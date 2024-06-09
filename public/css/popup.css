@@ -14,7 +14,7 @@ dialog {
     display: flex;
     flex-direction: column;
 
-    /* Overflow visible so elements (like toasts) can appear outside of the dialog. '.popup_content' is hiding overflow for the real content. */
+    /* Overflow visible so elements (like toasts) can appear outside of the dialog. '.popup-body' is hiding overflow for the real content. */
     overflow: visible;
 
     /* Fix weird animation issue with font-scaling during popup open */
@@ -23,7 +23,7 @@ dialog {
     -webkit-font-smoothing: subpixel-antialiased;
 }
 
-.popup .popup_content {
+.popup .popup-body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -32,23 +32,23 @@ dialog {
     padding: 1px;
 }
 
-.popup .popup_text {
+.popup .popup-content {
     margin-top: 10px;
     padding: 0 8px;
     overflow: hidden;
     flex-grow: 1;
 }
 
-.popup .popup_text h3:first-child {
-    /* No double spacing for the first heading needed, the .popup_text already has margin */
+.popup .popup-content h3:first-child {
+    /* No double spacing for the first heading needed, the .popup-content already has margin */
     margin-top: 0px;
 }
 
-.popup.vertical_scrolling_dialogue_popup .popup_text {
+.popup.vertical_scrolling_dialogue_popup .popup-content {
     overflow-y: auto;
 }
 
-.popup.horizontal_scrolling_dialogue_popup .popup_text {
+.popup.horizontal_scrolling_dialogue_popup .popup-content {
     overflow-x: auto;
 }
 
@@ -89,11 +89,11 @@ dialog {
     transform: translate(-50%, -50%);
 }
 
-.popup_input {
+.popup-input {
     margin-top: 10px;
 }
 
-.popup_controls {
+.popup-controls {
     margin-top: 10px;
     display: flex;
     align-self: center;
@@ -104,16 +104,16 @@ dialog {
     box-shadow: 0 0 5px var(--white20a);
 }
 
-.menu_button.popup_ok {
+.menu_button.popup-button-ok {
     background-color: var(--crimson70a);
     cursor: pointer;
 }
 
-.menu_button.popup_ok:hover {
+.menu_button.popup-button-ok:hover {
     background-color: var(--crimson-hover);
 }
 
-.menu_button.menu_button_custom {
+.menu_button.popup-button-custom {
     /* Custom buttons should not scale to smallest size, otherwise they will always break to multiline */
     width: unset;
 }

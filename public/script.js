@@ -6837,7 +6837,7 @@ export function select_selected_character(chid) {
 
     $('#add_avatar_button').val('');
 
-    $('#character_popup_text_h3').text(characters[chid].name);
+    $('#character_popup-button-h3').text(characters[chid].name);
     $('#character_name_pole').val(characters[chid].name);
     $('#description_textarea').val(characters[chid].description);
     $('#character_world').val(characters[chid].data?.extensions?.world || '');
@@ -6914,7 +6914,7 @@ function select_rm_create() {
     //create text poles
     $('#rm_button_back').css('display', '');
     $('#character_import_button').css('display', '');
-    $('#character_popup_text_h3').text('Create character');
+    $('#character_popup-button-h3').text('Create character');
     $('#character_name_pole').val(create_save.name);
     $('#description_textarea').val(create_save.description);
     $('#character_world').val(create_save.world);
@@ -7583,7 +7583,7 @@ async function createOrEditCharacter(e) {
                         field.callback && field.callback(fieldValue);
                     });
 
-                    $('#character_popup_text_h3').text('Create character');
+                    $('#character_popup-button-h3').text('Create character');
 
                     create_save.avatar = '';
 
@@ -10603,7 +10603,7 @@ jQuery(async function () {
         const html = await renderTemplateAsync('importCharacters');
 
         /** @type {string?} */
-        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { wider: true, okButton: $('#popup_template').attr('popup_text_import'), rows: 4 });
+        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { wider: true, okButton: $('#popup_template').attr('popup-button-import'), rows: 4 });
 
         if (!input) {
             console.debug('Custom content import cancelled');

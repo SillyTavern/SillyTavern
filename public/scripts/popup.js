@@ -1,5 +1,4 @@
-import { debounce_timeout } from './constants.js';
-import { hasAnimation, removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
+import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
 
 /** @readonly */
 /** @enum {Number} */
@@ -10,15 +9,12 @@ export const POPUP_TYPE = {
 };
 
 /** @readonly */
-/** @enum {number} */
+/** @enum {number?} */
 export const POPUP_RESULT = {
     'AFFIRMATIVE': 1,
     'NEGATIVE': 0,
-    'CANCELLED': undefined,
+    'CANCELLED': null,
 };
-
-/** @type {Popup[]} Remember all popups */
-export const popups = [];
 
 /**
  * @typedef {object} PopupOptions
@@ -43,14 +39,38 @@ export const popups = [];
  * @property {boolean?} [appendAtEnd] - Whether to append the button to the end of the popup - by default it will be prepended
  */
 
+/**
+ * @typedef {object} ShowPopupHelper
+ * Local implementation of the helper functionality to show several popups.
+ *
+ * Should be called via `Popup.show.xxxx()`.
+ */
+const showPopupHelper = {
+    /**
+     * Asynchronously displays an input popup with the given header and text, and returns the user's input.
+     *
+     * @param {string} header - The header text for the popup.
+     * @param {string} text - The main text for the popup.
+     * @param {string} [defaultValue=''] - The default value for the input field.
+     * @param {PopupOptions} [popupOptions={}] - Options for the popup.
+     * @return {Promise<string?>} A Promise that resolves with the user's input.
+     */
+    input: async (header, text, defaultValue = '', popupOptions = {}) => {
+        const content = PopupUtils.BuildTextWithHeader(header, text);
+        const popup = new Popup(content, POPUP_TYPE.INPUT, defaultValue, popupOptions);
+        const value = await popup.show();
+        return value ? String(value) : null;
+    },
+}
+
 export class Popup {
     /** @type {POPUP_TYPE} */ type;
 
     /** @type {string} */ id;
 
     /** @type {HTMLDialogElement} */ dlg;
+    /** @type {HTMLElement} */ body;
     /** @type {HTMLElement} */ content;
-    /** @type {HTMLElement} */ text;
     /** @type {HTMLTextAreaElement} */ input;
     /** @type {HTMLElement} */ controls;
     /** @type {HTMLElement} */ ok;
@@ -67,15 +87,15 @@ export class Popup {
     /** @type {(result: any) => any} */ resolver;
 
     /**
-     * Constructs a new Popup object with the given text, type, inputValue, and options
+     * Constructs a new Popup object with the given text content, type, inputValue, and options
      *
-     * @param {JQuery<HTMLElement>|string|Element} text - Text to display in the popup
+     * @param {JQuery<HTMLElement>|string|Element} content - Text content to display in the popup
      * @param {POPUP_TYPE} type - The type of the popup
      * @param {string} [inputValue=''] - The initial value of the input field
      * @param {PopupOptions} [options={}] - Additional options for the popup
      */
-    constructor(text, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null } = {}) {
-        popups.push(this);
+    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null } = {}) {
+        Popup.util.popups.push(this);
 
         // Make this popup uniquely identifiable
         this.id = uuidv4();
@@ -85,12 +105,12 @@ export class Popup {
         const template = document.querySelector('#popup_template');
         // @ts-ignore
         this.dlg = template.content.cloneNode(true).querySelector('.popup');
-        this.content = this.dlg.querySelector('.popup_content');
-        this.text = this.dlg.querySelector('.popup_text');
-        this.input = this.dlg.querySelector('.popup_input');
-        this.controls = this.dlg.querySelector('.popup_controls');
-        this.ok = this.dlg.querySelector('.popup_ok');
-        this.cancel = this.dlg.querySelector('.popup_cancel');
+        this.body = this.dlg.querySelector('.popup-body');
+        this.content = this.dlg.querySelector('.popup-content');
+        this.input = this.dlg.querySelector('.popup-input');
+        this.controls = this.dlg.querySelector('.popup-controls');
+        this.ok = this.dlg.querySelector('.popup-button-ok');
+        this.cancel = this.dlg.querySelector('.popup-button-cancel');
 
         this.dlg.setAttribute('data-id', this.id);
         if (wide) this.dlg.classList.add('wide_dialogue_popup');
@@ -101,7 +121,7 @@ export class Popup {
 
         // If custom button captions are provided, we set them beforehand
         this.ok.textContent = typeof okButton === 'string' ? okButton : 'OK';
-        this.cancel.textContent = typeof cancelButton === 'string' ? cancelButton : template.getAttribute('popup_text_cancel');
+        this.cancel.textContent = typeof cancelButton === 'string' ? cancelButton : template.getAttribute('popup-button-cancel');
 
         this.defaultResult = defaultResult;
         this.customButtons = customButtons;
@@ -110,7 +130,7 @@ export class Popup {
             const button = typeof x === 'string' ? { text: x, result: index + 2 } : x;
 
             const buttonElement = document.createElement('div');
-            buttonElement.classList.add('menu_button', 'menu_button_custom', 'result_control');
+            buttonElement.classList.add('menu_button', 'popup-button-custom', 'result-control');
             buttonElement.classList.add(...(button.classes ?? []));
             buttonElement.setAttribute('data-result', String(button.result ?? undefined));
             buttonElement.textContent = button.text;
@@ -138,13 +158,13 @@ export class Popup {
             }
             case POPUP_TYPE.CONFIRM: {
                 this.input.style.display = 'none';
-                if (!okButton) this.ok.textContent = template.getAttribute('popup_text_yes');
-                if (!cancelButton) this.cancel.textContent = template.getAttribute('popup_text_no');
+                if (!okButton) this.ok.textContent = template.getAttribute('popup-button-yes');
+                if (!cancelButton) this.cancel.textContent = template.getAttribute('popup-button-no');
                 break;
             }
             case POPUP_TYPE.INPUT: {
                 this.input.style.display = 'block';
-                if (!okButton) this.ok.textContent = template.getAttribute('popup_text_save');
+                if (!okButton) this.ok.textContent = template.getAttribute('popup-button-save');
                 break;
             }
             default: {
@@ -156,15 +176,15 @@ export class Popup {
         this.input.value = inputValue;
         this.input.rows = rows ?? 1;
 
-        this.text.innerHTML = '';
-        if (text instanceof jQuery) {
-            $(this.text).append(text);
-        } else if (text instanceof HTMLElement) {
-            this.text.append(text);
-        } else if (typeof text == 'string') {
-            this.text.innerHTML = text;
+        this.content.innerHTML = '';
+        if (content instanceof jQuery) {
+            $(this.content).append(content);
+        } else if (content instanceof HTMLElement) {
+            this.content.append(content);
+        } else if (typeof content == 'string') {
+            this.content.innerHTML = content;
         } else {
-            console.warn('Unknown popup text type. Should be jQuery, HTMLElement or string.', text);
+            console.warn('Unknown popup text type. Should be jQuery, HTMLElement or string.', content);
         }
 
         // Already prepare the auto-focus control by adding the "autofocus" attribute, this should be respected by showModal()
@@ -198,7 +218,7 @@ export class Popup {
                         return;
 
                     // Check if the current focus is a result control. Only should we apply the compelete action
-                    const resultControl = document.activeElement?.closest('.result_control');
+                    const resultControl = document.activeElement?.closest('.result-control');
                     if (!resultControl)
                         return;
 
@@ -297,6 +317,7 @@ export class Popup {
 
         this.value = value;
         this.result = result;
+        Popup.util.lastResult = { value, result };
         this.hide();
     }
 
@@ -320,13 +341,13 @@ export class Popup {
             this.dlg.remove();
 
             // Remove it from the popup references
-            removeFromArray(popups, this);
+            removeFromArray(Popup.util.popups, this);
 
             // If there is any popup below this one, see if we can set the focus
-            if (popups.length > 0) {
+            if (Popup.util.popups.length > 0) {
                 const activeDialog = document.activeElement?.closest('.popup');
                 const id = activeDialog?.getAttribute('data-id');
-                const popup = popups.find(x => x.id == id);
+                const popup = Popup.util.popups.find(x => x.id == id);
                 if (popup) {
                     if (popup.lastFocus) popup.lastFocus.focus();
                     else popup.setAutoFocus();
@@ -336,19 +357,45 @@ export class Popup {
 
         this.resolver(this.value);
     }
+
+    /**
+     * Show a popup with any of the given helper methods. Use `await` to make them blocking.
+     */
+    static show = showPopupHelper;
+
+    /**
+     * Utility for popup and popup management.
+     *
+     * Contains the list of all currently open popups, and it'll remember the result of the last closed popup.
+     */
+    static util = {
+        /** @type {Popup[]} Remember all popups */
+        popups: [],
+
+        /** @type {{value: any, result: POPUP_RESULT|number?}?} Last popup result */
+        lastResult: null,
+    }
+}
+
+class PopupUtils {
+    static BuildTextWithHeader(header, text) {
+        return `
+            <h3>${header}</h1>
+            ${text}`;
+    }
 }
 
 /**
- * Displays a blocking popup with a given text and type
- * @param {JQuery<HTMLElement>|string|Element} text - Text to display in the popup
+ * Displays a blocking popup with a given content and type
+ * @param {JQuery<HTMLElement>|string|Element} content - Content or text to display in the popup
  * @param {POPUP_TYPE} type
  * @param {string} inputValue - Value to set the input to
  * @param {PopupOptions} [popupOptions={}] - Options for the popup
  * @returns {Promise<POPUP_RESULT|string|boolean?>} The value for this popup, which can either be the popup retult or the input value if chosen
  */
-export function callGenericPopup(text, type, inputValue = '', popupOptions = {}) {
+export function callGenericPopup(content, type, inputValue = '', popupOptions = {}) {
     const popup = new Popup(
-        text,
+        content,
         type,
         inputValue,
         popupOptions,
@@ -356,6 +403,9 @@ export function callGenericPopup(text, type, inputValue = '', popupOptions = {})
     return popup.show();
 }
 
+/**
+ * Fixes the issue with toastr not displaying on top of the dialog by moving the toastr container inside the dialog or back to the main body
+ */
 export function fixToastrForDialogs() {
     // Hacky way of getting toastr to actually display on top of the popup...
 

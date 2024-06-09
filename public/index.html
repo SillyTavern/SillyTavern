@@ -4843,16 +4843,16 @@
         </div>
     </div>
     <!-- various fullscreen popups -->
-    <template id="popup_template" data-i18n="[popup_text_save]popup_text_save;[popup_text_yes]popup_text_yes;[popup_text_no]popup_text_no;[popup_text_cancel]popup_text_cancel;[popup_text_import]popup_text_import" popup_text_save="Save" popup_text_yes="Yes" popup_text_no="No" popup_text_cancel="Cancel" popup_text_import="Import"> <!-- localization data holder for popups -->
+    <template id="popup_template" data-i18n="[popup-button-save]popup-button-save;[popup-button-yes]popup-button-yes;[popup-button-no]popup-button-no;[popup-button-cancel]popup-button-cancel;[popup-button-import]popup-button-import" popup-button-save="Save" popup-button-yes="Yes" popup-button-no="No" popup-button-cancel="Cancel" popup-button-import="Import"> <!-- localization data holder for popups -->
         <dialog class="popup">
-            <div class="popup_content">
-                <div class="popup_text">
-                    <h3 class="margin0">text</h3>
+            <div class="popup-body">
+                <div class="popup-content">
+                    <h3 class="popup-header">text</h3>
                 </div>
-                <textarea class="popup_input text_pole result_control" rows="1" data-result="1"></textarea>
-                <div class="popup_controls">
-                    <div class="popup_ok menu_button result_control" data-i18n="Delete" data-result="1" tabindex="0">Delete</div>
-                    <div class="popup_cancel menu_button result_control" data-i18n="Cancel" data-result="0" tabindex="0">Cancel</div>
+                <textarea class="popup-input text_pole result-control" rows="1" data-result="1"></textarea>
+                <div class="popup-controls">
+                    <div class="popup-button-ok menu_button result-control" data-i18n="Delete" data-result="1" tabindex="0">Delete</div>
+                    <div class="popup-button-cancel menu_button result-control" data-i18n="Cancel" data-result="0" tabindex="0">Cancel</div>
                 </div>
             </div>
         </dialog>
@@ -4873,7 +4873,7 @@
     </div>
     <div id="character_popup" class="flex-container flexFlowColumn flexNoGap">
         <div id="character_popup_text">
-            <h3 id="character_popup_text_h3" class="margin0"></h3> <span data-i18n="Advanced Defininitions">- Advanced
+            <h3 id="character_popup-button-h3" class="margin0"></h3> <span data-i18n="Advanced Defininitions">- Advanced
                 Definitions</span>
         </div>
         <hr class="margin-bot-10px">
