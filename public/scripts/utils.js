@@ -644,7 +644,7 @@ function parseTimestamp(timestamp) {
         if (isNaN(timestamp) || !isFinite(timestamp) || timestamp < 0) {
             return moment.invalid();
         }
-        return moment(timestamp);
+        return moment(Number(timestamp));
     }
 
     // ST "humanized" format pattern
