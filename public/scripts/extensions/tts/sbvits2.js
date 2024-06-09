@@ -69,6 +69,7 @@ class SBVits2TtsProvider {
         <label">SBVits2 Settings:</label><br/>
         <label for="sbvits_tts_endpoint">Provider Endpoint:</label>
         <input id="sbvits_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
+        <span>Use <a target="_blank" href="https://github.com/litagin02/Style-Bert-VITS2">Style-Bert-VITS2 API Server</a>.</span><br/>
 
         <label for="sbvits_sdp_ratio">sdp_ratio: <span id="sbvits_sdp_ratio_output">${this.defaultSettings.sdp_ratio}</span></label>
         <input id="sbvits_sdp_ratio" type="range" value="${this.defaultSettings.sdp_ratio}" min="0.0" max="1" step="0.01" />
@@ -101,10 +102,6 @@ class SBVits2TtsProvider {
 
         <label for="sbvits_reference_audio_path">reference_audio_path:</label>
         <input id="sbvits_reference_audio_path" type="text" class="text_pole" maxlength="512" value="${this.defaultSettings.reference_audio_path}"/>
-        <p>
-            For more information, visit the
-            <a href="https://github.com/litagin02/Style-Bert-VITS2" target="_blank">Style-Bert-VITS2 project page</a>.
-        </p>
         `;
 
         return html;
