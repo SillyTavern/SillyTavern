@@ -251,7 +251,7 @@ class SBVits2TtsProvider {
                     return {
                         name: `${speaker} (${style})`,
                         voice_id: `${key}-${speaker_id}-${style}`,
-                        preview_url: false
+                        preview_url: false,
                     };
                 });
             });
@@ -302,7 +302,7 @@ class SBVits2TtsProvider {
             {
                 method: 'POST',
                 headers: {
-                }
+                },
             },
         );
         if (!response.ok) {
@@ -319,7 +319,7 @@ class SBVits2TtsProvider {
     async previewTtsVoice(id) {
         this.audioElement.pause();
         this.audioElement.currentTime = 0;
-        const lang_code = this.langKey2LangCode[this.settings.lang] ?? 'ja-JP'
+        const lang_code = this.langKey2LangCode[this.settings.lang] ?? 'ja-JP';
         const text = getPreviewString(lang_code);
         const response = await this.fetchTtsGeneration(text, id);
         if (!response.ok) {
