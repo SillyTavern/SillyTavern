@@ -276,6 +276,11 @@ class SBVits2TtsProvider {
 
         const [model_id, speaker_id, style] = voiceId.split('-');
         const params = new URLSearchParams();
+        if (this.settings.auto_split) {
+            // newlines are replaced with spaces
+            // so, revert for auto_split
+            inputText = inputText.replace(' ', '\n');
+        }
         params.append('text', inputText);
         params.append('model_id', model_id);
         params.append('speaker_id', speaker_id);
