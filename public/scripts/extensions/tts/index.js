@@ -10,6 +10,7 @@ import { NovelTtsProvider } from './novel.js';
 import { power_user } from '../../power-user.js';
 import { OpenAITtsProvider } from './openai.js';
 import { XTTSTtsProvider } from './xtts.js';
+import { VITSTtsProvider } from './vits.js';
 import { GSVITtsProvider } from './gsvi.js';
 import { SBVits2TtsProvider } from './sbvits2.js';
 import { AllTalkTtsProvider } from './alltalk.js';
@@ -83,6 +84,7 @@ const ttsProviders = {
     ElevenLabs: ElevenLabsTtsProvider,
     Silero: SileroTtsProvider,
     XTTSv2: XTTSTtsProvider,
+    VITS: VITSTtsProvider,
     GSVI: GSVITtsProvider,
     SBVits2: SBVits2TtsProvider,
     System: SystemTtsProvider,
