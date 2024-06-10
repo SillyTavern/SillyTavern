@@ -1261,6 +1261,9 @@ export async function waitUntilCondition(condition, timeout = 1000, interval = 1
  * uuidv4(); // '3e2fd9e1-0a7a-4f6d-9aaf-8a7a4babe7eb'
  */
 export function uuidv4() {
+    if ('randomUUID' in crypto) {
+        return crypto.randomUUID();
+    }
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
