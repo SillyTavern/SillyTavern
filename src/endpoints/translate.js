@@ -102,6 +102,55 @@ router.post('/google', jsonParser, async (request, response) => {
     }
 });
 
+router.post('/yandex', jsonParser, async (request, response) => {
+    
+    const chunks = request.body.chunks;
+    const lang = request.body.lang;
+
+    if (!chunks || !lang) {
+        return response.sendStatus(400);
+    }
+
+    // reconstruct original text to log
+    let inputText = '';
+    
+    const params = new URLSearchParams();
+    for (const chunk of chunks) {
+        params.append('text', chunk);
+        inputText += chunk;
+    }
+    params.append('lang', lang);
+    const ucid = crypto.randomUUID().replaceAll('-', '');
+    
+    console.log('Input text: ' + inputText);
+    
+    try {
+        const result = await fetch(`https://translate.yandex.net/api/v1/tr.json/translate?ucid=${ucid}&srv=android&format=text`, {
+            method: 'POST',
+            body: params,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            timeout: 0,
+        });
+
+        if (!result.ok) {
+            const error = await result.message();
+            console.log('Yandex error: ', result.code, error);
+            return response.sendStatus(result.code);
+        }
+
+        const json = await result.json();
+        const translated = json.text.join();
+        console.log('Translated text: ' + translated);
+
+        return response.send(translated);
+    } catch (error) {
+        console.log('Translation error: ' + error.message);
+        return response.sendStatus(500);
+    }
+});
+
 router.post('/lingva', jsonParser, async (request, response) => {
     try {
         const baseUrl = readSecret(request.user.directories, SECRET_KEYS.LINGVA_URL);
