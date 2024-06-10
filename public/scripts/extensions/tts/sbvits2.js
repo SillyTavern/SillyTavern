@@ -19,6 +19,8 @@ class SBVits2TtsProvider {
      * @returns {string} Processed text
      */
     processText(text) {
+        // backup for auto_split
+        text = text.replace(/\n+/g, '<br>');
         return text;
     }
 
@@ -276,11 +278,8 @@ class SBVits2TtsProvider {
 
         const [model_id, speaker_id, style] = voiceId.split('-');
         const params = new URLSearchParams();
-        if (this.settings.auto_split) {
-            // newlines are replaced with spaces
-            // so, revert for auto_split
-            inputText = inputText.replace(' ', '\n');
-        }
+        // restore for auto_split
+        inputText = inputText.replaceAll('<br>', '\n');
         params.append('text', inputText);
         params.append('model_id', model_id);
         params.append('speaker_id', speaker_id);
