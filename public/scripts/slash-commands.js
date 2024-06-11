@@ -84,15 +84,21 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     helpString: 'Get help on macros, chat formatting and commands.',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-    name: 'name',
+    name: 'persona',
     callback: setNameCallback,
-    unnamedArgumentList: [
-        new SlashCommandArgument(
-            'persona', [ARGUMENT_TYPE.STRING], true,
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'mode', 'The mode for persona selection. ("lookup" = search for existing persona, "temp" = create a temporary name, set a temporary name, "all" = allow both in the same command)',
+            [ARGUMENT_TYPE.STRING], false, false, 'all', ['lookup', 'temp', 'all'],
         ),
     ],
-    helpString: 'Sets user name and persona avatar (if set).',
-    aliases: ['persona'],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'persona name', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Selects the given persona with its name and avatar (by name or avatar url). If no matching persona exists, applies a temporary name.',
+    aliases: ['name'],
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'sync',
@@ -2372,26 +2378,44 @@ function setFlatModeCallback() {
     $('#chat_display').val(chat_styles.DEFAULT).trigger('change');
 }
 
-function setNameCallback(_, name) {
+/**
+ *
+ * @param {{mode: 'lookup' | 'temp' | 'all'}} namedArgs
+ * @param {string} name
+ * @returns
+ */
+function setNameCallback({ mode = 'all' }, name) {
     if (!name) {
         toastr.warning('you must specify a name to change to');
         return;
     }
 
+    if (!['lookup', 'temp', 'all'].includes(mode)) {
+        toastr.warning('mode must be one of "lookup", "temp" or "all"');
+        return;
+    }
+
     name = name.trim();
 
-    // If the name is a persona, auto-select it
-    for (let persona of Object.values(power_user.personas)) {
-        if (persona.toLowerCase() === name.toLowerCase()) {
-            autoSelectPersona(name);
+    // If the name matches a persona avatar, or a name, auto-select it
+    if (['lookup', 'all'].includes(mode)) {
+        let persona = Object.entries(power_user.personas).find(([avatar, _]) => avatar === name)?.[1];
+        if (!persona) persona = Object.entries(power_user.personas).find(([_, personaName]) => personaName.toLowerCase() === name.toLowerCase())?.[1];
+        if (persona) {
+            autoSelectPersona(persona);
             retriggerFirstMessageOnEmptyChat();
+            return;
+        } else if (mode === 'lookup') {
+            toastr.warning(`Persona ${name} not found`);
             return;
         }
     }
 
-    // Otherwise, set just the name
-    setUserName(name); //this prevented quickReply usage
-    retriggerFirstMessageOnEmptyChat();
+    if (['temp', 'all'].includes(mode)) {
+        // Otherwise, set just the name
+        setUserName(name); //this prevented quickReply usage
+        retriggerFirstMessageOnEmptyChat();
+    }
 }
 
 async function setNarratorName(_, text) {
