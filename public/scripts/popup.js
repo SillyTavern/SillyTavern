@@ -375,13 +375,13 @@ export class Popup {
         /** @type {{value: any, result: POPUP_RESULT|number?}?} Last popup result */
         lastResult: null,
 
-        /** @returns {boolean} Checks if any modal dialog is open */
-        isDialogOpen() {
+        /** @returns {boolean} Checks if any modal popup dialog is open */
+        isPopupOpen() {
             return Popup.util.popups.length > 0;
         },
 
         /**
-         * Returns the topmost modal layer in the document. If there is an open dialog,
+         * Returns the topmost modal layer in the document. If there is an open dialog popup,
          * it returns the dialog element. Otherwise, it returns the document body.
          *
          * @return {HTMLElement} The topmost modal layer element
