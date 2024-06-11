@@ -2379,19 +2379,19 @@ function setFlatModeCallback() {
 }
 
 /**
- *
- * @param {{mode: 'lookup' | 'temp' | 'all'}} namedArgs
- * @param {string} name
- * @returns
+ * Sets a persona name and optionally an avatar.
+ * @param {{mode: 'lookup' | 'temp' | 'all'}} namedArgs Named arguments
+ * @param {string} name Name to set
+ * @returns {void}
  */
 function setNameCallback({ mode = 'all' }, name) {
     if (!name) {
-        toastr.warning('you must specify a name to change to');
+        toastr.warning('You must specify a name to change to');
         return;
     }
 
     if (!['lookup', 'temp', 'all'].includes(mode)) {
-        toastr.warning('mode must be one of "lookup", "temp" or "all"');
+        toastr.warning('Mode must be one of "lookup", "temp" or "all"');
         return;
     }
 
