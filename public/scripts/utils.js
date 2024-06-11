@@ -481,14 +481,16 @@ export function trimToEndSentence(input, include_newline = false) {
         return '';
     }
 
+    const isEmoji = x => /(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu.test(x);
     const punctuation = new Set(['.', '!', '?', '*', '"', ')', '}', '`', ']', '$', '。', '！', '？', '”', '）', '】', '’', '」', '_']); // extend this as you see fit
     let last = -1;
 
-    for (let i = input.length - 1; i >= 0; i--) {
-        const char = input[i];
+    const characters = Array.from(input);
+    for (let i = characters.length - 1; i >= 0; i--) {
+        const char = characters[i];
 
-        if (punctuation.has(char)) {
-            if (i > 0 && /[\s\n]/.test(input[i - 1])) {
+        if (punctuation.has(char) || isEmoji(char)) {
+            if (i > 0 && /[\s\n]/.test(characters[i - 1])) {
                 last = i - 1;
             } else {
                 last = i;
@@ -506,7 +508,7 @@ export function trimToEndSentence(input, include_newline = false) {
         return input.trimEnd();
     }
 
-    return input.substring(0, last + 1).trimEnd();
+    return characters.slice(0, last + 1).join('').trimEnd();
 }
 
 export function trimToStartSentence(input) {
