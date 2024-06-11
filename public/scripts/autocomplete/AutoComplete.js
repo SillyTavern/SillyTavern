@@ -6,6 +6,7 @@ import { BlankAutoCompleteOption } from './BlankAutoCompleteOption.js';
 // eslint-disable-next-line no-unused-vars
 import { AutoCompleteNameResult } from './AutoCompleteNameResult.js';
 import { AutoCompleteSecondaryNameResult } from './AutoCompleteSecondaryNameResult.js';
+import { Popup, getTopmostModalLayer } from '../popup.js';
 
 /**@readonly*/
 /**@enum {Number}*/
@@ -438,7 +439,7 @@ export class AutoComplete {
             }
             this.dom.append(frag);
             this.updatePosition();
-            document.body.append(this.domWrap);
+            getTopmostModalLayer().append(this.domWrap);
         } else {
             this.domWrap.remove();
         }
@@ -453,7 +454,7 @@ export class AutoComplete {
         if (!this.isShowingDetails && this.isReplaceable) return this.detailsWrap.remove();
         this.detailsDom.innerHTML = '';
         this.detailsDom.append(this.selectedItem?.renderDetails() ?? 'NO ITEM');
-        document.body.append(this.detailsWrap);
+        getTopmostModalLayer().append(this.detailsWrap);
         this.updateDetailsPositionDebounced();
     }
 
@@ -469,7 +470,7 @@ export class AutoComplete {
             const rect = {};
             rect[AUTOCOMPLETE_WIDTH.INPUT] = this.textarea.getBoundingClientRect();
             rect[AUTOCOMPLETE_WIDTH.CHAT] = document.querySelector('#sheld').getBoundingClientRect();
-            rect[AUTOCOMPLETE_WIDTH.FULL] = document.body.getBoundingClientRect();
+            rect[AUTOCOMPLETE_WIDTH.FULL] = getTopmostModalLayer().getBoundingClientRect();
             this.domWrap.style.setProperty('--bottom', `${window.innerHeight - rect[AUTOCOMPLETE_WIDTH.INPUT].top}px`);
             this.dom.style.setProperty('--bottom', `${window.innerHeight - rect[AUTOCOMPLETE_WIDTH.INPUT].top}px`);
             this.domWrap.style.bottom = `${window.innerHeight - rect[AUTOCOMPLETE_WIDTH.INPUT].top}px`;
@@ -496,7 +497,7 @@ export class AutoComplete {
                 const rect = {};
                 rect[AUTOCOMPLETE_WIDTH.INPUT] = this.textarea.getBoundingClientRect();
                 rect[AUTOCOMPLETE_WIDTH.CHAT] = document.querySelector('#sheld').getBoundingClientRect();
-                rect[AUTOCOMPLETE_WIDTH.FULL] = document.body.getBoundingClientRect();
+                rect[AUTOCOMPLETE_WIDTH.FULL] = getTopmostModalLayer().getBoundingClientRect();
                 if (this.isReplaceable) {
                     this.detailsWrap.classList.remove('full');
                     const selRect = this.selectedItem.dom.children[0].getBoundingClientRect();
@@ -592,7 +593,7 @@ export class AutoComplete {
             }
             this.clone.style.position = 'fixed';
             this.clone.style.visibility = 'hidden';
-            document.body.append(this.clone);
+            getTopmostModalLayer().append(this.clone);
             const mo = new MutationObserver(muts=>{
                 if (muts.find(it=>Array.from(it.removedNodes).includes(this.textarea))) {
                     this.clone.remove();

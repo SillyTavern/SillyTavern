@@ -374,6 +374,21 @@ export class Popup {
 
         /** @type {{value: any, result: POPUP_RESULT|number?}?} Last popup result */
         lastResult: null,
+
+        /** @returns {boolean} Checks if any modal dialog is open */
+        isDialogOpen() {
+            return Popup.util.popups.length > 0;
+        },
+
+        /**
+         * Returns the topmost modal layer in the document. If there is an open dialog,
+         * it returns the dialog element. Otherwise, it returns the document body.
+         *
+         * @return {HTMLElement} The topmost modal layer element
+         */
+        getTopmostModalLayer() {
+            return getTopmostModalLayer();
+        },
     }
 }
 
@@ -387,6 +402,7 @@ class PopupUtils {
 
 /**
  * Displays a blocking popup with a given content and type
+ *
  * @param {JQuery<HTMLElement>|string|Element} content - Content or text to display in the popup
  * @param {POPUP_TYPE} type
  * @param {string} inputValue - Value to set the input to
@@ -401,6 +417,18 @@ export function callGenericPopup(content, type, inputValue = '', popupOptions = 
         popupOptions,
     );
     return popup.show();
+}
+
+/**
+ * Returns the topmost modal layer in the document. If there is an open dialog,
+ * it returns the dialog element. Otherwise, it returns the document body.
+ *
+ * @return {HTMLElement} The topmost modal layer element
+ */
+export function getTopmostModalLayer() {
+    const dlg = Array.from(document.querySelectorAll('dialog[open]:not([closing])')).pop();
+    if (dlg instanceof HTMLElement) return dlg;
+    return document.body;
 }
 
 /**
