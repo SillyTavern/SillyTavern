@@ -499,6 +499,7 @@ let rawPromptPopper = Popper.createPopper(document.getElementById('dialogue_popu
 // Saved here for performance reasons
 const messageTemplate = $('#message_template .mes');
 const chatElement = $('#chat');
+const textHolder = $('#API-status-top');
 
 let dialogueResolve = null;
 let dialogueCloseStop = false;
@@ -901,7 +902,7 @@ function cancelStatusCheck() {
 export function displayOnlineStatus() {
     if (online_status == 'no_connection') {
         $('.online_status_indicator').removeClass('success');
-        $('.online_status_text').text('No connection...');
+        $('.online_status_text').text(textHolder.attr('no_connection_text'));
     } else {
         $('.online_status_indicator').addClass('success');
         $('.online_status_text').text(online_status);
@@ -1371,7 +1372,7 @@ export async function printCharacters(fullRefresh = false) {
         },
         afterRender: function () {
             $(listId).scrollTop(currentScrollTop);
-        },
+        }
     });
 
     favsToHotswap();

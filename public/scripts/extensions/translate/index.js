@@ -10,13 +10,12 @@ import {
     substituteParams,
     updateMessageBlock,
 } from '../../../script.js';
-import { extension_settings, getContext } from '../../extensions.js';
+import { extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
 import { findSecret, secret_state, writeSecret } from '../../secrets.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { splitRecursive } from '../../utils.js';
-import { renderTemplateAsync } from '../../templates.js';
 
 export const autoModeOptions = {
     NONE: 'none',
@@ -505,7 +504,8 @@ async function onTranslateChatClick() {
 }
 
 async function onTranslationsClearClick() {
-    const confirm = await callPopup('<h3>Are you sure?</h3>This will remove translated text from all messages in the current chat. This action cannot be undone.', 'confirm');
+    const popupHtml = await renderExtensionTemplateAsync('translate', 'deleteConfirmation');
+    const confirm = await callPopup(popupHtml, 'confirm');
 
     if (!confirm) {
         return;
@@ -564,9 +564,9 @@ const handleMessageEdit = createEventHandler(translateMessageEdit, () => true);
 window['translate'] = translate;
 
 jQuery(async() => {
-    const html = await renderTemplateAsync('translateIndex');
+    const html = await renderExtensionTemplateAsync('translate', 'index');
 
-    const buttonHtml = await renderTemplateAsync('translateButtons');
+    const buttonHtml = await renderExtensionTemplateAsync('translate', 'buttons');
     $('#extensionsMenu').append(buttonHtml);
     $('#extensions_settings2').append(html);
     $('#translate_chat').on('click', onTranslateChatClick);
