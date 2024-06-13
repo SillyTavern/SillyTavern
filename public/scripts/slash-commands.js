@@ -2910,6 +2910,8 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
         result = await executeSlashCommandsWithOptions(text, {
             abortController: commandsFromChatInputAbortController,
             onProgress: (done, total) => ta.style.setProperty('--prog', `${done / total * 100}%`),
+            parserFlags: options.parserFlags,
+            scope: options.scope,
         });
         if (commandsFromChatInputAbortController.signal.aborted) {
             document.querySelector('#form_sheld').classList.add('script_aborted');
