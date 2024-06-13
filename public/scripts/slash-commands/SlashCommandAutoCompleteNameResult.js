@@ -43,6 +43,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
                     [...namedResult.optionList, ...unnamedResult.optionList],
                 );
                 combinedResult.isRequired = namedResult.isRequired || unnamedResult.isRequired;
+                combinedResult.forceMatch = namedResult.forceMatch && unnamedResult.forceMatch;
                 return combinedResult;
             }
         }
@@ -114,6 +115,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
                     true,
                 );
                 result.isRequired = true;
+                result.forceMatch = cmdArg.forceEnum;
                 return result;
             }
         }
@@ -176,6 +178,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
         const isCompleteValue = enumList.find(it=>it.value == value);
         const isSelectedValue = isSelect && isCompleteValue;
         result.isRequired = cmdArg.isRequired && !isSelectedValue && !isCompleteValue;
+        result.forceMatch = cmdArg.forceEnum;
         return result;
     }
 }
