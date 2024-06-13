@@ -72,7 +72,7 @@
                 </div>
                 <label for="sd_drawthings_auth" data-i18n="Authentication (optional)">Authentication (optional)</label>
                 <input id="sd_drawthings_auth" type="text" class="text_pole"  data-i18n="[placeholder]Example: username:password" placeholder="Example: username:password" value="" />
-				<!-- (Original Text)<b>Important:</b> run DrawThings app with HTTP API switch enabled in the UI! The server must be accessible from the SillyTavern host machine. -->
+                <!-- (Original Text)<b>Important:</b> run DrawThings app with HTTP API switch enabled in the UI! The server must be accessible from the SillyTavern host machine. -->
                 <i><b data-i18n="Important:">Important:</b></i><i data-i18n="sd_drawthings_auth_txt"> run DrawThings app with HTTP API switch enabled in the UI! The server must be accessible from the SillyTavern host machine.</i>
             </div>
             <div data-sd-source="vlad">
@@ -182,23 +182,33 @@
             </div>
             <label for="sd_scale" data-i18n="CFG Scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
             <input id="sd_scale" type="range" min="{{scale_min}}" max="{{scale_max}}" step="{{scale_step}}" value="{{scale}}" />
+            <div data-sd-source="novel" class="marginTopBot5">
+                <label class="checkbox_label" for="sd_novel_decrisper" title="Reduce artifacts caused by high guidance values.">
+                    <input id="sd_novel_decrisper" type="checkbox" />
+                    <span data-i18n="Decrisper">
+                        Decrisper
+                    </span>
+                </label>
+            </div>
             <label for="sd_steps" data-i18n="Sampling steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
             <input id="sd_steps" type="range" min="{{steps_min}}" max="{{steps_max}}" step="{{steps_step}}" value="{{steps}}" />
             <label for="sd_width" data-i18n="Width">Width (<span id="sd_width_value"></span>)</label>
             <input id="sd_width" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{width}}" />
             <label for="sd_height" data-i18n="Height">Height (<span id="sd_height_value"></span>)</label>
             <input id="sd_height" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{height}}" />
+            <label for="sd_resolution" data-i18n="Resolution">Resolution</label>
+            <select id="sd_resolution"><!-- Populated in JS --></select>
             <label for="sd_model" data-i18n="Model">Model</label>
             <select id="sd_model"></select>
             <label for="sd_sampler" data-i18n="Sampling method">Sampling method</label>
             <select id="sd_sampler"></select>
-            <label data-sd-source="horde" for="sd_horde_karras" class="checkbox_label">
+            <label data-sd-source="horde" for="sd_horde_karras" class="checkbox_label marginTopBot5">
                 <input id="sd_horde_karras" type="checkbox" />
                 <span data-i18n="Karras (not all samplers supported)">
                     Karras (not all samplers supported)
                 </span>
             </label>
-            <div data-sd-source="novel" class="flex-container">
+            <div data-sd-source="novel" class="flex-container marginTopBot5">
                 <label class="flex1 checkbox_label" data-i18n="[title]SMEA versions of samplers are modified to perform better at high resolution." title="SMEA versions of samplers are modified to perform better at high resolution.">
                     <input id="sd_novel_sm" type="checkbox" />
                     <span data-i18n="SMEA">
@@ -212,9 +222,7 @@
                     </span>
                 </label>
             </div>
-            <label for="sd_resolution" data-i18n="Resolution">Resolution</label>
-            <select id="sd_resolution"><!-- Populated in JS --></select>
-            <div data-sd-source="comfy">
+            <div data-sd-source="comfy,auto">
                 <label for="sd_scheduler" data-i18n="Scheduler">Scheduler</label>
                 <select id="sd_scheduler"></select>
             </div>
@@ -222,7 +230,7 @@
                 <label for="sd_vae">VAE</label>
                 <select id="sd_vae"></select>
             </div>
-            <div class="flex-container marginTop10 margin-bot-10px">
+            <div class="flex-container marginTopBot5">
                 <label class="flex1 checkbox_label">
                     <input id="sd_restore_faces" type="checkbox" />
                     <span data-i18n="Restore Faces">Restore Faces</span>
@@ -232,11 +240,17 @@
                     <span data-i18n="Hires. Fix">Hires. Fix</span>
                 </label>
             </div>
-            <div data-sd-source="auto,vlad">
+            <div data-sd-source="auto,vlad,comfy,horde,drawthings,extras" class="marginTopBot5">
+                <label for="sd_clip_skip">CLIP Skip (<span id="sd_clip_skip_value"></span>)</label>
+                <input type="range" id="sd_clip_skip" min="{{clip_skip_min}}" max="{{clip_skip_max}}" step="{{clip_skip_step}}" value="{{clip_skip}}" />
+            </div>
+            <div data-sd-source="auto,vlad,drawthings">
                 <label for="sd_hr_upscaler" data-i18n="Upscaler">Upscaler</label>
                 <select id="sd_hr_upscaler"></select>
                 <label for="sd_hr_scale"><span data-i18n="Upscale by">Upscale by</span> (<span id="sd_hr_scale_value"></span>)</label>
                 <input id="sd_hr_scale" type="range" min="{{hr_scale_min}}" max="{{hr_scale_max}}" step="{{hr_scale_step}}" value="{{hr_scale}}" />
+            </div>
+            <div data-sd-source="auto,vlad">
                 <label for="sd_denoising_strength"><span data-i18n="Denoising strength">Denoising strength</span> (<span id="sd_denoising_strength_value"></span>)</label>
                 <input id="sd_denoising_strength" type="range" min="{{denoising_strength_min}}" max="{{denoising_strength_max}}" step="{{denoising_strength_step}}" value="{{denoising_strength}}" />
                 <label for="sd_hr_second_pass_steps"><span data-i18n="Hires steps (2nd pass)">Hires steps (2nd pass)</span> (<span id="sd_hr_second_pass_steps_value"></span>)</label>
@@ -246,6 +260,11 @@
                 <label for="sd_novel_upscale_ratio"><span data-i18n="Upscale by">Upscale by</span> (<span id="sd_novel_upscale_ratio_value"></span>)</label>
                 <input id="sd_novel_upscale_ratio" type="range" min="{{novel_upscale_ratio_min}}" max="{{novel_upscale_ratio_max}}" step="{{novel_upscale_ratio_step}}" value="{{novel_upscale_ratio}}" />
             </div>
+            <div data-sd-source="novel,togetherai,pollinations,comfy,drawthings,vlad,auto,horde,extras" class="marginTop5">
+                <label for="sd_seed">Seed</label>
+                <small>(-1 for random)</small>
+                <input id="sd_seed" type="number" class="text_pole" min="-1" max="9999999999" step="1" />
+            </div>
             <hr>
             <h4  data-i18n="[title]Preset for prompt prefix and negative prompt" title="Preset for prompt prefix and negative prompt">
                 <span data-i18n="Style">Style</span>
@@ -254,6 +273,9 @@
                 <select id="sd_style" class="flex1 text_pole"></select>
                 <div id="sd_save_style" data-i18n="[title]Save style" title="Save style" class="menu_button">
                     <i class="fa-solid fa-save"></i>
+                </div>
+                <div id="sd_delete_style" data-i18n="[title]Delete style" title="Delete style" class="menu_button">
+                    <i class="fa-solid fa-trash-can"></i>
                 </div>
             </div>
             <label for="sd_prompt_prefix" data-i18n="Common prompt prefix">Common prompt prefix</label>
@@ -267,6 +289,15 @@
                 <label for="sd_character_negative_prompt" data-i18n="Character-specific negative prompt prefix">Character-specific negative prompt prefix</label>
                 <small data-i18n="Won't be used in groups.">Won't be used in groups.</small>
                 <textarea id="sd_character_negative_prompt" class="text_pole textarea_compact" rows="3" data-i18n="[placeholder]sd_character_negative_prompt_placeholder" placeholder="Any characteristics that should not appear for the selected character. Will be added after a negative common prompt prefix.&#10;Example: jewellery, shoes, glasses"></textarea>
+                <label for="sd_character_prompt_share" class="checkbox_label flexWrap marginTop5">
+                    <input id="sd_character_prompt_share" type="checkbox" />
+                    <span data-i18n="Shareable">
+                        Shareable
+                    </span>
+                    <small class="flexBasis100p">
+                        When checked, character-specific prompts will be saved with the character card data.
+                    </small>
+                </label>
             </div>
         </div>
     </div>

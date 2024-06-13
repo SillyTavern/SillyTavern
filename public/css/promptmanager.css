@@ -19,7 +19,7 @@
 
 #completion_prompt_manager #completion_prompt_manager_list li {
     display: grid;
-    grid-template-columns: 4fr 80px 40px;
+    grid-template-columns: 4fr 80px 45px;
     margin-bottom: 0.5em;
     width: 100%
 }

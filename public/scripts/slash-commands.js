@@ -23,6 +23,7 @@ import {
     name2,
     reloadCurrentChat,
     removeMacros,
+    renameCharacter,
     saveChatConditional,
     sendMessageAsUser,
     sendSystemMessage,
@@ -83,15 +84,21 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     helpString: 'Get help on macros, chat formatting and commands.',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-    name: 'name',
+    name: 'persona',
     callback: setNameCallback,
-    unnamedArgumentList: [
-        new SlashCommandArgument(
-            'persona', [ARGUMENT_TYPE.STRING], true,
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'mode', 'The mode for persona selection. ("lookup" = search for existing persona, "temp" = create a temporary name, set a temporary name, "all" = allow both in the same command)',
+            [ARGUMENT_TYPE.STRING], false, false, 'all', ['lookup', 'temp', 'all'],
         ),
     ],
-    helpString: 'Sets user name and persona avatar (if set).',
-    aliases: ['persona'],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'persona name', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Selects the given persona with its name and avatar (by name or avatar url). If no matching persona exists, applies a temporary name.',
+    aliases: ['name'],
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'sync',
@@ -324,6 +331,29 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     aliases: ['char'],
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+    name: 'rename-char',
+    /** @param {{silent: string, chats: string}} options @param {string} name */
+    callback: async ({ silent = 'true', chats = null }, name) => {
+        const renamed = await renameCharacter(name, { silent: isTrueBoolean(silent), renameChats: chats !== null ? isTrueBoolean(chats) : null });
+        return String(renamed);
+    },
+    returns: 'true/false - Whether the rename was successful',
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'silent', 'Hide any blocking popups. (if false, the name is optional. If not supplied, a popup asking for it will appear)', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true',
+        ),
+        new SlashCommandNamedArgument(
+            'chats', 'Rename char in all previous chats', [ARGUMENT_TYPE.BOOLEAN], false, false, '<null>',
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'new char name', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Renames the current character.',
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'sysgen',
     callback: generateSystemMessage,
     unnamedArgumentList: [
@@ -336,15 +366,17 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'ask',
     callback: askCharacter,
-    unnamedArgumentList: [
-        new SlashCommandArgument(
-            'character name', [ARGUMENT_TYPE.STRING], true,
-        ),
-        new SlashCommandArgument(
-            'prompt', [ARGUMENT_TYPE.STRING], true,
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'name', 'character name', [ARGUMENT_TYPE.STRING], true, false, '',
         ),
     ],
-    helpString: 'Asks a specified character card a prompt. Character name and prompt have to be separated by a new line.',
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'prompt', [ARGUMENT_TYPE.STRING], true, false,
+        ),
+    ],
+    helpString: 'Asks a specified character card a prompt. Character name must be provided in a named argument.',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'delname',
@@ -1112,6 +1144,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         new SlashCommandNamedArgument(
             'role', 'role for in-chat injections', [ARGUMENT_TYPE.STRING], false, false, 'system', ['system', 'user', 'assistant'],
         ),
+        new SlashCommandNamedArgument(
+            'ephemeral', 'remove injection after generation', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false', ['true', 'false'],
+        ),
     ],
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -1126,9 +1161,15 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     helpString: 'Lists all script injections for the current chat.',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-    name: 'flushinjects',
+    name: 'flushinject',
+    aliases: ['flushinjects'],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'injection ID or a variable name pointing to ID', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME], false, false, '',
+        ),
+    ],
     callback: flushInjectsCallback,
-    helpString: 'Removes all script injections for the current chat.',
+    helpString: 'Removes a script injection for the current chat. If no ID is provided, removes all script injections.',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'tokens',
@@ -1173,6 +1214,7 @@ function injectCallback(args, value) {
     };
 
     const id = resolveVariable(args?.id);
+    const ephemeral = isTrueBoolean(args?.ephemeral);
 
     if (!id) {
         console.warn('WARN: No ID provided for /inject command');
@@ -1206,11 +1248,28 @@ function injectCallback(args, value) {
 
     setExtensionPrompt(prefixedId, value, position, depth, scan, role);
     saveMetadataDebounced();
+
+    if (ephemeral) {
+        let deleted = false;
+        const unsetInject = () => {
+            if (deleted) {
+                return;
+            }
+            console.log('Removing ephemeral script injection', id);
+            delete chat_metadata.script_injects[id];
+            setExtensionPrompt(prefixedId, '', position, depth, scan, role);
+            saveMetadataDebounced();
+            deleted = true;
+        };
+        eventSource.once(event_types.GENERATION_ENDED, unsetInject);
+        eventSource.once(event_types.GENERATION_STOPPED, unsetInject);
+    }
+
     return '';
 }
 
 function listInjectsCallback() {
-    if (!chat_metadata.script_injects) {
+    if (!chat_metadata.script_injects || !Object.keys(chat_metadata.script_injects).length) {
         toastr.info('No script injections for the current chat');
         return '';
     }
@@ -1230,17 +1289,29 @@ function listInjectsCallback() {
     sendSystemMessage(system_message_types.GENERIC, htmlMessage);
 }
 
-function flushInjectsCallback() {
+/**
+ * Flushes script injections for the current chat.
+ * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args Named arguments
+ * @param {string} value Unnamed argument
+ * @returns {string} Empty string
+ */
+function flushInjectsCallback(args, value) {
     if (!chat_metadata.script_injects) {
         return '';
     }
 
+    const idArgument = resolveVariable(value, args._scope);
+
     for (const [id, inject] of Object.entries(chat_metadata.script_injects)) {
+        if (idArgument && id !== idArgument) {
+            continue;
+        }
+
         const prefixedId = `${SCRIPT_PROMPT_KEY}${id}`;
         setExtensionPrompt(prefixedId, '', inject.position, inject.depth, inject.scan, inject.role);
+        delete chat_metadata.script_injects[id];
     }
 
-    chat_metadata.script_injects = {};
     saveMetadataDebounced();
     return '';
 }
@@ -1776,7 +1847,7 @@ async function deleteSwipeCallback(_, arg) {
     await reloadCurrentChat();
 }
 
-async function askCharacter(_, text) {
+async function askCharacter(args, text) {
     // Prevent generate recursion
     $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
 
@@ -1789,17 +1860,25 @@ async function askCharacter(_, text) {
 
     if (!text) {
         console.warn('WARN: No text provided for /ask command');
-    }
-
-    const parts = text.split('\n');
-    if (parts.length <= 1) {
-        toastr.warning('Both character name and message are required. Separate them with a new line.');
+        toastr.warning('No text provided for /ask command');
         return;
     }
 
-    // Grabbing the message
-    const name = parts.shift().trim();
-    let mesText = parts.join('\n').trim();
+    let name = '';
+    let mesText = '';
+
+    if (args?.name) {
+        name = args.name.trim();
+        mesText = text.trim();
+
+        if (!name && !mesText) {
+            toastr.warning('You must specify a name and text to ask.');
+            return;
+        }
+    }
+
+    mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND);
+
     const prevChId = this_chid;
 
     // Find the character
@@ -1810,7 +1889,7 @@ async function askCharacter(_, text) {
     }
 
     // Override character and send a user message
-    setCharacterId(chId);
+    setCharacterId(String(chId));
 
     // TODO: Maybe look up by filename instead of name
     const character = characters[chId];
@@ -2299,26 +2378,44 @@ function setFlatModeCallback() {
     $('#chat_display').val(chat_styles.DEFAULT).trigger('change');
 }
 
-function setNameCallback(_, name) {
+/**
+ * Sets a persona name and optionally an avatar.
+ * @param {{mode: 'lookup' | 'temp' | 'all'}} namedArgs Named arguments
+ * @param {string} name Name to set
+ * @returns {void}
+ */
+function setNameCallback({ mode = 'all' }, name) {
     if (!name) {
-        toastr.warning('you must specify a name to change to');
+        toastr.warning('You must specify a name to change to');
+        return;
+    }
+
+    if (!['lookup', 'temp', 'all'].includes(mode)) {
+        toastr.warning('Mode must be one of "lookup", "temp" or "all"');
         return;
     }
 
     name = name.trim();
 
-    // If the name is a persona, auto-select it
-    for (let persona of Object.values(power_user.personas)) {
-        if (persona.toLowerCase() === name.toLowerCase()) {
-            autoSelectPersona(name);
+    // If the name matches a persona avatar, or a name, auto-select it
+    if (['lookup', 'all'].includes(mode)) {
+        let persona = Object.entries(power_user.personas).find(([avatar, _]) => avatar === name)?.[1];
+        if (!persona) persona = Object.entries(power_user.personas).find(([_, personaName]) => personaName.toLowerCase() === name.toLowerCase())?.[1];
+        if (persona) {
+            autoSelectPersona(persona);
             retriggerFirstMessageOnEmptyChat();
+            return;
+        } else if (mode === 'lookup') {
+            toastr.warning(`Persona ${name} not found`);
             return;
         }
     }
 
-    // Otherwise, set just the name
-    setUserName(name); //this prevented quickReply usage
-    retriggerFirstMessageOnEmptyChat();
+    if (['temp', 'all'].includes(mode)) {
+        // Otherwise, set just the name
+        setUserName(name); //this prevented quickReply usage
+        retriggerFirstMessageOnEmptyChat();
+    }
 }
 
 async function setNarratorName(_, text) {

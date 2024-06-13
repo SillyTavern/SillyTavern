@@ -1,6 +1,6 @@
 const fetch = require('node-fetch').default;
 const express = require('express');
-const AIHorde = require('@zeldafan0225/ai_horde');
+const { AIHorde, ModelGenerationInputStableSamplers, ModelInterrogationFormTypes, HordeAsyncRequestStates } = require('@zeldafan0225/ai_horde');
 const { getVersion, delay, Cache } = require('../util');
 const { readSecret, SECRET_KEYS } = require('./secrets');
 const { jsonParser } = require('../express-common');
@@ -65,7 +65,7 @@ router.post('/text-workers', jsonParser, async (request, response) => {
         }
 
         const agent = await getClientAgent();
-        const fetchResult = await fetch('https://horde.koboldai.net/api/v2/workers?type=text', {
+        const fetchResult = await fetch('https://aihorde.net/api/v2/workers?type=text', {
             headers: {
                 'Client-Agent': agent,
             },
@@ -88,7 +88,7 @@ router.post('/text-models', jsonParser, async (request, response) => {
         }
 
         const agent = await getClientAgent();
-        const fetchResult = await fetch('https://horde.koboldai.net/api/v2/status/models?type=text', {
+        const fetchResult = await fetch('https://aihorde.net/api/v2/status/models?type=text', {
             headers: {
                 'Client-Agent': agent,
             },
@@ -106,7 +106,7 @@ router.post('/text-models', jsonParser, async (request, response) => {
 router.post('/status', jsonParser, async (_, response) => {
     try {
         const agent = await getClientAgent();
-        const fetchResult = await fetch('https://horde.koboldai.net/api/v2/status/heartbeat', {
+        const fetchResult = await fetch('https://aihorde.net/api/v2/status/heartbeat', {
             headers: {
                 'Client-Agent': agent,
             },
@@ -123,7 +123,7 @@ router.post('/cancel-task', jsonParser, async (request, response) => {
     try {
         const taskId = request.body.taskId;
         const agent = await getClientAgent();
-        const fetchResult = await fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${taskId}`, {
+        const fetchResult = await fetch(`https://aihorde.net/api/v2/generate/text/status/${taskId}`, {
             method: 'DELETE',
             headers: {
                 'Client-Agent': agent,
@@ -143,7 +143,7 @@ router.post('/task-status', jsonParser, async (request, response) => {
     try {
         const taskId = request.body.taskId;
         const agent = await getClientAgent();
-        const fetchResult = await fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${taskId}`, {
+        const fetchResult = await fetch(`https://aihorde.net/api/v2/generate/text/status/${taskId}`, {
             headers: {
                 'Client-Agent': agent,
             },
@@ -160,7 +160,7 @@ router.post('/task-status', jsonParser, async (request, response) => {
 
 router.post('/generate-text', jsonParser, async (request, response) => {
     const apiKey = readSecret(request.user.directories, SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
-    const url = 'https://horde.koboldai.net/api/v2/generate/text/async';
+    const url = 'https://aihorde.net/api/v2/generate/text/async';
     const agent = await getClientAgent();
 
     console.log(request.body);
@@ -191,8 +191,7 @@ router.post('/generate-text', jsonParser, async (request, response) => {
 
 router.post('/sd-samplers', jsonParser, async (_, response) => {
     try {
-        const ai_horde = await getHordeClient();
-        const samplers = Object.values(ai_horde.ModelGenerationInputStableSamplers);
+        const samplers = Object.values(ModelGenerationInputStableSamplers);
         response.send(samplers);
     } catch (error) {
         console.error(error);
@@ -217,7 +216,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
         const ai_horde = await getHordeClient();
         const result = await ai_horde.postAsyncInterrogate({
             source_image: request.body.image,
-            forms: [{ name: AIHorde.ModelInterrogationFormTypes.caption }],
+            forms: [{ name: ModelInterrogationFormTypes.caption }],
         }, { token: api_key_horde });
 
         if (!result.id) {
@@ -233,7 +232,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             const status = await ai_horde.getInterrogationStatus(result.id);
             console.log(status);
 
-            if (status.state === AIHorde.HordeAsyncRequestStates.done) {
+            if (status.state === HordeAsyncRequestStates.done) {
 
                 if (status.forms === undefined) {
                     console.error('Image interrogation request failed: no forms found.');
@@ -251,7 +250,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
                 return response.send({ caption });
             }
 
-            if (status.state === AIHorde.HordeAsyncRequestStates.faulted || status.state === AIHorde.HordeAsyncRequestStates.cancelled) {
+            if (status.state === HordeAsyncRequestStates.faulted || status.state === HordeAsyncRequestStates.cancelled) {
                 console.log('Image interrogation request is not successful.');
                 return response.sendStatus(503);
             }
@@ -325,6 +324,8 @@ router.post('/generate-image', jsonParser, async (request, response) => {
                     width: request.body.width,
                     height: request.body.height,
                     karras: Boolean(request.body.karras),
+                    clip_skip: request.body.clip_skip,
+                    seed: request.body.seed >= 0 ? String(request.body.seed) : undefined,
                     n: 1,
                 },
                 r2: false,

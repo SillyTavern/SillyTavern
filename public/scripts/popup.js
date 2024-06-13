@@ -48,7 +48,7 @@ export class Popup {
      * @param {string} inputValue - Value to set the input to.
      * @param {PopupOptions} options - Options for the popup.
      */
-    constructor(text, type, inputValue = '', { okButton, cancelButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling } = {}) {
+    constructor(text, type, inputValue = '', { okButton, cancelButton, rows, wide, wider, large, allowHorizontalScrolling, allowVerticalScrolling } = {}) {
         this.type = type;
 
         /**@type {HTMLTemplateElement}*/
@@ -64,6 +64,7 @@ export class Popup {
         this.cancel = this.dom.querySelector('.dialogue_popup_cancel');
 
         if (wide) dlg.classList.add('wide_dialogue_popup');
+        if (wider) dlg.classList.add('wider_dialogue_popup');
         if (large) dlg.classList.add('large_dialogue_popup');
         if (allowHorizontalScrolling) dlg.classList.add('horizontal_scrolling_dialogue_popup');
         if (allowVerticalScrolling) dlg.classList.add('vertical_scrolling_dialogue_popup');
@@ -225,12 +226,12 @@ export class Popup {
  * @param {PopupOptions} options - Options for the popup.
  * @returns
  */
-export function callGenericPopup(text, type, inputValue = '', { okButton, cancelButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling } = {}) {
+export function callGenericPopup(text, type, inputValue = '', { okButton, cancelButton, rows, wide, wider, large, allowHorizontalScrolling, allowVerticalScrolling } = {}) {
     const popup = new Popup(
         text,
         type,
         inputValue,
-        { okButton, cancelButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling },
+        { okButton, cancelButton, rows, wide, wider, large, allowHorizontalScrolling, allowVerticalScrolling },
     );
     return popup.show();
 }

@@ -255,7 +255,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
                     height: request.body.height ?? 512,
                     width: request.body.width ?? 512,
                     scale: request.body.scale ?? 9,
-                    seed: Math.floor(Math.random() * 9999999999),
+                    seed: request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 9999999999),
                     sampler: request.body.sampler ?? 'k_dpmpp_2m',
                     steps: request.body.steps ?? 28,
                     n_samples: 1,
@@ -264,7 +264,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
                     qualityToggle: false,
                     add_original_image: false,
                     controlnet_strength: 1,
-                    dynamic_thresholding: false,
+                    dynamic_thresholding: request.body.decrisper ?? false,
                     legacy: false,
                     sm: request.body.sm ?? false,
                     sm_dyn: request.body.sm_dyn ?? false,
@@ -281,6 +281,12 @@ router.post('/generate-image', jsonParser, async (request, response) => {
 
         const archiveBuffer = await generateResult.arrayBuffer();
         const imageBuffer = await extractFileFromZipBuffer(archiveBuffer, '.png');
+
+        if (!imageBuffer) {
+            console.warn('NovelAI generated an image, but the PNG file was not found.');
+            return response.sendStatus(500);
+        }
+
         const originalBase64 = imageBuffer.toString('base64');
 
         // No upscaling
@@ -311,6 +317,11 @@ router.post('/generate-image', jsonParser, async (request, response) => {
 
             const upscaledArchiveBuffer = await upscaleResult.arrayBuffer();
             const upscaledImageBuffer = await extractFileFromZipBuffer(upscaledArchiveBuffer, '.png');
+
+            if (!upscaledImageBuffer) {
+                throw new Error('NovelAI upscaled an image, but the PNG file was not found.');
+            }
+
             const upscaledBase64 = upscaledImageBuffer.toString('base64');
 
             return response.send(upscaledBase64);

@@ -1501,15 +1501,17 @@ async function onGroupActionClick(event) {
         const index = _thisGroup.disabled_members.indexOf(member.data('id'));
         if (index !== -1) {
             _thisGroup.disabled_members.splice(index, 1);
+            await editGroup(openGroupId, false, false);
         }
-        await editGroup(openGroupId, false, false);
     }
 
     if (action === 'disable') {
         member.addClass('disabled');
         const _thisGroup = groups.find(x => x.id === openGroupId);
-        _thisGroup.disabled_members.push(member.data('id'));
-        await editGroup(openGroupId, false, false);
+        if (!_thisGroup.disabled_members.includes(member.data('id'))) {
+            _thisGroup.disabled_members.push(member.data('id'));
+            await editGroup(openGroupId, false, false);
+        }
     }
 
     if (action === 'up' || action === 'down') {

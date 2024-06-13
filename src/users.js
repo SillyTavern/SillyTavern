@@ -87,6 +87,7 @@ const STORAGE_KEYS = {
  * @property {string} comfyWorkflows - The directory where the ComfyUI workflows are stored
  * @property {string} files - The directory where the uploaded files are stored
  * @property {string} vectors - The directory where the vectors are stored
+ * @property {string} backups - The directory where the backups are stored
  */
 
 /**

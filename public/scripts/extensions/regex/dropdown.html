@@ -1,24 +1,52 @@
 <div class="regex_settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <b>Regex</b>
+            <b data-i18n="ext_regex_title">
+                Regex
+            </b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
             <div class="flex-container">
-                <div id="open_regex_editor" class="menu_button">
+                <div id="open_regex_editor" class="menu_button menu_button_icon" title="New global regex script">
                     <i class="fa-solid fa-pen-to-square"></i>
-                    <span data-i18n="ext_regex_open_editor">Open Editor</span>
+                    <small data-i18n="ext_regex_new_global_script">+ Global</small>
                 </div>
-                <div id="import_regex" class="menu_button">
+                <div id="open_scoped_editor" class="menu_button menu_button_icon" title="New scoped regex script">
+                    <i class="fa-solid fa-address-card"></i>
+                    <small data-i18n="ext_regex_new_scoped_script">+ Scoped</small>
+                </div>
+                <div id="import_regex" class="menu_button menu_button_icon">
                     <i class="fa-solid fa-file-import"></i>
-                    <span data-i18n="ext_regex_import_script">Import Script</span>
+                    <small data-i18n="ext_regex_import_script">Import</small>
                 </div>
                 <input type="file" id="import_regex_file" hidden accept="*.json" multiple />
             </div>
             <hr />
-            <label data-i18n="ext_regex_saved_scripts">Saved Scripts</label>
-            <div id="saved_regex_scripts" class="flex-container regex-script-container flexFlowColumn"></div>
+            <div id="global_scripts_block" class="padding5">
+                <div>
+                    <strong data-i18n="ext_regex_global_scripts">Global Scripts</strong>
+                </div>
+                <small data-i18n="ext_regex_global_scripts_desc">
+                    Available for all characters. Saved to local settings.
+                </small>
+                <div id="saved_regex_scripts" class="flex-container regex-script-container flexFlowColumn"></div>
+            </div>
+            <hr />
+            <div id="scoped_scripts_block" class="padding5">
+                <div class="flex-container alignItemsBaseline">
+                    <strong class="flex1" data-i18n="ext_regex_scoped_scripts">Scoped Scripts</strong>
+                    <label id="toggle_scoped_regex" class="checkbox flex-container" for="regex_scoped_toggle">
+                        <input type="checkbox" id="regex_scoped_toggle" class="enable_scoped" />
+                        <span class="regex-toggle-on fa-solid fa-toggle-on fa-lg" title="Disallow using scoped regex"></span>
+                        <span class="regex-toggle-off fa-solid fa-toggle-off fa-lg" title="Allow using scoped regex"></span>
+                    </label>
+                </div>
+                <small data-i18n="ext_regex_scoped_scripts_desc">
+                    Only available for this character. Saved to the card data.
+                </small>
+                <div id="saved_scoped_scripts" class="flex-container regex-script-container flexFlowColumn"></div>
+            </div>
         </div>
     </div>
 </div>

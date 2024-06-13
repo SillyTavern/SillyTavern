@@ -13,7 +13,7 @@ const jimp = require('jimp');
 
 const { UPLOADS_PATH, AVATAR_WIDTH, AVATAR_HEIGHT } = require('../constants');
 const { jsonParser, urlencodedParser } = require('../express-common');
-const { deepMerge, humanizedISO8601DateTime, tryParse } = require('../util');
+const { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer } = require('../util');
 const { TavernCardValidator } = require('../validator/TavernCardValidator');
 const characterCardParser = require('../character-card-parser.js');
 const { readWorldInfoFile } = require('./worldinfo');
@@ -44,7 +44,7 @@ async function readCharacterData(inputFile, inputFormat = 'png') {
 
 /**
  * Writes the character card to the specified image file.
- * @param {string} inputFile - Path to the image file
+ * @param {string|Buffer} inputFile - Path to the image file or image buffer
  * @param {string} data - Character card data
  * @param {string} outputFile - Target image file name
  * @param {import('express').Request} request - Express request obejct
@@ -60,8 +60,20 @@ async function writeCharacterData(inputFile, data, outputFile, request, crop = u
                 break;
             }
         }
-        // Read the image, resize, and save it as a PNG into the buffer
-        const inputImage = await tryReadImage(inputFile, crop);
+
+        /**
+         * Read the image, resize, and save it as a PNG into the buffer.
+         * @returns {Promise<Buffer>} Image buffer
+         */
+        function getInputImage() {
+            if (Buffer.isBuffer(inputFile)) {
+                return parseImageBuffer(inputFile, crop);
+            }
+
+            return tryReadImage(inputFile, crop);
+        }
+
+        const inputImage = await getInputImage();
 
         // Get the chunks
         const outputImage = characterCardParser.write(inputImage, data);
@@ -83,6 +95,32 @@ async function writeCharacterData(inputFile, data, outputFile, request, crop = u
  * @property {number} height Height
  * @property {boolean} want_resize Resize the image to the standard avatar size
  */
+
+/**
+ * Parses an image buffer and applies crop if defined.
+ * @param {Buffer} buffer Buffer of the image
+ * @param {Crop|undefined} [crop] Crop parameters
+ * @returns {Promise<Buffer>} Image buffer
+ */
+async function parseImageBuffer(buffer, crop) {
+    const image = await jimp.read(buffer);
+    let finalWidth = image.bitmap.width, finalHeight = image.bitmap.height;
+
+    // Apply crop if defined
+    if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
+        image.crop(crop.x, crop.y, crop.width, crop.height);
+        // Apply standard resize if requested
+        if (crop.want_resize) {
+            finalWidth = AVATAR_WIDTH;
+            finalHeight = AVATAR_HEIGHT;
+        } else {
+            finalWidth = crop.width;
+            finalHeight = crop.height;
+        }
+    }
+
+    return image.cover(finalWidth, finalHeight).getBufferAsync(jimp.MIME_PNG);
+}
 
 /**
  * Reads an image file and applies crop if defined.
@@ -424,6 +462,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
             insertion_order: entry.order,
             enabled: !entry.disable,
             position: entry.position == 0 ? 'before_char' : 'after_char',
+            use_regex: true, // ST keys are always regex
             extensions: {
                 position: entry.position,
                 exclude_recursion: entry.excludeRecursion,
@@ -486,6 +525,51 @@ async function importFromYaml(uploadPath, context) {
 }
 
 /**
+ * Imports a character card from CharX (ZIP) file.
+ * @param {string} uploadPath
+ * @param {object} params
+ * @param {import('express').Request} params.request
+ * @returns {Promise<string>} Internal name of the character
+ */
+async function importFromCharX(uploadPath, { request }) {
+    const data = fs.readFileSync(uploadPath);
+    fs.rmSync(uploadPath);
+    console.log('Importing from CharX');
+    const cardBuffer = await extractFileFromZipBuffer(data, 'card.json');
+
+    if (!cardBuffer) {
+        throw new Error('Failed to extract card.json from CharX file');
+    }
+
+    const card = readFromV2(JSON.parse(cardBuffer.toString()));
+
+    if (card.spec === undefined) {
+        throw new Error('Invalid CharX card file: missing spec field');
+    }
+
+    /** @type {string|Buffer} */
+    let avatar = defaultAvatarPath;
+    const assets = _.get(card, 'data.assets');
+    if (Array.isArray(assets) && assets.length) {
+        for (const asset of assets.filter(x => x.type === 'icon' && typeof x.uri === 'string')) {
+            const pathNoProtocol = String(asset.uri.replace(/^(?:\/\/|[^/]+)*\//, ''));
+            const buffer = await extractFileFromZipBuffer(data, pathNoProtocol);
+            if (buffer) {
+                avatar = buffer;
+                break;
+            }
+        }
+    }
+
+    unsetFavFlag(card);
+    card['create_date'] = humanizedISO8601DateTime();
+    card.name = sanitize(card.name);
+    const fileName = getPngName(card.name, request.user.directories);
+    const result = await writeCharacterData(avatar, JSON.stringify(card), fileName, request);
+    return result ? fileName : '';
+}
+
+/**
  * Import a character from a JSON file.
  * @param {string} uploadPath Path to the uploaded file
  * @param {{ request: import('express').Request, response: import('express').Response }} context Express request and response objects
@@ -498,7 +582,7 @@ async function importFromJson(uploadPath, { request }) {
     let jsonData = JSON.parse(data);
 
     if (jsonData.spec !== undefined) {
-        console.log('Importing from v2 json');
+        console.log(`Importing from ${jsonData.spec} json`);
         importRisuSprites(request.user.directories, jsonData);
         unsetFavFlag(jsonData);
         jsonData = readFromV2(jsonData);
@@ -581,7 +665,7 @@ async function importFromPng(uploadPath, { request }, preservedFileName) {
     const pngName = preservedFileName || getPngName(jsonData.name, request.user.directories);
 
     if (jsonData.spec !== undefined) {
-        console.log('Found a v2 character file.');
+        console.log(`Found a ${jsonData.spec} character file.`);
         importRisuSprites(request.user.directories, jsonData);
         unsetFavFlag(jsonData);
         jsonData = readFromV2(jsonData);
@@ -924,6 +1008,10 @@ router.post('/chats', jsonParser, async function (request, response) {
             return;
         }
 
+        if (request.body.simple) {
+            return response.send(jsonFiles.map(file => ({ file_name: file })));
+        }
+
         const jsonFilesPromise = jsonFiles.map((file) => {
             return new Promise(async (res) => {
                 const pathToFile = path.join(request.user.directories.chats, characterDirectory, file);
@@ -1015,6 +1103,7 @@ router.post('/import', urlencodedParser, async function (request, response) {
         'yml': importFromYaml,
         'json': importFromJson,
         'png': importFromPng,
+        'charx': importFromCharX,
     };
 
     try {

@@ -164,6 +164,17 @@ function getOverrideHeaders(urlHost) {
  * @param {string|null} server API server for new request
  */
 function setAdditionalHeaders(request, args, server) {
+    setAdditionalHeadersByType(args.headers, request.body.api_type, server, request.user.directories);
+}
+
+/**
+ *
+ * @param {object} requestHeaders Request headers
+ * @param {string} type API type
+ * @param {string|null} server API server for new request
+ * @param {import('./users').UserDirectoryList} directories User directories
+ */
+function setAdditionalHeadersByType(requestHeaders, type, server, directories) {
     const headerGetters = {
         [TEXTGEN_TYPES.MANCER]: getMancerHeaders,
         [TEXTGEN_TYPES.VLLM]: getVllmHeaders,
@@ -178,13 +189,13 @@ function setAdditionalHeaders(request, args, server) {
         [TEXTGEN_TYPES.LLAMACPP]: getLlamaCppHeaders,
     };
 
-    const getHeaders = headerGetters[request.body.api_type];
-    const headers = getHeaders ? getHeaders(request.user.directories) : {};
+    const getHeaders = headerGetters[type];
+    const headers = getHeaders ? getHeaders(directories) : {};
 
     if (typeof server === 'string' && server.length > 0) {
         try {
             const url = new URL(server);
-            const overrideHeaders =  getOverrideHeaders(url.host);
+            const overrideHeaders = getOverrideHeaders(url.host);
 
             if (overrideHeaders && Object.keys(overrideHeaders).length > 0) {
                 Object.assign(headers, overrideHeaders);
@@ -194,10 +205,11 @@ function setAdditionalHeaders(request, args, server) {
         }
     }
 
-    Object.assign(args.headers, headers);
+    Object.assign(requestHeaders, headers);
 }
 
 module.exports = {
     getOverrideHeaders,
     setAdditionalHeaders,
+    setAdditionalHeadersByType,
 };

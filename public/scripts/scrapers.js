@@ -1,6 +1,9 @@
 import { getRequestHeaders } from '../script.js';
 import { renderExtensionTemplateAsync } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
+import { SlashCommand } from './slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
+import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { isValidUrl } from './utils.js';
 
 /**
@@ -441,6 +444,32 @@ class YouTubeScraper {
         this.description = 'Download a transcript from a YouTube video.';
         this.iconClass = 'fa-brands fa-youtube';
         this.iconAvailable = true;
+
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'yt-script',
+            callback: async (args, url) => {
+                try {
+                    if (!url) {
+                        throw new Error('URL or ID of the YouTube video is required');
+                    }
+
+                    const lang = String(args?.lang || '');
+                    const { transcript } = await this.getScript(String(url).trim(), lang);
+                    return transcript;
+                } catch (error) {
+                    toastr.error(error.message);
+                    return '';
+                }
+            },
+            helpString: 'Scrape a transcript from a YouTube video by ID or URL.',
+            returns: ARGUMENT_TYPE.STRING,
+            namedArgumentList: [
+                new SlashCommandNamedArgument('lang', 'ISO 639-1 language code of the transcript, e.g. "en"', ARGUMENT_TYPE.STRING, false, false, ''),
+            ],
+            unnamedArgumentList: [
+                new SlashCommandArgument('URL or ID of the YouTube video', ARGUMENT_TYPE.STRING, true, false),
+            ],
+        }));
     }
 
     /**
@@ -456,7 +485,12 @@ class YouTubeScraper {
      * @param {string} url URL of the YouTube video
      * @returns {string} ID of the YouTube video
      */
-    parseId(url){
+    parseId(url) {
+        // If the URL is already an ID, return it
+        if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+            return url;
+        }
+
         const regex = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|&v(?:i)?=))([^#&?]*).*/;
         const match = url.match(regex);
         return (match?.length && match[1] ? match[1] : url);
@@ -479,8 +513,22 @@ class YouTubeScraper {
             return;
         }
 
-        const id = this.parseId(String(videoUrl).trim());
         const toast = toastr.info('Working, please wait...');
+        const { transcript, id } = await this.getScript(videoUrl, lang);
+        toastr.clear(toast);
+
+        const file = new File([transcript], `YouTube - ${id} - ${Date.now()}.txt`, { type: 'text/plain' });
+        return [file];
+    }
+
+    /**
+     * Fetches the transcript of a YouTube video.
+     * @param {string} videoUrl Video URL or ID
+     * @param {string} lang Video language
+     * @returns {Promise<{ transcript: string, id: string }>} Transcript of the YouTube video with the video ID
+     */
+    async getScript(videoUrl, lang) {
+        const id = this.parseId(String(videoUrl).trim());
 
         const result = await fetch('/api/serpapi/transcript', {
             method: 'POST',
@@ -494,10 +542,7 @@ class YouTubeScraper {
         }
 
         const transcript = await result.text();
-        toastr.clear(toast);
-
-        const file = new File([transcript], `YouTube - ${id} - ${Date.now()}.txt`, { type: 'text/plain' });
-        return [file];
+        return { transcript, id };
     }
 }
 

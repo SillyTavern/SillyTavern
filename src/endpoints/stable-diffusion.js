@@ -160,6 +160,31 @@ router.post('/samplers', jsonParser, async (request, response) => {
     }
 });
 
+router.post('/schedulers', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/schedulers';
+
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        const names = data.map(x => x.name);
+        return response.send(names);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
 router.post('/models', jsonParser, async (request, response) => {
     try {
         const url = new URL(request.body.url);
@@ -608,8 +633,10 @@ together.post('/generate', jsonParser, async (request, response) => {
                 model: request.body.model,
                 steps: request.body.steps,
                 n: 1,
-                seed: Math.floor(Math.random() * 10_000_000), // Limited to 10000 on playground, works fine with more.
-                sessionKey: getHexString(40), // Don't know if that's supposed to be random or not. It works either way.
+                // Limited to 10000 on playground, works fine with more.
+                seed: request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 10_000_000),
+                // Don't know if that's supposed to be random or not. It works either way.
+                sessionKey: getHexString(40),
             }),
             headers: {
                 'Content-Type': 'application/json',
@@ -676,6 +703,23 @@ drawthings.post('/get-model', jsonParser, async (request, response) => {
     }
 });
 
+drawthings.post('/get-upscaler', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/';
+
+        const result = await fetch(url, {
+            method: 'GET',
+        });
+        const data = await result.json();
+
+        return response.send(data['upscaler']);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
 drawthings.post('/generate', jsonParser, async (request, response) => {
     try {
         console.log('SD DrawThings API request:', request.body);
@@ -719,7 +763,7 @@ pollinations.post('/generate', jsonParser, async (request, response) => {
         const params = new URLSearchParams({
             model: String(request.body.model),
             negative_prompt: String(request.body.negative_prompt),
-            seed: String(Math.floor(Math.random() * 10_000_000)),
+            seed: String(request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 10_000_000)),
             enhance: String(request.body.enhance ?? false),
             refine: String(request.body.refine ?? false),
             width: String(request.body.width ?? 1024),

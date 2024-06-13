@@ -68,6 +68,7 @@
  * @property {number} depth_prompt.depth - The level of detail or nuance targeted by the prompt.
  * @property {string} depth_prompt.prompt - The actual prompt text used for deeper character interaction.
  * @property {"system" | "user" | "assistant"} depth_prompt.role - The role the character takes on during the prompted interaction (system, user, or assistant).
+ * @property {RegexScriptData[]} regex_scripts - Custom regex scripts for the character.
  * // Non-standard extensions added by external tools
  * @property {string} [pygmalion_id] - The unique identifier assigned to the character by the Pygmalion.chat.
  * @property {string} [github_repo] - The gitHub repository associated with the character.
@@ -75,6 +76,23 @@
  * @property {{full_path: string}} [chub] - The Chub-specific data associated with the character.
  * @property {{source: string[]}} [risuai] - The RisuAI-specific data associated with the character.
  */
+
+/**
+* @typedef {object} RegexScriptData
+* @property {string} id - UUID of the script
+* @property {string} scriptName - The name of the script
+* @property {string} findRegex - The regex to find
+* @property {string} replaceString - The string to replace
+* @property {string[]} trimStrings - The strings to trim
+* @property {number[]} placement - The placement of the script
+* @property {boolean} disabled - Whether the script is disabled
+* @property {boolean} markdownOnly - Whether the script only applies to Markdown
+* @property {boolean} promptOnly - Whether the script only applies to prompts
+* @property {boolean} runOnEdit - Whether the script runs on edit
+* @property {boolean} substituteRegex - Whether the regex should be substituted
+* @property {number} minDepth - The minimum depth
+* @property {number} maxDepth - The maximum depth
+*/
 
 /**
  * @typedef {object} v1CharData

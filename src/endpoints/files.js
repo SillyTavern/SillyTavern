@@ -2,10 +2,26 @@ const path = require('path');
 const fs = require('fs');
 const writeFileSyncAtomic = require('write-file-atomic').sync;
 const express = require('express');
+const sanitize = require('sanitize-filename');
 const router = express.Router();
 const { validateAssetFileName } = require('./assets');
 const { jsonParser } = require('../express-common');
 const { clientRelativePath } = require('../util');
+
+router.post('/sanitize-filename', jsonParser, async (request, response) => {
+    try {
+        const fileName = String(request.body.fileName);
+        if (!fileName) {
+            return response.status(400).send('No fileName specified');
+        }
+
+        const sanitizedFilename = sanitize(fileName);
+        return response.send({ fileName: sanitizedFilename });
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
 
 router.post('/upload', jsonParser, async (request, response) => {
     try {

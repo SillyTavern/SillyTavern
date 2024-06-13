@@ -431,6 +431,21 @@ code {
     color: var(--white70a);
 }
 
+kbd {
+    display: inline-block;
+    padding: 2px 4px;
+    font-family: Consolas, monospace;
+    white-space: nowrap;
+    /* background-color: #eeeeee; */
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #333;
+    border: 1px solid #b4b4b4;
+    border-radius: 3px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2), 0 2px 0 0 rgba(255, 255, 255, 0.7) inset;
+    font-size: 90%;
+    line-height: 1;
+}
+
 
 hr {
     background-image: linear-gradient(90deg, var(--transparent), var(--SmartThemeBodyColor), var(--transparent));
@@ -657,12 +672,11 @@ body .panelControlBar {
     outline: none;
     border: none;
     cursor: pointer;
-    transition: 0.3s;
     opacity: 0.7;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 300ms;
+    transition: opacity 300ms;
 }
 
 #rightSendForm>div:hover,
@@ -691,8 +705,13 @@ body .panelControlBar {
 
 
 #form_sheld.isExecutingCommandsFromChatInput {
-    #send_but {
+
+    #send_but,
+    #mes_continue {
         visibility: hidden;
+        width: 0;
+        height: 0;
+        opacity: 0;
     }
 
     #rightSendForm>div:not(.mes_send).stscript_btn {
@@ -3066,6 +3085,10 @@ grammarly-extension {
     min-width: var(--sheldWidth);
 }
 
+.wider_dialogue_popup {
+    min-width: 750px;
+}
+
 .horizontal_scrolling_dialogue_popup {
     overflow-x: unset !important;
 }
@@ -3169,14 +3192,9 @@ grammarly-extension {
 
 .avatar_div .menu_button,
 .form_create_bottom_buttons_block .menu_button {
-    font-weight: bold;
     padding: 5px;
     margin: 0;
     filter: grayscale(0.5);
-    text-align: center;
-    font-size: 17px;
-    aspect-ratio: 1 / 1;
-    flex: 0.05;
 }
 
 .menu_button:hover,
@@ -4484,6 +4502,18 @@ a {
     transition: all 250ms;
 }
 
+.standoutHeader.inline-drawer-header {
+    padding: 5px;
+    margin-bottom: 0;
+}
+
+.standoutHeader~.inline-drawer-content {
+    border: 1px solid var(--SmartThemeBorderColor);
+    padding: 5px;
+    border-radius: 10px;
+    background-color: var(--black30a);
+}
+
 #user-settings-block [name="MiscellaneousToggles"],
 #CustomCSS-block,
 #CustomCSS-textAreaBlock {
@@ -4499,7 +4529,8 @@ a {
 }
 
 #extensions_settings .inline-drawer-toggle.inline-drawer-header:hover,
-#extensions_settings2 .inline-drawer-toggle.inline-drawer-header:hover {
+#extensions_settings2 .inline-drawer-toggle.inline-drawer-header:hover,
+.standoutHeader.inline-drawer-header:hover {
     filter: brightness(150%);
 }
 
