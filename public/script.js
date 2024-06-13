@@ -4673,7 +4673,7 @@ function addChatsSeparator(mesSendString) {
 async function DupeChar() {
     if (!this_chid) {
         toastr.warning('You must first select a character to duplicate!');
-        return;
+        return '';
     }
 
     const confirmMessage = `
@@ -4684,7 +4684,7 @@ async function DupeChar() {
 
     if (!confirm) {
         console.log('User cancelled duplication');
-        return;
+        return '';
     }
 
     const body = { avatar_url: characters[this_chid].avatar };
@@ -4699,6 +4699,8 @@ async function DupeChar() {
         await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: body.avatar_url, newAvatar: data.path });
         getCharacters();
     }
+
+    return '';
 }
 
 export async function itemizedParams(itemizedPrompts, thisPromptSet) {
@@ -8261,10 +8263,12 @@ async function selectInstructCallback(_, name) {
 
 async function enableInstructCallback() {
     $('#instruct_enabled').prop('checked', true).trigger('change');
+    return '';
 }
 
 async function disableInstructCallback() {
     $('#instruct_enabled').prop('checked', false).trigger('change');
+    return '';
 }
 
 /**
@@ -8470,23 +8474,25 @@ async function doDeleteChat() {
     $(currentChatDeleteButton).trigger('click');
     await delay(1);
     $('#dialogue_popup_ok').trigger('click', { fromSlashCommand: true });
+    return '';
 }
 
 async function doRenameChat(_, chatName) {
     if (!chatName) {
         toastr.warning('Name must be provided as an argument to rename this chat.');
-        return;
+        return '';
     }
 
     const currentChatName = getCurrentChatId();
     if (!currentChatName) {
         toastr.warning('No chat selected that can be renamed.');
-        return;
+        return '';
     }
 
     await renameChat(currentChatName, chatName);
 
     toastr.success(`Successfully renamed chat to: ${chatName}`);
+    return '';
 }
 
 /**
@@ -8560,6 +8566,7 @@ function doCharListDisplaySwitch() {
 
 function doCloseChat() {
     $('#option_close_chat').trigger('click');
+    return '';
 }
 
 /**
@@ -8655,6 +8662,7 @@ async function removeCharacterFromUI(name, avatar, reloadCharacters = true) {
 
 function doTogglePanels() {
     $('#option_settings').trigger('click');
+    return '';
 }
 
 function addDebugFunctions() {
@@ -8742,6 +8750,7 @@ jQuery(async function () {
         await saveSettings();
         await saveChatConditional();
         toastr.success('Chat and settings saved.');
+        return '';
     }
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
@@ -8893,7 +8902,10 @@ jQuery(async function () {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'chat-manager',
-        callback: () => $('#option_select_chat').trigger('click'),
+        callback: () => {
+            $('#option_select_chat').trigger('click');
+            return '';
+        },
         aliases: ['chat-history', 'manage-chats'],
         helpString: 'Opens the chat manager for the current character/group.',
     }));

@@ -1,5 +1,6 @@
 import { substituteParams } from '../../script.js';
 import { delay, escapeRegex } from '../utils.js';
+import { SlashCommand } from './SlashCommand.js';
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandClosureExecutor } from './SlashCommandClosureExecutor.js';
 import { SlashCommandClosureResult } from './SlashCommandClosureResult.js';
@@ -248,6 +249,7 @@ export class SlashCommandClosure {
                 }
                 executor.onProgress = (subDone, subTotal)=>this.onProgress?.(done + subDone, this.commandCount);
                 this.scope.pipe = await executor.command.callback(args, value ?? '');
+                this.#lintPipe(executor.command);
                 done += executor.commandCount;
                 this.onProgress?.(done, this.commandCount);
                 abortResult = await this.testAbortController();
@@ -274,6 +276,17 @@ export class SlashCommandClosure {
             result.isQuietlyAborted = this.abortController.signal.isQuiet;
             result.abortReason = this.abortController.signal.reason.toString();
             return result;
+        }
+    }
+
+    /**
+     * Auto-fixes the pipe if it is not a valid result for STscript.
+     * @param {SlashCommand} command Command being executed
+     */
+    #lintPipe(command) {
+        if (this.scope.pipe === undefined || this.scope.pipe === null) {
+            console.warn(`${command.name} returned undefined or null. Auto-fixing to empty string.`);
+            this.scope.pipe = '';
         }
     }
 }

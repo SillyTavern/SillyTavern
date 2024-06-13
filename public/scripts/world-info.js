@@ -645,7 +645,7 @@ function registerWorldInfoSlashCommands() {
         await saveWorldInfo(file, data, true);
         reloadEditor(file);
 
-        return entry.uid;
+        return String(entry.uid);
     }
 
     async function setEntryFieldCallback(args, value) {
@@ -3533,6 +3533,7 @@ function onWorldInfoChange(args, text) {
 
     saveSettingsDebounced();
     eventSource.emit(event_types.WORLDINFO_SETTINGS_UPDATED);
+    return '';
 }
 
 export async function importWorldInfo(file) {
