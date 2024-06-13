@@ -162,10 +162,12 @@ export class SlashCommandClosure {
                 const result = await closure.execute();
                 this.scope.pipe = result.pipe;
             } else {
+                /**@type {import('./SlashCommand.js').NamedArguments} */
                 let args = {
                     _scope: this.scope,
                     _parserFlags: executor.parserFlags,
                     _abortController: this.abortController,
+                    _hasUnnamedArgument: executor.unnamedArgumentList.length > 0,
                 };
                 let value;
                 // substitute named arguments
@@ -195,6 +197,7 @@ export class SlashCommandClosure {
                 if (executor.unnamedArgumentList.length == 0) {
                     if (executor.injectPipe) {
                         value = this.scope.pipe;
+                        args._hasUnnamedArgument = this.scope.pipe !== null && this.scope.pipe !== undefined;
                     }
                 } else {
                     value = [];

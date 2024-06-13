@@ -9,10 +9,10 @@ import { SlashCommandScope } from './SlashCommandScope.js';
 
 /**
  * @typedef {{
- * _pipe:string|SlashCommandClosure,
  * _scope:SlashCommandScope,
  * _parserFlags:{[id:PARSER_FLAG]:boolean},
  * _abortController:SlashCommandAbortController,
+ * _hasUnnamedArgument:boolean,
  * [id:string]:string|SlashCommandClosure,
  * }} NamedArguments
  */
