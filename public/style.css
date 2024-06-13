@@ -1227,6 +1227,7 @@ select {
     left: var(--leftOffset);
     right: var(--rightOffset);
     z-index: 10000;
+    pointer-events: none;
 
 
     &.isFloating {
