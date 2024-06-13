@@ -218,7 +218,7 @@ export class SlashCommandClosure {
                         if (value.length == 1) {
                             value = value[0];
                         } else if (!value.find(it=>it instanceof SlashCommandClosure)) {
-                            value = value.join(' ');
+                            value = value.join('');
                         }
                     }
                 }
