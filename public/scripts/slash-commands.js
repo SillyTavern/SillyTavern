@@ -56,13 +56,12 @@ import { background_settings } from './backgrounds.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
-import { AutoCompleteNameResult } from './autocomplete/AutoCompleteNameResult.js';
-import { AutoCompleteOption } from './autocomplete/AutoCompleteOption.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { AutoComplete } from './autocomplete/AutoComplete.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortController.js';
 import { SlashCommandNamedArgumentAssignment } from './slash-commands/SlashCommandNamedArgumentAssignment.js';
+import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -117,9 +116,14 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     aliases: ['background'],
     returns: 'the current background',
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'filename', [ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandArgument.fromProps({ description: 'filename',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: ()=>[...document.querySelectorAll('.bg_example')]
+                .map((it)=>new SlashCommandEnumValue(it.getAttribute('bgfile')))
+                .filter(it=>it.value?.length)
+            ,
+        }),
     ],
     helpString: `
         <div>
@@ -323,9 +327,14 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'go',
     callback: goToCharacterCallback,
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'name', [ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandArgument.fromProps({ description: 'name',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: ()=>[
+                ...characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+                ...groups.map(it=>new SlashCommandEnumValue(it.name, null, 'variable', 'G')),
+            ],
+        }),
     ],
     helpString: 'Opens up a chat with the character or group by its name',
     aliases: ['char'],
@@ -367,9 +376,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'ask',
     callback: askCharacter,
     namedArgumentList: [
-        new SlashCommandNamedArgument(
-            'name', 'character name', [ARGUMENT_TYPE.STRING], true, false, '',
-        ),
+        SlashCommandNamedArgument.fromProps({ name: 'name',
+            description: 'character name',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: ()=>characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+        }),
     ],
     unnamedArgumentList: [
         new SlashCommandArgument(
