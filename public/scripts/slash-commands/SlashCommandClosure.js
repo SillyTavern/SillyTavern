@@ -17,6 +17,7 @@ export class SlashCommandClosure {
     /**@type {SlashCommandExecutor[]}*/ executorList = [];
     /**@type {SlashCommandAbortController}*/ abortController;
     /**@type {(done:number, total:number)=>void}*/ onProgress;
+    /**@type {string}*/ rawText;
 
     /**@type {number}*/
     get commandCount() {

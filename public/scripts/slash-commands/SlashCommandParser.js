@@ -598,6 +598,7 @@ export class SlashCommandParser {
         this.closureIndex.push(closureIndexEntry);
         let injectPipe = true;
         if (!isRoot) this.take(2); // discard opening {:
+        const textStart = this.index;
         let closure = new SlashCommandClosure(this.scope);
         closure.abortController = this.abortController;
         this.scope = closure.scope;
@@ -638,6 +639,7 @@ export class SlashCommandParser {
             }
             this.discardWhitespace(); // discard further whitespace
         }
+        closure.rawText = this.text.slice(textStart, this.index);
         if (!isRoot) this.take(2); // discard closing :}
         if (this.testSymbol('()')) {
             this.take(2); // discard ()
