@@ -311,7 +311,11 @@
 .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::selection {
   color: unset;
   background-color: rgba(108 171 251 / 0.25);
-  background-color: rgb(from var(--ac-style-color-matchedText) r g b / 0.25);
+}
+@supports (color: rgb(from white r g b / 0.25)) {
+  .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::selection {
+    background-color: rgb(from var(--ac-style-color-matchedText) r g b / 0.25);
+  }
 }
 .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-messageSyntax {
   grid-column: 1;
@@ -342,7 +346,11 @@
 .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message::selection {
   color: transparent;
   background-color: rgba(108 171 251 / 0.25);
-  background-color: rgb(from var(--ac-style-color-matchedText) r g b / 0.25);
+}
+@supports (color: rgb(from white r g b / 0.25)) {
+  .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message::selection {
+    background-color: rgb(from var(--ac-style-color-matchedText) r g b / 0.25);
+  }
 }
 .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder #qr--modal-message,
 .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder #qr--modal-messageSyntaxInner {

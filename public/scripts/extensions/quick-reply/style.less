@@ -332,7 +332,9 @@
 								&::selection {
 									color: unset;
 									background-color: rgba(108 171 251 / 0.25);
-									background-color: rgb(from var(--ac-style-color-matchedText) r g b / 0.25);
+									@supports (color: rgb(from white r g b / 0.25)) {
+										background-color: rgb(from var(--ac-style-color-matchedText) r g b / 0.25);
+									}
 								}
 							}
 						}
@@ -363,7 +365,9 @@
 							&::selection {
 								color: transparent;
 								background-color: rgba(108 171 251 / 0.25);
-								background-color: rgb(from var(--ac-style-color-matchedText) r g b / 0.25);
+								@supports (color: rgb(from white r g b / 0.25)) {
+									background-color: rgb(from var(--ac-style-color-matchedText) r g b / 0.25);
+								}
 							}
 						}
 						#qr--modal-message, #qr--modal-messageSyntaxInner {
