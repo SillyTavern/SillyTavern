@@ -148,6 +148,9 @@ export class SlashCommandClosure {
         }
 
         let done = 0;
+        if (this.executorList.length == 0) {
+            this.scope.pipe = '';
+        }
         for (const executor of this.executorList) {
             this.onProgress?.(done, this.commandCount);
             if (executor instanceof SlashCommandClosureExecutor) {
