@@ -1613,7 +1613,10 @@ function registerTagsSlashCommands() {
                 description: 'Character name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
-                enumProvider: ()=>characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+                enumProvider: ()=>[
+                    ...characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+                    ...groups.map(it=>new SlashCommandEnumValue(it.name, null, 'variable', 'G')),
+                ],
             }),
         ],
         unnamedArgumentList: [
@@ -1663,7 +1666,10 @@ function registerTagsSlashCommands() {
                 description: 'Character name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
-                enumProvider: ()=>characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+                enumProvider: ()=>[
+                    ...characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+                    ...groups.map(it=>new SlashCommandEnumValue(it.name, null, 'variable', 'G')),
+                ],
             }),
         ],
         unnamedArgumentList: [
