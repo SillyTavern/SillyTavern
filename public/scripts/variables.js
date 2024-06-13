@@ -795,7 +795,7 @@ function letCallback(args, value) {
 
 /**
  * Set or retrieve a variable in the current scope or nearest ancestor scope.
- * @param {{_scope:SlashCommandScope, key?:string, index?:string|number}} args Named arguments.
+ * @param {{_hasUnnamedArgument:boolean, _scope:SlashCommandScope, key?:string, index?:string|number}} args Named arguments.
  * @param {string|SlashCommandClosure|(string|SlashCommandClosure)[]} value Name and optional value for the variable.
  * @returns The variable's value
  */
@@ -803,9 +803,13 @@ function varCallback(args, value) {
     if (!Array.isArray(value)) value = [value];
     if (args.key !== undefined) {
         const key = args.key;
-        const val = value.join(' ');
-        args._scope.setVariable(key, val, args.index);
-        return val;
+        if (args._hasUnnamedArgument) {
+            const val = value.join(' ');
+            args._scope.setVariable(key, val, args.index);
+            return val;
+        } else {
+            return args._scope.getVariable(key, args.index);
+        }
     }
     const key = value.shift();
     if (value.length > 0) {
