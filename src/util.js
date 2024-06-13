@@ -293,7 +293,14 @@ const color = {
     white: (mess) => color.byNum(mess, 37),
 };
 
+/**
+ * Gets a random UUIDv4 string.
+ * @returns {string} A UUIDv4 string
+ */
 function uuidv4() {
+    if ('randomUUID' in crypto) {
+        return crypto.randomUUID();
+    }
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);

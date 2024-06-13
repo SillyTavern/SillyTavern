@@ -1,0 +1,89 @@
+/* noto-sans-mono-100 - cyrillic_cyrillic-ext_greek_greek-ext_latin_latin-ext_vietnamese */
+@font-face {
+    font-display: swap;
+    font-family: 'Noto Sans Mono';
+    font-style: normal;
+    font-weight: 100;
+    src: url('noto-sans-mono-v30-100.woff2') format('woff2');
+    /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* noto-sans-mono-200 - cyrillic_cyrillic-ext_greek_greek-ext_latin_latin-ext_vietnamese */
+@font-face {
+    font-display: swap;
+    font-family: 'Noto Sans Mono';
+    font-style: normal;
+    font-weight: 200;
+    src: url('noto-sans-mono-v30-200.woff2') format('woff2');
+    /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* noto-sans-mono-300 - cyrillic_cyrillic-ext_greek_greek-ext_latin_latin-ext_vietnamese */
+@font-face {
+    font-display: swap;
+    font-family: 'Noto Sans Mono';
+    font-style: normal;
+    font-weight: 300;
+    src: url('noto-sans-mono-v30-300.woff2') format('woff2');
+    /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* noto-sans-mono-regular - cyrillic_cyrillic-ext_greek_greek-ext_latin_latin-ext_vietnamese */
+@font-face {
+    font-display: swap;
+    font-family: 'Noto Sans Mono';
+    font-style: normal;
+    font-weight: 400;
+    src: url('noto-sans-mono-v30-regular.woff2') format('woff2');
+    /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* noto-sans-mono-500 - cyrillic_cyrillic-ext_greek_greek-ext_latin_latin-ext_vietnamese */
+@font-face {
+    font-display: swap;
+    font-family: 'Noto Sans Mono';
+    font-style: normal;
+    font-weight: 500;
+    src: url('noto-sans-mono-v30-500.woff2') format('woff2');
+    /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* noto-sans-mono-600 - cyrillic_cyrillic-ext_greek_greek-ext_latin_latin-ext_vietnamese */
+@font-face {
+    font-display: swap;
+    font-family: 'Noto Sans Mono';
+    font-style: normal;
+    font-weight: 600;
+    src: url('noto-sans-mono-v30-600.woff2') format('woff2');
+    /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* noto-sans-mono-700 - cyrillic_cyrillic-ext_greek_greek-ext_latin_latin-ext_vietnamese */
+@font-face {
+    font-display: swap;
+    font-family: 'Noto Sans Mono';
+    font-style: normal;
+    font-weight: 700;
+    src: url('noto-sans-mono-v30-700.woff2') format('woff2');
+    /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* noto-sans-mono-800 - cyrillic_cyrillic-ext_greek_greek-ext_latin_latin-ext_vietnamese */
+@font-face {
+    font-display: swap;
+    font-family: 'Noto Sans Mono';
+    font-style: normal;
+    font-weight: 800;
+    src: url('noto-sans-mono-v30-800.woff2') format('woff2');
+    /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* noto-sans-mono-900 - cyrillic_cyrillic-ext_greek_greek-ext_latin_latin-ext_vietnamese */
+@font-face {
+    font-display: swap;
+    font-family: 'Noto Sans Mono';
+    font-style: normal;
+    font-weight: 900;
+    src: url('noto-sans-mono-v30-900.woff2') format('woff2');
+    /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}

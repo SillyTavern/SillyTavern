@@ -764,8 +764,19 @@ const per_page_default = 50;
 
 var is_advanced_char_open = false;
 
-export let menu_type = ''; //what is selected in the menu
+/**
+ * The type of the right menu
+ * @typedef {'characters' | 'character_edit' | 'create' | 'group_edit' | 'group_create' | '' } MenuType
+ */
+
+/**
+ * The type of the right menu that is currently open
+ * @type {MenuType}
+ */
+export let menu_type = '';
+
 export let selected_button = ''; //which button pressed
+
 //create pole save
 let create_save = {
     name: '',
@@ -5432,8 +5443,14 @@ export function resetChatState() {
     characters.length = 0;
 }
 
+/**
+ *
+ * @param {'characters' | 'character_edit' | 'create' | 'group_edit' | 'group_create'} value
+ */
 export function setMenuType(value) {
     menu_type = value;
+    // Allow custom CSS to see which menu type is active
+    document.getElementById('right-nav-panel').dataset.menuType = menu_type;
 }
 
 export function setExternalAbortController(controller) {
@@ -6815,7 +6832,7 @@ export function select_selected_character(chid) {
     //character select
     //console.log('select_selected_character() -- starting with input of -- ' + chid + ' (name:' + characters[chid].name + ')');
     select_rm_create();
-    menu_type = 'character_edit';
+    setMenuType('character_edit');
     $('#delete_button').css('display', 'flex');
     $('#export_button').css('display', 'flex');
     var display_name = characters[chid].name;
@@ -6891,7 +6908,7 @@ export function select_selected_character(chid) {
 }
 
 function select_rm_create() {
-    menu_type = 'create';
+    setMenuType('create');
 
     //console.log('select_rm_Create() -- selected button: '+selected_button);
     if (selected_button == 'create') {
@@ -6952,7 +6969,7 @@ function select_rm_create() {
 
 function select_rm_characters() {
     const doFullRefresh = menu_type === 'characters';
-    menu_type = 'characters';
+    setMenuType('characters');
     selectRightMenuWithAnimation('rm_characters_block');
     printCharacters(doFullRefresh);
 }
@@ -8978,7 +8995,6 @@ jQuery(async function () {
 
     $('#rm_button_settings').click(function () {
         selected_button = 'settings';
-        menu_type = 'settings';
         selectRightMenuWithAnimation('rm_api_block');
     });
     $('#rm_button_characters').click(function () {

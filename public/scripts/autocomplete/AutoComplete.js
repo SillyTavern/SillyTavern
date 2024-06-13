@@ -482,8 +482,8 @@ export class AutoComplete {
                 this.domWrap.style.setProperty('--leftOffset', `max(1vw, ${rect[power_user.stscript.autocomplete.width.left].left}px)`);
                 this.domWrap.style.setProperty('--rightOffset', `calc(100vw - min(99vw, ${rect[power_user.stscript.autocomplete.width.right].right}px)`);
             }
-            this.updateDetailsPosition();
         }
+        this.updateDetailsPosition();
     }
 
     /**
