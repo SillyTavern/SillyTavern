@@ -29,6 +29,7 @@ export class SlashCommandArgument {
      * @param {boolean} [props.acceptsMultiple] default: false - whether argument accepts multiple values
      * @param {string|SlashCommandClosure} [props.defaultValue] default value if no value is provided
      * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} [props.enumList] list of accepted values
+     * @param {()=>SlashCommandEnumValue[]} [props.enumProvider] function that returns auto complete options
      */
     static fromProps(props) {
         return new SlashCommandArgument(
@@ -38,6 +39,7 @@ export class SlashCommandArgument {
             props.acceptsMultiple ?? false,
             props.defaultValue ?? null,
             props.enumList ?? [],
+            props.enumProvider ?? null,
         );
     }
 
@@ -50,6 +52,7 @@ export class SlashCommandArgument {
     /**@type {boolean}*/ acceptsMultiple = false;
     /**@type {string|SlashCommandClosure}*/ defaultValue;
     /**@type {SlashCommandEnumValue[]}*/ enumList = [];
+    /**@type {()=>SlashCommandEnumValue[]}*/ enumProvider = null;
 
 
     /**
@@ -57,8 +60,9 @@ export class SlashCommandArgument {
      * @param {ARGUMENT_TYPE|ARGUMENT_TYPE[]} types
      * @param {string|SlashCommandClosure} defaultValue
      * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} enums
+     * @param {()=>SlashCommandEnumValue[]} enumProvider function that returns auto complete options
      */
-    constructor(description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = []) {
+    constructor(description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = [], enumProvider = null) {
         this.description = description;
         this.typeList = types ? Array.isArray(types) ? types : [types] : [];
         this.isRequired = isRequired ?? false;
@@ -68,6 +72,7 @@ export class SlashCommandArgument {
             if (it instanceof SlashCommandEnumValue) return it;
             return new SlashCommandEnumValue(it);
         });
+        this.enumProvider = enumProvider;
     }
 }
 
@@ -85,6 +90,7 @@ export class SlashCommandNamedArgument extends SlashCommandArgument {
      * @param {boolean} [props.acceptsMultiple] default: false - whether argument accepts multiple values
      * @param {string|SlashCommandClosure} [props.defaultValue] default value if no value is provided
      * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} [props.enumList] list of accepted values
+     * @param {()=>SlashCommandEnumValue[]} [props.enumProvider] function that returns auto complete options
      */
     static fromProps(props) {
         return new SlashCommandNamedArgument(
@@ -96,6 +102,7 @@ export class SlashCommandNamedArgument extends SlashCommandArgument {
             props.defaultValue ?? null,
             props.enumList ?? [],
             props.aliasList ?? [],
+            props.enumProvider ?? null,
         );
     }
 
@@ -113,8 +120,8 @@ export class SlashCommandNamedArgument extends SlashCommandArgument {
      * @param {string|SlashCommandClosure} defaultValue
      * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} enums
      */
-    constructor(name, description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = [], aliases = []) {
-        super(description, types, isRequired, acceptsMultiple, defaultValue, enums);
+    constructor(name, description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = [], aliases = [], enumProvider = null) {
+        super(description, types, isRequired, acceptsMultiple, defaultValue, enums, enumProvider);
         this.name = name;
         this.aliasList = aliases ? Array.isArray(aliases) ? aliases : [aliases] : [];
     }
