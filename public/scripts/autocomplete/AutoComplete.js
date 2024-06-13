@@ -390,7 +390,7 @@ export class AutoComplete {
             const option = new BlankAutoCompleteOption(
                 this.name.length ?
                     this.effectiveParserResult.makeNoMatchText()
-                    : this.effectiveParserResult.makeNoOptionstext()
+                    : this.effectiveParserResult.makeNoOptionsText()
                 ,
             );
             this.result.push(option);
