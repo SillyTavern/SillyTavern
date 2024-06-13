@@ -8,7 +8,7 @@ import { debounce_timeout } from './constants.js';
 export class DragAndDropHandler {
     /** @private @type {JQuery.Selector} */ selector;
     /** @private @type {(files: File[], event:JQuery.DropEvent<HTMLElement, undefined, any, any>) => void} */ onDropCallback;
-    /** @private @type {NodeJS.Timeout} */ dragLeaveTimeout;
+    /** @private @type {NodeJS.Timeout} Remark: Not actually NodeJS timeout, but it's close */ dragLeaveTimeout;
 
     /** @private @type {boolean} */ noAnimation;
 

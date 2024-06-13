@@ -1,11 +1,14 @@
 @charset "UTF-8";
 
+@import url(css/animations.css);
+@import url(css/popup.css);
 @import url(css/promptmanager.css);
 @import url(css/loader.css);
 @import url(css/character-group-overlay.css);
 @import url(css/file-form.css);
 @import url(css/logprobs.css);
 @import url(css/accounts.css);
+@import url(css/tags.css);
 
 :root {
     --doc-height: 100%;
