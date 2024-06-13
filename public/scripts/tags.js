@@ -1619,7 +1619,13 @@ function registerTagsSlashCommands() {
             SlashCommandArgument.fromProps({ description: 'tag name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: ()=>tags.map(it=>new SlashCommandEnumValue(it.name, it.title)),
+                enumProvider: (executor)=>{
+                    const key = paraGetCharKey(/**@type {string}*/(executor.namedArgumentList.find(it=>it.name == 'name')?.value));
+                    if (!key) return tags.map(it=>new SlashCommandEnumValue(it.name, it.title));
+                    const assigned = getTagsList(key);
+                    return tags.filter(it=>!assigned.includes(it)).map(it=>new SlashCommandEnumValue(it.name, it.title));
+                },
+                forceEnum: false,
             }),
         ],
         helpString: `
