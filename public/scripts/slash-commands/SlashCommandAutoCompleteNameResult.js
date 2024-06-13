@@ -103,7 +103,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
 
         if (name.includes('=') && cmdArg) {
             // if cursor is already behind "=" check for enums
-            const enumList = cmdArg?.enumProvider?.() ?? cmdArg?.enumList;
+            const enumList = cmdArg?.enumProvider?.(this.executor) ?? cmdArg?.enumList;
             if (cmdArg && enumList?.length) {
                 if (isSelect && enumList.find(it=>it.value == value) && argAssign && argAssign.end == index) {
                     return null;
@@ -150,7 +150,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             if (idx > -1) {
                 argAssign = this.executor.unnamedArgumentList[idx];
                 cmdArg = this.executor.command.unnamedArgumentList[idx];
-                const enumList = cmdArg?.enumProvider?.() ?? cmdArg?.enumList;
+                const enumList = cmdArg?.enumProvider?.(this.executor) ?? cmdArg?.enumList;
                 if (cmdArg && enumList.length > 0) {
                     value = argAssign.value.toString().slice(0, index - argAssign.start);
                     start = argAssign.start;
@@ -166,7 +166,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             return null;
         }
 
-        const enumList = cmdArg?.enumProvider?.() ?? cmdArg?.enumList;
+        const enumList = cmdArg?.enumProvider?.(this.executor) ?? cmdArg?.enumList;
         if (cmdArg == null || enumList.length == 0) return null;
 
         const result = new AutoCompleteSecondaryNameResult(
