@@ -20,6 +20,7 @@ import { power_user } from './power-user.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
+import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -1607,10 +1608,19 @@ function registerTagsSlashCommands() {
             return String(result);
         },
         namedArgumentList: [
-            new SlashCommandNamedArgument('name', 'Character name', [ARGUMENT_TYPE.STRING], false, false, '{{char}}'),
+            SlashCommandNamedArgument.fromProps({ name: 'name',
+                description: 'Character name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: '{{char}}',
+                enumProvider: ()=>characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+            }),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument('tag name', [ARGUMENT_TYPE.STRING], true),
+            SlashCommandArgument.fromProps({ description: 'tag name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: ()=>tags.map(it=>new SlashCommandEnumValue(it.name, it.title)),
+            }),
         ],
         helpString: `
         <div>
