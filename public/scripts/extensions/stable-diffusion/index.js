@@ -62,6 +62,7 @@ const generationMode = {
     CHARACTER_MULTIMODAL: 8,
     USER_MULTIMODAL: 9,
     FACE_MULTIMODAL: 10,
+    FREE_EXTENDED: 11,
 };
 
 const multimodalMap = {
@@ -81,6 +82,7 @@ const modeLabels = {
     [generationMode.CHARACTER_MULTIMODAL]: 'Character (Multimodal Mode)',
     [generationMode.FACE_MULTIMODAL]: 'Portrait (Multimodal Mode)',
     [generationMode.USER_MULTIMODAL]: 'User (Multimodal Mode)',
+    [generationMode.FREE_EXTENDED]: 'Free Mode (LLM-Extended)',
 };
 
 const triggerWords = {
@@ -94,7 +96,7 @@ const triggerWords = {
 };
 
 const messageTrigger = {
-    activationRegex: /\b(send|mail|imagine|generate|make|create|draw|paint|render)\b.{0,10}\b(pic|picture|image|drawing|painting|photo|photograph)\b(?:\s+of)?(?:\s+(?:a|an|the|this|that|those)?)?(.+)/i,
+    activationRegex: /\b(send|mail|imagine|generate|make|create|draw|paint|render)\b.{0,10}\b(pic|picture|image|drawing|painting|photo|photograph)\b(?:\s+of)?(?:\s+(?:a|an|the|this|that|those|your)?)?(.+)/i,
     specialCases: {
         [generationMode.CHARACTER]: ['you', 'yourself'],
         [generationMode.USER]: ['me', 'myself'],
@@ -143,6 +145,7 @@ const promptTemplates = {
     [generationMode.FACE_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "close-up portrait".',
     [generationMode.CHARACTER_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".',
     [generationMode.USER_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".',
+    [generationMode.FREE_EXTENDED]: 'Pause your roleplay and provide an exhaustive comma-separated list of tags describing the appearance of "{0}" in great detail. Start with {{charPrefix}} (sic) if the subject is associated with {{char}}.',
 };
 
 const defaultPrefix = 'best quality, absurdres, aesthetic,';
@@ -204,6 +207,7 @@ const defaultSettings = {
     interactive_mode: false,
     multimodal_captioning: false,
     snap: false,
+    free_extend: false,
 
     prompts: promptTemplates,
 
@@ -419,6 +423,7 @@ async function loadSettings() {
     $('#sd_clip_skip').val(extension_settings.sd.clip_skip);
     $('#sd_clip_skip_value').text(extension_settings.sd.clip_skip);
     $('#sd_seed').val(extension_settings.sd.seed);
+    $('#sd_free_extend').prop('checked', extension_settings.sd.free_extend);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -759,6 +764,11 @@ function onExpandInput() {
 
 function onRefineModeInput() {
     extension_settings.sd.refine_mode = !!$('#sd_refine_mode').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onFreeExtendInput() {
+    extension_settings.sd.free_extend = !!$('#sd_free_extend').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -2016,6 +2026,10 @@ function getGenerationType(prompt) {
         mode = multimodalMap[mode];
     }
 
+    if (mode === generationMode.FREE && extension_settings.sd.free_extend) {
+        mode = generationMode.FREE_EXTENDED;
+    }
+
     return mode;
 }
 
@@ -2216,6 +2230,10 @@ async function getPrompt(generationType, message, trigger, quietPrompt) {
             break;
     }
 
+    if (generationType === generationMode.FREE_EXTENDED) {
+        prompt = generateFreeModePrompt(prompt.trim());
+    }
+
     if (generationType !== generationMode.FREE) {
         prompt = await refinePrompt(prompt, true);
     }
@@ -2340,7 +2358,7 @@ async function generatePrompt(quietPrompt) {
  * @returns
  */
 async function sendGenerationRequest(generationType, prompt, additionalNegativePrefix, characterName = null, callback) {
-    const noCharPrefix = [generationMode.FREE, generationMode.BACKGROUND, generationMode.USER, generationMode.USER_MULTIMODAL];
+    const noCharPrefix = [generationMode.FREE, generationMode.BACKGROUND, generationMode.USER, generationMode.USER_MULTIMODAL, generationMode.FREE_EXTENDED];
     const prefix = noCharPrefix.includes(generationType)
         ? extension_settings.sd.prompt_prefix
         : combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix());
@@ -3326,6 +3344,7 @@ jQuery(async () => {
     $('#sd_clip_skip').on('input', onClipSkipInput);
     $('#sd_seed').on('input', onSeedInput);
     $('#sd_character_prompt_share').on('input', onCharacterPromptShareInput);
+    $('#sd_free_extend').on('input', onFreeExtendInput);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($('#sd_prompt_prefix'));
