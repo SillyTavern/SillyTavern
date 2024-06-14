@@ -1,4 +1,4 @@
-import { callPopup, eventSource, event_types, generateQuietPrompt, getRequestHeaders, online_status, saveSettingsDebounced, substituteParams } from '../../../script.js';
+import { callPopup, eventSource, event_types, generateQuietPrompt, getRequestHeaders, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended } from '../../../script.js';
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, power_user } from '../../power-user.js';
@@ -1008,8 +1008,7 @@ async function getLlmPrompt(labels) {
     }
 
     const labelsString = labels.map(x => `"${x}"`).join(', ');
-    const prompt = substituteParams(String(extension_settings.expressions.llmPrompt))
-        .replace(/{{labels}}/gi, labelsString);
+    const prompt = substituteParamsExtended(String(extension_settings.expressions.llmPrompt), { labels: labelsString });
     return prompt;
 }
 

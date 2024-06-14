@@ -10,6 +10,7 @@ import {
     setExtensionPrompt,
     substituteParams,
     generateRaw,
+    substituteParamsExtended,
 } from '../../../script.js';
 import {
     ModuleWorkerWrapper,
@@ -441,7 +442,7 @@ async function injectDataBankChunks(queryText, collectionIds) {
             return;
         }
 
-        const insertedText = substituteParams(settings.file_template_db.replace(/{{text}}/i, textResult));
+        const insertedText = substituteParamsExtended(settings.file_template_db, { text: textResult });
         setExtensionPrompt(EXTENSION_PROMPT_TAG_DB, insertedText, settings.file_position_db, settings.file_depth_db, settings.include_wi, settings.file_depth_role_db);
     } catch (error) {
         console.error('Vectors: Failed to insert Data Bank chunks', error);
@@ -592,7 +593,7 @@ async function rearrangeChat(chat) {
 function getPromptText(queriedMessages) {
     const queriedText = queriedMessages.map(x => collapseNewlines(`${x.name}: ${x.mes}`).trim()).join('\n\n');
     console.log('Vectors: relevant past messages found.\n', queriedText);
-    return substituteParams(settings.template.replace(/{{text}}/i, queriedText));
+    return substituteParamsExtended(settings.template, { text: queriedText });
 }
 
 /**

@@ -2323,7 +2323,7 @@ export function scrollChatToBottom() {
  * @param {Record<string,any>} additionalMacro - Additional environment variables for substitution.
  * @returns {string} The string with substituted parameters.
  */
-export function substituteParamsExtended(content, additionalMacro) {
+export function substituteParamsExtended(content, additionalMacro = {}) {
     return substituteParams(content, undefined, undefined, undefined, undefined, true, additionalMacro);
 }
 
@@ -7725,6 +7725,8 @@ window['SillyTavern'].getContext = function () {
         activateSendButtons,
         deactivateSendButtons,
         saveReply,
+        substituteParams,
+        substituteParamsExtended,
         registerSlashCommand: registerSlashCommand,
         executeSlashCommands: executeSlashCommands,
         timestampToMoment: timestampToMoment,
