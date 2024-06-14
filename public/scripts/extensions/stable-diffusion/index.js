@@ -96,7 +96,7 @@ const triggerWords = {
 };
 
 const messageTrigger = {
-    activationRegex: /\b(send|mail|imagine|generate|make|create|draw|paint|render)\b.{0,10}\b(pic|picture|image|drawing|painting|photo|photograph)\b(?:\s+of)?(?:\s+(?:a|an|the|this|that|those|your)?)?(.+)/i,
+    activationRegex: /\b(send|mail|imagine|generate|make|create|draw|paint|render|show)\b.{0,10}\b(pic|picture|image|drawing|painting|photo|photograph)\b(?:\s+of)?(?:\s+(?:a|an|the|this|that|those|your)?)?(.+)/i,
     specialCases: {
         [generationMode.CHARACTER]: ['you', 'yourself'],
         [generationMode.USER]: ['me', 'myself'],
@@ -2267,7 +2267,7 @@ function generateFreeModePrompt(trigger) {
 
             const key = getLastCharacterKey();
             const value = (extension_settings.sd.character_prompts[key] || '').trim();
-            return value ? value + (suffix || '') : '';
+            return value ? combinePrefixes(value, (suffix || '')) : '';
         });
 }
 
