@@ -17,6 +17,7 @@ import {
     getCharacterAvatar,
     formatCharacterAvatar,
     substituteParams,
+    substituteParamsExtended,
 } from '../../../script.js';
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplateAsync, writeExtensionField } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
@@ -51,6 +52,7 @@ const sources = {
 };
 
 const generationMode = {
+    MESSAGE: -1,
     CHARACTER: 0,
     USER: 1,
     SCENARIO: 2,
@@ -72,6 +74,7 @@ const multimodalMap = {
 };
 
 const modeLabels = {
+    [generationMode.MESSAGE]: 'Chat Message Template',
     [generationMode.CHARACTER]: 'Character ("Yourself")',
     [generationMode.FACE]: 'Portrait ("Your Face")',
     [generationMode.USER]: 'User ("Me")',
@@ -108,6 +111,8 @@ const messageTrigger = {
 };
 
 const promptTemplates = {
+    // Not really a prompt template, rather an outcome message template
+    [generationMode.MESSAGE]: '[{{char}} sends a picture that contains: {{prompt}}].',
     /*OLD:     [generationMode.CHARACTER]: "Pause your roleplay and provide comma-delimited list of phrases and keywords which describe {{char}}'s physical appearance and clothing. Ignore {{char}}'s personality traits, and chat history when crafting this description. End your response once the comma-delimited list is complete. Do not roleplay when writing this description, and do not attempt to continue the story.", */
     [generationMode.CHARACTER]: '[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase \'full body portrait,\']',
     //face-specific prompt
@@ -481,7 +486,7 @@ async function loadSettingOptions() {
 function addPromptTemplates() {
     $('#sd_prompt_templates').empty();
 
-    for (const [name, prompt] of Object.entries(extension_settings.sd.prompts)) {
+    for (const [name, prompt] of Object.entries(extension_settings.sd.prompts).sort((a, b) => Number(a[0]) - Number(b[0]))) {
         const label = $('<label></label>')
             .text(modeLabels[name])
             .attr('for', `sd_prompt_${name}`)
@@ -1036,6 +1041,7 @@ async function changeComfyWorkflow(_, name) {
     } else {
         toastr.error(`ComfyUI Workflow "${name}" does not exist.`);
     }
+    return '';
 }
 
 async function validateAutoUrl() {
@@ -3031,7 +3037,8 @@ async function onComfyDeleteWorkflowClick() {
 async function sendMessage(prompt, image, generationType, additionalNegativePrefix) {
     const context = getContext();
     const name = context.groupId ? systemUserName : context.name2;
-    const messageText = `[${name} sends a picture that contains: ${prompt}]`;
+    const template = promptTemplates[generationMode.MESSAGE] || '{{prompt}}';
+    const messageText = substituteParamsExtended(template, { char: name, prompt: prompt });
     const message = {
         name: name,
         is_user: false,
