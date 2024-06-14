@@ -795,7 +795,7 @@ function letCallback(args, value) {
 
 /**
  * Set or retrieve a variable in the current scope or nearest ancestor scope.
- * @param {{_scope:SlashCommandScope, key?:string, index?:string|number}} args Named arguments.
+ * @param {{_hasUnnamedArgument:boolean, _scope:SlashCommandScope, key?:string, index?:string|number}} args Named arguments.
  * @param {string|SlashCommandClosure|(string|SlashCommandClosure)[]} value Name and optional value for the variable.
  * @returns The variable's value
  */
@@ -803,9 +803,13 @@ function varCallback(args, value) {
     if (!Array.isArray(value)) value = [value];
     if (args.key !== undefined) {
         const key = args.key;
-        const val = value.join(' ');
-        args._scope.setVariable(key, val, args.index);
-        return val;
+        if (args._hasUnnamedArgument) {
+            const val = value.join(' ');
+            args._scope.setVariable(key, val, args.index);
+            return val;
+        } else {
+            return args._scope.getVariable(key, args.index);
+        }
     }
     const key = value.shift();
     if (value.length > 0) {
@@ -815,6 +819,30 @@ function varCallback(args, value) {
     } else {
         return args._scope.getVariable(key, args.index);
     }
+}
+
+/**
+ * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
+ * @param {SlashCommandClosure} value
+ * @returns {string}
+ */
+function closureSerializeCallback(args, value) {
+    if (!(value instanceof SlashCommandClosure)) {
+        throw new Error('unnamed argument must be a closure');
+    }
+    return value.rawText;
+}
+
+/**
+ * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
+ * @param {import('./slash-commands/SlashCommand.js').UnnamedArguments} value
+ * @returns {SlashCommandClosure}
+ */
+function closureDeserializeCallback(args, value) {
+    const parser = new SlashCommandParser();
+    const closure = parser.parse(value, true, args._parserFlags, args._abortController);
+    closure.scope.parent = args._scope;
+    return closure;
 }
 
 export function registerVariableCommands() {
@@ -1806,6 +1834,63 @@ export function registerVariableCommands() {
                     </li>
                     <li>
                         <pre><code class="language-stscript">/let y</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'closure-serialize',
+        /**
+         *
+         * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
+         * @param {SlashCommandClosure} value
+         * @returns {string}
+         */
+        callback: (args, value)=>closureSerializeCallback(args, value),
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({ description: 'the closure to serialize',
+                typeList: [ARGUMENT_TYPE.CLOSURE],
+                isRequired: true,
+            }),
+        ],
+        returns: 'serialized closure as string',
+        helpString: `
+            <div>
+                Serialize a closure as text that can be stored in global and chat variables.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/closure-serialize {: x=1 /echo x is {{var::x}} and y is {{var::y}} :} |\n/setvar key=myClosure</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'closure-deserialize',
+        /**
+         * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
+         * @param {import('./slash-commands/SlashCommand.js').UnnamedArguments} value
+         * @returns {SlashCommandClosure}
+         */
+        callback: (args, value)=>closureDeserializeCallback(args, value),
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({ description: 'serialized closure',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+            }),
+        ],
+        returns: 'deserialized closure',
+        helpString: `
+            <div>
+                Deserialize a closure from text.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/closure-deserialize {{getvar::myClosure}} |\n/let myClosure {{pipe}} |\n/let y bar |\n/:myClosure x=foo</code></pre>
                     </li>
                 </ul>
             </div>

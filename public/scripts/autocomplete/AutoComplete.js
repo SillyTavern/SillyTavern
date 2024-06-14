@@ -386,11 +386,15 @@ export class AutoComplete {
                 // no result and no input? hide autocomplete
                 return this.hide();
             }
+            if (this.effectiveParserResult instanceof AutoCompleteSecondaryNameResult && !this.effectiveParserResult.forceMatch) {
+                // no result and matching is no forced? hide autocomplete
+                return this.hide();
+            }
             // otherwise add "no match" notice
             const option = new BlankAutoCompleteOption(
                 this.name.length ?
                     this.effectiveParserResult.makeNoMatchText()
-                    : this.effectiveParserResult.makeNoOptionstext()
+                    : this.effectiveParserResult.makeNoOptionsText()
                 ,
             );
             this.result.push(option);

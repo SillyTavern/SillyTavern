@@ -43,6 +43,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
                     [...namedResult.optionList, ...unnamedResult.optionList],
                 );
                 combinedResult.isRequired = namedResult.isRequired || unnamedResult.isRequired;
+                combinedResult.forceMatch = namedResult.forceMatch && unnamedResult.forceMatch;
                 return combinedResult;
             }
         }
@@ -102,18 +103,19 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
 
         if (name.includes('=') && cmdArg) {
             // if cursor is already behind "=" check for enums
-            /**@type {SlashCommandNamedArgument} */
-            if (cmdArg && cmdArg.enumList?.length) {
-                if (isSelect && cmdArg.enumList.includes(value) && argAssign && argAssign.end == index) {
+            const enumList = cmdArg?.enumProvider?.(this.executor) ?? cmdArg?.enumList;
+            if (cmdArg && enumList?.length) {
+                if (isSelect && enumList.find(it=>it.value == value) && argAssign && argAssign.end == index) {
                     return null;
                 }
                 const result = new AutoCompleteSecondaryNameResult(
                     value,
                     start + name.length,
-                    cmdArg.enumList.map(it=>new SlashCommandEnumAutoCompleteOption(this.executor.command, it)),
+                    enumList.map(it=>new SlashCommandEnumAutoCompleteOption(this.executor.command, it)),
                     true,
                 );
                 result.isRequired = true;
+                result.forceMatch = cmdArg.forceEnum;
                 return result;
             }
         }
@@ -148,7 +150,8 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             if (idx > -1) {
                 argAssign = this.executor.unnamedArgumentList[idx];
                 cmdArg = this.executor.command.unnamedArgumentList[idx];
-                if (cmdArg && cmdArg.enumList.length > 0) {
+                const enumList = cmdArg?.enumProvider?.(this.executor) ?? cmdArg?.enumList;
+                if (cmdArg && enumList.length > 0) {
                     value = argAssign.value.toString().slice(0, index - argAssign.start);
                     start = argAssign.start;
                 } else {
@@ -163,17 +166,19 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             return null;
         }
 
-        if (cmdArg == null || cmdArg.enumList.length == 0) return null;
+        const enumList = cmdArg?.enumProvider?.(this.executor) ?? cmdArg?.enumList;
+        if (cmdArg == null || enumList.length == 0) return null;
 
         const result = new AutoCompleteSecondaryNameResult(
             value,
             start,
-            cmdArg.enumList.map(it=>new SlashCommandEnumAutoCompleteOption(this.executor.command, it)),
+            enumList.map(it=>new SlashCommandEnumAutoCompleteOption(this.executor.command, it)),
             false,
         );
-        const isCompleteValue = cmdArg.enumList.find(it=>it.value == value);
+        const isCompleteValue = enumList.find(it=>it.value == value);
         const isSelectedValue = isSelect && isCompleteValue;
         result.isRequired = cmdArg.isRequired && !isSelectedValue && !isCompleteValue;
+        result.forceMatch = cmdArg.forceEnum;
         return result;
     }
 }

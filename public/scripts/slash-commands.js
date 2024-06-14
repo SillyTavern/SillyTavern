@@ -56,13 +56,12 @@ import { background_settings } from './backgrounds.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
-import { AutoCompleteNameResult } from './autocomplete/AutoCompleteNameResult.js';
-import { AutoCompleteOption } from './autocomplete/AutoCompleteOption.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { AutoComplete } from './autocomplete/AutoComplete.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortController.js';
 import { SlashCommandNamedArgumentAssignment } from './slash-commands/SlashCommandNamedArgumentAssignment.js';
+import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -117,9 +116,14 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     aliases: ['background'],
     returns: 'the current background',
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'filename', [ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandArgument.fromProps({ description: 'filename',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: ()=>[...document.querySelectorAll('.bg_example')]
+                .map((it)=>new SlashCommandEnumValue(it.getAttribute('bgfile')))
+                .filter(it=>it.value?.length)
+            ,
+        }),
     ],
     helpString: `
         <div>
@@ -323,9 +327,14 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'go',
     callback: goToCharacterCallback,
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'name', [ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandArgument.fromProps({ description: 'name',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: ()=>[
+                ...characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+                ...groups.map(it=>new SlashCommandEnumValue(it.name, null, 'variable', 'G')),
+            ],
+        }),
     ],
     helpString: 'Opens up a chat with the character or group by its name',
     aliases: ['char'],
@@ -367,9 +376,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'ask',
     callback: askCharacter,
     namedArgumentList: [
-        new SlashCommandNamedArgument(
-            'name', 'character name', [ARGUMENT_TYPE.STRING], true, false, '',
-        ),
+        SlashCommandNamedArgument.fromProps({ name: 'name',
+            description: 'character name',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: ()=>characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+        }),
     ],
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -1572,7 +1584,7 @@ function abortCallback({ _abortController, quiet }, reason) {
 async function delayCallback(_, amount) {
     if (!amount) {
         console.warn('WARN: No amount provided for /delay command');
-        return;
+        return '';
     }
 
     amount = Number(amount);
@@ -1581,6 +1593,7 @@ async function delayCallback(_, amount) {
     }
 
     await delay(amount);
+    return '';
 }
 
 async function inputCallback(args, prompt) {
@@ -1767,27 +1780,27 @@ async function addSwipeCallback(_, arg) {
 
     if (!lastMessage) {
         toastr.warning('No messages to add swipes to.');
-        return;
+        return '';
     }
 
     if (!arg) {
         console.warn('WARN: No argument provided for /addswipe command');
-        return;
+        return '';
     }
 
     if (lastMessage.is_user) {
         toastr.warning('Can\'t add swipes to user messages.');
-        return;
+        return '';
     }
 
     if (lastMessage.is_system) {
         toastr.warning('Can\'t add swipes to system messages.');
-        return;
+        return '';
     }
 
     if (lastMessage.extra?.image) {
         toastr.warning('Can\'t add swipes to message containing an image.');
-        return;
+        return '';
     }
 
     if (!Array.isArray(lastMessage.swipes)) {
@@ -1811,6 +1824,8 @@ async function addSwipeCallback(_, arg) {
 
     await saveChatConditional();
     await reloadCurrentChat();
+
+    return '';
 }
 
 async function deleteSwipeCallback(_, arg) {
@@ -1818,19 +1833,19 @@ async function deleteSwipeCallback(_, arg) {
 
     if (!lastMessage || !Array.isArray(lastMessage.swipes) || !lastMessage.swipes.length) {
         toastr.warning('No messages to delete swipes from.');
-        return;
+        return '';
     }
 
     if (lastMessage.swipes.length <= 1) {
         toastr.warning('Can\'t delete the last swipe.');
-        return;
+        return '';
     }
 
     const swipeId = arg && !isNaN(Number(arg)) ? (Number(arg) - 1) : lastMessage.swipe_id;
 
     if (swipeId < 0 || swipeId >= lastMessage.swipes.length) {
         toastr.warning(`Invalid swipe ID: ${swipeId + 1}`);
-        return;
+        return '';
     }
 
     lastMessage.swipes.splice(swipeId, 1);
@@ -1845,6 +1860,8 @@ async function deleteSwipeCallback(_, arg) {
 
     await saveChatConditional();
     await reloadCurrentChat();
+
+    return '';
 }
 
 async function askCharacter(args, text) {
@@ -1855,13 +1872,13 @@ async function askCharacter(args, text) {
     // TODO: Maybe support group chats?
     if (selected_group) {
         toastr.error('Cannot run this command in a group chat!');
-        return;
+        return '';
     }
 
     if (!text) {
         console.warn('WARN: No text provided for /ask command');
         toastr.warning('No text provided for /ask command');
-        return;
+        return '';
     }
 
     let name = '';
@@ -1873,7 +1890,7 @@ async function askCharacter(args, text) {
 
         if (!name && !mesText) {
             toastr.warning('You must specify a name and text to ask.');
-            return;
+            return '';
         }
     }
 
@@ -1885,7 +1902,7 @@ async function askCharacter(args, text) {
     const chId = characters.findIndex((e) => e.name === name);
     if (!characters[chId] || chId === -1) {
         toastr.error('Character not found.');
-        return;
+        return '';
     }
 
     // Override character and send a user message
@@ -1935,22 +1952,24 @@ async function askCharacter(args, text) {
     // Restore previous character once message renders
     // Hack for generate
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, restoreCharacter);
+    return '';
 }
 
 async function hideMessageCallback(_, arg) {
     if (!arg) {
         console.warn('WARN: No argument provided for /hide command');
-        return;
+        return '';
     }
 
     const range = stringToRange(arg, 0, chat.length - 1);
 
     if (!range) {
         console.warn(`WARN: Invalid range provided for /hide command: ${arg}`);
-        return;
+        return '';
     }
 
     await hideChatMessageRange(range.start, range.end, false);
+    return '';
 }
 
 async function unhideMessageCallback(_, arg) {
@@ -2347,7 +2366,7 @@ export async function generateSystemMessage(_, prompt) {
     if (!prompt) {
         console.warn('WARN: No prompt provided for /sysgen command');
         toastr.warning('You must provide a prompt for the system message');
-        return;
+        return '';
     }
 
     // Generate and regex the output if applicable
@@ -2356,43 +2375,49 @@ export async function generateSystemMessage(_, prompt) {
     message = getRegexedString(message, regex_placement.SLASH_COMMAND);
 
     sendNarratorMessage(_, message);
+    return '';
 }
 
 function syncCallback() {
     $('#sync_name_button').trigger('click');
+    return '';
 }
 
 function bindCallback() {
     $('#lock_user_name').trigger('click');
+    return '';
 }
 
 function setStoryModeCallback() {
     $('#chat_display').val(chat_styles.DOCUMENT).trigger('change');
+    return '';
 }
 
 function setBubbleModeCallback() {
     $('#chat_display').val(chat_styles.BUBBLES).trigger('change');
+    return '';
 }
 
 function setFlatModeCallback() {
     $('#chat_display').val(chat_styles.DEFAULT).trigger('change');
+    return '';
 }
 
 /**
  * Sets a persona name and optionally an avatar.
  * @param {{mode: 'lookup' | 'temp' | 'all'}} namedArgs Named arguments
  * @param {string} name Name to set
- * @returns {void}
+ * @returns {string}
  */
 function setNameCallback({ mode = 'all' }, name) {
     if (!name) {
         toastr.warning('You must specify a name to change to');
-        return;
+        return '';
     }
 
     if (!['lookup', 'temp', 'all'].includes(mode)) {
         toastr.warning('Mode must be one of "lookup", "temp" or "all"');
-        return;
+        return '';
     }
 
     name = name.trim();
@@ -2404,10 +2429,10 @@ function setNameCallback({ mode = 'all' }, name) {
         if (persona) {
             autoSelectPersona(persona);
             retriggerFirstMessageOnEmptyChat();
-            return;
+            return '';
         } else if (mode === 'lookup') {
             toastr.warning(`Persona ${name} not found`);
-            return;
+            return '';
         }
     }
 
@@ -2416,6 +2441,8 @@ function setNameCallback({ mode = 'all' }, name) {
         setUserName(name); //this prevented quickReply usage
         retriggerFirstMessageOnEmptyChat();
     }
+
+    return '';
 }
 
 async function setNarratorName(_, text) {
@@ -2423,11 +2450,12 @@ async function setNarratorName(_, text) {
     chat_metadata[NARRATOR_NAME_KEY] = name;
     toastr.info(`System narrator name set to ${name}`);
     await saveChatConditional();
+    return '';
 }
 
 export async function sendMessageAs(args, text) {
     if (!text) {
-        return;
+        return '';
     }
 
     let name;
@@ -2439,7 +2467,7 @@ export async function sendMessageAs(args, text) {
 
         if (!name && !text) {
             toastr.warning('You must specify a name and text to send as');
-            return;
+            return '';
         }
     } else {
         const namelessWarningKey = 'sendAsNamelessWarningShown';
@@ -2500,11 +2528,13 @@ export async function sendMessageAs(args, text) {
         await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
         await saveChatConditional();
     }
+
+    return '';
 }
 
 export async function sendNarratorMessage(args, text) {
     if (!text) {
-        return;
+        return '';
     }
 
     const name = chat_metadata[NARRATOR_NAME_KEY] || NARRATOR_NAME_DEFAULT;
@@ -2543,6 +2573,8 @@ export async function sendNarratorMessage(args, text) {
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
         await saveChatConditional();
     }
+
+    return '';
 }
 
 export async function promptQuietForLoudResponse(who, text) {
@@ -2586,7 +2618,7 @@ export async function promptQuietForLoudResponse(who, text) {
 
 async function sendCommentMessage(args, text) {
     if (!text) {
-        return;
+        return '';
     }
 
     const compact = isTrueBoolean(args?.compact);
@@ -2619,6 +2651,8 @@ async function sendCommentMessage(args, text) {
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
         await saveChatConditional();
     }
+
+    return '';
 }
 
 /**
@@ -2656,6 +2690,8 @@ function helpCommandCallback(_, type) {
             sendSystemMessage(system_message_types.HELP);
             break;
     }
+
+    return '';
 }
 
 $(document).on('click', '[data-displayHelp]', function (e) {
@@ -2680,7 +2716,7 @@ function setBackgroundCallback(_, bg) {
 
     if (!result.length) {
         toastr.error(`No background found with name "${bg}"`);
-        return;
+        return '';
     }
 
     const bgElement = result[0].item.element;
@@ -2688,6 +2724,8 @@ function setBackgroundCallback(_, bg) {
     if (bgElement instanceof HTMLElement) {
         bgElement.click();
     }
+
+    return '';
 }
 
 /**
@@ -2910,6 +2948,8 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
         result = await executeSlashCommandsWithOptions(text, {
             abortController: commandsFromChatInputAbortController,
             onProgress: (done, total) => ta.style.setProperty('--prog', `${done / total * 100}%`),
+            parserFlags: options.parserFlags,
+            scope: options.scope,
         });
         if (commandsFromChatInputAbortController.signal.aborted) {
             document.querySelector('#form_sheld').classList.add('script_aborted');
@@ -3006,7 +3046,7 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
  * @param {boolean} handleParserErrors Whether to handle parser errors (show toast on error) or throw
  * @param {SlashCommandScope} scope The scope to be used when executing the commands.
  * @param {boolean} handleExecutionErrors Whether to handle execution errors (show toast on error) or throw
- * @param {PARSER_FLAG[]} parserFlags Parser flags to apply
+ * @param {{[id:PARSER_FLAG]:boolean}} parserFlags Parser flags to apply
  * @param {SlashCommandAbortController} abortController Controller used to abort or pause command execution
  * @param {(done:number, total:number)=>void} onProgress Callback to handle progress events
  * @returns {Promise<SlashCommandClosureResult>}

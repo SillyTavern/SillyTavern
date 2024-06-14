@@ -92,7 +92,7 @@ export class SlashCommandScope {
                     v = v[numIndex];
                 }
                 if (typeof v == 'object') return JSON.stringify(v);
-                return v;
+                return v ?? '';
             } else {
                 const value = this.variables[key];
                 return (value === '' || isNaN(Number(value))) ? (value || '') : Number(value);

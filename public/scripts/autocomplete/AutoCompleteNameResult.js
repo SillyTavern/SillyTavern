@@ -10,7 +10,7 @@ export class AutoCompleteNameResult {
     /**@type {AutoCompleteOption[]} */ optionList = [];
     /**@type {boolean} */ canBeQuoted = false;
     /**@type {()=>string} */ makeNoMatchText = ()=>`No matches found for "${this.name}"`;
-    /**@type {()=>string} */ makeNoOptionstext = ()=>'No options';
+    /**@type {()=>string} */ makeNoOptionsText = ()=>'No options';
 
 
     /**
@@ -27,7 +27,7 @@ export class AutoCompleteNameResult {
         this.optionList = optionList;
         this.canBeQuoted = canBeQuoted;
         this.noMatchText = makeNoMatchText ?? this.makeNoMatchText;
-        this.noOptionstext = makeNoOptionsText ?? this.makeNoOptionstext;
+        this.noOptionstext = makeNoOptionsText ?? this.makeNoOptionsText;
     }
 
 
