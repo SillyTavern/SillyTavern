@@ -1207,7 +1207,7 @@
     "Model": "模型",
     "currently_selected": "[当前选定]",
     "currently_loaded": "[当前正在加载]",
-    "Allow Reverse Proxy": "允许反向代理",
+    "Allow reverse Proxy": "允许反向代理",
     "Hint:": "提示：",
     "Set your API keys and endpoints in the 'API Connections' tab first.": "首先在“API 连接”选项卡中设置您的 API 密钥和端点。",
     "Caption Prompt": "字幕提示",

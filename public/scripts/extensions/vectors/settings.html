@@ -132,7 +132,7 @@
             <div class="flex-container">
                 <label class="checkbox_label expander" for="vectors_include_wi" title="Query results can activate World Info entries.">
                     <input id="vectors_include_wi" type="checkbox" class="checkbox">
-                    <div data-i18n="Include in World Info Scanning">Include in World Info Scanning</div>
+                    <span data-i18n="Include in World Info Scanning">Include in World Info Scanning</span>
                 </label>
             </div>
 
@@ -144,7 +144,7 @@
 
             <label class="checkbox_label" for="vectors_enabled_world_info" title="Enable activation of World Info entries based on vector similarity.">
                 <input id="vectors_enabled_world_info" type="checkbox" class="checkbox">
-                <div data-i18n="Enable for World Info">Enable for World Info</div>
+                <span data-i18n="Enable for World Info">Enable for World Info</span>
             </label>
 
             <div id="vectors_world_info_settings" class="marginTopBot5">
@@ -284,10 +284,10 @@
                 </div>
                 <div class="flex-container">
                     <div id="vectors_files_vectorize_all" class="menu_button menu_button_icon" title="Vectorize all files in the Data Bank and current chat.">
-                        <div data-i18n="Vectorize All">Vectorize All</div>
+                        <span data-i18n="Vectorize All">Vectorize All</span>
                     </div>
                     <div id="vectors_files_purge" class="menu_button menu_button_icon" title="Purge all file vectors in the Data Bank and current chat.">
-                        <div data-i18n="Purge Vectors">Purge Vectors</div>
+                        <span data-i18n="Purge Vectors">Purge Vectors</span>
                     </div>
                 </div>
             </div>
@@ -299,7 +299,7 @@
             </h4>
             <label class="checkbox_label" for="vectors_enabled_chats">
                 <input id="vectors_enabled_chats" type="checkbox" class="checkbox">
-                <div data-i18n="Enabled for chat messages">Enabled for chat messages</div>
+                <span data-i18n="Enabled for chat messages">Enabled for chat messages</span>
             </label>
 
             <hr>
@@ -314,16 +314,16 @@
                     <div class="radio_group">
                         <label>
                             <input type="radio" name="vectors_position" value="2" />
-                            <div data-i18n="Before Main Prompt / Story String">Before Main Prompt / Story String</div>
+                            <span data-i18n="Before Main Prompt / Story String">Before Main Prompt / Story String</span>
                         </label>
                         <!--Keep these as 0 and 1 to interface with the setExtensionPrompt function-->
                         <label>
                             <input type="radio" name="vectors_position" value="0" />
-                            <div data-i18n="After Main Prompt / Story String">After Main Prompt / Story String</div>
+                            <span data-i18n="After Main Prompt / Story String">After Main Prompt / Story String</span>
                         </label>
                         <label for="vectors_depth" title="How many messages before the current end of the chat." data-i18n="[title]How many messages before the current end of the chat.">
                             <input type="radio" name="vectors_position" value="1" />
-                            <div data-i18n="In-chat @ Depth">In-chat @ Depth </div>
+                            <span data-i18n="In-chat @ Depth">In-chat @ Depth </span>
                             <input id="vectors_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
                         </label>
                     </div>
@@ -355,13 +355,13 @@
                         </div>
                         <label class="checkbox_label expander" for="vectors_summarize" title="Summarize chat messages before generating embeddings.">
                             <input id="vectors_summarize" type="checkbox" class="checkbox">
-                            <div data-i18n="Summarize chat messages for vector generation">Summarize chat messages for vector generation</div>
+                            <span data-i18n="Summarize chat messages for vector generation">Summarize chat messages for vector generation</span>
                         </label>
                         <i class="failure" data-i18n="Warning: This will slow down vector generation drastically, as all messages have to be summarized first.">Warning: This will slow down vector generation drastically, as all messages have to be summarized first.</i>
 
                         <label class="checkbox_label expander" for="vectors_summarize_user" title="Summarize sent chat messages before generating embeddings.">
                             <input id="vectors_summarize_user" type="checkbox" class="checkbox">
-                            <div data-i18n="Summarize chat messages when sending">Summarize chat messages when sending</div>
+                            <span data-i18n="Summarize chat messages when sending">Summarize chat messages when sending</span>
                         </label>
                         <i class="failure" data-i18n="Warning: This might cause your sent messages to take a bit to process and slow down response time.">Warning: This might cause your sent messages to take a bit to process and slow down response time.</i>
 
