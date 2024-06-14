@@ -2320,14 +2320,25 @@ export function scrollChatToBottom() {
 /**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
+ * @param {Record<string,any>} additionalMacro - Additional environment variables for substitution.
+ * @returns {string} The string with substituted parameters.
+ */
+export function substituteParamsExtended(content, additionalMacro) {
+    return substituteParams(content, undefined, undefined, undefined, undefined, true, additionalMacro);
+}
+
+/**
+ * Substitutes {{macro}} parameters in a string.
+ * @param {string} content - The string to substitute parameters in.
  * @param {string} [_name1] - The name of the user. Uses global name1 if not provided.
  * @param {string} [_name2] - The name of the character. Uses global name2 if not provided.
  * @param {string} [_original] - The original message for {{original}} substitution.
  * @param {string} [_group] - The group members list for {{group}} substitution.
  * @param {boolean} [_replaceCharacterCard] - Whether to replace character card macros.
+ * @param {Record<string,any>} [additionalMacro] - Additional environment variables for substitution.
  * @returns {string} The string with substituted parameters.
  */
-export function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
+export function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true, additionalMacro = {}) {
     const environment = {};
 
     if (typeof _original === 'string') {
@@ -2376,6 +2387,10 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
     environment.char = _name2 ?? name2;
     environment.group = environment.charIfNotGroup = getGroupValue();
     environment.model = getGeneratingModel();
+
+    if (additionalMacro && typeof additionalMacro === 'object') {
+        Object.assign(environment, additionalMacro);
+    }
 
     return evaluateMacros(content, environment);
 }
