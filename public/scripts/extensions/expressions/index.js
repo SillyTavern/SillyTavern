@@ -1190,6 +1190,11 @@ function getLastCharacterMessage() {
             continue;
         }
 
+        const character = context.characters.find(x => x.avatar == mes.original_avatar || (mes.force_avatar && mes.force_avatar.includes(encodeURIComponent(x.avatar))));
+        if (!character) {
+            continue;
+        }
+
         return { mes: mes.mes, name: mes.name, original_avatar: mes.original_avatar, force_avatar: mes.force_avatar };
     }
 
