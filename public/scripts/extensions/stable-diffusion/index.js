@@ -51,6 +51,13 @@ const sources = {
     pollinations: 'pollinations',
 };
 
+const initiators = {
+    command: 'command',
+    action: 'action',
+    interactive: 'interactive',
+    wand: 'wand',
+};
+
 const generationMode = {
     MESSAGE: -1,
     CHARACTER: 0,
@@ -270,6 +277,11 @@ const defaultSettings = {
     // Pollinations settings
     pollinations_enhance: false,
     pollinations_refine: false,
+
+    // Visibility toggles
+    wand_visible: false,
+    command_visible: false,
+    interactive_visible: false,
 };
 
 const writePromptFieldsDebounced = debounce(writePromptFields, debounce_timeout.relaxed);
@@ -321,7 +333,7 @@ function processTriggers(chat, _, abort) {
         }
 
         abort(true);
-        setTimeout(() => generatePicture('sd', subject, message), 1);
+        setTimeout(() => generatePicture(initiators.interactive, {}, subject, message), 1);
     } catch {
         console.log('SD: Failed to process triggers.');
         return;
@@ -429,6 +441,9 @@ async function loadSettings() {
     $('#sd_clip_skip_value').text(extension_settings.sd.clip_skip);
     $('#sd_seed').val(extension_settings.sd.seed);
     $('#sd_free_extend').prop('checked', extension_settings.sd.free_extend);
+    $('#sd_wand_visible').prop('checked', extension_settings.sd.wand_visible);
+    $('#sd_command_visible').prop('checked', extension_settings.sd.command_visible);
+    $('#sd_interactive_visible').prop('checked', extension_settings.sd.interactive_visible);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -774,6 +789,21 @@ function onRefineModeInput() {
 
 function onFreeExtendInput() {
     extension_settings.sd.free_extend = !!$('#sd_free_extend').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onWandVisibleInput() {
+    extension_settings.sd.wand_visible = !!$('#sd_wand_visible').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onCommandVisibleInput() {
+    extension_settings.sd.command_visible = !!$('#sd_command_visible').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onInteractiveVisibleInput() {
+    extension_settings.sd.interactive_visible = !!$('#sd_interactive_visible').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -2100,7 +2130,16 @@ function getRawLastMessage() {
     return `((${processReply(lastMessage.mes)})), (${processReply(character.scenario)}:0.7), (${processReply(character.description)}:0.5)`;
 }
 
-async function generatePicture(args, trigger, message, callback) {
+/**
+ * Generates an image based on the given trigger word.
+ * @param {string} initiator The initiator of the image generation
+ * @param {Record<string, object>} args Command arguments
+ * @param {string} trigger Subject trigger word
+ * @param {string} [message] Chat message
+ * @param {function} [callback] Callback function
+ * @returns {Promise<string>} Image path
+ */
+async function generatePicture(initiator, args, trigger, message, callback) {
     if (!trigger || trigger.trim().length === 0) {
         console.log('Trigger word empty, aborting');
         return;
@@ -2131,9 +2170,9 @@ async function generatePicture(args, trigger, message, callback) {
             eventSource.emit(event_types.FORCE_SET_BACKGROUND, { url: imgUrl, path: imagePath });
 
             if (typeof callbackOriginal === 'function') {
-                callbackOriginal(prompt, imagePath, generationType, negativePromptPrefix);
+                callbackOriginal(prompt, imagePath, generationType, negativePromptPrefix, initiator);
             } else {
-                sendMessage(prompt, imagePath, generationType, negativePromptPrefix);
+                sendMessage(prompt, imagePath, generationType, negativePromptPrefix, initiator);
             }
         };
     }
@@ -2153,7 +2192,7 @@ async function generatePicture(args, trigger, message, callback) {
         context.deactivateSendButtons();
         hideSwipeButtons();
 
-        imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback);
+        imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback, initiator);
     } catch (err) {
         console.trace(err);
         throw new Error('SD prompt text generation failed.');
@@ -2359,11 +2398,12 @@ async function generatePrompt(quietPrompt) {
  * @param {number} generationType Type of image generation
  * @param {string} prompt Prompt to be used for image generation
  * @param {string} additionalNegativePrefix Additional negative prompt to be used for image generation
- * @param {string} [characterName] Name of the character
- * @param {function} [callback] Callback function to be called after image generation
+ * @param {string} characterName Name of the character
+ * @param {function} callback Callback function to be called after image generation
+ * @param {string} initiator The initiator of the image generation
  * @returns
  */
-async function sendGenerationRequest(generationType, prompt, additionalNegativePrefix, characterName = null, callback) {
+async function sendGenerationRequest(generationType, prompt, additionalNegativePrefix, characterName, callback, initiator) {
     const noCharPrefix = [generationMode.FREE, generationMode.BACKGROUND, generationMode.USER, generationMode.USER_MULTIMODAL, generationMode.FREE_EXTENDED];
     const prefix = noCharPrefix.includes(generationType)
         ? extension_settings.sd.prompt_prefix
@@ -2429,7 +2469,7 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
 
     const filename = `${characterName}_${humanizedDateTime()}`;
     const base64Image = await saveBase64AsFile(result.data, characterName, filename, result.format);
-    callback ? callback(prompt, base64Image, generationType, additionalNegativePrefix) : sendMessage(prompt, base64Image, generationType, additionalNegativePrefix);
+    callback ? callback(prompt, base64Image, generationType, additionalNegativePrefix, initiator) : sendMessage(prompt, base64Image, generationType, additionalNegativePrefix, initiator);
     return base64Image;
 }
 
@@ -3033,16 +3073,17 @@ async function onComfyDeleteWorkflowClick() {
  * @param {string} image Base64 encoded image
  * @param {number} generationType Generation type of the image
  * @param {string} additionalNegativePrefix Additional negative prompt used for the image generation
+ * @param {string} initiator The initiator of the image generation
  */
-async function sendMessage(prompt, image, generationType, additionalNegativePrefix) {
+async function sendMessage(prompt, image, generationType, additionalNegativePrefix, initiator) {
     const context = getContext();
     const name = context.groupId ? systemUserName : context.name2;
-    const template = promptTemplates[generationMode.MESSAGE] || '{{prompt}}';
+    const template = extension_settings.sd.prompts[generationMode.MESSAGE] || '{{prompt}}';
     const messageText = substituteParamsExtended(template, { char: name, prompt: prompt });
     const message = {
         name: name,
         is_user: false,
-        is_system: true,
+        is_system: !getVisibilityByInitiator(initiator),
         send_date: getMessageTimeStamp(),
         mes: messageText,
         extra: {
@@ -3056,6 +3097,24 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
     context.chat.push(message);
     context.addOneMessage(message);
     context.saveChat();
+}
+
+/**
+ * Gets the visibility of the resulting message based on the initiator.
+ * @param {string} initiator Generation initiator
+ * @returns {boolean} Is resulting message visible
+ */
+function getVisibilityByInitiator(initiator) {
+    switch (initiator) {
+        case initiators.interactive:
+            return !!extension_settings.sd.interactive_visible;
+        case initiators.wand:
+            return !!extension_settings.sd.wand_visible;
+        case initiators.command:
+            return !!extension_settings.sd.command_visible;
+        default:
+            return false;
+    }
 }
 
 async function addSDGenButtons() {
@@ -3107,7 +3166,7 @@ async function addSDGenButtons() {
 
         if (param) {
             console.log('doing /sd ' + param);
-            generatePicture('sd', param);
+            generatePicture(initiators.wand, {}, param);
         }
     });
 }
@@ -3184,11 +3243,11 @@ async function sdMessageButton(e) {
             const generationType = message?.extra?.generationType ?? generationMode.FREE;
             console.log('Regenerating an image, using existing prompt:', prompt);
             dimensions = setTypeSpecificDimensions(generationType);
-            await sendGenerationRequest(generationType, prompt, negative, characterFileName, saveGeneratedImage);
+            await sendGenerationRequest(generationType, prompt, negative, characterFileName, saveGeneratedImage, initiators.action);
         }
         else {
             console.log('doing /sd raw last');
-            await generatePicture('sd', 'raw_last', messageText, saveGeneratedImage);
+            await generatePicture(initiators.action, {}, 'raw_last', messageText, saveGeneratedImage);
         }
     }
     catch (error) {
@@ -3251,7 +3310,7 @@ jQuery(async () => {
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'imagine',
-        callback: generatePicture,
+        callback: (args, trigger) => generatePicture(initiators.command, args, String(trigger)),
         aliases: ['sd', 'img', 'image'],
         namedArgumentList: [
             new SlashCommandNamedArgument(
@@ -3352,6 +3411,9 @@ jQuery(async () => {
     $('#sd_seed').on('input', onSeedInput);
     $('#sd_character_prompt_share').on('input', onCharacterPromptShareInput);
     $('#sd_free_extend').on('input', onFreeExtendInput);
+    $('#sd_wand_visible').on('input', onWandVisibleInput);
+    $('#sd_command_visible').on('input', onCommandVisibleInput);
+    $('#sd_interactive_visible').on('input', onInteractiveVisibleInput);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($('#sd_prompt_prefix'));
