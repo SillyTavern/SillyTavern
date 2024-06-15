@@ -50,6 +50,7 @@ const settings = {
     summarize_sent: false,
     summary_source: 'main',
     summary_prompt: 'Pause your roleplay. Summarize the most important parts of the message. Limit yourself to 250 words or less. Your response should include nothing but the summary.',
+    force_chunk_delimiter: '',
 
     // For chats
     enabled_chats: false,
@@ -154,6 +155,20 @@ async function onVectorizeAllClick() {
 let syncBlocked = false;
 
 /**
+ * Gets the chunk delimiters for splitting text.
+ * @returns {string[]} Array of chunk delimiters
+ */
+function getChunkDelimiters() {
+    const delimiters = ['\n\n', '\n', ' ', ''];
+
+    if (settings.force_chunk_delimiter) {
+        delimiters.unshift(settings.force_chunk_delimiter);
+    }
+
+    return delimiters;
+}
+
+/**
  * Splits messages into chunks before inserting them into the vector index.
  * @param {object[]} items Array of vector items
  * @returns {object[]} Array of vector items (possibly chunked)
@@ -166,7 +181,7 @@ function splitByChunks(items) {
     const chunkedItems = [];
 
     for (const item of items) {
-        const chunks = splitRecursive(item.text, settings.message_chunk_size);
+        const chunks = splitRecursive(item.text, settings.message_chunk_size, getChunkDelimiters());
         for (const chunk of chunks) {
             const chunkedItem = { ...item, text: chunk };
             chunkedItems.push(chunkedItem);
@@ -484,9 +499,10 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overla
 
         const toast = toastr.info('Vectorization may take some time, please wait...', `Ingesting file ${fileName}`);
         const overlapSize = Math.round(chunkSize * overlapPercent / 100);
+        const delimiters = getChunkDelimiters();
         // Overlap should not be included in chunk size. It will be later compensated by overlapChunks
         chunkSize = overlapSize > 0 ? (chunkSize - overlapSize) : chunkSize;
-        const chunks = splitRecursive(fileText, chunkSize).map((x, y, z) => overlapSize > 0 ? overlapChunks(x, y, z, overlapSize) : x);
+        const chunks = splitRecursive(fileText, chunkSize, delimiters).map((x, y, z) => overlapSize > 0 ? overlapChunks(x, y, z, overlapSize) : x);
         console.debug(`Vectors: Split file ${fileName} into ${chunks.length} chunks with ${overlapPercent}% overlap`, chunks);
 
         const items = chunks.map((chunk, index) => ({ hash: getStringHash(chunk), text: chunk, index: index }));
@@ -1476,6 +1492,12 @@ jQuery(async () => {
 
     $('#vectors_score_threshold').val(settings.score_threshold).on('input', () => {
         settings.score_threshold = Number($('#vectors_score_threshold').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_force_chunk_delimiter').prop('checked', settings.force_chunk_delimiter).on('input', () => {
+        settings.force_chunk_delimiter = String($('#vectors_force_chunk_delimiter').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
