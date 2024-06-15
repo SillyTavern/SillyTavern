@@ -723,7 +723,7 @@ function populationInjectionPrompts(prompts, messages) {
             const jointPrompt = [rolePrompts, extensionPrompt].filter(x => x).map(x => x.trim()).join(separator);
 
             if (jointPrompt && jointPrompt.length) {
-                roleMessages.push({ 'role': role, 'content': jointPrompt });
+                roleMessages.push({ 'role': role, 'content': jointPrompt, injected: true });
             }
         }
 
@@ -795,6 +795,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
     // Insert chat messages as long as there is budget available
     const chatPool = [...messages].reverse();
+    const firstNonInjected = chatPool.find(x => !x.injected);
     for (let index = 0; index < chatPool.length; index++) {
         const chatPrompt = chatPool[index];
 
@@ -813,6 +814,12 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         }
 
         if (chatCompletion.canAfford(chatMessage)) {
+            if (type === 'continue' && oai_settings.continue_prefill && chatPrompt === firstNonInjected) {
+                const collection = new MessageCollection('continuePrefill', chatMessage);
+                chatCompletion.add(collection, -1);
+                continue;
+            }
+
             chatCompletion.insertAtStart(chatMessage, 'chatHistory');
         } else {
             break;
