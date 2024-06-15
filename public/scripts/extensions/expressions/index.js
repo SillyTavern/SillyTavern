@@ -10,6 +10,7 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { isFunctionCallingSupported } from '../../openai.js';
+import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -87,6 +88,7 @@ function getFallbackExpression() {
  */
 function toggleTalkingHeadCommand(_) {
     setTalkingHeadState(!extension_settings.expressions.talkinghead);
+    return String(extension_settings.expressions.talkinghead);
 }
 
 function isVisualNovelMode() {
@@ -914,6 +916,7 @@ async function setSpriteSetCommand(_, folder) {
     // moduleWorker();
     const vnMode = isVisualNovelMode();
     await sendExpressionCall(folder, lastExpression, true, vnMode);
+    return '';
 }
 
 async function classifyCommand(_, text) {
@@ -935,7 +938,7 @@ async function classifyCommand(_, text) {
 async function setSpriteSlashCommand(_, spriteId) {
     if (!spriteId) {
         console.log('No sprite id provided');
-        return;
+        return '';
     }
 
     spriteId = spriteId.trim().toLowerCase();
@@ -955,7 +958,7 @@ async function setSpriteSlashCommand(_, spriteId) {
 
         if (!spriteItem) {
             console.log('No sprite found for search term ' + spriteId);
-            return;
+            return '';
         }
 
         label = spriteItem.label;
@@ -963,6 +966,7 @@ async function setSpriteSlashCommand(_, spriteId) {
 
     const vnMode = isVisualNovelMode();
     await sendExpressionCall(spriteFolderName, label, true, vnMode);
+    return label;
 }
 
 /**
@@ -1330,10 +1334,18 @@ async function renderFallbackExpressionPicker() {
     }
 }
 
+function getCachedExpressions() {
+    if (!Array.isArray(expressionsList)) {
+        return [];
+    }
+
+    return [...expressionsList, ...extension_settings.expressions.custom].filter(onlyUnique);
+}
+
 async function getExpressionsList() {
     // Return cached list if available
     if (Array.isArray(expressionsList)) {
-        return [...expressionsList, ...extension_settings.expressions.custom].filter(onlyUnique);
+        return getCachedExpressions();
     }
 
     /**
@@ -2037,17 +2049,23 @@ function migrateSettings() {
     });
     eventSource.on(event_types.MOVABLE_PANELS_RESET, updateVisualNovelModeDebounced);
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sprite',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'sprite',
         aliases: ['emote'],
         callback: setSpriteSlashCommand,
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'spriteId', [ARGUMENT_TYPE.STRING], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'spriteId',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: () => getCachedExpressions().map((x) => new SlashCommandEnumValue(x)),
+            }),
         ],
         helpString: 'Force sets the sprite for the current character.',
+        returns: 'label',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'spriteoverride',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'spriteoverride',
         aliases: ['costume'],
         callback: setSpriteSetCommand,
         unnamedArgumentList: [
@@ -2057,8 +2075,9 @@ function migrateSettings() {
         ],
         helpString: 'Sets an override sprite folder for the current character. If the name starts with a slash or a backslash, selects a sub-folder in the character-named folder. Empty value to reset to default.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'lastsprite',
-        callback: (_, value) => lastExpression[value.trim()] ?? '',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'lastsprite',
+        callback: (_, value) => lastExpression[String(value).trim()] ?? '',
         returns: 'sprite',
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -2067,12 +2086,15 @@ function migrateSettings() {
         ],
         helpString: 'Returns the last set sprite / expression for the named character.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'th',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'th',
         callback: toggleTalkingHeadCommand,
         aliases: ['talkinghead'],
         helpString: 'Character Expressions: toggles <i>Image Type - talkinghead (extras)</i> on/off.',
+        returns: ARGUMENT_TYPE.BOOLEAN,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'classify',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'classify',
         callback: classifyCommand,
         unnamedArgumentList: [
             new SlashCommandArgument(
