@@ -28,6 +28,7 @@ import {
     setOnlineStatus,
     startStatusLoading,
     substituteParams,
+    substituteParamsExtended,
     system_message_types,
     this_chid,
 } from '../script.js';
@@ -775,7 +776,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         const promptObject = {
             identifier: 'continueNudge',
             role: 'system',
-            content: oai_settings.continue_nudge_prompt.replace('{{lastChatMessage}}', String(cyclePrompt).trim()),
+            content: substituteParamsExtended(oai_settings.continue_nudge_prompt, { lastChatMessage: String(cyclePrompt).trim() }),
             system_prompt: true,
         };
         const continuePrompt = new Prompt(promptObject);
