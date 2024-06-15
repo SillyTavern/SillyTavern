@@ -2181,12 +2181,13 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         callback = () => { };
     }
 
-    const negativePromptPrefix = resolveVariable(args?.negative) || '';
     const dimensions = setTypeSpecificDimensions(generationType);
+    let negativePromptPrefix = resolveVariable(args?.negative) || '';
     let imagePath = '';
 
     try {
-        const prompt = await getPrompt(generationType, message, trigger, quietPrompt);
+        const combineNegatives = (prefix) => { negativePromptPrefix = combinePrefixes(negativePromptPrefix, prefix); };
+        const prompt = await getPrompt(generationType, message, trigger, quietPrompt, combineNegatives);
         console.log('Processed image prompt:', prompt);
 
         context.deactivateSendButtons();
@@ -2255,7 +2256,16 @@ function restoreOriginalDimensions(savedParams) {
     extension_settings.sd.width = savedParams.width;
 }
 
-async function getPrompt(generationType, message, trigger, quietPrompt) {
+/**
+ * Generates a prompt for image generation.
+ * @param {number} generationType The type of image generation to perform.
+ * @param {string} message A message text to use for the image generation.
+ * @param {string} trigger A trigger string to use for the image generation.
+ * @param {string} quietPrompt A quiet prompt to use for the image generation.
+ * @param {function} combineNegatives A function that combines the negative prompt with other prompts.
+ * @returns {Promise<string>} - A promise that resolves when the prompt generation completes.
+ */
+async function getPrompt(generationType, message, trigger, quietPrompt, combineNegatives) {
     let prompt;
 
     switch (generationType) {
@@ -2263,7 +2273,7 @@ async function getPrompt(generationType, message, trigger, quietPrompt) {
             prompt = message || getRawLastMessage();
             break;
         case generationMode.FREE:
-            prompt = generateFreeModePrompt(trigger.trim());
+            prompt = generateFreeModePrompt(trigger.trim(), combineNegatives);
             break;
         case generationMode.FACE_MULTIMODAL:
         case generationMode.CHARACTER_MULTIMODAL:
@@ -2276,7 +2286,7 @@ async function getPrompt(generationType, message, trigger, quietPrompt) {
     }
 
     if (generationType === generationMode.FREE_EXTENDED) {
-        prompt = generateFreeModePrompt(prompt.trim());
+        prompt = generateFreeModePrompt(prompt.trim(), combineNegatives);
     }
 
     if (generationType !== generationMode.FREE) {
@@ -2289,9 +2299,10 @@ async function getPrompt(generationType, message, trigger, quietPrompt) {
 /**
  * Generates a free prompt with a character-specific prompt prefix support.
  * @param {string} trigger - The prompt to use for the image generation.
+ * @param {function} combineNegatives - A function that combines the negative prompt with other prompts.
  * @returns {string}
  */
-function generateFreeModePrompt(trigger) {
+function generateFreeModePrompt(trigger, combineNegatives) {
     return trigger
         .replace(/(?:^char(\s|,)|\{\{charPrefix\}\})/gi, (_, suffix) => {
             const getLastCharacterKey = () => {
@@ -2312,6 +2323,8 @@ function generateFreeModePrompt(trigger) {
 
             const key = getLastCharacterKey();
             const value = (extension_settings.sd.character_prompts[key] || '').trim();
+            const negativeValue = (extension_settings.sd.character_negative_prompts[key] || '').trim();
+            typeof combineNegatives === 'function' && negativeValue ? combineNegatives(negativeValue) : void 0;
             return value ? combinePrefixes(value, (suffix || '')) : '';
         });
 }
