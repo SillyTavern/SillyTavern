@@ -708,6 +708,14 @@ function onChatChanged() {
     $('#sd_character_prompt').val(characterPrompt);
     $('#sd_character_negative_prompt').val(negativePrompt);
     $('#sd_character_prompt_share').prop('checked', hasSharedData);
+    adjustElementScrollHeight();
+}
+
+function adjustElementScrollHeight(){
+    resetScrollHeight($('#sd_prompt_prefix'));
+    resetScrollHeight($('#sd_negative_prompt'));
+    resetScrollHeight($('#sd_character_prompt'));
+    resetScrollHeight($('#sd_character_negative_prompt'));
 }
 
 function onCharacterPromptInput() {
