@@ -3700,8 +3700,8 @@ function onSettingsPresetChange() {
         preset.assistant_impersonation = preset.assistant_prefill;
     }
 
-    const updateInput = (selector, value) => $(selector).val(value).trigger('input');
-    const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
+    const updateInput = (selector, value) => $(selector).val(value).trigger('input', { source: 'preset' });
+    const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input', { source: 'preset' });
 
     // Allow subscribers to alter the preset before applying deltas
     eventSource.emit(event_types.OAI_PRESET_CHANGED_BEFORE, {
@@ -4857,9 +4857,11 @@ $(document).ready(async function () {
         eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
     });
 
-    $('#oai_max_context_unlocked').on('input', function () {
+    $('#oai_max_context_unlocked').on('input', function (_e, data) {
         oai_settings.max_context_unlocked = !!$(this).prop('checked');
-        $('#chat_completion_source').trigger('change');
+        if (data?.source !== 'preset') {
+            $('#chat_completion_source').trigger('change');
+        }
         saveSettingsDebounced();
     });
 
