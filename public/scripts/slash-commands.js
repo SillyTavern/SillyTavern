@@ -1224,7 +1224,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         ),
     ],
     unnamedArgumentList: [
-        SlashCommandArgument.fromProps({ description: 'Set entry/entries on or off',
+        SlashCommandArgument.fromProps({ description: 'Set entry/entries on, off or toggle current state',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
             acceptsMultiple: false,
@@ -1232,7 +1232,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             enumList: ['on', 'off', 'toggle'],
         }),
     ],
-    helpString: 'Sets the model for the current API. Gets the current model name if no argument is provided.',
+    helpString: 'Sets or toggles individual chat completion prompt entries.',
 }));
 
 registerVariableCommands();
