@@ -77,6 +77,7 @@
     --fontScale: 1;
     --mainFontSize: calc(var(--fontScale) * 15px);
     --mainFontFamily: "Noto Sans", "Noto Color Emoji", sans-serif;
+    --monoFontFamily: 'Noto Sans Mono', 'Courier New', Consolas, monospace;
 
     /* base variable for blur strength slider calculations */
     --blurStrength: 10;
@@ -380,7 +381,8 @@ table.responsiveTable {
 }
 
 small {
-    color: var(--grey70);
+    color: var(--SmartThemeBodyColor);
+    opacity: 0.7;
 }
 
 .mes.smallSysMes {
@@ -418,7 +420,7 @@ small {
 }
 
 code {
-    font-family: Consolas, monospace;
+    font-family: var(--monoFontFamily);
     white-space: pre-wrap;
     /* word-wrap: break-word; */
     border: 1px solid var(--SmartThemeBorderColor);
@@ -1226,6 +1228,11 @@ select {
     left: var(--leftOffset);
     right: var(--rightOffset);
     z-index: 10000;
+    pointer-events: none;
+
+    .autoComplete {
+        pointer-events: all;
+    }
 
 
     &.isFloating {
@@ -1243,7 +1250,6 @@ select {
         .autoComplete {
             flex: 0 0 auto;
             width: 50vw;
-            pointer-events: all;
         }
 
         &:after {
@@ -1634,7 +1640,7 @@ body[data-stscript-style] .hljs.language-stscript {
             text-align: center;
             /* opacity: 0.6; */
             white-space: nowrap;
-            font-family: monospace;
+            font-family: var(--monoFontFamily);
             line-height: calc(1.2em / 0.8);
             /* &:before { content: "["; }
             &:after { content: "]"; } */
@@ -1802,7 +1808,7 @@ body[data-stscript-style] .hljs.language-stscript {
         }
 
         >.alias {
-            font-family: monospace;
+            font-family: var(--monoFontFamily);
 
             &+.alias:before {
                 content: ', ';
@@ -1822,7 +1828,7 @@ body[data-stscript-style] .hljs.language-stscript {
         gap: 0.5em;
 
         >.name {
-            font-family: monospace;
+            font-family: var(--monoFontFamily);
             white-space: nowrap;
             /* color: var(--ac-color-text); */
         }
@@ -1831,7 +1837,7 @@ body[data-stscript-style] .hljs.language-stscript {
             display: flex;
 
             >.arguments {
-                font-family: monospace;
+                font-family: var(--monoFontFamily);
 
                 .argument {
                     white-space: nowrap;
@@ -1921,7 +1927,7 @@ body[data-stscript-style] .hljs.language-stscript {
             }
 
             >.returns {
-                font-family: monospace;
+                font-family: var(--monoFontFamily);
                 color: var(--ac-color-text);
 
                 &:before {
@@ -2035,11 +2041,17 @@ body[data-stscript-style] .hljs.language-stscript {
 }
 
 .text_pole::placeholder {
-    color: rgb(139, 139, 139);
+    color: var(--SmartThemeEmColor) !important;
+    opacity: 0.7;
+}
+
+textarea::placeholder {
+    color: var(--SmartThemeEmColor) !important;
+    opacity: 0.7;
 }
 
 #send_textarea::placeholder {
-    color: var(--SmartThemeEmColor);
+    color: var(--SmartThemeEmColor) !important;
     text-align: center;
     white-space: nowrap;
 }

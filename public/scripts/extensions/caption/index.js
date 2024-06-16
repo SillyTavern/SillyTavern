@@ -1,6 +1,6 @@
 import { getBase64Async, isTrueBoolean, saveBase64AsFile } from '../../utils.js';
 import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules, renderExtensionTemplateAsync } from '../../extensions.js';
-import { callPopup, getRequestHeaders, saveSettingsDebounced, substituteParams } from '../../../script.js';
+import { callPopup, getRequestHeaders, saveSettingsDebounced, substituteParamsExtended } from '../../../script.js';
 import { getMessageTimeStamp } from '../../RossAscends-mods.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getMultimodalCaption } from '../shared.js';
@@ -95,7 +95,7 @@ async function sendCaptionedMessage(caption, image) {
         template += ' {{caption}}';
     }
 
-    let messageText = substituteParams(template).replace(/{{caption}}/i, caption);
+    let messageText = substituteParamsExtended(template, { caption: caption });
 
     if (extension_settings.caption.refine_mode) {
         messageText = await callPopup(

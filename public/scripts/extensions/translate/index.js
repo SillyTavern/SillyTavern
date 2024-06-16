@@ -563,7 +563,7 @@ const handleMessageEdit = createEventHandler(translateMessageEdit, () => true);
 
 window['translate'] = translate;
 
-jQuery(async() => {
+jQuery(async () => {
     const html = await renderExtensionTemplateAsync('translate', 'index');
 
     const buttonHtml = await renderExtensionTemplateAsync('translate', 'buttons');
@@ -609,7 +609,7 @@ jQuery(async() => {
             'libre': 'http://127.0.0.1:5000/translate',
             'lingva': 'https://lingva.ml/api/v1',
             'oneringtranslator': 'http://127.0.0.1:4990/translate',
-            'deeplx': 'http://127.0.0.1:1188/translate'
+            'deeplx': 'http://127.0.0.1:1188/translate',
         };
         const popupText = `<h3>${optionText} API URL</h3><i>Example: <tt>${String(exampleURLs[extension_settings.translate.provider])}</tt></i>`;
 
@@ -653,5 +653,6 @@ jQuery(async() => {
                 : extension_settings.translate.target_language;
             return await translate(String(value), target);
         },
+        returns: ARGUMENT_TYPE.STRING,
     }));
 });

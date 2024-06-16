@@ -386,11 +386,15 @@ export class AutoComplete {
                 // no result and no input? hide autocomplete
                 return this.hide();
             }
+            if (this.effectiveParserResult instanceof AutoCompleteSecondaryNameResult && !this.effectiveParserResult.forceMatch) {
+                // no result and matching is no forced? hide autocomplete
+                return this.hide();
+            }
             // otherwise add "no match" notice
             const option = new BlankAutoCompleteOption(
                 this.name.length ?
                     this.effectiveParserResult.makeNoMatchText()
-                    : this.effectiveParserResult.makeNoOptionstext()
+                    : this.effectiveParserResult.makeNoOptionsText()
                 ,
             );
             this.result.push(option);
@@ -481,8 +485,8 @@ export class AutoComplete {
                 this.domWrap.style.setProperty('--leftOffset', `max(1vw, ${rect[power_user.stscript.autocomplete.width.left].left}px)`);
                 this.domWrap.style.setProperty('--rightOffset', `calc(100vw - min(99vw, ${rect[power_user.stscript.autocomplete.width.right].right}px)`);
             }
-            this.updateDetailsPosition();
         }
+        this.updateDetailsPosition();
     }
 
     /**

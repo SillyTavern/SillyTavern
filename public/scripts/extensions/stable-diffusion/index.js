@@ -17,6 +17,7 @@ import {
     getCharacterAvatar,
     formatCharacterAvatar,
     substituteParams,
+    substituteParamsExtended,
 } from '../../../script.js';
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplateAsync, writeExtensionField } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
@@ -50,7 +51,15 @@ const sources = {
     pollinations: 'pollinations',
 };
 
+const initiators = {
+    command: 'command',
+    action: 'action',
+    interactive: 'interactive',
+    wand: 'wand',
+};
+
 const generationMode = {
+    MESSAGE: -1,
     CHARACTER: 0,
     USER: 1,
     SCENARIO: 2,
@@ -62,6 +71,7 @@ const generationMode = {
     CHARACTER_MULTIMODAL: 8,
     USER_MULTIMODAL: 9,
     FACE_MULTIMODAL: 10,
+    FREE_EXTENDED: 11,
 };
 
 const multimodalMap = {
@@ -71,6 +81,7 @@ const multimodalMap = {
 };
 
 const modeLabels = {
+    [generationMode.MESSAGE]: 'Chat Message Template',
     [generationMode.CHARACTER]: 'Character ("Yourself")',
     [generationMode.FACE]: 'Portrait ("Your Face")',
     [generationMode.USER]: 'User ("Me")',
@@ -81,6 +92,7 @@ const modeLabels = {
     [generationMode.CHARACTER_MULTIMODAL]: 'Character (Multimodal Mode)',
     [generationMode.FACE_MULTIMODAL]: 'Portrait (Multimodal Mode)',
     [generationMode.USER_MULTIMODAL]: 'User (Multimodal Mode)',
+    [generationMode.FREE_EXTENDED]: 'Free Mode (LLM-Extended)',
 };
 
 const triggerWords = {
@@ -94,7 +106,7 @@ const triggerWords = {
 };
 
 const messageTrigger = {
-    activationRegex: /\b(send|mail|imagine|generate|make|create|draw|paint|render)\b.{0,10}\b(pic|picture|image|drawing|painting|photo|photograph)\b(?:\s+of)?(?:\s+(?:a|an|the|this|that|those)?)?(.+)/i,
+    activationRegex: /\b(send|mail|imagine|generate|make|create|draw|paint|render|show)\b.{0,10}\b(pic|picture|image|drawing|painting|photo|photograph)\b(?:\s+of)?(?:\s+(?:a|an|the|this|that|those|your)?)?(.+)/i,
     specialCases: {
         [generationMode.CHARACTER]: ['you', 'yourself'],
         [generationMode.USER]: ['me', 'myself'],
@@ -106,6 +118,8 @@ const messageTrigger = {
 };
 
 const promptTemplates = {
+    // Not really a prompt template, rather an outcome message template
+    [generationMode.MESSAGE]: '[{{char}} sends a picture that contains: {{prompt}}].',
     /*OLD:     [generationMode.CHARACTER]: "Pause your roleplay and provide comma-delimited list of phrases and keywords which describe {{char}}'s physical appearance and clothing. Ignore {{char}}'s personality traits, and chat history when crafting this description. End your response once the comma-delimited list is complete. Do not roleplay when writing this description, and do not attempt to continue the story.", */
     [generationMode.CHARACTER]: '[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase \'full body portrait,\']',
     //face-specific prompt
@@ -143,6 +157,7 @@ const promptTemplates = {
     [generationMode.FACE_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "close-up portrait".',
     [generationMode.CHARACTER_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".',
     [generationMode.USER_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".',
+    [generationMode.FREE_EXTENDED]: 'Pause your roleplay and provide an exhaustive comma-separated list of tags describing the appearance of "{0}" in great detail. Start with {{charPrefix}} (sic) if the subject is associated with {{char}}.',
 };
 
 const defaultPrefix = 'best quality, absurdres, aesthetic,';
@@ -204,6 +219,7 @@ const defaultSettings = {
     interactive_mode: false,
     multimodal_captioning: false,
     snap: false,
+    free_extend: false,
 
     prompts: promptTemplates,
 
@@ -261,6 +277,11 @@ const defaultSettings = {
     // Pollinations settings
     pollinations_enhance: false,
     pollinations_refine: false,
+
+    // Visibility toggles
+    wand_visible: false,
+    command_visible: false,
+    interactive_visible: false,
 };
 
 const writePromptFieldsDebounced = debounce(writePromptFields, debounce_timeout.relaxed);
@@ -312,7 +333,7 @@ function processTriggers(chat, _, abort) {
         }
 
         abort(true);
-        setTimeout(() => generatePicture('sd', subject, message), 1);
+        setTimeout(() => generatePicture(initiators.interactive, {}, subject, message), 1);
     } catch {
         console.log('SD: Failed to process triggers.');
         return;
@@ -419,6 +440,10 @@ async function loadSettings() {
     $('#sd_clip_skip').val(extension_settings.sd.clip_skip);
     $('#sd_clip_skip_value').text(extension_settings.sd.clip_skip);
     $('#sd_seed').val(extension_settings.sd.seed);
+    $('#sd_free_extend').prop('checked', extension_settings.sd.free_extend);
+    $('#sd_wand_visible').prop('checked', extension_settings.sd.wand_visible);
+    $('#sd_command_visible').prop('checked', extension_settings.sd.command_visible);
+    $('#sd_interactive_visible').prop('checked', extension_settings.sd.interactive_visible);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -476,7 +501,7 @@ async function loadSettingOptions() {
 function addPromptTemplates() {
     $('#sd_prompt_templates').empty();
 
-    for (const [name, prompt] of Object.entries(extension_settings.sd.prompts)) {
+    for (const [name, prompt] of Object.entries(extension_settings.sd.prompts).sort((a, b) => Number(a[0]) - Number(b[0]))) {
         const label = $('<label></label>')
             .text(modeLabels[name])
             .attr('for', `sd_prompt_${name}`)
@@ -683,6 +708,18 @@ function onChatChanged() {
     $('#sd_character_prompt').val(characterPrompt);
     $('#sd_character_negative_prompt').val(negativePrompt);
     $('#sd_character_prompt_share').prop('checked', hasSharedData);
+    adjustElementScrollHeight();
+}
+
+function adjustElementScrollHeight(){
+    if (!$('.sd_settings').is(':visible')) {
+        return;
+    }
+
+    resetScrollHeight($('#sd_prompt_prefix'));
+    resetScrollHeight($('#sd_negative_prompt'));
+    resetScrollHeight($('#sd_character_prompt'));
+    resetScrollHeight($('#sd_character_negative_prompt'));
 }
 
 function onCharacterPromptInput() {
@@ -759,6 +796,26 @@ function onExpandInput() {
 
 function onRefineModeInput() {
     extension_settings.sd.refine_mode = !!$('#sd_refine_mode').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onFreeExtendInput() {
+    extension_settings.sd.free_extend = !!$('#sd_free_extend').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onWandVisibleInput() {
+    extension_settings.sd.wand_visible = !!$('#sd_wand_visible').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onCommandVisibleInput() {
+    extension_settings.sd.command_visible = !!$('#sd_command_visible').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onInteractiveVisibleInput() {
+    extension_settings.sd.interactive_visible = !!$('#sd_interactive_visible').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -1026,6 +1083,7 @@ async function changeComfyWorkflow(_, name) {
     } else {
         toastr.error(`ComfyUI Workflow "${name}" does not exist.`);
     }
+    return '';
 }
 
 async function validateAutoUrl() {
@@ -2016,6 +2074,10 @@ function getGenerationType(prompt) {
         mode = multimodalMap[mode];
     }
 
+    if (mode === generationMode.FREE && extension_settings.sd.free_extend) {
+        mode = generationMode.FREE_EXTENDED;
+    }
+
     return mode;
 }
 
@@ -2080,7 +2142,16 @@ function getRawLastMessage() {
     return `((${processReply(lastMessage.mes)})), (${processReply(character.scenario)}:0.7), (${processReply(character.description)}:0.5)`;
 }
 
-async function generatePicture(args, trigger, message, callback) {
+/**
+ * Generates an image based on the given trigger word.
+ * @param {string} initiator The initiator of the image generation
+ * @param {Record<string, object>} args Command arguments
+ * @param {string} trigger Subject trigger word
+ * @param {string} [message] Chat message
+ * @param {function} [callback] Callback function
+ * @returns {Promise<string>} Image path
+ */
+async function generatePicture(initiator, args, trigger, message, callback) {
     if (!trigger || trigger.trim().length === 0) {
         console.log('Trigger word empty, aborting');
         return;
@@ -2111,9 +2182,9 @@ async function generatePicture(args, trigger, message, callback) {
             eventSource.emit(event_types.FORCE_SET_BACKGROUND, { url: imgUrl, path: imagePath });
 
             if (typeof callbackOriginal === 'function') {
-                callbackOriginal(prompt, imagePath, generationType, negativePromptPrefix);
+                callbackOriginal(prompt, imagePath, generationType, negativePromptPrefix, initiator);
             } else {
-                sendMessage(prompt, imagePath, generationType, negativePromptPrefix);
+                sendMessage(prompt, imagePath, generationType, negativePromptPrefix, initiator);
             }
         };
     }
@@ -2122,18 +2193,19 @@ async function generatePicture(args, trigger, message, callback) {
         callback = () => { };
     }
 
-    const negativePromptPrefix = resolveVariable(args?.negative) || '';
     const dimensions = setTypeSpecificDimensions(generationType);
+    let negativePromptPrefix = resolveVariable(args?.negative) || '';
     let imagePath = '';
 
     try {
-        const prompt = await getPrompt(generationType, message, trigger, quietPrompt);
+        const combineNegatives = (prefix) => { negativePromptPrefix = combinePrefixes(negativePromptPrefix, prefix); };
+        const prompt = await getPrompt(generationType, message, trigger, quietPrompt, combineNegatives);
         console.log('Processed image prompt:', prompt);
 
         context.deactivateSendButtons();
         hideSwipeButtons();
 
-        imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback);
+        imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback, initiator);
     } catch (err) {
         console.trace(err);
         throw new Error('SD prompt text generation failed.');
@@ -2196,7 +2268,16 @@ function restoreOriginalDimensions(savedParams) {
     extension_settings.sd.width = savedParams.width;
 }
 
-async function getPrompt(generationType, message, trigger, quietPrompt) {
+/**
+ * Generates a prompt for image generation.
+ * @param {number} generationType The type of image generation to perform.
+ * @param {string} message A message text to use for the image generation.
+ * @param {string} trigger A trigger string to use for the image generation.
+ * @param {string} quietPrompt A quiet prompt to use for the image generation.
+ * @param {function} combineNegatives A function that combines the negative prompt with other prompts.
+ * @returns {Promise<string>} - A promise that resolves when the prompt generation completes.
+ */
+async function getPrompt(generationType, message, trigger, quietPrompt, combineNegatives) {
     let prompt;
 
     switch (generationType) {
@@ -2204,7 +2285,7 @@ async function getPrompt(generationType, message, trigger, quietPrompt) {
             prompt = message || getRawLastMessage();
             break;
         case generationMode.FREE:
-            prompt = generateFreeModePrompt(trigger.trim());
+            prompt = generateFreeModePrompt(trigger.trim(), combineNegatives);
             break;
         case generationMode.FACE_MULTIMODAL:
         case generationMode.CHARACTER_MULTIMODAL:
@@ -2214,6 +2295,10 @@ async function getPrompt(generationType, message, trigger, quietPrompt) {
         default:
             prompt = await generatePrompt(quietPrompt);
             break;
+    }
+
+    if (generationType === generationMode.FREE_EXTENDED) {
+        prompt = generateFreeModePrompt(prompt.trim(), combineNegatives);
     }
 
     if (generationType !== generationMode.FREE) {
@@ -2226,9 +2311,10 @@ async function getPrompt(generationType, message, trigger, quietPrompt) {
 /**
  * Generates a free prompt with a character-specific prompt prefix support.
  * @param {string} trigger - The prompt to use for the image generation.
+ * @param {function} combineNegatives - A function that combines the negative prompt with other prompts.
  * @returns {string}
  */
-function generateFreeModePrompt(trigger) {
+function generateFreeModePrompt(trigger, combineNegatives) {
     return trigger
         .replace(/(?:^char(\s|,)|\{\{charPrefix\}\})/gi, (_, suffix) => {
             const getLastCharacterKey = () => {
@@ -2249,7 +2335,9 @@ function generateFreeModePrompt(trigger) {
 
             const key = getLastCharacterKey();
             const value = (extension_settings.sd.character_prompts[key] || '').trim();
-            return value ? value + (suffix || '') : '';
+            const negativeValue = (extension_settings.sd.character_negative_prompts[key] || '').trim();
+            typeof combineNegatives === 'function' && negativeValue ? combineNegatives(negativeValue) : void 0;
+            return value ? combinePrefixes(value, (suffix || '')) : '';
         });
 }
 
@@ -2335,12 +2423,13 @@ async function generatePrompt(quietPrompt) {
  * @param {number} generationType Type of image generation
  * @param {string} prompt Prompt to be used for image generation
  * @param {string} additionalNegativePrefix Additional negative prompt to be used for image generation
- * @param {string} [characterName] Name of the character
- * @param {function} [callback] Callback function to be called after image generation
+ * @param {string} characterName Name of the character
+ * @param {function} callback Callback function to be called after image generation
+ * @param {string} initiator The initiator of the image generation
  * @returns
  */
-async function sendGenerationRequest(generationType, prompt, additionalNegativePrefix, characterName = null, callback) {
-    const noCharPrefix = [generationMode.FREE, generationMode.BACKGROUND, generationMode.USER, generationMode.USER_MULTIMODAL];
+async function sendGenerationRequest(generationType, prompt, additionalNegativePrefix, characterName, callback, initiator) {
+    const noCharPrefix = [generationMode.FREE, generationMode.BACKGROUND, generationMode.USER, generationMode.USER_MULTIMODAL, generationMode.FREE_EXTENDED];
     const prefix = noCharPrefix.includes(generationType)
         ? extension_settings.sd.prompt_prefix
         : combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix());
@@ -2405,7 +2494,7 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
 
     const filename = `${characterName}_${humanizedDateTime()}`;
     const base64Image = await saveBase64AsFile(result.data, characterName, filename, result.format);
-    callback ? callback(prompt, base64Image, generationType, additionalNegativePrefix) : sendMessage(prompt, base64Image, generationType, additionalNegativePrefix);
+    callback ? callback(prompt, base64Image, generationType, additionalNegativePrefix, initiator) : sendMessage(prompt, base64Image, generationType, additionalNegativePrefix, initiator);
     return base64Image;
 }
 
@@ -3009,15 +3098,17 @@ async function onComfyDeleteWorkflowClick() {
  * @param {string} image Base64 encoded image
  * @param {number} generationType Generation type of the image
  * @param {string} additionalNegativePrefix Additional negative prompt used for the image generation
+ * @param {string} initiator The initiator of the image generation
  */
-async function sendMessage(prompt, image, generationType, additionalNegativePrefix) {
+async function sendMessage(prompt, image, generationType, additionalNegativePrefix, initiator) {
     const context = getContext();
     const name = context.groupId ? systemUserName : context.name2;
-    const messageText = `[${name} sends a picture that contains: ${prompt}]`;
+    const template = extension_settings.sd.prompts[generationMode.MESSAGE] || '{{prompt}}';
+    const messageText = substituteParamsExtended(template, { char: name, prompt: prompt });
     const message = {
         name: name,
         is_user: false,
-        is_system: true,
+        is_system: !getVisibilityByInitiator(initiator),
         send_date: getMessageTimeStamp(),
         mes: messageText,
         extra: {
@@ -3031,6 +3122,24 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
     context.chat.push(message);
     context.addOneMessage(message);
     context.saveChat();
+}
+
+/**
+ * Gets the visibility of the resulting message based on the initiator.
+ * @param {string} initiator Generation initiator
+ * @returns {boolean} Is resulting message visible
+ */
+function getVisibilityByInitiator(initiator) {
+    switch (initiator) {
+        case initiators.interactive:
+            return !!extension_settings.sd.interactive_visible;
+        case initiators.wand:
+            return !!extension_settings.sd.wand_visible;
+        case initiators.command:
+            return !!extension_settings.sd.command_visible;
+        default:
+            return false;
+    }
 }
 
 async function addSDGenButtons() {
@@ -3082,7 +3191,7 @@ async function addSDGenButtons() {
 
         if (param) {
             console.log('doing /sd ' + param);
-            generatePicture('sd', param);
+            generatePicture(initiators.wand, {}, param);
         }
     });
 }
@@ -3159,11 +3268,11 @@ async function sdMessageButton(e) {
             const generationType = message?.extra?.generationType ?? generationMode.FREE;
             console.log('Regenerating an image, using existing prompt:', prompt);
             dimensions = setTypeSpecificDimensions(generationType);
-            await sendGenerationRequest(generationType, prompt, negative, characterFileName, saveGeneratedImage);
+            await sendGenerationRequest(generationType, prompt, negative, characterFileName, saveGeneratedImage, initiators.action);
         }
         else {
             console.log('doing /sd raw last');
-            await generatePicture('sd', 'raw_last', messageText, saveGeneratedImage);
+            await generatePicture(initiators.action, {}, 'raw_last', messageText, saveGeneratedImage);
         }
     }
     catch (error) {
@@ -3226,7 +3335,7 @@ jQuery(async () => {
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'imagine',
-        callback: generatePicture,
+        callback: (args, trigger) => generatePicture(initiators.command, args, String(trigger)),
         aliases: ['sd', 'img', 'image'],
         namedArgumentList: [
             new SlashCommandNamedArgument(
@@ -3326,6 +3435,10 @@ jQuery(async () => {
     $('#sd_clip_skip').on('input', onClipSkipInput);
     $('#sd_seed').on('input', onSeedInput);
     $('#sd_character_prompt_share').on('input', onCharacterPromptShareInput);
+    $('#sd_free_extend').on('input', onFreeExtendInput);
+    $('#sd_wand_visible').on('input', onWandVisibleInput);
+    $('#sd_command_visible').on('input', onCommandVisibleInput);
+    $('#sd_interactive_visible').on('input', onInteractiveVisibleInput);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($('#sd_prompt_prefix'));
