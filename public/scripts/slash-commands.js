@@ -116,12 +116,13 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     aliases: ['background'],
     returns: 'the current background',
     unnamedArgumentList: [
-        SlashCommandArgument.fromProps({ description: 'filename',
+        SlashCommandArgument.fromProps({
+            description: 'filename',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-            enumProvider: ()=>[...document.querySelectorAll('.bg_example')]
-                .map((it)=>new SlashCommandEnumValue(it.getAttribute('bgfile')))
-                .filter(it=>it.value?.length)
+            enumProvider: () => [...document.querySelectorAll('.bg_example')]
+                .map((it) => new SlashCommandEnumValue(it.getAttribute('bgfile')))
+                .filter(it => it.value?.length)
             ,
         }),
     ],
@@ -327,12 +328,13 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'go',
     callback: goToCharacterCallback,
     unnamedArgumentList: [
-        SlashCommandArgument.fromProps({ description: 'name',
+        SlashCommandArgument.fromProps({
+            description: 'name',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-            enumProvider: ()=>[
-                ...characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
-                ...groups.map(it=>new SlashCommandEnumValue(it.name, null, 'variable', 'G')),
+            enumProvider: () => [
+                ...characters.map(it => new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+                ...groups.map(it => new SlashCommandEnumValue(it.name, null, 'variable', 'G')),
             ],
         }),
     ],
@@ -376,11 +378,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'ask',
     callback: askCharacter,
     namedArgumentList: [
-        SlashCommandNamedArgument.fromProps({ name: 'name',
+        SlashCommandNamedArgument.fromProps({
+            name: 'name',
             description: 'character name',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-            enumProvider: ()=>characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+            enumProvider: () => characters.map(it => new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
         }),
     ],
     unnamedArgumentList: [
@@ -1218,7 +1221,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         ),
     ],
     unnamedArgumentList: [
-        SlashCommandArgument.fromProps({ description: 'Set entry/entries on or off',
+        SlashCommandArgument.fromProps({
+            description: 'Set entry/entries on or off',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
             acceptsMultiple: false,
@@ -1226,7 +1230,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             enumList: ['on', 'off', 'toggle'],
         }),
     ],
-    helpString: 'Sets the toggles for prompt entries. Toggle by default.',
+    helpString: 'Sets the specified prompt manager entry/entries on or off.',
 }));
 
 registerVariableCommands();
@@ -2863,29 +2867,23 @@ function setPromptEntryCallback(args, targetState) {
     const promptManager = setupChatCompletionPromptManager(oai_settings);
     const prompts = promptManager.serviceSettings.prompts;
 
-    let identifiersList = [];
-    // Check identifiers args
-    try {
-        const parsedIdentifiers = JSON.parse(args.identifier);
-        identifiersList = identifiersList.concat(Array.isArray(parsedIdentifiers) ? parsedIdentifiers : [args.identifier]);
-    } catch {
-        identifiersList.push(args.identifier);
+    function parseArgs(arg) {
+        const list = [];
+        try {
+            const parsedArg = JSON.parse(arg);
+            list.push(...Array.isArray(parsedArg) ? parsedArg : [arg]);
+        } catch {
+            list.push(arg);
+        }
+        return list;
     }
+
+    let identifiersList = parseArgs(args.identifier);
+    let nameList = parseArgs(args.name);
 
     // Check if identifiers exists in prompt, else remove from list
     if (identifiersList.length !== 0) {
-        identifiersList = identifiersList.filter(identifier => {
-            return prompts.some(prompt => prompt.identifier === identifier);
-        });
-    }
-
-    let nameList = [];
-    // Get list of names
-    try {
-        const parsedNames = JSON.parse(args.name);
-        nameList = nameList.concat(Array.isArray(parsedNames) ? parsedNames : [args.name]);
-    } catch {
-        nameList.push(args.name);
+        identifiersList = identifiersList.filter(identifier => prompts.some(prompt => prompt.identifier === identifier));
     }
 
     if (nameList.length !== 0) {
@@ -2900,38 +2898,36 @@ function setPromptEntryCallback(args, targetState) {
             identifiersList = identifiersList.concat(identifiers);
         });
     }
+
     // Remove duplicates to allow consistent 'toggle'
     identifiersList = [...new Set(identifiersList)];
     if (identifiersList.length === 0) return '';
 
     // logic adapted from PromptManager.js, handleToggle
-    if (['toggle', 't', ''].includes(targetState.trim().toLowerCase())){
-        identifiersList.forEach(promptID => {
-            const promptOrderEntry = promptManager.getPromptOrderEntry(promptManager.activeCharacter, promptID);
-            const counts = promptManager.tokenHandler.getCounts();
+    const getPromptOrderEntryState = (promptOrderEntry) => {
+        if (['toggle', 't', ''].includes(targetState.trim().toLowerCase())) {
+            return !promptOrderEntry.enabled;
+        }
 
-            counts[promptID] = null;
-            promptOrderEntry.enabled = !promptOrderEntry.enabled;
-        });
-    }
-    if (isTrueBoolean(targetState)) {
-        identifiersList.forEach(promptID => {
-            const promptOrderEntry = promptManager.getPromptOrderEntry(promptManager.activeCharacter, promptID);
-            const counts = promptManager.tokenHandler.getCounts();
+        if (isTrueBoolean(targetState)) {
+            return true;
+        }
 
-            counts[promptID] = null;
-            promptOrderEntry.enabled = true;
-        });
-    }
-    if (isFalseBoolean(targetState)) {
-        identifiersList.forEach(promptID => {
-            const promptOrderEntry = promptManager.getPromptOrderEntry(promptManager.activeCharacter, promptID);
-            const counts = promptManager.tokenHandler.getCounts();
+        if (isFalseBoolean(targetState)) {
+            return false;
+        }
 
-            counts[promptID] = null;
-            promptOrderEntry.enabled = false;
-        });
-    }
+        return promptOrderEntry.enabled;
+    };
+
+    identifiersList.forEach(promptID => {
+        const promptOrderEntry = promptManager.getPromptOrderEntry(promptManager.activeCharacter, promptID);
+        const counts = promptManager.tokenHandler.getCounts();
+
+        counts[promptID] = null;
+        promptOrderEntry.enabled = getPromptOrderEntryState(promptOrderEntry);
+    });
+
     // no need to render for each identifier
     promptManager.render();
     promptManager.saveServiceSettings();
