@@ -45,7 +45,8 @@ router.post('/caption-image', jsonParser, async (request, response) => {
         });
 
         if (!result.ok) {
-            console.log(`Claude API returned error: ${result.status} ${result.statusText}`);
+            const text = await result.text();
+            console.log(`Claude API returned error: ${result.status} ${result.statusText}`, text);
             return response.status(result.status).send({ error: true });
         }
 

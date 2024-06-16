@@ -598,6 +598,7 @@ export class SlashCommandParser {
         this.closureIndex.push(closureIndexEntry);
         let injectPipe = true;
         if (!isRoot) this.take(2); // discard opening {:
+        const textStart = this.index;
         let closure = new SlashCommandClosure(this.scope);
         closure.abortController = this.abortController;
         this.scope = closure.scope;
@@ -638,13 +639,13 @@ export class SlashCommandParser {
             }
             this.discardWhitespace(); // discard further whitespace
         }
+        closure.rawText = this.text.slice(textStart, this.index);
         if (!isRoot) this.take(2); // discard closing :}
         if (this.testSymbol('()')) {
             this.take(2); // discard ()
             closure.executeNow = true;
         }
         closureIndexEntry.end = this.index - 1;
-        this.discardWhitespace(); // discard trailing whitespace
         this.scope = closure.scope.parent;
         return closure;
     }
@@ -820,9 +821,8 @@ export class SlashCommandParser {
             if (this.testClosure()) {
                 isList = true;
                 if (value.length > 0) {
-                    assignment.end = assignment.end - (value.length - value.trim().length);
                     this.indexMacros(this.index - value.length, value);
-                    assignment.value = value.trim();
+                    assignment.value = value;
                     listValues.push(assignment);
                     assignment = new SlashCommandUnnamedArgumentAssignment();
                     assignment.start = this.index;
@@ -834,6 +834,7 @@ export class SlashCommandParser {
                 listValues.push(assignment);
                 assignment = new SlashCommandUnnamedArgumentAssignment();
                 assignment.start = this.index;
+                if (split) this.discardWhitespace();
             } else if (split) {
                 if (this.testQuotedValue()) {
                     assignment.start = this.index;
@@ -862,8 +863,8 @@ export class SlashCommandParser {
                 assignment.end = this.index;
             }
         }
-        if (isList && value.trim().length > 0) {
-            assignment.value = value.trim();
+        if (isList && value.length > 0) {
+            assignment.value = value;
             listValues.push(assignment);
         }
         if (isList) {

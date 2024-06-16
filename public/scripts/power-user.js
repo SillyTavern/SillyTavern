@@ -46,6 +46,7 @@ import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandPa
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 import { AUTOCOMPLETE_WIDTH } from './autocomplete/AutoComplete.js';
+import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 
 export {
     loadPowerUserSettings,
@@ -975,6 +976,7 @@ function switchUiMode() {
 
 function toggleWaifu() {
     $('#waifuMode').trigger('click');
+    return '';
 }
 
 function switchWaifuMode() {
@@ -2483,14 +2485,12 @@ async function resetMovablePanels(type) {
     });
 }
 
-function doNewChat() {
-    setTimeout(() => {
-        $('#option_start_new_chat').trigger('click');
-    }, 1);
-    //$("#dialogue_popup").hide();
-    setTimeout(() => {
-        $('#dialogue_popup_ok').trigger('click');
-    }, 1);
+async function doNewChat() {
+    $('#option_start_new_chat').trigger('click');
+    await delay(1);
+    $('#dialogue_popup_ok').trigger('click');
+    await delay(1);
+    return '';
 }
 
 /**
@@ -2627,16 +2627,14 @@ async function doMesCut(_, text) {
 }
 
 async function doDelMode(_, text) {
-    //first enter delmode
-    $('#option_delete_mes').trigger('click', { fromSlashCommand: true });
-
     //reject invalid args
     if (text && isNaN(text)) {
         toastr.warning('Must enter a number or nothing.');
-        await delay(300); //unsure why 300 is neccessary here, but any shorter and it wont see the delmode UI
-        $('#dialogue_del_mes_cancel').trigger('click');
-        return;
+        return '';
     }
+
+    //first enter delmode
+    $('#option_delete_mes').trigger('click', { fromSlashCommand: true });
 
     //parse valid args
     if (text) {
@@ -2648,7 +2646,7 @@ async function doDelMode(_, text) {
 
         if (oldestMesIDToDel < 0) {
             toastr.warning(`Cannot delete more than ${chat.length} messages.`);
-            return;
+            return '';
         }
 
         let oldestMesToDel = $('#chat').find(`.mes[mesid=${oldestMesIDToDel}]`);
@@ -2657,7 +2655,7 @@ async function doDelMode(_, text) {
             oldestMesToDel = await loadUntilMesId(oldestMesIDToDel);
 
             if (!oldestMesToDel || !oldestMesToDel.length) {
-                return;
+                return '';
             }
         }
 
@@ -2670,12 +2668,15 @@ async function doDelMode(_, text) {
         //await delay(1)
         $('#dialogue_del_mes_ok').trigger('click');
         toastr.success(`Deleted ${trueNumberOfDeletedMessage} messages.`);
-        return;
+        return '';
     }
+
+    return '';
 }
 
 function doResetPanels() {
     $('#movingUIreset').trigger('click');
+    return '';
 }
 
 function setAvgBG() {
@@ -2906,6 +2907,7 @@ async function setThemeCallback(_, text) {
     applyTheme(theme.name);
     $('#themes').val(theme.name);
     saveSettingsDebounced();
+    return '';
 }
 
 async function setmovingUIPreset(_, text) {
@@ -2929,6 +2931,7 @@ async function setmovingUIPreset(_, text) {
     applyMovingUIPreset(preset.name);
     $('#movingUIPresets').val(preset.name);
     saveSettingsDebounced();
+    return '';
 }
 
 const EPHEMERAL_STOPPING_STRINGS = [];
@@ -3943,9 +3946,12 @@ $(document).ready(() => {
         name: 'theme',
         callback: setThemeCallback,
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'name', [ARGUMENT_TYPE.STRING], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: () => themes.map(theme => new SlashCommandEnumValue(theme.name)),
+            }),
         ],
         helpString: 'sets a UI theme by name',
     }));
@@ -3953,9 +3959,12 @@ $(document).ready(() => {
         name: 'movingui',
         callback: setmovingUIPreset,
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'name', [ARGUMENT_TYPE.STRING], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: () => movingUIPresets.map(preset => new SlashCommandEnumValue(preset.name)),
+            }),
         ],
         helpString: 'activates a movingUI preset by name',
     }));

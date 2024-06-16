@@ -10,13 +10,12 @@ import {
     substituteParams,
     updateMessageBlock,
 } from '../../../script.js';
-import { extension_settings, getContext } from '../../extensions.js';
+import { extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
 import { findSecret, secret_state, writeSecret } from '../../secrets.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { splitRecursive } from '../../utils.js';
-import { renderTemplateAsync } from '../../templates.js';
 
 export const autoModeOptions = {
     NONE: 'none',
@@ -505,7 +504,8 @@ async function onTranslateChatClick() {
 }
 
 async function onTranslationsClearClick() {
-    const confirm = await callPopup('<h3>Are you sure?</h3>This will remove translated text from all messages in the current chat. This action cannot be undone.', 'confirm');
+    const popupHtml = await renderExtensionTemplateAsync('translate', 'deleteConfirmation');
+    const confirm = await callPopup(popupHtml, 'confirm');
 
     if (!confirm) {
         return;
@@ -563,10 +563,10 @@ const handleMessageEdit = createEventHandler(translateMessageEdit, () => true);
 
 window['translate'] = translate;
 
-jQuery(async() => {
-    const html = await renderTemplateAsync('translateIndex');
+jQuery(async () => {
+    const html = await renderExtensionTemplateAsync('translate', 'index');
 
-    const buttonHtml = await renderTemplateAsync('translateButtons');
+    const buttonHtml = await renderExtensionTemplateAsync('translate', 'buttons');
     $('#extensionsMenu').append(buttonHtml);
     $('#extensions_settings2').append(html);
     $('#translate_chat').on('click', onTranslateChatClick);
@@ -609,7 +609,7 @@ jQuery(async() => {
             'libre': 'http://127.0.0.1:5000/translate',
             'lingva': 'https://lingva.ml/api/v1',
             'oneringtranslator': 'http://127.0.0.1:4990/translate',
-            'deeplx': 'http://127.0.0.1:1188/translate'
+            'deeplx': 'http://127.0.0.1:1188/translate',
         };
         const popupText = `<h3>${optionText} API URL</h3><i>Example: <tt>${String(exampleURLs[extension_settings.translate.provider])}</tt></i>`;
 
@@ -653,5 +653,6 @@ jQuery(async() => {
                 : extension_settings.translate.target_language;
             return await translate(String(value), target);
         },
+        returns: ARGUMENT_TYPE.STRING,
     }));
 });

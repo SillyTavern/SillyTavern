@@ -24,6 +24,8 @@ import { isMobile } from './RossAscends-mods.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 import { debounce_timeout } from './constants.js';
 import { INTERACTABLE_CONTROL_CLASS } from './keyboard.js';
+import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
+import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -662,7 +664,7 @@ const tagImportSettings = {
     ALWAYS_IMPORT_ALL: 1,
     ONLY_IMPORT_EXISTING: 2,
     IMPORT_NONE: 3,
-    ASK: 4
+    ASK: 4,
 };
 
 let globalTagImportSetting = tagImportSettings.ASK; // Default setting
@@ -734,7 +736,7 @@ async function showTagImportPopup(character, existingTags, newTags) {
         EXISTING: { result: 2, text: 'Import Existing' },
         ALL: { result: 3, text: 'Import All' },
         NONE: { result: 4, text: 'Import None' },
-    }
+    };
 
     const customButtonsCaptions = Object.values(importButtons).map(button => `&quot;${button.text}&quot;`);
     const customButtonsString = customButtonsCaptions.slice(0, -1).join(', ') + ' or ' + customButtonsCaptions.slice(-1);
@@ -1810,10 +1812,28 @@ function registerTagsSlashCommands() {
             return String(result);
         },
         namedArgumentList: [
-            new SlashCommandNamedArgument('name', 'Character name', [ARGUMENT_TYPE.STRING], false, false, '{{char}}'),
+            SlashCommandNamedArgument.fromProps({ name: 'name',
+                description: 'Character name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: '{{char}}',
+                enumProvider: ()=>[
+                    ...characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+                    ...groups.map(it=>new SlashCommandEnumValue(it.name, null, 'variable', 'G')),
+                ],
+            }),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument('tag name', [ARGUMENT_TYPE.STRING], true),
+            SlashCommandArgument.fromProps({ description: 'tag name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: (executor)=>{
+                    const key = paraGetCharKey(/**@type {string}*/(executor.namedArgumentList.find(it=>it.name == 'name')?.value));
+                    if (!key) return tags.map(it=>new SlashCommandEnumValue(it.name, it.title));
+                    const assigned = getTagsList(key);
+                    return tags.filter(it=>!assigned.includes(it)).map(it=>new SlashCommandEnumValue(it.name, it.title));
+                },
+                forceEnum: false,
+            }),
         ],
         helpString: `
         <div>
@@ -1844,10 +1864,27 @@ function registerTagsSlashCommands() {
             return String(result);
         },
         namedArgumentList: [
-            new SlashCommandNamedArgument('name', 'Character name', [ARGUMENT_TYPE.STRING], false, false, '{{char}}'),
+            SlashCommandNamedArgument.fromProps({ name: 'name',
+                description: 'Character name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: '{{char}}',
+                enumProvider: ()=>[
+                    ...characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+                    ...groups.map(it=>new SlashCommandEnumValue(it.name, null, 'variable', 'G')),
+                ],
+            }),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument('tag name', [ARGUMENT_TYPE.STRING], true),
+            SlashCommandArgument.fromProps({ description: 'tag name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                /**@param {SlashCommandExecutor} executor */
+                enumProvider: (executor)=>{
+                    const key = paraGetCharKey(/**@type {string}*/(executor.namedArgumentList.find(it=>it.name == 'name')?.value));
+                    if (!key) return tags.map(it=>new SlashCommandEnumValue(it.name, it.title));
+                    return getTagsList(key).map(it=>new SlashCommandEnumValue(it.name, it.title));
+                },
+            }),
         ],
         helpString: `
         <div>

@@ -306,6 +306,9 @@ export function throttle(func, limit = 300) {
  * @returns {boolean} True if the element is in the viewport, false otherwise.
  */
 export function isElementInViewport(el) {
+    if (!el) {
+        return false;
+    }
     if (typeof jQuery === 'function' && el instanceof jQuery) {
         el = el[0];
     }

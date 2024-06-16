@@ -934,7 +934,7 @@ function cancelStatusCheck() {
 export function displayOnlineStatus() {
     if (online_status == 'no_connection') {
         $('.online_status_indicator').removeClass('success');
-        $('.online_status_text').text('No connection...');
+        $('.online_status_text').text($('#API-status-top').attr('no_connection_text'));
     } else {
         $('.online_status_indicator').addClass('success');
         $('.online_status_text').text(online_status);
@@ -2344,14 +2344,25 @@ export function scrollChatToBottom() {
 /**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
+ * @param {Record<string,any>} additionalMacro - Additional environment variables for substitution.
+ * @returns {string} The string with substituted parameters.
+ */
+export function substituteParamsExtended(content, additionalMacro = {}) {
+    return substituteParams(content, undefined, undefined, undefined, undefined, true, additionalMacro);
+}
+
+/**
+ * Substitutes {{macro}} parameters in a string.
+ * @param {string} content - The string to substitute parameters in.
  * @param {string} [_name1] - The name of the user. Uses global name1 if not provided.
  * @param {string} [_name2] - The name of the character. Uses global name2 if not provided.
  * @param {string} [_original] - The original message for {{original}} substitution.
  * @param {string} [_group] - The group members list for {{group}} substitution.
  * @param {boolean} [_replaceCharacterCard] - Whether to replace character card macros.
+ * @param {Record<string,any>} [additionalMacro] - Additional environment variables for substitution.
  * @returns {string} The string with substituted parameters.
  */
-export function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
+export function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true, additionalMacro = {}) {
     const environment = {};
 
     if (typeof _original === 'string') {
@@ -2400,6 +2411,10 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
     environment.char = _name2 ?? name2;
     environment.group = environment.charIfNotGroup = getGroupValue();
     environment.model = getGeneratingModel();
+
+    if (additionalMacro && typeof additionalMacro === 'object') {
+        Object.assign(environment, additionalMacro);
+    }
 
     return evaluateMacros(content, environment);
 }
@@ -4697,7 +4712,7 @@ function addChatsSeparator(mesSendString) {
 async function DupeChar() {
     if (!this_chid) {
         toastr.warning('You must first select a character to duplicate!');
-        return;
+        return '';
     }
 
     const confirmMessage = `
@@ -4708,7 +4723,7 @@ async function DupeChar() {
 
     if (!confirm) {
         console.log('User cancelled duplication');
-        return;
+        return '';
     }
 
     const body = { avatar_url: characters[this_chid].avatar };
@@ -4723,6 +4738,8 @@ async function DupeChar() {
         await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: body.avatar_url, newAvatar: data.path });
         getCharacters();
     }
+
+    return '';
 }
 
 export async function itemizedParams(itemizedPrompts, thisPromptSet) {
@@ -7733,6 +7750,8 @@ window['SillyTavern'].getContext = function () {
         activateSendButtons,
         deactivateSendButtons,
         saveReply,
+        substituteParams,
+        substituteParamsExtended,
         registerSlashCommand: registerSlashCommand,
         executeSlashCommands: executeSlashCommands,
         timestampToMoment: timestampToMoment,
@@ -8286,10 +8305,12 @@ async function selectInstructCallback(_, name) {
 
 async function enableInstructCallback() {
     $('#instruct_enabled').prop('checked', true).trigger('change');
+    return '';
 }
 
 async function disableInstructCallback() {
     $('#instruct_enabled').prop('checked', false).trigger('change');
+    return '';
 }
 
 /**
@@ -8495,23 +8516,25 @@ async function doDeleteChat() {
     $(currentChatDeleteButton).trigger('click');
     await delay(1);
     $('#dialogue_popup_ok').trigger('click', { fromSlashCommand: true });
+    return '';
 }
 
 async function doRenameChat(_, chatName) {
     if (!chatName) {
         toastr.warning('Name must be provided as an argument to rename this chat.');
-        return;
+        return '';
     }
 
     const currentChatName = getCurrentChatId();
     if (!currentChatName) {
         toastr.warning('No chat selected that can be renamed.');
-        return;
+        return '';
     }
 
     await renameChat(currentChatName, chatName);
 
     toastr.success(`Successfully renamed chat to: ${chatName}`);
+    return '';
 }
 
 /**
@@ -8585,6 +8608,7 @@ function doCharListDisplaySwitch() {
 
 function doCloseChat() {
     $('#option_close_chat').trigger('click');
+    return '';
 }
 
 /**
@@ -8680,6 +8704,7 @@ async function removeCharacterFromUI(name, avatar, reloadCharacters = true) {
 
 function doTogglePanels() {
     $('#option_settings').trigger('click');
+    return '';
 }
 
 function addDebugFunctions() {
@@ -8767,6 +8792,7 @@ jQuery(async function () {
         await saveSettings();
         await saveChatConditional();
         toastr.success('Chat and settings saved.');
+        return '';
     }
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
@@ -8918,7 +8944,10 @@ jQuery(async function () {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'chat-manager',
-        callback: () => $('#option_select_chat').trigger('click'),
+        callback: () => {
+            $('#option_select_chat').trigger('click');
+            return '';
+        },
         aliases: ['chat-history', 'manage-chats'],
         helpString: 'Opens the chat manager for the current character/group.',
     }));

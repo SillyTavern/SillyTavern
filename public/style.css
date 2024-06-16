@@ -410,7 +410,8 @@ input[type='checkbox']:focus {
 }
 
 small {
-    color: var(--grey70);
+    color: var(--SmartThemeBodyColor);
+    opacity: 0.7;
 }
 
 .mes.smallSysMes {
@@ -1254,6 +1255,10 @@ select {
     z-index: 10000;
     pointer-events: none;
 
+    .autoComplete {
+        pointer-events: all;
+    }
+
 
     &.isFloating {
         --direction: row;
@@ -1270,7 +1275,6 @@ select {
         .autoComplete {
             flex: 0 0 auto;
             width: 50vw;
-            pointer-events: all;
         }
 
         &:after {
@@ -2066,11 +2070,17 @@ body[data-stscript-style] .hljs.language-stscript {
 }
 
 .text_pole::placeholder {
-    color: rgb(139, 139, 139);
+    color: var(--SmartThemeEmColor) !important;
+    opacity: 0.7;
+}
+
+textarea::placeholder {
+    color: var(--SmartThemeEmColor) !important;
+    opacity: 0.7;
 }
 
 #send_textarea::placeholder {
-    color: var(--SmartThemeEmColor);
+    color: var(--SmartThemeEmColor) !important;
     text-align: center;
     white-space: nowrap;
 }
