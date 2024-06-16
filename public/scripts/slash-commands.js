@@ -45,7 +45,7 @@ import { hideChatMessageRange } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
-import { chat_completion_sources, oai_settings } from './openai.js';
+import { chat_completion_sources, oai_settings, setupChatCompletionPromptManager } from './openai.js';
 import { autoSelectPersona, retriggerFirstMessageOnEmptyChat, user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
@@ -1202,6 +1202,35 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         new SlashCommandArgument(
             'model name', [ARGUMENT_TYPE.STRING], false,
         ),
+    ],
+    helpString: 'Sets the model for the current API. Gets the current model name if no argument is provided.',
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+    name: 'setpromptentry',
+    aliases: ['setpromptentries'],
+    callback: setPromptEntryCallback,
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'identifier', 'Prompt entry identifier to set (UUID)', [ARGUMENT_TYPE.STRING], false,
+        ),
+        new SlashCommandNamedArgument(
+            'identifiers', 'List of prompt entry identifiers to set (UUID)', [ARGUMENT_TYPE.LIST], false,
+        ),
+        new SlashCommandNamedArgument(
+            'name', 'Prompt entry name to set', [ARGUMENT_TYPE.STRING], false,
+        ),
+        new SlashCommandNamedArgument(
+            'names', 'Prompt entry names to set', [ARGUMENT_TYPE.LIST], false,
+        ),
+    ],
+    unnamedArgumentList: [
+        SlashCommandArgument.fromProps({ description: 'Set entry/entries on or off',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            acceptsMultiple: false,
+            defaultValue: 'toggle', // unnamed arguments don't support default values yet
+            enumList: ['on', 'off', 'toggle'],
+        }),
     ],
     helpString: 'Sets the model for the current API. Gets the current model name if no argument is provided.',
 }));
@@ -2827,6 +2856,98 @@ function modelCallback(_, model) {
     }
 }
 
+/**
+ * Sets state of prompt entries (toggles) either via identifier/uuid or name.
+ * @param {object} args Object containing arguments
+ * @param {string} args.identifier Select prompt entry using an identifier (uuid)
+ * @param {string} args.identifiers List of identifiers to set
+ * @param {string} args.name Select prompt entry using name
+ * @param {string} args.names List of names to set
+ * @param {string} targetState The targeted state of the entry/entries
+ * @returns {String} empty string
+ */
+function setPromptEntryCallback(args, targetState) {
+    // needs promptManager to manipulate prompt entries
+    const promptManager = setupChatCompletionPromptManager(oai_settings);
+    const prompts = promptManager.serviceSettings.prompts;
+
+    let identifiersList = [];
+    // Check identifier(s) args
+    if (args.identifier) identifiersList.push(args.identifier);
+    if (args.identifiers) {
+        try {
+            identifiersList = identifiersList.concat(JSON.parse(args.identifiers));
+        } catch {
+            // Do nothing
+        }
+    }
+    // Check if identifiers exists in prompt, else remove from list
+    if (identifiersList.length !== 0) {
+        identifiersList = identifiersList.filter(identifier => {
+            return prompts.some(prompt => prompt.identifier === identifier);
+        });
+    }
+
+    let nameList = [];
+    // Get list of names
+    if (args.name) nameList.push(args.name);
+    if (args.names) {
+        try {
+            nameList = nameList.concat(JSON.parse(args.names));
+        } catch {
+            // Do nothing
+        }
+    }
+
+    if (nameList.length !== 0) {
+        nameList.forEach(name => {
+            // one name could potentially have multiple entries, find all identifiers that match given name
+            let identifiers = [];
+            prompts.forEach(entry => {
+                if (entry.name === name) {
+                    identifiers.push(entry.identifier);
+                }
+            });
+            identifiersList = identifiersList.concat(identifiers);
+        });
+    }
+    // Remove duplicates to allow consistent 'toggle'
+    identifiersList = [...new Set(identifiersList)];
+    if (identifiersList.length === 0) return '';
+
+    // logic adapted from PromptManager.js, handleToggle
+    if (['toggle', 't', ''].includes(targetState.trim().toLowerCase())){
+        identifiersList.forEach(promptID => {
+            const promptOrderEntry = promptManager.getPromptOrderEntry(promptManager.activeCharacter, promptID);
+            const counts = promptManager.tokenHandler.getCounts();
+
+            counts[promptID] = null;
+            promptOrderEntry.enabled = !promptOrderEntry.enabled;
+        });
+    }
+    if (isTrueBoolean(targetState)) {
+        identifiersList.forEach(promptID => {
+            const promptOrderEntry = promptManager.getPromptOrderEntry(promptManager.activeCharacter, promptID);
+            const counts = promptManager.tokenHandler.getCounts();
+
+            counts[promptID] = null;
+            promptOrderEntry.enabled = true;
+        });
+    }
+    if (isFalseBoolean(targetState)) {
+        identifiersList.forEach(promptID => {
+            const promptOrderEntry = promptManager.getPromptOrderEntry(promptManager.activeCharacter, promptID);
+            const counts = promptManager.tokenHandler.getCounts();
+
+            counts[promptID] = null;
+            promptOrderEntry.enabled = false;
+        });
+    }
+    // no need to render for each identifier
+    promptManager.render();
+    promptManager.saveServiceSettings();
+    return '';
+}
 
 export let isExecutingCommandsFromChatInput = false;
 export let commandsFromChatInputAbortController;
