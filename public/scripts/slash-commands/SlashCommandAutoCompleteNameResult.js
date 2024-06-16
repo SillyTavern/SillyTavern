@@ -8,15 +8,18 @@ import { SlashCommandCommandAutoCompleteOption } from './SlashCommandCommandAuto
 import { SlashCommandEnumAutoCompleteOption } from './SlashCommandEnumAutoCompleteOption.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 import { SlashCommandNamedArgumentAutoCompleteOption } from './SlashCommandNamedArgumentAutoCompleteOption.js';
+import { SlashCommandScope } from './SlashCommandScope.js';
 
 export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
     /**@type {SlashCommandExecutor}*/ executor;
+    /**@type {SlashCommandScope}*/ scope;
 
     /**
      * @param {SlashCommandExecutor} executor
+     * @param {SlashCommandScope} scope
      * @param {Object.<string,SlashCommand>} commands
      */
-    constructor(executor, commands) {
+    constructor(executor, scope, commands) {
         super(
             executor.name,
             executor.start,
@@ -29,6 +32,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             ()=>'No slash commands found!',
         );
         this.executor = executor;
+        this.scope = scope;
     }
 
     getSecondaryNameAt(text, index, isSelect) {
@@ -103,7 +107,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
 
         if (name.includes('=') && cmdArg) {
             // if cursor is already behind "=" check for enums
-            const enumList = cmdArg?.enumProvider?.(this.executor) ?? cmdArg?.enumList;
+            const enumList = cmdArg?.enumProvider?.(this.executor, this.scope) ?? cmdArg?.enumList;
             if (cmdArg && enumList?.length) {
                 if (isSelect && enumList.find(it=>it.value == value) && argAssign && argAssign.end == index) {
                     return null;
@@ -150,7 +154,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             if (idx > -1) {
                 argAssign = this.executor.unnamedArgumentList[idx];
                 cmdArg = this.executor.command.unnamedArgumentList[idx];
-                const enumList = cmdArg?.enumProvider?.(this.executor) ?? cmdArg?.enumList;
+                const enumList = cmdArg?.enumProvider?.(this.executor, this.scope) ?? cmdArg?.enumList;
                 if (cmdArg && enumList.length > 0) {
                     value = argAssign.value.toString().slice(0, index - argAssign.start);
                     start = argAssign.start;
@@ -166,7 +170,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             return null;
         }
 
-        const enumList = cmdArg?.enumProvider?.(this.executor) ?? cmdArg?.enumList;
+        const enumList = cmdArg?.enumProvider?.(this.executor, this.scope) ?? cmdArg?.enumList;
         if (cmdArg == null || enumList.length == 0) return null;
 
         const result = new AutoCompleteSecondaryNameResult(

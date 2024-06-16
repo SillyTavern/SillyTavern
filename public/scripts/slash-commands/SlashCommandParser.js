@@ -411,7 +411,7 @@ export class SlashCommandParser {
                 );
                 return result;
             }
-            const result = new SlashCommandAutoCompleteNameResult(executor, this.commands);
+            const result = new SlashCommandAutoCompleteNameResult(executor, this.scopeIndex[this.commandIndex.indexOf(executor)], this.commands);
             return result;
         }
         return null;
