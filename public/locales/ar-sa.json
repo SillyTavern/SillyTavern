@@ -1007,7 +1007,6 @@
     "Inclusion Group": "مجموعة الإدراج",
     "Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.Documentation: World Info - Inclusion Group": "تضمن مجموعات التضمين تنشيط إدخال واحد فقط من المجموعة في المرة الواحدة، إذا تم تشغيل عدة إدخالات.\rيدعم مجموعات متعددة مفصولة بفواصل.\r\rالتوثيق: معلومات العالم - مجموعة الإدماج",
     "Prioritize this entry: When checked, this entry is prioritized out of all selections.If multiple are prioritized, the one with the highest 'Order' is chosen.": "إعطاء الأولوية لهذا الإدخال: عند تحديده، يتم إعطاء الأولوية لهذا الإدخال من بين جميع التحديدات.\rإذا تم تحديد الأولوية لأكثر من مجموعة، فسيتم اختيار \"الترتيب\" الأعلى.",
-    "Prioritize": "تحديد الأولويات",
     "Only one entry with the same label will be activated": "سيتم تنشيط مدخل واحد فقط بنفس العلامة",
     "A relative likelihood of entry activation within the group": "احتمال نسبي لتفعيل الدخول داخل المجموعة",
     "Group Weight": "وزن المجموعة",
@@ -1156,9 +1155,6 @@
     "Contest Winners": "الفائزين في المسابقة",
     "These characters are the finalists of character design contests and have remarkable quality.": "هذه الشخصيات هي المتأهلين للتصفيات النهائية في مسابقات تصميم الشخصيات وتتمتع بجودة رائعة.",
     "Featured Characters": "شخصيات مميزة",
-    "Download Extensions & Assets": "تنزيل الإضافات والأصول",
-    "Assets URL": "عنوان URL للأصول",
-    "Characters": "الشخصيات",
     "Attach a File": "إرفاق ملف",
     "Open Data Bank": "بنك البيانات المفتوح",
     "Enter a URL or the ID of a Fandom wiki page to scrape:": "أدخل عنوان URL أو معرف صفحة ويكي Fandom لجمعها:",
@@ -1181,73 +1177,24 @@
     "Bulk Edit": "تحرير بالجملة",
     "Select All": "اختر الكل",
     "Select None": "لا تختر شيء",
-    "Disable": "إبطال",
-    "Enable": "يُمكَِن",
     "Global Attachments": "المرفقات العالمية",
     "These files are available for all characters in all chats.": "هذه الملفات متاحة لجميع الشخصيات في جميع الدردشات.",
     "Character Attachments": "مرفقات الشخصيات",
-    "These files are available for the current character in all chats they are in.": "تتوفر هذه الملفات للشخصية الحالية في جميع الدردشات الموجودة فيها.",
+    "These files are available the current character in all chats they are in.": "تتوفر هذه الملفات بالحرف الحالي في جميع الدردشات الموجودة فيها.",
     "Saved locally. Not exported.": "تم الحفظ محليًا. لم يتم تصديرها.",
     "Chat Attachments": "مرفقات الدردشة",
-    "These files are available for all characters in the current chat.": "هذه الملفات متاحة لجميع الشخصيات في الدردشة الحالية.",
+    "These files are available to all characters in the current chat.": "هذه الملفات متاحة لجميع الشخصيات في الدردشة الحالية.",
     "Enter a base URL of the MediaWiki to scrape.": "أدخل عنوان URL الأساسي لـ MediaWiki المراد استخراجه.",
     "Don't include the page name!": "لا تقم بتضمين اسم الصفحة!",
     "Enter web URLs to scrape (one per line):": "أدخل عناوين URL للويب المراد استخراجها (واحد لكل سطر):",
     "Enter a video URL to download its transcript.": "أدخل عنوان URL أو معرف الفيديو لتنزيل النص الخاص به.",
-    "Image Captioning": "تعليق الصورة",
-    "Source": "مصدر",
-    "Local": "محلي",
-    "Multimodal (OpenAI / Anthropic / llama / Google)": "متعدد الوسائط (OpenAI / Anthropic / اللاما / Google)",
-    "Extras": "إضافات",
-    "Horde": "حشد",
-    "API": "واجهة برمجة التطبيقات",
-    "Custom (OpenAI-compatible)": "مخصص (متوافق مع OpenAI)",
-    "Text Generation WebUI (oobabooga)": "واجهة WebUI الخاصة بإنشاء النص (oobaboga)",
-    "Model": "نموذج",
-    "currently_selected": "[المحدد حاليا]",
-    "currently_loaded": "[تم التحميل حاليًا]",
-    "Allow reverse proxy": "السماح بالوكيل العكسي",
-    "Hint:": "تَلمِيح:",
-    "Set your API keys and endpoints in the 'API Connections' tab first.": "قم بتعيين مفاتيح API ونقاط النهاية الخاصة بك في علامة التبويب \"اتصالات API\" أولاً.",
-    "Caption Prompt": "موجه التسمية التوضيحية",
-    "Ask every time": "اسأل كل مرة",
-    "Message Template": "قالب الرسالة",
-    "(use _space": "(يستخدم",
-    "macro)": "دقيق)",
-    "Edit captions before saving": "تحرير التسميات التوضيحية قبل الحفظ",
-    "Character Expressions": "تعبيرات الحروف",
-    "Translate text to English before classification": "ترجمة النص إلى اللغة الإنجليزية قبل التصنيف",
-    "Show default images (emojis) if sprite missing": "إظهار الصور الافتراضية (الرموز التعبيرية) في حالة فقدان الكائن",
-    "Image Type - talkinghead (extras)": "نوع الصورة - رأس التحدث (الإضافات)",
-    "Classifier API": "واجهة برمجة تطبيقات المصنف",
-    "Select the API for classifying expressions.": "حدد واجهة برمجة التطبيقات (API) لتصنيف التعبيرات.",
     "Expression API": "محلي\nإضافات\nماجستير",
-    "LLM": "ماجستير",
-    "LLM Prompt": "موجه LLM",
-    "Will be used if the API doesn't support JSON schemas or function calling.": "سيتم استخدامه إذا كانت واجهة برمجة التطبيقات (API) لا تدعم مخططات JSON أو استدعاء الوظائف.",
-    "Default / Fallback Expression": "التعبير الافتراضي/الاحتياطي",
-    "Set the default and fallback expression being used when no matching expression is found.": "قم بتعيين التعبير الافتراضي والتعبير الاحتياطي المستخدم في حالة عدم العثور على تعبير مطابق.",
-    "Custom Expressions": "التعبيرات المخصصة",
-    "Can be set manually or with an _space": "يمكن ضبطه يدويًا أو باستخدام",
-    "space_ slash command.": "أمر مائل.",
-    "Open a chat to see the character expressions.": "افتح الدردشة لرؤية تعبيرات الأحرف.",
-    "You are in offline mode. Click on the image below to set the expression.": "أنت في وضع غير متصل بالشبكة. انقر على الصورة أدناه لتعيين التعبير.",
-    "Sprite Folder Override": "تجاوز مجلد العفريت",
-    "Use a forward slash to specify a subfolder. Example: _space": "استخدم الشرطة المائلة للأمام لتحديد مجلد فرعي. مثال:",
-    "Upload sprite pack (ZIP)": "تحميل حزمة الكائنات (ZIP)",
-    "Remove all image overrides": "إزالة كافة تجاوزات الصورة",
-    "Create new folder in the _space": "قم بإنشاء مجلد جديد في",
-    "folder of your user data directory and name it as the name of the character.": "مجلد دليل بيانات المستخدم الخاص بك وقم بتسميته كاسم الشخصية.",
-    "Put images with expressions there. File names should follow the pattern:": "ضع الصور مع التعبيرات هناك. يجب أن تتبع أسماء الملفات النمط:",
-    "expression_label_pattern": "[expression_label].[image_format]",
-    "Sprite set:": "مجموعة العفاريت:",
-    "ext_sum_title": "لخص",
     "ext_sum_with": "تلخيص مع:",
     "ext_sum_main_api": "واجهة برمجة التطبيقات الرئيسية",
     "ext_sum_current_summary": "الملخص الحالي:",
     "ext_sum_restore_previous": "استعادة ما تقدم",
     "ext_sum_memory_placeholder": "سيتم إنشاء الملخص هنا...",
-    "ext_sum_force_tip": "قم بتشغيل تحديث موجز الآن.",
+    "Trigger a summary update right now.": "تلخيص الآن",
     "ext_sum_force_text": "تلخيص الآن",
     "Disable automatic summary updates. While paused, the summary remains as-is. You can still force an update by pressing the Summarize now button (which is only available with the Main API).": "تعطيل التحديثات الموجزة التلقائية. أثناء الإيقاف المؤقت، يظل الملخص كما هو. لا يزال بإمكانك فرض التحديث بالضغط على زر تلخيص الآن (والذي يتوفر فقط مع واجهة برمجة التطبيقات الرئيسية).",
     "ext_sum_pause": "يوقف",
@@ -1286,37 +1233,6 @@
     "ext_sum_memory_template_placeholder": "{{summary}} سيتوافق مع محتويات الملخص الحالي.",
     "ext_sum_injection_position": "موضع الحقن",
     "How many messages before the current end of the chat.": "كم عدد الرسائل قبل النهاية الحالية للدردشة.",
-    "Labels and Message": "العلامات والرسائل",
-    "Label": "ملصق",
-    "Title": "عنوان",
-    "(tooltip, leave empty to show message or /command)": "(تلميح الأداة، اتركه فارغًا لإظهار الرسالة أو / الأمر)",
-    "Message / Command:": "الرسالة / الأمر:",
-    "Word wrap": "التفاف الكلمة",
-    "Tab size:": "حجم علامة التبويب:",
-    "Ctrl+Enter to execute": "Ctrl+Enter للتنفيذ",
-    "Context Menu": "قائمة السياق",
-    "Auto-Execute": "التنفيذ التلقائي",
-    "Don't trigger auto-execute": "لا تقم بتشغيل التنفيذ التلقائي",
-    "Invisible (auto-execute only)": "غير مرئي (التنفيذ التلقائي فقط)",
-    "Execute on startup": "تنفيذ عند بدء التشغيل",
-    "Execute on user message": "تنفيذ على رسالة المستخدم",
-    "Execute on AI message": "تنفيذ على رسالة AI",
-    "Execute on chat change": "تنفيذ على تغيير الدردشة",
-    "Execute on group member draft": "تنفيذ على مسودة عضو المجموعة",
-    "Automation ID:": "معرف الأتمتة",
-    "Testing": "اختبارات",
-    "Execute": "ينفذ",
-    "Quick Reply": "الرد السريع",
-    "Enable Quick Replies": "تمكين الردود السريعة",
-    "Combine Quick Replies": "الجمع بين الردود السريعة",
-    "Global Quick Reply Sets": "مجموعات الرد السريع العالمية",
-    "Chat Quick Reply Sets": "مجموعات الرد السريع للدردشة",
-    "Edit Quick Replies": "تعديل الردود السريعة",
-    "Disable Send (Insert Into Input Field)": "تعطيل الإرسال (أدخل في حقل الإدخال)",
-    "Place Quick Reply Before Input": "ضع الرد السريع قبل الإدخال",
-    "Inject user input automatically": "إدخال إدخال المستخدم تلقائيا",
-    "(if disabled, use ": "(إذا تم تعطيله، استخدم",
-    "macro for manual injection)": "ماكرو للحقن اليدوي)",
     "ext_regex_title": "التعبيرات العادية",
     "ext_regex_new_global_script": "+ العالمية",
     "ext_regex_new_scoped_script": "+ نطاق",
@@ -1376,13 +1292,11 @@
     "sd_interactive_mode_txt": "الوضع التفاعلي",
     "sd_multimodal_captioning": "استخدم التسميات التوضيحية متعددة الوسائط لإنشاء مطالبات لصور المستخدمين والشخصيات استنادًا إلى الصور الرمزية الخاصة بهم.",
     "sd_multimodal_captioning_txt": "استخدم التسميات التوضيحية متعددة الوسائط للصور",
-    "sd_free_extend": "قم بتوسيع مطالبات موضوع الوضع الحر تلقائيًا (وليس الصور الشخصية أو الخلفيات) باستخدام LLM المحدد حاليًا.",
-    "sd_free_extend_txt": "تمديد مطالبات الوضع الحر",
-    "sd_free_extend_small": "(تفاعلي/أوامر)",
     "sd_expand": "تمديد المطالبات تلقائيًا باستخدام نموذج إنشاء النص",
     "sd_expand_txt": "مطالبات التحسين التلقائي",
     "sd_snap": "طلبات إنشاء اللقطات باستخدام نسبة العرض إلى الارتفاع القسرية (الصور الشخصية والخلفيات) إلى أقرب دقة معروفة، مع محاولة الحفاظ على عدد البكسل المطلق (موصى به لـ SDXL).",
     "sd_snap_txt": "التقاط الدقة المعدلة تلقائيًا",
+    "Source": "مصدر",
     "sd_auto_url": "مثال: {{auto_url}}",
     "Authentication (optional)": "المصادقة (اختياري)",
     "Example: username:password": "مثال: اسم المستخدم: كلمة المرور",
@@ -1416,6 +1330,7 @@
     "Width": "عرض ()",
     "Height": "ارتفاع ()",
     "Resolution": "دقة",
+    "Model": "نموذج",
     "Sampling method": "طريقة أخذ العينات",
     "Karras (not all samplers supported)": "Karras (ليست جميع أجهزة أخذ العينات مدعومة)",
     "SMEA versions of samplers are modified to perform better at high resolution.": "يتم تعديل إصدارات SMEA من أجهزة أخذ العينات لتقديم أداء أفضل بدقة عالية.",
@@ -1442,58 +1357,9 @@
     "Character-specific negative prompt prefix": "بادئة موجه سلبية خاصة بالحرف",
     "sd_character_negative_prompt_placeholder": "أي خصائص يجب ألا تظهر للشخصية المحددة. ستتم إضافتها بعد بادئة المطالبة العامة السلبية.\nمثال: المجوهرات والأحذية والنظارات",
     "Shareable": "قابلة للمشاركة",
-    "Chat Message Visibility (by source)": "رؤية رسائل الدردشة (حسب المصدر)",
-    "Uncheck to hide the extension's messages in chat prompts.": "قم بإلغاء التحديد لإخفاء رسائل الامتداد في مطالبات الدردشة.",
-    "Extensions Menu": "قائمة الإضافات",
-    "Slash Command": "أمر القطع",
-    "Interactive Mode": "الوضع التفاعلي",
     "Image Prompt Templates": "قوالب الصور السريعة",
-    "Vector Storage": "تخزين المتجهات",
-    "Vectorization Source": "مصدر المتجهات",
-    "Local (Transformers)": "محلي (المحولات)",
-    "Vectorization Model": "نموذج المتجهات",
-    "Keep model in memory": "احتفظ بالنموذج في الذاكرة",
-    "Hint: Download models and set the URL in the API connection settings.": "تلميح: قم بتنزيل النماذج وقم بتعيين عنوان URL في إعدادات اتصال API.",
-    "The server MUST be started with the --embedding flag to use this feature!": "يجب أن يبدأ الخادم بعلامة --embedding لاستخدام هذه الميزة!",
-    "Hint: Set the URL in the API connection settings.": "تلميح: قم بتعيين عنوان URL في إعدادات اتصال API.",
     "Vectors Model Warning": "يوصى بتطهير المتجهات عند تغيير النموذج أثناء الدردشة. وإلا فإنه سيؤدي إلى نتائج دون المستوى.",
-    "NomicAI API Key": "مفتاح NomicAI API",
-    "Query messages": "رسائل الاستعلام",
-    "Score threshold": "عتبة النتيجة",
-    "Chunk boundary": "حدود القطعة",
-    "World Info settings": "إعدادات معلومات العالم",
-    "Enable for World Info": "تمكين للحصول على معلومات العالم",
-    "Enabled for all entries": "ممكّن لجميع الإدخالات",
-    "Checked: all entries except ❌ status can be activated.": "تم التحقق: يمكن تنشيط جميع الإدخالات باستثناء الحالة ❌.",
-    "Unchecked: only entries with ❌ status can be activated.": "غير محدد: يمكن تفعيل الإدخالات ذات الحالة 🔗 فقط.",
-    "Max Entries": "ماكس الإدخالات",
-    "File vectorization settings": "إعدادات توجيه الملف",
-    "Enable for files": "تمكين للملفات",
     "Translate files into English before processing": "ترجمة الملفات إلى اللغة الإنجليزية قبل المعالجة",
-    "Message attachments": "مرفقات الرسالة",
-    "Size threshold (KB)": "عتبة الحجم (كيلو بايت)",
-    "Chunk size (chars)": "حجم القطعة (الحرف)",
-    "Chunk overlap (%)": "تداخل القطعة (%)",
-    "Retrieve chunks": "استرداد القطع",
-    "Data Bank files": "ملفات بنك البيانات",
-    "Injection Template": "قالب الحقن",
-    "Injection Position": "موضع الحقن",
-    "Vectorize All": "فيكتوريز الكل",
-    "Purge Vectors": "تطهير المتجهات",
-    "Chat vectorization settings": "إعدادات توجيه الدردشة",
-    "Enabled for chat messages": "ممكّن لرسائل الدردشة",
-    "Retain#": "يحتفظ#",
-    "Insert#": "إدراج#",
-    "Vector Summarization": "تلخيص المتجهات",
-    "Summarize chat messages for vector generation": "تلخيص رسائل الدردشة لتوليد المتجهات",
-    "Warning: This will slow down vector generation drastically, as all messages have to be summarized first.": "تحذير: سيؤدي هذا إلى إبطاء إنشاء المتجهات بشكل كبير، حيث يجب تلخيص جميع الرسائل أولاً.",
-    "Summarize chat messages when sending": "تلخيص رسائل الدردشة عند الإرسال",
-    "Warning: This might cause your sent messages to take a bit to process and slow down response time.": "تحذير: قد يتسبب هذا في استغراق بعض الوقت في معالجة رسائلك المرسلة وإبطاء وقت الاستجابة.",
-    "Main API": "واجهة برمجة التطبيقات الرئيسية",
-    "Extras API": "إضافات API",
-    "Only used when Main API is selected.": "يُستخدم فقط عند تحديد واجهة برمجة التطبيقات الرئيسية.",
-    "Old messages are vectorized gradually as you chat. To process all previous messages, click the button below.": "يتم توجيه الرسائل القديمة تدريجيًا أثناء الدردشة.\n                    لمعالجة كافة الرسائل السابقة، انقر فوق الزر أدناه.",
-    "View Stats": "عرض احصائيات",
     "Manager Users": "ادارة المستخدمين",
     "New User": "مستخدم جديد",
     "Status:": "حالة:",
@@ -1507,6 +1373,7 @@
     "New Password:": "كلمة المرور الجديدة:",
     "Confirm New Password:": "تأكيد كلمة المرور الجديدة:",
     "Debug Warning": "الوظائف في هذه الفئة مخصصة للمستخدمين المتقدمين فقط. لا تنقر على أي شيء إذا لم تكن متأكدًا من العواقب.",
+    "Execute": "ينفذ",
     "Are you sure you want to delete this user?": "هل أنت متأكد أنك تريد حذف هذا المستخدم؟",
     "Deleting:": "حذف:",
     "Also wipe user data.": "امسح بيانات المستخدم أيضًا.",
@@ -1546,17 +1413,6 @@
     "Record a snapshot of your current settings.": "سجل لقطة لإعداداتك الحالية.",
     "Make a Snapshot": "قم بعمل لقطة",
     "Restore this snapshot": "استعادة هذه اللقطة",
-    "ext_translate_btn_chat": "ترجمة الدردشة",
-    "ext_translate_btn_input": "ترجمة الإدخال",
-    "Chat Translation": "ترجمة الدردشة",
-    "ext_translate_auto_mode": "نظام آلي",
-    "ext_translate_mode_none": "لا أحد",
-    "ext_translate_mode_responses": "ترجمة الردود",
-    "ext_translate_mode_inputs": "ترجمة المدخلات",
-    "ext_translate_mode_both": "ترجمة كلاهما",
-    "ext_translate_mode_provider": "مزود",
-    "ext_translate_target_lang": "اللغة المستهدفة",
-    "ext_translate_clear": "ترجمات واضحة",
     "Hi,": "أهلاً،",
     "To enable multi-account features, restart the SillyTavern server with": "لتمكين ميزات الحسابات المتعددة، أعد تشغيل خادم SillyTavern باستخدام",
     "set to true in the config.yaml file.": "تم ضبطه على true في ملف config.yaml.",
@@ -1585,6 +1441,7 @@
     "Chat API": "واجهة برمجة تطبيقات الدردشة",
     "and pick a character.": "واختر شخصية.",
     "You can browse a list of bundled characters in the": "يمكنك تصفح قائمة الأحرف المجمعة في ملف",
+    "Download Extensions & Assets": "تنزيل الإضافات والأصول",
     "menu within": "القائمة داخل",
     "Confused or lost?": "هل أنت مرتبك أو ضائع؟",
     "click these icons!": "انقر على هذه الأيقونات!",
