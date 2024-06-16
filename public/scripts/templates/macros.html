@@ -1,91 +1,91 @@
-<div>
+<div data-i18n="System-wide Replacement Macros (in order of evaluation):">
     System-wide Replacement Macros (in order of evaluation):
 </div>
 <ul>
-    <li><tt>&lcub;&lcub;pipe&rcub;&rcub;</tt> – only for slash command batching. Replaced with the returned result of the previous command.</li>
-    <li><tt>&lcub;&lcub;newline&rcub;&rcub;</tt> – just inserts a newline.</li>
-    <li><tt>&lcub;&lcub;trim&rcub;&rcub;</tt> – trims newlines surrounding this macro.</li>
-    <li><tt>&lcub;&lcub;noop&rcub;&rcub;</tt> – no operation, just an empty string.</li>
-    <li><tt>&lcub;&lcub;original&rcub;&rcub;</tt> – global prompts defined in API settings. Only valid in Advanced Definitions prompt overrides.</li>
-    <li><tt>&lcub;&lcub;input&rcub;&rcub;</tt> – the user input</li>
-    <li><tt>&lcub;&lcub;charPrompt&rcub;&rcub;</tt> – the Character's Main Prompt override</li>
-    <li><tt>&lcub;&lcub;charJailbreak&rcub;&rcub;</tt> – the Character's Jailbreak Prompt override</li>
-    <li><tt>&lcub;&lcub;description&rcub;&rcub;</tt> – the Character's Description</li>
-    <li><tt>&lcub;&lcub;personality&rcub;&rcub;</tt> – the Character's Personality</li>
-    <li><tt>&lcub;&lcub;scenario&rcub;&rcub;</tt> – the Character's Scenario</li>
-    <li><tt>&lcub;&lcub;persona&rcub;&rcub;</tt> – your current Persona Description</li>
-    <li><tt>&lcub;&lcub;mesExamples&rcub;&rcub;</tt> – the Character's Dialogue Examples</li>
-    <li><tt>&lcub;&lcub;mesExamplesRaw&rcub;&rcub;</tt> – unformatted Dialogue Examples <b>(only for Story String)</b></li>
-    <li><tt>&lcub;&lcub;user&rcub;&rcub;</tt> – your current Persona username</li>
-    <li><tt>&lcub;&lcub;char&rcub;&rcub;</tt> – the Character's name</li>
-    <li><tt>&lcub;&lcub;char_version&rcub;&rcub;</tt> – the Character's version number</li>
-    <li><tt>&lcub;&lcub;group&rcub;&rcub;</tt> – a comma-separated list of group member names or the character name in solo chats. Alias: &lcub;&lcub;charIfNotGroup&rcub;&rcub;</li>
-    <li><tt>&lcub;&lcub;model&rcub;&rcub;</tt> – a text generation model name for the currently selected API. <b>Can be inaccurate!</b></li>
-    <li><tt>&lcub;&lcub;lastMessage&rcub;&rcub;</tt> - the text of the latest chat message.</li>
-    <li><tt>&lcub;&lcub;lastMessageId&rcub;&rcub;</tt> – index # of the latest chat message. Useful for slash command batching.</li>
-    <li><tt>&lcub;&lcub;firstIncludedMessageId&rcub;&rcub;</tt> - the ID of the first message included in the context. Requires generation to be ran at least once in the current session.</li>
-    <li><tt>&lcub;&lcub;currentSwipeId&rcub;&rcub;</tt> – the 1-based ID of the current swipe in the last chat message. Empty string if the last message is user or prompt-hidden.</li>
-    <li><tt>&lcub;&lcub;lastSwipeId&rcub;&rcub;</tt> – the number of swipes in the last chat message. Empty string if the last message is user or prompt-hidden.</li>
-    <li><tt>&lcub;&lcub;// (note)&rcub;&rcub;</tt> – you can leave a note here, and the macro will be replaced with blank content. Not visible for the AI.</li>
-    <li><tt>&lcub;&lcub;time&rcub;&rcub;</tt> – the current time</li>
-    <li><tt>&lcub;&lcub;date&rcub;&rcub;</tt> – the current date</li>
-    <li><tt>&lcub;&lcub;weekday&rcub;&rcub;</tt> – the current weekday</li>
-    <li><tt>&lcub;&lcub;isotime&rcub;&rcub;</tt> – the current ISO time (24-hour clock)</li>
-    <li><tt>&lcub;&lcub;isodate&rcub;&rcub;</tt> – the current ISO date (YYYY-MM-DD)</li>
-    <li><tt>&lcub;&lcub;datetimeformat &hellip;&rcub;&rcub;</tt> – the current date/time in the specified format, e. g. for German date/time: <tt>&lcub;&lcub;datetimeformat DD.MM.YYYY HH:mm&rcub;&rcub;</tt></li>
-    <li><tt>&lcub;&lcub;time_UTC±#&rcub;&rcub;</tt> – the current time in the specified UTC time zone offset, e.g. UTC-4 or UTC+2</li>
-    <li><tt>&lcub;&lcub;timeDiff::(time1)::(time2)&rcub;&rcub;</tt> – the time difference between time1 and time2. Accepts time and date macros. (Ex: &lcub;&lcub;timeDiff::&lcub;&lcub;isodate&rcub;&rcub; &lcub;&lcub;time&rcub;&rcub;::2024/5/11 12:30:00&rcub;&rcub;)</li>
-    <li><tt>&lcub;&lcub;idle_duration&rcub;&rcub;</tt> – the time since the last user message was sent</li>
-    <li><tt>&lcub;&lcub;bias "text here"&rcub;&rcub;</tt> – sets a behavioral bias for the AI until the next user input. Quotes around the text are important.</li>
-    <li><tt>&lcub;&lcub;roll:(formula)&rcub;&rcub;</tt> – rolls a dice. (ex: <tt>>&lcub;&lcub;roll:1d6&rcub;&rcub;</tt> will roll a 6-sided dice and return a number between 1 and 6)</li>
-    <li><tt>&lcub;&lcub;random:(args)&rcub;&rcub;</tt> – returns a random item from the list. (ex: <tt>&lcub;&lcub;random:1,2,3,4&rcub;&rcub;</tt> will return 1 of the 4 numbers at random. Works with text lists too.</li>
-    <li><tt>&lcub;&lcub;random::(arg1)::(arg2)&rcub;&rcub;</tt> – alternative syntax for random that allows to use commas in the list items.</li>
-    <li><tt>&lcub;&lcub;pick::(args)&rcub;&rcub;</tt> – picks a random item from the list. Works the same as &lcub;&lcub;random&rcub;&rcub;, with the same possible syntax options, but the pick will stay consistent for this chat once picked and won't be re-rolled on consecutive messages and prompt processing.</li>
-    <li><tt>&lcub;&lcub;banned "text here"&rcub;&rcub;</tt> – dynamically add text in the quotes to banned words sequences, if Text Generation WebUI backend used. Do nothing for others backends. Can be used anywhere (Character description, WI, AN, etc.) Quotes around the text are important.</li>
+    <li><tt>&lcub;&lcub;pipe&rcub;&rcub;</tt> – <span data-i18n="help_macros_1">only for slash command batching. Replaced with the returned result of the previous command.</span></li>
+    <li><tt>&lcub;&lcub;newline&rcub;&rcub;</tt> – <span data-i18n="help_macros_2">just inserts a newline.</span></li>
+    <li><tt>&lcub;&lcub;trim&rcub;&rcub;</tt> – <span data-i18n="help_macros_3">trims newlines surrounding this macro.</span></li>
+    <li><tt>&lcub;&lcub;noop&rcub;&rcub;</tt> – <span data-i18n="help_macros_4">no operation, just an empty string.</span></li>
+    <li><tt>&lcub;&lcub;original&rcub;&rcub;</tt> – <span data-i18n="help_macros_5">global prompts defined in API settings. Only valid in Advanced Definitions prompt overrides.</span></li>
+    <li><tt>&lcub;&lcub;input&rcub;&rcub;</tt> – <span data-i18n="help_macros_6">the user input</span></li>
+    <li><tt>&lcub;&lcub;charPrompt&rcub;&rcub;</tt> – <span data-i18n="help_macros_7">the Character's Main Prompt override</span></li>
+    <li><tt>&lcub;&lcub;charJailbreak&rcub;&rcub;</tt> – <span data-i18n="help_macros_8">the Character's Jailbreak Prompt override</span></li>
+    <li><tt>&lcub;&lcub;description&rcub;&rcub;</tt> – <span data-i18n="help_macros_9">the Character's Description</span></li>
+    <li><tt>&lcub;&lcub;personality&rcub;&rcub;</tt> – <span data-i18n="help_macros_10">the Character's Personality</span></li>
+    <li><tt>&lcub;&lcub;scenario&rcub;&rcub;</tt> – <span data-i18n="help_macros_11">the Character's Scenario</span></li>
+    <li><tt>&lcub;&lcub;persona&rcub;&rcub;</tt> – <span data-i18n="help_macros_12">your current Persona Description</span></li>
+    <li><tt>&lcub;&lcub;mesExamples&rcub;&rcub;</tt> – <span data-i18n="help_macros_"13>the Character's Dialogue Examples</span></li>
+    <li><tt>&lcub;&lcub;mesExamplesRaw&rcub;&rcub;</tt> – <span data-i18n="help_macros_14">unformatted Dialogue Examples </span><b>(only for Story String)</b></li>
+    <li><tt>&lcub;&lcub;user&rcub;&rcub;</tt> – <span data-i18n="help_macros_15">your current Persona username</span></li>
+    <li><tt>&lcub;&lcub;char&rcub;&rcub;</tt> – <span data-i18n="help_macros_16">the Character's name</span></li>
+    <li><tt>&lcub;&lcub;char_version&rcub;&rcub;</tt> – <span data-i18n="help_macros_17">the Character's version number</span></li>
+    <li><tt>&lcub;&lcub;group&rcub;&rcub;</tt> – <span data-i18n="help_macros_18">a comma-separated list of group member names or the character name in solo chats. Alias: &lcub;&lcub;charIfNotGroup&rcub;&rcub;</span></li>
+    <li><tt>&lcub;&lcub;model&rcub;&rcub;</tt> – <span data-i18n="help_macros_19">a text generation model name for the currently selected API. </span><b>Can be inaccurate!</b></li>
+    <li><tt>&lcub;&lcub;lastMessage&rcub;&rcub;</tt> - <span data-i18n="help_macros_20">the text of the latest chat message.</span></li>
+    <li><tt>&lcub;&lcub;lastMessageId&rcub;&rcub;</tt> – <span data-i18n="help_macros_21">index # of the latest chat message. Useful for slash command batching.</span></li>
+    <li><tt>&lcub;&lcub;firstIncludedMessageId&rcub;&rcub;</tt> - <span data-i18n="help_macros_22">the ID of the first message included in the context. Requires generation to be ran at least once in the current session.</span></li>
+    <li><tt>&lcub;&lcub;currentSwipeId&rcub;&rcub;</tt> – <span data-i18n="help_macros_23">the 1-based ID of the current swipe in the last chat message. Empty string if the last message is user or prompt-hidden.</span></li>
+    <li><tt>&lcub;&lcub;lastSwipeId&rcub;&rcub;</tt> – <span data-i18n="help_macros_24">the number of swipes in the last chat message. Empty string if the last message is user or prompt-hidden.</span></li>
+    <li><tt>&lcub;&lcub;// (note)&rcub;&rcub;</tt> – <span data-i18n="help_macros_25">you can leave a note here, and the macro will be replaced with blank content. Not visible for the AI.</span></li>
+    <li><tt>&lcub;&lcub;time&rcub;&rcub;</tt> – <span data-i18n="help_macros_26">the current time</span></li>
+    <li><tt>&lcub;&lcub;date&rcub;&rcub;</tt> – <span data-i18n="help_macros_27">the current date</span></li>
+    <li><tt>&lcub;&lcub;weekday&rcub;&rcub;</tt> – <span data-i18n="help_macros_28">the current weekday</span></li>
+    <li><tt>&lcub;&lcub;isotime&rcub;&rcub;</tt> – <span data-i18n="help_macros_29">the current ISO time (24-hour clock)</span></li>
+    <li><tt>&lcub;&lcub;isodate&rcub;&rcub;</tt> – <span data-i18n="help_macros_30">the current ISO date (YYYY-MM-DD)</span></li>
+    <li><tt>&lcub;&lcub;datetimeformat &hellip;&rcub;&rcub;</tt> – <span data-i18n="help_macros_31">the current date/time in the specified format, e. g. for German date/time: </span><tt>&lcub;&lcub;datetimeformat DD.MM.YYYY HH:mm&rcub;&rcub;</tt></li>
+    <li><tt>&lcub;&lcub;time_UTC±#&rcub;&rcub;</tt> – <span data-i18n="help_macros_32">the current time in the specified UTC time zone offset, e.g. UTC-4 or UTC+2</span></li>
+    <li><tt>&lcub;&lcub;timeDiff::(time1)::(time2)&rcub;&rcub;</tt> – <span data-i18n="help_macros_33">the time difference between time1 and time2. Accepts time and date macros. (Ex: &lcub;&lcub;timeDiff::&lcub;&lcub;isodate&rcub;&rcub; &lcub;&lcub;time&rcub;&rcub;::2024/5/11 12:30:00&rcub;&rcub;)</span></li>
+    <li><tt>&lcub;&lcub;idle_duration&rcub;&rcub;</tt> – <span data-i18n="help_macros_34">the time since the last user message was sent</span></li>
+    <li><tt>&lcub;&lcub;bias "text here"&rcub;&rcub;</tt> – <span data-i18n="help_macros_35">sets a behavioral bias for the AI until the next user input. Quotes around the text are important.</span></li>
+    <li><tt>&lcub;&lcub;roll:(formula)&rcub;&rcub;</tt> – <span data-i18n="help_macros_36">rolls a dice. (ex: </span><tt>>&lcub;&lcub;roll:1d6&rcub;&rcub;</tt> will roll a 6-sided dice and return a number between 1 and 6)</li>
+    <li><tt>&lcub;&lcub;random:(args)&rcub;&rcub;</tt> – <span data-i18n="help_macros_37">returns a random item from the list. (ex: </span><tt>&lcub;&lcub;random:1,2,3,4&rcub;&rcub;</tt> will return 1 of the 4 numbers at random. Works with text lists too.</li>
+    <li><tt>&lcub;&lcub;random::(arg1)::(arg2)&rcub;&rcub;</tt> – <span data-i18n="help_macros_38">alternative syntax for random that allows to use commas in the list items.</span></li>
+    <li><tt>&lcub;&lcub;pick::(args)&rcub;&rcub;</tt> – <span data-i18n="help_macros_39">picks a random item from the list. Works the same as &lcub;&lcub;random&rcub;&rcub;, with the same possible syntax options, but the pick will stay consistent for this chat once picked and won't be re-rolled on consecutive messages and prompt processing.</span></li>
+    <li><tt>&lcub;&lcub;banned "text here"&rcub;&rcub;</tt> – <span data-i18n="help_macros_40">dynamically add text in the quotes to banned words sequences, if Text Generation WebUI backend used. Do nothing for others backends. Can be used anywhere (Character description, WI, AN, etc.) Quotes around the text are important.</span></li>
 </ul>
-<div>
+<div data-i18n="Instruct Mode and Context Template Macros:">
     Instruct Mode and Context Template Macros:
 </div>
 <div>
-    <small>(enabled in the Advanced Formatting settings)</small>
+    <small data-i18n="(enabled in the Advanced Formatting settings)">(enabled in the Advanced Formatting settings)</small>
 </div>
 <ul>
-    <li><tt>&lcub;&lcub;maxPrompt&rcub;&rcub;</tt> – max allowed prompt length in tokens = (context size - response length)</li>
-    <li><tt>&lcub;&lcub;exampleSeparator&rcub;&rcub;</tt> – context template example dialogues separator</li>
-    <li><tt>&lcub;&lcub;chatStart&rcub;&rcub;</tt> – context template chat start line</li>
-    <li><tt>&lcub;&lcub;systemPrompt&rcub;&rcub;</tt> – main system prompt (either character prompt override if chosen, or instructSystemPrompt)</li>
-    <li><tt>&lcub;&lcub;instructSystemPrompt&rcub;&rcub;</tt> – instruct system prompt</li>
-    <li><tt>&lcub;&lcub;instructSystemPromptPrefix&rcub;&rcub;</tt> – instruct system prompt prefix sequence</li>
-    <li><tt>&lcub;&lcub;instructSystemPromptSuffix&rcub;&rcub;</tt> – instruct system prompt suffix sequence</li>
-    <li><tt>&lcub;&lcub;instructUserPrefix&rcub;&rcub;</tt> – instruct user prefix sequence</li>
-    <li><tt>&lcub;&lcub;instructUserSuffix&rcub;&rcub;</tt> – instruct user suffix sequence</li>
-    <li><tt>&lcub;&lcub;instructAssistantPrefix&rcub;&rcub;</tt> – instruct assistant prefix sequence</li>
-    <li><tt>&lcub;&lcub;instructAssistantSuffix&rcub;&rcub;</tt> – instruct assistant suffix sequence</li>
-    <li><tt>&lcub;&lcub;instructFirstAssistantPrefix&rcub;&rcub;</tt> – instruct assistant first output sequence</li>
-    <li><tt>&lcub;&lcub;instructLastAssistantPrefix&rcub;&rcub;</tt> – instruct assistant last output sequence</li>
-    <li><tt>&lcub;&lcub;instructSystemPrefix&rcub;&rcub;</tt> – instruct system message prefix sequence</li>
-    <li><tt>&lcub;&lcub;instructSystemSuffix&rcub;&rcub;</tt> – instruct system message suffix sequence</li>
-    <li><tt>&lcub;&lcub;instructSystemInstructionPrefix&rcub;&rcub;</tt> – instruct system instruction prefix</li>
-    <li><tt>&lcub;&lcub;instructUserFiller&rcub;&rcub;</tt> – instruct first user message filler</li>
-    <li><tt>&lcub;&lcub;instructStop&rcub;&rcub;</tt> – instruct stop sequence</li>
+    <li><tt>&lcub;&lcub;maxPrompt&rcub;&rcub;</tt> – <span data-i18n="help_macros_41">max allowed prompt length in tokens = (context size - response length)</span></li>
+    <li><tt>&lcub;&lcub;exampleSeparator&rcub;&rcub;</tt> – <span data-i18n="help_macros_42">context template example dialogues separator</span></li>
+    <li><tt>&lcub;&lcub;chatStart&rcub;&rcub;</tt> – <span data-i18n="help_macros_43">context template chat start line</span></li>
+    <li><tt>&lcub;&lcub;systemPrompt&rcub;&rcub;</tt> – <span data-i18n="help_macros_44">main system prompt (either character prompt override if chosen, or instructSystemPrompt)</span></li>
+    <li><tt>&lcub;&lcub;instructSystemPrompt&rcub;&rcub;</tt> – <span data-i18n="help_macros_45">instruct system prompt</span></li>
+    <li><tt>&lcub;&lcub;instructSystemPromptPrefix&rcub;&rcub;</tt> – <span data-i18n="help_macros_46">instruct system prompt prefix sequence</span></li>
+    <li><tt>&lcub;&lcub;instructSystemPromptSuffix&rcub;&rcub;</tt> – <span data-i18n="help_macros_47">instruct system prompt suffix sequence</span></li>
+    <li><tt>&lcub;&lcub;instructUserPrefix&rcub;&rcub;</tt> – <span data-i18n="help_macros_48">instruct user prefix sequence</span></li>
+    <li><tt>&lcub;&lcub;instructUserSuffix&rcub;&rcub;</tt> – <span data-i18n="help_macros_49">instruct user suffix sequence</span></li>
+    <li><tt>&lcub;&lcub;instructAssistantPrefix&rcub;&rcub;</tt> – <span data-i18n="help_macros_50">instruct assistant prefix sequence</span></li>
+    <li><tt>&lcub;&lcub;instructAssistantSuffix&rcub;&rcub;</tt> – <span data-i18n="help_macros_51">instruct assistant suffix sequence</span></li>
+    <li><tt>&lcub;&lcub;instructFirstAssistantPrefix&rcub;&rcub;</tt> – <span data-i18n="help_macros_52">instruct assistant first output sequence</span></li>
+    <li><tt>&lcub;&lcub;instructLastAssistantPrefix&rcub;&rcub;</tt> – <span data-i18n="help_macros_53">instruct assistant last output sequence</span></li>
+    <li><tt>&lcub;&lcub;instructSystemPrefix&rcub;&rcub;</tt> – <span data-i18n="help_macros_54">instruct system message prefix sequence</span></li>
+    <li><tt>&lcub;&lcub;instructSystemSuffix&rcub;&rcub;</tt> – <span data-i18n="help_macros_55">instruct system message suffix sequence</span></li>
+    <li><tt>&lcub;&lcub;instructSystemInstructionPrefix&rcub;&rcub;</tt> – <span data-i18n="help_macros_56">instruct system instruction prefix</span></li>
+    <li><tt>&lcub;&lcub;instructUserFiller&rcub;&rcub;</tt> – <span data-i18n="help_macros_57">instruct first user message filler</span></li>
+    <li><tt>&lcub;&lcub;instructStop&rcub;&rcub;</tt> – <span data-i18n="help_macros_58">instruct stop sequence</span></li>
 </ul>
-<div>
+<div data-i18n="Chat variables Macros:">
     Chat variables Macros:
 </div>
-<div><small>Local variables = unique to the current chat</small></div>
-<div><small>Global variables = works in any chat for any character</small></div>
-<div><small>Scoped variables = works in STscript</small></div>
+<div><small data-i18n="Local variables = unique to the current chat">Local variables = unique to the current chat</small></div>
+<div><small data-i18n="Global variables = works in any chat for any character">Global variables = works in any chat for any character</small></div>
+<div><small data-i18n="Scoped variables = works in STscript">Scoped variables = works in STscript</small></div>
 <ul>
-    <li><tt>&lcub;&lcub;getvar::name&rcub;&rcub;</tt> – replaced with the value of the local variable "name"</li>
-    <li><tt>&lcub;&lcub;setvar::name::value&rcub;&rcub;</tt> – replaced with empty string, sets the local variable "name" to "value"</li>
-    <li><tt>&lcub;&lcub;addvar::name::increment&rcub;&rcub;</tt> – replaced with empty strings, adds a numeric value of "increment" to the local variable "name"</li>
-    <li><tt>&lcub;&lcub;incvar::name&rcub;&rcub;</tt> – replaced with the result of the increment of value of the variable "name" by 1</li>
-    <li><tt>&lcub;&lcub;decvar::name&rcub;&rcub;</tt> – replaced with the result of the decrement of value of the variable "name" by 1</li>
-    <li><tt>&lcub;&lcub;getglobalvar::name&rcub;&rcub;</tt> – replaced with the value of the global variable "name"</li>
-    <li><tt>&lcub;&lcub;setglobalvar::name::value&rcub;&rcub;</tt> – replaced with empty string, sets the global variable "name" to "value"</li>
-    <li><tt>&lcub;&lcub;addglobalvar::name::value&rcub;&rcub;</tt> – replaced with empty string, adds a numeric value of "increment" to the global variable "name"</li>
-    <li><tt>&lcub;&lcub;incglobalvar::name&rcub;&rcub;</tt> – replaced with the result of the increment of value of the global variable "name" by 1</li>
-    <li><tt>&lcub;&lcub;decglobalvar::name&rcub;&rcub;</tt> – replaced with the result of the decrement of value of the global variable "name" by 1</li>
-    <li><tt>&lcub;&lcub;var::name&rcub;&rcub;</tt> – replaced with the value of the scoped variable "name"</li>
-    <li><tt>&lcub;&lcub;var::name::index&rcub;&rcub;</tt> – replaced with the value of item at index (for arrays / lists or objects / dictionaries) of the scoped variable "name"</li>
+    <li><tt>&lcub;&lcub;getvar::name&rcub;&rcub;</tt> – <span data-i18n="help_macros_59">replaced with the value of the local variable "name"</span></li>
+    <li><tt>&lcub;&lcub;setvar::name::value&rcub;&rcub;</tt> – <span data-i18n="help_macros_60">replaced with empty string, sets the local variable "name" to "value"</span></li>
+    <li><tt>&lcub;&lcub;addvar::name::increment&rcub;&rcub;</tt> – <span data-i18n="help_macros_61">replaced with empty strings, adds a numeric value of "increment" to the local variable "name"</span></li>
+    <li><tt>&lcub;&lcub;incvar::name&rcub;&rcub;</tt> – <span data-i18n="help_macros_62">replaced with the result of the increment of value of the variable "name" by 1</span></li>
+    <li><tt>&lcub;&lcub;decvar::name&rcub;&rcub;</tt> – <span data-i18n="help_macros_63">replaced with the result of the decrement of value of the variable "name" by 1</span></li>
+    <li><tt>&lcub;&lcub;getglobalvar::name&rcub;&rcub;</tt> – <span data-i18n="help_macros_64">replaced with the value of the global variable "name"</span></li>
+    <li><tt>&lcub;&lcub;setglobalvar::name::value&rcub;&rcub;</tt> – <span data-i18n="help_macros_65">replaced with empty string, sets the global variable "name" to "value"</span></li>
+    <li><tt>&lcub;&lcub;addglobalvar::name::value&rcub;&rcub;</tt> – <span data-i18n="help_macros_66">replaced with empty string, adds a numeric value of "increment" to the global variable "name"</span></li>
+    <li><tt>&lcub;&lcub;incglobalvar::name&rcub;&rcub;</tt> – <span data-i18n="help_macros_67">replaced with the result of the increment of value of the global variable "name" by 1</span></li>
+    <li><tt>&lcub;&lcub;decglobalvar::name&rcub;&rcub;</tt> – <span data-i18n="help_macros_68">replaced with the result of the decrement of value of the global variable "name" by 1</span></li>
+    <li><tt>&lcub;&lcub;var::name&rcub;&rcub;</tt> – <span data-i18n="help_macros_69">replaced with the value of the scoped variable "name"</span></li>
+    <li><tt>&lcub;&lcub;var::name::index&rcub;&rcub;</tt> – <span data-i18n="help_macros_70">replaced with the value of item at index (for arrays / lists or objects / dictionaries) of the scoped variable "name"</span></li>
 </ul>

@@ -1754,8 +1754,8 @@
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
                                             <div class="flexBasis100p toggle-description justifyLeft">
-                                                Allows using <a href="https://platform.openai.com/docs/guides/function-calling" target="_blank">function tools</a>.
-                                                Can be utilized by various extensions to provide additional functionality.
+                                                <span data-i18n="enable_functions_desc_1">Allows using </span><a href="https://platform.openai.com/docs/guides/function-calling" target="_blank" data-i18n="enable_functions_desc_2">function tools</a>.
+                                                <span data-i18n="enable_functions_desc_3">Can be utilized by various extensions to provide additional functionality.</span>
                                             </div>
                                         </label>
                                     </div>
@@ -1864,7 +1864,7 @@
                                             <div id="openai_logit_bias_new_entry" class="menu_button wide100p flex-container justifyCenter" data-i18n="Add bias entry">
                                                 Add bias entry
                                             </div>
-                                            <div class="openai_logit_bias_list"></div>
+                                            <div class="openai_logit_bias_list" no_items_text="No items" data-i18n="[no_items_text]openai_logit_bias_no_items"></div>
                                             <div class="m-t-1">
                                                 <small>
                                                     <i class="fa-solid fa-lightbulb"></i>
@@ -1888,7 +1888,7 @@
         </div>
         <div id="sys-settings-button" class="drawer">
             <div class="drawer-toggle drawer-header">
-                <div id="API-status-top" class="drawer-icon fa-solid fa-plug-circle-exclamation  closedIcon" title="API Connections" data-i18n="[title]API Connections"></div>
+                <div id="API-status-top" class="drawer-icon fa-solid fa-plug-circle-exclamation  closedIcon" title="API Connections" data-i18n="[title]API Connections;[no_connection_text]api_no_connection" no_connection_text="No connection..."></div>
             </div>
             <div id="rm_api_block" class="drawer-content closedDrawer">
                 <h3 class="margin0" id="title_api">API</h3>
@@ -2358,7 +2358,7 @@
                         <select id="chat_completion_source">
                             <optgroup>
                                 <option value="openai">OpenAI</option>
-                                <option value="custom">Custom (OpenAI-compatible)</option>
+                                <option value="custom" data-i18n="Custom (OpenAI-compatible)">Custom (OpenAI-compatible)</option>
                             </optgroup>
                             <optgroup>
                                 <option value="ai21">AI21</option>
@@ -2857,16 +2857,16 @@
                         <form id="custom_form" data-source="custom">
                             <h4 data-i18n="Custom Endpoint (Base URL)">Custom Endpoint (Base URL)</h4>
                             <div class="flex-container">
-                                <input id="custom_api_url_text" class="text_pole wide100p" maxlength="5000" value="" autocomplete="off" placeholder="Example: http://localhost:1234/v1">
+                                <input id="custom_api_url_text" class="text_pole wide100p" maxlength="5000" value="" autocomplete="off" data-i18n="[placeholder]Example: http://localhost:1234/v1" placeholder="Example: http://localhost:1234/v1">
                             </div>
                             <div>
                                 <small>
-                                    Doesn't work? Try adding <code>/v1</code> at the end of the URL!
+                                    <span data-i18n="Doesn't work? Try adding">Doesn't work? Try adding</span> <code>/v1</code> <span data-i18n="at the end of the URL!">at the end of the URL!</span>
                                 </small>
                             </div>
                             <h4>
                                 <span data-i18n="Custom API Key">Custom API Key</span>
-                                <small>(Optional)</small>
+                                <small data-i18n="(Optional)">(Optional)</small>
                             </h4>
                             <div class="flex-container">
                                 <input id="api_key_custom" name="api_key_custom" class="text_pole flex1" maxlength="5000" value="" type="text" autocomplete="off">
@@ -2875,9 +2875,9 @@
                             <div data-for="api_key_custom" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
                                 For privacy reasons, your API key will be hidden after you reload the page.
                             </div>
-                            <h4>Enter a Model ID</h4>
+                            <h4 data-i18n="Enter a Model ID">Enter a Model ID</h4>
                             <div class="flex-container">
-                                <input id="custom_model_id" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" placeholder="Example: gpt-3.5-turbo">
+                                <input id="custom_model_id" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-i18n="[placeholder]Example: gpt-3.5-turbo" placeholder="Example: gpt-3.5-turbo">
                             </div>
                             <h4 data-i18n="Available Models">Available Models</h4>
                             <div class="flex-container">
@@ -2885,14 +2885,14 @@
                             </div>
                             <h4 data-i18n="Prompt Post-Processing">Prompt Post-Processing</h4>
                             <select id="custom_prompt_post_processing" class="text_pole" title="Applies additional processing to the prompt before sending it to the API." data-i18n="[title]Applies additional processing to the prompt before sending it to the API.">
-                                <option value="">None</option>
+                                <option data-i18n="prompt_post_processing_none" value="">None</option>
                                 <option value="claude">Claude</option>
                             </select>
                         </form>
                         <div class="flex-container flex">
                             <div id="api_button_openai" class="api_button menu_button menu_button_icon" type="submit" data-i18n="Connect">Connect</div>
                             <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
-                            <div data-source="custom" id="customize_additional_parameters" class="menu_button menu_button_icon">Additional Parameters</div>
+                            <div data-source="custom" id="customize_additional_parameters" class="menu_button menu_button_icon" data-i18n="Additional Parameters">Additional Parameters</div>
                             <div data-source="openrouter" class="menu_button menu_button_icon openrouter_authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="Authorize;[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
                             <div id="test_api_button" class="menu_button menu_button_icon" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!"><span data-i18n="Test Message">Test Message</span></div>
                         </div>
@@ -4247,7 +4247,7 @@
                             <div name="STscriptToggles">
                                 <h4 data-i18n="STscript Settings">STscript Settings</h4>
                                 <div title="Sets default flags for the STscript parser." data-i18n="[title]Sets default flags for the STscript parser.">
-                                    <label data-i18n="Parser Flags"><small>Parser Flags</small></label>
+                                    <label><small data-i18n="Parser Flags">Parser Flags</small></label>
                                     <label class="checkbox_label" title="Switch to stricter escaping, allowing all delimiting characters to be escaped with a backslash, and backslashes to be escaped as well." data-i18n="[title]Switch to stricter escaping, allowing all delimiting characters to be escaped with a backslash, and backslashes to be escaped as well.">
                                         <input id="stscript_parser_flag_strict_escaping" type="checkbox" />
                                         <span data-i18n="STRICT_ESCAPING"><small>STRICT_ESCAPING</small></span>
@@ -5833,8 +5833,8 @@
             </small>
             <hr>
             <div class="alternate_greetings_list flexFlowColumn flex-container wide100p">
-                <strong class="alternate_grettings_hint margin-bot-10px" data-i18n="Alternate Greetings Hint">
-                    Click the <i class="fa-solid fa-plus"></i> button to get started!
+                <strong class="alternate_grettings_hint margin-bot-10px">
+                    <span data-i18n="alternate_greetings_hint_1">Click the</span> <i class="fa-solid fa-plus"></i> <span data-i18n="alternate_greetings_hint_2">button to get started!</span>
                 </strong>
             </div>
         </div>
@@ -5842,7 +5842,7 @@
     <div id="alternate_greeting_form_template" class="template_element">
         <div class="alternate_greeting">
             <div class="title_restorable">
-                <strong>Alternate Greeting #<span class="greeting_index"></span></strong>
+                <strong><span data-i18n="Alternate Greeting #">Alternate Greeting #</span><span class="greeting_index"></span></strong>
                 <div class="menu_button fa-solid fa-trash-alt delete_alternate_greeting"></div>
             </div>
             <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="50000" value="" autocomplete="off" rows="16"></textarea>

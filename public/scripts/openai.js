@@ -70,6 +70,7 @@ import { saveLogprobsForActiveMessage } from './logprobs.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
+import { renderTemplateAsync } from './templates.js';
 
 export {
     openai_messages_count,
@@ -4409,23 +4410,8 @@ function updateScaleForm() {
     }
 }
 
-function onCustomizeParametersClick() {
-    const template = $(`
-    <div class="flex-container flexFlowColumn height100p">
-        <h3>Additional Parameters</h3>
-        <div class="flex1 flex-container flexFlowColumn">
-            <h4>Include Body Parameters</h4>
-            <textarea id="custom_include_body" class="flex1" placeholder="Parameters to be included in the Chat Completion request body (YAML object)&#10;&#10;Example:&#10;- top_k: 20&#10;- repetition_penalty: 1.1"></textarea>
-        </div>
-        <div class="flex1 flex-container flexFlowColumn">
-            <h4>Exclude Body Parameters</h4>
-            <textarea id="custom_exclude_body" class="flex1" placeholder="Parameters to be excluded from the Chat Completion request body (YAML array)&#10;&#10;Example:&#10;- frequency_penalty&#10;- presence_penalty"></textarea>
-        </div>
-        <div class="flex1 flex-container flexFlowColumn">
-            <h4>Include Request Headers</h4>
-            <textarea id="custom_include_headers" class="flex1" placeholder="Additional headers for Chat Completion requests (YAML object)&#10;&#10;Example:&#10;- CustomHeader: custom-value&#10;- AnotherHeader: custom-value"></textarea>
-        </div>
-    </div>`);
+async function onCustomizeParametersClick() {
+    const template = $(await renderTemplateAsync('customEndpointAdditionalParameters'));
 
     template.find('#custom_include_body').val(oai_settings.custom_include_body).on('input', function () {
         oai_settings.custom_include_body = String($(this).val());

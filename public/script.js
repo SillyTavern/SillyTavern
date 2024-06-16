@@ -912,7 +912,7 @@ function cancelStatusCheck() {
 export function displayOnlineStatus() {
     if (online_status == 'no_connection') {
         $('.online_status_indicator').removeClass('success');
-        $('.online_status_text').text('No connection...');
+        $('.online_status_text').text($('#API-status-top').attr('no_connection_text'));
     } else {
         $('.online_status_indicator').addClass('success');
         $('.online_status_text').text(online_status);
