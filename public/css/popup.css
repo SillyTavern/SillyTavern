@@ -100,6 +100,10 @@ dialog {
     gap: 20px;
 }
 
+.popup-controls .menu_button:focus-within {
+    outline: 1px solid var(--white100);
+}
+
 .menu_button.menu_button_default {
     box-shadow: 0 0 5px var(--white20a);
 }
@@ -117,3 +121,15 @@ dialog {
     /* Custom buttons should not scale to smallest size, otherwise they will always break to multiline */
     width: unset;
 }
+
+.popup-controls .menu_button {
+    /* Fix weird animation issue with fonts on brightness filter */
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    -webkit-font-smoothing: subpixel-antialiased;
+}
+
+.popup-controls .menu_button:hover:focus-within {
+    filter: brightness(1.3) saturate(1.3);
+}
+

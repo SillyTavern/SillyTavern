@@ -55,10 +55,14 @@ function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
 
                 // We collect all hover and focus rules to be able to later decide which hover rules don't have a matching focus rule
                 selectors.forEach(selector => {
-                    if (selector.includes(':hover')) {
+                    const isHover = selector.includes(':hover'), isFocus = selector.includes(':focus');
+                    if (isHover && isFocus) {
+                        // We currently do nothing here. Rules containing both hover and focus are very specific and should never be automatically touched
+                    }
+                    else if (isHover) {
                         const baseSelector = selector.replace(':hover', PLACEHOLDER).trim();
                         hoverRules.push({ baseSelector, rule });
-                    } else if (selector.includes(':focus')) {
+                    } else if (isFocus) {
                         // We need to make sure that we both remember existing :focus and :focus-within rules
                         const baseSelector = selector.replace(':focus-within', PLACEHOLDER).replace(':focus-visible', PLACEHOLDER).replace(':focus', PLACEHOLDER).trim();
                         focusRules.add(baseSelector);
