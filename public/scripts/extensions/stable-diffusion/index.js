@@ -712,6 +712,10 @@ function onChatChanged() {
 }
 
 function adjustElementScrollHeight(){
+    if (!$('.sd_settings').is(':visible')) {
+        return;
+    }
+
     resetScrollHeight($('#sd_prompt_prefix'));
     resetScrollHeight($('#sd_negative_prompt'));
     resetScrollHeight($('#sd_character_prompt'));
