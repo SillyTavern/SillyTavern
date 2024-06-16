@@ -45,7 +45,7 @@ import { hideChatMessageRange } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
-import { chat_completion_sources, oai_settings } from './openai.js';
+import { chat_completion_sources, oai_settings, setupChatCompletionPromptManager } from './openai.js';
 import { autoSelectPersona, retriggerFirstMessageOnEmptyChat, user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
@@ -1204,6 +1204,29 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         ),
     ],
     helpString: 'Sets the model for the current API. Gets the current model name if no argument is provided.',
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+    name: 'setpromptentry',
+    aliases: ['setpromptentries'],
+    callback: setPromptEntryCallback,
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'identifier', 'Prompt entry identifier(s) to target', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.LIST], false, true,
+        ),
+        new SlashCommandNamedArgument(
+            'name', 'Prompt entry name(s) to target', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.LIST], false, true,
+        ),
+    ],
+    unnamedArgumentList: [
+        SlashCommandArgument.fromProps({ description: 'Set entry/entries on or off',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            acceptsMultiple: false,
+            defaultValue: 'toggle', // unnamed arguments don't support default values yet
+            enumList: ['on', 'off', 'toggle'],
+        }),
+    ],
+    helpString: 'Sets the toggles for prompt entries. Toggle by default.',
 }));
 
 registerVariableCommands();
@@ -2827,6 +2850,93 @@ function modelCallback(_, model) {
     }
 }
 
+/**
+ * Sets state of prompt entries (toggles) either via identifier/uuid or name.
+ * @param {object} args Object containing arguments
+ * @param {string} args.identifier Select prompt entry using an identifier (uuid)
+ * @param {string} args.name Select prompt entry using name
+ * @param {string} targetState The targeted state of the entry/entries
+ * @returns {String} empty string
+ */
+function setPromptEntryCallback(args, targetState) {
+    // needs promptManager to manipulate prompt entries
+    const promptManager = setupChatCompletionPromptManager(oai_settings);
+    const prompts = promptManager.serviceSettings.prompts;
+
+    let identifiersList = [];
+    // Check identifiers args
+    try {
+        const parsedIdentifiers = JSON.parse(args.identifier);
+        identifiersList = identifiersList.concat(Array.isArray(parsedIdentifiers) ? parsedIdentifiers : [args.identifier]);
+    } catch {
+        identifiersList.push(args.identifier);
+    }
+
+    // Check if identifiers exists in prompt, else remove from list
+    if (identifiersList.length !== 0) {
+        identifiersList = identifiersList.filter(identifier => {
+            return prompts.some(prompt => prompt.identifier === identifier);
+        });
+    }
+
+    let nameList = [];
+    // Get list of names
+    try {
+        const parsedNames = JSON.parse(args.name);
+        nameList = nameList.concat(Array.isArray(parsedNames) ? parsedNames : [args.name]);
+    } catch {
+        nameList.push(args.name);
+    }
+
+    if (nameList.length !== 0) {
+        nameList.forEach(name => {
+            // one name could potentially have multiple entries, find all identifiers that match given name
+            let identifiers = [];
+            prompts.forEach(entry => {
+                if (entry.name === name) {
+                    identifiers.push(entry.identifier);
+                }
+            });
+            identifiersList = identifiersList.concat(identifiers);
+        });
+    }
+    // Remove duplicates to allow consistent 'toggle'
+    identifiersList = [...new Set(identifiersList)];
+    if (identifiersList.length === 0) return '';
+
+    // logic adapted from PromptManager.js, handleToggle
+    if (['toggle', 't', ''].includes(targetState.trim().toLowerCase())){
+        identifiersList.forEach(promptID => {
+            const promptOrderEntry = promptManager.getPromptOrderEntry(promptManager.activeCharacter, promptID);
+            const counts = promptManager.tokenHandler.getCounts();
+
+            counts[promptID] = null;
+            promptOrderEntry.enabled = !promptOrderEntry.enabled;
+        });
+    }
+    if (isTrueBoolean(targetState)) {
+        identifiersList.forEach(promptID => {
+            const promptOrderEntry = promptManager.getPromptOrderEntry(promptManager.activeCharacter, promptID);
+            const counts = promptManager.tokenHandler.getCounts();
+
+            counts[promptID] = null;
+            promptOrderEntry.enabled = true;
+        });
+    }
+    if (isFalseBoolean(targetState)) {
+        identifiersList.forEach(promptID => {
+            const promptOrderEntry = promptManager.getPromptOrderEntry(promptManager.activeCharacter, promptID);
+            const counts = promptManager.tokenHandler.getCounts();
+
+            counts[promptID] = null;
+            promptOrderEntry.enabled = false;
+        });
+    }
+    // no need to render for each identifier
+    promptManager.render();
+    promptManager.saveServiceSettings();
+    return '';
+}
 
 export let isExecutingCommandsFromChatInput = false;
 export let commandsFromChatInputAbortController;
