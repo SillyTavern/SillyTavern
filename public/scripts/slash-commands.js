@@ -1211,20 +1211,14 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     callback: setPromptEntryCallback,
     namedArgumentList: [
         new SlashCommandNamedArgument(
-            'identifier', 'Prompt entry identifier to set (UUID)', [ARGUMENT_TYPE.STRING], false,
+            'identifier', 'Prompt entry identifier(s) to target', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.LIST], false, true,
         ),
         new SlashCommandNamedArgument(
-            'identifiers', 'List of prompt entry identifiers to set (UUID)', [ARGUMENT_TYPE.LIST], false,
-        ),
-        new SlashCommandNamedArgument(
-            'name', 'Prompt entry name to set', [ARGUMENT_TYPE.STRING], false,
-        ),
-        new SlashCommandNamedArgument(
-            'names', 'Prompt entry names to set', [ARGUMENT_TYPE.LIST], false,
+            'name', 'Prompt entry name(s) to target', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.LIST], false, true,
         ),
     ],
     unnamedArgumentList: [
-        SlashCommandArgument.fromProps({ description: 'Set entry/entries on, off or toggle current state',
+        SlashCommandArgument.fromProps({ description: 'Set entry/entries on or off',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
             acceptsMultiple: false,
@@ -1232,7 +1226,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             enumList: ['on', 'off', 'toggle'],
         }),
     ],
-    helpString: 'Sets or toggles individual chat completion prompt entries.',
+    helpString: 'Sets the model for the current API. Gets the current model name if no argument is provided.',
 }));
 
 registerVariableCommands();
@@ -2860,9 +2854,7 @@ function modelCallback(_, model) {
  * Sets state of prompt entries (toggles) either via identifier/uuid or name.
  * @param {object} args Object containing arguments
  * @param {string} args.identifier Select prompt entry using an identifier (uuid)
- * @param {string} args.identifiers List of identifiers to set
  * @param {string} args.name Select prompt entry using name
- * @param {string} args.names List of names to set
  * @param {string} targetState The targeted state of the entry/entries
  * @returns {String} empty string
  */
@@ -2872,15 +2864,14 @@ function setPromptEntryCallback(args, targetState) {
     const prompts = promptManager.serviceSettings.prompts;
 
     let identifiersList = [];
-    // Check identifier(s) args
-    if (args.identifier) identifiersList.push(args.identifier);
-    if (args.identifiers) {
-        try {
-            identifiersList = identifiersList.concat(JSON.parse(args.identifiers));
-        } catch {
-            // Do nothing
-        }
+    // Check identifiers args
+    try {
+        const parsedIdentifiers = JSON.parse(args.identifier);
+        identifiersList = identifiersList.concat(Array.isArray(parsedIdentifiers) ? parsedIdentifiers : [args.identifier]);
+    } catch {
+        identifiersList.push(args.identifier);
     }
+
     // Check if identifiers exists in prompt, else remove from list
     if (identifiersList.length !== 0) {
         identifiersList = identifiersList.filter(identifier => {
@@ -2890,13 +2881,11 @@ function setPromptEntryCallback(args, targetState) {
 
     let nameList = [];
     // Get list of names
-    if (args.name) nameList.push(args.name);
-    if (args.names) {
-        try {
-            nameList = nameList.concat(JSON.parse(args.names));
-        } catch {
-            // Do nothing
-        }
+    try {
+        const parsedNames = JSON.parse(args.name);
+        nameList = nameList.concat(Array.isArray(parsedNames) ? parsedNames : [args.name]);
+    } catch {
+        nameList.push(args.name);
     }
 
     if (nameList.length !== 0) {
