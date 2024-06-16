@@ -1226,7 +1226,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             enumList: ['on', 'off', 'toggle'],
         }),
     ],
-    helpString: 'Sets the model for the current API. Gets the current model name if no argument is provided.',
+    helpString: 'Sets the toggles for prompt entries. Toggle by default.',
 }));
 
 registerVariableCommands();
