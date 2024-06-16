@@ -112,10 +112,16 @@ export function applyLocale(root = document) {
                 if (localizedValue || localizedValue == '') {
                     $(this).attr(attributeMatch[1], localizedValue);
                 }
+                else {
+                    console.warn(`Missing translation for '${attributeMatch[2]}'`);
+                }
             } else { // No attribute tag, treat as 'text'
                 const localizedValue = localeData?.[key];
                 if (localizedValue || localizedValue == '') {
                     $(this).text(localizedValue);
+                }
+                else {
+                    console.warn(`Missing translation for '${key}'`);
                 }
             }
         }
