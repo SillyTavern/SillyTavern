@@ -398,7 +398,7 @@ export class AutoComplete {
                 ,
             );
             this.result.push(option);
-        } else if (this.result.length == 1 && this.effectiveParserResult && this.result[0].name == this.effectiveParserResult.name) {
+        } else if (this.result.length == 1 && this.effectiveParserResult && this.effectiveParserResult != this.secondaryParserResult && this.result[0].name == this.effectiveParserResult.name) {
             // only one result that is exactly the current value? just show hint, no autocomplete
             this.isReplaceable = false;
             this.isShowingDetails = false;

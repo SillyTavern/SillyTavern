@@ -177,7 +177,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
         );
         const isCompleteValue = enumList.find(it=>it.value == value);
         const isSelectedValue = isSelect && isCompleteValue;
-        result.isRequired = cmdArg.isRequired && !isSelectedValue && !isCompleteValue;
+        result.isRequired = cmdArg.isRequired && !isSelectedValue;
         result.forceMatch = cmdArg.forceEnum;
         return result;
     }
