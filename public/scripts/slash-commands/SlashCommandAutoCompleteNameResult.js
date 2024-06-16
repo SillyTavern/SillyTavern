@@ -90,8 +90,8 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             }
         } else if (unamedArgLength > 0 && index >= this.executor.startUnnamedArgs && index <= this.executor.endUnnamedArgs) {
             // cursor is somewhere within the unnamed arguments
-            //TODO if index is in first array item and that is a string, treat it as an unfinished named arg
-            if (typeof this.executor.unnamedArgumentList[0].value == 'string') {
+            // if index is in first array item and that is a string, treat it as an unfinished named arg
+            if (typeof this.executor.unnamedArgumentList[0]?.value == 'string') {
                 if (index <= this.executor.startUnnamedArgs + this.executor.unnamedArgumentList[0].value.length) {
                     name = this.executor.unnamedArgumentList[0].value.slice(0, index - this.executor.startUnnamedArgs);
                     start = this.executor.startUnnamedArgs;
@@ -154,6 +154,9 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             if (idx > -1) {
                 argAssign = this.executor.unnamedArgumentList[idx];
                 cmdArg = this.executor.command.unnamedArgumentList[idx];
+                if (cmdArg === undefined && this.executor.command.unnamedArgumentList.slice(-1)[0].acceptsMultiple) {
+                    cmdArg = this.executor.command.unnamedArgumentList.slice(-1)[0];
+                }
                 const enumList = cmdArg?.enumProvider?.(this.executor, this.scope) ?? cmdArg?.enumList;
                 if (cmdArg && enumList.length > 0) {
                     value = argAssign.value.toString().slice(0, index - argAssign.start);
@@ -165,6 +168,9 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
                 value = '';
                 start = index;
                 cmdArg = notProvidedArguments[0];
+                if (cmdArg === undefined && this.executor.command.unnamedArgumentList.slice(-1)[0].acceptsMultiple) {
+                    cmdArg = this.executor.command.unnamedArgumentList.slice(-1)[0];
+                }
             }
         } else {
             return null;
