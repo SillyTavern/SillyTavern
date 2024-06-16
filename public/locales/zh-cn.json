@@ -1101,7 +1101,7 @@
     "Alternate_Greetings_desc": "开始新聊天时，这些按钮将显示为第一条消息的滑动选项。\n群组成员可以选择其中之一来发起对话。",
     "alternate_greetings_hint_1": "点击",
     "alternate_greetings_hint_2": "按钮即可开始！",
-    "Alternate Greeting #": "替代问候语 #",
+    "Alternate Greeting #": "额外问候语 #",
     "(This will be the first message from the character that starts every chat)": "(这将是角色在每次聊天开始时发送的第一条消息)",
     "Forbid Media Override explanation": "当前角色/群组在聊天中使用外部媒体的能力。",
     "Forbid Media Override subtitle": "媒体：图像、视频、音频。外部：不在本地服务器上托管。",
