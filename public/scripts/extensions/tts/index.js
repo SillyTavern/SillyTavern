@@ -529,6 +529,7 @@ function loadSettings() {
     $('#tts_narrate_dialogues').prop('checked', extension_settings.tts.narrate_dialogues_only);
     $('#tts_narrate_quoted').prop('checked', extension_settings.tts.narrate_quoted_only);
     $('#tts_auto_generation').prop('checked', extension_settings.tts.auto_generation);
+    $('#tts_periodic_auto_generation').prop('checked', extension_settings.tts.periodic_auto_generation);
     $('#tts_narrate_translated_only').prop('checked', extension_settings.tts.narrate_translated_only);
     $('#tts_narrate_user').prop('checked', extension_settings.tts.narrate_user);
     $('#tts_pass_asterisks').prop('checked', extension_settings.tts.pass_asterisks);
@@ -588,6 +589,12 @@ function onEnableClick() {
 
 function onAutoGenerationClick() {
     extension_settings.tts.auto_generation = !!$('#tts_auto_generation').prop('checked');
+    saveSettingsDebounced();
+}
+
+
+function onPeriodicAutoGenerationClick() {
+    extension_settings.tts.periodic_auto_generation = !!$('#tts_periodic_auto_generation').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -793,6 +800,11 @@ async function onGenerationStarted(userMessageType) {
 
     // Auto generation is disabled
     if (!extension_settings.tts.auto_generation) {
+        return;
+    }
+
+    // Periodic auto generation is disabled
+    if (!extension_settings.tts.periodic_auto_generation) {
         return;
     }
 
@@ -1072,6 +1084,10 @@ $(document).ready(function () {
                             <input type="checkbox" id="tts_auto_generation">
                             <small>Auto Generation</small>
                         </label>
+                        <label class="checkbox_label" for="tts_periodic_auto_generation">
+                            <input type="checkbox" id="tts_periodic_auto_generation">
+                            <small>Periodically auto generate</small>
+                        </label>
                         <label class="checkbox_label" for="tts_narrate_quoted">
                             <input type="checkbox" id="tts_narrate_quoted">
                             <small>Only narrate "quotes"</small>
@@ -1134,6 +1150,7 @@ $(document).ready(function () {
         $('#tts_skip_tags').on('click', onSkipTagsClick);
         $('#tts_pass_asterisks').on('click', onPassAsterisksClick);
         $('#tts_auto_generation').on('click', onAutoGenerationClick);
+        $('#tts_periodic_auto_generation').on('click', onPeriodicAutoGenerationClick);
         $('#tts_narrate_user').on('click', onNarrateUserClick);
 
         $('#playback_rate').on('input', function () {
