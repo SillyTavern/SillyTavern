@@ -45,7 +45,7 @@ import { hideChatMessageRange } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
-import { chat_completion_sources, oai_settings } from './openai.js';
+import { chat_completion_sources, oai_settings, setupChatCompletionPromptManager } from './openai.js';
 import { autoSelectPersona, retriggerFirstMessageOnEmptyChat, user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
@@ -116,12 +116,13 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     aliases: ['background'],
     returns: 'the current background',
     unnamedArgumentList: [
-        SlashCommandArgument.fromProps({ description: 'filename',
+        SlashCommandArgument.fromProps({
+            description: 'filename',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-            enumProvider: ()=>[...document.querySelectorAll('.bg_example')]
-                .map((it)=>new SlashCommandEnumValue(it.getAttribute('bgfile')))
-                .filter(it=>it.value?.length)
+            enumProvider: () => [...document.querySelectorAll('.bg_example')]
+                .map((it) => new SlashCommandEnumValue(it.getAttribute('bgfile')))
+                .filter(it => it.value?.length)
             ,
         }),
     ],
@@ -327,12 +328,13 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'go',
     callback: goToCharacterCallback,
     unnamedArgumentList: [
-        SlashCommandArgument.fromProps({ description: 'name',
+        SlashCommandArgument.fromProps({
+            description: 'name',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-            enumProvider: ()=>[
-                ...characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
-                ...groups.map(it=>new SlashCommandEnumValue(it.name, null, 'variable', 'G')),
+            enumProvider: () => [
+                ...characters.map(it => new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+                ...groups.map(it => new SlashCommandEnumValue(it.name, null, 'variable', 'G')),
             ],
         }),
     ],
@@ -376,11 +378,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'ask',
     callback: askCharacter,
     namedArgumentList: [
-        SlashCommandNamedArgument.fromProps({ name: 'name',
+        SlashCommandNamedArgument.fromProps({
+            name: 'name',
             description: 'character name',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-            enumProvider: ()=>characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+            enumProvider: () => characters.map(it => new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
         }),
     ],
     unnamedArgumentList: [
@@ -1204,6 +1207,30 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         ),
     ],
     helpString: 'Sets the model for the current API. Gets the current model name if no argument is provided.',
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+    name: 'setpromptentry',
+    aliases: ['setpromptentries'],
+    callback: setPromptEntryCallback,
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'identifier', 'Prompt entry identifier(s) to target', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.LIST], false, true,
+        ),
+        new SlashCommandNamedArgument(
+            'name', 'Prompt entry name(s) to target', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.LIST], false, true,
+        ),
+    ],
+    unnamedArgumentList: [
+        SlashCommandArgument.fromProps({
+            description: 'Set entry/entries on or off',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            acceptsMultiple: false,
+            defaultValue: 'toggle', // unnamed arguments don't support default values yet
+            enumList: ['on', 'off', 'toggle'],
+        }),
+    ],
+    helpString: 'Sets the specified prompt manager entry/entries on or off.',
 }));
 
 registerVariableCommands();
@@ -2827,6 +2854,85 @@ function modelCallback(_, model) {
     }
 }
 
+/**
+ * Sets state of prompt entries (toggles) either via identifier/uuid or name.
+ * @param {object} args Object containing arguments
+ * @param {string} args.identifier Select prompt entry using an identifier (uuid)
+ * @param {string} args.name Select prompt entry using name
+ * @param {string} targetState The targeted state of the entry/entries
+ * @returns {String} empty string
+ */
+function setPromptEntryCallback(args, targetState) {
+    // needs promptManager to manipulate prompt entries
+    const promptManager = setupChatCompletionPromptManager(oai_settings);
+    const prompts = promptManager.serviceSettings.prompts;
+
+    function parseArgs(arg) {
+        const list = [];
+        try {
+            const parsedArg = JSON.parse(arg);
+            list.push(...Array.isArray(parsedArg) ? parsedArg : [arg]);
+        } catch {
+            list.push(arg);
+        }
+        return list;
+    }
+
+    let identifiersList = parseArgs(args.identifier);
+    let nameList = parseArgs(args.name);
+
+    // Check if identifiers exists in prompt, else remove from list
+    if (identifiersList.length !== 0) {
+        identifiersList = identifiersList.filter(identifier => prompts.some(prompt => prompt.identifier === identifier));
+    }
+
+    if (nameList.length !== 0) {
+        nameList.forEach(name => {
+            // one name could potentially have multiple entries, find all identifiers that match given name
+            let identifiers = [];
+            prompts.forEach(entry => {
+                if (entry.name === name) {
+                    identifiers.push(entry.identifier);
+                }
+            });
+            identifiersList = identifiersList.concat(identifiers);
+        });
+    }
+
+    // Remove duplicates to allow consistent 'toggle'
+    identifiersList = [...new Set(identifiersList)];
+    if (identifiersList.length === 0) return '';
+
+    // logic adapted from PromptManager.js, handleToggle
+    const getPromptOrderEntryState = (promptOrderEntry) => {
+        if (['toggle', 't', ''].includes(targetState.trim().toLowerCase())) {
+            return !promptOrderEntry.enabled;
+        }
+
+        if (isTrueBoolean(targetState)) {
+            return true;
+        }
+
+        if (isFalseBoolean(targetState)) {
+            return false;
+        }
+
+        return promptOrderEntry.enabled;
+    };
+
+    identifiersList.forEach(promptID => {
+        const promptOrderEntry = promptManager.getPromptOrderEntry(promptManager.activeCharacter, promptID);
+        const counts = promptManager.tokenHandler.getCounts();
+
+        counts[promptID] = null;
+        promptOrderEntry.enabled = getPromptOrderEntryState(promptOrderEntry);
+    });
+
+    // no need to render for each identifier
+    promptManager.render();
+    promptManager.saveServiceSettings();
+    return '';
+}
 
 export let isExecutingCommandsFromChatInput = false;
 export let commandsFromChatInputAbortController;
