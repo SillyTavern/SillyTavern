@@ -1345,13 +1345,23 @@ export function registerVariableCommands() {
         `,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'add',
-        callback: addValuesCallback,
+        callback: (args, /**@type {string[]}*/value) => addValuesCallback(args, value.join(' ')),
         returns: 'sum of the provided values',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'values', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true, true,
-            ),
+            SlashCommandArgument.fromProps({ description: 'values',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                acceptsMultiple: true,
+                enumProvider: (executor, scope)=>[
+                    ...scope.allVariableNames.map(it=>new SlashCommandEnumValue(it, 'scope', 'variable', 'S')),
+                    ...Object.keys(chat_metadata.variables).map(it=>new SlashCommandEnumValue(it, 'chat', 'qr', 'C')),
+                    ...Object.keys(extension_settings.variables.global).map(it=>new SlashCommandEnumValue(it, 'global', 'enum', 'G')),
+                    new SlashCommandEnumValue('', 'any number or variable name', 'macro', '?'),
+                ].filter((value, idx, list)=>idx == list.findIndex(it=>it.value == value.value)),
+                forceEnum: false,
+            }),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Performs an addition of the set of values and passes the result down the pipe.
