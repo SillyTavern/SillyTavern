@@ -2339,6 +2339,10 @@ export function substituteParamsExtended(content, additionalMacro = {}) {
  * @returns {string} The string with substituted parameters.
  */
 export function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true, additionalMacro = {}) {
+    if (!content) {
+        return '';
+    }
+
     const environment = {};
 
     if (typeof _original === 'string') {

@@ -10,6 +10,8 @@ import {
     buildAvatarList,
     eventSource,
     event_types,
+    substituteParams,
+    printCharacters,
 } from '../script.js';
 // eslint-disable-next-line no-unused-vars
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
@@ -1546,17 +1548,18 @@ function registerTagsSlashCommands() {
      * @param {string?} [charName] The optionally provided char name
      * @returns {string?} - The char/group key, or null if none found
      */
-    function paraGetCharKey(charName) {
+    function paraGetCharKey(charName, { suppressLogging = false } = {}) {
         const entity = charName
             ? (characters.find(x => x.name === charName) || groups.find(x => x.name == charName))
             : (selected_group ? groups.find(x => x.id == selected_group) : characters[this_chid]);
         const key = getTagKeyForEntity(entity);
         if (!key) {
-            toastr.warning(`Character ${charName} not found.`);
+            if (!suppressLogging) toastr.warning(`Character ${charName} not found.`);
             return null;
         }
         return key;
     }
+
     /**
      * Gets a tag by its name. Optionally can create the tag if it does not exist.
      * @param {string} tagName - The name of the tag
@@ -1580,18 +1583,23 @@ function registerTagsSlashCommands() {
         return tag;
     }
 
-    function updateTagsList() {
-        switch (menu_type) {
-            case 'characters':
-                printTagFilters(tag_filter_types.character);
-                printTagFilters(tag_filter_types.group_member);
-                break;
-            case 'character_edit':
-                applyTagsOnCharacterSelect();
-                break;
-            case 'group_edit':
-                select_group_chats(selected_group, true);
-                break;
+    /** A collection of enum providers used for the tag slash commands */
+    const enumProviders = {
+        /** Get a list of all possible character and group names */
+        charName: () => [
+            ...characters.map(it => new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
+            ...groups.map(it => new SlashCommandEnumValue(it.name, null, 'variable', 'G')),
+        ],
+        /**
+         * Get A list of all possible tags for the given char/group entity
+         * @param {'all' | 'existing' | 'not-existing'} mode - Which types of tags to
+         */
+        tagForChar: (mode) => (/** @type {SlashCommandExecutor} */ executor) => {
+            // Try to see if we can find the char during execution to filter down the tags list some more. Otherwise take all tags.
+            const key = paraGetCharKey(substituteParams(/**@type {string?}*/(executor.namedArgumentList.find(it => it.name == 'name')?.value)), { suppressLogging: true });
+            const assigned = key ? getTagsList(key) : [];
+            return tags.filter(it => !key || mode === 'all' || mode === 'existing' && assigned.includes(it) || mode === 'not-existing' && !assigned.includes(it))
+                .map(it => new SlashCommandEnumValue(it.name, it.title));
         }
     }
 
@@ -1605,7 +1613,7 @@ function registerTagsSlashCommands() {
             const tag = paraGetTag(tagName, { allowCreate: true });
             if (!tag) return 'false';
             const result = addTagToEntity(tag, key);
-            updateTagsList();
+            printCharacters();
             return String(result);
         },
         namedArgumentList: [
@@ -1613,22 +1621,14 @@ function registerTagsSlashCommands() {
                 description: 'Character name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
-                enumProvider: ()=>[
-                    ...characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
-                    ...groups.map(it=>new SlashCommandEnumValue(it.name, null, 'variable', 'G')),
-                ],
+                enumProvider: enumProviders.charName,
             }),
         ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({ description: 'tag name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: (executor)=>{
-                    const key = paraGetCharKey(/**@type {string}*/(executor.namedArgumentList.find(it=>it.name == 'name')?.value));
-                    if (!key) return tags.map(it=>new SlashCommandEnumValue(it.name, it.title));
-                    const assigned = getTagsList(key);
-                    return tags.filter(it=>!assigned.includes(it)).map(it=>new SlashCommandEnumValue(it.name, it.title));
-                },
+                enumProvider: enumProviders.tagForChar('not-existing'),
                 forceEnum: false,
             }),
         ],
@@ -1658,7 +1658,7 @@ function registerTagsSlashCommands() {
             const tag = paraGetTag(tagName);
             if (!tag) return 'false';
             const result = removeTagFromEntity(tag, key);
-            updateTagsList();
+            printCharacters();
             return String(result);
         },
         namedArgumentList: [
@@ -1666,10 +1666,7 @@ function registerTagsSlashCommands() {
                 description: 'Character name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
-                enumProvider: ()=>[
-                    ...characters.map(it=>new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
-                    ...groups.map(it=>new SlashCommandEnumValue(it.name, null, 'variable', 'G')),
-                ],
+                enumProvider: enumProviders.charName,
             }),
         ],
         unnamedArgumentList: [
@@ -1677,11 +1674,7 @@ function registerTagsSlashCommands() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 /**@param {SlashCommandExecutor} executor */
-                enumProvider: (executor)=>{
-                    const key = paraGetCharKey(/**@type {string}*/(executor.namedArgumentList.find(it=>it.name == 'name')?.value));
-                    if (!key) return tags.map(it=>new SlashCommandEnumValue(it.name, it.title));
-                    return getTagsList(key).map(it=>new SlashCommandEnumValue(it.name, it.title));
-                },
+                enumProvider: enumProviders.tagForChar('existing'),
             }),
         ],
         helpString: `
@@ -1711,10 +1704,22 @@ function registerTagsSlashCommands() {
             return String(tag_map[key].includes(tag.id));
         },
         namedArgumentList: [
-            new SlashCommandNamedArgument('name', 'Character name', [ARGUMENT_TYPE.STRING], false, false, '{{char}}'),
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'Character name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: '{{char}}',
+                enumProvider: enumProviders.charName,
+            }),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument('tag name', [ARGUMENT_TYPE.STRING], true),
+            SlashCommandArgument.fromProps({
+                description: 'tag name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                /**@param {SlashCommandExecutor} executor */
+                enumProvider: enumProviders.tagForChar('all'),
+            }),
         ],
         helpString: `
         <div>
@@ -1742,7 +1747,13 @@ function registerTagsSlashCommands() {
             return tags.map(x => x.name).join(', ');
         },
         namedArgumentList: [
-            new SlashCommandNamedArgument('name', 'Character name', [ARGUMENT_TYPE.STRING], false, false, '{{char}}'),
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'Character name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: '{{char}}',
+                enumProvider: enumProviders.charName,
+            }),
         ],
         helpString: `
         <div>

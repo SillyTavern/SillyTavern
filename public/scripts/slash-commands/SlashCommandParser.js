@@ -18,6 +18,9 @@ import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgu
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
 import { MacroAutoCompleteOption } from '../autocomplete/MacroAutoCompleteOption.js';
 
+/** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
+/** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
+
 /**@readonly*/
 /**@enum {Number}*/
 export const PARSER_FLAG = {
@@ -32,7 +35,7 @@ export class SlashCommandParser {
     /**
      * @deprecated Use SlashCommandParser.addCommandObject() instead.
      * @param {string} command Command name
-     * @param {(namedArguments:Object.<string,string|SlashCommandClosure>, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|void|Promise<string|SlashCommandClosure|void>} callback The function to execute when the command is called
+     * @param {(namedArguments:NamedArguments|NamedArgumentsCapture, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|Promise<string|SlashCommandClosure>} callback callback The function to execute when the command is called
      * @param {string[]} aliases List of alternative command names
      * @param {string} helpString Help text shown in autocomplete and command browser
      */
