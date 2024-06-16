@@ -29,33 +29,42 @@ export const NOT_FOCUSABLE_CONTROL_CLASS = 'not_focusable';
 export const DISABLED_CONTROL_CLASS = 'disabled';
 
 /**
- * An observer that will check if any new interactables are added to the body
+ * An observer that will check if any new interactables or scroll reset containers are added to the body
  * @type {MutationObserver}
  */
 const observer = new MutationObserver(mutations => {
     mutations.forEach(mutation => {
         if (mutation.type === 'childList') {
-            mutation.addedNodes.forEach(node => {
-                if (node.nodeType === Node.ELEMENT_NODE && node instanceof Element) {
-                    // Check if the node itself is an interactable
-                    if (isKeyboardInteractable(node)) {
-                        makeKeyboardInteractable(node);
-                    }
-                    // Check for any descendants that might be an interactable
-                    const interactables = getAllInteractables(node);
-                    makeKeyboardInteractable(...interactables);
-                }
-            });
-        } else if (mutation.type === 'attributes') {
+            mutation.addedNodes.forEach(handleNodeChange);
+        }
+        if (mutation.type === 'attributes') {
             const target = mutation.target;
             if (mutation.attributeName === 'class' && target instanceof Element) {
-                if (isKeyboardInteractable(target)) {
-                    makeKeyboardInteractable(target);
-                }
+                handleNodeChange(target);
             }
         }
     });
 });
+
+/**
+ * Function to handle node changes (added or modified nodes)
+ * @param {Element} node
+ */
+function handleNodeChange(node) {
+    if (node.nodeType === Node.ELEMENT_NODE && node instanceof Element) {
+        // Handle keyboard interactables
+        if (isKeyboardInteractable(node)) {
+            makeKeyboardInteractable(node);
+        }
+        initializeInteractables(node);
+
+        // Handle scroll reset containers
+        if (node.classList.contains('scroll-reset-container')) {
+            applyScrollResetBehavior(node);
+        }
+        initializeScrollResetBehaviors(node);
+    }
+}
 
 /**
  * Registers an interactable class (for example for an extension) and makes it keyboard interactable.
@@ -138,7 +147,6 @@ export function makeKeyboardInteractable(...interactables) {
     });
 }
 
-
 /**
  * Initializes the focusability of controls on the given element or the document
  *
@@ -158,6 +166,32 @@ function initializeInteractables(element = document) {
 function getAllInteractables(element) {
     // Query each selector individually and combine all to a big array to return
     return [].concat(...interactableSelectors.map(selector => Array.from(element.querySelectorAll(`${selector}`))));
+}
+
+/**
+ * Function to apply scroll reset behavior to a container
+ * @param {Element} container - The container
+ */
+const applyScrollResetBehavior = (container) => {
+    container.addEventListener('focusout', (e) => {
+        setTimeout(() => {
+            const focusedElement = document.activeElement;
+            if (!container.contains(focusedElement)) {
+                container.scrollTop = 0;
+                container.scrollLeft = 0;
+            }
+        }, 0);
+    });
+};
+
+/**
+ * Initializes the scroll reset behavior on the given element or the document
+ *
+ * @param {Element|Document} [element=document] - The element on which to initialize the scroll reset behavior. Defaults to the document.
+ */
+function initializeScrollResetBehaviors(element = document) {
+    const scrollResetContainers = element.querySelectorAll('.scroll-reset-container');
+    scrollResetContainers.forEach(container => applyScrollResetBehavior(container));
 }
 
 /**
@@ -200,8 +234,9 @@ export function initKeyboard() {
         attributeFilter: ['class']
     });
 
-    // Initialize interactable state for already existing controls
+    // Initialize already existing controls
     initializeInteractables();
+    initializeScrollResetBehaviors();
 
     // Add a global keydown listener
     document.addEventListener('keydown', handleGlobalKeyDown);

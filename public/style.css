@@ -5164,3 +5164,24 @@ body:not(.movingUI) .drawer-content.maximized {
 .regex-highlight {
     color: #FAF8F6;
 }
+
+.pagination-indicators {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+}
+
+.pagination-indicator {
+    width: 10px;
+    height: 10px;
+    background-color: #ddd;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.pagination-indicator.active {
+    background-color: #333;
+}
