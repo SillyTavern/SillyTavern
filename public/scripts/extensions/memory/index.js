@@ -11,7 +11,7 @@ import {
     generateQuietPrompt,
     is_send_press,
     saveSettingsDebounced,
-    substituteParams,
+    substituteParamsExtended,
     generateRaw,
     getMaxContextSize,
 } from '../../../script.js';
@@ -43,8 +43,7 @@ const formatMemoryValue = function (value) {
     value = value.trim();
 
     if (extension_settings.memory.template) {
-        let result = extension_settings.memory.template.replace(/{{summary}}/i, value);
-        return substituteParams(result);
+        return substituteParamsExtended(extension_settings.memory.template, { summary: value });
     } else {
         return `Summary: ${value}`;
     }
@@ -447,7 +446,7 @@ async function summarizeCallback(args, text) {
     }
 
     const source = args.source || extension_settings.memory.source;
-    const prompt = substituteParams((resolveVariable(args.prompt) || extension_settings.memory.prompt)?.replace(/{{words}}/gi, extension_settings.memory.promptWords));
+    const prompt = substituteParamsExtended((resolveVariable(args.prompt) || extension_settings.memory.prompt), { words: extension_settings.memory.promptWords });
 
     try {
         switch (source) {
@@ -534,7 +533,7 @@ async function summarizeChatMain(context, force, skipWIAN) {
     }
 
     console.log('Summarizing chat, messages since last summary: ' + messagesSinceLastSummary, 'words since last summary: ' + wordsSinceLastSummary);
-    const prompt = extension_settings.memory.prompt?.replace(/{{words}}/gi, extension_settings.memory.promptWords);
+    const prompt = substituteParamsExtended(extension_settings.memory.prompt, { words: extension_settings.memory.promptWords });
 
     if (!prompt) {
         console.debug('Summarization prompt is empty. Skipping summarization.');

@@ -28,6 +28,7 @@ import {
     setOnlineStatus,
     startStatusLoading,
     substituteParams,
+    substituteParamsExtended,
     system_message_types,
     this_chid,
 } from '../script.js';
@@ -723,7 +724,7 @@ function populationInjectionPrompts(prompts, messages) {
             const jointPrompt = [rolePrompts, extensionPrompt].filter(x => x).map(x => x.trim()).join(separator);
 
             if (jointPrompt && jointPrompt.length) {
-                roleMessages.push({ 'role': role, 'content': jointPrompt });
+                roleMessages.push({ 'role': role, 'content': jointPrompt, injected: true });
             }
         }
 
@@ -776,7 +777,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         const promptObject = {
             identifier: 'continueNudge',
             role: 'system',
-            content: oai_settings.continue_nudge_prompt.replace('{{lastChatMessage}}', String(cyclePrompt).trim()),
+            content: substituteParamsExtended(oai_settings.continue_nudge_prompt, { lastChatMessage: String(cyclePrompt).trim() }),
             system_prompt: true,
         };
         const continuePrompt = new Prompt(promptObject);
@@ -795,6 +796,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
     // Insert chat messages as long as there is budget available
     const chatPool = [...messages].reverse();
+    const firstNonInjected = chatPool.find(x => !x.injected);
     for (let index = 0; index < chatPool.length; index++) {
         const chatPrompt = chatPool[index];
 
@@ -813,6 +815,12 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         }
 
         if (chatCompletion.canAfford(chatMessage)) {
+            if (type === 'continue' && oai_settings.continue_prefill && chatPrompt === firstNonInjected) {
+                const collection = new MessageCollection('continuePrefill', chatMessage);
+                chatCompletion.add(collection, -1);
+                continue;
+            }
+
             chatCompletion.insertAtStart(chatMessage, 'chatHistory');
         } else {
             break;

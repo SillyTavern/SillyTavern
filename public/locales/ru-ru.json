@@ -1342,7 +1342,7 @@
     "Click to allow/forbid the use of external media for this character.": "Нажмите, чтобы разрешить/запретить использование внешних медиа для этого персонажа.",
     "Inserted before each part of the joined fields.": "Inserted before each part of the joined fields.",
     "Join Prefix": "Join Prefix",
-    "When 'Join character cards' is selected, all respective fields of the characters are being joined together.\rThis means that in the story string for example all character descriptions will be joined to one big text.\rIf you want those fields to be separated, you can define a prefix or suffix here.\r\rThis value supports normal macros and will also replace {{char}} with the relevant char's name and <FIELDNAME> with the name of the part (e.g.: description, personality, scenario, etc.)": "When 'Join character cards' is selected, all respective fields of the characters are being joined together.\rThis means that in the story string for example all character descriptions will be joined to one big text.\rIf you want those fields to be separated, you can define a prefix or suffix here.\r\rThis value supports normal macros and will also replace {{char}} with the relevant char's name and <FIELDNAME> with the name of the part (e.g.: description, personality, scenario, etc.)",
+    "When 'Join character cards' is selected, all respective fields of the characters are being joined together.This means that in the story string for example all character descriptions will be joined to one big text.If you want those fields to be separated, you can define a prefix or suffix here.This value supports normal macros and will also replace {{char}} with the relevant char's name and <FIELDNAME> with the name of the part (e.g.: description, personality, scenario, etc.)": "When 'Join character cards' is selected, all respective fields of the characters are being joined together.\rThis means that in the story string for example all character descriptions will be joined to one big text.\rIf you want those fields to be separated, you can define a prefix or suffix here.\r\rThis value supports normal macros and will also replace {{char}} with the relevant char's name and <FIELDNAME> with the name of the part (e.g.: description, personality, scenario, etc.)",
     "Inserted after each part of the joined fields.": "Inserted after each part of the joined fields.",
     "Join Suffix": "Join Suffix",
     "Auto Mode delay": "Auto Mode delay",
@@ -1378,8 +1378,8 @@
     "Automation ID": "Automation ID",
     "( None )": "( None )",
     "Delay until recursion (this entry can only be activated on recursive checking)": "Delay until recursion (this entry can only be activated on recursive checking)",
-    "Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.\r\rDocumentation: World Info - Inclusion Group": "Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.\rSupports multiple comma-separated groups.\r\rDocumentation: World Info - Inclusion Group",
-    "Prioritize this entry: When checked, this entry is prioritized out of all selections.\rIf multiple are prioritized, the one with the highest 'Order' is chosen.": "Prioritize this entry: When checked, this entry is prioritized out of all selections.\rIf multiple are prioritized, the one with the highest 'Order' is chosen.\r",
+    "Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.Documentation: World Info - Inclusion Group": "Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.\rSupports multiple comma-separated groups.\r\rDocumentation: World Info - Inclusion Group",
+    "Prioritize this entry: When checked, this entry is prioritized out of all selections.If multiple are prioritized, the one with the highest 'Order' is chosen.": "Prioritize this entry: When checked, this entry is prioritized out of all selections.\rIf multiple are prioritized, the one with the highest 'Order' is chosen.\r",
     "A relative likelihood of entry activation within the group": "A relative likelihood of entry activation within the group",
     "Group Weight": "Group Weight",
     "Add Memo": "Add Memo",
@@ -1635,6 +1635,6 @@
     "Don't forget to save a snapshot of your settings before proceeding.": "Настоятельно советуем перед этим сохранить снимок текущих настроек.",
     "Change Password": "Сменить пароль",
     "Reset Code:": "Reset Code:",
-    "Click": "Нажмите ",
+    "Click _space": "Нажмите ",
     "Alternate Greeting #": "Вариант #"
 }

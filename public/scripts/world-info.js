@@ -645,7 +645,7 @@ function registerWorldInfoSlashCommands() {
         await saveWorldInfo(file, data, true);
         reloadEditor(file);
 
-        return entry.uid;
+        return String(entry.uid);
     }
 
     async function setEntryFieldCallback(args, value) {
@@ -1402,9 +1402,17 @@ function splitKeywordsAndRegexes(input) {
 function customTokenizer(input, _selection, callback) {
     let current = input.term;
 
+    let insideRegex = false, regexClosed = false;
+
     // Go over the input and check the current state, if we can get a token
     for (let i = 0; i < current.length; i++) {
         let char = current[i];
+
+        // If we find an unascaped slash, set the current regex state
+        if (char === '/' && (i === 0 || current[i - 1] !== '\\')) {
+            if (!insideRegex) insideRegex = true;
+            else if (!regexClosed) regexClosed = true;
+        }
 
         // If a comma is typed, we tokenize the input.
         // unless we are inside a possible regex, which would allow commas inside
@@ -1412,12 +1420,11 @@ function customTokenizer(input, _selection, callback) {
             // We take everything up till now and consider this a token
             const token = current.slice(0, i).trim();
 
-            // Now how we test if this is a valid regex? And not a finished one, but a half-finished one?
-            // Easy, if someone typed a comma it can't be a delimiter escape.
-            // So we just check if this opening with a slash, and if so, we "close" the regex and try to parse it.
-            // So if we are inside a valid regex, we can't take the token now, we continue processing until the regex is closed,
-            // or this is not a valid regex anymore
-            if (token.startsWith('/') && isValidRegex(token + '/')) {
+            // Now how we test if this is a regex? And not a finished one, but a half-finished one?
+            // We use the state remembered from above to check whether the delimiter was opened but not closed yet.
+            // We don't check validity here if we are inside a regex, because it might only get valid after its finished. (Closing brackets, etc)
+            // Validity will be finally checked when the next comma is typed.
+            if (insideRegex && !regexClosed) {
                 continue;
             }
 
@@ -1437,6 +1444,7 @@ function customTokenizer(input, _selection, callback) {
 
             // Now remove the token from the current input, and the comma too
             current = current.slice(i + 1);
+            insideRegex = false, regexClosed = false;
             i = 0;
         }
     }
@@ -3533,6 +3541,7 @@ function onWorldInfoChange(args, text) {
 
     saveSettingsDebounced();
     eventSource.emit(event_types.WORLDINFO_SETTINGS_UPDATED);
+    return '';
 }
 
 export async function importWorldInfo(file) {
