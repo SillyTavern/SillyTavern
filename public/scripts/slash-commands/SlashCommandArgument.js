@@ -78,6 +78,9 @@ export class SlashCommandArgument {
         });
         this.enumProvider = enumProvider;
         this.forceEnum = forceEnum;
+
+        // If no enums were set explictly and the type is one where we know possible enum values, we set them here
+        if (!this.enumList.length && types == ARGUMENT_TYPE.BOOLEAN) this.enumList = [new SlashCommandEnumValue('true'), new SlashCommandEnumValue('false')];
     }
 }
 
