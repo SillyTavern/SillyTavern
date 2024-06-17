@@ -711,7 +711,7 @@ function onChatChanged() {
     adjustElementScrollHeight();
 }
 
-function adjustElementScrollHeight(){
+function adjustElementScrollHeight() {
     if (!$('.sd_settings').is(':visible')) {
         return;
     }
@@ -908,6 +908,16 @@ function onWidthInput() {
 function onHeightInput() {
     extension_settings.sd.height = Number($('#sd_height').val());
     $('#sd_height_value').val(extension_settings.sd.height);
+    saveSettingsDebounced();
+}
+
+function onSwapDimensionsClick() {
+    const w = extension_settings.sd.height;
+    const h = extension_settings.sd.width;
+    extension_settings.sd.width = w;
+    extension_settings.sd.height = h;
+    $('#sd_width').val(w).trigger('input');
+    $('#sd_height').val(h).trigger('input');
     saveSettingsDebounced();
 }
 
@@ -3439,6 +3449,7 @@ jQuery(async () => {
     $('#sd_wand_visible').on('input', onWandVisibleInput);
     $('#sd_command_visible').on('input', onCommandVisibleInput);
     $('#sd_interactive_visible').on('input', onInteractiveVisibleInput);
+    $('#sd_swap_dimensions').on('click', onSwapDimensionsClick);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($('#sd_prompt_prefix'));

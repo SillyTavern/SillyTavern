@@ -244,7 +244,7 @@
                 </div>
             </div>
 
-            <div class="flex-container">
+            <div id="sd_dimensions_block" class="flex-container">
                 <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
                     <small>
                         <span data-i18n="Width">Width</span>
@@ -259,6 +259,10 @@
                     </small>
                     <input class="neo-range-slider" type="range" id="sd_height" name="sd_height" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{height}}" >
                     <input class="neo-range-input" type="number" id="sd_height_value" data-for="sd_height" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{height}}" >
+                </div>
+
+                <div id="sd_swap_dimensions" class="right_menu_button" title="Swap width and height" data-i18n="[title]Swap width and height">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
                 </div>
             </div>
 
