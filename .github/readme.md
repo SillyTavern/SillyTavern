@@ -268,7 +268,7 @@ You will need two mandatory directory mappings and a port mapping to allow Silly
 
 ## API keys management
 
-SillyTavern saves your API keys to a `secrets.json` file in the server directory.
+SillyTavern saves your API keys to a `secrets.json` file in the user data directory (`/data/default-user/secrets.json` is the default path).
 
 By default, they will not be exposed to a frontend after you enter them and reload the page.
 
