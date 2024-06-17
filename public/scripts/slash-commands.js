@@ -42,7 +42,7 @@ import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandPa
 import { SlashCommandParserError } from './slash-commands/SlashCommandParserError.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
 import { hideChatMessageRange } from './chats.js';
-import { getContext, saveMetadataDebounced } from './extensions.js';
+import { extension_settings, getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
 import { chat_completion_sources, oai_settings } from './openai.js';

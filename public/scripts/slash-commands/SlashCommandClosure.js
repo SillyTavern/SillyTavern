@@ -93,7 +93,7 @@ export class SlashCommandClosure {
 
     /**
      *
-     * @returns Promise<SlashCommandClosureResult>
+     * @returns {Promise<SlashCommandClosureResult>}
      */
     async execute() {
         const closure = this.getCopy();

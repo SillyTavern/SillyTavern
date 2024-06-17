@@ -22,6 +22,7 @@ import { kai_settings } from './kai-settings.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
+import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import {
     textgenerationwebui_preset_names,
@@ -481,9 +482,11 @@ export async function initPresetManager() {
         returns: 'current preset',
         namedArgumentList: [],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'name', [ARGUMENT_TYPE.STRING], false,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: () => getPresetManager().getAllPresets().map(preset => new SlashCommandEnumValue(preset)),
+            }),
         ],
         helpString: `
             <div>

@@ -13,6 +13,8 @@ import { getRegexedString, regex_placement } from './extensions/regex/engine.js'
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
+import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
+import { commonEnumProviders, getEnumIconByValueType } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 
 export {
     world_info,
@@ -698,6 +700,12 @@ function registerWorldInfoSlashCommands() {
         return '';
     }
 
+    /** A collection of local enum providers for this context of world info */
+    const localEnumProviders = {
+        /** All possible fields that can be set in a WI entry */
+        wiEntryFields: () => Object.entries(newEntryDefinition).map(([key, value]) => new SlashCommandEnumValue(key, `[${value.type}] default: ${(typeof value.default === 'string' ? `'${value.default}'` : value.default)}`, 'property', getEnumIconByValueType(value.type))),
+    };
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'world',
         callback: onWorldInfoChange,
         namedArgumentList: [
@@ -709,9 +717,11 @@ function registerWorldInfoSlashCommands() {
             ),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'name', [ARGUMENT_TYPE.STRING], false,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'world name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.worlds,
+            }),
         ],
         helpString: `
             <div>
@@ -726,17 +736,26 @@ function registerWorldInfoSlashCommands() {
         helpString: 'Get a name of the chat-bound lorebook or create a new one if was unbound, and pass it down the pipe.',
         aliases: ['getchatlore', 'getchatwi'],
     }));
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'findentry',
         aliases: ['findlore', 'findwi'],
         returns: 'UID',
         callback: findBookEntryCallback,
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'file', 'bookName', ARGUMENT_TYPE.STRING, true,
-            ),
-            new SlashCommandNamedArgument(
-                'field', 'field value for fuzzy match (default: key)', ARGUMENT_TYPE.STRING, false, false, 'key',
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'file',
+                description: 'book name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: commonEnumProviders.loreBooks,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'field',
+                description: 'field value for fuzzy match (default: key)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'key',
+                enumList: localEnumProviders.wiEntryFields(),
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -762,12 +781,20 @@ function registerWorldInfoSlashCommands() {
         callback: getEntryFieldCallback,
         returns: 'field value',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'file', 'bookName', ARGUMENT_TYPE.STRING, true,
-            ),
-            new SlashCommandNamedArgument(
-                'field', 'field to retrieve (default: content)', ARGUMENT_TYPE.STRING, false, false, 'content',
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'file',
+                description: 'book name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: commonEnumProviders.loreBooks,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'field',
+                description: 'field to retrieve (default: content)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'content',
+                enumList: localEnumProviders.wiEntryFields(),
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -793,9 +820,13 @@ function registerWorldInfoSlashCommands() {
         aliases: ['createlore', 'createwi'],
         returns: 'UID of the new record',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'file', 'book name', [ARGUMENT_TYPE.STRING], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'file',
+                description: 'book name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: commonEnumProviders.loreBooks,
+            }),
             new SlashCommandNamedArgument(
                 'key', 'record key', [ARGUMENT_TYPE.STRING], false,
             ),
@@ -823,15 +854,23 @@ function registerWorldInfoSlashCommands() {
         callback: setEntryFieldCallback,
         aliases: ['setlorefield', 'setwifield'],
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'file', 'book name', [ARGUMENT_TYPE.STRING], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'file',
+                description: 'book name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: commonEnumProviders.loreBooks,
+            }),
             new SlashCommandNamedArgument(
                 'uid', 'record UID', [ARGUMENT_TYPE.STRING], true,
             ),
-            new SlashCommandNamedArgument(
-                'field', 'field name', [ARGUMENT_TYPE.STRING], true, false, 'content',
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'field',
+                description: 'field name (default: content)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'content',
+                enumList: localEnumProviders.wiEntryFields(),
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -2450,35 +2489,46 @@ function deleteWorldInfoEntry(data, uid) {
     delete data.entries[uid];
 }
 
-const newEntryTemplate = {
-    key: [],
-    keysecondary: [],
-    comment: '',
-    content: '',
-    constant: false,
-    vectorized: false,
-    selective: true,
-    selectiveLogic: world_info_logic.AND_ANY,
-    addMemo: false,
-    order: 100,
-    position: 0,
-    disable: false,
-    excludeRecursion: false,
-    preventRecursion: false,
-    delayUntilRecursion: false,
-    probability: 100,
-    useProbability: true,
-    depth: DEFAULT_DEPTH,
-    group: '',
-    groupOverride: false,
-    groupWeight: DEFAULT_WEIGHT,
-    scanDepth: null,
-    caseSensitive: null,
-    matchWholeWords: null,
-    useGroupScoring: null,
-    automationId: '',
-    role: 0,
+/**
+ * Definitions of types for new WI entries
+ *
+ * Use `newEntryTemplate` if you just need the template that contains default values
+ *
+ * @type {{[key: string]: { default: any, type: string }}}
+ */
+const newEntryDefinition = {
+    key: { default: [], type: 'array' },
+    keysecondary: { default: [], type: 'array' },
+    comment: { default: '', type: 'string' },
+    content: { default: '', type: 'string' },
+    constant: { default: false, type: 'boolean' },
+    vectorized: { default: false, type: 'boolean' },
+    selective: { default: true, type: 'boolean' },
+    selectiveLogic: { default: world_info_logic.AND_ANY, type: 'enum' },
+    addMemo: { default: false, type: 'boolean' },
+    order: { default: 100, type: 'number' },
+    position: { default: 0, type: 'number' },
+    disable: { default: false, type: 'boolean' },
+    excludeRecursion: { default: false, type: 'boolean' },
+    preventRecursion: { default: false, type: 'boolean' },
+    delayUntilRecursion: { default: false, type: 'boolean' },
+    probability: { default: 100, type: 'number' },
+    useProbability: { default: true, type: 'boolean' },
+    depth: { default: DEFAULT_DEPTH, type: 'number' },
+    group: { default: '', type: 'string' },
+    groupOverride: { default: false, type: 'boolean' },
+    groupWeight: { default: DEFAULT_WEIGHT, type: 'number' },
+    scanDepth: { default: null, type: 'number?' },
+    caseSensitive: { default: null, type: 'boolean?' },
+    matchWholeWords: { default: null, type: 'boolean?' },
+    useGroupScoring: { default: null, type: 'boolean?' },
+    automationId: { default: '', type: 'string' },
+    role: { default: 0, type: 'enum' },
 };
+
+const newEntryTemplate = Object.fromEntries(
+    Object.entries(newEntryDefinition).map(([key, value]) => [key, value.default])
+);
 
 function createWorldInfoEntry(_name, data) {
     const newUid = getFreeWorldEntryUid(data);

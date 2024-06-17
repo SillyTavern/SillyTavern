@@ -70,6 +70,7 @@ import { saveLogprobsForActiveMessage } from './logprobs.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
+import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 
 export {
     openai_messages_count,
@@ -4616,9 +4617,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     returns: 'current proxy',
     namedArgumentList: [],
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'name', [ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandArgument.fromProps({
+            description: 'name',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: () => proxies.map(preset => new SlashCommandEnumValue(preset.name)),
+        }),
     ],
     helpString: 'Sets a proxy preset by name.',
 }));

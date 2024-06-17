@@ -24,6 +24,7 @@ import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
+import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -467,6 +468,28 @@ export function getTagKeyForEntityElement(element) {
     }
 
     return undefined;
+}
+
+
+/**
+ * Gets the key for char/group by searching based on the name or avatar. If none can be found, a toastr will be shown and null returned.
+ * This function is mostly used in slash commands.
+ *
+ * @param {string?} [charName] The optionally provided char name
+ * @param {object} [options] - Optional arguments
+ * @param {boolean} [options.suppressLogging=false] - Whether to suppress the toastr warning
+ * @returns {string?} - The char/group key, or null if none found
+ */
+export function searchCharByName(charName, { suppressLogging = false } = {}) {
+    const entity = charName
+        ? (characters.find(x => x.name === charName) || groups.find(x => x.name == charName))
+        : (selected_group ? groups.find(x => x.id == selected_group) : characters[this_chid]);
+    const key = getTagKeyForEntity(entity);
+    if (!key) {
+        if (!suppressLogging) toastr.warning(`Character ${charName} not found.`);
+        return null;
+    }
+    return key;
 }
 
 /**
@@ -1544,23 +1567,6 @@ function printViewTagList(empty = true) {
 
 function registerTagsSlashCommands() {
     /**
-     * Gets the key for char/group for a slash command. If none can be found, a toastr will be shown and null returned.
-     * @param {string?} [charName] The optionally provided char name
-     * @returns {string?} - The char/group key, or null if none found
-     */
-    function paraGetCharKey(charName, { suppressLogging = false } = {}) {
-        const entity = charName
-            ? (characters.find(x => x.name === charName) || groups.find(x => x.name == charName))
-            : (selected_group ? groups.find(x => x.id == selected_group) : characters[this_chid]);
-        const key = getTagKeyForEntity(entity);
-        if (!key) {
-            if (!suppressLogging) toastr.warning(`Character ${charName} not found.`);
-            return null;
-        }
-        return key;
-    }
-
-    /**
      * Gets a tag by its name. Optionally can create the tag if it does not exist.
      * @param {string} tagName - The name of the tag
      * @param {object} options - Optional arguments
@@ -1583,32 +1589,12 @@ function registerTagsSlashCommands() {
         return tag;
     }
 
-    /** A collection of enum providers used for the tag slash commands */
-    const enumProviders = {
-        /** Get a list of all possible character and group names */
-        charName: () => [
-            ...characters.map(it => new SlashCommandEnumValue(it.name, null, 'qr', 'C')),
-            ...groups.map(it => new SlashCommandEnumValue(it.name, null, 'variable', 'G')),
-        ],
-        /**
-         * Get A list of all possible tags for the given char/group entity
-         * @param {'all' | 'existing' | 'not-existing'} mode - Which types of tags to
-         */
-        tagForChar: (mode) => (/** @type {SlashCommandExecutor} */ executor) => {
-            // Try to see if we can find the char during execution to filter down the tags list some more. Otherwise take all tags.
-            const key = paraGetCharKey(substituteParams(/**@type {string?}*/(executor.namedArgumentList.find(it => it.name == 'name')?.value)), { suppressLogging: true });
-            const assigned = key ? getTagsList(key) : [];
-            return tags.filter(it => !key || mode === 'all' || mode === 'existing' && assigned.includes(it) || mode === 'not-existing' && !assigned.includes(it))
-                .map(it => new SlashCommandEnumValue(it.name, it.title));
-        }
-    }
-
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'tag-add',
         returns: 'true/false - Whether the tag was added or was assigned already',
         /** @param {{name: string}} namedArgs @param {string} tagName @returns {string} */
         callback: ({ name }, tagName) => {
-            const key = paraGetCharKey(name);
+            const key = searchCharByName(name);
             if (!key) return 'false';
             const tag = paraGetTag(tagName, { allowCreate: true });
             if (!tag) return 'false';
@@ -1621,14 +1607,14 @@ function registerTagsSlashCommands() {
                 description: 'Character name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
-                enumProvider: enumProviders.charName,
+                enumProvider: commonEnumProviders.charName,
             }),
         ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({ description: 'tag name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: enumProviders.tagForChar('not-existing'),
+                enumProvider: commonEnumProviders.tagsForChar('not-existing'),
                 forceEnum: false,
             }),
         ],
@@ -1653,7 +1639,7 @@ function registerTagsSlashCommands() {
         returns: 'true/false - Whether the tag was removed or wasn\'t assigned already',
         /** @param {{name: string}} namedArgs @param {string} tagName @returns {string} */
         callback: ({ name }, tagName) => {
-            const key = paraGetCharKey(name);
+            const key = searchCharByName(name);
             if (!key) return 'false';
             const tag = paraGetTag(tagName);
             if (!tag) return 'false';
@@ -1666,7 +1652,7 @@ function registerTagsSlashCommands() {
                 description: 'Character name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
-                enumProvider: enumProviders.charName,
+                enumProvider: commonEnumProviders.charName,
             }),
         ],
         unnamedArgumentList: [
@@ -1674,7 +1660,7 @@ function registerTagsSlashCommands() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 /**@param {SlashCommandExecutor} executor */
-                enumProvider: enumProviders.tagForChar('existing'),
+                enumProvider: commonEnumProviders.tagsForChar('existing'),
             }),
         ],
         helpString: `
@@ -1697,7 +1683,7 @@ function registerTagsSlashCommands() {
         returns: 'true/false - Whether the given tag name is assigned to the character',
         /** @param {{name: string}} namedArgs @param {string} tagName @returns {string} */
         callback: ({ name }, tagName) => {
-            const key = paraGetCharKey(name);
+            const key = searchCharByName(name);
             if (!key) return 'false';
             const tag = paraGetTag(tagName);
             if (!tag) return 'false';
@@ -1709,7 +1695,7 @@ function registerTagsSlashCommands() {
                 description: 'Character name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
-                enumProvider: enumProviders.charName,
+                enumProvider: commonEnumProviders.charName,
             }),
         ],
         unnamedArgumentList: [
@@ -1718,7 +1704,7 @@ function registerTagsSlashCommands() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 /**@param {SlashCommandExecutor} executor */
-                enumProvider: enumProviders.tagForChar('all'),
+                enumProvider: commonEnumProviders.tagsForChar('all'),
             }),
         ],
         helpString: `
@@ -1741,7 +1727,7 @@ function registerTagsSlashCommands() {
         returns: 'Comma-separated list of all assigned tags',
         /** @param {{name: string}} namedArgs @returns {string} */
         callback: ({ name }) => {
-            const key = paraGetCharKey(name);
+            const key = searchCharByName(name);
             if (!key) return '';
             const tags = getTagsList(key);
             return tags.map(x => x.name).join(', ');
@@ -1752,7 +1738,7 @@ function registerTagsSlashCommands() {
                 description: 'Character name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
-                enumProvider: enumProviders.charName,
+                enumProvider: commonEnumProviders.charName,
             }),
         ],
         helpString: `
