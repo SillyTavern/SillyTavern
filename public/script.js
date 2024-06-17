@@ -154,7 +154,7 @@ import {
     isValidUrl,
     ensureImageFormatSupported,
     flashHighlight,
-    checkOverwriteExistingData,
+    isTrueBoolean,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -232,7 +232,7 @@ import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { ScraperManager } from './scripts/scrapers.js';
 import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './scripts/slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument } from './scripts/slash-commands/SlashCommandArgument.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './scripts/slash-commands/SlashCommandArgument.js';
 import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowser.js';
 import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
 
@@ -744,8 +744,19 @@ const per_page_default = 50;
 
 var is_advanced_char_open = false;
 
-export let menu_type = ''; //what is selected in the menu
+/**
+ * The type of the right menu
+ * @typedef {'characters' | 'character_edit' | 'create' | 'group_edit' | 'group_create' | '' } MenuType
+ */
+
+/**
+ * The type of the right menu that is currently open
+ * @type {MenuType}
+ */
+export let menu_type = '';
+
 export let selected_button = ''; //which button pressed
+
 //create pole save
 let create_save = {
     name: '',
@@ -901,7 +912,7 @@ function cancelStatusCheck() {
 export function displayOnlineStatus() {
     if (online_status == 'no_connection') {
         $('.online_status_indicator').removeClass('success');
-        $('.online_status_text').text('No connection...');
+        $('.online_status_text').text($('#API-status-top').attr('no_connection_text'));
     } else {
         $('.online_status_indicator').addClass('success');
         $('.online_status_text').text(online_status);
@@ -2309,14 +2320,25 @@ export function scrollChatToBottom() {
 /**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
+ * @param {Record<string,any>} additionalMacro - Additional environment variables for substitution.
+ * @returns {string} The string with substituted parameters.
+ */
+export function substituteParamsExtended(content, additionalMacro = {}) {
+    return substituteParams(content, undefined, undefined, undefined, undefined, true, additionalMacro);
+}
+
+/**
+ * Substitutes {{macro}} parameters in a string.
+ * @param {string} content - The string to substitute parameters in.
  * @param {string} [_name1] - The name of the user. Uses global name1 if not provided.
  * @param {string} [_name2] - The name of the character. Uses global name2 if not provided.
  * @param {string} [_original] - The original message for {{original}} substitution.
  * @param {string} [_group] - The group members list for {{group}} substitution.
  * @param {boolean} [_replaceCharacterCard] - Whether to replace character card macros.
+ * @param {Record<string,any>} [additionalMacro] - Additional environment variables for substitution.
  * @returns {string} The string with substituted parameters.
  */
-export function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
+export function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true, additionalMacro = {}) {
     const environment = {};
 
     if (typeof _original === 'string') {
@@ -2365,6 +2387,10 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
     environment.char = _name2 ?? name2;
     environment.group = environment.charIfNotGroup = getGroupValue();
     environment.model = getGeneratingModel();
+
+    if (additionalMacro && typeof additionalMacro === 'object') {
+        Object.assign(environment, additionalMacro);
+    }
 
     return evaluateMacros(content, environment);
 }
@@ -4662,7 +4688,7 @@ function addChatsSeparator(mesSendString) {
 async function DupeChar() {
     if (!this_chid) {
         toastr.warning('You must first select a character to duplicate!');
-        return;
+        return '';
     }
 
     const confirmMessage = `
@@ -4673,7 +4699,7 @@ async function DupeChar() {
 
     if (!confirm) {
         console.log('User cancelled duplication');
-        return;
+        return '';
     }
 
     const body = { avatar_url: characters[this_chid].avatar };
@@ -4688,6 +4714,8 @@ async function DupeChar() {
         await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: body.avatar_url, newAvatar: data.path });
         getCharacters();
     }
+
+    return '';
 }
 
 export async function itemizedParams(itemizedPrompts, thisPromptSet) {
@@ -5408,8 +5436,14 @@ export function resetChatState() {
     characters.length = 0;
 }
 
+/**
+ *
+ * @param {'characters' | 'character_edit' | 'create' | 'group_edit' | 'group_create'} value
+ */
 export function setMenuType(value) {
     menu_type = value;
+    // Allow custom CSS to see which menu type is active
+    document.getElementById('right-nav-panel').dataset.menuType = menu_type;
 }
 
 export function setExternalAbortController(controller) {
@@ -6791,7 +6825,7 @@ export function select_selected_character(chid) {
     //character select
     //console.log('select_selected_character() -- starting with input of -- ' + chid + ' (name:' + characters[chid].name + ')');
     select_rm_create();
-    menu_type = 'character_edit';
+    setMenuType('character_edit');
     $('#delete_button').css('display', 'flex');
     $('#export_button').css('display', 'flex');
     var display_name = characters[chid].name;
@@ -6867,7 +6901,7 @@ export function select_selected_character(chid) {
 }
 
 function select_rm_create() {
-    menu_type = 'create';
+    setMenuType('create');
 
     //console.log('select_rm_Create() -- selected button: '+selected_button);
     if (selected_button == 'create') {
@@ -6928,7 +6962,7 @@ function select_rm_create() {
 
 function select_rm_characters() {
     const doFullRefresh = menu_type === 'characters';
-    menu_type = 'characters';
+    setMenuType('characters');
     selectRightMenuWithAnimation('rm_characters_block');
     printCharacters(doFullRefresh);
 }
@@ -7691,6 +7725,8 @@ window['SillyTavern'].getContext = function () {
         activateSendButtons,
         deactivateSendButtons,
         saveReply,
+        substituteParams,
+        substituteParamsExtended,
         registerSlashCommand: registerSlashCommand,
         executeSlashCommands: executeSlashCommands,
         timestampToMoment: timestampToMoment,
@@ -8244,10 +8280,12 @@ async function selectInstructCallback(_, name) {
 
 async function enableInstructCallback() {
     $('#instruct_enabled').prop('checked', true).trigger('change');
+    return '';
 }
 
 async function disableInstructCallback() {
     $('#instruct_enabled').prop('checked', false).trigger('change');
+    return '';
 }
 
 /**
@@ -8421,9 +8459,30 @@ async function importFromURL(items, files) {
     }
 }
 
-async function doImpersonate(_, prompt) {
-    $('#send_textarea').val('');
-    $('#option_impersonate').trigger('click', { fromSlashCommand: true, additionalPrompt: prompt });
+async function doImpersonate(args, prompt) {
+    const options = prompt?.trim() ? { quiet_prompt: prompt.trim(), quietToLoud: true } : {};
+    const shouldAwait = isTrueBoolean(args?.await);
+    const outerPromise = new Promise((outerResolve) => setTimeout(async () => {
+        try {
+            await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
+        } catch {
+            console.warn('Timeout waiting for generation unlock');
+            toastr.warning('Cannot run /impersonate command while the reply is being generated.');
+            return '';
+        }
+
+        // Prevent generate recursion
+        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
+
+        outerResolve(new Promise(innerResolve => setTimeout(() => innerResolve(Generate('impersonate', options)), 1)));
+    }, 1));
+
+    if (shouldAwait) {
+        const innerPromise = await outerPromise;
+        await innerPromise;
+    }
+
+    return '';
 }
 
 async function doDeleteChat() {
@@ -8432,23 +8491,25 @@ async function doDeleteChat() {
     $(currentChatDeleteButton).trigger('click');
     await delay(1);
     $('#dialogue_popup_ok').trigger('click', { fromSlashCommand: true });
+    return '';
 }
 
 async function doRenameChat(_, chatName) {
     if (!chatName) {
         toastr.warning('Name must be provided as an argument to rename this chat.');
-        return;
+        return '';
     }
 
     const currentChatName = getCurrentChatId();
     if (!currentChatName) {
         toastr.warning('No chat selected that can be renamed.');
-        return;
+        return '';
     }
 
     await renameChat(currentChatName, chatName);
 
     toastr.success(`Successfully renamed chat to: ${chatName}`);
+    return '';
 }
 
 /**
@@ -8522,6 +8583,7 @@ function doCharListDisplaySwitch() {
 
 function doCloseChat() {
     $('#option_close_chat').trigger('click');
+    return '';
 }
 
 /**
@@ -8617,6 +8679,7 @@ async function removeCharacterFromUI(name, avatar, reloadCharacters = true) {
 
 function doTogglePanels() {
     $('#option_settings').trigger('click');
+    return '';
 }
 
 function addDebugFunctions() {
@@ -8704,6 +8767,7 @@ jQuery(async function () {
         await saveSettings();
         await saveChatConditional();
         toastr.success('Chat and settings saved.');
+        return '';
     }
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
@@ -8739,6 +8803,16 @@ jQuery(async function () {
         name: 'impersonate',
         callback: doImpersonate,
         aliases: ['imp'],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'await',
+                'Whether to await for the triggered generation before continuing',
+                [ARGUMENT_TYPE.BOOLEAN],
+                false,
+                false,
+                'false',
+            ),
+        ],
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'prompt', [ARGUMENT_TYPE.STRING], false,
@@ -8747,6 +8821,9 @@ jQuery(async function () {
         helpString: `
             <div>
                 Calls an impersonation response, with an optional additional prompt.
+            </div>
+            <div>
+                If <code>await=true</code> named argument is passed, the command will wait for the impersonation to end before continuing.
             </div>
             <div>
                 <strong>Example:</strong>
@@ -8842,7 +8919,10 @@ jQuery(async function () {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'chat-manager',
-        callback: () => $('#option_select_chat').trigger('click'),
+        callback: () => {
+            $('#option_select_chat').trigger('click');
+            return '';
+        },
         aliases: ['chat-history', 'manage-chats'],
         helpString: 'Opens the chat manager for the current character/group.',
     }));
@@ -8919,7 +8999,6 @@ jQuery(async function () {
 
     $('#rm_button_settings').click(function () {
         selected_button = 'settings';
-        menu_type = 'settings';
         selectRightMenuWithAnimation('rm_api_block');
     });
     $('#rm_button_characters').click(function () {

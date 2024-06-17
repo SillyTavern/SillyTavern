@@ -10,6 +10,7 @@ import {
     setExtensionPrompt,
     substituteParams,
     generateRaw,
+    substituteParamsExtended,
 } from '../../../script.js';
 import {
     ModuleWorkerWrapper,
@@ -44,10 +45,12 @@ const settings = {
     cohere_model: 'embed-english-v3.0',
     ollama_model: 'mxbai-embed-large',
     ollama_keep: false,
+    vllm_model: '',
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
     summary_prompt: 'Pause your roleplay. Summarize the most important parts of the message. Limit yourself to 250 words or less. Your response should include nothing but the summary.',
+    force_chunk_delimiter: '',
 
     // For chats
     enabled_chats: false,
@@ -152,6 +155,20 @@ async function onVectorizeAllClick() {
 let syncBlocked = false;
 
 /**
+ * Gets the chunk delimiters for splitting text.
+ * @returns {string[]} Array of chunk delimiters
+ */
+function getChunkDelimiters() {
+    const delimiters = ['\n\n', '\n', ' ', ''];
+
+    if (settings.force_chunk_delimiter) {
+        delimiters.unshift(settings.force_chunk_delimiter);
+    }
+
+    return delimiters;
+}
+
+/**
  * Splits messages into chunks before inserting them into the vector index.
  * @param {object[]} items Array of vector items
  * @returns {object[]} Array of vector items (possibly chunked)
@@ -164,7 +181,7 @@ function splitByChunks(items) {
     const chunkedItems = [];
 
     for (const item of items) {
-        const chunks = splitRecursive(item.text, settings.message_chunk_size);
+        const chunks = splitRecursive(item.text, settings.message_chunk_size, getChunkDelimiters());
         for (const chunk of chunks) {
             const chunkedItem = { ...item, text: chunk };
             chunkedItems.push(chunkedItem);
@@ -440,7 +457,7 @@ async function injectDataBankChunks(queryText, collectionIds) {
             return;
         }
 
-        const insertedText = substituteParams(settings.file_template_db.replace(/{{text}}/i, textResult));
+        const insertedText = substituteParamsExtended(settings.file_template_db, { text: textResult });
         setExtensionPrompt(EXTENSION_PROMPT_TAG_DB, insertedText, settings.file_position_db, settings.file_depth_db, settings.include_wi, settings.file_depth_role_db);
     } catch (error) {
         console.error('Vectors: Failed to insert Data Bank chunks', error);
@@ -482,9 +499,10 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overla
 
         const toast = toastr.info('Vectorization may take some time, please wait...', `Ingesting file ${fileName}`);
         const overlapSize = Math.round(chunkSize * overlapPercent / 100);
+        const delimiters = getChunkDelimiters();
         // Overlap should not be included in chunk size. It will be later compensated by overlapChunks
         chunkSize = overlapSize > 0 ? (chunkSize - overlapSize) : chunkSize;
-        const chunks = splitRecursive(fileText, chunkSize).map((x, y, z) => overlapSize > 0 ? overlapChunks(x, y, z, overlapSize) : x);
+        const chunks = splitRecursive(fileText, chunkSize, delimiters).map((x, y, z) => overlapSize > 0 ? overlapChunks(x, y, z, overlapSize) : x);
         console.debug(`Vectors: Split file ${fileName} into ${chunks.length} chunks with ${overlapPercent}% overlap`, chunks);
 
         const items = chunks.map((chunk, index) => ({ hash: getStringHash(chunk), text: chunk, index: index }));
@@ -591,7 +609,7 @@ async function rearrangeChat(chat) {
 function getPromptText(queriedMessages) {
     const queriedText = queriedMessages.map(x => collapseNewlines(`${x.name}: ${x.mes}`).trim()).join('\n\n');
     console.log('Vectors: relevant past messages found.\n', queriedText);
-    return substituteParams(settings.template.replace(/{{text}}/i, queriedText));
+    return substituteParamsExtended(settings.template, { text: queriedText });
 }
 
 /**
@@ -691,6 +709,9 @@ function getVectorHeaders() {
         case 'llamacpp':
             addLlamaCppHeaders(headers);
             break;
+        case 'vllm':
+            addVllmHeaders(headers);
+            break;
         default:
             break;
     }
@@ -762,6 +783,17 @@ function addLlamaCppHeaders(headers) {
 }
 
 /**
+ * Add headers for the VLLM API source.
+ * @param {object} headers Header object
+ */
+function addVllmHeaders(headers) {
+    Object.assign(headers, {
+        'X-Vllm-URL': textgenerationwebui_settings.server_urls[textgen_types.VLLM],
+        'X-Vllm-Model': extension_settings.vectors.vllm_model,
+    });
+}
+
+/**
  * Inserts vector items into a collection
  * @param {string} collectionId - The collection to insert into
  * @param {{ hash: number, text: string }[]} items - The items to insert
@@ -801,11 +833,12 @@ function throwIfSourceInvalid() {
     }
 
     if (settings.source === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA] ||
+        settings.source === 'vllm' && !textgenerationwebui_settings.server_urls[textgen_types.VLLM] ||
         settings.source === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) {
         throw new Error('Vectors: API URL missing', { cause: 'api_url_missing' });
     }
 
-    if (settings.source === 'ollama' && !settings.ollama_model) {
+    if (settings.source === 'ollama' && !settings.ollama_model || settings.source === 'vllm' && !settings.vllm_model) {
         throw new Error('Vectors: API model missing', { cause: 'api_model_missing' });
     }
 
@@ -965,6 +998,7 @@ function toggleSettings() {
     $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
     $('#ollama_vectorsModel').toggle(settings.source === 'ollama');
     $('#llamacpp_vectorsModel').toggle(settings.source === 'llamacpp');
+    $('#vllm_vectorsModel').toggle(settings.source === 'vllm');
     $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
 }
 
@@ -1274,6 +1308,12 @@ jQuery(async () => {
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
+    $('#vectors_vllm_model').val(settings.vllm_model).on('input', () => {
+        $('#vectors_modelWarning').show();
+        settings.vllm_model = String($('#vectors_vllm_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
     $('#vectors_ollama_keep').prop('checked', settings.ollama_keep).on('input', () => {
         settings.ollama_keep = $('#vectors_ollama_keep').prop('checked');
         Object.assign(extension_settings.vectors, settings);
@@ -1452,6 +1492,12 @@ jQuery(async () => {
 
     $('#vectors_score_threshold').val(settings.score_threshold).on('input', () => {
         settings.score_threshold = Number($('#vectors_score_threshold').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_force_chunk_delimiter').prop('checked', settings.force_chunk_delimiter).on('input', () => {
+        settings.force_chunk_delimiter = String($('#vectors_force_chunk_delimiter').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

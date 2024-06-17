@@ -292,6 +292,9 @@ export function throttle(func, limit = 300) {
  * @returns {boolean} True if the element is in the viewport, false otherwise.
  */
 export function isElementInViewport(el) {
+    if (!el) {
+        return false;
+    }
     if (typeof jQuery === 'function' && el instanceof jQuery) {
         el = el[0];
     }
@@ -481,14 +484,16 @@ export function trimToEndSentence(input, include_newline = false) {
         return '';
     }
 
+    const isEmoji = x => /(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu.test(x);
     const punctuation = new Set(['.', '!', '?', '*', '"', ')', '}', '`', ']', '$', '。', '！', '？', '”', '）', '】', '’', '」', '_']); // extend this as you see fit
     let last = -1;
 
-    for (let i = input.length - 1; i >= 0; i--) {
-        const char = input[i];
+    const characters = Array.from(input);
+    for (let i = characters.length - 1; i >= 0; i--) {
+        const char = characters[i];
 
-        if (punctuation.has(char)) {
-            if (i > 0 && /[\s\n]/.test(input[i - 1])) {
+        if (punctuation.has(char) || isEmoji(char)) {
+            if (i > 0 && /[\s\n]/.test(characters[i - 1])) {
                 last = i - 1;
             } else {
                 last = i;
@@ -506,7 +511,7 @@ export function trimToEndSentence(input, include_newline = false) {
         return input.trimEnd();
     }
 
-    return input.substring(0, last + 1).trimEnd();
+    return characters.slice(0, last + 1).join('').trimEnd();
 }
 
 export function trimToStartSentence(input) {
@@ -640,11 +645,11 @@ function parseTimestamp(timestamp) {
     }
 
     // Unix time (legacy TAI / tags)
-    if (typeof timestamp === 'number') {
+    if (typeof timestamp === 'number' || /^\d+$/.test(timestamp)) {
         if (isNaN(timestamp) || !isFinite(timestamp) || timestamp < 0) {
             return moment.invalid();
         }
-        return moment(timestamp);
+        return moment(Number(timestamp));
     }
 
     // ST "humanized" format pattern
@@ -1261,6 +1266,9 @@ export async function waitUntilCondition(condition, timeout = 1000, interval = 1
  * uuidv4(); // '3e2fd9e1-0a7a-4f6d-9aaf-8a7a4babe7eb'
  */
 export function uuidv4() {
+    if ('randomUUID' in crypto) {
+        return crypto.randomUUID();
+    }
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);

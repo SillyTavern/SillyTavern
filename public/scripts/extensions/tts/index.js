@@ -11,6 +11,7 @@ import { power_user } from '../../power-user.js';
 import { OpenAITtsProvider } from './openai.js';
 import { XTTSTtsProvider } from './xtts.js';
 import { GSVITtsProvider } from './gsvi.js';
+import { SBVits2TtsProvider } from './sbvits2.js';
 import { AllTalkTtsProvider } from './alltalk.js';
 import { SpeechT5TtsProvider } from './speecht5.js';
 import { AzureTtsProvider } from './azure.js';
@@ -77,6 +78,7 @@ const ttsProviders = {
     Silero: SileroTtsProvider,
     XTTSv2: XTTSTtsProvider,
     GSVI: GSVITtsProvider,
+    SBVits2: SBVits2TtsProvider,
     System: SystemTtsProvider,
     Coqui: CoquiTtsProvider,
     Edge: EdgeTtsProvider,
