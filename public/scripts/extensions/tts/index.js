@@ -846,6 +846,13 @@ async function onPeriodicMessageGenerationTick() {
     // look for double ending lines which should indicate the end of a paragraph
     var newLastPositionOfParagraphEnd = lastMessageText
         .indexOf('\n\n', lastPositionOfParagraphEnd + 1);
+    // if not found, look for a single ending line which should indicate the end of a paragraph
+    if (newLastPositionOfParagraphEnd === -1) {
+        newLastPositionOfParagraphEnd = lastMessageText
+            .indexOf('\n', lastPositionOfParagraphEnd + 1);
+    }
+
+    // send the message to the tts module if we found the new end of a paragraph
     if (newLastPositionOfParagraphEnd > -1) {
         onMessageEvent(lastMessageId, newLastPositionOfParagraphEnd);
 
@@ -1086,7 +1093,7 @@ $(document).ready(function () {
                         </label>
                         <label class="checkbox_label" for="tts_periodic_auto_generation">
                             <input type="checkbox" id="tts_periodic_auto_generation">
-                            <small>Periodically auto generate</small>
+                            <small>Narrate by paragraphs (streaming)</small>
                         </label>
                         <label class="checkbox_label" for="tts_narrate_quoted">
                             <input type="checkbox" id="tts_narrate_quoted">
