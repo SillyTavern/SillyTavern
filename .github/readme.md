@@ -283,7 +283,7 @@ Most often this is for people who want to use SillyTavern on their mobile phones
 
 However, it can be used to allow remote connections from anywhere as well.
 
-**IMPORTANT: SillyTavern is a single-user program, so anyone who logs in will be able to see all characters and chats, and be able to change any settings inside the UI.**
+**IMPORTANT: Refer to the official guide if you want to configure SillyTavern user accounts with (optional) password protection: [Users](https://docs.sillytavern.app/installation/st-1.12.0-migration-guide/#users).**
 
 ### 1. Managing whitelisted IPs
 
