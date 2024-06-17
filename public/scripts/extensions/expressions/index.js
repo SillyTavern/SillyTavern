@@ -1,4 +1,4 @@
-import { callPopup, eventSource, event_types, generateQuietPrompt, getRequestHeaders, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended } from '../../../script.js';
+import { callPopup, eventSource, event_types, generateQuietPrompt, getRequestHeaders, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types } from '../../../script.js';
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, power_user } from '../../power-user.js';
@@ -1191,12 +1191,7 @@ function getLastCharacterMessage() {
     const reversedChat = context.chat.slice().reverse();
 
     for (let mes of reversedChat) {
-        if (mes.is_user || mes.is_system) {
-            continue;
-        }
-
-        const character = context.characters.find(x => x.avatar == mes.original_avatar || (mes.force_avatar && mes.force_avatar.includes(encodeURIComponent(x.avatar))));
-        if (!character) {
+        if (mes.is_user || mes.is_system || mes.extra?.type === system_message_types.NARRATOR) {
             continue;
         }
 

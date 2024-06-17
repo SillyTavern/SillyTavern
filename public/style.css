@@ -802,7 +802,7 @@ body .panelControlBar {
 }
 
 .font-family-reset {
-    font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+    font-family:  var(--mainFontFamily);
     font-size: var(--mainFontSize);
     font-weight: 400;
 }
@@ -951,7 +951,7 @@ body .panelControlBar {
     color: var(--SmartThemeBodyColor);
     font-size: 12px;
     padding: 0;
-    font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+    font-family: var(--mainFontFamily);
     font-weight: 400;
 }
 
@@ -1131,7 +1131,7 @@ textarea {
     border-radius: 5px;
     color: var(--SmartThemeBodyColor);
     font-size: var(--mainFontSize);
-    font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+    font-family: var(--mainFontFamily);
     padding: 5px 10px;
     max-height: 90vh;
     max-height: 90svh;
@@ -1144,6 +1144,7 @@ textarea.autoSetHeight {
 
 input,
 select {
+    font-family: var(--mainFontFamily);
     font-size: var(--mainFontSize);
     color: var(--SmartThemeBodyColor);
 }
@@ -1160,7 +1161,7 @@ select {
     border: 0;
     box-shadow: none;
     padding: 6px;
-    font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+    font-family: var(--mainFontFamily);
     margin: 0;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     flex: 1;
@@ -2103,7 +2104,7 @@ textarea::placeholder {
     color: var(--SmartThemeBodyColor);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
-    font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+    font-family: var(--mainFontFamily);
     padding: 3px 5px;
     width: 100%;
     margin: 5px 0;
