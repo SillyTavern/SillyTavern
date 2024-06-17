@@ -199,16 +199,18 @@ const custom_prompt_post_processing_types = {
     CLAUDE: 'claude',
 };
 
-const prefixMap = selected_group ? {
-    assistant: '',
-    user: '',
-    system: 'OOC: ',
+function getPrefixMap() {
+    return selected_group ? {
+        assistant: '',
+        user: '',
+        system: 'OOC: ',
+    }
+        : {
+            assistant: '{{char}}:',
+            user: '{{user}}:',
+            system: '',
+        };
 }
-    : {
-        assistant: '{{char}}:',
-        user: '{{user}}:',
-        system: '',
-    };
 
 const default_settings = {
     preset_settings_openai: 'Default',
@@ -1709,7 +1711,7 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     if (isAI21) {
         const joinedMsgs = messages.reduce((acc, obj) => {
-            const prefix = prefixMap[obj.role];
+            const prefix = getPrefixMap()[obj.role];
             return acc + (prefix ? (selected_group ? '\n' : prefix + ' ') : '') + obj.content + '\n';
         }, '');
         messages = substituteParams(joinedMsgs) + (isImpersonate ? `${name1}:` : `${name2}:`);

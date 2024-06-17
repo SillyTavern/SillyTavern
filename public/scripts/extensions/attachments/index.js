@@ -198,7 +198,10 @@ jQuery(async () => {
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'db',
-        callback: () => document.getElementById('manageAttachments')?.click(),
+        callback: () => {
+            document.getElementById('manageAttachments')?.click();
+            return '';
+        },
         aliases: ['databank', 'data-bank'],
         helpString: 'Open the data bank',
     }));

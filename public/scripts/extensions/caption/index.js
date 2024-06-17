@@ -8,6 +8,7 @@ import { textgen_types, textgenerationwebui_settings } from '../../textgen-setti
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -445,11 +446,14 @@ jQuery(async function () {
         returns: 'caption',
         namedArgumentList: [
             new SlashCommandNamedArgument(
-                'quiet', 'suppress sending a captioned message', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false', ['true', 'false'],
+                'quiet', 'suppress sending a captioned message', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
             ),
-            new SlashCommandNamedArgument(
-                'id', 'get image from a message with this ID', [ARGUMENT_TYPE.NUMBER], false, false,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'id',
+                description: 'get image from a message with this ID',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                enumProvider: () => getContext().chat.map((_, i) => new SlashCommandEnumValue(String(i), null, 'number', '1️⃣')),
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(

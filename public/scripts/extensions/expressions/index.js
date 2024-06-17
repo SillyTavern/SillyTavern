@@ -11,6 +11,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { isFunctionCallingSupported } from '../../openai.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
+import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -2080,9 +2081,12 @@ function migrateSettings() {
         callback: (_, value) => lastExpression[String(value).trim()] ?? '',
         returns: 'sprite',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'charName', [ARGUMENT_TYPE.STRING], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'character name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: commonEnumProviders.charName(),
+            }),
         ],
         helpString: 'Returns the last set sprite / expression for the named character.',
     }));

@@ -92,7 +92,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
 
 /**
  * Runs the provided regex script on the given string
- * @param {object} regexScript The regex script to run
+ * @param {import('./index.js').RegexScript} regexScript The regex script to run
  * @param {string} rawString The string to run the regex script on
  * @param {RegexScriptParams} params The parameters to use for the regex script
  * @returns {string} The new string

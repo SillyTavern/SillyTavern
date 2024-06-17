@@ -123,6 +123,7 @@ async function doCount() {
     //toastr success with the token count of the chat
     const count = await getTokenCountAsync(allMessages);
     toastr.success(`Token count: ${count}`);
+    return count;
 }
 
 jQuery(() => {
@@ -134,7 +135,7 @@ jQuery(() => {
     $('#extensionsMenu').prepend(buttonHtml);
     $('#token_counter').on('click', doTokenCounter);
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'count',
-        callback: doCount,
+        callback: async () => String(await doCount()),
         returns: 'number of tokens',
         helpString: 'Counts the number of tokens in the current chat.',
     }));

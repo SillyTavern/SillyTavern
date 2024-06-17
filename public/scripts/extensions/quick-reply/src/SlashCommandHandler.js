@@ -1,9 +1,12 @@
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
+import { SlashCommandEnumValue } from '../../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { isTrueBoolean } from '../../../utils.js';
 // eslint-disable-next-line no-unused-vars
 import { QuickReplyApi } from '../api/QuickReplyApi.js';
+import { QuickReply } from './QuickReply.js';
+import { QuickReplySet } from './QuickReplySet.js';
 
 export class SlashCommandHandler {
     /**@type {QuickReplyApi}*/ api;
@@ -29,86 +32,125 @@ export class SlashCommandHandler {
             helpString: 'Activates the specified Quick Reply',
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qrset',
-            callback: () => toastr.warning('The command /qrset has been deprecated. Use /qr-set, /qr-set-on, and /qr-set-off instead.'),
+            callback: () => {
+                toastr.warning('The command /qrset has been deprecated. Use /qr-set, /qr-set-on, and /qr-set-off instead.');
+                return '';
+            },
             helpString: '<strong>DEPRECATED</strong> – The command /qrset has been deprecated. Use /qr-set, /qr-set-on, and /qr-set-off instead.',
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set',
-            callback: (args, value) => this.toggleGlobalSet(value, args),
+            callback: (args, value) => {
+                this.toggleGlobalSet(value, args);
+                return '';
+            },
             namedArgumentList: [
                 new SlashCommandNamedArgument(
                     'visible', 'set visibility', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true',
                 ),
             ],
             unnamedArgumentList: [
-                new SlashCommandArgument(
-                    'QR set name', [ARGUMENT_TYPE.STRING], true,
-                ),
+                SlashCommandArgument.fromProps({
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
             ],
             helpString: 'Toggle global QR set',
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-on',
-            callback: (args, value) => this.addGlobalSet(value, args),
+            callback: (args, value) => {
+                this.addGlobalSet(value, args);
+                return '';
+            },
             namedArgumentList: [
                 new SlashCommandNamedArgument(
                     'visible', 'set visibility', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true',
                 ),
             ],
             unnamedArgumentList: [
-                new SlashCommandArgument(
-                    'QR set name', [ARGUMENT_TYPE.STRING], true,
-                ),
+                SlashCommandArgument.fromProps({
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
             ],
             helpString: 'Activate global QR set',
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-off',
-            callback: (_, value) => this.removeGlobalSet(value),
+            callback: (_, value) => {
+                this.removeGlobalSet(value);
+                return '';
+            },
             unnamedArgumentList: [
-                new SlashCommandArgument(
-                    'QR set name', [ARGUMENT_TYPE.STRING], true,
-                ),
+                SlashCommandArgument.fromProps({
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
             ],
             helpString: 'Deactivate global QR set',
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-chat-set',
-            callback: (args, value) => this.toggleChatSet(value, args),
+            callback: (args, value) => {
+                this.toggleChatSet(value, args);
+                return '';
+            },
             namedArgumentList: [
                 new SlashCommandNamedArgument(
                     'visible', 'set visibility', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true',
                 ),
             ],
             unnamedArgumentList: [
-                new SlashCommandArgument(
-                    'QR set name', [ARGUMENT_TYPE.STRING], true,
-                ),
+                SlashCommandArgument.fromProps({
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
             ],
             helpString: 'Toggle chat QR set',
         }));
 
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-chat-set-on',
-            callback: (args, value) => this.addChatSet(value, args),
+            callback: (args, value) => {
+                this.addChatSet(value, args);
+                return '';
+            },
             namedArgumentList: [
                 new SlashCommandNamedArgument(
                     'visible', 'whether the QR set should be visible', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true', ['true', 'false'],
                 ),
             ],
             unnamedArgumentList: [
-                new SlashCommandArgument(
-                    'QR set name', [ARGUMENT_TYPE.STRING], true,
-                ),
+                SlashCommandArgument.fromProps({
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
             ],
             helpString: 'Activate chat QR set',
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-chat-set-off',
-            callback: (_, value) => this.removeChatSet(value),
+            callback: (_, value) => {
+                this.removeChatSet(value);
+                return '';
+            },
             unnamedArgumentList: [
-                new SlashCommandArgument(
-                    'QR set name', [ARGUMENT_TYPE.STRING], true,
-                ),
+                SlashCommandArgument.fromProps({
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
             ],
             helpString: 'Deactivate chat QR set',
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-list',
-            callback: (_, value) => this.listSets(value ?? 'all'),
+            callback: (_, value) => JSON.stringify(this.listSets(value ?? 'all')),
             returns: 'list of QR sets',
             namedArgumentList: [],
             unnamedArgumentList: [
@@ -119,13 +161,18 @@ export class SlashCommandHandler {
             helpString: 'Gets a list of the names of all quick reply sets.',
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-list',
-            callback: (_, value) => this.listQuickReplies(value),
+            callback: (_, value) => {
+                return JSON.stringify(this.listQuickReplies(value));
+            },
             returns: 'list of QRs',
             namedArgumentList: [],
             unnamedArgumentList: [
-                new SlashCommandArgument(
-                    'set name', [ARGUMENT_TYPE.STRING], true,
-                ),
+                SlashCommandArgument.fromProps({
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
             ],
             helpString: 'Gets a list of the names of all quick replies in this quick reply set.',
         }));
@@ -144,8 +191,12 @@ export class SlashCommandHandler {
         const qrUpdateArgs = [
             new SlashCommandNamedArgument('newlabel', 'new text for the button', [ARGUMENT_TYPE.STRING], false),
         ];
+
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-create',
-            callback: (args, message) => this.createQuickReply(args, message),
+            callback: (args, message) => {
+                this.createQuickReply(args, message);
+                return '';
+            },
             namedArgumentList: qrArgs,
             unnamedArgumentList: [
                 new SlashCommandArgument(
@@ -165,9 +216,15 @@ export class SlashCommandHandler {
             `,
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-update',
-            callback: (args, message) => this.updateQuickReply(args, message),
+            callback: (args, message) => {
+                this.updateQuickReply(args, message);
+                return '';
+            },
             returns: 'updated quick reply',
             namedArgumentList: [...qrUpdateArgs, ...qrArgs],
+            unnamedArgumentList: [
+                new SlashCommandArgument('message', [ARGUMENT_TYPE.STRING]),
+            ],
             helpString: `
                 <div>
                     Updates Quick Reply.
@@ -183,34 +240,57 @@ export class SlashCommandHandler {
             `,
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-delete',
-            callback: (args, name) => this.deleteQuickReply(args, name),
+            callback: (args, name) => {
+                this.deleteQuickReply(args, name);
+                return '';
+            },
             namedArgumentList: [
-                new SlashCommandNamedArgument(
-                    'set', 'Quick Reply set', [ARGUMENT_TYPE.STRING], true,
-                ),
-                new SlashCommandNamedArgument(
-                    'label', 'Quick Reply label', [ARGUMENT_TYPE.STRING], false,
-                ),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'set',
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'label',
+                    description: 'Quick Reply label',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    enumProvider: (executor) => QuickReplySet.get(String(executor.namedArgumentList.find(x => x.name == 'set')?.value))?.qrList.map(x => new SlashCommandEnumValue(x.label, null, 'qr-entry')),
+                }),
             ],
             helpString: 'Deletes a Quick Reply from the specified set. If no label is provided, the entire set is deleted.',
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-contextadd',
-            callback: (args, name) => this.createContextItem(args, name),
+            callback: (args, name) => {
+                this.createContextItem(args, name);
+                return '';
+            },
             namedArgumentList: [
-                new SlashCommandNamedArgument(
-                    'set', 'string', [ARGUMENT_TYPE.STRING], true,
-                ),
-                new SlashCommandNamedArgument(
-                    'label', 'string', [ARGUMENT_TYPE.STRING], true,
-                ),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'set',
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'label',
+                    description: 'Quick Reply label',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    enumProvider: (executor) => QuickReplySet.get(String(executor.namedArgumentList.find(x => x.name == 'set')?.value))?.qrList.map(x => new SlashCommandEnumValue(x.label, null, 'qr-entry')),
+                }),
                 new SlashCommandNamedArgument(
                     'chain', 'boolean', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
                 ),
             ],
             unnamedArgumentList: [
-                new SlashCommandArgument(
-                    'preset name', [ARGUMENT_TYPE.STRING], true,
-                ),
+                SlashCommandArgument.fromProps({
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
             ],
             helpString: `
                 <div>
@@ -227,19 +307,32 @@ export class SlashCommandHandler {
             `,
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-contextdel',
-            callback: (args, name) => this.deleteContextItem(args, name),
+            callback: (args, name) => {
+                this.deleteContextItem(args, name);
+                return '';
+            },
             namedArgumentList: [
-                new SlashCommandNamedArgument(
-                    'set', 'string', [ARGUMENT_TYPE.STRING], true,
-                ),
-                new SlashCommandNamedArgument(
-                    'label', 'string', [ARGUMENT_TYPE.STRING], true,
-                ),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'set',
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'label',
+                    description: 'Quick Reply label',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    enumProvider: (executor) => QuickReplySet.get(String(executor.namedArgumentList.find(x => x.name == 'set')?.value))?.qrList.map(x => new SlashCommandEnumValue(x.label, null, 'qr-entry')),
+                }),
             ],
             unnamedArgumentList: [
-                new SlashCommandArgument(
-                    'preset name', [ARGUMENT_TYPE.STRING], true,
-                ),
+                SlashCommandArgument.fromProps({
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
             ],
             helpString: `
                 <div>
@@ -256,16 +349,25 @@ export class SlashCommandHandler {
             `,
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-contextclear',
-            callback: (args, label) => this.clearContextMenu(args, label),
+            callback: (args, label) => {
+                this.clearContextMenu(args, label);
+                return '';
+            },
             namedArgumentList: [
-                new SlashCommandNamedArgument(
-                    'set', 'context menu preset name', [ARGUMENT_TYPE.STRING], true,
-                ),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'set',
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
             ],
             unnamedArgumentList: [
-                new SlashCommandArgument(
-                    'label', [ARGUMENT_TYPE.STRING], true,
-                ),
+                SlashCommandArgument.fromProps({
+                    description: 'Quick Reply label',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    enumProvider: (executor) => QuickReplySet.get(String(executor.namedArgumentList.find(x => x.name == 'set')?.value))?.qrList.map(x => new SlashCommandEnumValue(x.label, null, 'qr-entry')),
+                }),
             ],
             helpString: `
                 <div>
@@ -288,13 +390,19 @@ export class SlashCommandHandler {
             new SlashCommandNamedArgument('inject', 'inject user input automatically (if disabled use {{input}})', [ARGUMENT_TYPE.BOOLEAN], false),
         ];
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-create',
-            callback: (args, name) => this.createSet(name, args),
+            callback: (args, name) => {
+                this.createSet(name, args);
+                return '';
+            },
             aliases: ['qr-presetadd'],
             namedArgumentList: presetArgs,
             unnamedArgumentList: [
-                new SlashCommandArgument(
-                    'name', [ARGUMENT_TYPE.STRING], true,
-                ),
+                SlashCommandArgument.fromProps({
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
             ],
             helpString: `
                 <div>
@@ -312,11 +420,19 @@ export class SlashCommandHandler {
         }));
 
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-update',
-            callback: (args, name) => this.updateSet(name, args),
+            callback: (args, name) => {
+                this.updateSet(name, args);
+                return '';
+            },
             aliases: ['qr-presetupdate'],
             namedArgumentList: presetArgs,
             unnamedArgumentList: [
-                new SlashCommandArgument('name', [ARGUMENT_TYPE.STRING], true),
+                SlashCommandArgument.fromProps({
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
             ],
             helpString: `
                 <div>
@@ -329,10 +445,18 @@ export class SlashCommandHandler {
             `,
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-delete',
-            callback: (args, name) => this.deleteSet(name),
+            callback: (_, name) => {
+                this.deleteSet(name);
+                return '';
+            },
             aliases: ['qr-presetdelete'],
             unnamedArgumentList: [
-                new SlashCommandArgument('name', [ARGUMENT_TYPE.STRING], true),
+                SlashCommandArgument.fromProps({
+                    description: 'QR set name',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                }),
             ],
             helpString: `
                 <div>
@@ -468,7 +592,7 @@ export class SlashCommandHandler {
     }
     deleteQuickReply(args, label) {
         try {
-            this.api.deleteQuickReply(args.set, label);
+            this.api.deleteQuickReply(args.set, args.label ?? label);
         } catch (ex) {
             toastr.error(ex.message);
         }

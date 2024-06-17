@@ -11,6 +11,7 @@ import { dragElement } from '../../RossAscends-mods.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 
 const extensionName = 'gallery';
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
@@ -419,7 +420,10 @@ function viewWithDragbox(items) {
 // Registers a simple command for opening the char gallery.
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'show-gallery',
     aliases: ['sg'],
-    callback: showGalleryCommand,
+    callback: () => {
+        showCharGallery();
+        return '';
+    },
     helpString: 'Shows the gallery.',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'list-gallery',
@@ -427,20 +431,21 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'list-gallery
     callback: listGalleryCommand,
     returns: 'list of images',
     namedArgumentList: [
-        new SlashCommandNamedArgument(
-            'char', 'character name', [ARGUMENT_TYPE.STRING], false,
-        ),
-        new SlashCommandNamedArgument(
-            'group', 'group name', [ARGUMENT_TYPE.STRING], false,
-        ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'char',
+            description: 'character name',
+            typeList: [ARGUMENT_TYPE.STRING],
+            enumProvider: commonEnumProviders.charName('character'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'group',
+            description: 'group name',
+            typeList: [ARGUMENT_TYPE.STRING],
+            enumProvider: commonEnumProviders.charName('group'),
+        }),
     ],
     helpString: 'List images in the gallery of the current char / group or a specified char / group.',
 }));
-
-
-function showGalleryCommand(args) {
-    showCharGallery();
-}
 
 async function listGalleryCommand(args) {
     try {
