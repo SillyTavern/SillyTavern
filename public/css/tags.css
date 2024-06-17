@@ -119,13 +119,11 @@
     opacity: 0.6;
 }
 
-#tagList .tag:has(.tag_remove:hover),
-#tagList .tag:has(.tag_remove:focus) {
+#tagList .tag:has(.tag_remove:hover) {
     opacity: 1;
 }
 
-#tagList .tag:has(.tag_remove:hover) .tag_name,
-#tagList .tag:has(.tag_remove:focus) .tag_name {
+#tagList .tag:has(.tag_remove:hover) .tag_name {
     opacity: 0.6;
 }
 
@@ -172,8 +170,7 @@
     transition: opacity 200ms;
 }
 
-.rm_tag_filter .tag:hover,
-.rm_tag_filter .tag:focus {
+.rm_tag_filter .tag:hover {
     opacity: 1;
     filter: brightness(1);
 }
@@ -218,7 +215,6 @@
 }
 
 .tag_as_folder:hover,
-.tag_as_folder:focus,
 .tag_as_folder.flash {
     filter: brightness(150%) saturate(0.6) !important;
 }

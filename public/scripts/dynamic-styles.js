@@ -63,7 +63,7 @@ function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
                         const baseSelector = selector.replace(':hover', PLACEHOLDER).trim();
                         hoverRules.push({ baseSelector, rule });
                     } else if (isFocus) {
-                        // We need to make sure that we both remember existing :focus and :focus-within rules
+                        // We need to make sure that we remember all existing :focus, :focus-within and :focus-visible rules
                         const baseSelector = selector.replace(':focus-within', PLACEHOLDER).replace(':focus-visible', PLACEHOLDER).replace(':focus', PLACEHOLDER).trim();
                         focusRules.add(baseSelector);
                     }
@@ -96,10 +96,13 @@ function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
             // Only initialize the dynamic stylesheet if needed
             targetStyleSheet ??= getDynamicStyleSheet({ fromExtension });
 
-            // The closest keyboard-equivalent to :hover styling is utilizing the :focus-within for keyboards
+            // The closest keyboard-equivalent to :hover styling is utilizing the :focus-visible rule from modern browsers.
+            // It let's the browser decide whether a focus highlighting is expected and makes sense.
             // So we take all :hover rules that don't have a manually defined focus rule yet, and create their
-            // :focus-within counterpart, which will make the styling work the same for keyboard and mouse
-            const focusSelector = rule.selectorText.replace(/:hover/g, ':focus-within');
+            // :focus-visible counterpart, which will make the styling work the same for keyboard and mouse.
+            // If something like :focus-within or a more specific selector like `.blah:has(:focus-visible)` for elements inside,
+            // it should be manually defined in CSS.
+            const focusSelector = rule.selectorText.replace(/:hover/g, ':focus-visible');
             const focusRule = `${focusSelector} { ${rule.style.cssText} }`;
 
             try {

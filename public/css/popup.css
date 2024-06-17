@@ -100,10 +100,6 @@ dialog {
     gap: 20px;
 }
 
-.popup-controls .menu_button:focus-within {
-    outline: 1px solid var(--white100);
-}
-
 .menu_button.menu_button_default {
     box-shadow: 0 0 5px var(--white20a);
 }
@@ -129,7 +125,7 @@ dialog {
     -webkit-font-smoothing: subpixel-antialiased;
 }
 
-.popup-controls .menu_button:hover:focus-within {
+.popup-controls .menu_button:hover:focus-visible {
     filter: brightness(1.3) saturate(1.3);
 }
 

@@ -51,6 +51,9 @@
     --active: rgb(88, 182, 0);
     --preferred: rgb(244, 67, 54);
 
+    --interactable-outline-color: var(--white100);
+    --interactable-outline-color-faint: var(--white50a);
+
 
     /*Default Theme, will be changed by ToolCool Color Picker*/
     --SmartThemeBodyColor: rgb(220, 220, 210);
@@ -223,18 +226,18 @@ table.responsiveTable {
 
 /* Outline for "normal" buttons should only be when actual keyboard navigation is used */
 .interactable:focus-visible {
-    outline: 1px solid var(--white100);
+    outline: 1px solid var(--interactable-outline-color);
 }
 
 /* The specific input controls can always have a faint outline, even on mouse interaction, to give a better hint */
-select:focus,
-input:focus,
-textarea:focus {
-    outline: 1px solid var(--white30a);
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+    outline: 1px solid var(--interactable-outline-color-faint);
 }
 
-input[type='checkbox']:focus {
-    outline: 1px solid var(--white100);
+input[type='checkbox']:focus-visible {
+    outline: 1px solid var(--interactable-outline-color);
 }
 
 /* General dragover styling */
@@ -699,7 +702,6 @@ body .panelControlBar {
     width: var(--bottomFormBlockSize);
     height: var(--bottomFormBlockSize);
     margin: 0;
-    outline: none;
     border: none;
     cursor: pointer;
     opacity: 0.7;
@@ -710,16 +712,9 @@ body .panelControlBar {
 }
 
 #rightSendForm>div:hover,
-#rightSendForm>div:focus,
-#leftSendForm>div:hover,
-#leftSendForm>div:focus {
+#leftSendForm>div:hover {
     opacity: 1;
     filter: brightness(1.2);
-}
-
-#rightSendForm>div:focus,
-#leftSendForm>div:focus {
-    outline: 1px solid var(--white100);
 }
 
 #send_but {
@@ -823,7 +818,6 @@ body .panelControlBar {
     height: var(--bottomFormBlockSize);
     font-size: var(--bottomFormIconSize);
     margin: 0;
-    outline: none;
     border: none;
     position: relative;
     opacity: 0.7;
@@ -1221,6 +1215,16 @@ select {
             100% 100%,
             0% 100%);
     transition: clip-path 200ms;
+}
+
+#send_textarea:focus-visible {
+    /* Disable outline for the chat bar itself, we add it to the outer div */
+    outline: none;
+}
+
+#send_form:has(#send_textarea:focus-visible) {
+    border-color: var(--interactable-outline-color-faint);
+    outline: 1px solid var(--interactable-outline-color-faint);
 }
 
 #form_sheld.isExecutingCommandsFromChatInput.script_paused #send_textarea {
@@ -2217,8 +2221,7 @@ input[type="file"] {
     transition: all 0.5s ease-in-out;
 }
 
-.right_menu_button:hover,
-.right_menu_button:focus {
+.right_menu_button:hover {
     filter: brightness(150%);
 }
 
@@ -2239,11 +2242,11 @@ input[type="file"] {
 }
 
 #rm_button_panel_pin_div:hover,
-#rm_button_panel_pin_div:focus-within,
+#rm_button_panel_pin_div:has(:focus-visible),
 #lm_button_panel_pin_div:hover,
-#lm_button_panel_pin_div:focus-within,
+#lm_button_panel_pin_div:has(:focus-visible),
 #WI_button_panel_pin_div:hover,
-#WI_button_panel_pin_div:focus-within {
+#WI_button_panel_pin_div:has(:focus-visible) {
     opacity: 1;
 }
 
@@ -2731,11 +2734,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .bogus_folder_select:hover,
-.bogus_folder_select:focus-within,
 .character_select:hover,
-.character_select:focus-within,
-.avatar-container:hover,
-.avatar-container:focus-within {
+.avatar-container:hover {
     background-color: var(--white30a);
 }
 
@@ -2776,19 +2776,23 @@ input[type=search]:focus::-webkit-search-cancel-button {
     outline: 2px solid var(--golden);
 }
 
-.bg_example:hover.locked .bg_example_lock {
+.bg_example:hover.locked .bg_example_lock,
+.bg_example:focus-within.locked .bg_example_lock {
     display: none;
 }
 
-.bg_example:hover:not(.locked) .bg_example_unlock {
+.bg_example:hover:not(.locked) .bg_example_unlock,
+.bg_example:focus-within:not(.locked) .bg_example_unlock {
     display: none;
 }
 
-.bg_example:hover[custom="true"] .bg_example_edit {
+.bg_example:hover[custom="true"] .bg_example_edit,
+.bg_example:focus-within[custom="true"] .bg_example_edit {
     display: none;
 }
 
-.bg_example:hover[custom="false"] .bg_example_copy {
+.bg_example:hover[custom="false"] .bg_example_copy,
+.bg_example:focus-within[custom="false"] .bg_example_copy {
     display: none;
 }
 
@@ -2828,7 +2832,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: none;
 }
 
-.bg_example:hover .bg_button {
+.bg_example:hover .bg_button,
+.bg_example:focus-within .bg_button {
     display: block;
 }
 
@@ -3570,15 +3575,13 @@ input[type='checkbox'].del_checkbox {
 }
 
 .neo-range-slider:hover,
-.neo-range-slider:focus,
-input[type="range"]:hover,
-input[type="range"]:focus {
+input[type="range"]:hover {
     filter: brightness(1.25);
 }
 
-.neo-range-slider:focus,
-input[type="range"]:focus {
-    outline: 1px solid var(--white100);
+.neo-range-slider:focus-visible,
+input[type="range"]:focus-visible {
+    outline: 1px solid var(--interactable-outline-color);
 }
 
 .range-block-range {
