@@ -531,6 +531,7 @@ function loadSettings() {
     $('#tts_narrate_dialogues').prop('checked', extension_settings.tts.narrate_dialogues_only);
     $('#tts_narrate_quoted').prop('checked', extension_settings.tts.narrate_quoted_only);
     $('#tts_auto_generation').prop('checked', extension_settings.tts.auto_generation);
+    $('#tts_periodic_auto_generation').prop('checked', extension_settings.tts.periodic_auto_generation);
     $('#tts_narrate_translated_only').prop('checked', extension_settings.tts.narrate_translated_only);
     $('#tts_narrate_user').prop('checked', extension_settings.tts.narrate_user);
     $('#tts_pass_asterisks').prop('checked', extension_settings.tts.pass_asterisks);
@@ -590,6 +591,12 @@ function onEnableClick() {
 
 function onAutoGenerationClick() {
     extension_settings.tts.auto_generation = !!$('#tts_auto_generation').prop('checked');
+    saveSettingsDebounced();
+}
+
+
+function onPeriodicAutoGenerationClick() {
+    extension_settings.tts.periodic_auto_generation = !!$('#tts_periodic_auto_generation').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -685,7 +692,7 @@ async function onChatChanged() {
     lastMessage = null;
 }
 
-async function onMessageEvent(messageId) {
+async function onMessageEvent(messageId, lastCharIndex) {
     // If TTS is disabled, do nothing
     if (!extension_settings.tts.enabled) {
         return;
@@ -721,6 +728,11 @@ async function onMessageEvent(messageId) {
     // if no new messages, or same message, or same message hash, do nothing
     if (hashNew === lastMessageHash) {
         return;
+    }
+
+    // if we only want to process part of the message
+    if (lastCharIndex) {
+      message.mes = message.mes.substring(0, lastCharIndex);
     }
 
     const isLastMessageInCurrent = () =>
@@ -779,6 +791,77 @@ async function onMessageDeleted() {
 
     // stop any tts playback since message might not exist anymore
     resetTtsPlayback();
+}
+
+async function onGenerationStarted(userMessageType) {
+  if (userMessageType === undefined) {
+    // If TTS is disabled, do nothing
+    if (!extension_settings.tts.enabled) {
+        return;
+    }
+
+    // Auto generation is disabled
+    if (!extension_settings.tts.auto_generation) {
+        return;
+    }
+
+    // Periodic auto generation is disabled
+    if (!extension_settings.tts.periodic_auto_generation) {
+        return;
+    }
+
+    // start the timer
+    if (periodicMessageGenerationTimer === undefined) {
+      periodicMessageGenerationTimer = setInterval(onPeriodicMessageGenerationTick, 1000);
+    }
+  }
+}
+
+async function onGenerationEnded() {
+    if (periodicMessageGenerationTimer !== undefined) {
+      clearInterval(periodicMessageGenerationTimer);
+      periodicMessageGenerationTimer = undefined;
+    }
+    lastPositionOfParagraphEnd = -1;
+}
+
+var periodicMessageGenerationTimer;
+var lastPositionOfParagraphEnd = -1;
+async function onPeriodicMessageGenerationTick() {
+    const context = getContext();
+
+    // no characters or group selected
+    if (!context.groupId && context.characterId === undefined) {
+        return;
+    }
+
+    const lastMessageId = context.chat.length - 1;
+
+    // the last message was from the user
+    if (context.chat[lastMessageId].is_user) {
+      return;
+    }
+
+    const lastMessage = structuredClone(context.chat[lastMessageId]);
+    const lastMessageText = lastMessage?.mes ?? '';
+
+    // look for double ending lines which should indicate the end of a paragraph
+    var newLastPositionOfParagraphEnd = lastMessageText
+        .indexOf('\n\n', lastPositionOfParagraphEnd + 1);
+    // if not found, look for a single ending line which should indicate the end of a paragraph
+    if (newLastPositionOfParagraphEnd === -1) {
+        newLastPositionOfParagraphEnd = lastMessageText
+            .indexOf('\n', lastPositionOfParagraphEnd + 1);
+    }
+
+    // send the message to the tts module if we found the new end of a paragraph
+    if (newLastPositionOfParagraphEnd > -1) {
+        onMessageEvent(lastMessageId, newLastPositionOfParagraphEnd);
+
+        if (periodicMessageGenerationTimer !== undefined) { 
+            lastPositionOfParagraphEnd = newLastPositionOfParagraphEnd;
+        }
+    }
 }
 
 /**
@@ -1010,6 +1093,10 @@ $(document).ready(function () {
                             <input type="checkbox" id="tts_auto_generation">
                             <small>Auto Generation</small>
                         </label>
+                        <label class="checkbox_label" for="tts_periodic_auto_generation">
+                            <input type="checkbox" id="tts_periodic_auto_generation">
+                            <small>Narrate by paragraphs (streaming)</small>
+                        </label>
                         <label class="checkbox_label" for="tts_narrate_quoted">
                             <input type="checkbox" id="tts_narrate_quoted">
                             <small>Only narrate "quotes"</small>
@@ -1072,6 +1159,7 @@ $(document).ready(function () {
         $('#tts_skip_tags').on('click', onSkipTagsClick);
         $('#tts_pass_asterisks').on('click', onPassAsterisksClick);
         $('#tts_auto_generation').on('click', onAutoGenerationClick);
+        $('#tts_periodic_auto_generation').on('click', onPeriodicAutoGenerationClick);
         $('#tts_narrate_user').on('click', onNarrateUserClick);
 
         $('#playback_rate').on('input', function () {
@@ -1099,6 +1187,8 @@ $(document).ready(function () {
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.on(event_types.MESSAGE_DELETED, onMessageDeleted);
     eventSource.on(event_types.GROUP_UPDATED, onChatChanged);
+    eventSource.on(event_types.GENERATION_STARTED, onGenerationStarted);
+    eventSource.on(event_types.GENERATION_ENDED, onGenerationEnded);
     eventSource.makeLast(event_types.CHARACTER_MESSAGE_RENDERED, onMessageEvent);
     eventSource.makeLast(event_types.USER_MESSAGE_RENDERED, onMessageEvent);
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'speak',
