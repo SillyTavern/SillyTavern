@@ -1,4 +1,4 @@
-import { callPopup, cancelTtsPlay, eventSource, event_types, name2, saveSettingsDebounced, substituteParams } from '../../../script.js';
+import { callPopup, cancelTtsPlay, eventSource, event_types, isStreamingEnabled, name2, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules } from '../../extensions.js';
 import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique } from '../../utils.js';
 import { EdgeTtsProvider } from './edge.js';
@@ -18,6 +18,7 @@ import { AzureTtsProvider } from './azure.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { debounce_timeout } from '../../constants.js';
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000;
@@ -28,6 +29,8 @@ let talkingHeadState = false;
 let lastChatId = null;
 let lastMessage = null;
 let lastMessageHash = null;
+let periodicMessageGenerationTimer = null;
+let lastPositionOfParagraphEnd = -1;
 
 const DEFAULT_VOICE_MARKER = '[Default Voice]';
 const DISABLED_VOICE_MARKER = 'disabled';
@@ -109,7 +112,7 @@ async function onNarrateOneMessage() {
 
 async function onNarrateText(args, text) {
     if (!text) {
-        return;
+        return '';
     }
 
     audioElement.src = '/sounds/silence.mp3';
@@ -135,6 +138,7 @@ async function onNarrateText(args, text) {
 
     // Return back to the chat voices
     await initVoiceMap(false);
+    return '';
 }
 
 async function moduleWorker() {
@@ -686,9 +690,10 @@ export function saveTtsProviderSettings() {
 //###################//
 
 async function onChatChanged() {
-    await resetTtsPlayback();
+    await onGenerationEnded();
+    resetTtsPlayback();
     const voiceMapInit = initVoiceMap();
-    await Promise.race([voiceMapInit, delay(1000)]);
+    await Promise.race([voiceMapInit, delay(debounce_timeout.relaxed)]);
     lastMessage = null;
 }
 
@@ -732,15 +737,15 @@ async function onMessageEvent(messageId, lastCharIndex) {
 
     // if we only want to process part of the message
     if (lastCharIndex) {
-      message.mes = message.mes.substring(0, lastCharIndex);
+        message.mes = message.mes.substring(0, lastCharIndex);
     }
 
     const isLastMessageInCurrent = () =>
         lastMessage &&
         typeof lastMessage === 'object' &&
         message.swipe_id === lastMessage.swipe_id &&
-        message.name === lastMessage.name  &&
-        message.is_user === lastMessage.is_user  &&
+        message.name === lastMessage.name &&
+        message.is_user === lastMessage.is_user &&
         message.mes.indexOf(lastMessage.mes) !== -1;
 
     // if last message within current message, message got extended. only send diff to TTS.
@@ -793,8 +798,12 @@ async function onMessageDeleted() {
     resetTtsPlayback();
 }
 
-async function onGenerationStarted(userMessageType) {
-  if (userMessageType === undefined) {
+async function onGenerationStarted(generationType, _args, isDryRun) {
+    // If dry running or quiet mode, do nothing
+    if (isDryRun || ['quiet', 'impersonate'].includes(generationType)) {
+        return;
+    }
+
     // If TTS is disabled, do nothing
     if (!extension_settings.tts.enabled) {
         return;
@@ -810,23 +819,25 @@ async function onGenerationStarted(userMessageType) {
         return;
     }
 
-    // start the timer
-    if (periodicMessageGenerationTimer === undefined) {
-      periodicMessageGenerationTimer = setInterval(onPeriodicMessageGenerationTick, 1000);
+    // If the reply is not being streamed
+    if (!isStreamingEnabled()) {
+        return;
     }
-  }
+
+    // start the timer
+    if (!periodicMessageGenerationTimer) {
+        periodicMessageGenerationTimer = setInterval(onPeriodicMessageGenerationTick, UPDATE_INTERVAL);
+    }
 }
 
 async function onGenerationEnded() {
-    if (periodicMessageGenerationTimer !== undefined) {
-      clearInterval(periodicMessageGenerationTimer);
-      periodicMessageGenerationTimer = undefined;
+    if (periodicMessageGenerationTimer) {
+        clearInterval(periodicMessageGenerationTimer);
+        periodicMessageGenerationTimer = null;
     }
     lastPositionOfParagraphEnd = -1;
 }
 
-var periodicMessageGenerationTimer;
-var lastPositionOfParagraphEnd = -1;
 async function onPeriodicMessageGenerationTick() {
     const context = getContext();
 
@@ -839,14 +850,14 @@ async function onPeriodicMessageGenerationTick() {
 
     // the last message was from the user
     if (context.chat[lastMessageId].is_user) {
-      return;
+        return;
     }
 
     const lastMessage = structuredClone(context.chat[lastMessageId]);
     const lastMessageText = lastMessage?.mes ?? '';
 
     // look for double ending lines which should indicate the end of a paragraph
-    var newLastPositionOfParagraphEnd = lastMessageText
+    let newLastPositionOfParagraphEnd = lastMessageText
         .indexOf('\n\n', lastPositionOfParagraphEnd + 1);
     // if not found, look for a single ending line which should indicate the end of a paragraph
     if (newLastPositionOfParagraphEnd === -1) {
@@ -858,7 +869,7 @@ async function onPeriodicMessageGenerationTick() {
     if (newLastPositionOfParagraphEnd > -1) {
         onMessageEvent(lastMessageId, newLastPositionOfParagraphEnd);
 
-        if (periodicMessageGenerationTimer !== undefined) { 
+        if (periodicMessageGenerationTimer) {
             lastPositionOfParagraphEnd = newLastPositionOfParagraphEnd;
         }
     }
@@ -1093,9 +1104,9 @@ $(document).ready(function () {
                             <input type="checkbox" id="tts_auto_generation">
                             <small>Auto Generation</small>
                         </label>
-                        <label class="checkbox_label" for="tts_periodic_auto_generation">
+                        <label class="checkbox_label" for="tts_periodic_auto_generation" title="Requires auto generation to be enabled.">
                             <input type="checkbox" id="tts_periodic_auto_generation">
-                            <small>Narrate by paragraphs (streaming)</small>
+                            <small>Narrate by paragraphs (when streaming)</small>
                         </label>
                         <label class="checkbox_label" for="tts_narrate_quoted">
                             <input type="checkbox" id="tts_narrate_quoted">
@@ -1191,7 +1202,8 @@ $(document).ready(function () {
     eventSource.on(event_types.GENERATION_ENDED, onGenerationEnded);
     eventSource.makeLast(event_types.CHARACTER_MESSAGE_RENDERED, onMessageEvent);
     eventSource.makeLast(event_types.USER_MESSAGE_RENDERED, onMessageEvent);
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'speak',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'speak',
         callback: onNarrateText,
         aliases: ['narrate', 'tts'],
         namedArgumentList: [
