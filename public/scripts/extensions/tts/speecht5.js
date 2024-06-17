@@ -60,7 +60,7 @@ class SpeechT5TtsProvider {
         const url = URL.createObjectURL(audio);
         this.audioElement.src = url;
         this.audioElement.play();
-        URL.revokeObjectURL(url);
+        this.audioElement.onended = () => URL.revokeObjectURL(url);
     }
 
     async loadSettings(settings) {

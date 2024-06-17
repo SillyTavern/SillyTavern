@@ -14,13 +14,13 @@
     <li><tt>&lcub;&lcub;personality&rcub;&rcub;</tt> – <span data-i18n="help_macros_10">the Character's Personality</span></li>
     <li><tt>&lcub;&lcub;scenario&rcub;&rcub;</tt> – <span data-i18n="help_macros_11">the Character's Scenario</span></li>
     <li><tt>&lcub;&lcub;persona&rcub;&rcub;</tt> – <span data-i18n="help_macros_12">your current Persona Description</span></li>
-    <li><tt>&lcub;&lcub;mesExamples&rcub;&rcub;</tt> – <span data-i18n="help_macros_"13>the Character's Dialogue Examples</span></li>
-    <li><tt>&lcub;&lcub;mesExamplesRaw&rcub;&rcub;</tt> – <span data-i18n="help_macros_14">unformatted Dialogue Examples </span><b>(only for Story String)</b></li>
+    <li><tt>&lcub;&lcub;mesExamples&rcub;&rcub;</tt> – <span data-i18n="help_macros_13">the Character's Dialogue Examples</span></li>
+    <li><tt>&lcub;&lcub;mesExamplesRaw&rcub;&rcub;</tt> – <span data-i18n="help_macros_14">unformatted Dialogue Examples </span><b data-i18n="(only for Story String)">(only for Story String)</b></li>
     <li><tt>&lcub;&lcub;user&rcub;&rcub;</tt> – <span data-i18n="help_macros_15">your current Persona username</span></li>
     <li><tt>&lcub;&lcub;char&rcub;&rcub;</tt> – <span data-i18n="help_macros_16">the Character's name</span></li>
     <li><tt>&lcub;&lcub;char_version&rcub;&rcub;</tt> – <span data-i18n="help_macros_17">the Character's version number</span></li>
     <li><tt>&lcub;&lcub;group&rcub;&rcub;</tt> – <span data-i18n="help_macros_18">a comma-separated list of group member names or the character name in solo chats. Alias: &lcub;&lcub;charIfNotGroup&rcub;&rcub;</span></li>
-    <li><tt>&lcub;&lcub;model&rcub;&rcub;</tt> – <span data-i18n="help_macros_19">a text generation model name for the currently selected API. </span><b>Can be inaccurate!</b></li>
+    <li><tt>&lcub;&lcub;model&rcub;&rcub;</tt> – <span data-i18n="help_macros_19">a text generation model name for the currently selected API. </span><b data-i18n="Can be inaccurate!">Can be inaccurate!</b></li>
     <li><tt>&lcub;&lcub;lastMessage&rcub;&rcub;</tt> - <span data-i18n="help_macros_20">the text of the latest chat message.</span></li>
     <li><tt>&lcub;&lcub;lastMessageId&rcub;&rcub;</tt> – <span data-i18n="help_macros_21">index # of the latest chat message. Useful for slash command batching.</span></li>
     <li><tt>&lcub;&lcub;firstIncludedMessageId&rcub;&rcub;</tt> - <span data-i18n="help_macros_22">the ID of the first message included in the context. Requires generation to be ran at least once in the current session.</span></li>
@@ -37,8 +37,8 @@
     <li><tt>&lcub;&lcub;timeDiff::(time1)::(time2)&rcub;&rcub;</tt> – <span data-i18n="help_macros_33">the time difference between time1 and time2. Accepts time and date macros. (Ex: &lcub;&lcub;timeDiff::&lcub;&lcub;isodate&rcub;&rcub; &lcub;&lcub;time&rcub;&rcub;::2024/5/11 12:30:00&rcub;&rcub;)</span></li>
     <li><tt>&lcub;&lcub;idle_duration&rcub;&rcub;</tt> – <span data-i18n="help_macros_34">the time since the last user message was sent</span></li>
     <li><tt>&lcub;&lcub;bias "text here"&rcub;&rcub;</tt> – <span data-i18n="help_macros_35">sets a behavioral bias for the AI until the next user input. Quotes around the text are important.</span></li>
-    <li><tt>&lcub;&lcub;roll:(formula)&rcub;&rcub;</tt> – <span data-i18n="help_macros_36">rolls a dice. (ex: </span><tt>>&lcub;&lcub;roll:1d6&rcub;&rcub;</tt> will roll a 6-sided dice and return a number between 1 and 6)</li>
-    <li><tt>&lcub;&lcub;random:(args)&rcub;&rcub;</tt> – <span data-i18n="help_macros_37">returns a random item from the list. (ex: </span><tt>&lcub;&lcub;random:1,2,3,4&rcub;&rcub;</tt> will return 1 of the 4 numbers at random. Works with text lists too.</li>
+    <li><tt>&lcub;&lcub;roll:(formula)&rcub;&rcub;</tt> – <span data-i18n="help_macros_36">rolls a dice. (ex: </span><tt>&lcub;&lcub;roll:1d6&rcub;&rcub;</tt><span data-i18n="space_  will roll a 6-sided dice and return a number between 1 and 6)"> will roll a 6-sided dice and return a number between 1 and 6)</span></li>
+    <li><tt>&lcub;&lcub;random:(args)&rcub;&rcub;</tt> – <span data-i18n="help_macros_37">returns a random item from the list. (ex: </span><tt>&lcub;&lcub;random:1,2,3,4&rcub;&rcub;</tt><span data-i18n="space_  will return 1 of the 4 numbers at random. Works with text lists too."> will return 1 of the 4 numbers at random. Works with text lists too.</span></li>
     <li><tt>&lcub;&lcub;random::(arg1)::(arg2)&rcub;&rcub;</tt> – <span data-i18n="help_macros_38">alternative syntax for random that allows to use commas in the list items.</span></li>
     <li><tt>&lcub;&lcub;pick::(args)&rcub;&rcub;</tt> – <span data-i18n="help_macros_39">picks a random item from the list. Works the same as &lcub;&lcub;random&rcub;&rcub;, with the same possible syntax options, but the pick will stay consistent for this chat once picked and won't be re-rolled on consecutive messages and prompt processing.</span></li>
     <li><tt>&lcub;&lcub;banned "text here"&rcub;&rcub;</tt> – <span data-i18n="help_macros_40">dynamically add text in the quotes to banned words sequences, if Text Generation WebUI backend used. Do nothing for others backends. Can be used anywhere (Character description, WI, AN, etc.) Quotes around the text are important.</span></li>

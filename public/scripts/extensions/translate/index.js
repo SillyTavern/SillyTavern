@@ -402,6 +402,10 @@ async function translate(text, lang) {
             return '';
         }
 
+        if (!lang) {
+            lang = extension_settings.translate.target_language;
+        }
+
         switch (extension_settings.translate.provider) {
             case 'libre':
                 return await translateProviderLibre(text, lang);
