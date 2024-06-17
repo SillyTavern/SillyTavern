@@ -96,3 +96,8 @@
         opacity: 1;
     }
 }
+
+.sd_settings .flex1.checkbox_label input[type="checkbox"] {
+    margin-right: 5px;
+    margin-left: 5px;
+}
