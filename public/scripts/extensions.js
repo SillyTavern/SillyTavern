@@ -349,12 +349,12 @@ function autoConnectInputHandler() {
 
 function addExtensionsButtonAndMenu() {
     const buttonHTML =
-        '<div id="extensionsMenuButton" style="display: none;" class="fa-solid fa-magic-wand-sparkles" title="Extras Extensions" /></div>';
+        '<div id="extensionsMenuButton" style="display: none;" class="fa-solid fa-magic-wand-sparkles interactable" title="Extras Extensions" /></div>';
     const extensionsMenuHTML = '<div id="extensionsMenu" class="options-content" style="display: none;"></div>';
 
     $(document.body).append(extensionsMenuHTML);
 
-    $('#leftSendForm').prepend(buttonHTML);
+    $('#leftSendForm').append(buttonHTML);
 
     const button = $('#extensionsMenuButton');
     const dropdown = $('#extensionsMenu');

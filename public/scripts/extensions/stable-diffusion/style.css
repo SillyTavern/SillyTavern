@@ -96,3 +96,19 @@
         opacity: 1;
     }
 }
+
+.sd_settings .flex1.checkbox_label input[type="checkbox"] {
+    margin-right: 5px;
+    margin-left: 5px;
+}
+
+#sd_dimensions_block {
+    position: relative;
+}
+
+#sd_swap_dimensions {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+}

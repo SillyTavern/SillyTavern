@@ -220,68 +220,68 @@
   align-items: baseline;
 }
 @media screen and (max-width: 750px) {
-  body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor {
+  body .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor {
     flex-direction: column;
     overflow: auto;
   }
-  body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main {
+  body .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main {
     flex: 0 0 auto;
   }
-  body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels {
+  body .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels {
     flex-direction: column;
   }
-  body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder {
+  body .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder {
     min-height: 50svh;
     height: 50svh;
   }
 }
-.dialogue_popup:has(#qr--modalEditor) {
+.popup:has(#qr--modalEditor) {
   aspect-ratio: unset;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text {
+.popup:has(#qr--modalEditor) .popup-content {
   display: flex;
   flex-direction: column;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor {
   flex: 1 1 auto;
   display: flex;
   flex-direction: row;
   gap: 1em;
   overflow: hidden;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels {
   flex: 0 0 auto;
   display: flex;
   flex-direction: row;
   gap: 0.5em;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label {
   flex: 1 1 1px;
   display: flex;
   flex-direction: column;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelText {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelText {
   flex: 1 1 auto;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelHint {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelHint {
   flex: 1 1 auto;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > input {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label > input {
   flex: 0 0 auto;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings {
   display: flex;
   flex-direction: row;
   gap: 1em;
@@ -289,35 +289,35 @@
   font-size: smaller;
   align-items: baseline;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings > .checkbox_label {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings > .checkbox_label {
   white-space: nowrap;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings > .checkbox_label > input {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings > .checkbox_label > input {
   font-size: inherit;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder {
   flex: 1 1 auto;
   display: grid;
   text-align: left;
   overflow: hidden;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-messageSyntax {
+.dialogue_popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-messageSyntax {
   display: none;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message {
+.dialogue_popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message {
   background-color: var(--ac-style-color-background);
   color: var(--ac-style-color-text);
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::selection {
+.dialogue_popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::selection {
   color: unset;
   background-color: rgba(108 171 251 / 0.25);
 }
 @supports (color: rgb(from white r g b / 0.25)) {
-  .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::selection {
+  .dialogue_popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::selection {
     background-color: rgb(from var(--ac-style-color-matchedText) r g b / 0.25);
   }
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-messageSyntax {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-messageSyntax {
   grid-column: 1;
   grid-row: 1;
   padding: 0;
@@ -327,10 +327,10 @@
   min-width: 100%;
   width: 0;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-messageSyntax > #qr--modal-messageSyntaxInner {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-messageSyntax > #qr--modal-messageSyntaxInner {
   height: 100%;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message {
   background-color: transparent;
   color: transparent;
   grid-column: 1;
@@ -338,22 +338,22 @@
   caret-color: var(--ac-style-color-text);
   overflow: auto;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message::-webkit-scrollbar,
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message::-webkit-scrollbar-thumb {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message::-webkit-scrollbar,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message::-webkit-scrollbar-thumb {
   visibility: hidden;
   cursor: default;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message::selection {
+.dialogue_popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message::selection {
   color: transparent;
   background-color: rgba(108 171 251 / 0.25);
 }
 @supports (color: rgb(from white r g b / 0.25)) {
-  .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message::selection {
+  .dialogue_popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message::selection {
     background-color: rgb(from var(--ac-style-color-matchedText) r g b / 0.25);
   }
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder #qr--modal-message,
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder #qr--modal-messageSyntaxInner {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder #qr--modal-message,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder #qr--modal-messageSyntaxInner {
   font-family: var(--monoFontFamily);
   padding: 0.75em;
   margin: 0;
@@ -363,11 +363,11 @@
   border: 1px solid var(--SmartThemeBorderColor);
   border-radius: 5px;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeButtons {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons {
   display: flex;
   gap: 1em;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeButtons .qr--modal-executeButton {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons .qr--modal-executeButton {
   border-width: 2px;
   border-style: solid;
   display: flex;
@@ -375,42 +375,42 @@
   gap: 0.5em;
   padding: 0.5em 0.75em;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeButtons .qr--modal-executeButton .qr--modal-executeComboIcon {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons .qr--modal-executeButton .qr--modal-executeComboIcon {
   display: flex;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeButtons #qr--modal-execute {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons #qr--modal-execute {
   transition: 200ms;
   filter: grayscale(0);
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeButtons #qr--modal-execute.qr--busy {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons #qr--modal-execute.qr--busy {
   cursor: wait;
   opacity: 0.5;
   filter: grayscale(1);
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeButtons #qr--modal-execute {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons #qr--modal-execute {
   border-color: #51a351;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeButtons #qr--modal-pause,
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeButtons #qr--modal-stop {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons #qr--modal-pause,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons #qr--modal-stop {
   cursor: default;
   opacity: 0.5;
   filter: grayscale(1);
   pointer-events: none;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeButtons .qr--busy ~ #qr--modal-pause,
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeButtons .qr--busy ~ #qr--modal-stop {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons .qr--busy ~ #qr--modal-pause,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons .qr--busy ~ #qr--modal-stop {
   cursor: pointer;
   opacity: 1;
   filter: grayscale(0);
   pointer-events: all;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeButtons #qr--modal-pause {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons #qr--modal-pause {
   border-color: #92befc;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeButtons #qr--modal-stop {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons #qr--modal-stop {
   border-color: #d78872;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeProgress {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeProgress {
   --prog: 0;
   --progColor: #92befc;
   --progFlashColor: #d78872;
@@ -421,7 +421,7 @@
   background-color: var(--black50a);
   position: relative;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeProgress:after {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeProgress:after {
   content: '';
   background-color: var(--progColor);
   position: absolute;
@@ -429,23 +429,23 @@
   right: calc(100% - var(--prog) * 1%);
   transition: 200ms;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeProgress.qr--paused:after {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeProgress.qr--paused:after {
   animation-name: qr--progressPulse;
   animation-duration: 1500ms;
   animation-timing-function: ease-in-out;
   animation-delay: 0s;
   animation-iteration-count: infinite;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeProgress.qr--aborted:after {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeProgress.qr--aborted:after {
   background-color: var(--progAbortedColor);
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeProgress.qr--success:after {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeProgress.qr--success:after {
   background-color: var(--progSuccessColor);
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeProgress.qr--error:after {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeProgress.qr--error:after {
   background-color: var(--progErrorColor);
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeErrors {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeErrors {
   display: none;
   text-align: left;
   font-size: smaller;
@@ -456,10 +456,10 @@
   min-width: 100%;
   width: 0;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeErrors.qr--hasErrors {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeErrors.qr--hasErrors {
   display: block;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeResult {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeResult {
   display: none;
   text-align: left;
   font-size: smaller;
@@ -470,10 +470,10 @@
   min-width: 100%;
   width: 0;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeResult.qr--hasResult {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeResult.qr--hasResult {
   display: block;
 }
-.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeResult:before {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeResult:before {
   content: 'Result: ';
 }
 @keyframes qr--progressPulse {
@@ -485,6 +485,6 @@
     background-color: var(--progFlashColor);
   }
 }
-.shadow_popup.qr--hide {
+.popup.qr--hide {
   opacity: 0 !important;
 }

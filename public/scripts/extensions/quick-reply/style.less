@@ -244,7 +244,7 @@
 
 
 @media screen and (max-width: 750px) {
-	body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor {
+	body .popup:has(#qr--modalEditor) .popup-content>#qr--modalEditor {
 		flex-direction: column;
 		overflow: auto;
 		> #qr--main {
@@ -259,10 +259,10 @@
 		}
 	}
 }
-.dialogue_popup:has(#qr--modalEditor) {
+.popup:has(#qr--modalEditor) {
 	aspect-ratio: unset;
 
-	.dialogue_popup_text {
+	.popup-content {
 		display: flex;
 		flex-direction: column;
 
@@ -507,6 +507,6 @@
     }
 }
 
-.shadow_popup.qr--hide {
+.popup.qr--hide {
 	opacity: 0 !important;
 }

@@ -438,7 +438,7 @@ async function loadSettings() {
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
     $('#sd_snap').prop('checked', extension_settings.sd.snap);
     $('#sd_clip_skip').val(extension_settings.sd.clip_skip);
-    $('#sd_clip_skip_value').text(extension_settings.sd.clip_skip);
+    $('#sd_clip_skip_value').val(extension_settings.sd.clip_skip);
     $('#sd_seed').val(extension_settings.sd.seed);
     $('#sd_free_extend').prop('checked', extension_settings.sd.free_extend);
     $('#sd_wand_visible').prop('checked', extension_settings.sd.wand_visible);
@@ -711,7 +711,7 @@ function onChatChanged() {
     adjustElementScrollHeight();
 }
 
-function adjustElementScrollHeight(){
+function adjustElementScrollHeight() {
     if (!$('.sd_settings').is(':visible')) {
         return;
     }
@@ -821,7 +821,7 @@ function onInteractiveVisibleInput() {
 
 function onClipSkipInput() {
     extension_settings.sd.clip_skip = Number($('#sd_clip_skip').val());
-    $('#sd_clip_skip_value').text(extension_settings.sd.clip_skip);
+    $('#sd_clip_skip_value').val(extension_settings.sd.clip_skip);
     saveSettingsDebounced();
 }
 
@@ -832,13 +832,13 @@ function onSeedInput() {
 
 function onScaleInput() {
     extension_settings.sd.scale = Number($('#sd_scale').val());
-    $('#sd_scale_value').text(extension_settings.sd.scale.toFixed(1));
+    $('#sd_scale_value').val(extension_settings.sd.scale.toFixed(1));
     saveSettingsDebounced();
 }
 
 function onStepsInput() {
     extension_settings.sd.steps = Number($('#sd_steps').val());
-    $('#sd_steps_value').text(extension_settings.sd.steps);
+    $('#sd_steps_value').val(extension_settings.sd.steps);
     saveSettingsDebounced();
 }
 
@@ -901,13 +901,23 @@ function onSchedulerChange() {
 
 function onWidthInput() {
     extension_settings.sd.width = Number($('#sd_width').val());
-    $('#sd_width_value').text(extension_settings.sd.width);
+    $('#sd_width_value').val(extension_settings.sd.width);
     saveSettingsDebounced();
 }
 
 function onHeightInput() {
     extension_settings.sd.height = Number($('#sd_height').val());
-    $('#sd_height_value').text(extension_settings.sd.height);
+    $('#sd_height_value').val(extension_settings.sd.height);
+    saveSettingsDebounced();
+}
+
+function onSwapDimensionsClick() {
+    const w = extension_settings.sd.height;
+    const h = extension_settings.sd.width;
+    extension_settings.sd.width = w;
+    extension_settings.sd.height = h;
+    $('#sd_width').val(w).trigger('input');
+    $('#sd_height').val(h).trigger('input');
     saveSettingsDebounced();
 }
 
@@ -947,7 +957,7 @@ async function onViewAnlasClick() {
 
 function onNovelUpscaleRatioInput() {
     extension_settings.sd.novel_upscale_ratio = Number($('#sd_novel_upscale_ratio').val());
-    $('#sd_novel_upscale_ratio_value').text(extension_settings.sd.novel_upscale_ratio.toFixed(1));
+    $('#sd_novel_upscale_ratio_value').val(extension_settings.sd.novel_upscale_ratio.toFixed(1));
     saveSettingsDebounced();
 }
 
@@ -1049,19 +1059,19 @@ function onHrUpscalerChange() {
 
 function onHrScaleInput() {
     extension_settings.sd.hr_scale = Number($('#sd_hr_scale').val());
-    $('#sd_hr_scale_value').text(extension_settings.sd.hr_scale.toFixed(1));
+    $('#sd_hr_scale_value').val(extension_settings.sd.hr_scale.toFixed(1));
     saveSettingsDebounced();
 }
 
 function onDenoisingStrengthInput() {
     extension_settings.sd.denoising_strength = Number($('#sd_denoising_strength').val());
-    $('#sd_denoising_strength_value').text(extension_settings.sd.denoising_strength.toFixed(2));
+    $('#sd_denoising_strength_value').val(extension_settings.sd.denoising_strength.toFixed(2));
     saveSettingsDebounced();
 }
 
 function onHrSecondPassStepsInput() {
     extension_settings.sd.hr_second_pass_steps = Number($('#sd_hr_second_pass_steps').val());
-    $('#sd_hr_second_pass_steps_value').text(extension_settings.sd.hr_second_pass_steps);
+    $('#sd_hr_second_pass_steps_value').val(extension_settings.sd.hr_second_pass_steps);
     saveSettingsDebounced();
 }
 
@@ -3439,6 +3449,7 @@ jQuery(async () => {
     $('#sd_wand_visible').on('input', onWandVisibleInput);
     $('#sd_command_visible').on('input', onCommandVisibleInput);
     $('#sd_interactive_visible').on('input', onInteractiveVisibleInput);
+    $('#sd_swap_dimensions').on('click', onSwapDimensionsClick);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($('#sd_prompt_prefix'));

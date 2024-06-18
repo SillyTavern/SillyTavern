@@ -14,7 +14,7 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     margin-bottom: 5px;
 }
 
@@ -27,8 +27,19 @@
     flex: 1;
 }
 
+.tag_view_color_picker {
+    position: relative;
+}
+
+.tag_view_color_picker .link_icon {
+    position: absolute;
+    top: 50%;
+    right: 0px;
+    opacity: 0.5;
+}
+
 .tag_delete {
-    padding-right: 0;
+    padding: 2px 4px;
     color: var(--SmartThemeBodyColor) !important;
 }
 
@@ -108,6 +119,14 @@
     opacity: 0.6;
 }
 
+#tagList .tag:has(.tag_remove:hover) {
+    opacity: 1;
+}
+
+#tagList .tag:has(.tag_remove:hover) .tag_name {
+    opacity: 0.6;
+}
+
 .tags.tags_inline {
     opacity: 0.6;
     column-gap: 0.2rem;
@@ -164,6 +183,7 @@
 .tag.selected {
     opacity: 1 !important;
     filter: none !important;
+    border: 1px solid lightgreen;
 }
 
 .tag.excluded {

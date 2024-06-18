@@ -476,7 +476,11 @@
         "type": "context"
     },
     {
-        "filename": "presets/context/DreamGen Role-Play V1.json",
+        "filename": "presets/context/DreamGen Role-Play V1 ChatML.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/DreamGen Role-Play V1 Llama3.json",
         "type": "context"
     },
     {
@@ -556,7 +560,11 @@
         "type": "instruct"
     },
     {
-        "filename": "presets/instruct/DreamGen Role-Play V1.json",
+        "filename": "presets/instruct/DreamGen Role-Play V1 ChatML.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/DreamGen Role-Play V1 Llama3.json",
         "type": "instruct"
     },
     {

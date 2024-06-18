@@ -33,7 +33,6 @@
     <link rel="apple-touch-icon" sizes="144x144" href="img/apple-icon-144x144.png" />
     <link rel="stylesheet" type="text/css" href="style.css">
     <link rel="stylesheet" type="text/css" href="css/st-tailwind.css">
-    <link rel="stylesheet" type="text/css" href="css/tags.css">
     <link rel="stylesheet" type="text/css" href="css/rm-groups.css">
     <link rel="stylesheet" type="text/css" href="css/group-avatars.css">
     <link rel="stylesheet" type="text/css" href="css/toggle-dependent.css">
@@ -73,8 +72,8 @@
                 <div id="lm_button_panel_pin_div" title="Locked = AI Configuration panel will stay open" data-i18n="[title]AI Configuration panel will stay open">
                     <input type="checkbox" id="lm_button_panel_pin">
                     <label for="lm_button_panel_pin">
-                        <div class="unchecked fa-solid fa-unlock "></div>
-                        <div class="checked fa-solid fa-lock "></div>
+                        <div class="unchecked fa-solid fa-unlock right_menu_button"></div>
+                        <div class="checked fa-solid fa-lock right_menu_button"></div>
                     </label>
                 </div>
                 <div id="clickSlidersTips" data-i18n="clickslidertips" class="toggle-description wide100p editable-slider-notification">
@@ -1754,8 +1753,8 @@
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
                                             <div class="flexBasis100p toggle-description justifyLeft">
-                                                Allows using <a href="https://platform.openai.com/docs/guides/function-calling" target="_blank">function tools</a>.
-                                                Can be utilized by various extensions to provide additional functionality.
+                                                <span data-i18n="enable_functions_desc_1">Allows using </span><a href="https://platform.openai.com/docs/guides/function-calling" target="_blank" data-i18n="enable_functions_desc_2">function tools</a>.
+                                                <span data-i18n="enable_functions_desc_3">Can be utilized by various extensions to provide additional functionality.</span>
                                             </div>
                                         </label>
                                     </div>
@@ -1864,7 +1863,7 @@
                                             <div id="openai_logit_bias_new_entry" class="menu_button wide100p flex-container justifyCenter" data-i18n="Add bias entry">
                                                 Add bias entry
                                             </div>
-                                            <div class="openai_logit_bias_list"></div>
+                                            <div class="openai_logit_bias_list" no_items_text="No items" data-i18n="[no_items_text]openai_logit_bias_no_items"></div>
                                             <div class="m-t-1">
                                                 <small>
                                                     <i class="fa-solid fa-lightbulb"></i>
@@ -1888,7 +1887,7 @@
         </div>
         <div id="sys-settings-button" class="drawer">
             <div class="drawer-toggle drawer-header">
-                <div id="API-status-top" class="drawer-icon fa-solid fa-plug-circle-exclamation  closedIcon" title="API Connections" data-i18n="[title]API Connections"></div>
+                <div id="API-status-top" class="drawer-icon fa-solid fa-plug-circle-exclamation  closedIcon" title="API Connections" data-i18n="[title]API Connections;[no_connection_text]api_no_connection" no_connection_text="No connection..."></div>
             </div>
             <div id="rm_api_block" class="drawer-content closedDrawer">
                 <h3 class="margin0" id="title_api">API</h3>
@@ -2358,7 +2357,7 @@
                         <select id="chat_completion_source">
                             <optgroup>
                                 <option value="openai">OpenAI</option>
-                                <option value="custom">Custom (OpenAI-compatible)</option>
+                                <option value="custom" data-i18n="Custom (OpenAI-compatible)">Custom (OpenAI-compatible)</option>
                             </optgroup>
                             <optgroup>
                                 <option value="ai21">AI21</option>
@@ -2857,16 +2856,16 @@
                         <form id="custom_form" data-source="custom">
                             <h4 data-i18n="Custom Endpoint (Base URL)">Custom Endpoint (Base URL)</h4>
                             <div class="flex-container">
-                                <input id="custom_api_url_text" class="text_pole wide100p" maxlength="5000" value="" autocomplete="off" placeholder="Example: http://localhost:1234/v1">
+                                <input id="custom_api_url_text" class="text_pole wide100p" maxlength="5000" value="" autocomplete="off" data-i18n="[placeholder]Example: http://localhost:1234/v1" placeholder="Example: http://localhost:1234/v1">
                             </div>
                             <div>
                                 <small>
-                                    Doesn't work? Try adding <code>/v1</code> at the end of the URL!
+                                    <span data-i18n="Doesn't work? Try adding">Doesn't work? Try adding</span> <code>/v1</code> <span data-i18n="at the end of the URL!">at the end of the URL!</span>
                                 </small>
                             </div>
                             <h4>
                                 <span data-i18n="Custom API Key">Custom API Key</span>
-                                <small>(Optional)</small>
+                                <small data-i18n="(Optional)">(Optional)</small>
                             </h4>
                             <div class="flex-container">
                                 <input id="api_key_custom" name="api_key_custom" class="text_pole flex1" maxlength="5000" value="" type="text" autocomplete="off">
@@ -2875,9 +2874,9 @@
                             <div data-for="api_key_custom" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
                                 For privacy reasons, your API key will be hidden after you reload the page.
                             </div>
-                            <h4>Enter a Model ID</h4>
+                            <h4 data-i18n="Enter a Model ID">Enter a Model ID</h4>
                             <div class="flex-container">
-                                <input id="custom_model_id" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" placeholder="Example: gpt-3.5-turbo">
+                                <input id="custom_model_id" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-i18n="[placeholder]Example: gpt-3.5-turbo" placeholder="Example: gpt-3.5-turbo">
                             </div>
                             <h4 data-i18n="Available Models">Available Models</h4>
                             <div class="flex-container">
@@ -2885,14 +2884,14 @@
                             </div>
                             <h4 data-i18n="Prompt Post-Processing">Prompt Post-Processing</h4>
                             <select id="custom_prompt_post_processing" class="text_pole" title="Applies additional processing to the prompt before sending it to the API." data-i18n="[title]Applies additional processing to the prompt before sending it to the API.">
-                                <option value="">None</option>
+                                <option data-i18n="prompt_post_processing_none" value="">None</option>
                                 <option value="claude">Claude</option>
                             </select>
                         </form>
                         <div class="flex-container flex">
                             <div id="api_button_openai" class="api_button menu_button menu_button_icon" type="submit" data-i18n="Connect">Connect</div>
                             <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
-                            <div data-source="custom" id="customize_additional_parameters" class="menu_button menu_button_icon">Additional Parameters</div>
+                            <div data-source="custom" id="customize_additional_parameters" class="menu_button menu_button_icon" data-i18n="Additional Parameters">Additional Parameters</div>
                             <div data-source="openrouter" class="menu_button menu_button_icon openrouter_authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="Authorize;[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
                             <div id="test_api_button" class="menu_button menu_button_icon" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!"><span data-i18n="Test Message">Test Message</span></div>
                         </div>
@@ -4247,7 +4246,7 @@
                             <div name="STscriptToggles">
                                 <h4 data-i18n="STscript Settings">STscript Settings</h4>
                                 <div title="Sets default flags for the STscript parser." data-i18n="[title]Sets default flags for the STscript parser.">
-                                    <label data-i18n="Parser Flags"><small>Parser Flags</small></label>
+                                    <label><small data-i18n="Parser Flags">Parser Flags</small></label>
                                     <label class="checkbox_label" title="Switch to stricter escaping, allowing all delimiting characters to be escaped with a backslash, and backslashes to be escaped as well." data-i18n="[title]Switch to stricter escaping, allowing all delimiting characters to be escaped with a backslash, and backslashes to be escaped as well.">
                                         <input id="stscript_parser_flag_strict_escaping" type="checkbox" />
                                         <span data-i18n="STRICT_ESCAPING"><small>STRICT_ESCAPING</small></span>
@@ -4476,14 +4475,14 @@
                         <div id="rm_button_panel_pin_div" class="alignitemsflexstart" title="Locked = Character Management panel will stay open" data-i18n="[title]Locked = Character Management panel will stay open">
                             <input type="checkbox" id="rm_button_panel_pin">
                             <label for="rm_button_panel_pin">
-                                <div class="fa-solid unchecked  fa-unlock" alt=""></div>
-                                <div class="fa-solid checked  fa-lock" alt=""></div>
+                                <div class="fa-solid unchecked fa-unlock right_menu_button" alt=""></div>
+                                <div class="fa-solid checked fa-lock right_menu_button" alt=""></div>
                             </label>
                         </div>
                         <div class="right_menu_button fa-solid fa-list-ul" id="rm_button_characters" title="Select/Create Characters" data-i18n="[title]Select/Create Characters"></div>
                     </div>
                     <div id="HotSwapWrapper" class="alignitemscenter flex-container margin0auto wide100p">
-                        <div class="hotswap avatars_inline flex-container expander" data-i18n="[no_favs]Favorite characters to add them to HotSwaps" no_favs="Favorite characters to add them to HotSwaps"></div>
+                        <div class="hotswap avatars_inline flex-container scroll-reset-container expander" data-i18n="[no_favs]Favorite characters to add them to HotSwaps" no_favs="Favorite characters to add them to HotSwaps"></div>
                     </div>
                 </div>
                 <hr>
@@ -4491,7 +4490,7 @@
                 <div id="rm_PinAndTabs">
                     <div id="right-nav-panel-tabs" class="">
                         <div id="rm_button_selected_ch">
-                            <h2></h2>
+                            <h2 class="interactable"></h2>
                         </div>
                         <div id="result_info" class="flex-container" style="display: none;">
                             <div id="result_info_text" title="Token counts may be inaccurate and provided just for reference." data-i18n="[title]Token counts may be inaccurate and provided just for reference.">
@@ -4842,21 +4841,19 @@
         </div>
     </div>
     <!-- various fullscreen popups -->
-    <template id="shadow_popup_template" data-i18n="[popup_text_save]popup_text_save;[popup_text_yes]popup_text_yes;[popup_text_no]popup_text_no;[popup_text_cancel]popup_text_cancel;[popup_text_import]popup_text_import" popup_text_save="Save" popup_text_yes="Yes" popup_text_no="No" popup_text_cancel="Cancel" popup_text_import="Import"> <!-- localization data holder for popups -->
-        <div class="shadow_popup">
-            <div class="dialogue_popup">
-                <div class="dialogue_popup_holder">
-                    <div class="dialogue_popup_text">
-                        <h3 class="margin0">text</h3>
-                    </div>
-                    <textarea class="dialogue_popup_input text_pole" rows="1"></textarea>
-                    <div class="dialogue_popup_controls">
-                        <div class="dialogue_popup_ok menu_button" data-i18n="Delete">Delete</div>
-                        <div class="dialogue_popup_cancel menu_button" data-i18n="Cancel">Cancel</div>
-                    </div>
+    <template id="popup_template" data-i18n="[popup-button-save]popup-button-save;[popup-button-yes]popup-button-yes;[popup-button-no]popup-button-no;[popup-button-cancel]popup-button-cancel;[popup-button-import]popup-button-import" popup-button-save="Save" popup-button-yes="Yes" popup-button-no="No" popup-button-cancel="Cancel" popup-button-import="Import"> <!-- localization data holder for popups -->
+        <dialog class="popup">
+            <div class="popup-body">
+                <div class="popup-content">
+                    <h3 class="popup-header">text</h3>
+                </div>
+                <textarea class="popup-input text_pole result-control" rows="1" data-result="1"></textarea>
+                <div class="popup-controls">
+                    <div class="popup-button-ok menu_button result-control" data-i18n="Delete" data-result="1" tabindex="0">Delete</div>
+                    <div class="popup-button-cancel menu_button result-control" data-i18n="Cancel" data-result="0" tabindex="0">Cancel</div>
                 </div>
             </div>
-        </div>
+        </dialog>
     </template>
     <div id="shadow_popup">
         <div id="dialogue_popup">
@@ -4866,15 +4863,15 @@
                 </div>
                 <textarea id="dialogue_popup_input" class="text_pole" rows="1"></textarea>
                 <div id="dialogue_popup_controls">
-                    <div id="dialogue_popup_ok" class="menu_button" data-i18n="Delete">Delete</div>
-                    <div id="dialogue_popup_cancel" class="menu_button" data-i18n="Cancel">Cancel</div>
+                    <div id="dialogue_popup_ok" class="menu_button" data-i18n="Delete" data-result="1">Delete</div>
+                    <div id="dialogue_popup_cancel" class="menu_button" data-i18n="Cancel" data-result="0">Cancel</div>
                 </div>
             </div>
         </div>
     </div>
     <div id="character_popup" class="flex-container flexFlowColumn flexNoGap">
         <div id="character_popup_text">
-            <h3 id="character_popup_text_h3" class="margin0"></h3> <span data-i18n="Advanced Defininitions">- Advanced
+            <h3 id="character_popup-button-h3" class="margin0"></h3> <span data-i18n="Advanced Defininitions">- Advanced
                 Definitions</span>
         </div>
         <hr class="margin-bot-10px">
@@ -5193,8 +5190,8 @@
             <div title="Tag as folder" class="tag_as_folder fa-solid fa-folder-open right_menu_button" data-i18n="[title]Use tag as folder">
                 <span class="tag_folder_indicator"></span>
             </div>
-            <div class="tagColorPickerHolder"></div>
-            <div class="tagColorPicker2Holder"></div>
+            <div class="tag_view_color_picker" data-value="color"></div>
+            <div class="tag_view_color_picker" data-value="color2"></div>
             <div class="tag_view_name" contenteditable="true"></div>
             <div class="tag_view_counter"><span class="tag_view_counter_value"></span>&nbsp;entries</div>
             <div title="Delete tag" class="tag_delete fa-solid fa-trash-can right_menu_button" data-i18n="[title]Delete tag"></div>
@@ -5617,21 +5614,21 @@
                         </div>
                     </div>
                     <div class="mes_buttons">
-                        <div title="Message Actions" class="extraMesButtonsHint fa-solid fa-ellipsis" data-i18n="[title]Message Actions"></div>
+                        <div title="Message Actions" class="mes_button extraMesButtonsHint fa-solid fa-ellipsis" data-i18n="[title]Message Actions"></div>
                         <div class="extraMesButtons">
-                            <div title="Translate message" class="mes_translate fa-solid fa-language" data-i18n="[title]Translate message"></div>
-                            <div title="Generate Image" class="sd_message_gen fa-solid fa-paintbrush" data-i18n="[title]Generate Image"></div>
-                            <div title="Narrate" class="mes_narrate fa-solid fa-bullhorn" data-i18n="[title]Narrate"></div>
-                            <div title="Prompt" class="mes_prompt fa-solid fa-square-poll-horizontal " data-i18n="[title]Prompt" style="display: none;"></div>
-                            <div title="Exclude message from prompts" class="mes_hide fa-solid fa-eye" data-i18n="[title]Exclude message from prompts"></div>
-                            <div title="Include message in prompts" class="mes_unhide fa-solid fa-eye-slash" data-i18n="[title]Include message in prompts"></div>
-                            <div title="Embed file or image" class="mes_embed fa-solid fa-paperclip" data-i18n="[title]Embed file or image"></div>
-                            <div title="Create checkpoint" class="mes_create_bookmark fa-regular fa-solid fa-flag-checkered" data-i18n="[title]Create checkpoint"></div>
-                            <div title="Create branch" class="mes_create_branch fa-regular fa-code-branch" data-i18n="[title]Create Branch"></div>
-                            <div title="Copy" class="mes_copy fa-solid fa-copy " data-i18n="[title]Copy"></div>
+                            <div title="Translate message" class="mes_button mes_translate fa-solid fa-language" data-i18n="[title]Translate message"></div>
+                            <div title="Generate Image" class="mes_button sd_message_gen fa-solid fa-paintbrush" data-i18n="[title]Generate Image"></div>
+                            <div title="Narrate" class="mes_button mes_narrate fa-solid fa-bullhorn" data-i18n="[title]Narrate"></div>
+                            <div title="Prompt" class="mes_button mes_prompt fa-solid fa-square-poll-horizontal " data-i18n="[title]Prompt" style="display: none;"></div>
+                            <div title="Exclude message from prompts" class="mes_button mes_hide fa-solid fa-eye" data-i18n="[title]Exclude message from prompts"></div>
+                            <div title="Include message in prompts" class="mes_button mes_unhide fa-solid fa-eye-slash" data-i18n="[title]Include message in prompts"></div>
+                            <div title="Embed file or image" class="mes_button mes_embed fa-solid fa-paperclip" data-i18n="[title]Embed file or image"></div>
+                            <div title="Create checkpoint" class="mes_button mes_create_bookmark fa-regular fa-solid fa-flag-checkered" data-i18n="[title]Create checkpoint"></div>
+                            <div title="Create branch" class="mes_button mes_create_branch fa-regular fa-code-branch" data-i18n="[title]Create Branch"></div>
+                            <div title="Copy" class="mes_button mes_copy fa-solid fa-copy " data-i18n="[title]Copy"></div>
                         </div>
-                        <div title="Open checkpoint chat" class="mes_bookmark fa-solid fa-flag" data-i18n="[title]Open checkpoint chat"></div>
-                        <div title="Edit" class="mes_edit fa-solid fa-pencil " data-i18n="[title]Edit"></div>
+                        <div title="Open checkpoint chat" class="mes_button mes_bookmark fa-solid fa-flag" data-i18n="[title]Open checkpoint chat"></div>
+                        <div title="Edit" class="mes_button mes_edit fa-solid fa-pencil " data-i18n="[title]Edit"></div>
                     </div>
                     <div class="mes_edit_buttons">
                         <div class="mes_edit_done menu_button  fa-solid fa-check" title="Confirm" data-i18n="[title]Confirm"></div>
@@ -5833,8 +5830,8 @@
             </small>
             <hr>
             <div class="alternate_greetings_list flexFlowColumn flex-container wide100p">
-                <strong class="alternate_grettings_hint margin-bot-10px" data-i18n="Alternate Greetings Hint">
-                    Click the <i class="fa-solid fa-plus"></i> button to get started!
+                <strong class="alternate_grettings_hint margin-bot-10px">
+                    <span data-i18n="alternate_greetings_hint_1">Click the</span> <i class="fa-solid fa-plus"></i> <span data-i18n="alternate_greetings_hint_2">button to get started!</span>
                 </strong>
             </div>
         </div>
@@ -5842,7 +5839,7 @@
     <div id="alternate_greeting_form_template" class="template_element">
         <div class="alternate_greeting">
             <div class="title_restorable">
-                <strong>Alternate Greeting #<span class="greeting_index"></span></strong>
+                <strong><span data-i18n="Alternate Greeting #">Alternate Greeting #</span><span class="greeting_index"></span></strong>
                 <div class="menu_button fa-solid fa-trash-alt delete_alternate_greeting"></div>
             </div>
             <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="50000" value="" autocomplete="off" rows="16"></textarea>
@@ -6251,7 +6248,7 @@
                 </form>
                 <div id="nonQRFormItems">
                     <div id="leftSendForm" class="alignContentCenter">
-                        <div id="options_button" class="fa-solid fa-bars"></div>
+                        <div id="options_button" class="fa-solid fa-bars interactable"></div>
                     </div>
                     <textarea id="send_textarea" name="text" data-i18n="[no_connection_text]Not connected to API!;[connected_text]Type a message, or /? for help" placeholder="Not connected to API!" no_connection_text="Not connected to API!" connected_text="Type a message, or /? for help"></textarea>
                     <div id="rightSendForm" class="alignContentCenter">
@@ -6267,8 +6264,8 @@
                         <div id="mes_stop" title="Abort request" class="mes_stop" data-i18n="[title]Abort request">
                             <i class="fa-solid fa-circle-stop"></i>
                         </div>
-                        <div id="mes_continue" class="fa-fw fa-solid fa-arrow-right displayNone" title="Continue the last message" data-i18n="[title]Continue the last message"></div>
-                        <div id="send_but" class="fa-solid fa-paper-plane displayNone" title="Send a message" data-i18n="[title]Send a message"></div>
+                        <div id="mes_continue" class="fa-fw fa-solid fa-arrow-right interactable displayNone" title="Continue the last message" data-i18n="[title]Continue the last message"></div>
+                        <div id="send_but" class="fa-solid fa-paper-plane interactable displayNone" title="Send a message" data-i18n="[title]Send a message"></div>
                     </div>
                 </div>
             </div>
@@ -6432,15 +6429,6 @@
     <script type="module" src="scripts/setting-search.js"></script>
     <script type="module" src="scripts/server-history.js"></script>
     <script type="module" src="script.js"></script>
-    <script>
-        // Configure toast library:
-        toastr.options.escapeHtml = true; // Prevent raw HTML inserts
-        toastr.options.timeOut = 4000; // How long the toast will display without user interaction
-        toastr.options.extendedTimeOut = 10000; // How long the toast will display after a user hovers over it
-        toastr.options.progressBar = true; // Visually indicate how long before a toast expires.
-        toastr.options.closeButton = true; // enable a close button
-        toastr.options.positionClass = "toast-top-center"; // Where to position the toast container
-    </script>
     <script>
         window.addEventListener('load', (event) => {
             const documentHeight = () => {

@@ -128,16 +128,20 @@
             <div data-sd-source="openai">
                 <small data-i18n="These settings only apply to DALL-E 3">These settings only apply to DALL-E 3</small>
                 <div class="flex-container">
-                    <label for="sd_openai_style" data-i18n="Image Style">Image Style</label>
-                    <select id="sd_openai_style">
-                        <option value="vivid">Vivid</option>
-                        <option value="natural">Natural</option>
-                    </select>
-                    <label for="sd_openai_quality" data-i18n="Image Quality">Image Quality</label>
-                    <select id="sd_openai_quality">
-                        <option value="standard" data-i18n="Standard">Standard</option>
-                        <option value="hd" data-i18n="HD">HD</option>
-                    </select>
+                    <div class="flex1">
+                        <label for="sd_openai_style" data-i18n="Image Style">Image Style</label>
+                        <select id="sd_openai_style">
+                            <option value="vivid">Vivid</option>
+                            <option value="natural">Natural</option>
+                        </select>
+                    </div>
+                    <div class="flex1">
+                        <label for="sd_openai_quality" data-i18n="Image Quality">Image Quality</label>
+                        <select id="sd_openai_quality">
+                            <option value="standard" data-i18n="Standard">Standard</option>
+                            <option value="hd" data-i18n="HD">HD</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div data-sd-source="comfy">
@@ -185,91 +189,164 @@
                     </label>
                 </div>
             </div>
-            <label for="sd_scale" data-i18n="CFG Scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
-            <input id="sd_scale" type="range" min="{{scale_min}}" max="{{scale_max}}" step="{{scale_step}}" value="{{scale}}" />
-            <div data-sd-source="novel" class="marginTopBot5">
-                <label class="checkbox_label" for="sd_novel_decrisper" title="Reduce artifacts caused by high guidance values.">
-                    <input id="sd_novel_decrisper" type="checkbox" />
-                    <span data-i18n="Decrisper">
-                        Decrisper
-                    </span>
-                </label>
+
+            <div class="flex-container">
+                <div class="flex1">
+                    <label for="sd_model" data-i18n="Model">Model</label>
+                    <select id="sd_model"></select>
+                </div>
+
+                <div class="flex1" data-sd-source="comfy">
+                    <label for="sd_vae">VAE</label>
+                    <select id="sd_vae"></select>
+                </div>
             </div>
-            <label for="sd_steps" data-i18n="Sampling steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
-            <input id="sd_steps" type="range" min="{{steps_min}}" max="{{steps_max}}" step="{{steps_step}}" value="{{steps}}" />
-            <label for="sd_width" data-i18n="Width">Width (<span id="sd_width_value"></span>)</label>
-            <input id="sd_width" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{width}}" />
-            <label for="sd_height" data-i18n="Height">Height (<span id="sd_height_value"></span>)</label>
-            <input id="sd_height" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{height}}" />
-            <label for="sd_resolution" data-i18n="Resolution">Resolution</label>
-            <select id="sd_resolution"><!-- Populated in JS --></select>
-            <label for="sd_model" data-i18n="Model">Model</label>
-            <select id="sd_model"></select>
-            <label for="sd_sampler" data-i18n="Sampling method">Sampling method</label>
-            <select id="sd_sampler"></select>
-            <label data-sd-source="horde" for="sd_horde_karras" class="checkbox_label marginTopBot5">
-                <input id="sd_horde_karras" type="checkbox" />
-                <span data-i18n="Karras (not all samplers supported)">
-                    Karras (not all samplers supported)
-                </span>
-            </label>
-            <div data-sd-source="novel" class="flex-container marginTopBot5">
-                <label class="flex1 checkbox_label" data-i18n="[title]SMEA versions of samplers are modified to perform better at high resolution." title="SMEA versions of samplers are modified to perform better at high resolution.">
-                    <input id="sd_novel_sm" type="checkbox" />
-                    <span data-i18n="SMEA">
-                        SMEA
-                    </span>
-                </label>
-                <label class="flex1 checkbox_label" data-i18n="[title]DYN variants of SMEA samplers often lead to more varied output, but may fail at very high resolutions." title="DYN variants of SMEA samplers often lead to more varied output, but may fail at very high resolutions.">
-                    <input id="sd_novel_sm_dyn" type="checkbox" />
-                    <span data-i18n="DYN">
-                        DYN
-                    </span>
-                </label>
+
+            <div class="flex-container">
+                <div class="flex1">
+                    <label for="sd_sampler" data-i18n="Sampling method">Sampling method</label>
+                    <select id="sd_sampler"></select>
+                </div>
+
+                <div class="flex1" data-sd-source="comfy,auto">
+                    <label for="sd_scheduler" data-i18n="Scheduler">Scheduler</label>
+                    <select id="sd_scheduler"></select>
+                </div>
             </div>
-            <div data-sd-source="comfy,auto">
-                <label for="sd_scheduler" data-i18n="Scheduler">Scheduler</label>
-                <select id="sd_scheduler"></select>
+
+            <div class="flex-container">
+                <div class="flex1">
+                    <label for="sd_resolution" data-i18n="Resolution">Resolution</label>
+                    <select id="sd_resolution"><!-- Populated in JS --></select>
+                </div>
+
+                <div class="flex1" data-sd-source="auto,vlad,drawthings">
+                    <label for="sd_hr_upscaler" data-i18n="Upscaler">Upscaler</label>
+                    <select id="sd_hr_upscaler"></select>
+                </div>
             </div>
-            <div data-sd-source="comfy">
-                <label for="sd_vae">VAE</label>
-                <select id="sd_vae"></select>
+
+            <div class="flex-container">
+                <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
+                    <small>
+                        <span data-i18n="Sampling steps">Sampling steps</span>
+                    </small>
+                    <input class="neo-range-slider" type="range" id="sd_steps" name="sd_steps" min="{{steps_min}}" max="{{steps_max}}" step="{{steps_step}}" value="{{steps}}" >
+                    <input class="neo-range-input" type="number" id="sd_steps_value" data-for="sd_steps" min="{{steps_min}}" max="{{steps_max}}" step="{{steps_step}}" value="{{steps}}" >
+                </div>
+
+                <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
+                    <small>
+                        <span data-i18n="CFG Scale">CFG Scale</span>
+                    </small>
+                    <input class="neo-range-slider" type="range" id="sd_scale" name="sd_scale" min="{{scale_min}}" max="{{scale_max}}" step="{{scale_step}}" value="{{scale}}" >
+                    <input class="neo-range-input" type="number" id="sd_scale_value" data-for="sd_scale" min="{{scale_min}}" max="{{scale_max}}" step="{{scale_step}}" value="{{scale}}" >
+                </div>
             </div>
-            <div class="flex-container marginTopBot5">
+
+            <div id="sd_dimensions_block" class="flex-container">
+                <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
+                    <small>
+                        <span data-i18n="Width">Width</span>
+                    </small>
+                    <input class="neo-range-slider" type="range" id="sd_width" name="sd_width" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{width}}" >
+                    <input class="neo-range-input" type="number" id="sd_width_value" data-for="sd_width" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{width}}" >
+                </div>
+
+                <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
+                    <small>
+                        <span data-i18n="Height">Height</span>
+                    </small>
+                    <input class="neo-range-slider" type="range" id="sd_height" name="sd_height" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{height}}" >
+                    <input class="neo-range-input" type="number" id="sd_height_value" data-for="sd_height" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{height}}" >
+                </div>
+
+                <div id="sd_swap_dimensions" class="right_menu_button" title="Swap width and height" data-i18n="[title]Swap width and height">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                </div>
+            </div>
+
+            <div class="flex-container">
+                <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" data-sd-source="auto,vlad,drawthings">
+                    <small>
+                        <span data-i18n="Upscale by">Upscale by</span>
+                    </small>
+                    <input class="neo-range-slider" type="range" id="sd_hr_scale" name="sd_hr_scale" min="{{hr_scale_min}}" max="{{hr_scale_max}}" step="{{hr_scale_step}}" value="{{hr_scale}}" >
+                    <input class="neo-range-input" type="number" id="sd_hr_scale_value" data-for="sd_hr_scale" min="{{hr_scale_min}}" max="{{hr_scale_max}}" step="{{hr_scale_step}}" value="{{hr_scale}}" >
+                </div>
+
+                <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" data-sd-source="auto,vlad">
+                    <small>
+                        <span data-i18n="Denoising strength">Denoising strength</span>
+                    </small>
+                    <input class="neo-range-slider" type="range" id="sd_denoising_strength" name="sd_denoising_strength" min="{{denoising_strength_min}}" max="{{denoising_strength_max}}" step="{{denoising_strength_step}}" value="{{denoising_strength}}" >
+                    <input class="neo-range-input" type="number" id="sd_denoising_strength_value" data-for="sd_denoising_strength" min="{{denoising_strength_min}}" max="{{denoising_strength_max}}" step="{{denoising_strength_step}}" value="{{denoising_strength}}" >
+                </div>
+
+                <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" data-sd-source="auto,vlad">
+                    <small>
+                        <span data-i18n="Hires steps (2nd pass)">Hires steps (2nd pass)</span>
+                    </small>
+                    <input class="neo-range-slider" type="range" id="sd_hr_second_pass_steps" name="sd_hr_second_pass_steps" max="{{hr_second_pass_steps_max}}" step="{{hr_second_pass_steps_step}}" value="{{hr_second_pass_steps}}"  >
+                    <input class="neo-range-input" type="number" id="sd_hr_second_pass_steps_value" data-for="sd_hr_second_pass_steps" max="{{hr_second_pass_steps_max}}" step="{{hr_second_pass_steps_step}}" value="{{hr_second_pass_steps}}" >
+                </div>
+
+                <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" data-sd-source="novel">
+                    <small>
+                        <span data-i18n="Upscale by">Upscale by</span>
+                    </small>
+                    <input class="neo-range-slider" type="range" id="sd_novel_upscale_ratio" name="sd_novel_upscale_ratio" min="{{novel_upscale_ratio_min}}" max="{{novel_upscale_ratio_max}}" step="{{novel_upscale_ratio_step}}" value="{{novel_upscale_ratio}}" >
+                    <input class="neo-range-input" type="number" id="sd_novel_upscale_ratio_value" data-for="sd_novel_upscale_ratio" min="{{novel_upscale_ratio_min}}" max="{{novel_upscale_ratio_max}}" step="{{novel_upscale_ratio_step}}" value="{{novel_upscale_ratio}}" >
+                </div>
+
+                <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" data-sd-source="auto,vlad,comfy,horde,drawthings,extras">
+                    <small>
+                        <span data-i18n="CLIP Skip">CLIP Skip</span>
+                    </small>
+                    <input class="neo-range-slider" type="range" id="sd_clip_skip" name="sd_clip_skip" min="{{clip_skip_min}}" max="{{clip_skip_max}}" step="{{clip_skip_step}}" value="{{clip_skip}}" >
+                    <input class="neo-range-input" type="number" id="sd_clip_skip_value" data-for="sd_clip_skip" min="{{clip_skip_min}}" max="{{clip_skip_max}}" step="{{clip_skip_step}}" value="{{clip_skip}}" >
+                </div>
+            </div>
+
+            <div class="flex-container marginTopBot5" data-sd-source="auto,vlad,extras,horde,drawthings,comfy">
                 <label class="flex1 checkbox_label">
                     <input id="sd_restore_faces" type="checkbox" />
-                    <span data-i18n="Restore Faces">Restore Faces</span>
+                    <small data-i18n="Restore Faces">Restore Faces</small>
                 </label>
                 <label class="flex1 checkbox_label">
                     <input id="sd_enable_hr" type="checkbox" />
-                    <span data-i18n="Hires. Fix">Hires. Fix</span>
+                    <small data-i18n="Hires. Fix">Hires. Fix</small>
+                </label>
+                <label data-sd-source="horde" for="sd_horde_karras" class="flex1 checkbox_label">
+                    <input id="sd_horde_karras" type="checkbox" />
+                    <small data-i18n="Karras">Karras</small>
+                    <i class="fa-solid fa-info-circle fa-sm opacity50p" data-i18n="[title]Not all samplers supported." title="Not all samplers supported."></i>
                 </label>
             </div>
-            <div data-sd-source="auto,vlad,comfy,horde,drawthings,extras" class="marginTopBot5">
-                <label for="sd_clip_skip">CLIP Skip (<span id="sd_clip_skip_value"></span>)</label>
-                <input type="range" id="sd_clip_skip" min="{{clip_skip_min}}" max="{{clip_skip_max}}" step="{{clip_skip_step}}" value="{{clip_skip}}" />
+
+            <div class="flex-container marginTopBot5" data-sd-source="novel">
+                <label class="flex1 checkbox_label" data-i18n="[title]SMEA versions of samplers are modified to perform better at high resolution." title="SMEA versions of samplers are modified to perform better at high resolution.">
+                    <input id="sd_novel_sm" type="checkbox" />
+                    <small data-i18n="SMEA">SMEA</small>
+                </label>
+                <label class="flex1 checkbox_label" data-i18n="[title]DYN variants of SMEA samplers often lead to more varied output, but may fail at very high resolutions." title="DYN variants of SMEA samplers often lead to more varied output, but may fail at very high resolutions.">
+                    <input id="sd_novel_sm_dyn" type="checkbox" />
+                    <small data-i18n="DYN">DYN</small>
+                </label>
+                <label class="flex1 checkbox_label" for="sd_novel_decrisper" title="Reduce artifacts caused by high guidance values.">
+                    <input id="sd_novel_decrisper" type="checkbox" />
+                    <small data-i18n="Decrisper">Decrisper</small>
+                </label>
             </div>
-            <div data-sd-source="auto,vlad,drawthings">
-                <label for="sd_hr_upscaler" data-i18n="Upscaler">Upscaler</label>
-                <select id="sd_hr_upscaler"></select>
-                <label for="sd_hr_scale"><span data-i18n="Upscale by">Upscale by</span> (<span id="sd_hr_scale_value"></span>)</label>
-                <input id="sd_hr_scale" type="range" min="{{hr_scale_min}}" max="{{hr_scale_max}}" step="{{hr_scale_step}}" value="{{hr_scale}}" />
-            </div>
-            <div data-sd-source="auto,vlad">
-                <label for="sd_denoising_strength"><span data-i18n="Denoising strength">Denoising strength</span> (<span id="sd_denoising_strength_value"></span>)</label>
-                <input id="sd_denoising_strength" type="range" min="{{denoising_strength_min}}" max="{{denoising_strength_max}}" step="{{denoising_strength_step}}" value="{{denoising_strength}}" />
-                <label for="sd_hr_second_pass_steps"><span data-i18n="Hires steps (2nd pass)">Hires steps (2nd pass)</span> (<span id="sd_hr_second_pass_steps_value"></span>)</label>
-                <input id="sd_hr_second_pass_steps" type="range" min="{{hr_second_pass_steps_min}}" max="{{hr_second_pass_steps_max}}" step="{{hr_second_pass_steps_step}}" value="{{hr_second_pass_steps}}" />
-            </div>
-            <div data-sd-source="novel">
-                <label for="sd_novel_upscale_ratio"><span data-i18n="Upscale by">Upscale by</span> (<span id="sd_novel_upscale_ratio_value"></span>)</label>
-                <input id="sd_novel_upscale_ratio" type="range" min="{{novel_upscale_ratio_min}}" max="{{novel_upscale_ratio_max}}" step="{{novel_upscale_ratio_step}}" value="{{novel_upscale_ratio}}" />
-            </div>
+
             <div data-sd-source="novel,togetherai,pollinations,comfy,drawthings,vlad,auto,horde,extras" class="marginTop5">
-                <label for="sd_seed">Seed</label>
-                <small>(-1 for random)</small>
+                <label for="sd_seed">
+                    <span data-i18n="Seed">Seed</span>
+                    <small data-i18n="(-1 for random)">(-1 for random)</small>
+                </label>
                 <input id="sd_seed" type="number" class="text_pole" min="-1" max="9999999999" step="1" />
             </div>
+
             <hr>
             <h4  data-i18n="[title]Preset for prompt prefix and negative prompt" title="Preset for prompt prefix and negative prompt">
                 <span data-i18n="Style">Style</span>

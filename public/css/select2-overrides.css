@@ -57,7 +57,7 @@
     color: var(--SmartThemeBodyColor);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 7px;
-    font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+    font-family: var(--mainFontFamily);
     padding: 3px 5px;
 }
 
@@ -85,7 +85,7 @@
     color: var(--SmartThemeBodyColor);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 7px;
-    font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+    font-family: var(--mainFontFamily);
     padding: 3px 5px;
 }
 
@@ -181,8 +181,9 @@
 }
 
 .select2-selection__choice__display {
-    /* Fix weird alignment on the left side */
-    margin-left: 1px;
+    /* Fix weird alignment of the inside block */
+    margin-left: 3px;
+    margin-right: 1px;
 }
 
 /* Styling for choice remove icon */
