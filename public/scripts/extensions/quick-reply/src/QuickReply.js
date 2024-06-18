@@ -1,6 +1,10 @@
 import { POPUP_TYPE, Popup } from '../../../popup.js';
 import { setSlashCommandAutoComplete } from '../../../slash-commands.js';
 import { SlashCommandAbortController } from '../../../slash-commands/SlashCommandAbortController.js';
+import { SlashCommandClosure } from '../../../slash-commands/SlashCommandClosure.js';
+import { SlashCommandClosureResult } from '../../../slash-commands/SlashCommandClosureResult.js';
+import { SlashCommandDebugController } from '../../../slash-commands/SlashCommandDebugController.js';
+import { SlashCommandExecutor } from '../../../slash-commands/SlashCommandExecutor.js';
 import { SlashCommandParserError } from '../../../slash-commands/SlashCommandParserError.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
 import { debounce, getSortableDelay } from '../../../utils.js';
@@ -38,6 +42,7 @@ export class QuickReply {
     /**@type {String}*/ automationId = '';
 
     /**@type {Function}*/ onExecute;
+    /**@type {(qr:QuickReply)=>AsyncGenerator<SlashCommandClosureResult|{closure:SlashCommandClosure, executor:SlashCommandExecutor|SlashCommandClosureResult}, SlashCommandClosureResult, boolean>}*/ onDebug;
     /**@type {Function}*/ onDelete;
     /**@type {Function}*/ onUpdate;
 
@@ -56,9 +61,11 @@ export class QuickReply {
     /**@type {HTMLElement}*/ editorExecuteProgress;
     /**@type {HTMLElement}*/ editorExecuteErrors;
     /**@type {HTMLElement}*/ editorExecuteResult;
+    /**@type {HTMLElement}*/ editorDebugState;
     /**@type {HTMLInputElement}*/ editorExecuteHide;
     /**@type {Promise}*/ editorExecutePromise;
     /**@type {SlashCommandAbortController}*/ abortController;
+    /**@type {SlashCommandDebugController}*/ debugController;
 
 
     get hasContext() {
@@ -298,6 +305,7 @@ export class QuickReply {
             });
             /**@type {HTMLTextAreaElement}*/
             const message = dom.querySelector('#qr--modal-message');
+            this.editorMessage = message;
             message.value = this.message;
             message.addEventListener('input', () => {
                 updateSyntax();
@@ -506,6 +514,9 @@ export class QuickReply {
             /**@type {HTMLElement}*/
             const executeResult = dom.querySelector('#qr--modal-executeResult');
             this.editorExecuteResult = executeResult;
+            /**@type {HTMLElement}*/
+            const debugState = dom.querySelector('#qr--modal-debugState');
+            this.editorDebugState = debugState;
             /**@type {HTMLInputElement}*/
             const executeHide = dom.querySelector('#qr--modal-executeHide');
             this.editorExecuteHide = executeHide;
@@ -536,6 +547,22 @@ export class QuickReply {
                 this.abortController?.abort('Stop button clicked');
             });
 
+            /**@type {HTMLElement}*/
+            const resumeBtn = dom.querySelector('#qr--modal-resume');
+            resumeBtn.addEventListener('click', ()=>{
+                this.debugController?.resume();
+            });
+            /**@type {HTMLElement}*/
+            const stepBtn = dom.querySelector('#qr--modal-step');
+            stepBtn.addEventListener('click', ()=>{
+                this.debugController?.step();
+            });
+            /**@type {HTMLElement}*/
+            const stepIntoBtn = dom.querySelector('#qr--modal-stepInto');
+            stepIntoBtn.addEventListener('click', ()=>{
+                this.debugController?.stepInto();
+            });
+
             await popupResult;
 
             window.removeEventListener('resize', resizeListener);
@@ -544,6 +571,47 @@ export class QuickReply {
         }
     }
 
+    getEditorPosition(start, end) {
+        const inputRect = this.editorMessage.getBoundingClientRect();
+        const style = window.getComputedStyle(this.editorMessage);
+        if (!this.clone) {
+            this.clone = document.createElement('div');
+            for (const key of style) {
+                this.clone.style[key] = style[key];
+            }
+            this.clone.style.position = 'fixed';
+            this.clone.style.visibility = 'hidden';
+            document.body.append(this.clone);
+            const mo = new MutationObserver(muts=>{
+                if (muts.find(it=>Array.from(it.removedNodes).includes(this.editorMessage))) {
+                    this.clone.remove();
+                }
+            });
+            mo.observe(this.editorMessage.parentElement, { childList:true });
+        }
+        this.clone.style.height = `${inputRect.height}px`;
+        this.clone.style.left = `${inputRect.left}px`;
+        this.clone.style.top = `${inputRect.top}px`;
+        this.clone.style.whiteSpace = style.whiteSpace;
+        this.clone.style.tabSize = style.tabSize;
+        const text = this.editorMessage.value;
+        const before = text.slice(0, start);
+        this.clone.textContent = before;
+        const locator = document.createElement('span');
+        locator.textContent = text.slice(start, end);
+        this.clone.append(locator);
+        this.clone.append(text.slice(end));
+        this.clone.scrollTop = this.editorMessage.scrollTop;
+        this.clone.scrollLeft = this.editorMessage.scrollLeft;
+        const locatorRect = locator.getBoundingClientRect();
+        const location = {
+            left: locatorRect.left,
+            right: locatorRect.right,
+            top: locatorRect.top,
+            bottom: locatorRect.bottom,
+        };
+        return location;
+    }
     async executeFromEditor() {
         if (this.editorExecutePromise) return;
         this.editorExecuteBtn.classList.add('qr--busy');
@@ -560,8 +628,44 @@ export class QuickReply {
             this.editorPopup.dom.classList.add('qr--hide');
         }
         try {
-            this.editorExecutePromise = this.execute({}, true);
-            const result = await this.editorExecutePromise;
+            // this.editorExecutePromise = this.execute({}, true);
+            // const result = await this.editorExecutePromise;
+            this.abortController = new SlashCommandAbortController();
+            this.debugController = new SlashCommandDebugController();
+            this.debugController.onBreakPoint = async(closure, executor)=>{
+                const vars = closure.scope.variables;
+                vars['#pipe'] = closure.scope.pipe;
+                let v = vars;
+                let s = closure.scope.parent;
+                while (s) {
+                    v['#parent'] = s.variables;
+                    v = v['#parent'];
+                    v['#pipe'] = s.pipe;
+                    s = s.parent;
+                }
+                this.editorDebugState.textContent = JSON.stringify(closure.scope.variables, (key, val)=>{
+                    if (val instanceof SlashCommandClosure) return val.toString();
+                    return val;
+                }, 2);
+                this.editorDebugState.classList.add('qr--active');
+                const loc = this.getEditorPosition(executor.start - 1, executor.end);
+                const hi = document.createElement('div');
+                hi.style.position = 'fixed';
+                hi.style.left = `${loc.left}px`;
+                hi.style.width = `${loc.right - loc.left}px`;
+                hi.style.top = `${loc.top}px`;
+                hi.style.height = `${loc.bottom - loc.top}px`;
+                hi.style.zIndex = '50000';
+                hi.style.pointerEvents = 'none';
+                hi.style.backgroundColor = 'rgb(255 255 0 / 0.5)';
+                document.body.append(hi);
+                const isStepping = await this.debugController.awaitContinue();
+                hi.remove();
+                this.editorDebugState.textContent = '';
+                this.editorDebugState.classList.remove('qr--active');
+                return isStepping;
+            };
+            const result = await this.onDebug(this);
             if (this.abortController?.signal?.aborted) {
                 this.editorExecuteProgress.classList.add('qr--aborted');
             } else {

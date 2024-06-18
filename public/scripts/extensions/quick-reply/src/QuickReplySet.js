@@ -1,5 +1,6 @@
 import { getRequestHeaders, substituteParams } from '../../../../script.js';
 import { executeSlashCommands, executeSlashCommandsOnChatInput, executeSlashCommandsWithOptions } from '../../../slash-commands.js';
+import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
 import { debounceAsync, warn } from '../index.js';
 import { QuickReply } from './QuickReply.js';
@@ -102,6 +103,26 @@ export class QuickReplySet {
 
     /**
      *
+     * @param {QuickReply} qr
+     */
+    async debug(qr) {
+        const parser = new SlashCommandParser();
+        const closure = parser.parse(qr.message, true, [], qr.abortController, qr.debugController);
+        closure.onProgress = (done, total) => qr.updateEditorProgress(done, total);
+        // closure.abortController = qr.abortController;
+        // closure.debugController = qr.debugController;
+        // const stepper = closure.executeGenerator();
+        // let step;
+        // let isStepping = false;
+        // while (!step?.done) {
+        //     step = await stepper.next(isStepping);
+        //     isStepping = yield(step.value);
+        // }
+        // return step.value;
+        return (await closure.execute())?.pipe;
+    }
+    /**
+     *
      * @param {QuickReply} qr The QR to execute.
      * @param {object} options
      * @param {string} [options.message] (null) altered message to be used
@@ -195,7 +216,12 @@ export class QuickReplySet {
         return qr;
     }
 
+    /**
+     *
+     * @param {QuickReply} qr
+     */
     hookQuickReply(qr) {
+        qr.onDebug = ()=>this.debug(qr);
         qr.onExecute = (_, options)=>this.executeWithOptions(qr, options);
         qr.onDelete = ()=>this.removeQuickReply(qr);
         qr.onUpdate = ()=>this.save();

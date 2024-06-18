@@ -431,6 +431,10 @@
 					border-color: rgb(215, 136, 114);
 				}
 			}
+			#qr--modal-debugButtons {
+				display: flex;
+				gap: 1em;
+			}
 			#qr--modal-executeProgress {
 				--prog: 0;
 				--progColor: rgb(146, 190, 252);
@@ -494,6 +498,22 @@
 				overflow: auto;
 				min-width: 100%;
 				width: 0;
+				white-space: pre-wrap;
+			}
+			#qr--modal-debugState {
+				display: none;
+				&.qr--active {
+					display: block;
+				}
+				text-align: left;
+				font-size: smaller;
+				// background-color: rgb(146, 190, 252);
+				color: white;
+				padding: 0.5em;
+				overflow: auto;
+				min-width: 100%;
+				width: 0;
+				white-space: pre-wrap;
 			}
 		}
 	}

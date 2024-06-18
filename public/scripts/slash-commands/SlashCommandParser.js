@@ -17,6 +17,8 @@ import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNa
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
 import { MacroAutoCompleteOption } from '../autocomplete/MacroAutoCompleteOption.js';
+import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
+import { SlashCommandDebugController } from './SlashCommandDebugController.js';
 
 /**@readonly*/
 /**@enum {Number}*/
@@ -85,6 +87,7 @@ export class SlashCommandParser {
     /**@type {string}*/ text;
     /**@type {number}*/ index;
     /**@type {SlashCommandAbortController}*/ abortController;
+    /**@type {SlashCommandDebugController}*/ debugController;
     /**@type {SlashCommandScope}*/ scope;
     /**@type {SlashCommandClosure}*/ closure;
 
@@ -560,12 +563,13 @@ export class SlashCommandParser {
     }
 
 
-    parse(text, verifyCommandNames = true, flags = null, abortController = null) {
+    parse(text, verifyCommandNames = true, flags = null, abortController = null, debugController = null) {
         this.verifyCommandNames = verifyCommandNames;
         for (const key of Object.keys(PARSER_FLAG)) {
             this.flags[PARSER_FLAG[key]] = flags?.[PARSER_FLAG[key]] ?? power_user.stscript.parser.flags[PARSER_FLAG[key]] ?? false;
         }
         this.abortController = abortController;
+        this.debugController = debugController;
         this.text = text;
         this.index = 0;
         this.scope = null;
@@ -601,6 +605,7 @@ export class SlashCommandParser {
         const textStart = this.index;
         let closure = new SlashCommandClosure(this.scope);
         closure.abortController = this.abortController;
+        closure.debugController = this.debugController;
         this.scope = closure.scope;
         this.closure = closure;
         this.discardWhitespace();
@@ -619,6 +624,11 @@ export class SlashCommandParser {
                 const cmd = this.parseRunShorthand();
                 closure.executorList.push(cmd);
                 injectPipe = true;
+            } else if (this.testBreakPoint()) {
+                const bp = this.parseBreakPoint();
+                if (this.debugController) {
+                    closure.executorList.push(bp);
+                }
             } else if (this.testCommand()) {
                 const cmd = this.parseCommand();
                 cmd.injectPipe = injectPipe;
@@ -648,6 +658,17 @@ export class SlashCommandParser {
         closureIndexEntry.end = this.index - 1;
         this.scope = closure.scope.parent;
         return closure;
+    }
+
+    testBreakPoint() {
+        return this.testSymbol(/\/breakpoint\s*\|/);
+    }
+    parseBreakPoint() {
+        const bp = new SlashCommandBreakPoint();
+        bp.start = this.index;
+        this.take('/breakpoint'.length);
+        bp.end = this.index;
+        return bp;
     }
 
     testComment() {

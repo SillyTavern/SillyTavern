@@ -301,19 +301,19 @@
   text-align: left;
   overflow: hidden;
 }
-.dialogue_popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-messageSyntax {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-messageSyntax {
   display: none;
 }
-.dialogue_popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message {
   background-color: var(--ac-style-color-background);
   color: var(--ac-style-color-text);
 }
-.dialogue_popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::selection {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::selection {
   color: unset;
   background-color: rgba(108 171 251 / 0.25);
 }
 @supports (color: rgb(from white r g b / 0.25)) {
-  .dialogue_popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::selection {
+  .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::selection {
     background-color: rgb(from var(--ac-style-color-matchedText) r g b / 0.25);
   }
 }
@@ -343,12 +343,12 @@
   visibility: hidden;
   cursor: default;
 }
-.dialogue_popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message::selection {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message::selection {
   color: transparent;
   background-color: rgba(108 171 251 / 0.25);
 }
 @supports (color: rgb(from white r g b / 0.25)) {
-  .dialogue_popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message::selection {
+  .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message::selection {
     background-color: rgb(from var(--ac-style-color-matchedText) r g b / 0.25);
   }
 }
@@ -410,6 +410,10 @@
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons #qr--modal-stop {
   border-color: #d78872;
 }
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons {
+  display: flex;
+  gap: 1em;
+}
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeProgress {
   --prog: 0;
   --progColor: #92befc;
@@ -469,12 +473,27 @@
   overflow: auto;
   min-width: 100%;
   width: 0;
+  white-space: pre-wrap;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeResult.qr--hasResult {
   display: block;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeResult:before {
   content: 'Result: ';
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState {
+  display: none;
+  text-align: left;
+  font-size: smaller;
+  color: white;
+  padding: 0.5em;
+  overflow: auto;
+  min-width: 100%;
+  width: 0;
+  white-space: pre-wrap;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState.qr--active {
+  display: block;
 }
 @keyframes qr--progressPulse {
   0%,
