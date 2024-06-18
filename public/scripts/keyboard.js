@@ -13,14 +13,18 @@ const interactableSelectors = [
     '.bg_example', // Background elements in the background menu
     '.bg_example .bg_button', // The inline buttons on the backgrounds
     '#options a', // Option entries in the popup options menu
-    '#extensionsMenu div:has(.extensionsMenuExtensionButton)', // Option entries in the extension menu popup that are coming from extensions
     '.mes_buttons .mes_button', // Small inline buttons on the chat messages
     '.extraMesButtons>div:not(.mes_button)', // The extra/extension buttons inline on the chat messages
     '.swipe_left, .swipe_right', // Swipe buttons on the last message
     '.stscript_btn', // STscript buttons in the chat bar
     '.select2_choice_clickable+span.select2-container .select2-selection__choice__display', // select2 control elements if they are meant to be clickable
-    '.avatar_load_preview' // Char display avatar selection
+    '.avatar_load_preview', // Char display avatar selection
 ];
+
+if (CSS.supports('selector(:has(*))')) {
+    // Option entries in the extension menu popup that are coming from extensions
+    interactableSelectors.push('#extensionsMenu div:has(.extensionsMenuExtensionButton)');
+}
 
 export const INTERACTABLE_CONTROL_CLASS = 'interactable';
 export const CUSTOM_INTERACTABLE_CONTROL_CLASS = 'custom_interactable';
@@ -231,7 +235,7 @@ export function initKeyboard() {
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ['class']
+        attributeFilter: ['class'],
     });
 
     // Initialize already existing controls
