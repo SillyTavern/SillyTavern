@@ -154,7 +154,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             if (idx > -1) {
                 argAssign = this.executor.unnamedArgumentList[idx];
                 cmdArg = this.executor.command.unnamedArgumentList[idx];
-                if (cmdArg === undefined && this.executor.command.unnamedArgumentList.slice(-1)[0].acceptsMultiple) {
+                if (cmdArg === undefined && this.executor.command.unnamedArgumentList.slice(-1)[0]?.acceptsMultiple) {
                     cmdArg = this.executor.command.unnamedArgumentList.slice(-1)[0];
                 }
                 const enumList = cmdArg?.enumProvider?.(this.executor, this.scope) ?? cmdArg?.enumList;
@@ -168,7 +168,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
                 value = '';
                 start = index;
                 cmdArg = notProvidedArguments[0];
-                if (cmdArg === undefined && this.executor.command.unnamedArgumentList.slice(-1)[0].acceptsMultiple) {
+                if (cmdArg === undefined && this.executor.command.unnamedArgumentList.slice(-1)[0]?.acceptsMultiple) {
                     cmdArg = this.executor.command.unnamedArgumentList.slice(-1)[0];
                 }
             }
