@@ -632,7 +632,7 @@ export function parseExampleIntoIndividual(messageExampleString, appendNamesForG
     let cur_msg_lines = [];
     let in_user = false;
     let in_bot = false;
-    // DRY my cock and balls :)
+    // DRY
     function add_msg(name, role, system_name) {
         // join different newlines (we split them by \n and join by \n)
         // remove char name
