@@ -272,12 +272,12 @@ toastr.options.timeOut = 4000; // How long the toast will display without user i
 toastr.options.extendedTimeOut = 10000; // How long the toast will display after a user hovers over it
 toastr.options.progressBar = true; // Visually indicate how long before a toast expires.
 toastr.options.closeButton = true; // enable a close button
-toastr.options.positionClass = "toast-top-center"; // Where to position the toast container
+toastr.options.positionClass = 'toast-top-center'; // Where to position the toast container
 toastr.options.onHidden = () => {
     // If we have any dialog still open, the last "hidden" toastr will remove the toastr-container. We need to keep it alive inside the dialog though
     // so the toasts still show up inside there.
     fixToastrForDialogs();
-}
+};
 
 // Allow target="_blank" in links
 DOMPurify.addHook('afterSanitizeAttributes', function (node) {
@@ -3439,7 +3439,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
      * @returns {string[]} Examples array with block heading
      */
     function parseMesExamples(examplesStr) {
-        if (examplesStr.length === 0) {
+        if (examplesStr.length === 0 || examplesStr === '<START>') {
             return [];
         }
 
