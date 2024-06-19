@@ -134,6 +134,41 @@ router.post('/transcript', jsonParser, async (request, response) => {
     }
 });
 
+router.post('/searxng', jsonParser, async (request, response) => {
+    try {
+        const { baseUrl, query } = request.body;
+
+        if (!baseUrl || !query) {
+            console.log('Missing required parameters for /searxng');
+            return response.sendStatus(400);
+        }
+
+        const url = new URL(baseUrl);
+        const params = new URLSearchParams();
+        params.append('q', query);
+        params.append('format', 'html');
+        url.pathname = '/search';
+        url.search = params.toString();
+
+        const result = await fetch(url, {
+            method: 'POST',
+            headers: visitHeaders,
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.log('SearXNG request failed', result.statusText, text);
+            return response.sendStatus(500);
+        }
+
+        const data = await result.text();
+        return response.send(data);
+    } catch (error) {
+        console.log('SearXNG request failed', error);
+        return response.sendStatus(500);
+    }
+});
+
 router.post('/visit', jsonParser, async (request, response) => {
     try {
         const url = request.body.url;
