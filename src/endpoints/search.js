@@ -22,7 +22,7 @@ const visitHeaders = {
     'Sec-Fetch-User': '?1',
 };
 
-router.post('/search', jsonParser, async (request, response) => {
+router.post('/serpapi', jsonParser, async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.SERPAPI);
 
