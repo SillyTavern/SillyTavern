@@ -645,20 +645,22 @@ export class QuickReply {
                 }
                 this.editorDebugState.textContent = JSON.stringify(closure.scope.variables, (key, val)=>{
                     if (val instanceof SlashCommandClosure) return val.toString();
+                    if (val === undefined) return null;
                     return val;
                 }, 2);
                 this.editorDebugState.classList.add('qr--active');
                 const loc = this.getEditorPosition(executor.start - 1, executor.end);
+                const layer = this.editorPopup.dlg.getBoundingClientRect();
                 const hi = document.createElement('div');
                 hi.style.position = 'fixed';
-                hi.style.left = `${loc.left}px`;
+                hi.style.left = `${loc.left - layer.left}px`;
                 hi.style.width = `${loc.right - loc.left}px`;
-                hi.style.top = `${loc.top}px`;
+                hi.style.top = `${loc.top - layer.top}px`;
                 hi.style.height = `${loc.bottom - loc.top}px`;
                 hi.style.zIndex = '50000';
                 hi.style.pointerEvents = 'none';
                 hi.style.backgroundColor = 'rgb(255 255 0 / 0.5)';
-                document.body.append(hi);
+                this.editorPopup.dlg.append(hi);
                 const isStepping = await this.debugController.awaitContinue();
                 hi.remove();
                 this.editorDebugState.textContent = '';
