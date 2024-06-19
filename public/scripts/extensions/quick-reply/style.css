@@ -507,3 +507,6 @@
 .popup.qr--hide {
   opacity: 0 !important;
 }
+.popup.qr--hide::backdrop {
+  opacity: 0 !important;
+}

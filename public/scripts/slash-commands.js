@@ -62,6 +62,7 @@ import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortController.js';
 import { SlashCommandNamedArgumentAssignment } from './slash-commands/SlashCommandNamedArgumentAssignment.js';
 import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
+import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { SlashCommandDebugController } from './slash-commands/SlashCommandDebugController.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
@@ -1450,6 +1451,7 @@ async function trimTokensCallback(arg, value) {
 
 async function buttonsCallback(args, text) {
     try {
+        /** @type {string[]} */
         const buttons = JSON.parse(resolveVariable(args?.labels));
 
         if (!Array.isArray(buttons) || !buttons.length) {
@@ -1457,18 +1459,24 @@ async function buttonsCallback(args, text) {
             return '';
         }
 
+        // Map custom buttons to results. Start at 2 because 1 and 0 are reserved for ok and cancel
+        const resultToButtonMap = new Map(buttons.map((button, index) => [index + 2, button]));
+
         return new Promise(async (resolve) => {
             const safeValue = DOMPurify.sanitize(text || '');
+
+            /** @type {Popup} */
+            let popup;
 
             const buttonContainer = document.createElement('div');
             buttonContainer.classList.add('flex-container', 'flexFlowColumn', 'wide100p', 'm-t-1');
 
-            for (const button of buttons) {
+            for (const [result, button] of resultToButtonMap) {
                 const buttonElement = document.createElement('div');
-                buttonElement.classList.add('menu_button', 'wide100p');
+                buttonElement.classList.add('menu_button', 'result-control', 'wide100p');
+                buttonElement.dataset.result = String(result);
                 buttonElement.addEventListener('click', () => {
-                    resolve(button);
-                    $('#dialogue_popup_ok').trigger('click');
+                    popup?.complete(result);
                 });
                 buttonElement.innerText = button;
                 buttonContainer.appendChild(buttonElement);
@@ -1477,8 +1485,10 @@ async function buttonsCallback(args, text) {
             const popupContainer = document.createElement('div');
             popupContainer.innerHTML = safeValue;
             popupContainer.appendChild(buttonContainer);
-            callPopup(popupContainer, 'text', '', { okButton: 'Cancel' })
-                .then(() => resolve(''))
+
+            popup = new Popup(popupContainer, POPUP_TYPE.TEXT, '', { okButton: 'Cancel' });
+            popup.show()
+                .then((result => resolve(typeof result === 'number' ? resultToButtonMap.get(result) ?? '' : '')))
                 .catch(() => resolve(''));
         });
     } catch {
@@ -1494,7 +1504,7 @@ async function popupCallback(args, value) {
         okButton: args?.okButton !== undefined && typeof args?.okButton === 'string' ? args.okButton : 'Ok',
     };
     await delay(1);
-    await callPopup(safeValue, 'text', '', popupOptions);
+    await callGenericPopup(safeValue, POPUP_TYPE.TEXT, '', popupOptions);
     await delay(1);
     return value;
 }

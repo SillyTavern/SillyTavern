@@ -625,7 +625,7 @@ export class QuickReply {
         this.editorExecuteErrors.innerHTML = '';
         this.editorExecuteResult.innerHTML = '';
         if (this.editorExecuteHide.checked) {
-            this.editorPopup.dom.classList.add('qr--hide');
+            this.editorPopup.dlg.classList.add('qr--hide');
         }
         try {
             // this.editorExecutePromise = this.execute({}, true);
@@ -694,7 +694,7 @@ export class QuickReply {
         }
         this.editorExecutePromise = null;
         this.editorExecuteBtn.classList.remove('qr--busy');
-        this.editorPopup.dom.classList.remove('qr--hide');
+        this.editorPopup.dlg.classList.remove('qr--hide');
     }
 
     updateEditorProgress(done, total) {
