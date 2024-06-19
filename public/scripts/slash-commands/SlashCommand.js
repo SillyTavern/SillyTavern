@@ -298,40 +298,52 @@ export class SlashCommand {
                         for (const arg of unnamedArguments) {
                             const listItem = document.createElement('li'); {
                                 listItem.classList.add('argumentItem');
-                                const argItem = document.createElement('div'); {
-                                    argItem.classList.add('argument');
-                                    argItem.classList.add('unnamedArgument');
-                                    argItem.title = `${arg.isRequired ? '' : 'optional '}unnamed argument`;
-                                    if (!arg.isRequired || (arg.defaultValue ?? false)) argItem.classList.add('optional');
-                                    if (arg.acceptsMultiple) argItem.classList.add('multiple');
-                                    if (arg.enumList.length > 0) {
-                                        const enums = document.createElement('span'); {
-                                            enums.classList.add('argument-enums');
-                                            enums.title = `${argItem.title} - accepted values`;
-                                            for (const e of arg.enumList) {
-                                                const enumItem = document.createElement('span'); {
-                                                    enumItem.classList.add('argument-enum');
-                                                    enumItem.textContent = e.value;
-                                                    enums.append(enumItem);
+                                const argSpec = document.createElement('div'); {
+                                    argSpec.classList.add('argumentSpec');
+                                    const argItem = document.createElement('div'); {
+                                        argItem.classList.add('argument');
+                                        argItem.classList.add('unnamedArgument');
+                                        argItem.title = `${arg.isRequired ? '' : 'optional '}unnamed argument`;
+                                        if (!arg.isRequired || (arg.defaultValue ?? false)) argItem.classList.add('optional');
+                                        if (arg.acceptsMultiple) argItem.classList.add('multiple');
+                                        if (arg.enumList.length > 0) {
+                                            const enums = document.createElement('span'); {
+                                                enums.classList.add('argument-enums');
+                                                enums.title = `${argItem.title} - accepted values`;
+                                                for (const e of arg.enumList) {
+                                                    const enumItem = document.createElement('span'); {
+                                                        enumItem.classList.add('argument-enum');
+                                                        enumItem.textContent = e.value;
+                                                        enums.append(enumItem);
+                                                    }
                                                 }
+                                                argItem.append(enums);
                                             }
-                                            argItem.append(enums);
+                                        } else {
+                                            const types = document.createElement('span'); {
+                                                types.classList.add('argument-types');
+                                                types.title = `${argItem.title} - accepted types`;
+                                                for (const t of arg.typeList) {
+                                                    const type = document.createElement('span'); {
+                                                        type.classList.add('argument-type');
+                                                        type.textContent = t;
+                                                        types.append(type);
+                                                    }
+                                                }
+                                                argItem.append(types);
+                                            }
                                         }
-                                    } else {
-                                        const types = document.createElement('span'); {
-                                            types.classList.add('argument-types');
-                                            types.title = `${argItem.title} - accepted types`;
-                                            for (const t of arg.typeList) {
-                                                const type = document.createElement('span'); {
-                                                    type.classList.add('argument-type');
-                                                    type.textContent = t;
-                                                    types.append(type);
-                                                }
-                                            }
-                                            argItem.append(types);
+                                        argSpec.append(argItem);
+                                    }
+                                    if (arg.defaultValue !== null) {
+                                        const argDefault = document.createElement('div'); {
+                                            argDefault.classList.add('argument-default');
+                                            argDefault.title = 'default value';
+                                            argDefault.textContent = arg.defaultValue.toString();
+                                            argSpec.append(argDefault);
                                         }
                                     }
-                                    listItem.append(argItem);
+                                    listItem.append(argSpec);
                                 }
                                 const desc = document.createElement('div'); {
                                     desc.classList.add('argument-description');
