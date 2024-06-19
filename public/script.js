@@ -7543,10 +7543,15 @@ function addAlternateGreeting(template, greeting, index, getArray) {
     template.find('.alternate_greetings_list').append(greetingBlock);
 }
 
+/**
+ * Creates or edits a character based on the form data.
+ * @param {Event} [e] Event that triggered the function call.
+ */
 async function createOrEditCharacter(e) {
     $('#rm_info_avatar').html('');
     const formData = new FormData($('#form_create').get(0));
     formData.set('fav', String(fav_ch_checked));
+    const isNewChat = e instanceof CustomEvent && e.type === 'newChat';
 
     const rawFile = formData.get('avatar');
     if (rawFile instanceof File) {
@@ -7689,6 +7694,7 @@ async function createOrEditCharacter(e) {
                 // Recreate the chat if it hasn't been used at least once (i.e. with continue).
                 const message = getFirstMessage();
                 const shouldRegenerateMessage =
+                    !isNewChat &&
                     message.mes &&
                     !selected_group &&
                     !chat_metadata['tainted'] &&
@@ -9215,7 +9221,7 @@ jQuery(async function () {
                 characters[this_chid].chat = `${name2} - ${humanizedDateTime()}`;
                 $('#selected_chat_pole').val(characters[this_chid].chat);
                 await getChat();
-                await createOrEditCharacter();
+                await createOrEditCharacter(new CustomEvent('newChat'));
                 if (isDelChatCheckbox) await delChat(chat_file_for_del + '.jsonl');
             }
         }
