@@ -585,7 +585,6 @@ export class QuickReply {
                     <div>${ex.message}</div>
                 `;
             }
-            const t = toastr.success('b');
         }
         this.editorExecutePromise = null;
         this.editorExecuteBtn.classList.remove('qr--busy');
