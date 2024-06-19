@@ -2678,7 +2678,7 @@ async function doDelMode(_, text) {
 
         let oldestMesToDel = $('#chat').find(`.mes[mesid=${oldestMesIDToDel}]`);
 
-        if (!oldestMesIDToDel) {
+        if (!oldestMesIDToDel && lastMesID > 0) {
             oldestMesToDel = await loadUntilMesId(oldestMesIDToDel);
 
             if (!oldestMesToDel || !oldestMesToDel.length) {
