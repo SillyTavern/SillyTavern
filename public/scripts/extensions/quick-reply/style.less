@@ -289,7 +289,9 @@
 				{
 					display: none;
 				}
-
+				#qr--modal-debugButtons {
+					display: flex;
+				}
 			}
 
 			> #qr--main {
@@ -403,6 +405,10 @@
 				}
 			}
 
+			label:has(#qr--modal-executeHide) {
+				// hide editor is not working anyways
+				display: none;
+			}
 			#qr--modal-executeButtons {
 				display: flex;
 				gap: 1em;
@@ -451,8 +457,20 @@
 				}
 			}
 			#qr--modal-debugButtons {
-				display: flex;
+				display: none;
 				gap: 1em;
+				.qr--modal-debugButton {
+					aspect-ratio: 1.25 / 1;
+					&.qr--glyph-combo {
+						display: grid;
+						grid-template-columns: 1fr;
+						grid-template-rows: 1fr 1fr;
+						.qr--glyph {
+							grid-column: 1;
+							line-height: 0.8;
+						}
+					}
+				}
 			}
 			#qr--modal-executeProgress {
 				--prog: 0;
@@ -538,7 +556,7 @@
 				.qr--scope {
 					display: grid;
 					grid-template-columns: 0fr 1fr;
-					column-gap: 1em;
+					column-gap: 0em;
 					.qr--title {
 						grid-column: 1 / 3;
 						font-weight: bold;
@@ -548,6 +566,11 @@
 					}
 					.qr--var, .qr--macro, .qr--pipe {
 						display: contents;
+						&:nth-child(2n + 2) {
+							.qr--key, .qr--val {
+								background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.25);
+							}
+						}
 						&.qr--isHidden {
 							.qr--key, .qr--val {
 								opacity: 0.5;
@@ -556,6 +579,7 @@
 					}
 					.qr--key {
 						margin-left: 0.5em;
+						padding-right: 1em;
 						&:after { content: ": "; }
 					}
 					.qr--pipe, .qr--macro {

@@ -3,8 +3,10 @@ import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 
 export class SlashCommandDebugController {
     /**@type {SlashCommandClosure[]} */ stack = [];
+    /**@type {boolean[]} */ stepStack = [];
     /**@type {boolean} */ isStepping = false;
     /**@type {boolean} */ isSteppingInto = false;
+    /**@type {boolean} */ isSteppingOut = false;
 
     /**@type {Promise<boolean>} */ continuePromise;
     /**@type {(boolean)=>void} */ continueResolver;
@@ -14,11 +16,22 @@ export class SlashCommandDebugController {
 
 
 
+    testStepping(closure) {
+        return this.stepStack[this.stack.indexOf(closure)];
+    }
+
+
+
+
     down(closure) {
         this.stack.push(closure);
+        if (this.stepStack.length < this.stack.length) {
+            this.stepStack.push(this.isSteppingInto);
+        }
     }
     up() {
         this.stack.pop();
+        this.stepStack.pop();
     }
 
 
@@ -26,14 +39,23 @@ export class SlashCommandDebugController {
     resume() {
         this.continueResolver?.(false);
         this.continuePromise = null;
+        this.stepStack.forEach((_,idx)=>this.stepStack[idx] = false);
     }
     step() {
+        this.stepStack[this.stepStack.length - 1] = true;
         this.continueResolver?.(true);
         this.continuePromise = null;
     }
     stepInto() {
         this.isSteppingInto = true;
+        this.stepStack.forEach((_,idx)=>this.stepStack[idx] = true);
         this.continueResolver?.(true);
+        this.continuePromise = null;
+    }
+    stepOut() {
+        this.isSteppingOut = true;
+        this.stepStack[this.stepStack.length - 1] = false;
+        this.continueResolver?.(false);
         this.continuePromise = null;
     }
 

@@ -116,17 +116,6 @@
 				<i class="fa-solid fa-stop"></i>
 			</div>
 		</div>
-		<div id="qr--modal-debugButtons">
-			<div id="qr--modal-resume" class="qr--modal-debugButton menu_button">
-				Resume
-			</div>
-			<div id="qr--modal-step" class="qr--modal-debugButton menu_button">
-				Step
-			</div>
-			<div id="qr--modal-stepInto" class="qr--modal-debugButton menu_button">
-				StepInto
-			</div>
-		</div>
 		<div id="qr--modal-executeProgress"></div>
 		<label class="checkbox_label">
 			<input type="checkbox" id="qr--modal-executeHide">
@@ -134,6 +123,21 @@
 		</label>
 		<div id="qr--modal-executeErrors"></div>
 		<div id="qr--modal-executeResult"></div>
+
+		<div id="qr--modal-debugButtons">
+			<div title="Resume" id="qr--modal-resume" class="qr--modal-debugButton menu_button">
+				<span class="qr--glyph">▷</span>
+			</div>
+			<div title="Step Over" id="qr--modal-step" class="qr--modal-debugButton qr--glyph-combo menu_button">
+				<span class="qr--glyph">↷</span><span class="qr--glyph">▪</span>
+			</div>
+			<div title="Step Into" id="qr--modal-stepInto" class="qr--modal-debugButton qr--glyph-combo menu_button">
+				<span class="qr--glyph">↓</span><span class="qr--glyph">▪</span>
+			</div>
+			<div title="Step Out" id="qr--modal-stepOut" class="qr--modal-debugButton qr--glyph-combo menu_button">
+				<span class="qr--glyph">↑</span><span class="qr--glyph">▪</span>
+			</div>
+		</div>
 		<div id="qr--modal-debugState"></div>
 	</div>
 </div>

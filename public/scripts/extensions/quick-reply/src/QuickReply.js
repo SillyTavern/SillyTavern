@@ -564,6 +564,11 @@ export class QuickReply {
             stepIntoBtn.addEventListener('click', ()=>{
                 this.debugController?.stepInto();
             });
+            /**@type {HTMLElement}*/
+            const stepOutBtn = dom.querySelector('#qr--modal-stepOut');
+            stepOutBtn.addEventListener('click', ()=>{
+                this.debugController?.stepOut();
+            });
 
             await popupResult;
 
@@ -653,7 +658,7 @@ export class QuickReply {
                             title.textContent = isCurrent ? 'Current Scope' : 'Parent Scope';
                             let hi;
                             title.addEventListener('pointerenter', ()=>{
-                                const loc = this.getEditorPosition(c.executorList[0].start, c.executorList.slice(-1)[0].end);
+                                const loc = this.getEditorPosition(c.executorList[0].start - 1, c.executorList.slice(-1)[0].end);
                                 const layer = this.editorPopup.dlg.getBoundingClientRect();
                                 hi = document.createElement('div');
                                 hi.style.position = 'fixed';
