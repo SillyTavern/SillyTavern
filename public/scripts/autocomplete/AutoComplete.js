@@ -102,10 +102,15 @@ export class AutoComplete {
         this.updateDetailsPositionDebounced = debounce(this.updateDetailsPosition.bind(this), 10);
         this.updateFloatingPositionDebounced = debounce(this.updateFloatingPosition.bind(this), 10);
 
-        textarea.addEventListener('input', ()=>this.text != this.textarea.value && this.show(true, this.wasForced));
+        textarea.addEventListener('input', ()=>{
+            this.selectionStart = this.textarea.selectionStart;
+            if (this.text != this.textarea.value) this.show(true, this.wasForced);
+        });
         textarea.addEventListener('keydown', (evt)=>this.handleKeyDown(evt));
-        textarea.addEventListener('click', ()=>this.isActive ? this.show() : null);
-        textarea.addEventListener('selectionchange', ()=>this.show());
+        textarea.addEventListener('click', ()=>{
+            this.selectionStart = this.textarea.selectionStart;
+            if (this.isActive) this.show();
+        });
         textarea.addEventListener('blur', ()=>this.hide());
         if (isFloating) {
             textarea.addEventListener('scroll', ()=>this.updateFloatingPositionDebounced());
@@ -768,30 +773,16 @@ export class AutoComplete {
             // ignore keydown on modifier keys
             return;
         }
-        switch (evt.key) {
-            case 'ArrowUp':
-            case 'ArrowDown':
-            case 'ArrowRight':
-            case 'ArrowLeft': {
-                if (this.isActive) {
-                    // keyboard navigation, wait for keyup to complete cursor move
-                    const oldText = this.textarea.value;
-                    await new Promise(resolve=>{
-                        window.addEventListener('keyup', resolve, { once:true });
-                    });
-                    if (this.selectionStart != this.textarea.selectionStart) {
-                        this.selectionStart = this.textarea.selectionStart;
-                        this.show(this.isReplaceable || oldText != this.textarea.value);
-                    }
-                }
-                break;
-            }
-            default: {
-                if (this.isActive) {
-                    this.text != this.textarea.value && this.show(this.isReplaceable);
-                }
-                break;
-            }
+        // await keyup to see if cursor position or text has changed
+        const oldText = this.textarea.value;
+        await new Promise(resolve=>{
+            window.addEventListener('keyup', resolve, { once:true });
+        });
+        if (this.selectionStart != this.textarea.selectionStart) {
+            this.selectionStart = this.textarea.selectionStart;
+            this.show(this.isReplaceable || oldText != this.textarea.value);
+        } else if (this.isActive) {
+            this.text != this.textarea.value && this.show(this.isReplaceable);
         }
     }
 }
