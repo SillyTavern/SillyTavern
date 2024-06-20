@@ -514,11 +514,14 @@ export class SlashCommandParser {
     }
 
     replaceGetvar(value) {
-        return value.replace(/{{(get(?:global)?var)::([^}]+)}}/gi, (_, cmd, name) => {
+        return value.replace(/{{(get(?:global)?var)::([^}]+)}}/gi, (match, cmd, name, idx) => {
             name = name.trim();
+            const startIdx = this.index - value.length + idx;
+            const endIdx = this.index - value.length + idx + match.length;
             // store pipe
             const pipeName = `_PARSER_${uuidv4()}`;
-            const storePipe = new SlashCommandExecutor(null); {
+            const storePipe = new SlashCommandExecutor(startIdx); {
+                storePipe.end = endIdx;
                 storePipe.command = this.commands['let'];
                 storePipe.name = 'let';
                 const nameAss = new SlashCommandUnnamedArgumentAssignment();
@@ -529,7 +532,8 @@ export class SlashCommandParser {
                 this.closure.executorList.push(storePipe);
             }
             // getvar / getglobalvar
-            const getvar = new SlashCommandExecutor(null); {
+            const getvar = new SlashCommandExecutor(startIdx); {
+                getvar.end = endIdx;
                 getvar.command = this.commands[cmd];
                 getvar.name = 'cmd';
                 const nameAss = new SlashCommandUnnamedArgumentAssignment();
@@ -539,7 +543,8 @@ export class SlashCommandParser {
             }
             // set to temp scoped var
             const varName = `_PARSER_${uuidv4()}`;
-            const setvar = new SlashCommandExecutor(null); {
+            const setvar = new SlashCommandExecutor(startIdx); {
+                setvar.end = endIdx;
                 setvar.command = this.commands['let'];
                 setvar.name = 'let';
                 const nameAss = new SlashCommandUnnamedArgumentAssignment();
@@ -550,7 +555,8 @@ export class SlashCommandParser {
                 this.closure.executorList.push(setvar);
             }
             // return pipe
-            const returnPipe = new SlashCommandExecutor(null); {
+            const returnPipe = new SlashCommandExecutor(startIdx); {
+                returnPipe.end = endIdx;
                 returnPipe.command = this.commands['return'];
                 returnPipe.name = 'return';
                 const varAss = new SlashCommandUnnamedArgumentAssignment();
