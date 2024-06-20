@@ -51,7 +51,7 @@ export class SlashCommandParser {
      * @param {SlashCommand} command
      */
     static addCommandObject(command) {
-        const reserved = ['/', '#', ':', 'parser-flag'];
+        const reserved = ['/', '#', ':', 'parser-flag', 'breakpoint'];
         for (const start of reserved) {
             if (command.name.toLowerCase().startsWith(start) || (command.aliases ?? []).find(a=>a.toLowerCase().startsWith(start))) {
                 throw new Error(`Illegal Name. Slash command name cannot begin with "${start}".`);
@@ -151,6 +151,11 @@ export class SlashCommandParser {
                     }),
                 ],
                 helpString: 'Write a comment.',
+            }));
+        }
+        if (!Object.keys(this.commands).includes('breakpoint')) {
+            SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({ name: 'breakpoint',
+                helpString: 'Set a breakpoint for debugging in the QR Editor.',
             }));
         }
 
