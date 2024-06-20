@@ -235,6 +235,8 @@ import { SlashCommand } from './scripts/slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './scripts/slash-commands/SlashCommandArgument.js';
 import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowser.js';
 import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
+import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/SlashCommandEnumValue.js';
+import { enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
 
 //exporting functions and vars for mods
 export {
@@ -8774,6 +8776,9 @@ jQuery(async function () {
         return '';
     }
 
+    // Collect all unique API names in an array
+    const uniqueAPIs = [...new Set(Object.values(CONNECT_API_MAP).map(x => x.selected))];
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'dupe',
         callback: DupeChar,
@@ -8790,7 +8795,9 @@ jQuery(async function () {
                 true,
                 false,
                 null,
-                Object.keys(CONNECT_API_MAP),
+                Object.entries(CONNECT_API_MAP).map(([api, { selected }]) =>
+                    new SlashCommandEnumValue(api, selected, enumTypes.getBasedOnIndex(uniqueAPIs.findIndex(x => x === selected)),
+                        selected[0].toUpperCase() ?? enumIcons.default)),
             ),
         ],
         helpString: `
@@ -8882,9 +8889,11 @@ jQuery(async function () {
         returns: 'current preset',
         namedArgumentList: [],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'name', [ARGUMENT_TYPE.STRING], false,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'instruct preset name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: () => instruct_presets.map(preset => new SlashCommandEnumValue(preset.name, null, enumTypes.enum, enumIcons.preset)),
+            }),
         ],
         helpString: `
             <div>
@@ -8915,9 +8924,11 @@ jQuery(async function () {
         callback: selectContextCallback,
         returns: 'template name',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'name', [ARGUMENT_TYPE.STRING], false,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'context preset name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: () => context_presets.map(preset => new SlashCommandEnumValue(preset.name, null, enumTypes.enum, enumIcons.preset)),
+            }),
         ],
         helpString: 'Selects context template by name. Gets the current template if no name is provided',
     }));

@@ -9,6 +9,7 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
+import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -452,7 +453,7 @@ jQuery(async function () {
                 name: 'id',
                 description: 'get image from a message with this ID',
                 typeList: [ARGUMENT_TYPE.NUMBER],
-                enumProvider: () => getContext().chat.map((_, i) => new SlashCommandEnumValue(String(i), null, 'number', '1️⃣')),
+                enumProvider: commonEnumProviders.messages,
             }),
         ],
         unnamedArgumentList: [

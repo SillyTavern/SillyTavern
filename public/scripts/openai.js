@@ -4609,7 +4609,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             description: 'name',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-            enumProvider: () => proxies.map(preset => new SlashCommandEnumValue(preset.name)),
+            enumProvider: () => proxies.map(preset => new SlashCommandEnumValue(preset.name, preset.url)),
         }),
     ],
     helpString: 'Sets a proxy preset by name.',

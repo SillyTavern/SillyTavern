@@ -46,7 +46,8 @@ import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandPa
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 import { AUTOCOMPLETE_WIDTH } from './autocomplete/AutoComplete.js';
-import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
+import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
+import { enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 
 export {
     loadPowerUserSettings,
@@ -3890,7 +3891,7 @@ $(document).ready(() => {
             SlashCommandArgument.fromProps({
                 description: 'optional tag name',
                 typeList: [ARGUMENT_TYPE.STRING],
-                enumProvider: () => tags.filter(tag => Object.values(tag_map).some(x => x.includes(tag.id))).map(tag => new SlashCommandEnumValue(tag.name)),
+                enumProvider: () => tags.filter(tag => Object.values(tag_map).some(x => x.includes(tag.id))).map(tag => new SlashCommandEnumValue(tag.name, null, enumTypes.enum, enumIcons.tag)),
             }),
         ],
         helpString: 'Start a new chat with a random character. If an argument is provided, only considers characters that have the specified tag.',

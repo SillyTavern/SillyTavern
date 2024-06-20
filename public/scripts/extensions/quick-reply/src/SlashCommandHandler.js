@@ -1,6 +1,7 @@
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
-import { SlashCommandEnumValue } from '../../../slash-commands/SlashCommandEnumValue.js';
+import { enumIcons } from '../../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandEnumValue, enumTypes } from '../../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { isTrueBoolean } from '../../../utils.js';
 // eslint-disable-next-line no-unused-vars
@@ -22,6 +23,28 @@ export class SlashCommandHandler {
 
 
     init() {
+        function getExecutionIcons(/**@type {QuickReply} */ qr) {
+            let icons = '';
+            if (qr.preventAutoExecute) icons += '🚫';
+            if (qr.isHidden) icons += '👁️';
+            if (qr.executeOnStartup) icons += '🚀';
+            if (qr.executeOnUser) icons += enumIcons.user;
+            if (qr.executeOnAi) icons += enumIcons.assistant;
+            if (qr.executeOnChatChange) icons += '💬';
+            if (qr.executeOnGroupMemberDraft) icons += enumIcons.group;
+            return icons;
+        }
+
+        const localEnumProviders = {
+            qrSets: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, enumTypes.enum, 'S')),
+
+            qrEntries: (executor) => QuickReplySet.get(String(executor.namedArgumentList.find(x => x.name == 'set')?.value))?.qrList.map(qr => {
+                const icons = getExecutionIcons(qr);
+                const message = `${qr.automationId ? `[${qr.automationId}]` : ''}${icons ? `[auto: ${icons}]` : ''} ${qr.title || qr.message}`.trim();
+                return new SlashCommandEnumValue(qr.label, message, enumTypes.enum, 'QR');
+            }) ?? [],
+        }
+
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr',
             callback: (_, value) => this.executeQuickReplyByIndex(Number(value)),
             unnamedArgumentList: [
@@ -53,7 +76,7 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
             ],
             helpString: 'Toggle global QR set',
@@ -73,7 +96,7 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
             ],
             helpString: 'Activate global QR set',
@@ -88,7 +111,7 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
             ],
             helpString: 'Deactivate global QR set',
@@ -108,7 +131,7 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
             ],
             helpString: 'Toggle chat QR set',
@@ -121,7 +144,7 @@ export class SlashCommandHandler {
             },
             namedArgumentList: [
                 new SlashCommandNamedArgument(
-                    'visible', 'whether the QR set should be visible', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true', ['true', 'false'],
+                    'visible', 'whether the QR set should be visible', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true',
                 ),
             ],
             unnamedArgumentList: [
@@ -129,7 +152,7 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
             ],
             helpString: 'Activate chat QR set',
@@ -144,7 +167,7 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
             ],
             helpString: 'Deactivate chat QR set',
@@ -171,7 +194,7 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
             ],
             helpString: 'Gets a list of the names of all quick replies in this quick reply set.',
@@ -250,13 +273,13 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
                 SlashCommandNamedArgument.fromProps({
                     name: 'label',
                     description: 'Quick Reply label',
                     typeList: [ARGUMENT_TYPE.STRING],
-                    enumProvider: (executor) => QuickReplySet.get(String(executor.namedArgumentList.find(x => x.name == 'set')?.value))?.qrList.map(x => new SlashCommandEnumValue(x.label, null, 'qr-entry')),
+                    enumProvider: localEnumProviders.qrEntries,
                 }),
             ],
             helpString: 'Deletes a Quick Reply from the specified set. If no label is provided, the entire set is deleted.',
@@ -272,13 +295,13 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
                 SlashCommandNamedArgument.fromProps({
                     name: 'label',
                     description: 'Quick Reply label',
                     typeList: [ARGUMENT_TYPE.STRING],
-                    enumProvider: (executor) => QuickReplySet.get(String(executor.namedArgumentList.find(x => x.name == 'set')?.value))?.qrList.map(x => new SlashCommandEnumValue(x.label, null, 'qr-entry')),
+                    enumProvider: localEnumProviders.qrEntries,
                 }),
                 new SlashCommandNamedArgument(
                     'chain', 'boolean', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
@@ -289,7 +312,7 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
             ],
             helpString: `
@@ -317,13 +340,13 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
                 SlashCommandNamedArgument.fromProps({
                     name: 'label',
                     description: 'Quick Reply label',
                     typeList: [ARGUMENT_TYPE.STRING],
-                    enumProvider: (executor) => QuickReplySet.get(String(executor.namedArgumentList.find(x => x.name == 'set')?.value))?.qrList.map(x => new SlashCommandEnumValue(x.label, null, 'qr-entry')),
+                    enumProvider: localEnumProviders.qrEntries,
                 }),
             ],
             unnamedArgumentList: [
@@ -331,7 +354,7 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
             ],
             helpString: `
@@ -359,14 +382,14 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
             ],
             unnamedArgumentList: [
                 SlashCommandArgument.fromProps({
                     description: 'Quick Reply label',
                     typeList: [ARGUMENT_TYPE.STRING],
-                    enumProvider: (executor) => QuickReplySet.get(String(executor.namedArgumentList.find(x => x.name == 'set')?.value))?.qrList.map(x => new SlashCommandEnumValue(x.label, null, 'qr-entry')),
+                    enumProvider: localEnumProviders.qrEntries,
                 }),
             ],
             helpString: `
@@ -401,7 +424,7 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
             ],
             helpString: `
@@ -431,7 +454,7 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
             ],
             helpString: `
@@ -455,7 +478,7 @@ export class SlashCommandHandler {
                     description: 'QR set name',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
-                    enumProvider: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, 'qr-set', 'QR')),
+                    enumProvider: localEnumProviders.qrSets,
                 }),
             ],
             helpString: `

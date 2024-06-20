@@ -328,6 +328,7 @@ function listVariablesCallback() {
  * @param {(string|SlashCommandClosure)[]} value
  */
 async function whileCallback(args, value) {
+    if (args.guard instanceof SlashCommandClosure) throw new Error('argument \'guard\' cannot be a closure for command /while');
     const isGuardOff = isFalseBoolean(args.guard);
     const iterations = isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS;
     /**@type {string|SlashCommandClosure} */
@@ -1199,12 +1200,22 @@ export function registerVariableCommands() {
         callback: ifCallback,
         returns: 'result of the executed command ("then" or "else")',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'left', 'left operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
-            ),
-            new SlashCommandNamedArgument(
-                'right', 'right operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'left',
+                description: 'left operand',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'right',
+                description: 'right operand',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
             new SlashCommandNamedArgument(
                 'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, [
                     new SlashCommandEnumValue('gt', 'a > b'),
@@ -1214,8 +1225,8 @@ export function registerVariableCommands() {
                     new SlashCommandEnumValue('eq', 'a == b'),
                     new SlashCommandEnumValue('neq', 'a !== b'),
                     new SlashCommandEnumValue('not', '!a'),
-                new SlashCommandEnumValue('in', 'a includes b'),
-                new SlashCommandEnumValue('nin', 'a not includes b'),
+                    new SlashCommandEnumValue('in', 'a includes b'),
+                    new SlashCommandEnumValue('nin', 'a not includes b'),
             ],
             ),
             new SlashCommandNamedArgument(
@@ -1267,12 +1278,22 @@ export function registerVariableCommands() {
         callback: whileCallback,
         returns: 'result of the last executed command',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'left', 'left operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
-            ),
-            new SlashCommandNamedArgument(
-                'right', 'right operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'left',
+                description: 'left operand',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'right',
+                description: 'right operand',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
             new SlashCommandNamedArgument(
                 'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, [
                     new SlashCommandEnumValue('gt', 'a > b'),
@@ -1282,12 +1303,12 @@ export function registerVariableCommands() {
                     new SlashCommandEnumValue('eq', 'a == b'),
                     new SlashCommandEnumValue('neq', 'a !== b'),
                     new SlashCommandEnumValue('not', '!a'),
-                new SlashCommandEnumValue('in', 'a includes b'),
-                new SlashCommandEnumValue('nin', 'a not includes b'),
+                    new SlashCommandEnumValue('in', 'a includes b'),
+                    new SlashCommandEnumValue('nin', 'a not includes b'),
             ],
             ),
             new SlashCommandNamedArgument(
-                'guard', 'disable loop iteration limit', [ARGUMENT_TYPE.STRING], false, false, null, ['off'],
+                'guard', 'disable loop iteration limit', [ARGUMENT_TYPE.STRING], false, false, null, commonEnumProviders.boolean('onOff')(),
             ),
         ],
         unnamedArgumentList: [

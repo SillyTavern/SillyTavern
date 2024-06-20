@@ -13,8 +13,10 @@ import { getRegexedString, regex_placement } from './extensions/regex/engine.js'
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
-import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
-import { commonEnumProviders, getEnumIconByValueType } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
+import { commonEnumProviders, enumIcons, getEnumIcon } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
+import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 
 export {
     world_info,
@@ -703,14 +705,41 @@ function registerWorldInfoSlashCommands() {
     /** A collection of local enum providers for this context of world info */
     const localEnumProviders = {
         /** All possible fields that can be set in a WI entry */
-        wiEntryFields: () => Object.entries(newEntryDefinition).map(([key, value]) => new SlashCommandEnumValue(key, `[${value.type}] default: ${(typeof value.default === 'string' ? `'${value.default}'` : value.default)}`, 'property', getEnumIconByValueType(value.type))),
+        wiEntryFields: () => Object.entries(newEntryDefinition).map(([key, value]) =>
+            new SlashCommandEnumValue(key, `[${value.type}] default: ${(typeof value.default === 'string' ? `'${value.default}'` : value.default)}`,
+                enumTypes.enum, getEnumIcon(value.type))),
+
+        /** All existing UIDs based on the file argument as world name */
+        wiUids: (/** @type {SlashCommandExecutor} */ executor) => {
+            const file = executor.namedArgumentList.find(it => it.name == 'file')?.value;
+            if (file instanceof SlashCommandClosure) throw new Error('Argument \'file\' does not support closures');
+            // Try find world from cache
+            const world = worldInfoCache[file];
+            if (!world) return [];
+            return Object.entries(world.entries).map(([uid, data]) =>
+                new SlashCommandEnumValue(uid, `${data.comment ? `${data.comment}: ` : ''}${data.key.join(', ')}${data.keysecondary?.length ? ` [${Object.entries(world_info_logic).find(([_, value]) => value == data.selectiveLogic)[0]}] ${data.keysecondary.join(', ')}` : ''} [${getWiPositionString(data)}]`,
+                    enumTypes.enum, enumIcons.getWiStatusIcon(data)));
+        },
     };
+
+    function getWiPositionString(entry) {
+        switch (entry.position) {
+            case world_info_position.before: return '↑Char';
+            case world_info_position.after: return '↓Char';
+            case world_info_position.EMTop: return '↑EM';
+            case world_info_position.EMBottom: return '↓EM';
+            case world_info_position.ANTop: return '↑AT';
+            case world_info_position.ANBottom: return '↓AT';
+            case world_info_position.atDepth: return `@D${enumIcons.getRoleIcon(entry.role)}`;
+            default: return '<Unknown>';
+        }
+    }
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'world',
         callback: onWorldInfoChange,
         namedArgumentList: [
             new SlashCommandNamedArgument(
-                'state', 'set world state', [ARGUMENT_TYPE.STRING], false, false, null, ['off', 'toggle'],
+                'state', 'set world state', [ARGUMENT_TYPE.STRING], false, false, null, commonEnumProviders.boolean('onOffToggle')(),
             ),
             new SlashCommandNamedArgument(
                 'silent', 'suppress toast messages', [ARGUMENT_TYPE.BOOLEAN], false,
@@ -747,7 +776,7 @@ function registerWorldInfoSlashCommands() {
                 description: 'book name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: commonEnumProviders.loreBooks,
+                enumProvider: commonEnumProviders.worlds,
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'field',
@@ -786,7 +815,7 @@ function registerWorldInfoSlashCommands() {
                 description: 'book name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: commonEnumProviders.loreBooks,
+                enumProvider: commonEnumProviders.worlds,
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'field',
@@ -797,9 +826,12 @@ function registerWorldInfoSlashCommands() {
             }),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'UID', ARGUMENT_TYPE.STRING, true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'record UID',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.wiUids,
+            }),
         ],
         helpString: `
             <div>
@@ -825,7 +857,7 @@ function registerWorldInfoSlashCommands() {
                 description: 'book name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: commonEnumProviders.loreBooks,
+                enumProvider: commonEnumProviders.worlds,
             }),
             new SlashCommandNamedArgument(
                 'key', 'record key', [ARGUMENT_TYPE.STRING], false,
@@ -859,11 +891,15 @@ function registerWorldInfoSlashCommands() {
                 description: 'book name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: commonEnumProviders.loreBooks,
+                enumProvider: commonEnumProviders.worlds,
             }),
-            new SlashCommandNamedArgument(
-                'uid', 'record UID', [ARGUMENT_TYPE.STRING], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'uid',
+                description: 'record UID',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.wiUids,
+            }),
             SlashCommandNamedArgument.fromProps({
                 name: 'field',
                 description: 'field name (default: content)',
@@ -910,9 +946,9 @@ async function loadWorldInfoData(name) {
         return;
     }
 
-    if (worldInfoCache[name]) {
-        return worldInfoCache[name];
-    }
+    // if (worldInfoCache[name]) {
+    //     return worldInfoCache[name];
+    // }
 
     const response = await fetch('/api/worldinfo/get', {
         method: 'POST',
@@ -2558,7 +2594,7 @@ async function saveWorldInfo(name, data, immediately) {
         return;
     }
 
-    delete worldInfoCache[name];
+    // delete worldInfoCache[name];
 
     if (immediately) {
         return await _save(name, data);
@@ -3555,6 +3591,7 @@ function onWorldInfoChange(args, text) {
                             }
                             break;
                         }
+                        case 'on':
                         default: {
                             selected_world_info.push(name);
                             wiElement.prop('selected', true);

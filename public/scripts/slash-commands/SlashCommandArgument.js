@@ -1,5 +1,5 @@
 import { SlashCommandClosure } from './SlashCommandClosure.js';
-import { getEnumBooleanValues, getEnumIconByValueType } from './SlashCommandCommonEnumsProvider.js';
+import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 
@@ -73,7 +73,7 @@ export class SlashCommandArgument {
         this.forceEnum = forceEnum;
 
         // If no enums were set explictly and the type is one where we know possible enum values, we set them here
-        if (!this.enumList.length && types == ARGUMENT_TYPE.BOOLEAN) this.enumList = getEnumBooleanValues();
+        if (!this.enumList.length && types == ARGUMENT_TYPE.BOOLEAN) this.enumList = commonEnumProviders.boolean()();
     }
 }
 

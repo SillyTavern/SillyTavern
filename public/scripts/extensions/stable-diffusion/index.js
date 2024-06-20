@@ -31,7 +31,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { resolveVariable } from '../../variables.js';
 import { debounce_timeout } from '../../constants.js';
-import { commonEnumProviders, getEnumBooleanValues } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 export { MODULE_NAME };
 
@@ -3347,7 +3347,7 @@ jQuery(async () => {
                 name: 'negative',
                 description: 'negative prompt prefix',
                 typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
-                enumProvider: () => [...getEnumBooleanValues(), ...commonEnumProviders.variables('all')()],
+                enumProvider: commonEnumProviders.variables('all'),
             }),
         ],
         unnamedArgumentList: [

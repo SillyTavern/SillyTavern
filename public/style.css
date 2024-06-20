@@ -1487,6 +1487,14 @@ body[data-stscript-style] .autoComplete [data-option-type] {
     &[data-option-type="macro"] .type {
         color: var(--ac-color-variableLanguage);
     }
+
+    &[data-option-type="number"] .type {
+        color: var(--ac-color-number);
+    }
+
+    &[data-option-type="name"] .type {
+        color: var(--ac-color-type);
+    }
 }
 
 body[data-stscript-style] .hljs.language-stscript {

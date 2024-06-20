@@ -17,6 +17,7 @@ import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNa
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
 import { MacroAutoCompleteOption } from '../autocomplete/MacroAutoCompleteOption.js';
+import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
 
 /** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
 /** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
@@ -134,7 +135,7 @@ export class SlashCommandParser {
                         description: 'The state of the parser flag to set.',
                         typeList: [ARGUMENT_TYPE.BOOLEAN],
                         defaultValue: 'on',
-                        enumList: ['on', 'off'],
+                        enumList: commonEnumProviders.boolean('onOff')(),
                     }),
                 ],
                 splitUnnamedArgument: true,

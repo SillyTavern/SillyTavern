@@ -231,6 +231,17 @@ export async function getGroupChat(groupId, reload = false) {
 }
 
 /**
+ * Retrieves the members of a group
+ *
+ * @param {string} [groupId=selected_group] - The ID of the group to retrieve members from. Defaults to the currently selected group.
+ * @returns {import('../script.js').Character[]} An array of character objects representing the members of the group. If the group is not found, an empty array is returned.
+ */
+export function getGroupMembers(groupId = selected_group) {
+    const group = groups.find((x) => x.id === groupId);
+    return group?.members.map(member => characters.find(x => x.avatar === member)) ?? [];
+}
+
+/**
  * Finds the character ID for a group member.
  * @param {string} arg 1-based member index or character name
  * @returns {number} 0-based character ID
