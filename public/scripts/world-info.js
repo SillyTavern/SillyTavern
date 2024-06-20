@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, equalsIgnoreCaseAndAccents, getSanitizedFilename, checkOverwriteExistingData } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, getSanitizedFilename, checkOverwriteExistingData, getStringHash } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { isMobile } from './RossAscends-mods.js';
@@ -96,6 +96,8 @@ class WorldInfoBuffer {
      * @property {string[]} [key] The primary keys to scan for
      * @property {string[]} [keysecondary] The secondary keys to scan for
      * @property {number} [selectiveLogic] The logic to use for selective activation
+     * @property {number} [sticky] The sticky value of the entry
+     * @property {number} [cooldown] The cooldown of the entry
      */
     // End typedef area
 
@@ -103,6 +105,11 @@ class WorldInfoBuffer {
      * @type {object[]} Array of entries that need to be activated no matter what
      */
     static externalActivations = [];
+
+    /**
+     * @type {object[]} Array of entries that need to be suppressed no matter what
+     */
+    static externalSuppressions = [];
 
     /**
      * @type {string[]} Array of messages sorted by ascending depth
@@ -263,10 +270,20 @@ class WorldInfoBuffer {
     }
 
     /**
-     * Clears the force activations buffer.
+     * Check if the current entry is externally suppressed.
+     * @param {object} entry WI entry to check
+     * @returns {boolean} True if the entry is forcefully suppressed
      */
-    cleanExternalActivations() {
+    isExternallySuppressed(entry) {
+        return WorldInfoBuffer.externalSuppressions.some(x => JSON.stringify(x) === JSON.stringify(entry));
+    }
+
+    /**
+     * Clean-up the external effects for entries (activations and suppressions).
+     */
+    resetExternalEffects() {
         WorldInfoBuffer.externalActivations.splice(0, WorldInfoBuffer.externalActivations.length);
+        WorldInfoBuffer.externalSuppressions.splice(0, WorldInfoBuffer.externalSuppressions.length);
     }
 
     /**
@@ -354,7 +371,8 @@ export const wi_anchor_position = {
     after: 1,
 };
 
-const worldInfoCache = {};
+const worldInfoCache = new Map();
+const entryHashCache = new Map();
 
 /**
  * Gets the world info based on chat messages.
@@ -367,7 +385,7 @@ const worldInfoCache = {};
 async function getWorldInfoPrompt(chat, maxContext, isDryRun) {
     let worldInfoString = '', worldInfoBefore = '', worldInfoAfter = '';
 
-    const activatedWorldInfo = await checkWorldInfo(chat, maxContext);
+    const activatedWorldInfo = await checkWorldInfo(chat, maxContext, isDryRun);
     worldInfoBefore = activatedWorldInfo.worldInfoBefore;
     worldInfoAfter = activatedWorldInfo.worldInfoAfter;
     worldInfoString = worldInfoBefore + worldInfoAfter;
@@ -698,7 +716,8 @@ function registerWorldInfoSlashCommands() {
         return '';
     }
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'world',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'world',
         callback: onWorldInfoChange,
         namedArgumentList: [
             new SlashCommandNamedArgument(
@@ -720,13 +739,15 @@ function registerWorldInfoSlashCommands() {
         `,
         aliases: [],
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getchatbook',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'getchatbook',
         callback: getChatBookCallback,
         returns: 'lorebook name',
         helpString: 'Get a name of the chat-bound lorebook or create a new one if was unbound, and pass it down the pipe.',
         aliases: ['getchatlore', 'getchatwi'],
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'findentry',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'findentry',
         aliases: ['findlore', 'findwi'],
         returns: 'UID',
         callback: findBookEntryCallback,
@@ -757,7 +778,8 @@ function registerWorldInfoSlashCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getentryfield',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'getentryfield',
         aliases: ['getlorefield', 'getwifield'],
         callback: getEntryFieldCallback,
         returns: 'field value',
@@ -788,7 +810,8 @@ function registerWorldInfoSlashCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'createentry',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'createentry',
         callback: createEntryCallback,
         aliases: ['createlore', 'createwi'],
         returns: 'UID of the new record',
@@ -819,7 +842,8 @@ function registerWorldInfoSlashCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'setentryfield',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'setentryfield',
         callback: setEntryFieldCallback,
         aliases: ['setlorefield', 'setwifield'],
         namedArgumentList: [
@@ -871,8 +895,8 @@ async function loadWorldInfoData(name) {
         return;
     }
 
-    if (worldInfoCache[name]) {
-        return worldInfoCache[name];
+    if (worldInfoCache.has(name)) {
+        return worldInfoCache.get(name);
     }
 
     const response = await fetch('/api/worldinfo/get', {
@@ -884,7 +908,7 @@ async function loadWorldInfoData(name) {
 
     if (response.ok) {
         const data = await response.json();
-        worldInfoCache[name] = data;
+        worldInfoCache.set(name, data);
         return data;
     }
 
@@ -1316,6 +1340,8 @@ const originalDataKeyMap = {
     'vectorized': 'extensions.vectorized',
     'groupOverride': 'extensions.group_override',
     'groupWeight': 'extensions.group_weight',
+    'sticky': 'extensions.sticky',
+    'cooldown': 'extensions.cooldown',
 };
 
 /** Checks the state of the current search, and adds/removes the search sorting option accordingly */
@@ -1937,6 +1963,32 @@ function getWorldEntry(name, data, entry) {
     });
     groupWeightInput.val(entry.groupWeight ?? DEFAULT_WEIGHT).trigger('input');
 
+    // sticky
+    const sticky = template.find('input[name="sticky"]');
+    sticky.data('uid', entry.uid);
+    sticky.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = Number($(this).val());
+        data.entries[uid].sticky = !isNaN(value) ? value : null;
+
+        setOriginalDataValue(data, uid, 'extensions.sticky', data.entries[uid].sticky);
+        saveWorldInfo(name, data);
+    });
+    sticky.val(entry.sticky > 0 ? entry.sticky : '').trigger('input');
+
+    // cooldown
+    const cooldown = template.find('input[name="cooldown"]');
+    cooldown.data('uid', entry.uid);
+    cooldown.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = Number($(this).val());
+        data.entries[uid].cooldown = !isNaN(value) ? value : null;
+
+        setOriginalDataValue(data, uid, 'extensions.cooldown', data.entries[uid].cooldown);
+        saveWorldInfo(name, data);
+    });
+    cooldown.val(entry.cooldown > 0 ? entry.cooldown : '').trigger('input');
+
     // probability
     if (entry.probability === undefined) {
         entry.probability = null;
@@ -2478,6 +2530,8 @@ const newEntryTemplate = {
     useGroupScoring: null,
     automationId: '',
     role: 0,
+    sticky: null,
+    cooldown: null,
 };
 
 function createWorldInfoEntry(_name, data) {
@@ -2508,7 +2562,7 @@ async function saveWorldInfo(name, data, immediately) {
         return;
     }
 
-    delete worldInfoCache[name];
+    worldInfoCache.delete(name);
 
     if (immediately) {
         return await _save(name, data);
@@ -2778,10 +2832,11 @@ export async function getSortedEntries() {
  * Performs a scan on the chat and returns the world info activated.
  * @param {string[]} chat The chat messages to scan.
  * @param {number} maxContext The maximum context size of the generation.
+ * @param {boolean} isDryRun Whether to perform a dry run.
  * @typedef {{ worldInfoBefore: string, worldInfoAfter: string, EMEntries: any[], WIDepthEntries: any[], allActivatedEntries: Set<any> }} WIActivated
  * @returns {Promise<WIActivated>} The world info activated.
  */
-async function checkWorldInfo(chat, maxContext) {
+async function checkWorldInfo(chat, maxContext, isDryRun) {
     const context = getContext();
     const buffer = new WorldInfoBuffer(chat);
 
@@ -2814,6 +2869,8 @@ async function checkWorldInfo(chat, maxContext) {
 
     console.debug(`Context size: ${maxContext}; WI budget: ${budget} (max% = ${world_info_budget}%, cap = ${world_info_budget_cap})`);
     const sortedEntries = await getSortedEntries();
+
+    !isDryRun && checkTimedEvents(chat, sortedEntries);
 
     if (sortedEntries.length === 0) {
         return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], EMEntries: [], allActivatedEntries: new Set() };
@@ -2854,6 +2911,11 @@ async function checkWorldInfo(chat, maxContext) {
                         }
                     }
                 }
+            }
+
+            if (buffer.isExternallySuppressed(entry)) {
+                console.debug(`WI entry ${entry.uid} suppressed by external suppression`);
+                continue;
             }
 
             if (failedProbabilityChecks.has(entry)) {
@@ -3082,9 +3144,115 @@ async function checkWorldInfo(chat, maxContext) {
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
     }
 
-    buffer.cleanExternalActivations();
+    !isDryRun && setTimedEvents(chat, Array.from(allActivatedEntries));
+    buffer.resetExternalEffects();
 
     return { worldInfoBefore, worldInfoAfter, EMEntries, WIDepthEntries, allActivatedEntries };
+}
+
+/**
+ * Gets a hash for a WI entry.
+ * @param {object} entry WI entry
+ * @returns {number} String hash
+ */
+function getEntryHash(entry) {
+    if (entryHashCache.has(entry)) {
+        return entryHashCache.get(entry);
+    }
+
+    const hash = getStringHash(JSON.stringify(entry));
+    entryHashCache.set(entry, hash);
+    return hash;
+}
+
+/**
+ * Sets timed effects on chat messages.
+ * @param {any[]} chat Array of chat messages
+ * @param {WIScanEntry[]} entries Array of entries to check
+ */
+function setTimedEvents(chat, entries) {
+    if (!chat_metadata.timedWorldInfo) {
+        chat_metadata.timedWorldInfo = {
+            sticky: {},
+            cooldown: {},
+        };
+    }
+
+    for (const entry of entries) {
+        if (!entry.sticky && !entry.cooldown) {
+            continue;
+        }
+
+        const hash = getEntryHash(entry);
+
+        if (entry.sticky && !chat_metadata.timedWorldInfo.sticky[hash]) {
+            const targetRelease = chat.length + entry.sticky;
+            chat_metadata.timedWorldInfo.sticky[hash] = chat.length;
+            console.log(`Adding sticky entry ${hash}: target release @ message ID ${targetRelease}`);
+        }
+
+        if (entry.cooldown && !chat_metadata.timedWorldInfo.cooldown[hash]) {
+            const targetRelease = chat.length + entry.cooldown;
+            chat_metadata.timedWorldInfo.cooldown[hash] = chat.length;
+            console.log(`Adding cooldown entry ${hash}: target release @ message ID ${targetRelease}`);
+        }
+    }
+}
+
+/**
+ * Checks for timed effects on chat messages.
+ * @param {any[]} chat Array of chat messages
+ * @param {WIScanEntry[]} entries Array of entries to check
+ */
+function checkTimedEvents(chat, entries) {
+    if (!chat_metadata.timedWorldInfo) {
+        chat_metadata.timedWorldInfo = {
+            sticky: {},
+            cooldown: {},
+        };
+    }
+
+    /**
+     * Processes entries for a given type of timed event.
+     * @param {string} type Identifier for the type of timed event
+     * @param {any[]} buffer Buffer to store the entries
+     */
+    function processEntries(type, buffer) {
+        for (const [hash, value] of Object.entries(chat_metadata.timedWorldInfo[type])) {
+            if (chat.length <= Number(value)) {
+                console.log(`Removing ${type} entry ${hash} from timedWorldInfo: chat not advanced`);
+                delete chat_metadata.timedWorldInfo[type][hash];
+                continue;
+            }
+
+            const entry = entries.find(x => String(getEntryHash(x)) === String(hash));
+
+            // Ignore missing entries (they could be from another character's lorebook)
+            if (!entry) {
+                continue;
+            }
+
+            if (!entry[type]) {
+                console.log(`Removing ${type} entry ${hash} from timedWorldInfo: entry not ${type}`);
+                delete chat_metadata.timedWorldInfo[type][hash];
+                continue;
+            }
+
+            const targetRelease = Number(value) + Number(entry[type]);
+
+            if (chat.length > targetRelease) {
+                console.log(`Removing ${type} entry ${hash} from timedWorldInfo: ${type} interval passed`);
+                delete chat_metadata.timedWorldInfo[type][hash];
+                continue;
+            }
+
+            buffer.push(entry);
+            console.log(`Timed effect "${type}" applied to entry`, entry);
+        }
+    }
+
+    processEntries('sticky', WorldInfoBuffer.externalActivations);
+    processEntries('cooldown', WorldInfoBuffer.externalSuppressions);
 }
 
 /**
@@ -3243,6 +3411,8 @@ function convertAgnaiMemoryBook(inputObj) {
             useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
+            sticky: null,
+            cooldown: null,
         };
     });
 
@@ -3282,6 +3452,8 @@ function convertRisuLorebook(inputObj) {
             useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
+            sticky: null,
+            cooldown: null,
         };
     });
 
@@ -3326,6 +3498,8 @@ function convertNovelLorebook(inputObj) {
             useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
+            sticky: null,
+            cooldown: null,
         };
     });
 
@@ -3372,6 +3546,8 @@ function convertCharacterBook(characterBook) {
             automationId: entry.extensions?.automation_id ?? '',
             role: entry.extensions?.role ?? extension_prompt_roles.SYSTEM,
             vectorized: entry.extensions?.vectorized ?? false,
+            sticky: entry.extensions?.sticky ?? null,
+            cooldown: entry.extensions?.cooldown ?? null,
         };
     });
 
