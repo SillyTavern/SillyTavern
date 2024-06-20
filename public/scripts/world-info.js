@@ -107,9 +107,14 @@ class WorldInfoBuffer {
     static externalActivations = [];
 
     /**
-     * @type {object[]} Array of entries that need to be suppressed no matter what
+     * @type {object[]} Array of entries that need to be activated due to sticky
      */
-    static externalSuppressions = [];
+    static stickyActivations = [];
+
+    /**
+     * @type {object[]} Array of entries that need to be suppressed due to cooldown
+     */
+    static cooldownSuppressions = [];
 
     /**
      * @type {string[]} Array of messages sorted by ascending depth
@@ -270,12 +275,21 @@ class WorldInfoBuffer {
     }
 
     /**
-     * Check if the current entry is externally suppressed.
+     * Check if the current entry is sticky activated.
      * @param {object} entry WI entry to check
-     * @returns {boolean} True if the entry is forcefully suppressed
+     * @returns {boolean} True if the entry is sticky activated
      */
-    isExternallySuppressed(entry) {
-        return WorldInfoBuffer.externalSuppressions.some(x => JSON.stringify(x) === JSON.stringify(entry));
+    isStickyActivated(entry) {
+        return WorldInfoBuffer.stickyActivations.some(x => JSON.stringify(x) === JSON.stringify(entry));
+    }
+
+    /**
+     * Check if the current entry is on cooldown.
+     * @param {object} entry WI entry to check
+     * @returns {boolean} True if the entry is suppressed by cooldown
+     */
+    isOnCooldown(entry) {
+        return WorldInfoBuffer.cooldownSuppressions.some(x => JSON.stringify(x) === JSON.stringify(entry));
     }
 
     /**
@@ -283,7 +297,8 @@ class WorldInfoBuffer {
      */
     resetExternalEffects() {
         WorldInfoBuffer.externalActivations.splice(0, WorldInfoBuffer.externalActivations.length);
-        WorldInfoBuffer.externalSuppressions.splice(0, WorldInfoBuffer.externalSuppressions.length);
+        WorldInfoBuffer.stickyActivations.splice(0, WorldInfoBuffer.stickyActivations.length);
+        WorldInfoBuffer.cooldownSuppressions.splice(0, WorldInfoBuffer.cooldownSuppressions.length);
     }
 
     /**
@@ -2913,7 +2928,10 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 }
             }
 
-            if (buffer.isExternallySuppressed(entry)) {
+            const isSticky = buffer.isStickyActivated(entry);
+            const isCooldown = buffer.isOnCooldown(entry);
+
+            if (isCooldown && !isSticky) {
                 console.debug(`WI entry ${entry.uid} suppressed by external suppression`);
                 continue;
             }
@@ -2926,7 +2944,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 continue;
             }
 
-            if (entry.constant || buffer.isExternallyActivated(entry)) {
+            if (entry.constant || buffer.isExternallyActivated(entry) || isSticky) {
                 activatedNow.add(entry);
                 continue;
             }
@@ -3251,8 +3269,8 @@ function checkTimedEvents(chat, entries) {
         }
     }
 
-    processEntries('sticky', WorldInfoBuffer.externalActivations);
-    processEntries('cooldown', WorldInfoBuffer.externalSuppressions);
+    processEntries('sticky', WorldInfoBuffer.stickyActivations);
+    processEntries('cooldown', WorldInfoBuffer.cooldownSuppressions);
 }
 
 /**
