@@ -185,7 +185,7 @@ class WebScraper {
         const files = [];
 
         for (const link of links) {
-            const result = await fetch('/api/serpapi/visit', {
+            const result = await fetch('/api/search/visit', {
                 method: 'POST',
                 headers: getRequestHeaders(),
                 body: JSON.stringify({ url: link }),
@@ -547,7 +547,7 @@ class YouTubeScraper {
     async getScript(videoUrl, lang) {
         const id = this.parseId(String(videoUrl).trim());
 
-        const result = await fetch('/api/serpapi/transcript', {
+        const result = await fetch('/api/search/transcript', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ id, lang }),

@@ -227,7 +227,7 @@ import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, de
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
-import { POPUP_TYPE, callGenericPopup } from './scripts/popup.js';
+import { POPUP_TYPE, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { ScraperManager } from './scripts/scrapers.js';
 import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
@@ -235,6 +235,9 @@ import { SlashCommand } from './scripts/slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './scripts/slash-commands/SlashCommandArgument.js';
 import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowser.js';
 import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
+import { DragAndDropHandler } from './scripts/dragdrop.js';
+import { INTERACTABLE_CONTROL_CLASS, initKeyboard } from './scripts/keyboard.js';
+import { initDynamicStyles } from './scripts/dynamic-styles.js';
 import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/SlashCommandEnumValue.js';
 import { enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
 
@@ -264,6 +267,19 @@ await new Promise((resolve) => {
 showLoader();
 // Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
 document.getElementById('preloader').remove();
+
+// Configure toast library:
+toastr.options.escapeHtml = true; // Prevent raw HTML inserts
+toastr.options.timeOut = 4000; // How long the toast will display without user interaction
+toastr.options.extendedTimeOut = 10000; // How long the toast will display after a user hovers over it
+toastr.options.progressBar = true; // Visually indicate how long before a toast expires.
+toastr.options.closeButton = true; // enable a close button
+toastr.options.positionClass = 'toast-top-center'; // Where to position the toast container
+toastr.options.onHidden = () => {
+    // If we have any dialog still open, the last "hidden" toastr will remove the toastr-container. We need to keep it alive inside the dialog though
+    // so the toasts still show up inside there.
+    fixToastrForDialogs();
+};
 
 // Allow target="_blank" in links
 DOMPurify.addHook('afterSanitizeAttributes', function (node) {
@@ -511,11 +527,15 @@ let is_delete_mode = false;
 let fav_ch_checked = false;
 let scrollLock = false;
 export let abortStatusCheck = new AbortController();
+let charDragDropHandler = null;
 
-/** @type {number} The debounce timeout used for chat/settings save. debounce_timeout.long: 1.000 ms */
-const durationSaveEdit = debounce_timeout.relaxed;
-export const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
-export const saveCharacterDebounced = debounce(() => $('#create_button').trigger('click'), durationSaveEdit);
+/** @type {debounce_timeout} The debounce timeout used for chat/settings save. debounce_timeout.long: 1.000 ms */
+export const DEFAULT_SAVE_EDIT_TIMEOUT = debounce_timeout.relaxed;
+/** @type {debounce_timeout} The debounce timeout used for printing. debounce_timeout.quick: 100 ms */
+export const DEFAULT_PRINT_TIMEOUT = debounce_timeout.quick;
+
+export const saveSettingsDebounced = debounce(() => saveSettings(), DEFAULT_SAVE_EDIT_TIMEOUT);
+export const saveCharacterDebounced = debounce(() => $('#create_button').trigger('click'), DEFAULT_SAVE_EDIT_TIMEOUT);
 
 /**
  * Prints the character list in a debounced fashion without blocking, with a delay of 100 milliseconds.
@@ -523,7 +543,7 @@ export const saveCharacterDebounced = debounce(() => $('#create_button').trigger
  *
  * The printing will also always reprint all filter options of the global list, to keep them up to date.
  */
-export const printCharactersDebounced = debounce(() => { printCharacters(false); }, debounce_timeout.quick);
+export const printCharactersDebounced = debounce(() => { printCharacters(false); }, DEFAULT_PRINT_TIMEOUT);
 
 /**
  * @enum {string} System message types
@@ -887,6 +907,8 @@ async function firstLoadInit() {
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     await getSettings();
+    initKeyboard();
+    initDynamicStyles();
     initTags();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
@@ -927,6 +949,8 @@ export function displayOnlineStatus() {
  */
 export function setAnimationDuration(ms = null) {
     animation_duration = ms ?? ANIMATION_DURATION_DEFAULT;
+    // Set CSS variable to document
+    document.documentElement.style.setProperty('--animation-duration', `${animation_duration}ms`);
 }
 
 export function setActiveCharacter(entityOrKey) {
@@ -3421,7 +3445,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
      * @returns {string[]} Examples array with block heading
      */
     function parseMesExamples(examplesStr) {
-        if (examplesStr.length === 0) {
+        if (examplesStr.length === 0 || examplesStr === '<START>') {
             return [];
         }
 
@@ -5488,7 +5512,7 @@ export async function renameCharacter(name = null, { silent = false, renameChats
     }
 
     const oldAvatar = characters[this_chid].avatar;
-    const newValue = name || await callPopup('<h3>New name:</h3>', 'input', characters[this_chid].name);
+    const newValue = name || await callGenericPopup('<h3>New name:</h3>', POPUP_TYPE.INPUT, characters[this_chid].name);
 
     if (!newValue) {
         toastr.warning('No character name provided.', 'Rename Character');
@@ -5736,7 +5760,7 @@ async function read_avatar_load(input) {
         }
 
         await createOrEditCharacter();
-        await delay(durationSaveEdit);
+        await delay(DEFAULT_SAVE_EDIT_TIMEOUT);
 
         const formData = new FormData($('#form_create').get(0));
         await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
@@ -5780,7 +5804,7 @@ export function getThumbnailUrl(type, file) {
     return `/thumbnail?type=${type}&file=${encodeURIComponent(file)}`;
 }
 
-export function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, selectable = false, highlightFavs = true } = {}) {
+export function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, interactable = false, highlightFavs = true } = {}) {
     if (empty) {
         block.empty();
     }
@@ -5815,8 +5839,8 @@ export function buildAvatarList(block, entities, { templateId = 'inline_avatar_t
             avatarTemplate.attr('title', `[Group] ${entity.item.name}`);
         }
 
-        if (selectable) {
-            avatarTemplate.addClass('selectable');
+        if (interactable) {
+            avatarTemplate.addClass(INTERACTABLE_CONTROL_CLASS);
             avatarTemplate.toggleClass('character_select', entity.type === 'character');
             avatarTemplate.toggleClass('group_select', entity.type === 'group');
         }
@@ -6853,7 +6877,7 @@ export function select_selected_character(chid) {
 
     $('#add_avatar_button').val('');
 
-    $('#character_popup_text_h3').text(characters[chid].name);
+    $('#character_popup-button-h3').text(characters[chid].name);
     $('#character_name_pole').val(characters[chid].name);
     $('#description_textarea').val(characters[chid].description);
     $('#character_world').val(characters[chid].data?.extensions?.world || '');
@@ -6930,7 +6954,7 @@ function select_rm_create() {
     //create text poles
     $('#rm_button_back').css('display', '');
     $('#character_import_button').css('display', '');
-    $('#character_popup_text_h3').text('Create character');
+    $('#character_popup-button-h3').text('Create character');
     $('#character_name_pole').val(create_save.name);
     $('#description_textarea').val(create_save.description);
     $('#character_world').val(create_save.world);
@@ -7076,10 +7100,10 @@ function onScenarioOverrideRemoveClick() {
  * @param {string} type
  * @param {string} inputValue - Value to set the input to.
  * @param {PopupOptions} options - Options for the popup.
- * @typedef {{okButton?: string, rows?: number, wide?: boolean, large?: boolean, allowHorizontalScrolling?: boolean, allowVerticalScrolling?: boolean, cropAspect?: number }} PopupOptions - Options for the popup.
+ * @typedef {{okButton?: string, rows?: number, wide?: boolean, wider?: boolean, large?: boolean, allowHorizontalScrolling?: boolean, allowVerticalScrolling?: boolean, cropAspect?: number }} PopupOptions - Options for the popup.
  * @returns
  */
-export function callPopup(text, type, inputValue = '', { okButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling, cropAspect } = {}) {
+export function callPopup(text, type, inputValue = '', { okButton, rows, wide, wider, large, allowHorizontalScrolling, allowVerticalScrolling, cropAspect } = {}) {
     function getOkButtonText() {
         if (['avatarToCrop'].includes(popup_type)) {
             return okButton ?? 'Accept';
@@ -7109,6 +7133,7 @@ export function callPopup(text, type, inputValue = '', { okButton, rows, wide, l
     const $shadowPopup = $('#shadow_popup');
 
     $dialoguePopup.toggleClass('wide_dialogue_popup', !!wide)
+        .toggleClass('wider_dialogue_popup', !!wider)
         .toggleClass('large_dialogue_popup', !!large)
         .toggleClass('horizontal_scrolling_dialogue_popup', !!allowHorizontalScrolling)
         .toggleClass('vertical_scrolling_dialogue_popup', !!allowVerticalScrolling);
@@ -7221,7 +7246,7 @@ export async function saveMetadata() {
 
 export async function saveChatConditional() {
     try {
-        await waitUntilCondition(() => !isChatSaving, durationSaveEdit, 100);
+        await waitUntilCondition(() => !isChatSaving, DEFAULT_SAVE_EDIT_TIMEOUT, 100);
     } catch {
         console.warn('Timeout waiting for chat to save');
         return;
@@ -7524,10 +7549,15 @@ function addAlternateGreeting(template, greeting, index, getArray) {
     template.find('.alternate_greetings_list').append(greetingBlock);
 }
 
+/**
+ * Creates or edits a character based on the form data.
+ * @param {Event} [e] Event that triggered the function call.
+ */
 async function createOrEditCharacter(e) {
     $('#rm_info_avatar').html('');
     const formData = new FormData($('#form_create').get(0));
     formData.set('fav', String(fav_ch_checked));
+    const isNewChat = e instanceof CustomEvent && e.type === 'newChat';
 
     const rawFile = formData.get('avatar');
     if (rawFile instanceof File) {
@@ -7598,7 +7628,7 @@ async function createOrEditCharacter(e) {
                         field.callback && field.callback(fieldValue);
                     });
 
-                    $('#character_popup_text_h3').text('Create character');
+                    $('#character_popup-button-h3').text('Create character');
 
                     create_save.avatar = '';
 
@@ -7670,6 +7700,7 @@ async function createOrEditCharacter(e) {
                 // Recreate the chat if it hasn't been used at least once (i.e. with continue).
                 const message = getFirstMessage();
                 const shouldRegenerateMessage =
+                    !isNewChat &&
                     message.mes &&
                     !selected_group &&
                     !chat_metadata['tainted'] &&
@@ -8958,7 +8989,7 @@ jQuery(async function () {
     $('#send_textarea').on('focusin focus click', () => {
         S_TAPreviouslyFocused = true;
     });
-    $('#options_button, #send_but, #option_regenerate, #option_continue, #mes_continue').on('click', () => {
+    $('#send_but, #option_regenerate, #option_continue, #mes_continue').on('click', () => {
         if (S_TAPreviouslyFocused) {
             $('#send_textarea').focus();
         }
@@ -9205,7 +9236,7 @@ jQuery(async function () {
                 characters[this_chid].chat = `${name2} - ${humanizedDateTime()}`;
                 $('#selected_chat_pole').val(characters[this_chid].chat);
                 await getChat();
-                await createOrEditCharacter();
+                await createOrEditCharacter(new CustomEvent('newChat'));
                 if (isDelChatCheckbox) await delChat(chat_file_for_del + '.jsonl');
             }
         }
@@ -9467,7 +9498,7 @@ jQuery(async function () {
     }
 
     function isMouseOverButtonOrMenu() {
-        return menu.is(':hover') || button.is(':hover');
+        return menu.is(':hover, :focus-within') || button.is(':hover, :focus');
     }
 
     button.on('click', function () {
@@ -10367,7 +10398,7 @@ jQuery(async function () {
             '#character_cross',
             '#avatar-and-name-block',
             '#shadow_popup',
-            '.shadow_popup',
+            '.popup',
             '#world_popup',
             '.ui-widget',
             '.text_pole',
@@ -10672,7 +10703,7 @@ jQuery(async function () {
         const html = await renderTemplateAsync('importCharacters');
 
         /** @type {string?} */
-        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { wider: true, okButton: $('#shadow_popup_template').attr('popup_text_import'), rows: 4 });
+        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { wider: true, okButton: $('#popup_template').attr('popup-button-import'), rows: 4 });
 
         if (!input) {
             console.debug('Custom content import cancelled');
@@ -10727,32 +10758,12 @@ jQuery(async function () {
         }
     });
 
-    const $dropzone = $(document.body);
-
-    $dropzone.on('dragover', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        $dropzone.addClass('dragover');
-    });
-
-    $dropzone.on('dragleave', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        $dropzone.removeClass('dragover');
-    });
-
-    $dropzone.on('drop', async (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        $dropzone.removeClass('dragover');
-
-        const files = Array.from(event.originalEvent.dataTransfer.files);
+    charDragDropHandler = new DragAndDropHandler('body', async (files, event) => {
         if (!files.length) {
             await importFromURL(event.originalEvent.dataTransfer.items, files);
         }
         await processDroppedFiles(files);
-    });
-
+    }, { noAnimation: true });
 
     $('#charListGridToggle').on('click', async () => {
         doCharListDisplaySwitch();

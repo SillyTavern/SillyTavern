@@ -2263,22 +2263,23 @@ async function importTheme(file) {
     }
 
     themes.push(parsed);
-    await applyTheme(parsed.name);
-    await saveTheme(parsed.name);
+    await saveTheme(parsed.name, getNewTheme(parsed));
     const option = document.createElement('option');
-    option.selected = true;
+    option.selected = false;
     option.value = parsed.name;
     option.innerText = parsed.name;
     $('#themes').append(option);
     saveSettingsDebounced();
+    toastr.success(parsed.name, 'Theme imported');
 }
 
 /**
  * Saves the current theme to the server.
  * @param {string|undefined} name Theme name. If undefined, a popup will be shown to enter a name.
+ * @param {object|undefined} theme Theme object. If undefined, the current theme will be saved.
  * @returns {Promise<object>} A promise that resolves when the theme is saved.
  */
-async function saveTheme(name = undefined) {
+async function saveTheme(name = undefined, theme = undefined) {
     if (typeof name !== 'string') {
         name = await callPopup('Enter a theme preset name:', 'input', power_user.theme);
 
@@ -2287,7 +2288,46 @@ async function saveTheme(name = undefined) {
         }
     }
 
-    const theme = {
+    if (typeof theme !== 'object') {
+        theme = getThemeObject(name);
+    }
+
+    const response = await fetch('/api/themes/save', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(theme),
+    });
+
+    if (response.ok) {
+        const themeIndex = themes.findIndex(x => x.name == name);
+
+        if (themeIndex == -1) {
+            themes.push(theme);
+            const option = document.createElement('option');
+            option.selected = true;
+            option.value = name;
+            option.innerText = name;
+            $('#themes').append(option);
+        }
+        else {
+            themes[themeIndex] = theme;
+            $(`#themes option[value="${name}"]`).attr('selected', true);
+        }
+
+        power_user.theme = name;
+        saveSettingsDebounced();
+    }
+
+    return theme;
+}
+
+/**
+ * Gets a snapshot of the current theme settings.
+ * @param {string} name Name of the theme
+ * @returns {object} Theme object
+ */
+function getThemeObject(name) {
+    return {
         name,
         blur_strength: power_user.blur_strength,
         main_text_color: power_user.main_text_color,
@@ -2325,33 +2365,20 @@ async function saveTheme(name = undefined) {
         reduced_motion: power_user.reduced_motion,
         compact_input_area: power_user.compact_input_area,
     };
+}
 
-    const response = await fetch('/api/themes/save', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify(theme),
-    });
-
-    if (response.ok) {
-        const themeIndex = themes.findIndex(x => x.name == name);
-
-        if (themeIndex == -1) {
-            themes.push(theme);
-            const option = document.createElement('option');
-            option.selected = true;
-            option.value = name;
-            option.innerText = name;
-            $('#themes').append(option);
+/**
+ * Applies imported theme properties to the theme object.
+ * @param {object} parsed Parsed object to get the theme from.
+ * @returns {object} Theme assigned to the parsed object.
+ */
+function getNewTheme(parsed) {
+    const theme = getThemeObject(parsed.name);
+    for (const key in parsed) {
+        if (Object.hasOwn(theme, key)) {
+            theme[key] = parsed[key];
         }
-        else {
-            themes[themeIndex] = theme;
-            $(`#themes option[value="${name}"]`).attr('selected', true);
-        }
-
-        power_user.theme = name;
-        saveSettingsDebounced();
     }
-
     return theme;
 }
 
@@ -2652,7 +2679,7 @@ async function doDelMode(_, text) {
 
         let oldestMesToDel = $('#chat').find(`.mes[mesid=${oldestMesIDToDel}]`);
 
-        if (!oldestMesIDToDel) {
+        if (!oldestMesIDToDel && lastMesID > 0) {
             oldestMesToDel = await loadUntilMesId(oldestMesIDToDel);
 
             if (!oldestMesToDel || !oldestMesToDel.length) {

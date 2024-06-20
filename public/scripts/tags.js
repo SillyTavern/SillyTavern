@@ -4,12 +4,12 @@ import {
     this_chid,
     callPopup,
     menu_type,
-    getCharacters,
     entitiesFilter,
     printCharactersDebounced,
     buildAvatarList,
     eventSource,
     event_types,
+    DEFAULT_PRINT_TIMEOUT,
     substituteParams,
     printCharacters,
 } from '../script.js';
@@ -17,11 +17,15 @@ import {
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groups, select_group_chats, selected_group } from './group-chats.js';
-import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight } from './utils.js';
+import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents, removeFromArray, getFreeName, debounce } from './utils.js';
 import { power_user } from './power-user.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
+import { isMobile } from './RossAscends-mods.js';
+import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
+import { debounce_timeout } from './constants.js';
+import { INTERACTABLE_CONTROL_CLASS } from './keyboard.js';
 import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
 import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -48,6 +52,8 @@ export {
     compareTagsForSort,
     removeTagFromMap,
 };
+
+/** @typedef {import('../script.js').Character} Character */
 
 const CHARACTER_FILTER_SELECTOR = '#rm_characters_block .rm_tag_filter';
 const GROUP_FILTER_SELECTOR = '#rm_group_chats_block .rm_tag_filter';
@@ -332,7 +338,7 @@ function filterByFolder(filterHelper) {
     if (!power_user.bogus_folders) {
         $('#bogus_folders').prop('checked', true).trigger('input');
         onViewTagsListClick();
-        flashHighlight($('#dialogue_popup .tag_as_folder, #dialogue_popup .tag_folder_indicator'));
+        flashHighlight($('#tag_view_list .tag_as_folder, #tag_view_list .tag_folder_indicator'));
         return;
     }
 
@@ -470,7 +476,6 @@ export function getTagKeyForEntityElement(element) {
     return undefined;
 }
 
-
 /**
  * Gets the key for char/group by searching based on the name or avatar. If none can be found, a toastr will be shown and null returned.
  * This function is mostly used in slash commands.
@@ -493,29 +498,34 @@ export function searchCharByName(charName, { suppressLogging = false } = {}) {
 }
 
 /**
- * Adds a tag to a given entity
- * @param {Tag} tag - The tag to add
- * @param {string|string[]} entityId - The entity to add this tag to. Has to be the entity key (e.g. `addTagToEntity`). (Also allows multiple entities to be passed in)
+ * Adds one or more tags to a given entity
+ *
+ * @param {Tag|Tag[]} tag - The tag or tags to add
+ * @param {string|string[]} entityId - The entity or entities to add this tag to. Has to be the entity key (e.g. `addTagToEntity`).
  * @param {object} [options={}] - Optional arguments
  * @param {JQuery<HTMLElement>|string?} [options.tagListSelector=null] - An optional selector if a specific list should be updated with the new tag too (for example because the add was triggered for that function)
  * @param {PrintTagListOptions} [options.tagListOptions] - Optional parameters for printing the tag list. Can be set to be consistent with the expected behavior of tags in the list that was defined before.
  * @returns {boolean} Whether at least one tag was added
  */
-export function addTagToEntity(tag, entityId, { tagListSelector = null, tagListOptions = {} } = {}) {
+export function addTagsToEntity(tag, entityId, { tagListSelector = null, tagListOptions = {} } = {}) {
+    const tags = Array.isArray(tag) ? tag : [tag];
+    const entityIds = Array.isArray(entityId) ? entityId : [entityId];
+
     let result = false;
+
     // Add tags to the map
-    if (Array.isArray(entityId)) {
-        entityId.forEach((id) => result = addTagToMap(tag.id, id) || result);
-    } else {
-        result = addTagToMap(tag.id, entityId);
-    }
+    entityIds.forEach((id) => {
+        tags.forEach((tag) => {
+            result = addTagToMap(tag.id, id) || result;
+        });
+    });
 
     // Save and redraw
     printCharactersDebounced();
     saveSettingsDebounced();
 
     // We should manually add the selected tag to the print tag function, so we cover places where the tag list did not automatically include it
-    tagListOptions.addTag = tag;
+    tagListOptions.addTag = tags;
 
     // add tag to the UI and internal map - we reprint so sorting and new markup is done correctly
     if (tagListSelector) printTagList(tagListSelector, tagListOptions);
@@ -613,10 +623,10 @@ function removeTagFromMap(tagId, characterId = null) {
 
 function findTag(request, resolve, listSelector) {
     const skipIds = [...($(listSelector).find('.tag').map((_, el) => $(el).attr('id')))];
-    const haystack = tags.filter(t => !skipIds.includes(t.id)).map(t => t.name).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-    const needle = request.term.toLowerCase();
-    const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
-    const result = haystack.filter(x => x.toLowerCase().includes(needle));
+    const haystack = tags.filter(t => !skipIds.includes(t.id)).sort(compareTagsForSort).map(t => t.name);
+    const needle = request.term;
+    const hasExactMatch = haystack.findIndex(x => equalsIgnoreCaseAndAccents(x, needle)) !== -1;
+    const result = haystack.filter(x => includesIgnoreCaseAndAccents(x, needle));
 
     if (request.term && !hasExactMatch) {
         result.unshift(request.term);
@@ -637,7 +647,7 @@ function findTag(request, resolve, listSelector) {
  */
 function selectTag(event, ui, listSelector, { tagListOptions = {} } = {}) {
     let tagName = ui.item.value;
-    let tag = tags.find(t => t.name === tagName);
+    let tag = getTag(tagName);
 
     // create new tag if it doesn't exist
     if (!tag) {
@@ -651,7 +661,7 @@ function selectTag(event, ui, listSelector, { tagListOptions = {} } = {}) {
     const characterData = event.target.closest('#bulk_tags_div')?.dataset.characters;
     const characterIds = characterData ? JSON.parse(characterData).characterIds : null;
 
-    addTagToEntity(tag, characterIds, { tagListSelector: listSelector, tagListOptions: tagListOptions });
+    addTagsToEntity(tag, characterIds, { tagListSelector: listSelector, tagListOptions: tagListOptions });
 
     // need to return false to keep the input clear
     return false;
@@ -660,70 +670,200 @@ function selectTag(event, ui, listSelector, { tagListOptions = {} } = {}) {
 /**
  * Get a list of existing tags matching a list of provided new tag names
  *
- * @param {string[]} new_tags - A list of strings representing tag names
- * @returns List of existing tags
+ * @param {string[]} newTags - A list of strings representing tag names
+ * @returns {Tag[]} List of existing tags
  */
-function getExistingTags(new_tags) {
-    let existing_tags = [];
-    for (let tag of new_tags) {
-        let foundTag = tags.find(t => t.name.toLowerCase() === tag.toLowerCase());
+function getExistingTags(newTags) {
+    let existingTags = [];
+    for (let tagName of newTags) {
+        let foundTag = getTag(tagName);
         if (foundTag) {
-            existing_tags.push(foundTag.name);
+            existingTags.push(foundTag);
         }
     }
-    return existing_tags;
+    return existingTags;
 }
 
-async function importTags(imported_char) {
-    let imported_tags = imported_char.tags.filter(t => t !== 'ROOT' && t !== 'TAVERN');
-    let existingTags = await getExistingTags(imported_tags);
-    //make this case insensitive
-    let newTags = imported_tags.filter(t => !existingTags.some(existingTag => existingTag.toLowerCase() === t.toLowerCase()));
-    let selected_tags = '';
-    const existingTagsString = existingTags.length ? (': ' + existingTags.join(', ')) : '';
-    if (newTags.length === 0) {
-        await callPopup(`<h3>Importing Tags For ${imported_char.name}</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p>`, 'text');
-    } else {
-        selected_tags = await callPopup(`<h3>Importing Tags For ${imported_char.name}</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p><p>The following ${newTags.length} new tags will be imported.</p>`, 'input', newTags.join(', '));
-    }
-    // @ts-ignore
-    selected_tags = existingTags.concat(selected_tags.split(','));
-    // @ts-ignore
-    selected_tags = selected_tags.map(t => t.trim()).filter(t => t !== '');
-    //Anti-troll measure
-    if (selected_tags.length > 15) {
-        selected_tags = selected_tags.slice(0, 15);
-    }
-    for (let tagName of selected_tags) {
-        let tag = tags.find(t => t.name === tagName);
+const tagImportSettings = {
+    ALWAYS_IMPORT_ALL: 1,
+    ONLY_IMPORT_EXISTING: 2,
+    IMPORT_NONE: 3,
+    ASK: 4,
+};
 
-        if (!tag) {
-            tag = createNewTag(tagName);
-        }
+let globalTagImportSetting = tagImportSettings.ASK; // Default setting
 
-        if (!tag_map[imported_char.avatar].includes(tag.id)) {
-            tag_map[imported_char.avatar].push(tag.id);
-            console.debug('added tag to map', tag, imported_char.name);
-        }
+const IMPORT_EXLCUDED_TAGS = ['ROOT', 'TAVERN'];
+const ANTI_TROLL_MAX_TAGS = 15;
+
+/**
+ * Imports tags for a given character
+ *
+ * @param {Character} character - The character
+ * @returns {Promise<boolean>} Boolean indicating whether any tag was imported
+ */
+async function importTags(character) {
+    // Gather the tags to import based on the selected setting
+    const tagNamesToImport = await handleTagImport(character);
+    if (!tagNamesToImport?.length) {
+        toastr.info('No tags imported', 'Importing Tags');
+        return;
     }
 
-    saveSettingsDebounced();
+    const tagsToImport = tagNamesToImport.map(tag => getTag(tag, { createNew: true }));
+    const added = addTagsToEntity(tagsToImport, character.avatar);
 
-    // Await the character list, which will automatically reprint it and all tag filters
-    await getCharacters();
+    toastr.success(`Imported tags:<br />${tagsToImport.map(x => x.name).join(', ')}`, 'Importing Tags', { escapeHtml: false });
 
-    // need to return false to keep the input clear
-    return false;
+    return added;
+}
+
+/**
+ * Handles the import of tags for a given character and returns the resulting list of tags to add
+ *
+ * @param {Character} character - The character
+ * @returns {Promise<string[]>} Array of strings representing the tags to import
+ */
+async function handleTagImport(character) {
+    /** @type {string[]} */
+    const importTags = character.tags.map(t => t.trim()).filter(t => t)
+        .filter(t => !IMPORT_EXLCUDED_TAGS.includes(t))
+        .slice(0, ANTI_TROLL_MAX_TAGS);
+    const existingTags = getExistingTags(importTags);
+    const newTags = importTags.filter(t => !existingTags.some(existingTag => existingTag.name.toLowerCase() === t.toLowerCase()))
+        .map(newTag);
+
+    switch (globalTagImportSetting) {
+        case tagImportSettings.ALWAYS_IMPORT_ALL:
+            return existingTags.concat(newTags).map(t => t.name);
+        case tagImportSettings.ONLY_IMPORT_EXISTING:
+            return existingTags.map(t => t.name);
+        case tagImportSettings.ASK:
+            return await showTagImportPopup(character, existingTags, newTags);
+        case tagImportSettings.IMPORT_NONE:
+        default:
+            return [];
+    }
+}
+
+/**
+ * Shows a popup to import tags for a given character and returns the resulting list of tags to add
+ *
+ * @param {Character} character - The character
+ * @param {Tag[]} existingTags - List of existing tags
+ * @param {Tag[]} newTags - List of new tags
+ * @returns {Promise<string[]>} Array of strings representing the tags to import
+ */
+async function showTagImportPopup(character, existingTags, newTags) {
+    /** @type {{[key: string]: import('./popup.js').CustomPopupButton}} */
+    const importButtons = {
+        EXISTING: { result: 2, text: 'Import Existing' },
+        ALL: { result: 3, text: 'Import All' },
+        NONE: { result: 4, text: 'Import None' },
+    };
+
+    const customButtonsCaptions = Object.values(importButtons).map(button => `&quot;${button.text}&quot;`);
+    const customButtonsString = customButtonsCaptions.slice(0, -1).join(', ') + ' or ' + customButtonsCaptions.slice(-1);
+
+    const popupContent = $(`
+        <h3>Import Tags For ${character.name}</h3>
+        <div class="import_avatar_placeholder"></div>
+        <div class="import_tags_content justifyLeft">
+            <small>
+                Click remove on any tag to remove it from this import.<br />
+                Select one of the import options to finish importing the tags.
+            </small>
+
+            <h4 class="m-t-1">Existing Tags</h4>
+            <div id="import_existing_tags_list" class="tags"></div>
+
+            <h4 class="m-t-1">New Tags</h4>
+            <div id="import_new_tags_list" class="tags"></div>
+
+            <small>
+                <label class="checkbox flex-container alignitemscenter flexNoGap m-t-3" for="import_remember_option">
+                    <input type="checkbox" id="import_remember_option" name="import_remember_option" />
+                    <span data-i18n="Remember my choice">
+                        Remember my choice
+                        <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Remember the chosen import option\nIf ${customButtonsString} is selected, this dialog will not show up anymore.\nTo change this, go to the settings and modify &quot;Tag Import Option&quot;.\n\nIf the &quot;Import&quot; option is chosen, the global setting will stay on &quot;Ask&quot;."
+                            title="Remember the chosen import option\nIf ${customButtonsString} is selected, this dialog will not show up anymore.\nTo change this, go to the settings and modify &quot;Tag Import Option&quot;.\n\nIf the &quot;Import&quot; option is chosen, the global setting will stay on &quot;Ask&quot;.">
+                        </div>
+                    </span>
+                </label>
+            </small>
+        </div>`);
+
+    // Print tags after popup is shown, so that events can be added
+    printTagList(popupContent.find('#import_existing_tags_list'), { tags: existingTags, tagOptions: { removable: true, removeAction: tag => removeFromArray(existingTags, tag) } });
+    printTagList(popupContent.find('#import_new_tags_list'), { tags: newTags, tagOptions: { removable: true, removeAction: tag => removeFromArray(newTags, tag) } });
+
+    const result = await callGenericPopup(popupContent, POPUP_TYPE.TEXT, null, { wider: true, okButton: 'Import', cancelButton: true, customButtons: Object.values(importButtons) });
+    if (!result) {
+        return [];
+    }
+
+    switch (result) {
+        case 1:
+        case true:
+        case importButtons.ALL.result: // Default 'Import' option where it imports all selected
+            return existingTags.concat(newTags).map(t => t.name);
+        case importButtons.EXISTING.result:
+            return existingTags.map(t => t.name);
+        case importButtons.NONE.result:
+        default:
+            return [];
+    }
+}
+
+/**
+ * Gets a tag from the tags array based on the provided tag name (insensitive soft matching)
+ * Optionally creates the tag if it doesn't exist
+ *
+ * @param {string} tagName - The name of the tag to search for
+ * @param {object} [options={}] - Optional parameters
+ * @param {boolean} [options.createNew=false] - Whether to create the tag if it doesn't exist
+ * @returns {Tag?} The tag object that matches the provided tag name, or undefined if no match is found
+ */
+function getTag(tagName, { createNew = false } = {}) {
+    let tag = tags.find(t => equalsIgnoreCaseAndAccents(t.name, tagName));
+    if (!tag && createNew) {
+        tag = createNewTag(tagName);
+    }
+    return tag;
 }
 
 /**
  * Creates a new tag with default properties and a randomly generated id
  *
+ * Does **not** trigger a save, so it's up to the caller to do that
+ *
  * @param {string} tagName - name of the tag
- * @returns {Tag}
+ * @returns {Tag} the newly created tag, or the existing tag if it already exists (with a logged warning)
  */
 function createNewTag(tagName) {
-    const tag = {
+    const existing = getTag(tagName);
+    if (existing) {
+        toastr.warning(`Cannot create new tag. A tag with the name already exists:<br />${existing.name}`, 'Creating Tag', { escapeHtml: false });
+        return existing;
+    }
+
+    const tag = newTag(tagName);
+    tags.push(tag);
+    console.debug('Created new tag', tag.name, 'with id', tag.id);
+    return tag;
+}
+
+/**
+ * Creates a new tag object with the given tag name and default properties
+ *
+ * Not to be confused with `createNewTag`, which actually creates the tag and adds it to the existing list of tags.
+ * Use this one to create temporary tag objects, for example for drawing.
+ *
+ * @param {string} tagName - The name of the tag
+ * @return {Tag} The newly created tag object
+ */
+function newTag(tagName) {
+    return {
         id: uuidv4(),
         name: tagName,
         folder_type: TAG_FOLDER_DEFAULT_TYPE,
@@ -733,16 +873,14 @@ function createNewTag(tagName) {
         color2: '',
         create_date: Date.now(),
     };
-    tags.push(tag);
-    console.debug('Created new tag', tag.name, 'with id', tag.id);
-    return tag;
 }
 
 /**
  * @typedef {object} TagOptions - Options for tag behavior. (Same object will be passed into "appendTagToList")
  * @property {boolean} [removable=false] - Whether tags can be removed.
- * @property {boolean} [selectable=false] - Whether tags can be selected.
+ * @property {boolean} [isFilter=false] - Whether tags can be selected as a filter.
  * @property {function} [action=undefined] - Action to perform on tag interaction.
+ * @property {(tag: Tag)=>boolean} [removeAction=undefined] - Action to perform on tag removal instead of the default remove action. If the action returns false, the tag will not be removed.
  * @property {boolean} [isGeneralList=false] - If true, indicates that this is the general list of tags.
  * @property {boolean} [skipExistsCheck=false] - If true, the tag gets added even if a tag with the same id already exists.
  */
@@ -750,7 +888,7 @@ function createNewTag(tagName) {
 /**
  * @typedef {object} PrintTagListOptions - Optional parameters for printing the tag list.
  * @property {Tag[]|function(): Tag[]} [tags=undefined] - Optional override of tags that should be printed. Those will not be sorted. If no supplied, tags for the relevant character are printed. Can also be a function that returns the tags.
- * @property {Tag} [addTag=undefined] - Optionally provide a tag that should be manually added to this print. Either to the overriden tag list or the found tags based on the entity/key. Will respect the tag exists check.
+ * @property {Tag|Tag[]} [addTag=undefined] - Optionally provide one or multiple tags that should be manually added to this print. Either to the overriden tag list or the found tags based on the entity/key. Will respect the tag exists check.
  * @property {object|number|string} [forEntityOrKey=undefined] - Optional override for the chosen entity, otherwise the currently selected is chosen. Can be an entity with id property (character, group, tag), or directly an id or tag key.
  * @property {boolean|string} [empty=true] - Whether the list should be initially empty. If a string string is provided, 'always' will always empty the list, otherwise it'll evaluate to a boolean.
  * @property {boolean} [sort=true] - Whether the tags should be sorted via the sort function, or kept as is.
@@ -774,8 +912,9 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
         $element.empty();
     }
 
-    if (addTag && (tagOptions.skipExistsCheck || !printableTags.some(x => x.id === addTag.id))) {
-        printableTags = [...printableTags, addTag];
+    if (addTag) {
+        const addTags = Array.isArray(addTag) ? addTag : [addTag];
+        printableTags = printableTags.concat(addTags.filter(tag => tagOptions.skipExistsCheck || !printableTags.some(t => t.id === tag.id)));
     }
 
     // one last sort, because we might have modified the tag list or manually retrieved it from a function
@@ -859,7 +998,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
  * @param {TagOptions} [options={}] - Options for tag behavior
  * @returns {void}
  */
-function appendTagToList(listElement, tag, { removable = false, selectable = false, action = undefined, isGeneralList = false, skipExistsCheck = false } = {}) {
+function appendTagToList(listElement, tag, { removable = false, isFilter = false, action = undefined, removeAction = undefined, isGeneralList = false, skipExistsCheck = false } = {}) {
     if (!listElement) {
         return;
     }
@@ -877,6 +1016,13 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
     tagElement.find('.tag_name').text(tag.name);
     const removeButton = tagElement.find('.tag_remove');
     removable ? removeButton.show() : removeButton.hide();
+    if (removable && removeAction) {
+        tagElement.attr('custom-remove-action', String(true));
+        removeButton.on('click', () => {
+            const result = removeAction(tag);
+            if (result !== false) tagElement.remove();
+        });
+    }
 
     if (tag.class) {
         tagElement.addClass(tag.class);
@@ -892,19 +1038,20 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
     // We could have multiple ways of actions passed in. The manual arguments have precendence in front of a specified tag action
     const clickableAction = action ?? tag.action;
 
-    // If this is a tag for a general list and its either selectable or actionable, lets mark its current state
-    if ((selectable || clickableAction) && isGeneralList) {
+    // If this is a tag for a general list and its either a filter or actionable, lets mark its current state
+    if ((isFilter || clickableAction) && isGeneralList) {
         toggleTagThreeState(tagElement, { stateOverride: tag.filter_state ?? DEFAULT_FILTER_STATE });
     }
 
-    if (selectable) {
+    if (isFilter) {
         tagElement.on('click', () => onTagFilterClick.bind(tagElement)(listElement));
+        tagElement.addClass(INTERACTABLE_CONTROL_CLASS);
     }
 
     if (clickableAction) {
         const filter = getFilterHelper($(listElement));
         tagElement.on('click', (e) => clickableAction.bind(tagElement)(filter, e));
-        tagElement.addClass('clickable-action');
+        tagElement.addClass('clickable-action').addClass(INTERACTABLE_CONTROL_CLASS);
     }
 
     $(listElement).append(tagElement);
@@ -913,6 +1060,7 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
 function onTagFilterClick(listElement) {
     const tagId = $(this).attr('id');
     const existingTag = tags.find((tag) => tag.id === tagId);
+    const parent = $(this).parents('.tags');
 
     let state = toggleTagThreeState($(this));
 
@@ -923,6 +1071,9 @@ function onTagFilterClick(listElement) {
 
     // We don't print anything manually, updating the filter will automatically trigger a redraw of all relevant stuff
     runTagFilters(listElement);
+
+    // Focus the tag again we were at, if possible. To improve keyboard navigation
+    setTimeout(() => parent.find(`.tag[id="${tagId}"]`).trigger('focus'), DEFAULT_PRINT_TIMEOUT + 1);
 }
 
 /**
@@ -1000,7 +1151,7 @@ function printTagFilters(type = tag_filter_types.character) {
 
     const characterTagIds = Object.values(tag_map).flat();
     const tagsToDisplay = tags.filter(x => characterTagIds.includes(x.id)).sort(compareTagsForSort);
-    printTagList($(FILTER_SELECTOR), { empty: false, tags: tagsToDisplay, tagOptions: { selectable: true, isGeneralList: true } });
+    printTagList($(FILTER_SELECTOR), { empty: false, tags: tagsToDisplay, tagOptions: { isFilter: true, isGeneralList: true } });
 
     // Print bogus folder navigation
     const bogusDrilldown = $(FILTER_SELECTOR).siblings('.rm_tag_bogus_drilldown');
@@ -1035,6 +1186,12 @@ function onTagRemoveClick(event) {
     const tagElement = $(this).closest('.tag');
     const tagId = tagElement.attr('id');
 
+    // If we have a custom remove action, we are not executing anything here in the default handler
+    if (tagElement.attr('custom-remove-action')) {
+        console.debug('Custom remove action', tagId);
+        return;
+    }
+
     // Check if we are inside the drilldown. If so, we call remove on the bogus folder
     if ($(this).closest('.rm_tag_bogus_drilldown').length > 0) {
         console.debug('Bogus drilldown remove', tagId);
@@ -1054,7 +1211,7 @@ function onTagRemoveClick(event) {
 // @ts-ignore
 function onTagInput(event) {
     let val = $(this).val();
-    if (tags.find(t => t.name === val)) return;
+    if (getTag(String(val))) return;
     // @ts-ignore
     $(this).autocomplete('search', val);
 }
@@ -1072,7 +1229,7 @@ function onGroupCreateClick() {
     // Nothing to do here at the moment. Tags in group interface get automatically redrawn.
 }
 
-export function applyTagsOnCharacterSelect() {
+export function applyTagsOnCharacterSelect(chid = null) {
     // If we are in create window, we cannot simply redraw, as there are no real persisted tags. Grab them, and pass them in
     if (menu_type === 'create') {
         const currentTagIds = $('#tagList').find('.tag').map((_, el) => $(el).attr('id')).get();
@@ -1081,11 +1238,11 @@ export function applyTagsOnCharacterSelect() {
         return;
     }
 
-    const chid = this_chid ? Number(this_chid) : null;
+    chid = chid ?? Number(this_chid);
     printTagList($('#tagList'), { forEntityOrKey: chid, tagOptions: { removable: true } });
 }
 
-export function applyTagsOnGroupSelect() {
+export function applyTagsOnGroupSelect(groupId = null) {
     // If we are in create window, we explicitly have to tell the system to print for the new group, not the one selected in the background
     if (menu_type === 'group_create') {
         const currentTagIds = $('#groupTagList').find('.tag').map((_, el) => $(el).attr('id')).get();
@@ -1094,7 +1251,7 @@ export function applyTagsOnGroupSelect() {
         return;
     }
 
-    const groupId = selected_group;
+    groupId = groupId ?? Number(selected_group);
     printTagList($('#groupTagList'), { forEntityOrKey: groupId, tagOptions: { removable: true } });
 }
 
@@ -1116,9 +1273,7 @@ export function createTagInput(inputSelector, listSelector, tagListOptions = {})
         .focus(onTagInputFocus); // <== show tag list on click
 }
 
-function onViewTagsListClick() {
-    const popup = $('#dialogue_popup');
-    popup.addClass('large_dialogue_popup');
+async function onViewTagsListClick() {
     const html = $(document.createElement('div'));
     html.attr('id', 'tag_view_list');
     html.append(`
@@ -1159,13 +1314,10 @@ function onViewTagsListClick() {
     const tagContainer = $('<div class="tag_view_list_tags ui-sortable"></div>');
     html.append(tagContainer);
 
-    callPopup(html, 'text', null, { allowVerticalScrolling: true });
-
-    printViewTagList();
+    printViewTagList(tagContainer);
     makeTagListDraggable(tagContainer);
 
-    $('#dialogue_popup  .tag-color').on('change', (evt) => onTagColorize(evt));
-    $('#dialogue_popup  .tag-color2').on('change', (evt) => onTagColorize2(evt));
+    await callGenericPopup(html, POPUP_TYPE.TEXT, null, { allowVerticalScrolling: true });
 }
 
 /**
@@ -1227,7 +1379,7 @@ function makeTagListDraggable(tagContainer) {
         // If tags were dragged manually, we have to disable auto sorting
         if (power_user.auto_sort_tags) {
             power_user.auto_sort_tags = false;
-            $('#dialogue_popup input[name="auto_sort_tags"]').prop('checked', false);
+            $('#tag_view_list input[name="auto_sort_tags"]').prop('checked', false);
             toastr.info('Automatic sorting of tags deactivated.');
         }
 
@@ -1354,7 +1506,7 @@ async function onTagRestoreFileSelect(e) {
     printCharactersDebounced();
     saveSettingsDebounced();
 
-    onViewTagsListClick();
+    await onViewTagsListClick();
 }
 
 function onBackupRestoreClick() {
@@ -1376,14 +1528,18 @@ function onTagsBackupClick() {
 }
 
 function onTagCreateClick() {
-    const tag = createNewTag('New Tag');
-    printViewTagList();
+    const tagName = getFreeName('New Tag', tags.map(x => x.name));
+    const tag = createNewTag(tagName);
+    printViewTagList($('#tag_view_list .tag_view_list_tags'));
 
-    const tagElement = ($('#dialogue_popup .tag_view_list_tags')).find(`.tag_view_item[id="${tag.id}"]`);
+    const tagElement = ($('#tag_view_list .tag_view_list_tags')).find(`.tag_view_item[id="${tag.id}"]`);
+    tagElement[0]?.scrollIntoView();
     flashHighlight(tagElement);
 
     printCharactersDebounced();
     saveSettingsDebounced();
+
+    toastr.success('Tag created', 'Create Tag');
 }
 
 function appendViewTagToList(list, tag, everything) {
@@ -1407,25 +1563,47 @@ function appendViewTagToList(list, tag, everything) {
 
     const primaryColorPicker = $('<toolcool-color-picker></toolcool-color-picker>')
         .addClass('tag-color')
-        .attr({ id: colorPickerId, color: tag.color });
+        .attr({ id: colorPickerId, color: tag.color || 'rgba(0, 0, 0, 0.3)', 'data-default-color': 'rgba(0, 0, 0, 0.3)' });
 
     const secondaryColorPicker = $('<toolcool-color-picker></toolcool-color-picker>')
         .addClass('tag-color2')
-        .attr({ id: colorPicker2Id, color: tag.color2 });
+        .attr({ id: colorPicker2Id, color: tag.color2 || power_user.main_text_color, 'data-default-color': power_user.main_text_color });
 
-    template.find('.tagColorPickerHolder').append(primaryColorPicker);
-    template.find('.tagColorPicker2Holder').append(secondaryColorPicker);
+    template.find('.tag_view_color_picker[data-value="color"]').append(primaryColorPicker)
+        .append($('<div class="fas fa-link fa-xs link_icon right_menu_button" title="Link to theme color"></div>'));
+    template.find('.tag_view_color_picker[data-value="color2"]').append(secondaryColorPicker)
+        .append($('<div class="fas fa-link fa-xs link_icon right_menu_button" title="Link to theme color"></div>'));
 
     template.find('.tag_as_folder').attr('id', tagAsFolderId);
 
+    primaryColorPicker.on('change', (evt) => onTagColorize(evt, (tag, color) => tag.color = color, 'background-color'));
+    secondaryColorPicker.on('change', (evt) => onTagColorize(evt, (tag, color) => tag.color2 = color, 'color'));
+    template.find('.tag_view_color_picker .link_icon').on('click', (evt) => {
+        const colorPicker = $(evt.target).closest('.tag_view_color_picker').find('toolcool-color-picker');
+        const defaultColor = colorPicker.attr('data-default-color');
+        // @ts-ignore
+        colorPicker[0].color = defaultColor;
+    });
+
     list.append(template);
 
-    updateDrawTagFolder(template, tag);
+    // We prevent the popup from auto-close on Escape press on the color pickups. If the user really wants to, he can hit it again
+    // Not the "cleanest" way, that would be actually using and observer, remembering whether the popup was open just before, but eh
+    // Not gonna invest too much time into this small control here
+    let lastHit = 0;
+    template.on('keydown', (evt) => {
+        if (evt.key === 'Escape') {
+            if (evt.target === primaryColorPicker[0] || evt.target === secondaryColorPicker[0]) {
+                if (Date.now() - lastHit < 5000) // If user hits it twice in five seconds
+                    return;
+                lastHit = Date.now();
+                evt.stopPropagation();
+                evt.preventDefault();
+            }
+        }
+    });
 
-    // @ts-ignore
-    $(colorPickerId).color = tag.color;
-    // @ts-ignore
-    $(colorPicker2Id).color = tag.color2;
+    updateDrawTagFolder(template, tag);
 }
 
 function onTagAsFolderClick() {
@@ -1463,19 +1641,55 @@ function updateDrawTagFolder(element, tag) {
     indicator.css('font-size', `calc(var(--mainFontSize) * ${tagFolder.size})`);
 }
 
-function onTagDeleteClick() {
-    if (!confirm('Are you sure?')) {
+async function onTagDeleteClick() {
+    const id = $(this).closest('.tag_view_item').attr('id');
+    const tag = tags.find(x => x.id === id);
+    const otherTags = sortTags(tags.filter(x => x.id !== id).map(x => ({ id: x.id, name: x.name })));
+
+    const popupContent = $(`
+        <h3>Delete Tag</h3>
+        <div>Do you want to delete the tag <div id="tag_to_delete" class="tags_inline inline-flex margin-r2"></div>?</div>
+        <div class="m-t-2 marginBot5">If you want to merge all references to this tag into another tag, select it below:</div>
+        <select id="merge_tag_select">
+            <option value="">--- None ---</option>
+            ${otherTags.map(x => `<option value="${x.id}">${x.name}</option>`).join('')}
+        </select>`);
+
+    appendTagToList(popupContent.find('#tag_to_delete'), tag);
+
+    // Make the select control more fancy on not mobile
+    if (!isMobile()) {
+        // Delete the empty option in the dropdown, and make the select2 be empty by default
+        popupContent.find('#merge_tag_select option[value=""]').remove();
+        popupContent.find('#merge_tag_select').select2({
+            width: '50%',
+            placeholder: 'Select tag to merge into',
+            allowClear: true,
+        }).val(null).trigger('change');
+    }
+
+    const result = await callGenericPopup(popupContent, POPUP_TYPE.CONFIRM);
+    if (result !== POPUP_RESULT.AFFIRMATIVE) {
         return;
     }
 
-    const id = $(this).closest('.tag_view_item').attr('id');
+    const mergeTagId = $('#merge_tag_select').val() ? String($('#merge_tag_select').val()) : null;
+
+    // Remove the tag from all entities that use it
+    // If we have a replacement tag, add that one instead
     for (const key of Object.keys(tag_map)) {
-        tag_map[key] = tag_map[key].filter(x => x !== id);
+        if (tag_map[key].includes(id)) {
+            tag_map[key] = tag_map[key].filter(x => x !== id);
+            if (mergeTagId) tag_map[key].push(mergeTagId);
+        }
     }
+
     const index = tags.findIndex(x => x.id === id);
     tags.splice(index, 1);
     $(`.tag[id="${id}"]`).remove();
     $(`.tag_view_item[id="${id}"]`).remove();
+
+    toastr.success(`'${tag.name}' deleted${mergeTagId ? ` and merged into '${tags.find(x => x.id === mergeTagId).name}'` : ''}`, 'Delete Tag');
 
     printCharactersDebounced();
     saveSettingsDebounced();
@@ -1486,35 +1700,41 @@ function onTagRenameInput() {
     const newName = $(this).text();
     const tag = tags.find(x => x.id === id);
     tag.name = newName;
+    $(this).attr('dirty', '');
     $(`.tag[id="${id}"] .tag_name`).text(newName);
     saveSettingsDebounced();
 }
 
-function onTagColorize(evt) {
+/**
+ * Handles the colorization of a tag when the user interacts with the color picker
+ *
+ * @param {*} evt - The custom colorize event object
+ * @param {(tag: Tag, val: string) => void} setColor - A function that sets the color of the tag
+ * @param {string} cssProperty - The CSS property to apply the color to
+ */
+function onTagColorize(evt, setColor, cssProperty) {
     console.debug(evt);
+    const isDefaultColor = $(evt.target).data('default-color') === evt.detail.rgba;
+    $(evt.target).closest('.tag_view_color_picker').find('.link_icon').toggle(!isDefaultColor);
+
     const id = $(evt.target).closest('.tag_view_item').attr('id');
-    const newColor = evt.detail.rgba;
-    $(evt.target).parent().parent().find('.tag_view_name').css('background-color', newColor);
-    $(`.tag[id="${id}"]`).css('background-color', newColor);
-    $(`.bogus_folder_select[tagid="${id}"] .avatar`).css('background-color', newColor);
+    let newColor = evt.detail.rgba;
+    if (isDefaultColor) newColor = '';
+
+    $(evt.target).closest('.tag_view_item').find('.tag_view_name').css(cssProperty, newColor);
     const tag = tags.find(x => x.id === id);
-    tag.color = newColor;
+    setColor(tag, newColor);
     console.debug(tag);
     saveSettingsDebounced();
+
+    // Debounce redrawing color of the tag in other elements
+    debouncedTagColoring(tag.id, cssProperty, newColor);
 }
 
-function onTagColorize2(evt) {
-    console.debug(evt);
-    const id = $(evt.target).closest('.tag_view_item').attr('id');
-    const newColor = evt.detail.rgba;
-    $(evt.target).parent().parent().find('.tag_view_name').css('color', newColor);
-    $(`.tag[id="${id}"]`).css('color', newColor);
-    $(`.bogus_folder_select[tagid="${id}"] .avatar`).css('color', newColor);
-    const tag = tags.find(x => x.id === id);
-    tag.color2 = newColor;
-    console.debug(tag);
-    saveSettingsDebounced();
-}
+const debouncedTagColoring = debounce((tagId, cssProperty, newColor) => {
+    $(`.tag[id="${tagId}"]`).css(cssProperty, newColor);
+    $(`.bogus_folder_select[tagid="${tagId}"] .avatar`).css(cssProperty, newColor);
+}, debounce_timeout.quick);
 
 function onTagListHintClick() {
     $(this).toggleClass('selected');
@@ -1554,9 +1774,7 @@ function copyTags(data) {
     tag_map[data.newAvatar] = Array.from(new Set([...prevTagMap, ...newTagMap]));
 }
 
-function printViewTagList(empty = true) {
-    const tagContainer = $('#dialogue_popup .tag_view_list_tags');
-
+function printViewTagList(tagContainer, empty = true) {
     if (empty) tagContainer.empty();
     const everything = Object.values(tag_map).flat();
     const sortedTags = sortTags(tags);
@@ -1578,7 +1796,7 @@ function registerTagsSlashCommands() {
             toastr.warning('Tag name must be provided.');
             return null;
         }
-        let tag = tags.find(t => t.name === tagName);
+        let tag = getTag(tagName);
         if (allowCreate && !tag) {
             tag = createNewTag(tagName);
         }
@@ -1598,7 +1816,7 @@ function registerTagsSlashCommands() {
             if (!key) return 'false';
             const tag = paraGetTag(tagName, { allowCreate: true });
             if (!tag) return 'false';
-            const result = addTagToEntity(tag, key);
+            const result = addTagsToEntity(tag, key);
             printCharacters();
             return String(result);
         },
@@ -1778,22 +1996,31 @@ export function initTags() {
     eventSource.on(event_types.CHARACTER_DUPLICATED, copyTags);
     eventSource.makeFirst(event_types.CHAT_CHANGED, () => selected_group ? applyTagsOnGroupSelect() : applyTagsOnCharacterSelect());
 
-    $(document).on('input', '#dialogue_popup input[name="auto_sort_tags"]', (evt) => {
+    $(document).on('input', '#tag_view_list input[name="auto_sort_tags"]', (evt) => {
         const toggle = $(evt.target).is(':checked');
         toggleAutoSortTags(evt.originalEvent, toggle);
-        printViewTagList();
+        printViewTagList($('#tag_view_list .tag_view_list_tags'));
     });
-    $(document).on('focusout', '#dialogue_popup .tag_view_name', (evt) => {
+    $(document).on('focusout', '#tag_view_list .tag_view_name', (evt) => {
+        // Reorder/reprint tags, but only if the name actually has changed, and only if we auto sort tags
+        if (!power_user.auto_sort_tags || !$(evt.target).is('[dirty]')) return;
+
         // Remember the order, so we can flash highlight if it changed after reprinting
-        const tagId = $(evt.target).parent('.tag_view_item').attr('id');
-        const oldOrder = $('#dialogue_popup .tag_view_item').map((_, el) => el.id).get();
+        const tagId = ($(evt.target).closest('.tag_view_item')).attr('id');
+        const oldOrder = $('#tag_view_list .tag_view_item').map((_, el) => el.id).get();
 
-        printViewTagList();
+        printViewTagList($('#tag_view_list .tag_view_list_tags'));
 
-        const newOrder = $('#dialogue_popup .tag_view_item').map((_, el) => el.id).get();
+        // If the new focus would've been inside the now redrawn tag list, we should at least move back the focus to the current name
+        // Otherwise tab-navigation gets a bit weird
+        if (evt.relatedTarget instanceof HTMLElement && $(evt.relatedTarget).closest('#tag_view_list')) {
+            $(`#tag_view_list .tag_view_item[id="${tagId}"] .tag_view_name`)[0]?.focus();
+        }
+
+        const newOrder = $('#tag_view_list .tag_view_item').map((_, el) => el.id).get();
         const orderChanged = !oldOrder.every((id, index) => id === newOrder[index]);
         if (orderChanged) {
-            flashHighlight($(`#dialogue_popup .tag_view_item[id="${tagId}"]`));
+            flashHighlight($(`#tag_view_list .tag_view_item[id="${tagId}"]`));
         }
     });
 

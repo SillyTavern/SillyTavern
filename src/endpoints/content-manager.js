@@ -420,7 +420,7 @@ async function downloadJannyCharacter(uuid) {
     // This endpoint is being guarded behind Bot Fight Mode of Cloudflare
     // So hosted ST on Azure/AWS/GCP/Collab might get blocked by IP
     // Should work normally on self-host PC/Android
-    const result = await fetch('https://api.janitorai.me/api/v1/download', {
+    const result = await fetch('https://api.jannyai.com/api/v1/download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -2755,7 +2755,6 @@ async function getCharacterLore() {
         worldsToSearch.add(baseWorldName);
     } else {
         console.debug(`Character ${name}'s base world could not be found or is empty! Skipping...`);
-        return [];
     }
 
     // TODO: Maybe make the utility function not use the window context?
@@ -2782,7 +2781,7 @@ async function getCharacterLore() {
         entries = entries.concat(newEntries);
     }
 
-    console.debug(`Character ${characters[this_chid]?.name} lore (${baseWorldName}) has ${entries.length} world info entries`);
+    console.debug(`Character ${name} lore (${Array.from(worldsToSearch)}) has ${entries.length} world info entries`);
     return entries;
 }
 

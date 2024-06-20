@@ -98,7 +98,7 @@
     font-weight: bold;
 }
 
-.logprobs_top_candidate:not([disabled]):hover, .logprobs_top_candidate:not([disabled]):focus {
+.logprobs_top_candidate:not([disabled]):hover {
     background-color: rgba(0, 0, 0, 0.3);
 }
 
