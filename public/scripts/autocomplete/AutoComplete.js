@@ -194,6 +194,11 @@ export class AutoComplete {
      * @returns The option.
      */
     fuzzyScore(option) {
+        // might have been matched by the options matchProvider function instead
+        if (!this.fuzzyRegex.test(option.name)) {
+            option.score = new AutoCompleteFuzzyScore(Number.MAX_SAFE_INTEGER, -1);
+            return option;
+        }
         const parts = this.fuzzyRegex.exec(option.name).slice(1, -1);
         let start = null;
         let consecutive = [];
@@ -344,7 +349,7 @@ export class AutoComplete {
 
         this.result = this.effectiveParserResult.optionList
             // filter the list of options by the partial name according to the matching type
-            .filter(it => this.isReplaceable || it.name == '' ? matchers[this.matchType](it.name) : it.name.toLowerCase() == this.name)
+            .filter(it => this.isReplaceable || it.name == '' ? (it.matchProvider ? it.matchProvider(this.name) : matchers[this.matchType](it.name)) : it.name.toLowerCase() == this.name)
             // remove aliases
             .filter((it,idx,list) => list.findIndex(opt=>opt.value == it.value) == idx);
 
@@ -362,10 +367,11 @@ export class AutoComplete {
                 // build element
                 option.dom = this.makeItem(option);
                 // update replacer and add quotes if necessary
+                const optionName = option.valueProvider ? option.valueProvider(this.name) : option.name;
                 if (this.effectiveParserResult.canBeQuoted) {
-                    option.replacer = option.name.includes(' ') || this.startQuote || this.endQuote ? `"${option.name}"` : `${option.name}`;
+                    option.replacer = optionName.includes(' ') || this.startQuote || this.endQuote ? `"${optionName}"` : `${optionName}`;
                 } else {
-                    option.replacer = option.name;
+                    option.replacer = optionName;
                 }
                 // calculate fuzzy score if matching is fuzzy
                 if (this.matchType == 'fuzzy') this.fuzzyScore(option);

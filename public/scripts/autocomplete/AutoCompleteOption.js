@@ -11,6 +11,8 @@ export class AutoCompleteOption {
     /**@type {AutoCompleteFuzzyScore}*/ score;
     /**@type {string}*/ replacer;
     /**@type {HTMLElement}*/ dom;
+    /**@type {(input:string)=>boolean}*/ matchProvider;
+    /**@type {(input:string)=>string}*/ valueProvider;
 
 
     /**
@@ -25,10 +27,12 @@ export class AutoCompleteOption {
     /**
      * @param {string} name
      */
-    constructor(name, typeIcon = ' ', type = '') {
+    constructor(name, typeIcon = ' ', type = '', matchProvider = null, valueProvider = null) {
         this.name = name;
         this.typeIcon = typeIcon;
         this.type = type;
+        this.matchProvider = matchProvider;
+        this.valueProvider = valueProvider;
     }
 
 
