@@ -119,7 +119,7 @@ async function sendClaudeRequest(request, response) {
         let use_system_prompt = (request.body.model.startsWith('claude-2') || request.body.model.startsWith('claude-3')) && request.body.claude_use_sysprompt;
         let converted_prompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, use_system_prompt, request.body.human_sysprompt_message, request.body.char_name, request.body.user_name);
         // Add custom stop sequences
-        const stopSequences = ['\n\nHuman:', '\n\nSystem:', '\n\nAssistant:'];
+        const stopSequences = [];
         if (Array.isArray(request.body.stop)) {
             stopSequences.push(...request.body.stop);
         }

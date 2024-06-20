@@ -81,12 +81,15 @@ dialog {
     animation: fade-out var(--animation-duration-slow) ease-in-out;
 }
 
-/* Fix toastr in dialogs by actually placing it at the top of the screen via transform */
 .popup #toast-container {
+    /* Fix toastr in dialogs by actually placing it at the top of the screen via transform */
     height: 100svh;
     top: calc(50% + var(--topBarBlockSize));
     left: 50%;
     transform: translate(-50%, -50%);
+
+    /* Fix text align, popups are centered by default. toasts should not. */
+    text-align: left;
 }
 
 .popup-input {
