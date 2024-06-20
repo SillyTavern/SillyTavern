@@ -1356,6 +1356,8 @@ export function registerVariableCommands() {
                     ...scope.allVariableNames.map(it=>new SlashCommandEnumValue(it, 'scope', 'variable', 'S')),
                     ...Object.keys(chat_metadata.variables ?? {}).map(it=>new SlashCommandEnumValue(it, 'chat', 'qr', 'C')),
                     ...Object.keys(extension_settings.variables?.global ?? {}).map(it=>new SlashCommandEnumValue(it, 'global', 'enum', 'G')),
+                    new SlashCommandEnumValue('', 'any number', 'macro', '?', (input)=>/^\d*$/.test(input), (input)=>input),
+                    new SlashCommandEnumValue(' ', 'any variable name', 'macro', '?', (input)=>/^\w*$/.test(input), (input)=>input),
                 ].filter((value, idx, list)=>idx == list.findIndex(it=>it.value == value.value)),
                 forceEnum: false,
             }),
