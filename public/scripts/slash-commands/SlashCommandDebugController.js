@@ -2,6 +2,7 @@ import { SlashCommandClosure } from './SlashCommandClosure.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 
 export class SlashCommandDebugController {
+    /**@type {SlashCommandClosure[]} */ stack = [];
     /**@type {boolean} */ isStepping = false;
     /**@type {boolean} */ isSteppingInto = false;
 
@@ -9,6 +10,16 @@ export class SlashCommandDebugController {
     /**@type {(boolean)=>void} */ continueResolver;
 
     /**@type {(closure:SlashCommandClosure, executor:SlashCommandExecutor)=>Promise<boolean>} */ onBreakPoint;
+
+
+
+
+    down(closure) {
+        this.stack.push(closure);
+    }
+    up() {
+        this.stack.pop();
+    }
 
 
 

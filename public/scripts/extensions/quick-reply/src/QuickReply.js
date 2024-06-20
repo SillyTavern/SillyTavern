@@ -54,6 +54,7 @@ export class QuickReply {
     /**@type {HTMLTextAreaElement}*/ settingsDomMessage;
 
     /**@type {Popup}*/ editorPopup;
+    /**@type {HTMLElement}*/ editorDom;
 
     /**@type {HTMLElement}*/ editorExecuteBtn;
     /**@type {HTMLElement}*/ editorExecuteBtnPause;
@@ -215,6 +216,7 @@ export class QuickReply {
             /**@type {HTMLElement} */
             // @ts-ignore
             const dom = this.template.cloneNode(true);
+            this.editorDom = dom;
             this.editorPopup = new Popup(dom, POPUP_TYPE.TEXT, undefined, { okButton: 'OK', wide: true, large: true, rows: 1 });
             const popupResult = this.editorPopup.show();
 
@@ -614,6 +616,7 @@ export class QuickReply {
     }
     async executeFromEditor() {
         if (this.editorExecutePromise) return;
+        this.editorDom.classList.add('qr--isExecuting');
         this.editorExecuteBtn.classList.add('qr--busy');
         this.editorExecuteProgress.style.setProperty('--prog', '0');
         this.editorExecuteErrors.classList.remove('qr--hasErrors');
@@ -628,26 +631,133 @@ export class QuickReply {
             this.editorPopup.dlg.classList.add('qr--hide');
         }
         try {
-            // this.editorExecutePromise = this.execute({}, true);
-            // const result = await this.editorExecutePromise;
             this.abortController = new SlashCommandAbortController();
             this.debugController = new SlashCommandDebugController();
             this.debugController.onBreakPoint = async(closure, executor)=>{
-                const vars = closure.scope.variables;
-                vars['#pipe'] = closure.scope.pipe;
-                let v = vars;
-                let s = closure.scope.parent;
-                while (s) {
-                    v['#parent'] = s.variables;
-                    v = v['#parent'];
-                    v['#pipe'] = s.pipe;
-                    s = s.parent;
-                }
-                this.editorDebugState.textContent = JSON.stringify(closure.scope.variables, (key, val)=>{
-                    if (val instanceof SlashCommandClosure) return val.toString();
-                    if (val === undefined) return null;
-                    return val;
-                }, 2);
+                this.editorDebugState.innerHTML = '';
+                let ci = -1;
+                const varNames = [];
+                const macroNames = [];
+                /**
+                 * @param {SlashCommandScope} scope
+                 */
+                const buildVars = (scope, isCurrent = false)=>{
+                    if (!isCurrent) {
+                        ci--;
+                    }
+                    const c = this.debugController.stack.slice(ci)[0];
+                    const wrap = document.createElement('div'); {
+                        wrap.classList.add('qr--scope');
+                        const title = document.createElement('div'); {
+                            title.classList.add('qr--title');
+                            title.textContent = isCurrent ? 'Current Scope' : 'Parent Scope';
+                            let hi;
+                            title.addEventListener('pointerenter', ()=>{
+                                const loc = this.getEditorPosition(c.executorList[0].start, c.executorList.slice(-1)[0].end);
+                                const layer = this.editorPopup.dlg.getBoundingClientRect();
+                                hi = document.createElement('div');
+                                hi.style.position = 'fixed';
+                                hi.style.left = `${loc.left - layer.left}px`;
+                                hi.style.width = `${loc.right - loc.left}px`;
+                                hi.style.top = `${loc.top - layer.top}px`;
+                                hi.style.height = `${loc.bottom - loc.top}px`;
+                                hi.style.zIndex = '50000';
+                                hi.style.pointerEvents = 'none';
+                                hi.style.border = '3px solid red';
+                                this.editorPopup.dlg.append(hi);
+                            });
+                            title.addEventListener('pointerleave', ()=>hi?.remove());
+                            wrap.append(title);
+                        }
+                        for (const key of Object.keys(scope.variables)) {
+                            const isHidden = varNames.includes(key);
+                            if (!isHidden) varNames.push(key);
+                            const item = document.createElement('div'); {
+                                item.classList.add('qr--var');
+                                if (isHidden) item.classList.add('qr--isHidden');
+                                const k = document.createElement('div'); {
+                                    k.classList.add('qr--key');
+                                    k.textContent = key;
+                                    item.append(k);
+                                }
+                                const v = document.createElement('div'); {
+                                    v.classList.add('qr--val');
+                                    const val = scope.variables[key];
+                                    if (val instanceof SlashCommandClosure) {
+                                        v.classList.add('qr--closure');
+                                        v.title = val.rawText;
+                                        v.textContent = val.toString();
+                                    } else if (val === undefined) {
+                                        v.classList.add('qr--undefined');
+                                        v.textContent = 'undefined';
+                                    } else {
+                                        v.textContent = val;
+                                    }
+                                    item.append(v);
+                                }
+                                wrap.append(item);
+                            }
+                        }
+                        for (const key of Object.keys(scope.macros)) {
+                            const isHidden = macroNames.includes(key);
+                            if (!isHidden) macroNames.push(key);
+                            const item = document.createElement('div'); {
+                                item.classList.add('qr--macro');
+                                if (isHidden) item.classList.add('qr--isHidden');
+                                const k = document.createElement('div'); {
+                                    k.classList.add('qr--key');
+                                    k.textContent = key;
+                                    item.append(k);
+                                }
+                                const v = document.createElement('div'); {
+                                    v.classList.add('qr--val');
+                                    const val = scope.macros[key];
+                                    if (val instanceof SlashCommandClosure) {
+                                        v.classList.add('qr--closure');
+                                        v.title = val.rawText;
+                                        v.textContent = val.toString();
+                                    } else if (val === undefined) {
+                                        v.classList.add('qr--undefined');
+                                        v.textContent = 'undefined';
+                                    } else {
+                                        v.textContent = val;
+                                    }
+                                    item.append(v);
+                                }
+                                wrap.append(item);
+                            }
+                        }
+                        const pipeItem = document.createElement('div'); {
+                            pipeItem.classList.add('qr--pipe');
+                            const k = document.createElement('div'); {
+                                k.classList.add('qr--key');
+                                k.textContent = 'pipe';
+                                pipeItem.append(k);
+                            }
+                            const v = document.createElement('div'); {
+                                v.classList.add('qr--val');
+                                const val = scope.pipe;
+                                if (val instanceof SlashCommandClosure) {
+                                    v.classList.add('qr--closure');
+                                    v.title = val.rawText;
+                                    v.textContent = val.toString();
+                                } else if (val === undefined) {
+                                    v.classList.add('qr--undefined');
+                                    v.textContent = 'undefined';
+                                } else {
+                                    v.textContent = val;
+                                }
+                                pipeItem.append(v);
+                            }
+                            wrap.append(pipeItem);
+                        }
+                        if (scope.parent) {
+                            wrap.append(buildVars(scope.parent));
+                        }
+                    }
+                    return wrap;
+                };
+                this.editorDebugState.append(buildVars(closure.scope, true));
                 this.editorDebugState.classList.add('qr--active');
                 const loc = this.getEditorPosition(executor.start - 1, executor.end);
                 const layer = this.editorPopup.dlg.getBoundingClientRect();
@@ -695,6 +805,7 @@ export class QuickReply {
         this.editorExecutePromise = null;
         this.editorExecuteBtn.classList.remove('qr--busy');
         this.editorPopup.dlg.classList.remove('qr--hide');
+        this.editorDom.classList.remove('qr--isExecuting');
     }
 
     updateEditorProgress(done, total) {

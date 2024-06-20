@@ -97,7 +97,7 @@ export class SlashCommandClosure {
 
     /**
      *
-     * @returns Promise<SlashCommandClosureResult>
+     * @returns {Promise<SlashCommandClosureResult>}
      */
     async execute() {
         const closure = this.getCopy();
@@ -124,6 +124,7 @@ export class SlashCommandClosure {
     }
 
     async * executeDirect() {
+        this.debugController?.down(this);
         // closure arguments
         for (const arg of this.argumentList) {
             let v = arg.value;
@@ -305,10 +306,12 @@ export class SlashCommandClosure {
 
         // if execution has returned a closure result, return that (should only happen on abort)
         if (step.value instanceof SlashCommandClosureResult) {
+            this.debugController?.up();
             return step.value;
         }
         /**@type {SlashCommandClosureResult} */
         const result = Object.assign(new SlashCommandClosureResult(), { pipe: this.scope.pipe });
+        this.debugController?.up();
         return result;
     }
     async * executeStep() {
