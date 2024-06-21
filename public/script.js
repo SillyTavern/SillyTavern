@@ -9216,7 +9216,7 @@ jQuery(async function () {
             if (selected_group) {
                 await createNewGroupChat(selected_group);
                 if (isDelChatCheckbox) await deleteGroupChat(selected_group, chat_file_for_del);
-                await eventSource.emit(event_types.GROUP_CHAT_DELETED);
+                await eventSource.emit(event_types.GROUP_CHAT_CREATED);
             }
             else {
                 //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
