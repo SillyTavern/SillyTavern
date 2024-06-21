@@ -9229,7 +9229,6 @@ jQuery(async function () {
                 await getChat();
                 await createOrEditCharacter(new CustomEvent('newChat'));
                 if (isDelChatCheckbox) await delChat(chat_file_for_del + '.jsonl');
-                await eventSource.emit(event_types.CHAT_CREATED);
             }
         }
 
