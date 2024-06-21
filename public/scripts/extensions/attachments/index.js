@@ -203,11 +203,12 @@ jQuery(async () => {
     /** A collection of local enum providers for this context of data bank */
     const localEnumProviders = {
         /**
-         * All attachements in the data bank based on the source argument. If not provided, defaults to 'chat'.
+         * All attachments in the data bank based on the source argument. If not provided, defaults to 'chat'.
          * @param {'name' | 'url'} returnField - Whether the enum should return the 'name' field or the 'url'
+         * @param {'chat' | 'character' | 'global' | ''} fallbackSource - The source to use if the source argument is not provided. Empty string to use all sources.
          * */
-        attachements: (returnField = 'name') => (/** @type {SlashCommandExecutor} */ executor) => {
-            const source = executor.namedArgumentList.find(it => it.name == 'source')?.value ?? 'chat';
+        attachments: (returnField = 'name', fallbackSource = 'chat') => (/** @type {SlashCommandExecutor} */ executor) => {
+            const source = executor.namedArgumentList.find(it => it.name == 'source')?.value ?? fallbackSource;
             if (source instanceof SlashCommandClosure) throw new Error('Argument \'source\' does not support closures');
             const attachments = getAttachments(source);
 
@@ -249,7 +250,13 @@ jQuery(async () => {
             new SlashCommandNamedArgument('source', 'The source of the attachment.', ARGUMENT_TYPE.STRING, false, false, '', TYPES),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument('The name or URL of the attachment.', ARGUMENT_TYPE.STRING, true, false),
+            SlashCommandArgument.fromProps({
+                description: 'The name or URL of the attachment.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                acceptsMultiple: false,
+                enumProvider: localEnumProviders.attachments('name', ''),
+            }),
         ],
         returns: ARGUMENT_TYPE.STRING,
     }));
@@ -280,13 +287,13 @@ jQuery(async () => {
                 name: 'name',
                 description: 'The name of the attachment.',
                 typeList: [ARGUMENT_TYPE.STRING],
-                enumProvider: localEnumProviders.attachements('name'),
+                enumProvider: localEnumProviders.attachments('name'),
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'url',
                 description: 'The URL of the attachment.',
                 typeList: [ARGUMENT_TYPE.STRING],
-                enumProvider: localEnumProviders.attachements('url'),
+                enumProvider: localEnumProviders.attachments('url'),
             }),
         ],
         unnamedArgumentList: [
@@ -308,7 +315,7 @@ jQuery(async () => {
                 description: 'The name or URL of the attachment.',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: localEnumProviders.attachements(),
+                enumProvider: localEnumProviders.attachments('name', ''),
             }),
         ],
     }));
@@ -326,7 +333,7 @@ jQuery(async () => {
                 description: 'The name or URL of the attachment.',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: localEnumProviders.attachements(),
+                enumProvider: localEnumProviders.attachments('name', ''),
             }),
         ],
     }));
@@ -344,7 +351,7 @@ jQuery(async () => {
                 description: 'The name or URL of the attachment.',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: localEnumProviders.attachements(),
+                enumProvider: localEnumProviders.attachments(),
             }),
         ],
     }));
