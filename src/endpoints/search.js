@@ -34,6 +34,8 @@ router.post('/serpapi', jsonParser, async (request, response) => {
         const { query } = request.body;
         const result = await fetch(`https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${key}`);
 
+        console.log('SerpApi query', query);
+
         if (!result.ok) {
             const text = await result.text();
             console.log('SerpApi request failed', result.statusText, text);
@@ -143,6 +145,8 @@ router.post('/searxng', jsonParser, async (request, response) => {
             return response.sendStatus(400);
         }
 
+        console.log('SearXNG query', baseUrl, query);
+
         const url = new URL(baseUrl);
         const params = new URLSearchParams();
         params.append('q', query);
@@ -204,6 +208,8 @@ router.post('/visit', jsonParser, async (request, response) => {
             console.log('Invalid url provided for /visit', url);
             return response.sendStatus(400);
         }
+
+        console.log('Visiting web URL', url);
 
         const result = await fetch(url, { headers: visitHeaders });
 

@@ -195,19 +195,19 @@ export class Popup {
 
         this.ok.addEventListener('click', () => this.complete(POPUP_RESULT.AFFIRMATIVE));
         this.cancel.addEventListener('click', () => this.complete(POPUP_RESULT.NEGATIVE));
+
+        // Bind dialog listeners manually, so we can be sure context is preserved
+        const cancelListener = (evt) => {
+            this.complete(POPUP_RESULT.CANCELLED);
+            evt.preventDefault();
+            evt.stopPropagation();
+            window.removeEventListener('cancel', cancelListenerBound);
+        };
+        const cancelListenerBound = cancelListener.bind(this);
+        this.dlg.addEventListener('cancel', cancelListenerBound);
+
         const keyListener = (evt) => {
             switch (evt.key) {
-                case 'Escape': {
-                    // Check if we are the currently active popup
-                    if (this.dlg != document.activeElement?.closest('.popup'))
-                        return;
-
-                    this.complete(POPUP_RESULT.CANCELLED);
-                    evt.preventDefault();
-                    evt.stopPropagation();
-                    window.removeEventListener('keydown', keyListenerBound);
-                    break;
-                }
                 case 'Enter': {
                     // CTRL+Enter counts as a closing action, but all other modifiers (ALT, SHIFT) should not trigger this
                     if (evt.altKey || evt.shiftKey)

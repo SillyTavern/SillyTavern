@@ -183,6 +183,7 @@ export async function getGroupChat(groupId, reload = false) {
     const group = groups.find((x) => x.id === groupId);
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
+    let freshChat = false;
 
     await loadItemizedPrompts(getCurrentChatId());
 
@@ -216,6 +217,7 @@ export async function getGroupChat(groupId, reload = false) {
             }
         }
         await saveGroupChat(groupId, false);
+        freshChat = true;
     }
 
     if (group) {
@@ -228,6 +230,7 @@ export async function getGroupChat(groupId, reload = false) {
     }
 
     await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+    if (freshChat) await eventSource.emit(event_types.GROUP_CHAT_CREATED);
 }
 
 /**
