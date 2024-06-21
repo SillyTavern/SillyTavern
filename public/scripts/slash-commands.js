@@ -1326,9 +1326,11 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     callback: modelCallback,
     returns: 'current model',
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'model name', [ARGUMENT_TYPE.STRING], false,
-        ),
+        SlashCommandArgument.fromProps({
+            description: 'model name',
+            typeList: [ARGUMENT_TYPE.STRING],
+            enumProvider: () => getModelOptions()?.options.map(option => new SlashCommandEnumValue(option.value, option.value !== option.text ? option.text : null)),
+        }),
     ],
     helpString: 'Sets the model for the current API. Gets the current model name if no argument is provided.',
 }));
@@ -2905,12 +2907,11 @@ function setBackgroundCallback(_, bg) {
 }
 
 /**
- * Sets a model for the current API.
- * @param {object} _ Unused
- * @param {string} model New model name
- * @returns {string} New or existing model name
+ * Retrieves the available model options based on the currently selected main API and its subtype
+ *
+ * @returns {{control: HTMLSelectElement, options: HTMLOptionElement[]}?} An array of objects representing the available model options, or null if not supported
  */
-function modelCallback(_, model) {
+function getModelOptions() {
     const modelSelectMap = [
         { id: 'model_togetherai_select', api: 'textgenerationwebui', type: textgen_types.TOGETHERAI },
         { id: 'openrouter_model', api: 'textgenerationwebui', type: textgen_types.OPENROUTER },
@@ -2951,17 +2952,33 @@ function modelCallback(_, model) {
 
     if (!modelSelectItem) {
         toastr.info('Setting a model for your API is not supported or not implemented yet.');
-        return '';
+        return null;
     }
 
     const modelSelectControl = document.getElementById(modelSelectItem);
 
     if (!(modelSelectControl instanceof HTMLSelectElement)) {
         toastr.error(`Model select control not found: ${main_api}[${apiSubType}]`);
-        return '';
+        return null;
     }
 
     const options = Array.from(modelSelectControl.options);
+    return { control: modelSelectControl, options };
+}
+
+/**
+ * Sets a model for the current API.
+ * @param {object} _ Unused
+ * @param {string} model New model name
+ * @returns {string} New or existing model name
+ */
+function modelCallback(_, model) {
+    const { control: modelSelectControl, options } = getModelOptions();
+
+    // If no model was found, the reason was already logged, we just return here
+    if (options === null) {
+        return '';
+    }
 
     if (!options.length) {
         toastr.warning('No model options found. Check your API settings.');
