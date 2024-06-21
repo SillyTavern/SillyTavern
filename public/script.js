@@ -5886,11 +5886,13 @@ export async function getChat() {
 
 async function getChatResult() {
     name2 = characters[this_chid].name;
+    let freshChat = false;
     if (chat.length === 0) {
         const message = getFirstMessage();
         if (message.mes) {
             chat.push(message);
             await saveChatConditional();
+            freshChat = true;
         }
     }
     await loadItemizedPrompts(getCurrentChatId());
@@ -5898,6 +5900,7 @@ async function getChatResult() {
     select_selected_character(this_chid);
 
     await eventSource.emit(event_types.CHAT_CHANGED, (getCurrentChatId()));
+    if (freshChat) await eventSource.emit(event_types.CHAT_CREATED);
 
     if (chat.length === 1) {
         const chat_id = (chat.length - 1);
