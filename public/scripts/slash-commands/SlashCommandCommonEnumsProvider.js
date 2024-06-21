@@ -14,7 +14,7 @@ export const enumIcons = {
     default: '◊',
 
     // Variables
-    variable: 'V',
+    variable: '𝑥',
     localVariable: 'L',
     globalVariable: 'G',
     scopeVariable: 'S',
@@ -24,6 +24,8 @@ export const enumIcons = {
     group: '🧑‍🤝‍🧑',
     persona: '🧙‍♂️',
     qr: 'QR',
+    closure: '𝑓',
+    macro: '{{',
     tag: '🏷️',
     world: '🌐',
     preset: '⚙️',
@@ -37,10 +39,9 @@ export const enumIcons = {
     boolean: '🔲',
     string: '📝',
     number: '1️⃣',
-    array: '📦',
+    array: '[]',
     enum: '📚',
-    dictionary: '📖',
-    closure: '🧩',
+    dictionary: '{}',
 
     // Roles
     system: '⚙️',

@@ -28,7 +28,7 @@ export class SlashCommandArgument {
      * @param {string|SlashCommandClosure} [props.defaultValue=null] default value if no value is provided
      * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} [props.enumList=[]] list of accepted values
      * @param {(executor:SlashCommandExecutor)=>SlashCommandEnumValue[]} [props.enumProvider=null] function that returns auto complete options
-     * @param {boolean} [props.forceEnum=true] default: true - whether the input must match one of the enum values
+     * @param {boolean} [props.forceEnum=false] default: false - whether the input must match one of the enum values
      */
     static fromProps(props) {
         return new SlashCommandArgument(
@@ -39,7 +39,7 @@ export class SlashCommandArgument {
             props.defaultValue ?? null,
             props.enumList ?? [],
             props.enumProvider ?? null,
-            props.forceEnum ?? true,
+            props.forceEnum ?? false,
         );
     }
 
@@ -50,7 +50,7 @@ export class SlashCommandArgument {
     /**@type {string|SlashCommandClosure}*/ defaultValue;
     /**@type {SlashCommandEnumValue[]}*/ enumList = [];
     /**@type {(executor:SlashCommandExecutor)=>SlashCommandEnumValue[]}*/ enumProvider = null;
-    /**@type {boolean}*/ forceEnum = true;
+    /**@type {boolean}*/ forceEnum = false;
 
     /**
      * @param {string} description

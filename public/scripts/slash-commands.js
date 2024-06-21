@@ -84,7 +84,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         typeList: [ARGUMENT_TYPE.STRING],
         enumList: [
             new SlashCommandEnumValue('slash', 'slash commands (STscript)', enumTypes.command, '/'),
-            new SlashCommandEnumValue('macros', '{{macros}} (text replacement)', enumTypes.macro, '{{'),
+            new SlashCommandEnumValue('macros', '{{macros}} (text replacement)', enumTypes.macro, enumIcons.macro),
             new SlashCommandEnumValue('format', 'chat/text formatting', enumTypes.name, '★'),
             new SlashCommandEnumValue('hotkeys', 'keyboard shortcuts', enumTypes.enum, '⏎'),
         ],
