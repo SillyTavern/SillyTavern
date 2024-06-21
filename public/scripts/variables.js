@@ -372,6 +372,7 @@ async function whileCallback(args, value) {
  * @returns
  */
 async function timesCallback(args, value) {
+    if (args.guard instanceof SlashCommandClosure) throw new Error('argument \'guard\' cannot be a closure for command /while');
     let repeats;
     let command;
     if (Array.isArray(value)) {

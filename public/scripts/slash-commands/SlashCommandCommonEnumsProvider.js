@@ -1,6 +1,7 @@
-import { chat_metadata, characters, substituteParams, chat, extension_prompt_roles } from "../../script.js";
+import { chat_metadata, characters, substituteParams, chat, extension_prompt_roles, extension_prompt_types } from "../../script.js";
 import { extension_settings } from "../extensions.js";
-import { groups } from "../group-chats.js";
+import { getGroupMembers, groups, selected_group } from "../group-chats.js";
+import { power_user } from "../power-user.js";
 import { searchCharByName, getTagsList, tags } from "../tags.js";
 import { SlashCommandClosure } from "./SlashCommandClosure.js";
 import { SlashCommandEnumValue, enumTypes } from "./SlashCommandEnumValue.js";
@@ -21,11 +22,13 @@ export const enumIcons = {
     // Common types
     character: '👤',
     group: '🧑‍🤝‍🧑',
-    qr: '🤖',
+    persona: '🧙‍♂️',
+    qr: 'QR',
     tag: '🏷️',
     world: '🌐',
     preset: '⚙️',
     file: '📄',
+    message: '💬',
 
     true: '✔️',
     false: '❌',
@@ -49,6 +52,16 @@ export const enumIcons = {
     normal: '🟢',
     disabled: '❌',
     vectorized: '🔗',
+
+    /**
+     * Returns the appropriate state icon based on a boolean
+     *
+     * @param {boolean} state - The state to determine the icon for
+     * @returns {string} The corresponding state icon
+     */
+    getStateIcon: (state) => {
+        return state ? enumIcons.true : enumIcons.false;
+    },
 
     /**
      * Returns the appropriate WI icon based on the entry
@@ -77,6 +90,18 @@ export const enumIcons = {
             default: return enumIcons.default;
         }
     },
+
+    /**
+     * A function to get the data type icon
+     *
+     * @param {string} type - The type of the data
+     * @returns {string} The corresponding data type icon
+     */
+    getDataTypeIcon: (type) => {
+        // Remove possible nullable types definition to match type icon
+        type = type.replace(/\?$/, '');
+        return enumIcons[type] ?? enumIcons.default;
+    }
 }
 
 /**
@@ -88,6 +113,7 @@ export const commonEnumProviders = {
     /**
      * Enum values for booleans. Either using true/false or on/off
      * Optionally supports "toggle".
+     *
      * @param {('onOff'|'onOffToggle'|'trueFalse')?} [mode='trueFalse'] - The mode to use. Default is 'trueFalse'.
      * @returns {() => SlashCommandEnumValue[]}
      */
@@ -112,9 +138,9 @@ export const commonEnumProviders = {
         const types = type.flat();
         const isAll = types.includes('all');
         return [
-            ...isAll || types.includes('global') ? Object.keys(extension_settings.variables.global ?? []).map(x => new SlashCommandEnumValue(x, null, enumTypes.macro, enumIcons.globalVariable)) : [],
-            ...isAll || types.includes('local') ? Object.keys(chat_metadata.variables ?? []).map(x => new SlashCommandEnumValue(x, null, enumTypes.name, enumIcons.localVariable)) : [],
-            ...isAll || types.includes('scope') ? [].map(x => new SlashCommandEnumValue(x, null, enumTypes.variable, enumIcons.scopeVariable)) : [], // TODO: Add scoped variables here, Lenny
+            ...isAll || types.includes('global') ? Object.keys(extension_settings.variables.global ?? []).map(name => new SlashCommandEnumValue(name, null, enumTypes.macro, enumIcons.globalVariable)) : [],
+            ...isAll || types.includes('local') ? Object.keys(chat_metadata.variables ?? []).map(name => new SlashCommandEnumValue(name, null, enumTypes.name, enumIcons.localVariable)) : [],
+            ...isAll || types.includes('scope') ? [].map(name => new SlashCommandEnumValue(name, null, enumTypes.variable, enumIcons.scopeVariable)) : [], // TODO: Add scoped variables here, Lenny
         ]
     },
 
@@ -124,12 +150,27 @@ export const commonEnumProviders = {
      * @param {('all' | 'character' | 'group')?} [mode='all'] - Which type to return
      * @returns {() => SlashCommandEnumValue[]}
      */
-    charName: (mode = 'all') => () => {
+    characters: (mode = 'all') => () => {
         return [
-            ...['all', 'character'].includes(mode) ? characters.map(it => new SlashCommandEnumValue(it.name, null, enumTypes.name, enumIcons.character)) : [],
-            ...['all', 'group'].includes(mode) ? groups.map(it => new SlashCommandEnumValue(it.name, null, enumTypes.qr, enumIcons.group)) : [],
+            ...['all', 'character'].includes(mode) ? characters.map(char => new SlashCommandEnumValue(char.name, null, enumTypes.name, enumIcons.character)) : [],
+            ...['all', 'group'].includes(mode) ? groups.map(group => new SlashCommandEnumValue(group.name, null, enumTypes.qr, enumIcons.group)) : [],
         ];
     },
+
+    /**
+     * All group members of the given group, or default the current active one
+     *
+     * @param {string?} groupId - The id of the group - pass in `undefined` to use the current active group
+     * @returns {() =>SlashCommandEnumValue[]}
+     */
+    groupMembers: (groupId = undefined) => () => getGroupMembers(groupId).map((character, index) => new SlashCommandEnumValue(String(index), character.name, enumTypes.enum, enumIcons.character)),
+
+    /**
+     * All possible personas
+     *
+     * @returns {SlashCommandEnumValue[]}
+     */
+    personas: () => Object.values(power_user.personas).map(persona => new SlashCommandEnumValue(persona, null, enumTypes.name, enumIcons.persona)),
 
     /**
      * All possible tags for a given char/group entity
@@ -144,14 +185,26 @@ export const commonEnumProviders = {
         const key = searchCharByName(substituteParams(charName), { suppressLogging: true });
         const assigned = key ? getTagsList(key) : [];
         return tags.filter(it => !key || mode === 'all' || mode === 'existing' && assigned.includes(it) || mode === 'not-existing' && !assigned.includes(it))
-            .map(it => new SlashCommandEnumValue(it.name, null, enumTypes.command, enumIcons.tag));
+            .map(tag => new SlashCommandEnumValue(tag.name, null, enumTypes.command, enumIcons.tag));
     },
 
     /**
      * All messages in the current chat, returning the message id
-     * @returns {SlashCommandEnumValue[]}
+     *
+     * Optionally supports variable names, and/or a placeholder for the last/new message id
+     *
+     * @param {object} [options={}] - Optional arguments
+     * @param {boolean} [options.allowIdAfter=false] - Whether to add an enum option for the new message id after the last message
+     * @param {boolean} [options.allowVars=false] - Whether to add enum option for variable names
+     * @returns {() => SlashCommandEnumValue[]}
      */
-    messages: () => chat.map((mes, i) => new SlashCommandEnumValue(String(i), `${mes.name}: ${mes.mes}`, enumTypes.number, mes.is_user ? enumIcons.user : mes.is_system ? enumIcons.system : enumIcons.assistant)),
+    messages: ({ allowIdAfter = false, allowVars = false } = {}) => () => {
+        return [
+            ...chat.map((message, index) => new SlashCommandEnumValue(String(index), `${message.name}: ${message.mes}`, enumTypes.number, message.is_user ? enumIcons.user : message.is_system ? enumIcons.system : enumIcons.assistant)),
+            ...allowIdAfter ? [new SlashCommandEnumValue(String(chat.length), '>> After Last Message >>', enumTypes.enum, '➕')] : [],
+            ...allowVars ? commonEnumProviders.variables('all')() : [],
+        ];
+    },
 
     /**
      * All existing worlds / lorebooks
@@ -159,18 +212,19 @@ export const commonEnumProviders = {
      * @returns {SlashCommandEnumValue[]}
      */
     worlds: () => $('#world_info').children().toArray().map(x => new SlashCommandEnumValue(x.textContent, null, enumTypes.name, enumIcons.world)),
-};
 
-/**
- * Get the unicode icon for the given enum value type
- *
- * Can also confert nullable data types to their non-nullable counterparts
- *
- * @param {string} type The type of the enum value
- * @returns {string} the unicode icon
- */
-export function getEnumIcon(type) {
-    // Remove possible nullable types definition to match type icon
-    type = type.replace(/\?$/, '');
-    return enumIcons[type] ?? enumIcons.default;
-}
+    /**
+     * All existing injects for the current chat
+     *
+     * @returns {SlashCommandEnumValue[]}
+     */
+    injects: () => {
+        if (!chat_metadata.script_injects || !Object.keys(chat_metadata.script_injects).length) return [];
+        return Object.entries(chat_metadata.script_injects)
+            .map(([id, inject]) => {
+                const positionName = (Object.entries(extension_prompt_types)).find(([_, value]) => value === inject.position)?.[0] ?? 'unknown';
+                return new SlashCommandEnumValue(id, `${enumIcons.getRoleIcon(inject.role ?? extension_prompt_roles.SYSTEM)}[Inject](${positionName}, depth: ${inject.depth}, scan: ${inject.scan ?? false}) ${inject.value}`,
+                    enumTypes.enum, '💉');
+            });
+    },
+};

@@ -10,7 +10,7 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { isFunctionCallingSupported } from '../../openai.js';
-import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
+import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 export { MODULE_NAME };
 
@@ -2045,6 +2045,14 @@ function migrateSettings() {
     });
     eventSource.on(event_types.MOVABLE_PANELS_RESET, updateVisualNovelModeDebounced);
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
+
+    const localEnumProviders = {
+        expressions: () => getCachedExpressions().map(expression => {
+            const isCustom = extension_settings.expressions.custom?.includes(expression);
+            return new SlashCommandEnumValue(expression, null, isCustom ? enumTypes.name : enumTypes.enum, isCustom ? 'C' : 'D');
+        }),
+    }
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sprite',
         aliases: ['emote'],
@@ -2054,7 +2062,7 @@ function migrateSettings() {
                 description: 'spriteId',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: () => getCachedExpressions().map((x) => new SlashCommandEnumValue(x)),
+                enumProvider: localEnumProviders.expressions,
             }),
         ],
         helpString: 'Force sets the sprite for the current character.',
@@ -2080,7 +2088,7 @@ function migrateSettings() {
                 description: 'character name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: commonEnumProviders.charName(),
+                enumProvider: commonEnumProviders.characters(),
             }),
         ],
         helpString: 'Returns the last set sprite / expression for the named character.',

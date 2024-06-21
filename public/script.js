@@ -8818,18 +8818,15 @@ jQuery(async function () {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'api',
         callback: connectAPISlash,
-        namedArgumentList: [],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'API to connect to',
-                [ARGUMENT_TYPE.STRING],
-                true,
-                false,
-                null,
-                Object.entries(CONNECT_API_MAP).map(([api, { selected }]) =>
+            SlashCommandArgument.fromProps({
+                description: 'API to connect to',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumList: Object.entries(CONNECT_API_MAP).map(([api, { selected }]) =>
                     new SlashCommandEnumValue(api, selected, enumTypes.getBasedOnIndex(uniqueAPIs.findIndex(x => x === selected)),
                         selected[0].toUpperCase() ?? enumIcons.default)),
-            ),
+            }),
         ],
         helpString: `
             <div>
@@ -8918,7 +8915,6 @@ jQuery(async function () {
         name: 'instruct',
         callback: selectInstructCallback,
         returns: 'current preset',
-        namedArgumentList: [],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'instruct preset name',

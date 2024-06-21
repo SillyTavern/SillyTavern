@@ -481,7 +481,6 @@ export async function initPresetManager() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'preset',
         callback: presetCommandCallback,
         returns: 'current preset',
-        namedArgumentList: [],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'name',

@@ -3,7 +3,8 @@ import { extension_settings, renderExtensionTemplateAsync, writeExtensionField }
 import { selected_group } from '../../group-chats.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
-import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
+import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { download, getFileText, getSortableDelay, uuidv4 } from '../../utils.js';
 import { resolveVariable } from '../../variables.js';
@@ -571,6 +572,14 @@ jQuery(async () => {
     await loadRegexScripts();
     $('#saved_regex_scripts').sortable('enable');
 
+    const localEnumProviders = {
+        regexScripts: () => getRegexScripts().map(script => {
+            const isGlobal = extension_settings.regex?.some(x => x.scriptName === script.scriptName);
+            return new SlashCommandEnumValue(script.scriptName, `${enumIcons.getStateIcon(!script.disabled)} [${isGlobal ? 'global' : 'scoped'}] ${script.findRegex}`,
+                isGlobal ? enumTypes.enum : enumTypes.name, isGlobal ? 'G' : 'S');
+        }),
+    };
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'regex',
         callback: runRegexCallback,
@@ -581,7 +590,7 @@ jQuery(async () => {
                 description: 'script name',
                 typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
-                enumProvider: () => getRegexScripts().map(script => new SlashCommandEnumValue(script.scriptName, null, 'regex', '🔍')),
+                enumProvider: localEnumProviders.regexScripts,
             }),
         ],
         unnamedArgumentList: [

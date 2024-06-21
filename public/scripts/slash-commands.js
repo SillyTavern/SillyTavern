@@ -61,9 +61,9 @@ import { AutoComplete } from './autocomplete/AutoComplete.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortController.js';
 import { SlashCommandNamedArgumentAssignment } from './slash-commands/SlashCommandNamedArgumentAssignment.js';
-import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
+import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
-import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -79,9 +79,16 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: '?',
     callback: helpCommandCallback,
     aliases: ['help'],
-    unnamedArgumentList: [new SlashCommandArgument(
-        'help topic', ARGUMENT_TYPE.STRING, false, false, null, ['slash', 'format', 'hotkeys', 'macros'],
-    )],
+    unnamedArgumentList: [SlashCommandArgument.fromProps({
+        description: 'help topic',
+        typeList: [ARGUMENT_TYPE.STRING],
+        enumList: [
+            new SlashCommandEnumValue('slash', 'slash commands (STscript)', enumTypes.command, '/'),
+            new SlashCommandEnumValue('macros', '{{macros}} (text replacement)', enumTypes.macro, '{{'),
+            new SlashCommandEnumValue('format', 'chat/text formatting', enumTypes.name, '★'),
+            new SlashCommandEnumValue('hotkeys', 'keyboard shortcuts', enumTypes.enum, '⏎'),
+        ],
+    })],
     helpString: 'Get help on macros, chat formatting and commands.',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
@@ -94,9 +101,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         ),
     ],
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'persona name', [ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandArgument.fromProps({
+            description: 'persona name',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: commonEnumProviders.personas,
+        }),
     ],
     helpString: 'Selects the given persona with its name and avatar (by name or avatar url). If no matching persona exists, applies a temporary name.',
     aliases: ['name'],
@@ -123,9 +133,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
             enumProvider: () => [...document.querySelectorAll('.bg_example')]
-                .map((it) => new SlashCommandEnumValue(it.getAttribute('bgfile')))
-                .filter(it => it.value?.length)
-            ,
+                .map(it => new SlashCommandEnumValue(it.getAttribute('bgfile')))
+                .filter(it => it.value?.length),
         }),
     ],
     helpString: `
@@ -146,9 +155,14 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'sendas',
     callback: sendMessageAs,
     namedArgumentList: [
-        new SlashCommandNamedArgument(
-            'name', 'Character name', [ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'name',
+            description: 'Character name',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: commonEnumProviders.characters('character'),
+            forceEnum: false,
+        }),
         new SlashCommandNamedArgument(
             'compact', 'Use compact layout', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
         ),
@@ -156,8 +170,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'at',
             description: 'position to insert the message',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.variables('all'),
-            forceEnum: false,
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true }),
         }),
     ],
     unnamedArgumentList: [
@@ -200,8 +213,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'at',
             description: 'position to insert the message',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.variables('all'),
-            forceEnum: false,
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true })
         }),
     ],
     unnamedArgumentList: [
@@ -255,8 +267,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'at',
             description: 'position to insert the message',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.variables('all'),
-            forceEnum: false,
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true })
         }),
     ],
     unnamedArgumentList: [
@@ -340,7 +351,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             description: 'name',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-            enumProvider: commonEnumProviders.charName('all'),
+            enumProvider: commonEnumProviders.characters('all'),
         }),
     ],
     helpString: 'Opens up a chat with the character or group by its name',
@@ -388,7 +399,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             description: 'character name',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-            enumProvider: commonEnumProviders.charName('all'),
+            enumProvider: commonEnumProviders.characters('all'),
         }),
     ],
     unnamedArgumentList: [
@@ -407,7 +418,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             description: 'name',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-            enumProvider: commonEnumProviders.charName('all'),
+            enumProvider: commonEnumProviders.characters('all'),
         }),
     ],
     aliases: ['cancel'],
@@ -441,17 +452,18 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'at',
             description: 'position to insert the message',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.variables('all'),
-            forceEnum: false,
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true })
         }),
-        new SlashCommandNamedArgument(
-            'name',
-            'display name',
-            [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
-            false,
-            false,
-            '{{user}}',
-        ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'name',
+            description: 'display name',
+            typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+            defaultValue: '{{user}}',
+            enumProvider: () => [
+                ...commonEnumProviders.characters('character')(),
+                ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; })
+            ],
+        }),
     ],
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -513,7 +525,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             description: 'message index or range',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
             isRequired: true,
-            enumProvider: () => chat.map((_, i) => new SlashCommandEnumValue(String(i), null, 'number', '1️⃣')),
+            enumProvider: commonEnumProviders.messages(),
         }),
     ],
     helpString: 'Hides a chat message from the prompt.',
@@ -522,9 +534,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'unhide',
     callback: unhideMessageCallback,
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'message index or range', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE], true,
-        ),
+        SlashCommandArgument.fromProps({
+            description: 'message index or range',
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
+            isRequired: true,
+            enumProvider: commonEnumProviders.messages(),
+        }),
     ],
     helpString: 'Unhides a message from the prompt.',
 }));
@@ -537,9 +552,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             description: 'member index or name',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING],
             isRequired: true,
-            enumProvider: () => [
-                ...getGroupMembers().map((character, i) => new SlashCommandEnumValue(String(i), character.name, 'name', '👤')),
-            ],
+            enumProvider: commonEnumProviders.groupMembers(),
         }),
     ],
     helpString: 'Disables a group member from being drafted for replies.',
@@ -549,9 +562,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     aliases: ['enable', 'enablemember', 'memberenable'],
     callback: enableGroupMemberCallback,
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandArgument.fromProps({
+            description: 'member index or name',
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: commonEnumProviders.groupMembers(),
+        }),
     ],
     helpString: 'Enables a group member to be drafted for replies.',
 }));
@@ -560,9 +576,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     callback: addGroupMemberCallback,
     aliases: ['addmember', 'memberadd'],
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'character name', [ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandArgument.fromProps({
+            description: 'character name',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: () => selected_group ? commonEnumProviders.characters('character')() : [],
+        }),
     ],
     helpString: `
         <div>
@@ -583,9 +602,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     callback: removeGroupMemberCallback,
     aliases: ['removemember', 'memberremove'],
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandArgument.fromProps({
+            description: 'member index or name',
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: commonEnumProviders.groupMembers(),
+        }),
     ],
     helpString: `
         <div>
@@ -607,9 +629,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     callback: moveGroupMemberUpCallback,
     aliases: ['upmember', 'memberup'],
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandArgument.fromProps({
+            description: 'member index or name',
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: commonEnumProviders.groupMembers(),
+        }),
     ],
     helpString: 'Moves a group member up in the group chat list.',
 }));
@@ -618,9 +643,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     callback: moveGroupMemberDownCallback,
     aliases: ['downmember', 'memberdown'],
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandArgument.fromProps({
+            description: 'member index or name',
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: commonEnumProviders.groupMembers(),
+        }),
     ],
     helpString: 'Moves a group member down in the group chat list.',
 }));
@@ -628,9 +656,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'peek',
     callback: peekCallback,
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'message index or range', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE], false, true,
-        ),
+        SlashCommandArgument.fromProps({
+            description: 'message index or range',
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
+            isRequired: true,
+            enumProvider: commonEnumProviders.messages(),
+        }),
     ],
     helpString: `
         <div>
@@ -656,9 +687,14 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     callback: deleteSwipeCallback,
     aliases: ['swipedel'],
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            '1-based swipe id', [ARGUMENT_TYPE.NUMBER],
-        ),
+        SlashCommandArgument.fromProps({
+            description: '1-based swipe id',
+            typeList: [ARGUMENT_TYPE.NUMBER],
+            isRequired: true,
+            enumProvider: () => Array.isArray(chat[chat.length - 1]?.swipes) ?
+                chat[chat.length - 1].swipes.map((/** @type {string} */ swipe, /** @type {number} */ i) => new SlashCommandEnumValue(String(i + 1), swipe, enumTypes.enum, enumIcons.message))
+                : [],
+        }),
     ],
     helpString: `
         <div>
@@ -687,9 +723,18 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         new SlashCommandNamedArgument(
             'title', 'title of the toast message', [ARGUMENT_TYPE.STRING], false,
         ),
-        new SlashCommandNamedArgument(
-            'severity', 'severity level of the toast message', [ARGUMENT_TYPE.STRING], false, false, null, ['info', 'warning', 'error', 'success'],
-        ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'severity',
+            description: 'severity level of the toast message',
+            typeList: [ARGUMENT_TYPE.STRING],
+            defaultValue: 'info',
+            enumProvider: () => [
+                new SlashCommandEnumValue('info', 'info', enumTypes.macro, 'ℹ️'),
+                new SlashCommandEnumValue('warning', 'warning', enumTypes.enum, '⚠️'),
+                new SlashCommandEnumValue('error', 'error', enumTypes.enum, '❗'),
+                new SlashCommandEnumValue('success', 'success', enumTypes.enum, '✅'),
+            ],
+        }),
     ],
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -716,17 +761,28 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     returns: 'generated text',
     namedArgumentList: [
         new SlashCommandNamedArgument(
-            'lock', 'lock user input during generation', [ARGUMENT_TYPE.BOOLEAN], false, false, null, ['on', 'off'],
+            'lock', 'lock user input during generation', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
         ),
-        new SlashCommandNamedArgument(
-            'name', 'in-prompt name for instruct mode', [ARGUMENT_TYPE.STRING], false, false, 'System',
-        ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'name',
+            description: 'in-prompt name for instruct mode',
+            typeList: [ARGUMENT_TYPE.STRING],
+            defaultValue: 'System',
+            enumProvider: () => [...commonEnumProviders.characters('character')(), new SlashCommandEnumValue('System', null, enumTypes.enum, enumIcons.assistant)],
+            forceEnum: false,
+        }),
         new SlashCommandNamedArgument(
             'length', 'API response length in tokens', [ARGUMENT_TYPE.NUMBER], false,
         ),
-        new SlashCommandNamedArgument(
-            'as', 'role of the output prompt', [ARGUMENT_TYPE.STRING], false, false, 'system', ['system', 'char'],
-        ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'as',
+            description: 'role of the output prompt',
+            typeList: [ARGUMENT_TYPE.STRING],
+            enumList: [
+                new SlashCommandEnumValue('system', null, enumTypes.enum, enumIcons.assistant),
+                new SlashCommandEnumValue('char', null, enumTypes.enum, enumIcons.character),
+            ],
+        }),
     ],
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -748,17 +804,23 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     returns: 'generated text',
     namedArgumentList: [
         new SlashCommandNamedArgument(
-            'lock', 'lock user input during generation', [ARGUMENT_TYPE.BOOLEAN], false, false, null, ['on', 'off'],
+            'lock', 'lock user input during generation', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
         ),
         new SlashCommandNamedArgument(
-            'instruct', 'use instruct mode', [ARGUMENT_TYPE.BOOLEAN], false, false, 'on', ['on', 'off'],
+            'instruct', 'use instruct mode', [ARGUMENT_TYPE.BOOLEAN], false, false, 'on', commonEnumProviders.boolean('onOff')(),
         ),
         new SlashCommandNamedArgument(
             'stop', 'one-time custom stop strings', [ARGUMENT_TYPE.LIST], false,
         ),
-        new SlashCommandNamedArgument(
-            'as', 'role of the output prompt', [ARGUMENT_TYPE.STRING], false, false, 'system', ['system', 'char'],
-        ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'as',
+            description: 'role of the output prompt',
+            typeList: [ARGUMENT_TYPE.STRING],
+            enumList: [
+                new SlashCommandEnumValue('system', null, enumTypes.enum, enumIcons.assistant),
+                new SlashCommandEnumValue('char', null, enumTypes.enum, enumIcons.character),
+            ],
+        }),
         new SlashCommandNamedArgument(
             'system', 'system prompt at the start', [ARGUMENT_TYPE.STRING], false,
         ),
@@ -861,7 +923,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'pass',
-    callback: (_, arg) => arg,
+    callback: (_, arg) => {
+        // We do not support arrays of closures. Arrays of strings will be send as JSON
+        if (Array.isArray(arg) && arg.some(x => x instanceof SlashCommandClosure)) throw new Error('Command /pass does not support multiple closures');
+        if (Array.isArray(arg)) return JSON.stringify(arg);
+        return arg;
+    },
     returns: 'the provided value',
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -914,10 +981,10 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             'default', 'default value of the input field', [ARGUMENT_TYPE.STRING], false, false, '"string"',
         ),
         new SlashCommandNamedArgument(
-            'large', 'show large input field', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', ['on', 'off'],
+            'large', 'show large input field', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', commonEnumProviders.boolean('onOff')(),
         ),
         new SlashCommandNamedArgument(
-            'wide', 'show wide input field', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', ['on', 'off'],
+            'wide', 'show wide input field', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', commonEnumProviders.boolean('onOff')(),
         ),
         new SlashCommandNamedArgument(
             'okButton', 'text for the ok button', [ARGUMENT_TYPE.STRING], false,
@@ -949,9 +1016,15 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         ),
     ],
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'scoped variable or qr label', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandArgument.fromProps({
+            description: 'scoped variable or qr label',
+            typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: () => [
+                ...commonEnumProviders.variables('scope')(),
+                ...(typeof window['qrEnumProviderExecutables'] === 'function') ? window['qrEnumProviderExecutables']() : [],
+            ],
+        }),
     ],
     helpString: `
         <div>
@@ -966,19 +1039,29 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     aliases: ['message'],
     namedArgumentList: [
         new SlashCommandNamedArgument(
-            'names', 'show message author names', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', ['off', 'on'],
+            'names', 'show message author names', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', commonEnumProviders.boolean('onOff')(),
         ),
         new SlashCommandNamedArgument(
-            'hidden', 'include hidden messages', [ARGUMENT_TYPE.BOOLEAN], false, false, 'on', ['off', 'on'],
+            'hidden', 'include hidden messages', [ARGUMENT_TYPE.BOOLEAN], false, false, 'on', commonEnumProviders.boolean('onOff')(),
         ),
-        new SlashCommandNamedArgument(
-            'role', 'filter messages by role', [ARGUMENT_TYPE.STRING], false, false, null, ['system', 'assistant', 'user'],
-        ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'role',
+            description: 'filter messages by role',
+            typeList: [ARGUMENT_TYPE.STRING],
+            enumList: [
+                new SlashCommandEnumValue('system', null, enumTypes.enum, enumIcons.system),
+                new SlashCommandEnumValue('assistant', null, enumTypes.enum, enumIcons.assistant),
+                new SlashCommandEnumValue('user', null, enumTypes.enum, enumIcons.user),
+            ],
+        }),
     ],
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'message index or range', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE], false, true,
-        ),
+        SlashCommandArgument.fromProps({
+            description: 'message index or range',
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
+            isRequired: true,
+            enumProvider: commonEnumProviders.messages(),
+        }),
     ],
     returns: 'the specified message or range of messages as a string',
     helpString: `
@@ -1034,10 +1117,10 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     returns: 'popup text',
     namedArgumentList: [
         new SlashCommandNamedArgument(
-            'large', 'show large popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, ['on', 'off'],
+            'large', 'show large popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
         ),
         new SlashCommandNamedArgument(
-            'wide', 'show wide popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, ['on', 'off'],
+            'wide', 'show wide popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
         ),
         new SlashCommandNamedArgument(
             'okButton', 'text for the OK button', [ARGUMENT_TYPE.STRING], false,
@@ -1100,9 +1183,16 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         new SlashCommandNamedArgument(
             'limit', 'number of tokens to keep', [ARGUMENT_TYPE.NUMBER], true,
         ),
-        new SlashCommandNamedArgument(
-            'direction', 'trim direction', [ARGUMENT_TYPE.STRING], true, false, null, ['start', 'end'],
-        ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'direction',
+            description: 'trim direction',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumList: [
+                new SlashCommandEnumValue('start', null, enumTypes.enum, '⬅️'),
+                new SlashCommandEnumValue('end', null, enumTypes.enum, '➡️'),
+            ],
+        }),
     ],
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -1173,11 +1263,19 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         new SlashCommandNamedArgument(
             'scan', 'include injection content into World Info scans', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
         ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'role',
+            description: 'role for in-chat injections',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: false,
+            enumList: [
+                new SlashCommandEnumValue('system', null, enumTypes.enum, enumIcons.system),
+                new SlashCommandEnumValue('assistant', null, enumTypes.enum, enumIcons.assistant),
+                new SlashCommandEnumValue('user', null, enumTypes.enum, enumIcons.user),
+            ],
+        }),
         new SlashCommandNamedArgument(
-            'role', 'role for in-chat injections', [ARGUMENT_TYPE.STRING], false, false, 'system', ['system', 'user', 'assistant'],
-        ),
-        new SlashCommandNamedArgument(
-            'ephemeral', 'remove injection after generation', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false', ['true', 'false'],
+            'ephemeral', 'remove injection after generation', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
         ),
     ],
     unnamedArgumentList: [
@@ -1196,16 +1294,25 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'flushinject',
     aliases: ['flushinjects'],
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'injection ID or a variable name pointing to ID', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME], false, false, '',
-        ),
+        SlashCommandArgument.fromProps({
+            description: 'injection ID or a variable name pointing to ID',
+            typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+            defaultValue: '',
+            enumProvider: () => [
+                ...commonEnumProviders.injects(),
+                ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; }),
+            ],
+        })
     ],
     callback: flushInjectsCallback,
     helpString: 'Removes a script injection for the current chat. If no ID is provided, removes all script injections.',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'tokens',
-    callback: (_, text) => getTokenCountAsync(text),
+    callback: (_, text) => {
+        if (text instanceof SlashCommandClosure || Array.isArray(text)) throw new Error('Unnamed argument cannot be a closure for command /tokens')
+        return getTokenCountAsync(text).then(count => String(count));
+    },
     returns: 'number of tokens',
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -1230,12 +1337,28 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     aliases: ['setpromptentries'],
     callback: setPromptEntryCallback,
     namedArgumentList: [
-        new SlashCommandNamedArgument(
-            'identifier', 'Prompt entry identifier(s) to target', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.LIST], false, true,
-        ),
-        new SlashCommandNamedArgument(
-            'name', 'Prompt entry name(s) to target', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.LIST], false, true,
-        ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'identifier',
+            description: 'Prompt entry identifier(s) to target',
+            typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.LIST],
+            acceptsMultiple: true,
+            enumProvider: () => {
+                const promptManager = setupChatCompletionPromptManager(oai_settings);
+                const prompts = promptManager.serviceSettings.prompts;
+                return prompts.map(prompt => new SlashCommandEnumValue(prompt.identifier, prompt.name, enumTypes.enum));
+            },
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'name',
+            description: 'Prompt entry name(s) to target',
+            typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.LIST],
+            acceptsMultiple: true,
+            enumProvider: () => {
+                const promptManager = setupChatCompletionPromptManager(oai_settings);
+                const prompts = promptManager.serviceSettings.prompts;
+                return prompts.map(prompt => new SlashCommandEnumValue(prompt.name, prompt.identifier, enumTypes.enum));
+            }
+        }),
     ],
     unnamedArgumentList: [
         SlashCommandArgument.fromProps({
@@ -1244,7 +1367,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             isRequired: true,
             acceptsMultiple: false,
             defaultValue: 'toggle', // unnamed arguments don't support default values yet
-            enumList: ['on', 'off', 'toggle'],
+            enumList: commonEnumProviders.boolean('onOffToggle')(),
         }),
     ],
     helpString: 'Sets the specified prompt manager entry/entries on or off.',
@@ -1521,7 +1644,7 @@ async function popupCallback(args, value) {
     await delay(1);
     await callGenericPopup(safeValue, POPUP_TYPE.TEXT, '', popupOptions);
     await delay(1);
-    return value;
+    return String(value);
 }
 
 function getMessagesCallback(args, value) {
@@ -1625,12 +1748,11 @@ async function runCallback(args, name) {
 
 /**
  *
- * @param {object} param0
- * @param {SlashCommandAbortController} param0._abortController
- * @param {string} [param0.quiet]
+ * @param {import('./slash-commands/SlashCommand.js').NamedArguments} param0
  * @param {string} [reason]
  */
 function abortCallback({ _abortController, quiet }, reason) {
+    if (quiet instanceof SlashCommandClosure) throw new Error('argument \'quiet\' cannot be a closure for command /abort');
     _abortController.abort((reason ?? '').toString().length == 0 ? '/abort command executed' : reason, !isFalseBoolean(quiet ?? 'true'));
     return '';
 }
@@ -1661,9 +1783,9 @@ async function inputCallback(args, prompt) {
     };
     // Do not remove this delay, otherwise the prompt will not show up
     await delay(1);
-    const result = await callPopup(safeValue, 'input', defaultInput, popupOptions);
+    const result = await callGenericPopup(safeValue, POPUP_TYPE.INPUT, defaultInput, popupOptions);
     await delay(1);
-    return result || '';
+    return String(result);
 }
 
 /**

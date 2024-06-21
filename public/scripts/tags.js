@@ -1825,7 +1825,7 @@ function registerTagsSlashCommands() {
                 description: 'Character name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
-                enumProvider: commonEnumProviders.charName(),
+                enumProvider: commonEnumProviders.characters(),
             }),
         ],
         unnamedArgumentList: [
@@ -1870,7 +1870,7 @@ function registerTagsSlashCommands() {
                 description: 'Character name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
-                enumProvider: commonEnumProviders.charName(),
+                enumProvider: commonEnumProviders.characters(),
             }),
         ],
         unnamedArgumentList: [
@@ -1913,7 +1913,7 @@ function registerTagsSlashCommands() {
                 description: 'Character name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
-                enumProvider: commonEnumProviders.charName(),
+                enumProvider: commonEnumProviders.characters(),
             }),
         ],
         unnamedArgumentList: [
@@ -1956,7 +1956,7 @@ function registerTagsSlashCommands() {
                 description: 'Character name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
-                enumProvider: commonEnumProviders.charName(),
+                enumProvider: commonEnumProviders.characters(),
             }),
         ],
         helpString: `

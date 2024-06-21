@@ -213,7 +213,7 @@ jQuery(async () => {
 
             return attachments.map(attachment => new SlashCommandEnumValue(
                 returnField === 'name' ? attachment.name : attachment.url,
-                `${extension_settings.disabled_attachments.includes(attachment.url) ? enumIcons.false : enumIcons.true} [${source}] ${returnField === 'url' ? attachment.name : attachment.url}`,
+                `${enumIcons.getStateIcon(!extension_settings.disabled_attachments.includes(attachment.url))} [${source}] ${returnField === 'url' ? attachment.name : attachment.url}`,
                 enumTypes.enum, enumIcons.file));
         },
     };

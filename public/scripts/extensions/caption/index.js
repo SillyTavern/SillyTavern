@@ -453,7 +453,7 @@ jQuery(async function () {
                 name: 'id',
                 description: 'get image from a message with this ID',
                 typeList: [ARGUMENT_TYPE.NUMBER],
-                enumProvider: commonEnumProviders.messages,
+                enumProvider: commonEnumProviders.messages(),
             }),
         ],
         unnamedArgumentList: [

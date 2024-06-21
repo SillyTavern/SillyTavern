@@ -36,14 +36,36 @@ export class SlashCommandHandler {
         }
 
         const localEnumProviders = {
-            qrSets: () => QuickReplySet.list.map(qrSet => new SlashCommandEnumValue(qrSet.name, null, enumTypes.enum, 'S')),
+            /** All quick reply sets, optionally filtering out sets that wer already used in the "set" named argument */
+            qrSets: (executor) => QuickReplySet.list.filter(qrSet => qrSet.name != String(executor.namedArgumentList.find(x => x.name == 'set')?.value))
+                .map(qrSet => new SlashCommandEnumValue(qrSet.name, null, enumTypes.enum, 'S')),
 
+            /** All QRs inside a set, utilizing the "set" named argument */
             qrEntries: (executor) => QuickReplySet.get(String(executor.namedArgumentList.find(x => x.name == 'set')?.value))?.qrList.map(qr => {
                 const icons = getExecutionIcons(qr);
                 const message = `${qr.automationId ? `[${qr.automationId}]` : ''}${icons ? `[auto: ${icons}]` : ''} ${qr.title || qr.message}`.trim();
-                return new SlashCommandEnumValue(qr.label, message, enumTypes.enum, 'QR');
+                return new SlashCommandEnumValue(qr.label, message, enumTypes.enum, enumIcons.qr);
             }) ?? [],
+
+            /** All QRs as a set.name string, to be able to execute, for example via the /run command */
+            qrExecutables: () => {
+                const globalSetList = this.api.settings.config.setList;
+                const chatSetList = this.api.settings.chatConfig?.setList;
+
+                const globalQrs = globalSetList.map(link => link.set.qrList.map(qr => ({ set: link.set, qr }))).flat();
+                const chatQrs = chatSetList?.map(link => link.set.qrList.map(qr => ({ set: link.set, qr }))).flat() ?? [];
+                const otherQrs = QuickReplySet.list.filter(set => !globalSetList.some(link => link.set.name === set.name && !chatSetList?.some(link => link.set.name === set.name)))
+                    .map(set => set.qrList.map(qr => ({ set, qr }))).flat();
+
+                return [
+                    ...globalQrs.map(x => new SlashCommandEnumValue(`${x.set.name}.${x.qr.label}`, `[global] ${x.qr.title || x.qr.message}`, enumTypes.name, enumIcons.qr)),
+                    ...chatQrs.map(x => new SlashCommandEnumValue(`${x.set.name}.${x.qr.label}`, `[chat] ${x.qr.title || x.qr.message}`, enumTypes.enum, enumIcons.qr)),
+                    ...otherQrs.map(x => new SlashCommandEnumValue(`${x.set.name}.${x.qr.label}`, `${x.qr.title || x.qr.message}`, enumTypes.qr, enumIcons.qr)),
+                ];
+            },
         }
+
+        window['qrEnumProviderExecutables'] = localEnumProviders.qrExecutables;
 
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr',
             callback: (_, value) => this.executeQuickReplyByIndex(Number(value)),
@@ -178,7 +200,7 @@ export class SlashCommandHandler {
             namedArgumentList: [],
             unnamedArgumentList: [
                 new SlashCommandArgument(
-                    'set type', [ARGUMENT_TYPE.STRING], false, false, null, ['all', 'global', 'chat'],
+                    'set type', [ARGUMENT_TYPE.STRING], false, false, 'all', ['all', 'global', 'chat'],
                 ),
             ],
             helpString: 'Gets a list of the names of all quick reply sets.',
@@ -201,8 +223,20 @@ export class SlashCommandHandler {
         }));
 
         const qrArgs = [
-            new SlashCommandNamedArgument('label', 'text on the button, e.g., label=MyButton', [ARGUMENT_TYPE.STRING]),
-            new SlashCommandNamedArgument('set', 'name of the QR set, e.g., set=PresetName1', [ARGUMENT_TYPE.STRING]),
+            SlashCommandNamedArgument.fromProps({
+                name: 'set',
+                description: 'name of the QR set, e.g., set=PresetName1',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.qrSets,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'label',
+                description: 'text on the button, e.g., label=MyButton',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.qrLabels,
+            }),
             new SlashCommandNamedArgument('hidden', 'whether the button should be hidden, e.g., hidden=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
             new SlashCommandNamedArgument('startup', 'auto execute on app startup, e.g., startup=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
             new SlashCommandNamedArgument('user', 'auto execute on user message, e.g., user=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
@@ -246,7 +280,7 @@ export class SlashCommandHandler {
             returns: 'updated quick reply',
             namedArgumentList: [...qrUpdateArgs, ...qrArgs],
             unnamedArgumentList: [
-                new SlashCommandArgument('message', [ARGUMENT_TYPE.STRING]),
+                new SlashCommandArgument('command', [ARGUMENT_TYPE.STRING]),
             ],
             helpString: `
                 <div>
@@ -425,6 +459,7 @@ export class SlashCommandHandler {
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
                     enumProvider: localEnumProviders.qrSets,
+                    forceEnum: false,
                 }),
             ],
             helpString: `

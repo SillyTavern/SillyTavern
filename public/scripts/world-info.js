@@ -14,7 +14,7 @@ import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
-import { commonEnumProviders, enumIcons, getEnumIcon } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 
@@ -707,7 +707,7 @@ function registerWorldInfoSlashCommands() {
         /** All possible fields that can be set in a WI entry */
         wiEntryFields: () => Object.entries(newEntryDefinition).map(([key, value]) =>
             new SlashCommandEnumValue(key, `[${value.type}] default: ${(typeof value.default === 'string' ? `'${value.default}'` : value.default)}`,
-                enumTypes.enum, getEnumIcon(value.type))),
+                enumTypes.enum, enumIcons.getDataTypeIcon(value.type))),
 
         /** All existing UIDs based on the file argument as world name */
         wiUids: (/** @type {SlashCommandExecutor} */ executor) => {

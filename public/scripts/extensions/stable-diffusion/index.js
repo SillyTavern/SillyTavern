@@ -3384,7 +3384,7 @@ jQuery(async () => {
                 description: 'workflow name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: () => Array.from(document.querySelectorAll('#sd_comfy_workflow > [value]')).map(x => x.getAttribute('value')).map(x => new SlashCommandEnumValue(x, null, 'workflow', 'W')),
+                enumProvider: () => Array.from(document.querySelectorAll('#sd_comfy_workflow > [value]')).map(x => x.getAttribute('value')).map(workflow => new SlashCommandEnumValue(workflow)),
             }),
         ],
         helpString: '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <pre><code>/imagine-comfy-workflow MyWorkflow</code></pre>',
