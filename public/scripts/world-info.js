@@ -3234,24 +3234,27 @@ function checkTimedEvents(chat, entries) {
      * Processes entries for a given type of timed event.
      * @param {string} type Identifier for the type of timed event
      * @param {any[]} buffer Buffer to store the entries
+     * @param {(entry: WIScanEntry) => void} onEnded Callback for when a timed event ends
      */
-    function processEntries(type, buffer) {
+    function processEntries(type, buffer, onEnded) {
         for (const [hash, value] of Object.entries(chat_metadata.timedWorldInfo[type])) {
+            console.log(`Processing ${type} entry ${hash} with value ${value}`);
+            const entry = entries.find(x => String(getEntryHash(x)) === String(hash));
+
             if (chat.length <= Number(value)) {
-                console.log(`Removing ${type} entry ${hash} from timedWorldInfo: chat not advanced`);
+                console.log(`Removing ${type} entry from timedWorldInfo: chat not advanced`, entry);
                 delete chat_metadata.timedWorldInfo[type][hash];
                 continue;
             }
-
-            const entry = entries.find(x => String(getEntryHash(x)) === String(hash));
 
             // Ignore missing entries (they could be from another character's lorebook)
             if (!entry) {
                 continue;
             }
 
+            // Ignore invalid entries (not configured for timed effects)
             if (!entry[type]) {
-                console.log(`Removing ${type} entry ${hash} from timedWorldInfo: entry not ${type}`);
+                console.log(`Removing ${type} entry from timedWorldInfo: entry not ${type}`, entry);
                 delete chat_metadata.timedWorldInfo[type][hash];
                 continue;
             }
@@ -3259,8 +3262,11 @@ function checkTimedEvents(chat, entries) {
             const targetRelease = Number(value) + Number(entry[type]);
 
             if (chat.length > targetRelease) {
-                console.log(`Removing ${type} entry ${hash} from timedWorldInfo: ${type} interval passed`);
+                console.log(`Removing ${type} entry from timedWorldInfo: ${type} interval passed`, entry);
                 delete chat_metadata.timedWorldInfo[type][hash];
+                if (typeof onEnded === 'function') {
+                    onEnded(entry);
+                }
                 continue;
             }
 
@@ -3269,8 +3275,40 @@ function checkTimedEvents(chat, entries) {
         }
     }
 
-    processEntries('sticky', WorldInfoBuffer.stickyActivations);
-    processEntries('cooldown', WorldInfoBuffer.cooldownSuppressions);
+    /**
+     * Callbacks for when a timed event ends.
+     */
+    const onEndedCallbacks = {
+        /**
+         * Callback for when a sticky entry ends.
+         * Sets an entry on cooldown immediately if it has a cooldown.
+         * @param {WIScanEntry} entry Entry that ended sticky
+         */
+        sticky: (entry) => {
+            if (!entry.cooldown) {
+                return;
+            }
+
+            const hash = getEntryHash(entry);
+            const targetRelease = chat.length + entry.cooldown;
+            chat_metadata.timedWorldInfo.cooldown[hash] = chat.length;
+            console.log(`Adding cooldown entry ${hash} on ended sticky: target release @ message ID ${targetRelease}`);
+            // Set the cooldown immediately for this evaluation
+            WorldInfoBuffer.cooldownSuppressions.push(entry);
+        },
+
+        /**
+         * Callback for when a cooldown entry ends.
+         * No-op, essentially.
+         * @param {WIScanEntry} entry Entry that ended cooldown
+         */
+        cooldown: (entry) => {
+            console.debug('Cooldown ended for entry', entry.uid);
+        },
+    };
+
+    processEntries('sticky', WorldInfoBuffer.stickyActivations, onEndedCallbacks.sticky);
+    processEntries('cooldown', WorldInfoBuffer.cooldownSuppressions, onEndedCallbacks.cooldown);
 }
 
 /**
