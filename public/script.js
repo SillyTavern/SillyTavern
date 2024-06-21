@@ -431,7 +431,9 @@ export const event_types = {
     CHARACTER_MESSAGE_RENDERED: 'character_message_rendered',
     FORCE_SET_BACKGROUND: 'force_set_background',
     CHAT_DELETED: 'chat_deleted',
+    CHAT_CREATED: 'chat_created',
     GROUP_CHAT_DELETED: 'group_chat_deleted',
+    GROUP_CHAT_CREATED: 'group_chat_created',
     GENERATE_BEFORE_COMBINE_PROMPTS: 'generate_before_combine_prompts',
     GENERATE_AFTER_COMBINE_PROMPTS: 'generate_after_combine_prompts',
     GROUP_MEMBER_DRAFTED: 'group_member_drafted',
@@ -5884,11 +5886,13 @@ export async function getChat() {
 
 async function getChatResult() {
     name2 = characters[this_chid].name;
+    let freshChat = false;
     if (chat.length === 0) {
         const message = getFirstMessage();
         if (message.mes) {
             chat.push(message);
             await saveChatConditional();
+            freshChat = true;
         }
     }
     await loadItemizedPrompts(getCurrentChatId());
@@ -5896,6 +5900,7 @@ async function getChatResult() {
     select_selected_character(this_chid);
 
     await eventSource.emit(event_types.CHAT_CHANGED, (getCurrentChatId()));
+    if (freshChat) await eventSource.emit(event_types.CHAT_CREATED);
 
     if (chat.length === 1) {
         const chat_id = (chat.length - 1);
@@ -9214,6 +9219,7 @@ jQuery(async function () {
             if (selected_group) {
                 await createNewGroupChat(selected_group);
                 if (isDelChatCheckbox) await deleteGroupChat(selected_group, chat_file_for_del);
+                await eventSource.emit(event_types.GROUP_CHAT_CREATED);
             }
             else {
                 //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
