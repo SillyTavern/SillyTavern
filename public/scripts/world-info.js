@@ -348,22 +348,26 @@ class WorldInfoTimedEvents {
     #entryHashCache = new WeakMap();
 
     /**
-     * @type {string[]} Array of chat messages
+     * Array of chat messages
+     * @type {string[]}
      */
     #chat = [];
 
     /**
-     * @type {WIScanEntry[]} Array of entries
+     * Array of entries
+     * @type {WIScanEntry[]}
      */
     #entries = [];
 
     /**
-     * @type {WIScanEntry[]} Array of entries that need to be activated due to sticky
+     * Array of entries that need to be activated due to sticky
+     * @type {WIScanEntry[]}
      */
     #stickyActivations = [];
 
     /**
-     * @type {WIScanEntry[]} Array of entries that need to be suppressed due to cooldown
+     * Array of entries that need to be suppressed due to cooldown
+     * @type {WIScanEntry[]}
      */
     #cooldownSuppressions = [];
 
