@@ -377,6 +377,12 @@ jQuery(async function () {
     }
     function switchMultimodalBlocks() {
         const isMultimodal = extension_settings.caption.source === 'multimodal';
+        $('#caption_ollama_pull').on('click', (e) => {
+            const presetModel = extension_settings.caption.multimodal_model !== 'ollama_current' ? extension_settings.caption.multimodal_model : '';
+            e.preventDefault();
+            $('#ollama_download_model').trigger('click');
+            $('#dialogue_popup_input').val(presetModel);
+        });
         $('#caption_multimodal_block').toggle(isMultimodal);
         $('#caption_prompt_block').toggle(isMultimodal);
         $('#caption_multimodal_api').val(extension_settings.caption.multimodal_api);

@@ -58,13 +58,19 @@
                         <option data-type="openrouter" value="google/gemini-flash-1.5">google/gemini-flash-1.5</option>
                         <option data-type="openrouter" value="liuhaotian/llava-yi-34b">liuhaotian/llava-yi-34b</option>
                         <option data-type="ollama" value="ollama_current" data-i18n="currently_selected">[Currently selected]</option>
-                        <option data-type="ollama" value="bakllava:latest">bakllava:latest</option>
-                        <option data-type="ollama" value="llava:latest">llava:latest</option>
+                        <option data-type="ollama" value="bakllava">bakllava</option>
+                        <option data-type="ollama" value="llava">llava</option>
+                        <option data-type="ollama" value="llava-llama3">llava-llama3</option>
+                        <option data-type="ollama" value="llava-phi3">llava-phi3</option>
+                        <option data-type="ollama" value="moondream">moondream</option>
                         <option data-type="llamacpp" value="llamacpp_current" data-i18n="currently_loaded">[Currently loaded]</option>
                         <option data-type="ooba" value="ooba_current" data-i18n="currently_loaded">[Currently loaded]</option>
                         <option data-type="koboldcpp" value="koboldcpp_current" data-i18n="currently_loaded">[Currently loaded]</option>
                         <option data-type="custom" value="custom_current" data-i18n="currently_selected">[Currently selected]</option>
                     </select>
+                </div>
+                <div data-type="ollama">
+                    The model must be downloaded first! Do it with the <code>ollama pull</code> command or <a href="#" id="caption_ollama_pull">click here</a>.
                 </div>
                 <label data-type="openai,anthropic,google" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
                     <input id="caption_allow_reverse_proxy" type="checkbox" class="checkbox">
