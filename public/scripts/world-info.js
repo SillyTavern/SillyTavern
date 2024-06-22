@@ -334,9 +334,9 @@ class WorldInfoBuffer {
 
 class WorldInfoTimedEvents {
     /**
-     * @type {Map<WIScanEntry, number>} Cache for entry hashes
+     * @type {WeakMap<WIScanEntry, number>} Cache for entry hashes
      */
-    static #entryHashCache = new Map();
+    static #entryHashCache = new WeakMap();
 
     /**
      * @type {string[]} Array of chat messages
