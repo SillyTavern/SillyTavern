@@ -2363,6 +2363,10 @@ input[type="file"] {
     padding: 1px;
 }
 
+#rm_print_characters_block .entity_block.useless {
+    opacity: 0.25;
+}
+
 #rm_ch_create_block {
     display: none;
     overflow-y: auto;
