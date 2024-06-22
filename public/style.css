@@ -367,6 +367,9 @@ input[type='checkbox']:focus-visible {
 }
 
 .img_enlarged_container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
     padding: 10px;
     height: 100%;
     width: 100%;
@@ -4481,7 +4484,7 @@ a {
     max-height: 100%;
     border-radius: 2px;
     border: 1px solid transparent;
-    outline: 1px solid var(--SmartThemeBorderColor);
+    object-fit: contain;
 }
 
 .cropper-container {
