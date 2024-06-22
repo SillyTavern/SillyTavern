@@ -140,7 +140,10 @@ class PresetManager {
      * @param {string} value Preset option value
      */
     selectPreset(value) {
-        $(this.select).find(`option[value=${value}]`).prop('selected', true);
+        const option = $(this.select).filter(function() {
+            return $(this).val() === value;
+        });
+        option.prop('selected', true);
         $(this.select).val(value).trigger('change');
     }
 
