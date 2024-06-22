@@ -1564,7 +1564,10 @@ function loadPowerUserSettings(settings, data) {
     }
 
     // Clean up old/legacy settings
-    delete power_user.import_card_tags;
+    if (power_user.import_card_tags !== undefined) {
+        power_user.tag_import_setting = power_user.import_card_tags ? tag_import_setting.ASK : tag_import_setting.NONE;
+        delete power_user.import_card_tags;
+    }
 
     $('#single_line').prop('checked', power_user.single_line);
     $('#relaxed_api_urls').prop('checked', power_user.relaxed_api_urls);
