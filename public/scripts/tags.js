@@ -299,11 +299,12 @@ function chooseBogusFolder(source, tagId, remove = false) {
  * Builds the tag block for the specified item.
  *
  * @param {Tag} tag The tag item
- * @param {*} entities The list ob sub items for this tag
- * @param {*} hidden A count of how many sub items are hidden
+ * @param {any[]} entities The list ob sub items for this tag
+ * @param {number} hidden A count of how many sub items are hidden
+ * @param {boolean} isUseless Whether the tag is useless (should be displayed greyed out)
  * @returns The html for the tag block
  */
-function getTagBlock(tag, entities, hidden = 0) {
+function getTagBlock(tag, entities, hidden = 0, isUseless = false) {
     let count = entities.length;
 
     const tagFolder = TAG_FOLDER_TYPES[tag.folder_type];
@@ -316,6 +317,7 @@ function getTagBlock(tag, entities, hidden = 0) {
     template.find('.bogus_folder_hidden_counter').text(hidden > 0 ? `${hidden} hidden` : '');
     template.find('.bogus_folder_counter').text(`${count} ${count != 1 ? 'characters' : 'character'}`);
     template.find('.bogus_folder_icon').addClass(tagFolder.fa_icon);
+    if (isUseless) template.addClass('useless');
 
     // Fill inline character images
     buildAvatarList(template.find('.bogus_folder_avatars_block'), entities);
