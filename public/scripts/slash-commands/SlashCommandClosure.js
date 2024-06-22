@@ -213,6 +213,7 @@ export class SlashCommandClosure {
         let done = 0;
         for (const executor of this.executorList) {
             this.onProgress?.(done, this.commandCount);
+            this.debugController?.setExecutor(executor);
             yield executor;
             if (executor instanceof SlashCommandClosureExecutor) {
                 const closure = this.scope.getVariable(executor.name);

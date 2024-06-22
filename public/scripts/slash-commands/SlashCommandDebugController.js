@@ -3,6 +3,7 @@ import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 
 export class SlashCommandDebugController {
     /**@type {SlashCommandClosure[]} */ stack = [];
+    /**@type {SlashCommandExecutor[]} */ cmdStack = [];
     /**@type {boolean[]} */ stepStack = [];
     /**@type {boolean} */ isStepping = false;
     /**@type {boolean} */ isSteppingInto = false;
@@ -31,7 +32,12 @@ export class SlashCommandDebugController {
     }
     up() {
         this.stack.pop();
+        while (this.cmdStack.length > this.stack.length) this.cmdStack.pop();
         this.stepStack.pop();
+    }
+
+    setExecutor(executor) {
+        this.cmdStack[this.stack.length - 1] = executor;
     }
 
 

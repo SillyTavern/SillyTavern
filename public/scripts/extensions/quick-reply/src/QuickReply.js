@@ -65,6 +65,7 @@ export class QuickReply {
     /**@type {HTMLElement}*/ editorDebugState;
     /**@type {HTMLInputElement}*/ editorExecuteHide;
     /**@type {Promise}*/ editorExecutePromise;
+    /**@type {boolean}*/ isExecuting;
     /**@type {SlashCommandAbortController}*/ abortController;
     /**@type {SlashCommandDebugController}*/ debugController;
 
@@ -244,9 +245,15 @@ export class QuickReply {
                 if (wrap.checked) {
                     message.style.whiteSpace = 'pre-wrap';
                     messageSyntaxInner.style.whiteSpace = 'pre-wrap';
+                    if (this.clone) {
+                        this.clone.style.whiteSpace = 'pre-wrap';
+                    }
                 } else {
                     message.style.whiteSpace = 'pre';
                     messageSyntaxInner.style.whiteSpace = 'pre';
+                    if (this.clone) {
+                        this.clone.style.whiteSpace = 'pre';
+                    }
                 }
                 updateScrollDebounced();
             };
@@ -317,6 +324,7 @@ export class QuickReply {
             setSlashCommandAutoComplete(message, true);
             //TODO move tab support for textarea into its own helper(?) and use for both this and .editor_maximize
             message.addEventListener('keydown', async(evt) => {
+                if (this.isExecuting) return;
                 if (evt.key == 'Tab' && !evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
                     evt.preventDefault();
                     const start = message.selectionStart;
@@ -569,6 +577,28 @@ export class QuickReply {
             stepOutBtn.addEventListener('click', ()=>{
                 this.debugController?.stepOut();
             });
+            /**@type {boolean}*/
+            let isResizing = false;
+            let resizeStart;
+            let wStart;
+            /**@type {HTMLElement}*/
+            const resizeHandle = dom.querySelector('#qr--resizeHandle');
+            resizeHandle.addEventListener('pointerdown', (evt)=>{
+                if (isResizing) return;
+                isResizing = true;
+                evt.preventDefault();
+                resizeStart = evt.x;
+                wStart = dom.querySelector('#qr--qrOptions').offsetWidth;
+                const dragListener = debounce((evt)=>{
+                    const w = wStart + resizeStart - evt.x;
+                    dom.querySelector('#qr--qrOptions').style.setProperty('--width', `${w}px`);
+                }, 5);
+                window.addEventListener('pointerup', ()=>{
+                    window.removeEventListener('pointermove', dragListener);
+                    isResizing = false;
+                }, { once:true });
+                window.addEventListener('pointermove', dragListener);
+            });
 
             await popupResult;
 
@@ -596,6 +626,7 @@ export class QuickReply {
             });
             mo.observe(this.editorMessage.parentElement, { childList:true });
         }
+        this.clone.style.width = `${inputRect.width}px`;
         this.clone.style.height = `${inputRect.height}px`;
         this.clone.style.left = `${inputRect.left}px`;
         this.clone.style.top = `${inputRect.top}px`;
@@ -620,8 +651,13 @@ export class QuickReply {
         return location;
     }
     async executeFromEditor() {
-        if (this.editorExecutePromise) return;
+        if (this.isExecuting) return;
+        this.isExecuting = true;
         this.editorDom.classList.add('qr--isExecuting');
+        const noSyntax = this.editorDom.querySelector('#qr--modal-messageHolder').classList.contains('qr--noSyntax');
+        if (noSyntax) {
+            this.editorDom.querySelector('#qr--modal-messageHolder').classList.remove('qr--noSyntax');
+        }
         this.editorExecuteBtn.classList.add('qr--busy');
         this.editorExecuteProgress.style.setProperty('--prog', '0');
         this.editorExecuteErrors.classList.remove('qr--hasErrors');
@@ -658,17 +694,14 @@ export class QuickReply {
                             title.textContent = isCurrent ? 'Current Scope' : 'Parent Scope';
                             let hi;
                             title.addEventListener('pointerenter', ()=>{
-                                const loc = this.getEditorPosition(c.executorList[0].start - 1, c.executorList.slice(-1)[0].end);
+                                const loc = this.getEditorPosition(Math.max(0, c.executorList[0].start - 1), c.executorList.slice(-1)[0].end);
                                 const layer = this.editorPopup.dlg.getBoundingClientRect();
                                 hi = document.createElement('div');
-                                hi.style.position = 'fixed';
+                                hi.classList.add('qr--highlight-secondary');
                                 hi.style.left = `${loc.left - layer.left}px`;
                                 hi.style.width = `${loc.right - loc.left}px`;
                                 hi.style.top = `${loc.top - layer.top}px`;
                                 hi.style.height = `${loc.bottom - loc.top}px`;
-                                hi.style.zIndex = '50000';
-                                hi.style.pointerEvents = 'none';
-                                hi.style.border = '3px solid red';
                                 this.editorPopup.dlg.append(hi);
                             });
                             title.addEventListener('pointerleave', ()=>hi?.remove());
@@ -696,7 +729,13 @@ export class QuickReply {
                                         v.classList.add('qr--undefined');
                                         v.textContent = 'undefined';
                                     } else {
-                                        v.textContent = val;
+                                        let jsonVal;
+                                        try { jsonVal = JSON.parse(val); } catch { /* empty */ }
+                                        if (jsonVal && typeof jsonVal == 'object') {
+                                            v.textContent = JSON.stringify(jsonVal, null, 2);
+                                        } else {
+                                            v.textContent = val;
+                                        }
                                     }
                                     item.append(v);
                                 }
@@ -725,7 +764,13 @@ export class QuickReply {
                                         v.classList.add('qr--undefined');
                                         v.textContent = 'undefined';
                                     } else {
-                                        v.textContent = val;
+                                        let jsonVal;
+                                        try { jsonVal = JSON.parse(val); } catch { /* empty */ }
+                                        if (jsonVal && typeof jsonVal == 'object') {
+                                            v.textContent = JSON.stringify(jsonVal, null, 2);
+                                        } else {
+                                            v.textContent = val;
+                                        }
                                     }
                                     item.append(v);
                                 }
@@ -750,7 +795,13 @@ export class QuickReply {
                                     v.classList.add('qr--undefined');
                                     v.textContent = 'undefined';
                                 } else {
-                                    v.textContent = val;
+                                    let jsonVal;
+                                    try { jsonVal = JSON.parse(val); } catch { /* empty */ }
+                                    if (jsonVal && typeof jsonVal == 'object') {
+                                        v.textContent = JSON.stringify(jsonVal, null, 2);
+                                    } else {
+                                        v.textContent = val;
+                                    }
                                 }
                                 pipeItem.append(v);
                             }
@@ -762,19 +813,51 @@ export class QuickReply {
                     }
                     return wrap;
                 };
+                const buildStack = ()=>{
+                    const wrap = document.createElement('div'); {
+                        wrap.classList.add('qr--stack');
+                        const title = document.createElement('div'); {
+                            title.classList.add('qr--title');
+                            title.textContent = 'Call Stack';
+                            wrap.append(title);
+                        }
+                        for (const executor of this.debugController.cmdStack.toReversed()) {
+                            const item = document.createElement('div'); {
+                                item.classList.add('qr--item');
+                                item.textContent = `/${executor.name}`;
+                                if (executor.command.name == 'run') {
+                                    item.textContent += `${(executor.name == ':' ? '' : ' ')}${executor.unnamedArgumentList[0]?.value}`;
+                                }
+                                let hi;
+                                item.addEventListener('pointerenter', ()=>{
+                                    const loc = this.getEditorPosition(Math.max(0, executor.start - 1), executor.end);
+                                    const layer = this.editorPopup.dlg.getBoundingClientRect();
+                                    hi = document.createElement('div');
+                                    hi.classList.add('qr--highlight-secondary');
+                                    hi.style.left = `${loc.left - layer.left}px`;
+                                    hi.style.width = `${loc.right - loc.left}px`;
+                                    hi.style.top = `${loc.top - layer.top}px`;
+                                    hi.style.height = `${loc.bottom - loc.top}px`;
+                                    this.editorPopup.dlg.append(hi);
+                                });
+                                item.addEventListener('pointerleave', ()=>hi?.remove());
+                                wrap.append(item);
+                            }
+                        }
+                    }
+                    return wrap;
+                };
                 this.editorDebugState.append(buildVars(closure.scope, true));
+                this.editorDebugState.append(buildStack());
                 this.editorDebugState.classList.add('qr--active');
-                const loc = this.getEditorPosition(executor.start - 1, executor.end);
+                const loc = this.getEditorPosition(Math.max(0, executor.start - 1), executor.end);
                 const layer = this.editorPopup.dlg.getBoundingClientRect();
                 const hi = document.createElement('div');
-                hi.style.position = 'fixed';
+                hi.classList.add('qr--highlight');
                 hi.style.left = `${loc.left - layer.left}px`;
                 hi.style.width = `${loc.right - loc.left}px`;
                 hi.style.top = `${loc.top - layer.top}px`;
                 hi.style.height = `${loc.bottom - loc.top}px`;
-                hi.style.zIndex = '50000';
-                hi.style.pointerEvents = 'none';
-                hi.style.backgroundColor = 'rgb(255 255 0 / 0.5)';
                 this.editorPopup.dlg.append(hi);
                 const isStepping = await this.debugController.awaitContinue();
                 hi.remove();
@@ -807,10 +890,14 @@ export class QuickReply {
                 `;
             }
         }
+        if (noSyntax) {
+            this.editorDom.querySelector('#qr--modal-messageHolder').classList.add('qr--noSyntax');
+        }
         this.editorExecutePromise = null;
         this.editorExecuteBtn.classList.remove('qr--busy');
         this.editorPopup.dlg.classList.remove('qr--hide');
         this.editorDom.classList.remove('qr--isExecuting');
+        this.isExecuting = false;
     }
 
     updateEditorProgress(done, total) {
