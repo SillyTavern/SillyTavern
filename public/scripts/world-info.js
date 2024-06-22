@@ -103,6 +103,11 @@ const MAX_SCAN_DEPTH = 1000;
  * @property {number} start The chat index where the event starts
  * @property {number} end The chat index where the event ends
  */
+
+/**
+ * @typedef TimedEventType Type of timed event
+ * @type {'sticky'|'cooldown'}
+ */
 // End typedef area
 
 /**
@@ -332,21 +337,25 @@ class WorldInfoBuffer {
     }
 }
 
+/**
+ * Represents a timed events manager for World Info.
+ */
 class WorldInfoTimedEvents {
     /**
-     * @type {WeakMap<WIScanEntry, number>} Cache for entry hashes
+     * Cache for entry hashes. Uses weak map to avoid memory leaks.
+     * @type {WeakMap<WIScanEntry, number>}
      */
-    static #entryHashCache = new WeakMap();
+    #entryHashCache = new WeakMap();
 
     /**
      * @type {string[]} Array of chat messages
      */
-    #chat;
+    #chat = [];
 
     /**
      * @type {WIScanEntry[]} Array of entries
      */
-    #entries;
+    #entries = [];
 
     /**
      * @type {WIScanEntry[]} Array of entries that need to be activated due to sticky
@@ -398,12 +407,12 @@ class WorldInfoTimedEvents {
     * @returns {number} String hash
     */
     #getEntryHash(entry) {
-        if (WorldInfoTimedEvents.#entryHashCache.has(entry)) {
-            return WorldInfoTimedEvents.#entryHashCache.get(entry);
+        if (this.#entryHashCache.has(entry)) {
+            return this.#entryHashCache.get(entry);
         }
 
         const hash = getStringHash(JSON.stringify(entry));
-        WorldInfoTimedEvents.#entryHashCache.set(entry, hash);
+        this.#entryHashCache.set(entry, hash);
         return hash;
     }
 
@@ -419,7 +428,7 @@ class WorldInfoTimedEvents {
     /**
      * Gets a timed event for a WI entry.
      * @param {WIScanEntry} entry WI entry
-     * @param {'sticky'|'cooldown'} type Type of timed event
+     * @param {TimedEventType} type Type of timed event
      * @returns {WITimedEvent} Timed event for the entry
      */
     #getEntryTimedEvent(entry, type) {
@@ -459,7 +468,7 @@ class WorldInfoTimedEvents {
 
     /**
      * Processes entries for a given type of timed event.
-     * @param {'sticky'|'cooldown'} type Identifier for the type of timed event
+     * @param {TimedEventType} type Identifier for the type of timed event
      * @param {WIScanEntry[]} buffer Buffer to store the entries
      * @param {(entry: WIScanEntry) => void} onEnded Callback for when a timed event ends
      */
@@ -516,7 +525,7 @@ class WorldInfoTimedEvents {
 
     /**
      * Sets a timed event for a WI entry.
-     * @param {'sticky'|'cooldown'} type Type of timed event
+     * @param {TimedEventType} type Type of timed event
      * @param {WIScanEntry} entry WI entry to check
      */
     #setTimedEventOfType(type, entry) {
