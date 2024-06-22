@@ -1,0 +1,35 @@
+<h3>Import Tags For {{charName}}</h3>
+<div class="import_avatar_placeholder"></div>
+<div class="import_tags_content justifyLeft">
+    <small data-i18n="Click remove on any tag to remove it from this import.&lt;br /&gt;Select one of the import options to finish importing the tags.">
+        Click remove on any tag to remove it from this import.<br />
+        Select one of the import options to finish importing the tags.
+    </small>
+
+    <h4 class="m-t-1" data-i18n="Existing Tags">Existing Tags</h4>
+    <div id="import_existing_tags_list" class="tags" style="min-height: 20px;"></div>
+
+    <h4 class="m-t-1" data-i18n="New Tags">New Tags</h4>
+    <div id="import_new_tags_list" class="tags" style="min-height: 20px;"></div>
+
+    <div id="folder_tags_block" class="m-t-1">
+        <h4 data-i18n="Folder Tags">Folder Tags</h4>
+        <small data-i18n="The following tags will be auto-imported based on the currently selected folders">
+            The following tags will be auto-imported based on the currently selected folders
+        </small>
+        <div id="import_folder_tags_list" class="tags" style="margin-top: 5px;"></div>
+    </div>
+
+    <small>
+        <label class="checkbox flex-container alignitemscenter flexNoGap m-t-3" for="import_remember_option">
+            <input type="checkbox" id="import_remember_option" name="import_remember_option" />
+            <span data-i18n="Remember my choice">
+                Remember my choice
+                <div class="fa-solid fa-circle-info opacity50p"
+                    data-i18n="[title]Remember the chosen import option&#010;If anything besides 'Cancel' is selected, this dialog will not show up anymore.&#010;To change this, go to the settings and modify &quot;Tag Import Option&quot;.&#010;&#010;If the &quot;Import&quot; option is chosen, the global setting will stay on &quot;Ask&quot;."
+                    title="Remember the chosen import option&#010;If anything besides 'Cancel' is selected, this dialog will not show up anymore.&#010;To change this, go to the settings and modify &quot;Tag Import Option&quot;.&#010;&#010;If the &quot;Import&quot; option is chosen, the global setting will stay on &quot;Ask&quot;.">
+                </div>
+            </span>
+        </label>
+    </small>
+</div>

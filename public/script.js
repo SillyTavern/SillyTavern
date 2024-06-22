@@ -175,11 +175,12 @@ import {
     createTagMapFromList,
     renameTagKey,
     importTags,
-    tag_filter_types,
+    tag_filter_type,
     compareTagsForSort,
     initTags,
     applyTagsOnCharacterSelect,
     applyTagsOnGroupSelect,
+    tag_import_setting,
 } from './scripts/tags.js';
 import {
     SECRET_KEYS,
@@ -1346,8 +1347,8 @@ export async function printCharacters(fullRefresh = false) {
     verifyCharactersSearchSortRule();
 
     // We are actually always reprinting filters, as it "doesn't hurt", and this way they are always up to date
-    printTagFilters(tag_filter_types.character);
-    printTagFilters(tag_filter_types.group_member);
+    printTagFilters(tag_filter_type.character);
+    printTagFilters(tag_filter_type.group_member);
 
     // We are also always reprinting the lists on character/group edit window, as these ones doesn't get updated otherwise
     applyTagsOnCharacterSelect();
@@ -1368,7 +1369,7 @@ export async function printCharacters(fullRefresh = false) {
         nextText: '>',
         formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
-        callback: function (data) {
+        callback: function (/** @type {Entity[]} */ data) {
             $(listId).empty();
             if (power_user.bogus_folders && isBogusFolderOpen()) {
                 $(listId).append(getBackBlock());
@@ -1388,7 +1389,7 @@ export async function printCharacters(fullRefresh = false) {
                         displayCount++;
                         break;
                     case 'tag':
-                        $(listId).append(getTagBlock(i.item, i.entities, i.hidden));
+                        $(listId).append(getTagBlock(i.item, i.entities, i.hidden, i.isUseless));
                         break;
                 }
             }
@@ -1442,8 +1443,9 @@ function verifyCharactersSearchSortRule() {
  * @property {Character|Group|import('./scripts/tags.js').Tag|*} item - The item
  * @property {string|number} id - The id
  * @property {'character'|'group'|'tag'} type - The type of this entity (character, group, tag)
- * @property {Entity[]} [entities] - An optional list of entities relevant for this item
- * @property {number} [hidden] - An optional number representing how many hidden entities this entity contains
+ * @property {Entity[]?} [entities=null] - An optional list of entities relevant for this item
+ * @property {number?} [hidden=null] - An optional number representing how many hidden entities this entity contains
+ * @property {boolean?} [isUseless=null] - Specifies if the entity is useless (not relevant, but should still be displayed for consistency) and should be displayed greyed out
  */
 
 /**
@@ -1538,6 +1540,15 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
         }
     }
 
+    // Final step, updating some properties after the last filter run
+    const nonTagEntitiesCount = entities.filter(entity => entity.type !== 'tag').length;
+    for (const entity of entities) {
+        if (entity.type === 'tag') {
+            if (entity.entities?.length == nonTagEntitiesCount) entity.isUseless = true;
+        }
+    }
+
+    // Sort before returning if requested
     if (doSort) {
         sortEntitiesList(entities);
     }
@@ -8464,7 +8475,7 @@ async function importCharacter(file, preserveFileName = false) {
 
         await getCharacters();
         select_rm_info('char_import', data.file_name, oldSelectedChar);
-        if (power_user.import_card_tags) {
+        if (power_user.tag_import_setting !== tag_import_setting.NONE) {
             let currentContext = getContext();
             let avatarFileName = `${data.file_name}.png`;
             let importedCharacter = currentContext.characters.find(character => character.avatar === avatarFileName);
@@ -10599,7 +10610,7 @@ jQuery(async function () {
                 }
             } break;
             case 'import_tags': {
-                await importTags(characters[this_chid]);
+                await importTags(characters[this_chid], { forceShow: true });
             } break;
             /*case 'delete_button':
                 popup_type = "del_ch";
