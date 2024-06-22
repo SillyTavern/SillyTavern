@@ -1368,7 +1368,7 @@ export async function printCharacters(fullRefresh = false) {
         nextText: '>',
         formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
-        callback: function (data) {
+        callback: function (/** @type {Entity[]} */ data) {
             $(listId).empty();
             if (power_user.bogus_folders && isBogusFolderOpen()) {
                 $(listId).append(getBackBlock());
@@ -1388,7 +1388,7 @@ export async function printCharacters(fullRefresh = false) {
                         displayCount++;
                         break;
                     case 'tag':
-                        $(listId).append(getTagBlock(i.item, i.entities, i.hidden));
+                        $(listId).append(getTagBlock(i.item, i.entities, i.hidden, i.isUseless));
                         break;
                 }
             }
@@ -1442,8 +1442,9 @@ function verifyCharactersSearchSortRule() {
  * @property {Character|Group|import('./scripts/tags.js').Tag|*} item - The item
  * @property {string|number} id - The id
  * @property {'character'|'group'|'tag'} type - The type of this entity (character, group, tag)
- * @property {Entity[]} [entities] - An optional list of entities relevant for this item
- * @property {number} [hidden] - An optional number representing how many hidden entities this entity contains
+ * @property {Entity[]?} [entities=null] - An optional list of entities relevant for this item
+ * @property {number?} [hidden=null] - An optional number representing how many hidden entities this entity contains
+ * @property {boolean?} [isUseless=null] - Specifies if the entity is useless (not relevant, but should still be displayed for consistency) and should be displayed greyed out
  */
 
 /**
@@ -1538,6 +1539,15 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
         }
     }
 
+    // Final step, updating some properties after the last filter run
+    const nonTagEntitiesCount = entities.filter(entity => entity.type !== 'tag').length;
+    for (const entity of entities) {
+        if (entity.type === 'tag') {
+            if (entity.entities?.length == nonTagEntitiesCount) entity.isUseless = true;
+        }
+    }
+
+    // Sort before returning if requested
     if (doSort) {
         sortEntitiesList(entities);
     }
