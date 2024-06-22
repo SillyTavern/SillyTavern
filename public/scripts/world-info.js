@@ -278,7 +278,7 @@ class WorldInfoBuffer {
     }
 
     /**
-     * Clean-up the external effects for entries (activations and suppressions).
+     * Clean-up the external effects for entries.
      */
     resetExternalEffects() {
         WorldInfoBuffer.externalActivations.splice(0, WorldInfoBuffer.externalActivations.length);
