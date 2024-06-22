@@ -1502,6 +1502,13 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
+    $('#vectors_ollama_pull').on('click', (e) => {
+        const presetModel = extension_settings.vectors.ollama_model || '';
+        e.preventDefault();
+        $('#ollama_download_model').trigger('click');
+        $('#dialogue_popup_input').val(presetModel);
+    });
+
     const validSecret = !!secret_state[SECRET_KEYS.NOMICAI];
     const placeholder = validSecret ? '✔️ Key saved' : '❌ Missing key';
     $('#api_key_nomicai').attr('placeholder', placeholder);
