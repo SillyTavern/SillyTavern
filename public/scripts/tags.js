@@ -778,6 +778,7 @@ async function showTagImportPopup(character, existingTags, newTags, folderTags) 
             const setting = buttonSettingsMap[popup.result];
             if (!setting) return;
             power_user.tag_import_setting = setting;
+            $('#tag_import_setting').val(power_user.tag_import_setting);
             saveSettingsDebounced();
             console.log('Remembered tag import setting:', Object.entries(tag_import_setting).find(x => x[1] === setting)[0], setting);
         }
