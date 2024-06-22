@@ -81,40 +81,37 @@ const DEFAULT_DEPTH = 4;
 const DEFAULT_WEIGHT = 100;
 const MAX_SCAN_DEPTH = 1000;
 
+// Typedef area
+/**
+ * @typedef {object} WIScanEntry The entry that triggered the scan
+ * @property {number} [scanDepth] The depth of the scan
+ * @property {boolean} [caseSensitive] If the scan is case sensitive
+ * @property {boolean} [matchWholeWords] If the scan should match whole words
+ * @property {boolean} [useGroupScoring] If the scan should use group scoring
+ * @property {number} [uid] The UID of the entry that triggered the scan
+ * @property {string[]} [key] The primary keys to scan for
+ * @property {string[]} [keysecondary] The secondary keys to scan for
+ * @property {number} [selectiveLogic] The logic to use for selective activation
+ * @property {number} [sticky] The sticky value of the entry
+ * @property {number} [cooldown] The cooldown of the entry
+ */
+
+/**
+ * @typedef {object} WITimedEvent Timed event for world info
+ * @property {number} hash Hash of the entry that triggered the event
+ * @property {number} start The chat index where the event starts
+ * @property {number} end The chat index where the event ends
+ */
+// End typedef area
+
 /**
  * Represents a scanning buffer for one evaluation of World Info.
  */
 class WorldInfoBuffer {
-    // Typedef area
-    /**
-     * @typedef {object} WIScanEntry The entry that triggered the scan
-     * @property {number} [scanDepth] The depth of the scan
-     * @property {boolean} [caseSensitive] If the scan is case sensitive
-     * @property {boolean} [matchWholeWords] If the scan should match whole words
-     * @property {boolean} [useGroupScoring] If the scan should use group scoring
-     * @property {number} [uid] The UID of the entry that triggered the scan
-     * @property {string[]} [key] The primary keys to scan for
-     * @property {string[]} [keysecondary] The secondary keys to scan for
-     * @property {number} [selectiveLogic] The logic to use for selective activation
-     * @property {number} [sticky] The sticky value of the entry
-     * @property {number} [cooldown] The cooldown of the entry
-     */
-    // End typedef area
-
     /**
      * @type {object[]} Array of entries that need to be activated no matter what
      */
     static externalActivations = [];
-
-    /**
-     * @type {object[]} Array of entries that need to be activated due to sticky
-     */
-    static stickyActivations = [];
-
-    /**
-     * @type {object[]} Array of entries that need to be suppressed due to cooldown
-     */
-    static cooldownSuppressions = [];
 
     /**
      * @type {string[]} Array of messages sorted by ascending depth
@@ -275,30 +272,10 @@ class WorldInfoBuffer {
     }
 
     /**
-     * Check if the current entry is sticky activated.
-     * @param {object} entry WI entry to check
-     * @returns {boolean} True if the entry is sticky activated
-     */
-    isStickyActivated(entry) {
-        return WorldInfoBuffer.stickyActivations.some(x => JSON.stringify(x) === JSON.stringify(entry));
-    }
-
-    /**
-     * Check if the current entry is on cooldown.
-     * @param {object} entry WI entry to check
-     * @returns {boolean} True if the entry is suppressed by cooldown
-     */
-    isOnCooldown(entry) {
-        return WorldInfoBuffer.cooldownSuppressions.some(x => JSON.stringify(x) === JSON.stringify(entry));
-    }
-
-    /**
      * Clean-up the external effects for entries (activations and suppressions).
      */
     resetExternalEffects() {
         WorldInfoBuffer.externalActivations.splice(0, WorldInfoBuffer.externalActivations.length);
-        WorldInfoBuffer.stickyActivations.splice(0, WorldInfoBuffer.stickyActivations.length);
-        WorldInfoBuffer.cooldownSuppressions.splice(0, WorldInfoBuffer.cooldownSuppressions.length);
     }
 
     /**
@@ -354,6 +331,211 @@ class WorldInfoBuffer {
     }
 }
 
+class WorldInfoTimedEvents {
+    /**
+     * @type {Map<object, number>} Cache for entry hashes
+     */
+    static #entryHashCache = new Map();
+
+    /**
+     * @type {string[]} Array of chat messages
+     */
+    #chat;
+
+    /**
+     * @type {WIScanEntry[]} Array of entries
+     */
+    #entries;
+
+    /**
+     * @type {WIScanEntry[]} Array of entries that need to be activated due to sticky
+     */
+    #stickyActivations = [];
+
+    /**
+     * @type {WIScanEntry[]} Array of entries that need to be suppressed due to cooldown
+     */
+    #cooldownSuppressions = [];
+
+    /**
+     * Initialize the timed events with the given messages.
+     * @param {string[]} chat Array of chat messages
+     * @param {WIScanEntry[]} entries Array of entries
+     */
+    constructor(chat, entries) {
+        this.#chat = chat;
+        this.#entries = entries;
+        this.#ensureChatMetadata();
+    }
+
+    /**
+     * Verify correct structure of chat metadata.
+     */
+    #ensureChatMetadata() {
+        if (!chat_metadata.timedWorldInfo) {
+            chat_metadata.timedWorldInfo = {
+                sticky: {},
+                cooldown: {},
+            };
+        }
+
+        if (!chat_metadata.timedWorldInfo.sticky || typeof chat_metadata.timedWorldInfo.sticky !== 'object') {
+            chat_metadata.timedWorldInfo.sticky = {};
+        }
+
+        if (!chat_metadata.timedWorldInfo.cooldown || typeof chat_metadata.timedWorldInfo.cooldown !== 'object') {
+            chat_metadata.timedWorldInfo.cooldown = {};
+        }
+    }
+
+    /**
+    * Gets a hash for a WI entry.
+    * @param {object} entry WI entry
+    * @returns {number} String hash
+    */
+    #getEntryHash(entry) {
+        if (WorldInfoTimedEvents.#entryHashCache.has(entry)) {
+            return WorldInfoTimedEvents.#entryHashCache.get(entry);
+        }
+
+        const hash = getStringHash(JSON.stringify(entry));
+        WorldInfoTimedEvents.#entryHashCache.set(entry, hash);
+        return hash;
+    }
+
+    /**
+     * Processes entries for a given type of timed event.
+     * @param {string} type Identifier for the type of timed event
+     * @param {WIScanEntry[]} buffer Buffer to store the entries
+     * @param {(entry: WIScanEntry) => void} onEnded Callback for when a timed event ends
+     */
+    #processEntries(type, buffer, onEnded) {
+        for (const [hash, value] of Object.entries(chat_metadata.timedWorldInfo[type])) {
+            console.log(`Processing ${type} entry ${hash} with value ${value}`);
+            const entry = this.#entries.find(x => String(this.#getEntryHash(x)) === String(hash));
+
+            if (this.#chat.length <= Number(value)) {
+                console.log(`Removing ${type} entry from timedWorldInfo: chat not advanced`, entry);
+                delete chat_metadata.timedWorldInfo[type][hash];
+                continue;
+            }
+
+            // Ignore missing entries (they could be from another character's lorebook)
+            if (!entry) {
+                continue;
+            }
+
+            // Ignore invalid entries (not configured for timed effects)
+            if (!entry[type]) {
+                console.log(`Removing ${type} entry from timedWorldInfo: entry not ${type}`, entry);
+                delete chat_metadata.timedWorldInfo[type][hash];
+                continue;
+            }
+
+            const targetRelease = Number(value) + Number(entry[type]);
+
+            if (this.#chat.length > targetRelease) {
+                console.log(`Removing ${type} entry from timedWorldInfo: ${type} interval passed`, entry);
+                delete chat_metadata.timedWorldInfo[type][hash];
+                if (typeof onEnded === 'function') {
+                    onEnded(entry);
+                }
+                continue;
+            }
+
+            buffer.push(entry);
+            console.log(`Timed effect "${type}" applied to entry`, entry);
+        }
+    }
+
+    /**
+     * Callback for when a sticky entry ends.
+     * Sets an entry on cooldown immediately if it has a cooldown.
+     * @param {WIScanEntry} entry Entry that ended sticky
+     */
+    #onStickyEndedCallback(entry) {
+        if (!entry.cooldown) {
+            return;
+        }
+
+        const hash = this.#getEntryHash(entry);
+        const targetRelease = this.#chat.length + entry.cooldown;
+        chat_metadata.timedWorldInfo.cooldown[hash] = this.#chat.length;
+        console.log(`Adding cooldown entry ${hash} on ended sticky: target release @ message ID ${targetRelease}`);
+        // Set the cooldown immediately for this evaluation
+        this.#cooldownSuppressions.push(entry);
+    }
+
+    /**
+     * Callback for when a cooldown entry ends.
+     * No-op, essentially.
+     * @param {WIScanEntry} entry Entry that ended cooldown
+     */
+    #onCooldownEndedCallback(entry) {
+        console.debug('Cooldown ended for entry', entry.uid);
+    }
+
+    /**
+     * Checks for timed effects on chat messages.
+     */
+    checkTimedEvents() {
+        this.#processEntries('sticky', this.#stickyActivations, this.#onStickyEndedCallback.bind(this));
+        this.#processEntries('cooldown', this.#cooldownSuppressions, this.#onCooldownEndedCallback.bind(this));
+    }
+
+    /**
+     * Sets timed effects on chat messages.
+     * @param {WIScanEntry[]} activatedEntries Entries that were activated
+     */
+    setTimedEvents(activatedEntries) {
+        for (const entry of activatedEntries) {
+            if (!entry.sticky && !entry.cooldown) {
+                continue;
+            }
+
+            const hash = this.#getEntryHash(entry);
+
+            if (entry.sticky && !chat_metadata.timedWorldInfo.sticky[hash]) {
+                const targetRelease = this.#chat.length + entry.sticky;
+                chat_metadata.timedWorldInfo.sticky[hash] = this.#chat.length;
+                console.log(`Adding sticky entry ${hash}: target release @ message ID ${targetRelease}`);
+            }
+
+            if (entry.cooldown && !chat_metadata.timedWorldInfo.cooldown[hash]) {
+                const targetRelease = this.#chat.length + entry.cooldown;
+                chat_metadata.timedWorldInfo.cooldown[hash] = this.#chat.length;
+                console.log(`Adding cooldown entry ${hash}: target release @ message ID ${targetRelease}`);
+            }
+        }
+    }
+
+    /**
+     * Check if the current entry is sticky activated.
+     * @param {object} entry WI entry to check
+     * @returns {boolean} True if the entry is sticky activated
+     */
+    isStickyActivated(entry) {
+        return this.#stickyActivations.some(x => JSON.stringify(x) === JSON.stringify(entry));
+    }
+
+    /**
+     * Check if the current entry is on cooldown.
+     * @param {object} entry WI entry to check
+     * @returns {boolean} True if the entry is suppressed by cooldown
+     */
+    isOnCooldown(entry) {
+        return this.#cooldownSuppressions.some(x => JSON.stringify(x) === JSON.stringify(entry));
+    }
+
+    /**
+     * Clean-up previously set timed events.
+     */
+    cleanUp() {
+        this.#stickyActivations.splice(0, this.#stickyActivations.length);
+        this.#cooldownSuppressions.splice(0, this.#cooldownSuppressions.length);
+    }
+}
+
 export function getWorldInfoSettings() {
     return {
         world_info,
@@ -387,7 +569,6 @@ export const wi_anchor_position = {
 };
 
 const worldInfoCache = new Map();
-const entryHashCache = new Map();
 
 /**
  * Gets the world info based on chat messages.
@@ -2884,8 +3065,9 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
 
     console.debug(`Context size: ${maxContext}; WI budget: ${budget} (max% = ${world_info_budget}%, cap = ${world_info_budget_cap})`);
     const sortedEntries = await getSortedEntries();
+    const timedEvents = new WorldInfoTimedEvents(chat, sortedEntries);
 
-    !isDryRun && checkTimedEvents(chat, sortedEntries);
+    !isDryRun && timedEvents.checkTimedEvents();
 
     if (sortedEntries.length === 0) {
         return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], EMEntries: [], allActivatedEntries: new Set() };
@@ -2928,8 +3110,8 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 }
             }
 
-            const isSticky = buffer.isStickyActivated(entry);
-            const isCooldown = buffer.isOnCooldown(entry);
+            const isSticky = timedEvents.isStickyActivated(entry);
+            const isCooldown = timedEvents.isOnCooldown(entry);
 
             if (isCooldown && !isSticky) {
                 console.debug(`WI entry ${entry.uid} suppressed by external suppression`);
@@ -3162,153 +3344,11 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
     }
 
-    !isDryRun && setTimedEvents(chat, Array.from(allActivatedEntries));
+    !isDryRun && timedEvents.setTimedEvents(Array.from(allActivatedEntries));
     buffer.resetExternalEffects();
+    timedEvents.cleanUp();
 
     return { worldInfoBefore, worldInfoAfter, EMEntries, WIDepthEntries, allActivatedEntries };
-}
-
-/**
- * Gets a hash for a WI entry.
- * @param {object} entry WI entry
- * @returns {number} String hash
- */
-function getEntryHash(entry) {
-    if (entryHashCache.has(entry)) {
-        return entryHashCache.get(entry);
-    }
-
-    const hash = getStringHash(JSON.stringify(entry));
-    entryHashCache.set(entry, hash);
-    return hash;
-}
-
-/**
- * Sets timed effects on chat messages.
- * @param {any[]} chat Array of chat messages
- * @param {WIScanEntry[]} entries Array of entries to check
- */
-function setTimedEvents(chat, entries) {
-    if (!chat_metadata.timedWorldInfo) {
-        chat_metadata.timedWorldInfo = {
-            sticky: {},
-            cooldown: {},
-        };
-    }
-
-    for (const entry of entries) {
-        if (!entry.sticky && !entry.cooldown) {
-            continue;
-        }
-
-        const hash = getEntryHash(entry);
-
-        if (entry.sticky && !chat_metadata.timedWorldInfo.sticky[hash]) {
-            const targetRelease = chat.length + entry.sticky;
-            chat_metadata.timedWorldInfo.sticky[hash] = chat.length;
-            console.log(`Adding sticky entry ${hash}: target release @ message ID ${targetRelease}`);
-        }
-
-        if (entry.cooldown && !chat_metadata.timedWorldInfo.cooldown[hash]) {
-            const targetRelease = chat.length + entry.cooldown;
-            chat_metadata.timedWorldInfo.cooldown[hash] = chat.length;
-            console.log(`Adding cooldown entry ${hash}: target release @ message ID ${targetRelease}`);
-        }
-    }
-}
-
-/**
- * Checks for timed effects on chat messages.
- * @param {any[]} chat Array of chat messages
- * @param {WIScanEntry[]} entries Array of entries to check
- */
-function checkTimedEvents(chat, entries) {
-    if (!chat_metadata.timedWorldInfo) {
-        chat_metadata.timedWorldInfo = {
-            sticky: {},
-            cooldown: {},
-        };
-    }
-
-    /**
-     * Processes entries for a given type of timed event.
-     * @param {string} type Identifier for the type of timed event
-     * @param {any[]} buffer Buffer to store the entries
-     * @param {(entry: WIScanEntry) => void} onEnded Callback for when a timed event ends
-     */
-    function processEntries(type, buffer, onEnded) {
-        for (const [hash, value] of Object.entries(chat_metadata.timedWorldInfo[type])) {
-            console.log(`Processing ${type} entry ${hash} with value ${value}`);
-            const entry = entries.find(x => String(getEntryHash(x)) === String(hash));
-
-            if (chat.length <= Number(value)) {
-                console.log(`Removing ${type} entry from timedWorldInfo: chat not advanced`, entry);
-                delete chat_metadata.timedWorldInfo[type][hash];
-                continue;
-            }
-
-            // Ignore missing entries (they could be from another character's lorebook)
-            if (!entry) {
-                continue;
-            }
-
-            // Ignore invalid entries (not configured for timed effects)
-            if (!entry[type]) {
-                console.log(`Removing ${type} entry from timedWorldInfo: entry not ${type}`, entry);
-                delete chat_metadata.timedWorldInfo[type][hash];
-                continue;
-            }
-
-            const targetRelease = Number(value) + Number(entry[type]);
-
-            if (chat.length > targetRelease) {
-                console.log(`Removing ${type} entry from timedWorldInfo: ${type} interval passed`, entry);
-                delete chat_metadata.timedWorldInfo[type][hash];
-                if (typeof onEnded === 'function') {
-                    onEnded(entry);
-                }
-                continue;
-            }
-
-            buffer.push(entry);
-            console.log(`Timed effect "${type}" applied to entry`, entry);
-        }
-    }
-
-    /**
-     * Callbacks for when a timed event ends.
-     */
-    const onEndedCallbacks = {
-        /**
-         * Callback for when a sticky entry ends.
-         * Sets an entry on cooldown immediately if it has a cooldown.
-         * @param {WIScanEntry} entry Entry that ended sticky
-         */
-        sticky: (entry) => {
-            if (!entry.cooldown) {
-                return;
-            }
-
-            const hash = getEntryHash(entry);
-            const targetRelease = chat.length + entry.cooldown;
-            chat_metadata.timedWorldInfo.cooldown[hash] = chat.length;
-            console.log(`Adding cooldown entry ${hash} on ended sticky: target release @ message ID ${targetRelease}`);
-            // Set the cooldown immediately for this evaluation
-            WorldInfoBuffer.cooldownSuppressions.push(entry);
-        },
-
-        /**
-         * Callback for when a cooldown entry ends.
-         * No-op, essentially.
-         * @param {WIScanEntry} entry Entry that ended cooldown
-         */
-        cooldown: (entry) => {
-            console.debug('Cooldown ended for entry', entry.uid);
-        },
-    };
-
-    processEntries('sticky', WorldInfoBuffer.stickyActivations, onEndedCallbacks.sticky);
-    processEntries('cooldown', WorldInfoBuffer.cooldownSuppressions, onEndedCallbacks.cooldown);
 }
 
 /**
