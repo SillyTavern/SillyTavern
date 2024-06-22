@@ -3164,7 +3164,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             const isCooldown = timedEvents.isOnCooldown(entry);
 
             if (isCooldown && !isSticky) {
-                console.debug(`WI entry ${entry.uid} suppressed by external suppression`);
+                console.debug(`WI entry ${entry.uid} suppressed by cooldown`);
                 continue;
             }
 
