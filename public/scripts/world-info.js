@@ -3260,9 +3260,12 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             const rollValue = Math.random() * 100;
 
             if (entry.useProbability && rollValue > entry.probability) {
-                console.debug(`WI entry ${entry.uid} ${entry.key} failed probability check, skipping`);
-                failedProbabilityChecks.add(entry);
-                continue;
+                const isSticky = timedEvents.isStickyActivated(entry);
+                if (!isSticky) {
+                    console.debug(`WI entry ${entry.uid} ${entry.key} failed probability check, skipping`);
+                    failedProbabilityChecks.add(entry);
+                    continue;
+                }
             } else { console.debug(`uid:${entry.uid} passed probability check, inserting to prompt`); }
 
             // Substitute macros inline, for both this checking and also future processing
