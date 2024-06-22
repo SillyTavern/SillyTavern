@@ -35,7 +35,7 @@ import {
     selectInstructPreset,
 } from './instruct-mode.js';
 
-import { getTagsList, tag_map, tags } from './tags.js';
+import { getTagsList, tag_import_setting, tag_map, tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
@@ -198,6 +198,7 @@ let power_user = {
     trim_spaces: true,
     relaxed_api_urls: false,
     world_import_dialog: true,
+    tag_import_setting: tag_import_setting.ASK,
     disable_group_trimming: false,
     single_line: false,
 
@@ -1562,6 +1563,9 @@ function loadPowerUserSettings(settings, data) {
         power_user.tokenizer = tokenizers.GPT2;
     }
 
+    // Clean up old/legacy settings
+    delete power_user.import_card_tags;
+
     $('#single_line').prop('checked', power_user.single_line);
     $('#relaxed_api_urls').prop('checked', power_user.relaxed_api_urls);
     $('#world_import_dialog').prop('checked', power_user.world_import_dialog);
@@ -1590,7 +1594,6 @@ function loadPowerUserSettings(settings, data) {
     $('#zoomed_avatar_magnification').prop('checked', power_user.zoomed_avatar_magnification);
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr('selected', true);
-    $('#import_card_tags').prop('checked', power_user.import_card_tags);
     $('#confirm_message_delete').prop('checked', power_user.confirm_message_delete !== undefined ? !!power_user.confirm_message_delete : true);
     $('#spoiler_free_mode').prop('checked', power_user.spoiler_free_mode);
     $('#collapse-newlines-checkbox').prop('checked', power_user.collapse_newlines);
@@ -1632,6 +1635,7 @@ function loadPowerUserSettings(settings, data) {
     $('#chat_width_slider').val(power_user.chat_width);
     $('#token_padding').val(power_user.token_padding);
     $('#aux_field').val(power_user.aux_field);
+    $('#tag_import_setting').val(power_user.tag_import_setting);
 
     $('#stscript_autocomplete_autoHide').prop('checked', power_user.stscript.autocomplete.autoHide ?? false).trigger('input');
     $('#stscript_matching').val(power_user.stscript.matching ?? 'fuzzy');
@@ -3516,11 +3520,6 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#import_card_tags').on('input', function () {
-        power_user.import_card_tags = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    });
-
     $('#confirm_message_delete').on('input', function () {
         power_user.confirm_message_delete = !!$(this).prop('checked');
         saveSettingsDebounced();
@@ -3756,6 +3755,12 @@ $(document).ready(() => {
         const value = $(this).find(':selected').val();
         power_user.aux_field = String(value);
         printCharactersDebounced();
+        saveSettingsDebounced();
+    });
+
+    $('#tag_import_setting').on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.tag_import_setting = Number(value);
         saveSettingsDebounced();
     });
 

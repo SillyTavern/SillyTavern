@@ -175,11 +175,12 @@ import {
     createTagMapFromList,
     renameTagKey,
     importTags,
-    tag_filter_types,
+    tag_filter_type,
     compareTagsForSort,
     initTags,
     applyTagsOnCharacterSelect,
     applyTagsOnGroupSelect,
+    tag_import_setting,
 } from './scripts/tags.js';
 import {
     SECRET_KEYS,
@@ -1346,8 +1347,8 @@ export async function printCharacters(fullRefresh = false) {
     verifyCharactersSearchSortRule();
 
     // We are actually always reprinting filters, as it "doesn't hurt", and this way they are always up to date
-    printTagFilters(tag_filter_types.character);
-    printTagFilters(tag_filter_types.group_member);
+    printTagFilters(tag_filter_type.character);
+    printTagFilters(tag_filter_type.group_member);
 
     // We are also always reprinting the lists on character/group edit window, as these ones doesn't get updated otherwise
     applyTagsOnCharacterSelect();
@@ -8464,7 +8465,7 @@ async function importCharacter(file, preserveFileName = false) {
 
         await getCharacters();
         select_rm_info('char_import', data.file_name, oldSelectedChar);
-        if (power_user.import_card_tags) {
+        if (power_user.tag_import_setting !== tag_import_setting.NONE) {
             let currentContext = getContext();
             let avatarFileName = `${data.file_name}.png`;
             let importedCharacter = currentContext.characters.find(character => character.avatar === avatarFileName);
@@ -10599,7 +10600,7 @@ jQuery(async function () {
                 }
             } break;
             case 'import_tags': {
-                await importTags(characters[this_chid]);
+                await importTags(characters[this_chid], { forceShow: true });
             } break;
             /*case 'delete_button':
                 popup_type = "del_ch";

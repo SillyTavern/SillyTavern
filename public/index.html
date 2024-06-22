@@ -3923,11 +3923,20 @@
                             <h4 data-i18n="Character Handling">
                                 Character Handling
                             </h4>
-                            <div title="If set in the advanced character definitions, this field will be displayed in the characters list." data-i18n="[title]If set in the advanced character definitions, this field will be displayed in the characters list.">
+                            <div class="flex-container alignitemscenter" title="If set in the advanced character definitions, this field will be displayed in the characters list." data-i18n="[title]If set in the advanced character definitions, this field will be displayed in the characters list.">
                                 <label for="aux_field"><small data-i18n="Char List Subheader">Char List Subheader</small></label>
-                                <select id="aux_field">
+                                <select id="aux_field" class="widthNatural flex1 margin0">
                                     <option data-i18n="Character Version" value="character_version">Character Version</option>
                                     <option data-i18n="Created by" value="creator">Created by</option>
+                                </select>
+                            </div>
+                            <div data-newbie-hidden class="flex-container alignitemscenter" title="Defines on importing cards which action should be chosen for importing its listed tags. 'Ask' will always display the dialog." data-i18n="[title]Defines on importing cards which action should be chosen for importing its listed tags. 'Ask' will always display the dialog.">
+                                <label for="tag_import_setting"><small data-i18n="Import Card Tags">Import Card Tags</small></label>
+                                <select id="tag_import_setting" class="widthNatural flex1 margin0">
+                                    <option data-i18n="Ask" value="1">Ask</option>
+                                    <option data-i18n="None" value="2">None</option>
+                                    <option data-i18n="All" value="3">All</option>
+                                    <option data-i18n="Existing" value="4">Existing</option>
                                 </select>
                             </div>
                             <label data-newbie-hidden class="checkbox_label" for="fuzzy_search_checkbox" title="Use fuzzy matching, and search characters in the list by all data fields, not just by a name substring." data-i18n="[title]Use fuzzy matching, and search characters in the list by all data fields, not just by a name substring">
@@ -3949,10 +3958,6 @@
                             <label data-newbie-hidden class="checkbox_label" for="show_card_avatar_urls" title="Show actual file names on the disk, in the characters list display only." data-i18n="[title]Show actual file names on the disk, in the characters list display only">
                                 <input id="show_card_avatar_urls" type="checkbox" />
                                 <small data-i18n="Show avatar filenames">Show avatar filenames</small>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="import_card_tags" title="Prompt to import embedded card tags on character import. Otherwise embedded tags are ignored." data-i18n="[title]Prompt to import embedded card tags on character import. Otherwise embedded tags are ignored">
-                                <input id="import_card_tags" type="checkbox" />
-                                <small data-i18n="Import Card Tags">Import Card Tags</small>
                             </label>
                             <label data-newbie-hidden class="checkbox_label" for="spoiler_free_mode" title="Hide character definitions from the editor panel behind a spoiler button." data-i18n="[title]Hide character definitions from the editor panel behind a spoiler button">
                                 <input id="spoiler_free_mode" type="checkbox" />
