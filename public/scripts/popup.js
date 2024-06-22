@@ -28,6 +28,8 @@ export const POPUP_RESULT = {
  * @property {boolean?} [allowVerticalScrolling] - Whether to allow vertical scrolling in the popup
  * @property {POPUP_RESULT|number?} [defaultResult] - The default result of this popup when Enter is pressed. Can be changed from `POPUP_RESULT.AFFIRMATIVE`.
  * @property {CustomPopupButton[]|string[]?} [customButtons] - Custom buttons to add to the popup. If only strings are provided, the buttons will be added with default options, and their result will be in order from `2` onward.
+ * @property {(popup: Popup) => boolean?} [onClosing] - Handler called before the popup closes, return `false` to cancel the close
+ * @property {(popup: Popup) => void?} [onClose] - Handler called after the popup closes, but before the DOM is cleaned up
  */
 
 /**
@@ -78,6 +80,9 @@ export class Popup {
     /** @type {POPUP_RESULT|number?} */ defaultResult;
     /** @type {CustomPopupButton[]|string[]?} */ customButtons;
 
+    /** @type {(popup: Popup) => boolean?} */ onClosing;
+    /** @type {(popup: Popup) => void?} */ onClose;
+
     /** @type {POPUP_RESULT|number} */ result;
     /** @type {any} */ value;
 
@@ -94,12 +99,16 @@ export class Popup {
      * @param {string} [inputValue=''] - The initial value of the input field
      * @param {PopupOptions} [options={}] - Additional options for the popup
      */
-    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null } = {}) {
+    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, onClosing = null, onClose = null } = {}) {
         Popup.util.popups.push(this);
 
         // Make this popup uniquely identifiable
         this.id = uuidv4();
         this.type = type;
+
+        // Utilize event handlers being passed in
+        this.onClosing = onClosing;
+        this.onClose = onClose;
 
         /**@type {HTMLTemplateElement}*/
         const template = document.querySelector('#popup_template');
@@ -317,6 +326,12 @@ export class Popup {
 
         this.value = value;
         this.result = result;
+
+        if (this.onClosing) {
+            const shouldClose = this.onClosing(this);
+            if (!shouldClose) return;
+        }
+
         Popup.util.lastResult = { value, result };
         this.hide();
     }
@@ -336,6 +351,11 @@ export class Popup {
         runAfterAnimation(this.dlg, () => {
             // Call the close on the dialog
             this.dlg.close();
+
+            // Run a possible custom handler right before DOM removal
+            if (this.onClose) {
+                this.onClose(this);
+            }
 
             // Remove it from the dom
             this.dlg.remove();
