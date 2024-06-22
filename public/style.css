@@ -368,6 +368,8 @@ input[type='checkbox']:focus-visible {
 
 .img_enlarged_container {
     padding: 10px;
+    height: 100%;
+    width: 100%;
 }
 
 .img_enlarged_container pre code,
