@@ -95,7 +95,7 @@ function onLockBackgroundClick(e) {
 
     if (!chatName) {
         toastr.warning('Select a chat to lock the background for it');
-        return;
+        return '';
     }
 
     const relativeBgImage = getUrlParameter(this);
@@ -103,6 +103,7 @@ function onLockBackgroundClick(e) {
     saveBackgroundMetadata(relativeBgImage);
     setCustomBackground();
     highlightLockedBackground();
+    return '';
 }
 
 function onUnlockBackgroundClick(e) {
@@ -110,6 +111,7 @@ function onUnlockBackgroundClick(e) {
     removeBackgroundMetadata();
     unsetCustomBackground();
     highlightLockedBackground();
+    return '';
 }
 
 function hasCustomBackground() {
@@ -319,7 +321,7 @@ async function autoBackgroundCommand() {
     const options = bgTitles.map(x => ({ element: x, text: x.innerText.trim() })).filter(x => x.text.length > 0);
     if (options.length == 0) {
         toastr.warning('No backgrounds to choose from. Please upload some images to the "backgrounds" folder.');
-        return;
+        return '';
     }
 
     const list = options.map(option => `- ${option.text}`).join('\n');
@@ -330,11 +332,12 @@ async function autoBackgroundCommand() {
 
     if (bestMatch.length == 0) {
         toastr.warning('No match found. Please try again.');
-        return;
+        return '';
     }
 
     console.debug('Automatically choosing background:', bestMatch);
     bestMatch[0].item.element.click();
+    return '';
 }
 
 export async function getBackgrounds() {

@@ -1511,6 +1511,14 @@ body[data-stscript-style] .autoComplete [data-option-type] {
     &[data-option-type="macro"] .type {
         color: var(--ac-color-variableLanguage);
     }
+
+    &[data-option-type="number"] .type {
+        color: var(--ac-color-number);
+    }
+
+    &[data-option-type="name"] .type {
+        color: var(--ac-color-type);
+    }
 }
 
 body[data-stscript-style] .hljs.language-stscript {
@@ -1620,6 +1628,11 @@ body[data-stscript-style] .hljs.language-stscript {
         gap: 0.5em;
         display: contents;
 
+        >.stopgap {
+            opacity: 0.75;
+            display: none;
+        }
+
         @container (max-width: 80em) {
             .specs {
                 grid-column: 2 / 4;
@@ -1630,6 +1643,10 @@ body[data-stscript-style] .hljs.language-stscript {
                 padding-left: 1em;
                 opacity: 0.75;
                 height: auto;
+            }
+
+            >.stopgap {
+                display: inline-block;
             }
         }
 

@@ -31,6 +31,8 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { resolveVariable } from '../../variables.js';
 import { debounce_timeout } from '../../constants.js';
+import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'sd';
@@ -3349,11 +3351,14 @@ jQuery(async () => {
         aliases: ['sd', 'img', 'image'],
         namedArgumentList: [
             new SlashCommandNamedArgument(
-                'quiet', 'whether to post the generated image to chat', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false', ['false', 'true'],
+                'quiet', 'whether to post the generated image to chat', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
             ),
-            new SlashCommandNamedArgument(
-                'negative', 'negative prompt prefix', [ARGUMENT_TYPE.STRING], false, false, '',
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'negative',
+                description: 'negative prompt prefix',
+                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+                enumProvider: commonEnumProviders.variables('all'),
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -3362,7 +3367,7 @@ jQuery(async () => {
         ],
         helpString: `
             <div>
-                Requests to generate an image and posts it to chat (unless quiet=true argument is specified). Supported arguments: <code>${Object.values(triggerWords).flat().join(', ')}</code>.
+                Requests to generate an image and posts it to chat (unless <code>quiet=true</code> argument is specified).</code>.
             </div>
             <div>
                 Anything else would trigger a "free mode" to make generate whatever you prompted. Example: <code>/imagine apple tree</code> would generate a picture of an apple tree. Returns a link to the generated image.
@@ -3375,9 +3380,12 @@ jQuery(async () => {
         callback: changeComfyWorkflow,
         aliases: ['icw'],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'workflowName', [ARGUMENT_TYPE.STRING], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'workflow name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: () => Array.from(document.querySelectorAll('#sd_comfy_workflow > [value]')).map(x => x.getAttribute('value')).map(workflow => new SlashCommandEnumValue(workflow)),
+            }),
         ],
         helpString: '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <pre><code>/imagine-comfy-workflow MyWorkflow</code></pre>',
     }));

@@ -17,6 +17,10 @@ import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNa
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
 import { MacroAutoCompleteOption } from '../autocomplete/MacroAutoCompleteOption.js';
+import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
+
+/** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
+/** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
 
 /**@readonly*/
 /**@enum {Number}*/
@@ -32,7 +36,7 @@ export class SlashCommandParser {
     /**
      * @deprecated Use SlashCommandParser.addCommandObject() instead.
      * @param {string} command Command name
-     * @param {(namedArguments:Object.<string,string|SlashCommandClosure>, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|void|Promise<string|SlashCommandClosure|void>} callback The function to execute when the command is called
+     * @param {(namedArguments:NamedArguments|NamedArgumentsCapture, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|Promise<string|SlashCommandClosure>} callback callback The function to execute when the command is called
      * @param {string[]} aliases List of alternative command names
      * @param {string} helpString Help text shown in autocomplete and command browser
      */
@@ -131,7 +135,7 @@ export class SlashCommandParser {
                         description: 'The state of the parser flag to set.',
                         typeList: [ARGUMENT_TYPE.BOOLEAN],
                         defaultValue: 'on',
-                        enumList: ['on', 'off'],
+                        enumList: commonEnumProviders.boolean('onOff')(),
                     }),
                 ],
                 splitUnnamedArgument: true,

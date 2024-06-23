@@ -19,6 +19,8 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { debounce_timeout } from '../../constants.js';
+import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
+import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000;
@@ -1204,12 +1206,19 @@ $(document).ready(function () {
     eventSource.makeLast(event_types.USER_MESSAGE_RENDERED, onMessageEvent);
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'speak',
-        callback: onNarrateText,
+        callback: async (args, value) => {
+            await onNarrateText(args, value);
+            return '';
+        },
         aliases: ['narrate', 'tts'],
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'voice', 'character voice name', [ARGUMENT_TYPE.STRING], false,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'voice',
+                description: 'character voice name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                enumProvider: () => Object.keys(voiceMap).map(voiceName => new SlashCommandEnumValue(voiceName, null, enumTypes.enum, enumIcons.voice)),
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(

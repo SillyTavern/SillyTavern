@@ -750,8 +750,10 @@ export class AutoComplete {
         }
         // autocomplete shown or not, cursor anywhere
         switch (evt.key) {
+            // The first is a non-breaking space, the second is a regular space.
+            case ' ':
             case ' ': {
-                if (evt.ctrlKey) {
+                if (evt.ctrlKey || evt.altKey) {
                     if (this.isActive && this.isReplaceable) {
                         // ctrl-space to toggle details for selected item
                         this.toggleDetails();
@@ -759,6 +761,8 @@ export class AutoComplete {
                         // ctrl-space to force show autocomplete
                         this.show(false, true);
                     }
+                    evt.preventDefault();
+                    evt.stopPropagation();
                     return;
                 }
                 break;
