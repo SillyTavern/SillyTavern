@@ -36,6 +36,7 @@ export class SlashCommand {
      * @param {(namedArguments:NamedArguments|NamedArgumentsCapture, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|Promise<string|SlashCommandClosure>} [props.callback]
      * @param {string} [props.helpString]
      * @param {boolean} [props.splitUnnamedArgument]
+     * @param {Number} [props.splitUnnamedArgumentCount]
      * @param {string[]} [props.aliases]
      * @param {string} [props.returns]
      * @param {SlashCommandNamedArgument[]} [props.namedArgumentList]
@@ -53,6 +54,7 @@ export class SlashCommand {
     /**@type {(namedArguments:{_pipe:string|SlashCommandClosure, _scope:SlashCommandScope, _abortController:SlashCommandAbortController, [id:string]:string|SlashCommandClosure}, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|Promise<string|SlashCommandClosure>}*/ callback;
     /**@type {string}*/ helpString;
     /**@type {boolean}*/ splitUnnamedArgument = false;
+    /**@type {Number}*/ splitUnnamedArgumentCount;
     /**@type {string[]}*/ aliases = [];
     /**@type {string}*/ returns;
     /**@type {SlashCommandNamedArgument[]}*/ namedArgumentList = [];

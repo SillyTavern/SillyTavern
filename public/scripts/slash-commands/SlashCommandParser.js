@@ -797,7 +797,7 @@ export class SlashCommandParser {
         cmd.startUnnamedArgs = this.index - /\s(\s*)$/s.exec(this.behind)?.[1]?.length ?? 0;
         cmd.endUnnamedArgs = this.index;
         if (this.testUnnamedArgument()) {
-            cmd.unnamedArgumentList = this.parseUnnamedArgument(cmd.command?.unnamedArgumentList?.length && cmd?.command?.splitUnnamedArgument);
+            cmd.unnamedArgumentList = this.parseUnnamedArgument(cmd.command?.unnamedArgumentList?.length && cmd?.command?.splitUnnamedArgument, cmd?.command?.splitUnnamedArgumentCount);
             cmd.endUnnamedArgs = this.index;
             if (cmd.name == 'let') {
                 const keyArg = cmd.namedArgumentList.find(it=>it.name == 'key');
@@ -846,7 +846,7 @@ export class SlashCommandParser {
     testUnnamedArgumentEnd() {
         return this.testCommandEnd();
     }
-    parseUnnamedArgument(split) {
+    parseUnnamedArgument(split, splitCount = null) {
         /**@type {SlashCommandClosure|String}*/
         let value = this.jumpedEscapeSequence ? this.take() : ''; // take the first, already tested, char if it is an escaped one
         let isList = split;
@@ -855,6 +855,7 @@ export class SlashCommandParser {
         let assignment = new SlashCommandUnnamedArgumentAssignment();
         assignment.start = this.index;
         while (!this.testUnnamedArgumentEnd()) {
+            if (split && splitCount && listValues.length >= splitCount) split = false;
             if (this.testClosure()) {
                 isList = true;
                 if (value.length > 0) {
