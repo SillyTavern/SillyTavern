@@ -364,16 +364,13 @@ class WorldInfoTimedEvents {
     #entries = [];
 
     /**
-     * Array of entries that need to be activated due to sticky
-     * @type {WIScanEntry[]}
+     * Buffer for active timed events
+     * @type {Record<TimedEventType, WIScanEntry[]>}
      */
-    #stickyActivations = [];
-
-    /**
-     * Array of entries that need to be suppressed due to cooldown
-     * @type {WIScanEntry[]}
-     */
-    #cooldownSuppressions = [];
+    #buffer = {
+        'sticky': [],
+        'cooldown': [],
+    };
 
     /**
      * Initialize the timed events with the given messages.
@@ -462,7 +459,7 @@ class WorldInfoTimedEvents {
         chat_metadata.timedWorldInfo.cooldown[key] = event;
         console.log(`Adding cooldown entry ${key} on ended sticky: target release @ message ID ${event.end}`);
         // Set the cooldown immediately for this evaluation
-        this.#cooldownSuppressions.push(entry);
+        this.#buffer['cooldown'].push(entry);
     }
 
     /**
@@ -527,8 +524,8 @@ class WorldInfoTimedEvents {
      * Checks for timed effects on chat messages.
      */
     checkTimedEvents() {
-        this.#checkTimedEventOfType('sticky', this.#stickyActivations, this.#onStickyEndedCallback.bind(this));
-        this.#checkTimedEventOfType('cooldown', this.#cooldownSuppressions, this.#onCooldownEndedCallback.bind(this));
+        this.#checkTimedEventOfType('sticky', this.#buffer['sticky'], this.#onStickyEndedCallback.bind(this));
+        this.#checkTimedEventOfType('cooldown', this.#buffer['cooldown'], this.#onCooldownEndedCallback.bind(this));
     }
 
     /**
@@ -564,29 +561,35 @@ class WorldInfoTimedEvents {
     }
 
     /**
-     * Check if the current entry is sticky activated.
-     * @param {object} entry WI entry to check
-     * @returns {boolean} True if the entry is sticky activated
+     * Check if the string is a valid timed event type.
+     * @param {string} type Name of the timed event
+     * @returns {boolean} Is recognized type
      */
-    isStickyActivated(entry) {
-        return this.#stickyActivations.some(x => this.#getEntryHash(x) === this.#getEntryHash(entry));
+    isValidEffectType(type) {
+        return typeof type === 'string' && ['sticky', 'cooldown'].includes(type.trim().toLowerCase());
     }
 
     /**
-     * Check if the current entry is on cooldown.
-     * @param {object} entry WI entry to check
-     * @returns {boolean} True if the entry is suppressed by cooldown
+     * Check if the current entry is sticky activated.
+     * @param {TimedEventType} type Type of timed event
+     * @param {WIScanEntry} entry WI entry to check
+     * @returns {boolean} True if the entry is active
      */
-    isOnCooldown(entry) {
-        return this.#cooldownSuppressions.some(x => this.#getEntryHash(x) === this.#getEntryHash(entry));
+    isEffectActive(type, entry) {
+        if (!this.isValidEffectType(type)) {
+            return false;
+        }
+
+        return this.#buffer[type]?.some(x => this.#getEntryHash(x) === this.#getEntryHash(entry)) ?? false;
     }
 
     /**
      * Clean-up previously set timed events.
      */
     cleanUp() {
-        this.#stickyActivations.splice(0, this.#stickyActivations.length);
-        this.#cooldownSuppressions.splice(0, this.#cooldownSuppressions.length);
+        for (const buffer of Object.values(this.#buffer)) {
+            buffer.splice(0, buffer.length);
+        }
     }
 }
 
@@ -3256,8 +3259,8 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 }
             }
 
-            const isSticky = timedEvents.isStickyActivated(entry);
-            const isCooldown = timedEvents.isOnCooldown(entry);
+            const isSticky = timedEvents.isEffectActive('sticky', entry);
+            const isCooldown = timedEvents.isEffectActive('cooldown', entry);
 
             if (isCooldown && !isSticky) {
                 console.debug(`WI entry ${entry.uid} suppressed by cooldown`);
@@ -3360,7 +3363,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             const rollValue = Math.random() * 100;
 
             if (entry.useProbability && rollValue > entry.probability) {
-                const isSticky = timedEvents.isStickyActivated(entry);
+                const isSticky = timedEvents.isEffectActive('sticky', entry);
                 if (!isSticky) {
                     console.debug(`WI entry ${entry.uid} ${entry.key} failed probability check, skipping`);
                     failedProbabilityChecks.add(entry);
