@@ -6,8 +6,8 @@ import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortC
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
-import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
-import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
+import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { isFalseBoolean } from './utils.js';
@@ -1456,7 +1456,28 @@ export function registerVariableCommands() {
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
                 acceptsMultiple: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: (executor, scope)=>{
+                    const vars = commonEnumProviders.variables('all')(executor, scope);
+                    vars.push(
+                        new SlashCommandEnumValue(
+                            'any variable name',
+                            null,
+                            enumTypes.variable,
+                            enumIcons.variable,
+                            (input)=>/^\w*$/.test(input),
+                            (input)=>input,
+                        ),
+                        new SlashCommandEnumValue(
+                            'any number',
+                            null,
+                            enumTypes.number,
+                            enumIcons.number,
+                            (input)=>input == '' || !Number.isNaN(Number(input)),
+                            (input)=>input,
+                        ),
+                    );
+                    return vars;
+                },
                 forceEnum: false,
             }),
         ],
