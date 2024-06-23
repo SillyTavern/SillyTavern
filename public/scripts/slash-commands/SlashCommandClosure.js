@@ -187,11 +187,29 @@ export class SlashCommandClosure {
                 if (this.debugController) {
                     // "execute" breakpoint
                     step = await stepper.next();
+                    step = await stepper.next();
                     // get next executor
                     step = await stepper.next();
-                    this.debugController.isStepping = yield { closure:this, executor:step.value };
+                    const hasImmediateClosureInNamedArgs = step.value.namedArgumentList.find(it=>it.value instanceof SlashCommandClosure && it.executeNow);
+                    const hasImmediateClosureInUnnamedArgs = step.value.unnamedArgumentList.find(it=>it.value instanceof SlashCommandClosure && it.executeNow);
+                    if (hasImmediateClosureInNamedArgs || hasImmediateClosureInUnnamedArgs) {
+                        this.debugController.isStepping = yield { closure:this, executor:step.value };
+                    } else {
+                        this.debugController.isStepping = true;
+                        this.debugController.stepStack[this.debugController.stepStack.length - 1] = true;
+                    }
                 }
             } else if (!step.done && this.debugController?.testStepping(this)) {
+                this.debugController.isSteppingInto = false;
+                const hasImmediateClosureInNamedArgs = step.value.namedArgumentList.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
+                const hasImmediateClosureInUnnamedArgs = step.value.unnamedArgumentList.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
+                if (hasImmediateClosureInNamedArgs || hasImmediateClosureInUnnamedArgs) {
+                    this.debugController.isStepping = yield { closure:this, executor:step.value };
+                }
+            }
+            // resolve args
+            step = await stepper.next();
+            if (!step.done && this.debugController?.testStepping(this)) {
                 this.debugController.isSteppingInto = false;
                 this.debugController.isStepping = yield { closure:this, executor:step.value };
             }
@@ -225,6 +243,7 @@ export class SlashCommandClosure {
             } else if (executor instanceof SlashCommandBreakPoint) {
                 // no execution for breakpoints, just raise counter
                 done++;
+                yield executor;
             } else {
                 /**@type {import('./SlashCommand.js').NamedArguments} */
                 let args = {
@@ -310,6 +329,11 @@ export class SlashCommandClosure {
                 if (abortResult) {
                     return abortResult;
                 }
+                if (this.debugController) {
+                    this.debugController.namedArguments = args;
+                    this.debugController.unnamedArguments = value ?? '';
+                }
+                yield executor;
                 executor.onProgress = (subDone, subTotal)=>this.onProgress?.(done + subDone, this.commandCount);
                 const isStepping = this.debugController?.testStepping(this);
                 if (this.debugController) {
@@ -317,6 +341,8 @@ export class SlashCommandClosure {
                 }
                 this.scope.pipe = await executor.command.callback(args, value ?? '');
                 if (this.debugController) {
+                    this.debugController.namedArguments = undefined;
+                    this.debugController.unnamedArguments = undefined;
                     this.debugController.isStepping = isStepping;
                 }
                 this.#lintPipe(executor.command);

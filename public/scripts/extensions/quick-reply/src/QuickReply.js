@@ -618,14 +618,15 @@ export class QuickReply {
             }
             this.clone.style.position = 'fixed';
             this.clone.style.visibility = 'hidden';
-            document.body.append(this.clone);
             const mo = new MutationObserver(muts=>{
-                if (muts.find(it=>Array.from(it.removedNodes).includes(this.editorMessage))) {
+                if (muts.find(it=>[...it.removedNodes].includes(this.editorMessage) || [...it.removedNodes].find(n=>n.contains(this.editorMessage)))) {
                     this.clone.remove();
+                    this.clone = null;
                 }
             });
-            mo.observe(this.editorMessage.parentElement, { childList:true });
+            mo.observe(document.body, { childList:true });
         }
+        document.body.append(this.clone);
         this.clone.style.width = `${inputRect.width}px`;
         this.clone.style.height = `${inputRect.height}px`;
         this.clone.style.left = `${inputRect.left}px`;
@@ -648,6 +649,7 @@ export class QuickReply {
             top: locatorRect.top,
             bottom: locatorRect.bottom,
         };
+        // this.clone.remove();
         return location;
     }
     async executeFromEditor() {
@@ -689,6 +691,157 @@ export class QuickReply {
                     const c = this.debugController.stack.slice(ci)[0];
                     const wrap = document.createElement('div'); {
                         wrap.classList.add('qr--scope');
+                        if (isCurrent) {
+                            const executor = this.debugController.cmdStack.slice(-1)[0];
+                            {
+                                const namedTitle = document.createElement('div'); {
+                                    namedTitle.classList.add('qr--title');
+                                    namedTitle.textContent = `Named Args - /${executor.name}`;
+                                    if (executor.command.name == 'run') {
+                                        namedTitle.textContent += `${(executor.name == ':' ? '' : ' ')}${executor.unnamedArgumentList[0]?.value}`;
+                                    }
+                                    wrap.append(namedTitle);
+                                }
+                                const keys = new Set([...Object.keys(this.debugController.namedArguments ?? {}), ...(executor.namedArgumentList ?? []).map(it=>it.name)]);
+                                for (const key of keys) {
+                                    if (key[0] == '_') continue;
+                                    const item = document.createElement('div'); {
+                                        item.classList.add('qr--var');
+                                        const k = document.createElement('div'); {
+                                            k.classList.add('qr--key');
+                                            k.textContent = key;
+                                            item.append(k);
+                                        }
+                                        const vUnresolved = document.createElement('div'); {
+                                            vUnresolved.classList.add('qr--val');
+                                            vUnresolved.classList.add('qr--singleCol');
+                                            const val = executor.namedArgumentList.find(it=>it.name == key)?.value;
+                                            if (val instanceof SlashCommandClosure) {
+                                                vUnresolved.classList.add('qr--closure');
+                                                vUnresolved.title = val.rawText;
+                                                vUnresolved.textContent = val.toString();
+                                            } else if (val === undefined) {
+                                                vUnresolved.classList.add('qr--undefined');
+                                                vUnresolved.textContent = 'undefined';
+                                            } else {
+                                                let jsonVal;
+                                                try { jsonVal = JSON.parse(val); } catch { /* empty */ }
+                                                if (jsonVal && typeof jsonVal == 'object') {
+                                                    vUnresolved.textContent = JSON.stringify(jsonVal, null, 2);
+                                                } else {
+                                                    vUnresolved.textContent = val;
+                                                    vUnresolved.classList.add('qr--simple');
+                                                }
+                                            }
+                                            item.append(vUnresolved);
+                                        }
+                                        const vResolved = document.createElement('div'); {
+                                            vResolved.classList.add('qr--val');
+                                            vResolved.classList.add('qr--singleCol');
+                                            const val = this.debugController.namedArguments[key];
+                                            if (val instanceof SlashCommandClosure) {
+                                                vResolved.classList.add('qr--closure');
+                                                vResolved.title = val.rawText;
+                                                vResolved.textContent = val.toString();
+                                            } else if (val === undefined) {
+                                                vResolved.classList.add('qr--undefined');
+                                                vResolved.textContent = 'undefined';
+                                            } else {
+                                                let jsonVal;
+                                                try { jsonVal = JSON.parse(val); } catch { /* empty */ }
+                                                if (jsonVal && typeof jsonVal == 'object') {
+                                                    vResolved.textContent = JSON.stringify(jsonVal, null, 2);
+                                                } else {
+                                                    vResolved.textContent = val;
+                                                    vResolved.classList.add('qr--simple');
+                                                }
+                                            }
+                                            item.append(vResolved);
+                                        }
+                                        wrap.append(item);
+                                    }
+                                }
+                            }
+                            {
+                                const unnamedTitle = document.createElement('div'); {
+                                    unnamedTitle.classList.add('qr--title');
+                                    unnamedTitle.textContent = `Unnamed Args - /${executor.name}`;
+                                    if (executor.command.name == 'run') {
+                                        unnamedTitle.textContent += `${(executor.name == ':' ? '' : ' ')}${executor.unnamedArgumentList[0]?.value}`;
+                                    }
+                                    wrap.append(unnamedTitle);
+                                }
+                                let i = 0;
+                                let unnamed = this.debugController.unnamedArguments ?? [];
+                                if (!Array.isArray(unnamed)) unnamed = [unnamed];
+                                while (unnamed.length < executor.unnamedArgumentList?.length ?? 0) unnamed.push(undefined);
+                                unnamed = unnamed.map((it,idx)=>[executor.unnamedArgumentList?.[idx], it]);
+                                for (const arg of unnamed) {
+                                    i++;
+                                    const item = document.createElement('div'); {
+                                        item.classList.add('qr--var');
+                                        const k = document.createElement('div'); {
+                                            k.classList.add('qr--key');
+                                            k.textContent = i.toString();
+                                            item.append(k);
+                                        }
+                                        const vUnresolved = document.createElement('div'); {
+                                            vUnresolved.classList.add('qr--val');
+                                            vUnresolved.classList.add('qr--singleCol');
+                                            const val = arg[0]?.value;
+                                            if (val instanceof SlashCommandClosure) {
+                                                vUnresolved.classList.add('qr--closure');
+                                                vUnresolved.title = val.rawText;
+                                                vUnresolved.textContent = val.toString();
+                                            } else if (val === undefined) {
+                                                vUnresolved.classList.add('qr--undefined');
+                                                vUnresolved.textContent = 'undefined';
+                                            } else {
+                                                let jsonVal;
+                                                try { jsonVal = JSON.parse(val); } catch { /* empty */ }
+                                                if (jsonVal && typeof jsonVal == 'object') {
+                                                    vUnresolved.textContent = JSON.stringify(jsonVal, null, 2);
+                                                } else {
+                                                    vUnresolved.textContent = val;
+                                                    vUnresolved.classList.add('qr--simple');
+                                                }
+                                            }
+                                            item.append(vUnresolved);
+                                        }
+                                        const vResolved = document.createElement('div'); {
+                                            vResolved.classList.add('qr--val');
+                                            vResolved.classList.add('qr--singleCol');
+                                            if (this.debugController.unnamedArguments === undefined) {
+                                                vResolved.classList.add('qr--unresolved');
+                                            } else if ((Array.isArray(this.debugController.unnamedArguments) ? this.debugController.unnamedArguments : [this.debugController.unnamedArguments]).length < i) {
+                                                // do nothing
+                                            } else {
+                                                const val = arg[1];
+                                                if (val instanceof SlashCommandClosure) {
+                                                    vResolved.classList.add('qr--closure');
+                                                    vResolved.title = val.rawText;
+                                                    vResolved.textContent = val.toString();
+                                                } else if (val === undefined) {
+                                                    vResolved.classList.add('qr--undefined');
+                                                    vResolved.textContent = 'undefined';
+                                                } else {
+                                                    let jsonVal;
+                                                    try { jsonVal = JSON.parse(val); } catch { /* empty */ }
+                                                    if (jsonVal && typeof jsonVal == 'object') {
+                                                        vResolved.textContent = JSON.stringify(jsonVal, null, 2);
+                                                    } else {
+                                                        vResolved.textContent = val;
+                                                        vResolved.classList.add('qr--simple');
+                                                    }
+                                                }
+                                            }
+                                            item.append(vResolved);
+                                        }
+                                        wrap.append(item);
+                                    }
+                                }
+                            }
+                        }
                         const title = document.createElement('div'); {
                             title.classList.add('qr--title');
                             title.textContent = isCurrent ? 'Current Scope' : 'Parent Scope';
@@ -735,6 +888,7 @@ export class QuickReply {
                                             v.textContent = JSON.stringify(jsonVal, null, 2);
                                         } else {
                                             v.textContent = val;
+                                            v.classList.add('qr--simple');
                                         }
                                     }
                                     item.append(v);
@@ -770,6 +924,7 @@ export class QuickReply {
                                             v.textContent = JSON.stringify(jsonVal, null, 2);
                                         } else {
                                             v.textContent = val;
+                                            v.classList.add('qr--simple');
                                         }
                                     }
                                     item.append(v);
@@ -801,6 +956,7 @@ export class QuickReply {
                                         v.textContent = JSON.stringify(jsonVal, null, 2);
                                     } else {
                                         v.textContent = val;
+                                        v.classList.add('qr--simple');
                                     }
                                 }
                                 pipeItem.append(v);
@@ -854,6 +1010,9 @@ export class QuickReply {
                 const layer = this.editorPopup.dlg.getBoundingClientRect();
                 const hi = document.createElement('div');
                 hi.classList.add('qr--highlight');
+                if (this.debugController.namedArguments === undefined) {
+                    hi.classList.add('qr--unresolved');
+                }
                 hi.style.left = `${loc.left - layer.left}px`;
                 hi.style.width = `${loc.right - loc.left}px`;
                 hi.style.top = `${loc.top - layer.top}px`;

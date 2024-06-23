@@ -245,6 +245,9 @@
   position: fixed;
   z-index: 50000;
   pointer-events: none;
+  background-color: rgba(47, 150, 180, 0.5);
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting) .qr--highlight.qr--unresolved {
   background-color: rgba(255, 255, 0, 0.5);
 }
 .popup:has(#qr--modalEditor):has(.qr--isExecuting) .qr--highlight-secondary {
@@ -559,11 +562,11 @@
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope {
   display: grid;
-  grid-template-columns: 0fr 1fr;
+  grid-template-columns: 0fr 1fr 1fr;
   column-gap: 0em;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--title {
-  grid-column: 1 / 3;
+  grid-column: 1 / 4;
   font-weight: bold;
   font-family: var(--mainFontFamily);
   background-color: var(--black50a);
@@ -583,6 +586,26 @@
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe:nth-child(2n + 1) .qr--val {
   background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.25);
 }
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var:nth-child(2n + 1) .qr--val:nth-child(2n),
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro:nth-child(2n + 1) .qr--val:nth-child(2n),
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe:nth-child(2n + 1) .qr--val:nth-child(2n) {
+  background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.125);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var:nth-child(2n + 1) .qr--val:hover,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro:nth-child(2n + 1) .qr--val:hover,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe:nth-child(2n + 1) .qr--val:hover {
+  background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.5);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var:nth-child(2n) .qr--val:nth-child(2n),
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro:nth-child(2n) .qr--val:nth-child(2n),
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe:nth-child(2n) .qr--val:nth-child(2n) {
+  background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.0625);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var:nth-child(2n) .qr--val:hover,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro:nth-child(2n) .qr--val:hover,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe:nth-child(2n) .qr--val:hover {
+  background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.5);
+}
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var.qr--isHidden .qr--key,
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro.qr--isHidden .qr--key,
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe.qr--isHidden .qr--key,
@@ -590,6 +613,32 @@
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro.qr--isHidden .qr--val,
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe.qr--isHidden .qr--val {
   opacity: 0.5;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var .qr--val,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro .qr--val,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe .qr--val {
+  grid-column: 2 / 4;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var .qr--val.qr--singleCol,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro .qr--val.qr--singleCol,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe .qr--val.qr--singleCol {
+  grid-column: unset;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var .qr--val.qr--simple:before,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro .qr--val.qr--simple:before,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe .qr--val.qr--simple:before,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var .qr--val.qr--simple:after,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro .qr--val.qr--simple:after,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe .qr--val.qr--simple:after {
+  content: '"';
+  color: var(--SmartThemeQuoteColor);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var .qr--val.qr--unresolved:after,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro .qr--val.qr--unresolved:after,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe .qr--val.qr--unresolved:after {
+  content: '-UNRESOLVED-';
+  font-style: italic;
+  color: var(--SmartThemeQuoteColor);
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--key {
   margin-left: 0.5em;

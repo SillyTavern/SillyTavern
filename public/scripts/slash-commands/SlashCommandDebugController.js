@@ -9,6 +9,9 @@ export class SlashCommandDebugController {
     /**@type {boolean} */ isSteppingInto = false;
     /**@type {boolean} */ isSteppingOut = false;
 
+    /**@type {object} */ namedArguments;
+    /**@type {string|SlashCommandClosure|(string|SlashCommandClosure)[]} */ unnamedArguments;
+
     /**@type {Promise<boolean>} */ continuePromise;
     /**@type {(boolean)=>void} */ continueResolver;
 
