@@ -3149,6 +3149,14 @@ grammarly-extension {
 
 .wider_dialogue_popup {
     min-width: 750px;
+    max-width: 90%;
+}
+
+/* If doesn't fit 750px in 90% of the screen, we should re-scale the wider popup */
+@media (max-width: calc(750px / 0.9)) {
+    .wider_dialogue_popup {
+        min-width: 90%;
+    }
 }
 
 .transparent_dialogue_popup {
