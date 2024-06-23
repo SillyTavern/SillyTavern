@@ -399,7 +399,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             description: 'character name',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-            enumProvider: commonEnumProviders.characters('all'),
+            enumProvider: commonEnumProviders.characters('character'),
         }),
     ],
     unnamedArgumentList: [
@@ -418,7 +418,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             description: 'name',
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-            enumProvider: commonEnumProviders.characters('all'),
+            enumProvider: commonEnumProviders.characters('character'),
         }),
     ],
     aliases: ['cancel'],
@@ -507,6 +507,14 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             false,
             'false',
         ),
+    ],
+    unnamedArgumentList: [
+        SlashCommandArgument.fromProps({
+            description: 'group member index (starts with 0) or name',
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING],
+            isRequired: false,
+            enumProvider: commonEnumProviders.groupMembers(),
+        }),
     ],
     helpString: `
         <div>
