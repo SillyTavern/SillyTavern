@@ -1,4 +1,4 @@
-import { getBase64Async, isTrueBoolean, saveBase64AsFile } from '../../utils.js';
+import { ensureImageFormatSupported, getBase64Async, isTrueBoolean, saveBase64AsFile } from '../../utils.js';
 import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callPopup, getRequestHeaders, saveSettingsDebounced, substituteParamsExtended } from '../../../script.js';
 import { getMessageTimeStamp } from '../../RossAscends-mods.js';
@@ -274,7 +274,7 @@ async function getCaptionForFile(file, prompt, quiet) {
     try {
         setSpinnerIcon();
         const context = getContext();
-        const fileData = await getBase64Async(file);
+        const fileData = await getBase64Async(await ensureImageFormatSupported(file));
         const base64Format = fileData.split(',')[0].split(';')[0].split('/')[1];
         const base64Data = fileData.split(',')[1];
         const { caption } = await doCaptionRequest(base64Data, fileData, prompt);
@@ -379,6 +379,12 @@ jQuery(async function () {
     }
     function switchMultimodalBlocks() {
         const isMultimodal = extension_settings.caption.source === 'multimodal';
+        $('#caption_ollama_pull').on('click', (e) => {
+            const presetModel = extension_settings.caption.multimodal_model !== 'ollama_current' ? extension_settings.caption.multimodal_model : '';
+            e.preventDefault();
+            $('#ollama_download_model').trigger('click');
+            $('#dialogue_popup_input').val(presetModel);
+        });
         $('#caption_multimodal_block').toggle(isMultimodal);
         $('#caption_prompt_block').toggle(isMultimodal);
         $('#caption_multimodal_api').val(extension_settings.caption.multimodal_api);

@@ -20,7 +20,7 @@ import {
     renderExtensionTemplateAsync,
     doExtrasFetch, getApiUrl,
 } from '../../extensions.js';
-import { collapseNewlines } from '../../power-user.js';
+import { collapseNewlines, registerDebugFunction } from '../../power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { getDataBankAttachments, getDataBankAttachmentsForSource, getFileAttachment } from '../../chats.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, trimToStartSentence, trimToEndSentence } from '../../utils.js';
@@ -989,6 +989,28 @@ async function purgeVectorIndex(collectionId) {
     }
 }
 
+/**
+ * Purges all vector indexes.
+ */
+async function purgeAllVectorIndexes() {
+    try {
+        const response = await fetch('/api/vector/purge-all', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to purge all vector indexes');
+        }
+
+        console.log('Vectors: Purged all vector indexes');
+        toastr.success('All vector indexes purged', 'Purge successful');
+    } catch (error) {
+        console.error('Vectors: Failed to purge all', error);
+        toastr.error('Failed to purge all vector indexes', 'Purge failed');
+    }
+}
+
 function toggleSettings() {
     $('#vectors_files_settings').toggle(!!settings.enabled_files);
     $('#vectors_chats_settings').toggle(!!settings.enabled_chats);
@@ -1502,6 +1524,13 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
+    $('#vectors_ollama_pull').on('click', (e) => {
+        const presetModel = extension_settings.vectors.ollama_model || '';
+        e.preventDefault();
+        $('#ollama_download_model').trigger('click');
+        $('#dialogue_popup_input').val(presetModel);
+    });
+
     const validSecret = !!secret_state[SECRET_KEYS.NOMICAI];
     const placeholder = validSecret ? '✔️ Key saved' : '❌ Missing key';
     $('#api_key_nomicai').attr('placeholder', placeholder);
@@ -1571,4 +1600,11 @@ jQuery(async () => {
         ],
         returns: ARGUMENT_TYPE.LIST,
     }));
+
+    registerDebugFunction('purge-everything', 'Purge all vector indices', 'Obliterate all stored vectors for all sources. No mercy.', async () => {
+        if (!confirm('Are you sure?')) {
+            return;
+        }
+        await purgeAllVectorIndexes();
+    });
 });
