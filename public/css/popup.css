@@ -109,7 +109,6 @@ dialog {
 
 .menu_button.popup-button-ok {
     background-color: var(--crimson70a);
-    cursor: pointer;
 }
 
 .menu_button.popup-button-ok:hover {
@@ -132,3 +131,17 @@ dialog {
     filter: brightness(1.3) saturate(1.3);
 }
 
+.popup .popup-button-close {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 24px;
+    height: 24px;
+    font-size: 20px;
+    padding: 2px 3px 3px 2px;
+
+    filter: brightness(0.8);
+
+    /* Fix weird animation issue with font-scaling during popup open */
+    backface-visibility: hidden;
+}

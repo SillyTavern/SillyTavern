@@ -2,6 +2,10 @@ import { deleteAttachment, getDataBankAttachments, getDataBankAttachmentsForSour
 import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { SlashCommandClosure } from '../../slash-commands/SlashCommandClosure.js';
+import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
+import { SlashCommandExecutor } from '../../slash-commands/SlashCommandExecutor.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 
 /**
@@ -196,9 +200,31 @@ jQuery(async () => {
     const buttons = await renderExtensionTemplateAsync('attachments', 'buttons', {});
     $('#extensionsMenu').prepend(buttons);
 
+    /** A collection of local enum providers for this context of data bank */
+    const localEnumProviders = {
+        /**
+         * All attachments in the data bank based on the source argument. If not provided, defaults to 'chat'.
+         * @param {'name' | 'url'} returnField - Whether the enum should return the 'name' field or the 'url'
+         * @param {'chat' | 'character' | 'global' | ''} fallbackSource - The source to use if the source argument is not provided. Empty string to use all sources.
+         * */
+        attachments: (returnField = 'name', fallbackSource = 'chat') => (/** @type {SlashCommandExecutor} */ executor) => {
+            const source = executor.namedArgumentList.find(it => it.name == 'source')?.value ?? fallbackSource;
+            if (source instanceof SlashCommandClosure) throw new Error('Argument \'source\' does not support closures');
+            const attachments = getAttachments(source);
+
+            return attachments.map(attachment => new SlashCommandEnumValue(
+                returnField === 'name' ? attachment.name : attachment.url,
+                `${enumIcons.getStateIcon(!extension_settings.disabled_attachments.includes(attachment.url))} [${source}] ${returnField === 'url' ? attachment.name : attachment.url}`,
+                enumTypes.enum, enumIcons.file));
+        },
+    };
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'db',
-        callback: () => document.getElementById('manageAttachments')?.click(),
+        callback: () => {
+            document.getElementById('manageAttachments')?.click();
+            return '';
+        },
         aliases: ['databank', 'data-bank'],
         helpString: 'Open the data bank',
     }));
@@ -224,7 +250,13 @@ jQuery(async () => {
             new SlashCommandNamedArgument('source', 'The source of the attachment.', ARGUMENT_TYPE.STRING, false, false, '', TYPES),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument('The name or URL of the attachment.', ARGUMENT_TYPE.STRING, true, false),
+            SlashCommandArgument.fromProps({
+                description: 'The name or URL of the attachment.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                acceptsMultiple: false,
+                enumProvider: localEnumProviders.attachments('name', ''),
+            }),
         ],
         returns: ARGUMENT_TYPE.STRING,
     }));
@@ -251,8 +283,18 @@ jQuery(async () => {
         helpString: 'Update an attachment in the Data Bank, preserving its name. Returns a new URL of the attachment.',
         namedArgumentList: [
             new SlashCommandNamedArgument('source', 'The source for the attachment.', ARGUMENT_TYPE.STRING, false, false, 'chat', TYPES),
-            new SlashCommandNamedArgument('name', 'The name of the attachment.', ARGUMENT_TYPE.STRING, false, false),
-            new SlashCommandNamedArgument('url', 'The URL of the attachment to update.', ARGUMENT_TYPE.STRING, false, false),
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'The name of the attachment.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: localEnumProviders.attachments('name'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'url',
+                description: 'The URL of the attachment.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: localEnumProviders.attachments('url'),
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument('The content of the file attachment.', ARGUMENT_TYPE.STRING, true, false),
@@ -269,7 +311,12 @@ jQuery(async () => {
             new SlashCommandNamedArgument('source', 'The source of the attachment.', ARGUMENT_TYPE.STRING, false, false, '', TYPES),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument('The name or URL of the attachment.', ARGUMENT_TYPE.STRING, true, false),
+            SlashCommandArgument.fromProps({
+                description: 'The name or URL of the attachment.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.attachments('name', ''),
+            }),
         ],
     }));
 
@@ -282,7 +329,12 @@ jQuery(async () => {
             new SlashCommandNamedArgument('source', 'The source of the attachment.', ARGUMENT_TYPE.STRING, false, false, '', TYPES),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument('The name or URL of the attachment.', ARGUMENT_TYPE.STRING, true, false),
+            SlashCommandArgument.fromProps({
+                description: 'The name or URL of the attachment.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.attachments('name', ''),
+            }),
         ],
     }));
 
@@ -295,7 +347,12 @@ jQuery(async () => {
             new SlashCommandNamedArgument('source', 'The source of the attachment.', ARGUMENT_TYPE.STRING, false, false, 'chat', TYPES),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument('The name or URL of the attachment.', ARGUMENT_TYPE.STRING, true, false),
+            SlashCommandArgument.fromProps({
+                description: 'The name or URL of the attachment.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.attachments(),
+            }),
         ],
     }));
 });

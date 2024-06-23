@@ -35,7 +35,7 @@ import {
     selectInstructPreset,
 } from './instruct-mode.js';
 
-import { getTagsList, tag_map, tags } from './tags.js';
+import { getTagsList, tag_import_setting, tag_map, tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
@@ -46,7 +46,8 @@ import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandPa
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 import { AUTOCOMPLETE_WIDTH } from './autocomplete/AutoComplete.js';
-import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
+import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
+import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 
 export {
     loadPowerUserSettings,
@@ -198,6 +199,7 @@ let power_user = {
     trim_spaces: true,
     relaxed_api_urls: false,
     world_import_dialog: true,
+    tag_import_setting: tag_import_setting.ASK,
     disable_group_trimming: false,
     single_line: false,
 
@@ -1562,6 +1564,12 @@ function loadPowerUserSettings(settings, data) {
         power_user.tokenizer = tokenizers.GPT2;
     }
 
+    // Clean up old/legacy settings
+    if (power_user.import_card_tags !== undefined) {
+        power_user.tag_import_setting = power_user.import_card_tags ? tag_import_setting.ASK : tag_import_setting.NONE;
+        delete power_user.import_card_tags;
+    }
+
     $('#single_line').prop('checked', power_user.single_line);
     $('#relaxed_api_urls').prop('checked', power_user.relaxed_api_urls);
     $('#world_import_dialog').prop('checked', power_user.world_import_dialog);
@@ -1590,7 +1598,6 @@ function loadPowerUserSettings(settings, data) {
     $('#zoomed_avatar_magnification').prop('checked', power_user.zoomed_avatar_magnification);
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr('selected', true);
-    $('#import_card_tags').prop('checked', power_user.import_card_tags);
     $('#confirm_message_delete').prop('checked', power_user.confirm_message_delete !== undefined ? !!power_user.confirm_message_delete : true);
     $('#spoiler_free_mode').prop('checked', power_user.spoiler_free_mode);
     $('#collapse-newlines-checkbox').prop('checked', power_user.collapse_newlines);
@@ -1632,6 +1639,7 @@ function loadPowerUserSettings(settings, data) {
     $('#chat_width_slider').val(power_user.chat_width);
     $('#token_padding').val(power_user.token_padding);
     $('#aux_field').val(power_user.aux_field);
+    $('#tag_import_setting').val(power_user.tag_import_setting);
 
     $('#stscript_autocomplete_autoHide').prop('checked', power_user.stscript.autocomplete.autoHide ?? false).trigger('input');
     $('#stscript_matching').val(power_user.stscript.matching ?? 'fuzzy');
@@ -2910,7 +2918,7 @@ function setAvgBG() {
         return `rgba(${rNew.toFixed(0)}, ${gNew.toFixed(0)}, ${bNew.toFixed(0)}, 1)`;
     }
 
-
+    return '';
 }
 
 async function setThemeCallback(_, text) {
@@ -3516,11 +3524,6 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#import_card_tags').on('input', function () {
-        power_user.import_card_tags = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    });
-
     $('#confirm_message_delete').on('input', function () {
         power_user.confirm_message_delete = !!$(this).prop('checked');
         saveSettingsDebounced();
@@ -3759,6 +3762,12 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $('#tag_import_setting').on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.tag_import_setting = Number(value);
+        saveSettingsDebounced();
+    });
+
     $('#stscript_autocomplete_autoHide').on('input', function () {
         power_user.stscript.autocomplete.autoHide = !!$(this).prop('checked');
         saveSettingsDebounced();
@@ -3914,9 +3923,11 @@ $(document).ready(() => {
         name: 'random',
         callback: doRandomChat,
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'optional tag name', [ARGUMENT_TYPE.STRING], false,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'optional tag name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: () => tags.filter(tag => Object.values(tag_map).some(x => x.includes(tag.id))).map(tag => new SlashCommandEnumValue(tag.name, null, enumTypes.enum, enumIcons.tag)),
+            }),
         ],
         helpString: 'Start a new chat with a random character. If an argument is provided, only considers characters that have the specified tag.',
     }));
@@ -3936,9 +3947,13 @@ $(document).ready(() => {
         callback: doMesCut,
         returns: 'the text of cut messages separated by a newline',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'number or range', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'number or range',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
+                isRequired: true,
+                acceptsMultiple: true,
+                enumProvider: commonEnumProviders.messages(),
+            }),
         ],
         helpString: `
             <div>

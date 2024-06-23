@@ -191,7 +191,7 @@ router.post('/delete', jsonParser, async (request, response) => {
         return response.status(400).send('Bad Request: extensionName is required in the request body.');
     }
 
-    // Sanatize the extension name to prevent directory traversal
+    // Sanitize the extension name to prevent directory traversal
     const extensionName = sanitize(request.body.extensionName);
 
     try {
@@ -201,7 +201,7 @@ router.post('/delete', jsonParser, async (request, response) => {
             return response.status(404).send(`Directory does not exist at ${extensionPath}`);
         }
 
-        await fs.promises.rmdir(extensionPath, { recursive: true });
+        await fs.promises.rm(extensionPath, { recursive: true });
         console.log(`Extension has been deleted at ${extensionPath}`);
 
         return response.send(`Extension has been deleted at ${extensionPath}`);

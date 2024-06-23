@@ -1,4 +1,4 @@
-import { getBase64Async, isTrueBoolean, saveBase64AsFile } from '../../utils.js';
+import { ensureImageFormatSupported, getBase64Async, isTrueBoolean, saveBase64AsFile } from '../../utils.js';
 import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callPopup, getRequestHeaders, saveSettingsDebounced, substituteParamsExtended } from '../../../script.js';
 import { getMessageTimeStamp } from '../../RossAscends-mods.js';
@@ -8,6 +8,8 @@ import { textgen_types, textgenerationwebui_settings } from '../../textgen-setti
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
+import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -272,7 +274,7 @@ async function getCaptionForFile(file, prompt, quiet) {
     try {
         setSpinnerIcon();
         const context = getContext();
-        const fileData = await getBase64Async(file);
+        const fileData = await getBase64Async(await ensureImageFormatSupported(file));
         const base64Format = fileData.split(',')[0].split(';')[0].split('/')[1];
         const base64Data = fileData.split(',')[1];
         const { caption } = await doCaptionRequest(base64Data, fileData, prompt);
@@ -377,6 +379,12 @@ jQuery(async function () {
     }
     function switchMultimodalBlocks() {
         const isMultimodal = extension_settings.caption.source === 'multimodal';
+        $('#caption_ollama_pull').on('click', (e) => {
+            const presetModel = extension_settings.caption.multimodal_model !== 'ollama_current' ? extension_settings.caption.multimodal_model : '';
+            e.preventDefault();
+            $('#ollama_download_model').trigger('click');
+            $('#dialogue_popup_input').val(presetModel);
+        });
         $('#caption_multimodal_block').toggle(isMultimodal);
         $('#caption_prompt_block').toggle(isMultimodal);
         $('#caption_multimodal_api').val(extension_settings.caption.multimodal_api);
@@ -445,11 +453,14 @@ jQuery(async function () {
         returns: 'caption',
         namedArgumentList: [
             new SlashCommandNamedArgument(
-                'quiet', 'suppress sending a captioned message', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false', ['true', 'false'],
+                'quiet', 'suppress sending a captioned message', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
             ),
-            new SlashCommandNamedArgument(
-                'id', 'get image from a message with this ID', [ARGUMENT_TYPE.NUMBER], false, false,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'id',
+                description: 'get image from a message with this ID',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                enumProvider: commonEnumProviders.messages(),
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(

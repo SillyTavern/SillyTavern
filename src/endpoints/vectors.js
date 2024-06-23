@@ -1,5 +1,6 @@
 const vectra = require('vectra');
 const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const sanitize = require('sanitize-filename');
 const { jsonParser } = require('../express-common');
@@ -437,6 +438,24 @@ router.post('/delete', jsonParser, async (req, res) => {
         return res.sendStatus(200);
     } catch (error) {
         return regenerateCorruptedIndexErrorHandler(req, res, error);
+    }
+});
+
+router.post('/purge-all', jsonParser, async (req, res) => {
+    try {
+        for (const source of SOURCES) {
+            const sourcePath = path.join(req.user.directories.vectors, sanitize(source));
+            if (!fs.existsSync(sourcePath)) {
+                continue;
+            }
+            await fs.promises.rm(sourcePath, { recursive: true });
+            console.log(`Deleted vector source store at ${sourcePath}`);
+        }
+
+        return res.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
     }
 });
 

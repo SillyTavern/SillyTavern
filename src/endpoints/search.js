@@ -34,6 +34,8 @@ router.post('/serpapi', jsonParser, async (request, response) => {
         const { query } = request.body;
         const result = await fetch(`https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${key}`);
 
+        console.log('SerpApi query', query);
+
         if (!result.ok) {
             const text = await result.text();
             console.log('SerpApi request failed', result.statusText, text);
@@ -143,25 +145,38 @@ router.post('/searxng', jsonParser, async (request, response) => {
             return response.sendStatus(400);
         }
 
-        const url = new URL(baseUrl);
-        const params = new URLSearchParams();
-        params.append('q', query);
-        params.append('format', 'html');
-        url.pathname = '/search';
-        url.search = params.toString();
+        console.log('SearXNG query', baseUrl, query);
 
-        const result = await fetch(url, {
-            method: 'POST',
-            headers: visitHeaders,
-        });
+        const mainPageUrl = new URL(baseUrl);
+        const mainPageRequest = await fetch(mainPageUrl, { headers: visitHeaders });
 
-        if (!result.ok) {
-            const text = await result.text();
-            console.log('SearXNG request failed', result.statusText, text);
+        if (!mainPageRequest.ok) {
+            console.log('SearXNG request failed', mainPageRequest.statusText);
             return response.sendStatus(500);
         }
 
-        const data = await result.text();
+        const mainPageText = await mainPageRequest.text();
+        const clientHref = mainPageText.match(/href="(\/client.+\.css)"/)?.[1];
+
+        if (clientHref) {
+            const clientUrl = new URL(clientHref, baseUrl);
+            await fetch(clientUrl, { headers: visitHeaders });
+        }
+
+        const searchUrl = new URL('/search', baseUrl);
+        const searchParams = new URLSearchParams();
+        searchParams.append('q', query);
+        searchUrl.search = searchParams.toString();
+
+        const searchResult = await fetch(searchUrl, { headers: visitHeaders });
+
+        if (!searchResult.ok) {
+            const text = await searchResult.text();
+            console.log('SearXNG request failed', searchResult.statusText, text);
+            return response.sendStatus(500);
+        }
+
+        const data = await searchResult.text();
         return response.send(data);
     } catch (error) {
         console.log('SearXNG request failed', error);
@@ -204,6 +219,8 @@ router.post('/visit', jsonParser, async (request, response) => {
             console.log('Invalid url provided for /visit', url);
             return response.sendStatus(400);
         }
+
+        console.log('Visiting web URL', url);
 
         const result = await fetch(url, { headers: visitHeaders });
 
