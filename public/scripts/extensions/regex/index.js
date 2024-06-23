@@ -3,10 +3,31 @@ import { extension_settings, renderExtensionTemplateAsync, writeExtensionField }
 import { selected_group } from '../../group-chats.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { download, getFileText, getSortableDelay, uuidv4 } from '../../utils.js';
 import { resolveVariable } from '../../variables.js';
 import { regex_placement, runRegexScript } from './engine.js';
+
+/**
+ * @typedef {object} RegexScript
+ * @property {string} scriptName - The name of the script
+ * @property {boolean} disabled - Whether the script is disabled
+ * @property {string} replaceString - The replace string
+ * @property {string[]} trimStrings - The trim strings
+ * @property {string?} findRegex - The find regex
+ * @property {string?} substituteRegex - The substitute regex
+ */
+
+/**
+ * Retrieves the list of regex scripts by combining the scripts from the extension settings and the character data
+ *
+ * @return {RegexScript[]} An array of regex scripts, where each script is an object containing the necessary information.
+ */
+export function getRegexScripts() {
+    return [...(extension_settings.regex ?? []), ...(characters[this_chid]?.data?.extensions?.regex_scripts ?? [])];
+}
 
 /**
  * Saves a regex script to the extension settings or character data.
@@ -339,7 +360,7 @@ function runRegexCallback(args, value) {
     }
 
     const scriptName = String(resolveVariable(args.name));
-    const scripts = [...(extension_settings.regex ?? []), ...(characters[this_chid]?.data?.extensions?.regex_scripts ?? [])];
+    const scripts = getRegexScripts();
 
     for (const script of scripts) {
         if (String(script.scriptName).toLowerCase() === String(scriptName).toLowerCase()) {
@@ -551,14 +572,26 @@ jQuery(async () => {
     await loadRegexScripts();
     $('#saved_regex_scripts').sortable('enable');
 
+    const localEnumProviders = {
+        regexScripts: () => getRegexScripts().map(script => {
+            const isGlobal = extension_settings.regex?.some(x => x.scriptName === script.scriptName);
+            return new SlashCommandEnumValue(script.scriptName, `${enumIcons.getStateIcon(!script.disabled)} [${isGlobal ? 'global' : 'scoped'}] ${script.findRegex}`,
+                isGlobal ? enumTypes.enum : enumTypes.name, isGlobal ? 'G' : 'S');
+        }),
+    };
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'regex',
         callback: runRegexCallback,
         returns: 'replaced text',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'name', 'script name', [ARGUMENT_TYPE.STRING], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'script name',
+                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: localEnumProviders.regexScripts,
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(

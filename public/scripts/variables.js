@@ -1,15 +1,19 @@
 import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessage, system_message_types } from '../script.js';
 import { extension_settings, saveMetadataDebounced } from './extensions.js';
-import { executeSlashCommands, executeSlashCommandsWithOptions } from './slash-commands.js';
+import { executeSlashCommandsWithOptions } from './slash-commands.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortController.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
+import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { isFalseBoolean } from './utils.js';
+
+/** @typedef {import('./slash-commands/SlashCommandParser.js').NamedArguments} NamedArguments */
+/** @typedef {import('./slash-commands/SlashCommand.js').UnnamedArguments} UnnamedArguments */
 
 const MAX_LOOPS = 100;
 
@@ -116,6 +120,7 @@ function setGlobalVariable(name, value, args = {}) {
         extension_settings.variables.global[name] = value;
     }
     saveSettingsDebounced();
+    return value;
 }
 
 function addLocalVariable(name, value) {
@@ -314,14 +319,16 @@ function listVariablesCallback() {
     const htmlMessage = DOMPurify.sanitize(converter.makeHtml(message));
 
     sendSystemMessage(system_message_types.GENERIC, htmlMessage);
+    return '';
 }
 
 /**
  *
- * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
+ * @param {NamedArguments} args
  * @param {(string|SlashCommandClosure)[]} value
  */
 async function whileCallback(args, value) {
+    if (args.guard instanceof SlashCommandClosure) throw new Error('argument \'guard\' cannot be a closure for command /while');
     const isGuardOff = isFalseBoolean(args.guard);
     const iterations = isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS;
     /**@type {string|SlashCommandClosure} */
@@ -360,11 +367,12 @@ async function whileCallback(args, value) {
 
 /**
  *
- * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
- * @param {import('./slash-commands/SlashCommand.js').UnnamedArguments} value
+ * @param {NamedArguments} args
+ * @param {UnnamedArguments} value
  * @returns
  */
 async function timesCallback(args, value) {
+    if (args.guard instanceof SlashCommandClosure) throw new Error('argument \'guard\' cannot be a closure for command /while');
     let repeats;
     let command;
     if (Array.isArray(value)) {
@@ -398,7 +406,7 @@ async function timesCallback(args, value) {
 
 /**
  *
- * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
+ * @param {NamedArguments} args
  * @param {(string|SlashCommandClosure)[]} value
  */
 async function ifCallback(args, value) {
@@ -765,13 +773,13 @@ function randValuesCallback(from, to, args) {
     if (args.round == 'floor') {
         return Math.floor(value);
     }
-    return String(value);
+    return value;
 }
 
 /**
  * Declare a new variable in the current scope.
- * @param {{_scope:SlashCommandScope, key?:string}} args Named arguments.
- * @param {String|[String, SlashCommandClosure]} value Name and optional value for the variable.
+ * @param {NamedArguments} args Named arguments.
+ * @param {string|SlashCommandClosure|(string|SlashCommandClosure)[]} value Name and optional value for the variable.
  * @returns The variable's value
  */
 function letCallback(args, value) {
@@ -784,7 +792,9 @@ function letCallback(args, value) {
         const val = value;
         args._scope.letVariable(key, val);
         return val;
-    } else if (value.includes(' ')) {
+    }
+    if (value instanceof SlashCommandClosure) throw new Error('/let unnamed argument does not support closures if no key is provided');
+    if (value.includes(' ')) {
         const key = value.split(' ')[0];
         const val = value.split(' ').slice(1).join(' ');
         args._scope.letVariable(key, val);
@@ -795,7 +805,7 @@ function letCallback(args, value) {
 
 /**
  * Set or retrieve a variable in the current scope or nearest ancestor scope.
- * @param {{_hasUnnamedArgument:boolean, _scope:SlashCommandScope, key?:string, index?:string|number}} args Named arguments.
+ * @param {NamedArguments} args Named arguments.
  * @param {string|SlashCommandClosure|(string|SlashCommandClosure)[]} value Name and optional value for the variable.
  * @returns The variable's value
  */
@@ -822,7 +832,7 @@ function varCallback(args, value) {
 }
 
 /**
- * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
+ * @param {NamedArguments} args
  * @param {SlashCommandClosure} value
  * @returns {string}
  */
@@ -834,8 +844,8 @@ function closureSerializeCallback(args, value) {
 }
 
 /**
- * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
- * @param {import('./slash-commands/SlashCommand.js').UnnamedArguments} value
+ * @param {NamedArguments} args
+ * @param {UnnamedArguments} value
  * @returns {SlashCommandClosure}
  */
 function closureDeserializeCallback(args, value) {
@@ -846,17 +856,24 @@ function closureDeserializeCallback(args, value) {
 }
 
 export function registerVariableCommands() {
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'listvar',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'listvar',
         callback: listVariablesCallback,
         helpString: 'List registered chat variables.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'setvar',
-        callback: (args, value) => setLocalVariable(args.key || args.name, value, args),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'setvar',
+        callback: (args, value) => String(setLocalVariable(args.key || args.name, value, args)),
         returns: 'the set variable value',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: 'variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('local'),
+                forceEnum: false,
+            }),
             new SlashCommandNamedArgument(
                 'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
             ),
@@ -880,21 +897,28 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getvar',
-        callback: (args, value) => getLocalVariable(value, args),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'getvar',
+        callback: (args, value) => String(getLocalVariable(value, args)),
         returns: 'the variable value',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], false,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: 'variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                enumProvider: commonEnumProviders.variables('local'),
+            }),
             new SlashCommandNamedArgument(
                 'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
             ),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'key', [ARGUMENT_TYPE.VARIABLE_NAME], false,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'key',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: false,
+                enumProvider: commonEnumProviders.variables('local'),
+            }),
         ],
         helpString: `
             <div>
@@ -916,13 +940,19 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'addvar',
-        callback: (args, value) => addLocalVariable(args.key || args.name, value),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'addvar',
+        callback: (args, value) => String(addLocalVariable(args.key || args.name, value)),
         returns: 'the new variable value',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: 'variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('local'),
+                forceEnum: false,
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -943,13 +973,19 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'setglobalvar',
-        callback: (args, value) => setGlobalVariable(args.key || args.name, value, args),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'setglobalvar',
+        callback: (args, value) => String(setGlobalVariable(args.key || args.name, value, args)),
         returns: 'the set global variable value',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: 'variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('global'),
+                forceEnum: false,
+            }),
             new SlashCommandNamedArgument(
                 'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
             ),
@@ -973,21 +1009,27 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getglobalvar',
-        callback: (args, value) => getGlobalVariable(value, args),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'getglobalvar',
+        callback: (args, value) => String(getGlobalVariable(value, args)),
         returns: 'global variable value',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], false,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: 'variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                enumProvider: commonEnumProviders.variables('global'),
+            }),
             new SlashCommandNamedArgument(
                 'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
             ),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'key', [ARGUMENT_TYPE.VARIABLE_NAME], false,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'key',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                enumProvider: commonEnumProviders.variables('global'),
+            }),
         ],
         helpString: `
             <div>
@@ -1009,13 +1051,19 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'addglobalvar',
-        callback: (args, value) => addGlobalVariable(args.key || args.name, value),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'addglobalvar',
+        callback: (args, value) => String(addGlobalVariable(args.key || args.name, value)),
         returns: 'the new variable value',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: 'variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('global'),
+                forceEnum: false,
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -1036,13 +1084,19 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'incvar',
-        callback: (_, value) => incrementLocalVariable(value),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'incvar',
+        callback: (_, value) => String(incrementLocalVariable(value)),
         returns: 'the new variable value',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: 'variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('local'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1058,13 +1112,19 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'decvar',
-        callback: (_, value) => decrementLocalVariable(value),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'decvar',
+        callback: (_, value) => String(decrementLocalVariable(value)),
         returns: 'the new variable value',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: 'variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('local'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1080,13 +1140,19 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'incglobalvar',
-        callback: (_, value) => incrementGlobalVariable(value),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'incglobalvar',
+        callback: (_, value) => String(incrementGlobalVariable(value)),
         returns: 'the new variable value',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: 'variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('global'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1102,13 +1168,19 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'decglobalvar',
-        callback: (_, value) => decrementGlobalVariable(value),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'decglobalvar',
+        callback: (_, value) => String(decrementGlobalVariable(value)),
         returns: 'the new variable value',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: 'variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('global'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1124,26 +1196,37 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'if',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'if',
         callback: ifCallback,
         returns: 'result of the executed command ("then" or "else")',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'left', 'left operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
-            ),
-            new SlashCommandNamedArgument(
-                'right', 'right operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'left',
+                description: 'left operand',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'right',
+                description: 'right operand',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
             new SlashCommandNamedArgument(
                 'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, [
-                    new SlashCommandEnumValue('gt',  'a > b'),
+                    new SlashCommandEnumValue('gt', 'a > b'),
                     new SlashCommandEnumValue('gte', 'a >= b'),
-                    new SlashCommandEnumValue('lt',  'a < b'),
+                    new SlashCommandEnumValue('lt', 'a < b'),
                     new SlashCommandEnumValue('lte', 'a <= b'),
-                    new SlashCommandEnumValue('eq',  'a == b'),
+                    new SlashCommandEnumValue('eq', 'a == b'),
                     new SlashCommandEnumValue('neq', 'a !== b'),
                     new SlashCommandEnumValue('not', '!a'),
-                    new SlashCommandEnumValue('in',  'a includes b'),
+                    new SlashCommandEnumValue('in', 'a includes b'),
                     new SlashCommandEnumValue('nin', 'a not includes b'),
                 ],
             ),
@@ -1191,31 +1274,42 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'while',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'while',
         callback: whileCallback,
         returns: 'result of the last executed command',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'left', 'left operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
-            ),
-            new SlashCommandNamedArgument(
-                'right', 'right operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'left',
+                description: 'left operand',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'right',
+                description: 'right operand',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
             new SlashCommandNamedArgument(
                 'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, [
-                    new SlashCommandEnumValue('gt',  'a > b'),
+                    new SlashCommandEnumValue('gt', 'a > b'),
                     new SlashCommandEnumValue('gte', 'a >= b'),
-                    new SlashCommandEnumValue('lt',  'a < b'),
+                    new SlashCommandEnumValue('lt', 'a < b'),
                     new SlashCommandEnumValue('lte', 'a <= b'),
-                    new SlashCommandEnumValue('eq',  'a == b'),
+                    new SlashCommandEnumValue('eq', 'a == b'),
                     new SlashCommandEnumValue('neq', 'a !== b'),
                     new SlashCommandEnumValue('not', '!a'),
-                    new SlashCommandEnumValue('in',  'a includes b'),
+                    new SlashCommandEnumValue('in', 'a includes b'),
                     new SlashCommandEnumValue('nin', 'a not includes b'),
                 ],
             ),
             new SlashCommandNamedArgument(
-                'guard', 'disable loop iteration limit', [ARGUMENT_TYPE.STRING], false, false, null, ['off'],
+                'guard', 'disable loop iteration limit', [ARGUMENT_TYPE.STRING], false, false, null, commonEnumProviders.boolean('onOff')(),
             ),
         ],
         unnamedArgumentList: [
@@ -1260,7 +1354,8 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'times',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'times',
         callback: timesCallback,
         returns: 'result of the last executed command',
         namedArgumentList: [],
@@ -1299,13 +1394,16 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'flushvar',
-        callback: (_, value) => deleteLocalVariable(value),
-        namedArgumentList: [],
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'flushvar',
+        callback: async (_, value) => deleteLocalVariable(value instanceof SlashCommandClosure ? (await value.execute())?.pipe : String(value)),
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: 'variable name or closure that returns a variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.CLOSURE],
+                enumProvider: commonEnumProviders.variables('local'),
+            }),
         ],
         helpString: `
             <div>
@@ -1321,13 +1419,17 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'flushglobalvar',
-        callback: (_, value) => deleteGlobalVariable(value),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'flushglobalvar',
+        callback: async (_, value) => deleteGlobalVariable(value instanceof SlashCommandClosure ? (await value.execute())?.pipe : String(value)),
         namedArgumentList: [],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: 'variable name or closure that returns a variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.CLOSURE],
+                enumProvider: commonEnumProviders.variables('global'),
+            }),
         ],
         helpString: `
             <div>
@@ -1344,13 +1446,19 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'add',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'add',
         callback: addValuesCallback,
         returns: 'sum of the provided values',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'values', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true, true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'values to sum',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                acceptsMultiple: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1367,16 +1475,19 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'mul',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'mul',
         callback: (args, value) => mulValuesCallback(args, value),
-        result: 'product of the provided values',
+        returns: 'product of the provided values',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'values to multiply',
-                [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-                true,
-                true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'values to multiply',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                acceptsMultiple: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1392,16 +1503,19 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'max',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'max',
         callback: maxValuesCallback,
         returns: 'maximum value of the set of values',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'values',
-                [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-                true,
-                true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'values to find the max',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                acceptsMultiple: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1417,13 +1531,19 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'min',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'min',
         callback: minValuesCallback,
         returns: 'minimum value of the set of values',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'values', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true, true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'values to find the min',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                acceptsMultiple: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1440,13 +1560,19 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sub',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'sub',
         callback: subValuesCallback,
         returns: 'difference of the provided values',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'values', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true, true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'values to find the difference',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                acceptsMultiple: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1463,16 +1589,25 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'div',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'div',
         callback: divValuesCallback,
         returns: 'result of division',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'dividend', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
-            new SlashCommandArgument(
-                'divisor', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'dividend',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
+            SlashCommandArgument.fromProps({
+                description: 'divisor',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1489,16 +1624,25 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'mod',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'mod',
         callback: modValuesCallback,
         returns: 'result of modulo operation',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'dividend', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
-            new SlashCommandArgument(
-                'divisor', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'dividend',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
+            SlashCommandArgument.fromProps({
+                description: 'divisor',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1515,16 +1659,25 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'pow',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'pow',
         callback: powValuesCallback,
         returns: 'result of power operation',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'base', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
-            new SlashCommandArgument(
-                'exponent', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'base',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
+            SlashCommandArgument.fromProps({
+                description: 'exponent',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1541,13 +1694,18 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sin',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'sin',
         callback: sinValuesCallback,
         returns: 'sine of the provided value',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'value', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'value',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1564,13 +1722,18 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'cos',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'cos',
         callback: cosValuesCallback,
         returns: 'cosine of the provided value',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'value', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'value',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1587,14 +1750,19 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'log',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'log',
         callback: logValuesCallback,
         returns: 'log of the provided value',
         namedArgumentList: [],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'value', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'value',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1611,13 +1779,18 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'abs',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'abs',
         callback: absValuesCallback,
         returns: 'absolute value of the provided value',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'value', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'value',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1634,13 +1807,18 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sqrt',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'sqrt',
         callback: sqrtValuesCallback,
         returns: 'square root of the provided value',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'value', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'value',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1657,13 +1835,18 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'round',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'round',
         callback: roundValuesCallback,
         returns: 'rounded value',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'value', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'value',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1680,13 +1863,18 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'len',
-        callback: (_, value) => lenValuesCallback(value),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'len',
+        callback: (_, value) => String(lenValuesCallback(value)),
         returns: 'length of the provided value',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'value', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'value',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                isRequired: true,
+                enumProvider: commonEnumProviders.variables('all'),
+                forceEnum: false,
+            }),
         ],
         helpString: `
             <div>
@@ -1702,8 +1890,9 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'rand',
-        callback: (args, value) => randValuesCallback(Number(args.from ?? 0), Number(args.to ?? (value.length ? value : 1)), args),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'rand',
+        callback: (args, value) => String(randValuesCallback(Number(args.from ?? 0), Number(args.to ?? (value ? value : 1)), args)),
         returns: 'random number',
         namedArgumentList: [
             new SlashCommandNamedArgument(
@@ -1755,13 +1944,18 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'var',
-        callback: (args, value) => varCallback(args, value),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'var',
+        callback: (/** @type {NamedArguments} */ args, value) => varCallback(args, value),
         returns: 'the variable value',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'key', 'variable name; forces setting the variable, even if no value is provided', [ARGUMENT_TYPE.VARIABLE_NAME], false,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: 'variable name; forces setting the variable, even if no value is provided',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                enumProvider: commonEnumProviders.variables('scope'),
+                forceEnum: false,
+            }),
             new SlashCommandNamedArgument(
                 'index',
                 'optional index for list or dictionary',
@@ -1771,12 +1965,12 @@ export function registerVariableCommands() {
             ),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'variable name',
-                [ARGUMENT_TYPE.VARIABLE_NAME],
-                false, // isRequired
-                false, // acceptsMultiple
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                enumProvider: commonEnumProviders.variables('scope'),
+                forceEnum: false,
+            }),
             new SlashCommandArgument(
                 'variable value',
                 [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY, ARGUMENT_TYPE.CLOSURE],
@@ -1802,18 +1996,26 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'let',
-        callback: (args, value) => letCallback(args, value),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'let',
+        callback: (/** @type {NamedArguments} */ args, value) => letCallback(args, value),
         returns: 'the variable value',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], false,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'key',
+                description: 'variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                enumProvider: commonEnumProviders.variables('scope'),
+                forceEnum: false,
+            }),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], false,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                enumProvider: commonEnumProviders.variables('scope'),
+                forceEnum: false,
+            }),
             new SlashCommandArgument(
                 'variable value', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY, ARGUMENT_TYPE.CLOSURE],
             ),
@@ -1839,16 +2041,18 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'closure-serialize',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'closure-serialize',
         /**
          *
-         * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
+         * @param {NamedArguments} args
          * @param {SlashCommandClosure} value
          * @returns {string}
          */
-        callback: (args, value)=>closureSerializeCallback(args, value),
+        callback: (args, value) => closureSerializeCallback(args, value),
         unnamedArgumentList: [
-            SlashCommandArgument.fromProps({ description: 'the closure to serialize',
+            SlashCommandArgument.fromProps({
+                description: 'the closure to serialize',
                 typeList: [ARGUMENT_TYPE.CLOSURE],
                 isRequired: true,
             }),
@@ -1868,15 +2072,17 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'closure-deserialize',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'closure-deserialize',
         /**
-         * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
-         * @param {import('./slash-commands/SlashCommand.js').UnnamedArguments} value
+         * @param {NamedArguments} args
+         * @param {UnnamedArguments} value
          * @returns {SlashCommandClosure}
          */
-        callback: (args, value)=>closureDeserializeCallback(args, value),
+        callback: (args, value) => closureDeserializeCallback(args, value),
         unnamedArgumentList: [
-            SlashCommandArgument.fromProps({ description: 'serialized closure',
+            SlashCommandArgument.fromProps({
+                description: 'serialized closure',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
             }),

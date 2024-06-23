@@ -239,6 +239,8 @@ import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/
 import { DragAndDropHandler } from './scripts/dragdrop.js';
 import { INTERACTABLE_CONTROL_CLASS, initKeyboard } from './scripts/keyboard.js';
 import { initDynamicStyles } from './scripts/dynamic-styles.js';
+import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/SlashCommandEnumValue.js';
+import { enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
 
 //exporting functions and vars for mods
 export {
@@ -2122,7 +2124,7 @@ export function addCopyToCodeBlocks(messageElement) {
         hljs.highlightElement(codeBlocks.get(i));
         if (navigator.clipboard !== undefined) {
             const copyButton = document.createElement('i');
-            copyButton.classList.add('fa-solid', 'fa-copy', 'code-copy');
+            copyButton.classList.add('fa-solid', 'fa-copy', 'code-copy', 'interactable');
             copyButton.title = 'Copy code';
             codeBlocks.get(i).appendChild(copyButton);
             copyButton.addEventListener('pointerup', function (event) {
@@ -2376,6 +2378,10 @@ export function substituteParamsExtended(content, additionalMacro = {}) {
  * @returns {string} The string with substituted parameters.
  */
 export function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true, additionalMacro = {}) {
+    if (!content) {
+        return '';
+    }
+
     const environment = {};
 
     if (typeof _original === 'string') {
@@ -8817,6 +8823,9 @@ jQuery(async function () {
         return '';
     }
 
+    // Collect all unique API names in an array
+    const uniqueAPIs = [...new Set(Object.values(CONNECT_API_MAP).map(x => x.selected))];
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'dupe',
         callback: DupeChar,
@@ -8825,16 +8834,15 @@ jQuery(async function () {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'api',
         callback: connectAPISlash,
-        namedArgumentList: [],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'API to connect to',
-                [ARGUMENT_TYPE.STRING],
-                true,
-                false,
-                null,
-                Object.keys(CONNECT_API_MAP),
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'API to connect to',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                enumList: Object.entries(CONNECT_API_MAP).map(([api, { selected }]) =>
+                    new SlashCommandEnumValue(api, selected, enumTypes.getBasedOnIndex(uniqueAPIs.findIndex(x => x === selected)),
+                        selected[0].toUpperCase() ?? enumIcons.default)),
+            }),
         ],
         helpString: `
             <div>
@@ -8923,11 +8931,12 @@ jQuery(async function () {
         name: 'instruct',
         callback: selectInstructCallback,
         returns: 'current preset',
-        namedArgumentList: [],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'name', [ARGUMENT_TYPE.STRING], false,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'instruct preset name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: () => instruct_presets.map(preset => new SlashCommandEnumValue(preset.name, null, enumTypes.enum, enumIcons.preset)),
+            }),
         ],
         helpString: `
             <div>
@@ -8958,9 +8967,11 @@ jQuery(async function () {
         callback: selectContextCallback,
         returns: 'template name',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'name', [ARGUMENT_TYPE.STRING], false,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'context preset name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: () => context_presets.map(preset => new SlashCommandEnumValue(preset.name, null, enumTypes.enum, enumIcons.preset)),
+            }),
         ],
         helpString: 'Selects context template by name. Gets the current template if no name is provided',
     }));

@@ -175,6 +175,11 @@ export class SlashCommand {
                     }
                     li.append(specs);
                 }
+                const stopgap = document.createElement('span'); {
+                    stopgap.classList.add('stopgap');
+                    stopgap.textContent = '';
+                    li.append(stopgap);
+                }
                 const help = document.createElement('span'); {
                     help.classList.add('help');
                     const content = document.createElement('span'); {
