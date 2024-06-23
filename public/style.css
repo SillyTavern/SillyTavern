@@ -1175,7 +1175,6 @@ select {
     color: var(--SmartThemeBodyColor);
 }
 
-
 #send_textarea {
     min-height: calc(var(--bottomFormBlockSize) + 2px);
     height: calc(var(--bottomFormBlockSize) + 2px);

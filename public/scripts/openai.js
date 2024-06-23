@@ -1563,7 +1563,7 @@ function saveModelList(data) {
         });
 
         if (!oai_settings.custom_model && model_list.length > 0) {
-            $('.model_custom_select').val(model_list[0].id).trigger('change');
+            $('#model_custom_select').val(model_list[0].id).trigger('change');
         }
     }
 }
@@ -3882,7 +3882,7 @@ async function onModelChange() {
         oai_settings.groq_model = value;
     }
 
-    if (value && $(this).is('.model_custom_select')) {
+    if (value && $(this).is('#model_custom_select')) {
         console.log('Custom model changed to', value);
         oai_settings.custom_model = value;
         $('#custom_model_id').val(value).trigger('input');
@@ -4359,7 +4359,7 @@ function toggleChatCompletionForms() {
         $('#model_groq_select').trigger('change');
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
-        $('.model_custom_select').trigger('change');
+        $('#model_custom_select').trigger('change');
     }
     $('[data-source]').each(function () {
         const validSources = $(this).data('source').split(',');
@@ -5062,7 +5062,7 @@ $(document).ready(async function () {
     $('#model_cohere_select').on('change', onModelChange);
     $('#model_perplexity_select').on('change', onModelChange);
     $('#model_groq_select').on('change', onModelChange);
-    $('.model_custom_select').on('change', onModelChange);
+    $('#model_custom_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);
