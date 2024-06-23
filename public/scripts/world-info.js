@@ -528,6 +528,21 @@ class WorldInfoTimedEffects {
     }
 
     /**
+     * Gets raw timed effect metadatum for a WI entry.
+     * @param {TimedEffectType} type Type of timed effect
+     * @param {WIScanEntry} entry WI entry
+     * @returns {WITimedEffect} Timed effect for the entry
+     */
+    getEffectMetadata(type, entry) {
+        if (!this.isValidEffectType(type)) {
+            return null;
+        }
+
+        const key = this.#getEntryKey(entry);
+        return chat_metadata.timedWorldInfo[type][key];
+    }
+
+    /**
      * Sets a timed effect for a WI entry.
      * @param {TimedEffectType} type Type of timed effect
      * @param {WIScanEntry} entry WI entry to check
@@ -1039,10 +1054,13 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
-        timedEffects.checkTimedEffects();
-        const isActive = timedEffects.isEffectActive(effect, entry);
-        timedEffects.cleanUp();
-        return String(isActive);
+        const data = timedEffects.getEffectMetadata(effect, entry);
+
+        if (String(args.format).trim().toLowerCase() === ARGUMENT_TYPE.NUMBER) {
+            return String(data ? (data.end - chat.length) : 0);
+        }
+
+        return String(!!data);
     }
 
     async function setTimedEffectCallback(args, value) {
@@ -1407,8 +1425,23 @@ function registerWorldInfoSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'wi-get-timed-effect',
         callback: getTimedEffectCallback,
-        helpString: 'Get the current state of the timed effect for the record with the UID from the specified book.',
-        returns: 'true/false - state of the effect',
+        helpString: `
+            <div>
+                Get the current state of the timed effect for the record with the UID from the specified book.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <code>/wi-get-timed-effect file=chatLore format=bool effect=sticky 123</code> - returns true or false if the effect is active or not
+                    </li>
+                    <li>
+                        <code>/wi-get-timed-effect file=chatLore format=number effect=sticky 123</code> - returns the remaining duration of the effect, or 0 if inactive
+                    </li>
+                </ul>
+            </div>
+        `,
+        returns: 'state of the effect',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'file',
@@ -1423,6 +1456,14 @@ function registerWorldInfoSlashCommands() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: localEnumProviders.timedEffects,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'format',
+                description: 'output format',
+                isRequired: false,
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: ARGUMENT_TYPE.BOOLEAN,
+                enumList: [ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.NUMBER],
             }),
         ],
         unnamedArgumentList: [
