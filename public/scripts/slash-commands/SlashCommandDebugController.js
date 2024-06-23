@@ -51,7 +51,7 @@ export class SlashCommandDebugController {
         this.stepStack.forEach((_,idx)=>this.stepStack[idx] = false);
     }
     step() {
-        this.stepStack[this.stepStack.length - 1] = true;
+        this.stepStack.forEach((_,idx)=>this.stepStack[idx] = true);
         this.continueResolver?.(true);
         this.continuePromise = null;
     }
