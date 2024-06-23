@@ -7,7 +7,6 @@ import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import { power_user } from './power-user.js';
 import { getTagKeyForEntity } from './tags.js';
-import { resolveVariable } from './variables.js';
 import { debounce_timeout } from './constants.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
@@ -545,7 +544,7 @@ function registerWorldInfoSlashCommands() {
     }
 
     async function findBookEntryCallback(args, value) {
-        const file = resolveVariable(args.file);
+        const file = args.file;
         const field = args.field || 'key';
 
         const entries = await getEntriesFromFile(file);
@@ -589,7 +588,7 @@ function registerWorldInfoSlashCommands() {
     }
 
     async function getEntryFieldCallback(args, uid) {
-        const file = resolveVariable(args.file);
+        const file = args.file;
         const field = args.field || 'content';
 
         const entries = await getEntriesFromFile(file);
@@ -624,7 +623,7 @@ function registerWorldInfoSlashCommands() {
     }
 
     async function createEntryCallback(args, content) {
-        const file = resolveVariable(args.file);
+        const file = args.file;
         const key = args.key;
 
         const data = await loadWorldInfoData(file);
@@ -653,8 +652,8 @@ function registerWorldInfoSlashCommands() {
     }
 
     async function setEntryFieldCallback(args, value) {
-        const file = resolveVariable(args.file);
-        const uid = resolveVariable(args.uid);
+        const file = args.file;
+        const uid = args.uid;
         const field = args.field || 'content';
 
         if (value === undefined) {
