@@ -795,6 +795,16 @@ function registerWorldInfoSlashCommands() {
         }
     }
 
+    /**
+     * Gets a *rough* approximation of the current chat context.
+     * Normally, it is provided externally by the prompt builder.
+     * Don't use for anything critical!
+     * @returns {string[]}
+     */
+    function getScanningChat() {
+        return getContext().chat.filter(x => !x.is_system).map(x => x.mes);
+    }
+
     async function getEntriesFromFile(file) {
         if (!file || !world_names.includes(file)) {
             toastr.warning('Valid World Info file name is required');
@@ -998,6 +1008,44 @@ function registerWorldInfoSlashCommands() {
         return '';
     }
 
+    async function getTimedEffectCallback(args, value) {
+        if (!getCurrentChatId()) {
+            throw new Error('This command can only be used in chat');
+        }
+
+        const file = resolveVariable(args.file);
+        const uid = resolveVariable(value);
+        const effect = args.effect;
+
+        const entries = await getEntriesFromFile(file);
+
+        if (!entries) {
+            return '';
+        }
+
+        /** @type {WIScanEntry} */
+        const entry = structuredClone(entries.find(x => String(x.uid) === String(uid)));
+
+        if (!entry) {
+            toastr.warning('Valid UID is required');
+            return '';
+        }
+
+        entry.world = file; // Required by the timed effects manager
+        const chat = getScanningChat();
+        const timedEffects = new WorldInfoTimedEffects(chat, [entry]);
+
+        if (!timedEffects.isValidEffectType(effect)) {
+            toastr.warning('Valid effect type is required');
+            return '';
+        }
+
+        timedEffects.checkTimedEffects();
+        const isActive = timedEffects.isEffectActive(effect, entry);
+        timedEffects.cleanUp();
+        return String(isActive);
+    }
+
     async function setTimedEffectCallback(args, value) {
         if (!getCurrentChatId()) {
             throw new Error('This command can only be used in chat');
@@ -1027,8 +1075,8 @@ function registerWorldInfoSlashCommands() {
         }
 
         entry.world = file; // Required by the timed effects manager
-        const chat = getContext().chat.filter(x => !x.is_system).map(x => x.mes);
-        const timedEffects = new WorldInfoTimedEffects(chat, entries);
+        const chat = getScanningChat();
+        const timedEffects = new WorldInfoTimedEffects(chat, [entry]);
 
         if (!timedEffects.isValidEffectType(effect)) {
             toastr.warning('Valid effect type is required');
@@ -1063,6 +1111,7 @@ function registerWorldInfoSlashCommands() {
         timedEffects.setTimedEffect(effect, entry, newEffectState);
 
         await saveMetadata();
+        timedEffects.cleanUp();
         toastr.success(`Timed effect "${effect}" for entry ${entry.uid} is now ${newEffectState ? 'active' : 'inactive'}`);
 
         return '';
@@ -1355,6 +1404,36 @@ function registerWorldInfoSlashCommands() {
                 </ul>
             </div>
         `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'wi-get-timed-effect',
+        callback: getTimedEffectCallback,
+        helpString: 'Get the current state of the timed effect for the record with the UID from the specified book.',
+        returns: 'true/false - state of the effect',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'file',
+                description: 'book name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: commonEnumProviders.worlds,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'effect',
+                description: 'effect name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.timedEffects,
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'record UID',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.wiUids,
+            }),
+        ],
     }));
 }
 
