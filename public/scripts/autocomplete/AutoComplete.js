@@ -721,6 +721,7 @@ export class AutoComplete {
                     // pick the selected item to autocomplete
                     if (evt.ctrlKey || evt.altKey || evt.shiftKey || this.selectedItem.value == '') break;
                     if (this.selectedItem.name == this.name) break;
+                    if (!this.selectedItem.isSelectable) break;
                     evt.preventDefault();
                     evt.stopImmediatePropagation();
                     this.select();
@@ -729,6 +730,7 @@ export class AutoComplete {
                 case 'Tab': {
                     // pick the selected item to autocomplete
                     if (evt.ctrlKey || evt.altKey || evt.shiftKey || this.selectedItem.value == '') break;
+                    if (!this.selectedItem.isSelectable) break;
                     evt.preventDefault();
                     evt.stopImmediatePropagation();
                     this.select();

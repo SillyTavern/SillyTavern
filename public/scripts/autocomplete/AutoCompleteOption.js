@@ -23,6 +23,10 @@ export class AutoCompleteOption {
         return this.name;
     }
 
+    get isSelectable() {
+        return !this.valueProvider;
+    }
+
 
     /**
      * @param {string} name
