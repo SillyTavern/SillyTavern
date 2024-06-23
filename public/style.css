@@ -3140,6 +3140,10 @@ grammarly-extension {
     border: none;
 }
 
+.transparent_dialogue_popup:focus-visible {
+    outline: none;
+}
+
 #dialogue_popup .horizontal_scrolling_dialogue_popup {
     overflow-x: unset !important;
 }
