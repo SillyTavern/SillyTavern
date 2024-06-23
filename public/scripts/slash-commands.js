@@ -1061,7 +1061,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     ],
     unnamedArgumentList: [
         SlashCommandArgument.fromProps({
-            description: 'message index or range',
+            description: 'message index (starts with 0) or range',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
             isRequired: true,
             enumProvider: commonEnumProviders.messages(),
