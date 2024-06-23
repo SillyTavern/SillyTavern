@@ -351,24 +351,57 @@ class WorldInfoTimedEffects {
     #entryHashCache = new WeakMap();
 
     /**
-     * Array of chat messages
+     * Array of chat messages.
      * @type {string[]}
      */
     #chat = [];
 
     /**
-     * Array of entries
+     * Array of entries.
      * @type {WIScanEntry[]}
      */
     #entries = [];
 
     /**
-     * Buffer for active timed effects
+     * Buffer for active timed effects.
      * @type {Record<TimedEffectType, WIScanEntry[]>}
      */
     #buffer = {
         'sticky': [],
         'cooldown': [],
+    };
+
+    /**
+     * Callbacks for effect types ending.
+     * @type {Record<TimedEffectType, (entry: WIScanEntry) => void>}
+     */
+    #onEnded = {
+        /**
+         * Callback for when a sticky entry ends.
+         * Sets an entry on cooldown immediately if it has a cooldown.
+         * @param {WIScanEntry} entry Entry that ended sticky
+         */
+        'sticky': (entry) => {
+            if (!entry.cooldown) {
+                return;
+            }
+
+            const key = this.#getEntryKey(entry);
+            const effect = this.#getEntryTimedEffect(entry, 'cooldown');
+            chat_metadata.timedWorldInfo.cooldown[key] = effect;
+            console.log(`Adding cooldown entry ${key} on ended sticky: start=${effect.start}, end=${effect.end}`);
+            // Set the cooldown immediately for this evaluation
+            this.#buffer['cooldown'].push(entry);
+        },
+
+        /**
+         * Callback for when a cooldown entry ends.
+         * No-op, essentially.
+         * @param {WIScanEntry} entry Entry that ended cooldown
+         */
+        'cooldown': (entry) => {
+            console.debug('Cooldown ended for entry', entry.uid);
+        },
     };
 
     /**
@@ -444,33 +477,6 @@ class WorldInfoTimedEffects {
     }
 
     /**
-     * Callback for when a sticky entry ends.
-     * Sets an entry on cooldown immediately if it has a cooldown.
-     * @param {WIScanEntry} entry Entry that ended sticky
-     */
-    #onStickyEndedCallback(entry) {
-        if (!entry.cooldown) {
-            return;
-        }
-
-        const key = this.#getEntryKey(entry);
-        const effect = this.#getEntryTimedEffect(entry, 'cooldown');
-        chat_metadata.timedWorldInfo.cooldown[key] = effect;
-        console.log(`Adding cooldown entry ${key} on ended sticky: start=${effect.start}, end=${effect.end}`);
-        // Set the cooldown immediately for this evaluation
-        this.#buffer['cooldown'].push(entry);
-    }
-
-    /**
-     * Callback for when a cooldown entry ends.
-     * No-op, essentially.
-     * @param {WIScanEntry} entry Entry that ended cooldown
-     */
-    #onCooldownEndedCallback(entry) {
-        console.debug('Cooldown ended for entry', entry.uid);
-    }
-
-    /**
      * Processes entries for a given type of timed effect.
      * @param {TimedEffectType} type Identifier for the type of timed effect
      * @param {WIScanEntry[]} buffer Buffer to store the entries
@@ -523,8 +529,8 @@ class WorldInfoTimedEffects {
      * Checks for timed effects on chat messages.
      */
     checkTimedEffects() {
-        this.#checkTimedEffectOfType('sticky', this.#buffer['sticky'], this.#onStickyEndedCallback.bind(this));
-        this.#checkTimedEffectOfType('cooldown', this.#buffer['cooldown'], this.#onCooldownEndedCallback.bind(this));
+        this.#checkTimedEffectOfType('sticky', this.#buffer.sticky, this.#onEnded.sticky.bind(this));
+        this.#checkTimedEffectOfType('cooldown', this.#buffer.cooldown, this.#onEnded.cooldown.bind(this));
     }
 
     /**
