@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, equalsIgnoreCaseAndAccents, getSanitizedFilename, checkOverwriteExistingData, parseStringArray } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, getSanitizedFilename, checkOverwriteExistingData, getStringHash, parseStringArray } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { isMobile } from './RossAscends-mods.js';
@@ -84,24 +84,39 @@ const DEFAULT_DEPTH = 4;
 const DEFAULT_WEIGHT = 100;
 const MAX_SCAN_DEPTH = 1000;
 
+// Typedef area
+/**
+ * @typedef {object} WIScanEntry The entry that triggered the scan
+ * @property {number} [scanDepth] The depth of the scan
+ * @property {boolean} [caseSensitive] If the scan is case sensitive
+ * @property {boolean} [matchWholeWords] If the scan should match whole words
+ * @property {boolean} [useGroupScoring] If the scan should use group scoring
+ * @property {number} [uid] The UID of the entry that triggered the scan
+ * @property {string} [world] The world info book of origin of the entry
+ * @property {string[]} [key] The primary keys to scan for
+ * @property {string[]} [keysecondary] The secondary keys to scan for
+ * @property {number} [selectiveLogic] The logic to use for selective activation
+ * @property {number} [sticky] The sticky value of the entry
+ * @property {number} [cooldown] The cooldown of the entry
+ */
+
+/**
+ * @typedef {object} WITimedEffect Timed effect for world info
+ * @property {number} hash Hash of the entry that triggered the effect
+ * @property {number} start The chat index where the effect starts
+ * @property {number} end The chat index where the effect ends
+ */
+
+/**
+ * @typedef TimedEffectType Type of timed effect
+ * @type {'sticky'|'cooldown'}
+ */
+// End typedef area
+
 /**
  * Represents a scanning buffer for one evaluation of World Info.
  */
 class WorldInfoBuffer {
-    // Typedef area
-    /**
-     * @typedef {object} WIScanEntry The entry that triggered the scan
-     * @property {number} [scanDepth] The depth of the scan
-     * @property {boolean} [caseSensitive] If the scan is case sensitive
-     * @property {boolean} [matchWholeWords] If the scan should match whole words
-     * @property {boolean} [useGroupScoring] If the scan should use group scoring
-     * @property {number} [uid] The UID of the entry that triggered the scan
-     * @property {string[]} [key] The primary keys to scan for
-     * @property {string[]} [keysecondary] The secondary keys to scan for
-     * @property {number} [selectiveLogic] The logic to use for selective activation
-     */
-    // End typedef area
-
     /**
      * @type {object[]} Array of entries that need to be activated no matter what
      */
@@ -266,9 +281,9 @@ class WorldInfoBuffer {
     }
 
     /**
-     * Clears the force activations buffer.
+     * Clean-up the external effects for entries.
      */
-    cleanExternalActivations() {
+    resetExternalEffects() {
         WorldInfoBuffer.externalActivations.splice(0, WorldInfoBuffer.externalActivations.length);
     }
 
@@ -325,6 +340,300 @@ class WorldInfoBuffer {
     }
 }
 
+/**
+ * Represents a timed effects manager for World Info.
+ */
+class WorldInfoTimedEffects {
+    /**
+     * Cache for entry hashes. Uses weak map to avoid memory leaks.
+     * @type {WeakMap<WIScanEntry, number>}
+     */
+    #entryHashCache = new WeakMap();
+
+    /**
+     * Array of chat messages.
+     * @type {string[]}
+     */
+    #chat = [];
+
+    /**
+     * Array of entries.
+     * @type {WIScanEntry[]}
+     */
+    #entries = [];
+
+    /**
+     * Buffer for active timed effects.
+     * @type {Record<TimedEffectType, WIScanEntry[]>}
+     */
+    #buffer = {
+        'sticky': [],
+        'cooldown': [],
+    };
+
+    /**
+     * Callbacks for effect types ending.
+     * @type {Record<TimedEffectType, (entry: WIScanEntry) => void>}
+     */
+    #onEnded = {
+        /**
+         * Callback for when a sticky entry ends.
+         * Sets an entry on cooldown immediately if it has a cooldown.
+         * @param {WIScanEntry} entry Entry that ended sticky
+         */
+        'sticky': (entry) => {
+            if (!entry.cooldown) {
+                return;
+            }
+
+            const key = this.#getEntryKey(entry);
+            const effect = this.#getEntryTimedEffect(entry, 'cooldown');
+            chat_metadata.timedWorldInfo.cooldown[key] = effect;
+            console.log(`Adding cooldown entry ${key} on ended sticky: start=${effect.start}, end=${effect.end}`);
+            // Set the cooldown immediately for this evaluation
+            this.#buffer['cooldown'].push(entry);
+        },
+
+        /**
+         * Callback for when a cooldown entry ends.
+         * No-op, essentially.
+         * @param {WIScanEntry} entry Entry that ended cooldown
+         */
+        'cooldown': (entry) => {
+            console.debug('Cooldown ended for entry', entry.uid);
+        },
+    };
+
+    /**
+     * Initialize the timed effects with the given messages.
+     * @param {string[]} chat Array of chat messages
+     * @param {WIScanEntry[]} entries Array of entries
+     */
+    constructor(chat, entries) {
+        this.#chat = chat;
+        this.#entries = entries;
+        this.#ensureChatMetadata();
+    }
+
+    /**
+     * Verify correct structure of chat metadata.
+     */
+    #ensureChatMetadata() {
+        if (!chat_metadata.timedWorldInfo) {
+            chat_metadata.timedWorldInfo = {};
+        }
+
+        ['sticky', 'cooldown'].forEach(type => {
+            // Ensure the property exists and is an object
+            if (!chat_metadata.timedWorldInfo[type] || typeof chat_metadata.timedWorldInfo[type] !== 'object') {
+                chat_metadata.timedWorldInfo[type] = {};
+            }
+
+            // Clean up invalid entries
+            Object.entries(chat_metadata.timedWorldInfo[type]).forEach(([key, value]) => {
+                if (!value || typeof value !== 'object') {
+                    delete chat_metadata.timedWorldInfo[type][key];
+                }
+            });
+        });
+    }
+
+    /**
+    * Gets a hash for a WI entry.
+    * @param {WIScanEntry} entry WI entry
+    * @returns {number} String hash
+    */
+    #getEntryHash(entry) {
+        if (this.#entryHashCache.has(entry)) {
+            return this.#entryHashCache.get(entry);
+        }
+
+        const hash = getStringHash(JSON.stringify(entry));
+        this.#entryHashCache.set(entry, hash);
+        return hash;
+    }
+
+    /**
+     * Gets a unique-ish key for a WI entry.
+     * @param {WIScanEntry} entry WI entry
+     * @returns {string} String key for the entry
+     */
+    #getEntryKey(entry) {
+        return `${entry.world}.${entry.uid}`;
+    }
+
+    /**
+     * Gets a timed effect for a WI entry.
+     * @param {WIScanEntry} entry WI entry
+     * @param {TimedEffectType} type Type of timed effect
+     * @returns {WITimedEffect} Timed effect for the entry
+     */
+    #getEntryTimedEffect(entry, type) {
+        return {
+            hash: this.#getEntryHash(entry),
+            start: this.#chat.length,
+            end: this.#chat.length + Number(entry[type]),
+        };
+    }
+
+    /**
+     * Processes entries for a given type of timed effect.
+     * @param {TimedEffectType} type Identifier for the type of timed effect
+     * @param {WIScanEntry[]} buffer Buffer to store the entries
+     * @param {(entry: WIScanEntry) => void} onEnded Callback for when a timed effect ends
+     */
+    #checkTimedEffectOfType(type, buffer, onEnded) {
+        /** @type {[string, WITimedEffect][]} */
+        const effects = Object.entries(chat_metadata.timedWorldInfo[type]);
+        for (const [key, value] of effects) {
+            console.log(`Processing ${type} entry ${key}`, value);
+            const entry = this.#entries.find(x => String(this.#getEntryHash(x)) === String(value.hash));
+
+            if (this.#chat.length <= Number(value.start)) {
+                console.log(`Removing ${type} entry ${key} from timedWorldInfo: chat not advanced`, value);
+                delete chat_metadata.timedWorldInfo[type][key];
+                continue;
+            }
+
+            // Missing entries (they could be from another character's lorebook)
+            if (!entry) {
+                if (this.#chat.length > Number(value.end)) {
+                    console.log(`Removing ${type} entry from timedWorldInfo: entry not found and interval passed`, entry);
+                    delete chat_metadata.timedWorldInfo[type][key];
+                }
+                continue;
+            }
+
+            // Ignore invalid entries (not configured for timed effects)
+            if (!entry[type]) {
+                console.log(`Removing ${type} entry from timedWorldInfo: entry not ${type}`, entry);
+                delete chat_metadata.timedWorldInfo[type][key];
+                continue;
+            }
+
+            if (this.#chat.length > Number(value.end)) {
+                console.log(`Removing ${type} entry from timedWorldInfo: ${type} interval passed`, entry);
+                delete chat_metadata.timedWorldInfo[type][key];
+                if (typeof onEnded === 'function') {
+                    onEnded(entry);
+                }
+                continue;
+            }
+
+            buffer.push(entry);
+            console.log(`Timed effect "${type}" applied to entry`, entry);
+        }
+    }
+
+    /**
+     * Checks for timed effects on chat messages.
+     */
+    checkTimedEffects() {
+        this.#checkTimedEffectOfType('sticky', this.#buffer.sticky, this.#onEnded.sticky.bind(this));
+        this.#checkTimedEffectOfType('cooldown', this.#buffer.cooldown, this.#onEnded.cooldown.bind(this));
+    }
+
+    /**
+     * Gets raw timed effect metadatum for a WI entry.
+     * @param {TimedEffectType} type Type of timed effect
+     * @param {WIScanEntry} entry WI entry
+     * @returns {WITimedEffect} Timed effect for the entry
+     */
+    getEffectMetadata(type, entry) {
+        if (!this.isValidEffectType(type)) {
+            return null;
+        }
+
+        const key = this.#getEntryKey(entry);
+        return chat_metadata.timedWorldInfo[type][key];
+    }
+
+    /**
+     * Sets a timed effect for a WI entry.
+     * @param {TimedEffectType} type Type of timed effect
+     * @param {WIScanEntry} entry WI entry to check
+     */
+    #setTimedEffectOfType(type, entry) {
+        // Skip if entry does not have the type (sticky or cooldown)
+        if (!entry[type]) {
+            return;
+        }
+
+        const key = this.#getEntryKey(entry);
+
+        if (!chat_metadata.timedWorldInfo[type][key]) {
+            const effect = this.#getEntryTimedEffect(entry, type);
+            chat_metadata.timedWorldInfo[type][key] = effect;
+
+            console.log(`Adding ${type} entry ${key}: start=${effect.start}, end=${effect.end}`);
+        }
+    }
+
+    /**
+     * Sets timed effects on chat messages.
+     * @param {WIScanEntry[]} activatedEntries Entries that were activated
+     */
+    setTimedEffects(activatedEntries) {
+        for (const entry of activatedEntries) {
+            this.#setTimedEffectOfType('sticky', entry);
+            this.#setTimedEffectOfType('cooldown', entry);
+        }
+    }
+
+    /**
+     * Force set a timed effect for a WI entry.
+     * @param {TimedEffectType} type Type of timed effect
+     * @param {WIScanEntry} entry WI entry
+     * @param {boolean} newState The state of the effect
+     */
+    setTimedEffect(type, entry, newState) {
+        if (!this.isValidEffectType(type)) {
+            return;
+        }
+
+        const key = this.#getEntryKey(entry);
+        delete chat_metadata.timedWorldInfo[type][key];
+
+        if (newState) {
+            const effect = this.#getEntryTimedEffect(entry, type);
+            chat_metadata.timedWorldInfo[type][key] = effect;
+            console.log(`Adding ${type} entry ${key}: start=${effect.start}, end=${effect.end}`);
+        }
+    }
+
+    /**
+     * Check if the string is a valid timed effect type.
+     * @param {string} type Name of the timed effect
+     * @returns {boolean} Is recognized type
+     */
+    isValidEffectType(type) {
+        return typeof type === 'string' && ['sticky', 'cooldown'].includes(type.trim().toLowerCase());
+    }
+
+    /**
+     * Check if the current entry is sticky activated.
+     * @param {TimedEffectType} type Type of timed effect
+     * @param {WIScanEntry} entry WI entry to check
+     * @returns {boolean} True if the entry is active
+     */
+    isEffectActive(type, entry) {
+        if (!this.isValidEffectType(type)) {
+            return false;
+        }
+
+        return this.#buffer[type]?.some(x => this.#getEntryHash(x) === this.#getEntryHash(entry)) ?? false;
+    }
+
+    /**
+     * Clean-up previously set timed effects.
+     */
+    cleanUp() {
+        for (const buffer of Object.values(this.#buffer)) {
+            buffer.splice(0, buffer.length);
+        }
+    }
+}
+
 export function getWorldInfoSettings() {
     return {
         world_info,
@@ -357,7 +666,7 @@ export const wi_anchor_position = {
     after: 1,
 };
 
-const worldInfoCache = {};
+const worldInfoCache = new Map();
 
 /**
  * Gets the world info based on chat messages.
@@ -370,7 +679,7 @@ const worldInfoCache = {};
 async function getWorldInfoPrompt(chat, maxContext, isDryRun) {
     let worldInfoString = '', worldInfoBefore = '', worldInfoAfter = '';
 
-    const activatedWorldInfo = await checkWorldInfo(chat, maxContext);
+    const activatedWorldInfo = await checkWorldInfo(chat, maxContext, isDryRun);
     worldInfoBefore = activatedWorldInfo.worldInfoBefore;
     worldInfoAfter = activatedWorldInfo.worldInfoAfter;
     worldInfoString = worldInfoBefore + worldInfoAfter;
@@ -477,9 +786,11 @@ function setWorldInfoSettings(settings, data) {
     $('#world_info').trigger('change');
     $('#world_editor_select').trigger('change');
 
-    eventSource.on(event_types.CHAT_CHANGED, () => {
+    eventSource.on(event_types.CHAT_CHANGED, async () => {
         const hasWorldInfo = !!chat_metadata[METADATA_KEY] && world_names.includes(chat_metadata[METADATA_KEY]);
         $('.chat_lorebook_button').toggleClass('world_set', hasWorldInfo);
+        // Pre-cache the world info data for the chat for quicker first prompt generation
+        await getSortedEntries();
     });
 
     eventSource.on(event_types.WORLDINFO_FORCE_ACTIVATE, (entries) => {
@@ -496,6 +807,16 @@ function registerWorldInfoSlashCommands() {
         if (selectedIndex !== -1) {
             $('#world_editor_select').val(selectedIndex).trigger('change');
         }
+    }
+
+    /**
+     * Gets a *rough* approximation of the current chat context.
+     * Normally, it is provided externally by the prompt builder.
+     * Don't use for anything critical!
+     * @returns {string[]}
+     */
+    function getScanningChat() {
+        return getContext().chat.filter(x => !x.is_system).map(x => x.mes);
     }
 
     async function getEntriesFromFile(file) {
@@ -701,6 +1022,116 @@ function registerWorldInfoSlashCommands() {
         return '';
     }
 
+    async function getTimedEffectCallback(args, value) {
+        if (!getCurrentChatId()) {
+            throw new Error('This command can only be used in chat');
+        }
+
+        const file = args.file;
+        const uid = value;
+        const effect = args.effect;
+
+        const entries = await getEntriesFromFile(file);
+
+        if (!entries) {
+            return '';
+        }
+
+        /** @type {WIScanEntry} */
+        const entry = structuredClone(entries.find(x => String(x.uid) === String(uid)));
+
+        if (!entry) {
+            toastr.warning('Valid UID is required');
+            return '';
+        }
+
+        entry.world = file; // Required by the timed effects manager
+        const chat = getScanningChat();
+        const timedEffects = new WorldInfoTimedEffects(chat, [entry]);
+
+        if (!timedEffects.isValidEffectType(effect)) {
+            toastr.warning('Valid effect type is required');
+            return '';
+        }
+
+        const data = timedEffects.getEffectMetadata(effect, entry);
+
+        if (String(args.format).trim().toLowerCase() === ARGUMENT_TYPE.NUMBER) {
+            return String(data ? (data.end - chat.length) : 0);
+        }
+
+        return String(!!data);
+    }
+
+    async function setTimedEffectCallback(args, value) {
+        if (!getCurrentChatId()) {
+            throw new Error('This command can only be used in chat');
+        }
+
+        const file = args.file;
+        const uid = args.uid;
+        const effect = args.effect;
+
+        if (value === undefined) {
+            toastr.warning('New state is required');
+            return '';
+        }
+
+        const entries = await getEntriesFromFile(file);
+
+        if (!entries) {
+            return '';
+        }
+
+        /** @type {WIScanEntry} */
+        const entry = structuredClone(entries.find(x => String(x.uid) === String(uid)));
+
+        if (!entry) {
+            toastr.warning('Valid UID is required');
+            return '';
+        }
+
+        entry.world = file; // Required by the timed effects manager
+        const chat = getScanningChat();
+        const timedEffects = new WorldInfoTimedEffects(chat, [entry]);
+
+        if (!timedEffects.isValidEffectType(effect)) {
+            toastr.warning('Valid effect type is required');
+            return '';
+        }
+
+        if (!entry[effect]) {
+            toastr.warning('This entry does not have the selected effect. Configure it in the editor first.');
+            return '';
+        }
+
+        const getNewEffectState = () => {
+            const currentState = !!timedEffects.getEffectMetadata(effect, entry);
+
+            if (['toggle', 't', ''].includes(value.trim().toLowerCase())) {
+                return !currentState;
+            }
+
+            if (isTrueBoolean(value)) {
+                return true;
+            }
+
+            if (isFalseBoolean(value)) {
+                return false;
+            }
+
+            return currentState;
+        };
+
+        const newEffectState = getNewEffectState();
+        timedEffects.setTimedEffect(effect, entry, newEffectState);
+
+        await saveMetadata();
+        toastr.success(`Timed effect "${effect}" for entry ${entry.uid} is now ${newEffectState ? 'active' : 'inactive'}`);
+
+        return '';
+    }
+
     /** A collection of local enum providers for this context of world info */
     const localEnumProviders = {
         /** All possible fields that can be set in a WI entry */
@@ -713,12 +1144,18 @@ function registerWorldInfoSlashCommands() {
             const file = executor.namedArgumentList.find(it => it.name == 'file')?.value;
             if (file instanceof SlashCommandClosure) throw new Error('Argument \'file\' does not support closures');
             // Try find world from cache
-            const world = worldInfoCache[file];
+            if (!worldInfoCache.has(file)) return [];
+            const world = worldInfoCache.get(file);
             if (!world) return [];
             return Object.entries(world.entries).map(([uid, data]) =>
                 new SlashCommandEnumValue(uid, `${data.comment ? `${data.comment}: ` : ''}${data.key.join(', ')}${data.keysecondary?.length ? ` [${Object.entries(world_info_logic).find(([_, value]) => value == data.selectiveLogic)[0]}] ${data.keysecondary.join(', ')}` : ''} [${getWiPositionString(data)}]`,
                     enumTypes.enum, enumIcons.getWiStatusIcon(data)));
         },
+
+        timedEffects: () => [
+            new SlashCommandEnumValue('sticky', 'Stays active for N messages', enumTypes.enum, '📌'),
+            new SlashCommandEnumValue('cooldown', 'Cooldown for N messages', enumTypes.enum, '⌛'),
+        ],
     };
 
     function getWiPositionString(entry) {
@@ -734,7 +1171,8 @@ function registerWorldInfoSlashCommands() {
         }
     }
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'world',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'world',
         callback: onWorldInfoChange,
         namedArgumentList: [
             new SlashCommandNamedArgument(
@@ -758,14 +1196,16 @@ function registerWorldInfoSlashCommands() {
         `,
         aliases: [],
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getchatbook',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'getchatbook',
         callback: getChatBookCallback,
         returns: 'lorebook name',
         helpString: 'Get a name of the chat-bound lorebook or create a new one if was unbound, and pass it down the pipe.',
         aliases: ['getchatlore', 'getchatwi'],
     }));
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'findentry',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'findentry',
         aliases: ['findlore', 'findwi'],
         returns: 'UID',
         callback: findBookEntryCallback,
@@ -804,7 +1244,8 @@ function registerWorldInfoSlashCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getentryfield',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'getentryfield',
         aliases: ['getlorefield', 'getwifield'],
         callback: getEntryFieldCallback,
         returns: 'field value',
@@ -846,7 +1287,8 @@ function registerWorldInfoSlashCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'createentry',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'createentry',
         callback: createEntryCallback,
         aliases: ['createlore', 'createwi'],
         returns: 'UID of the new record',
@@ -881,7 +1323,8 @@ function registerWorldInfoSlashCommands() {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'setentryfield',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'setentryfield',
         callback: setEntryFieldCallback,
         aliases: ['setlorefield', 'setwifield'],
         namedArgumentList: [
@@ -926,7 +1369,110 @@ function registerWorldInfoSlashCommands() {
             </div>
         `,
     }));
-
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'wi-set-timed-effect',
+        callback: setTimedEffectCallback,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'file',
+                description: 'book name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: commonEnumProviders.worlds,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'uid',
+                description: 'record UID',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.wiUids,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'effect',
+                description: 'effect name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.timedEffects,
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'new state of the effect',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                acceptsMultiple: false,
+                enumList: commonEnumProviders.boolean('onOffToggle')(),
+            }),
+        ],
+        helpString: `
+            <div>
+                Set a timed effect for the record with the UID from the specified book. The duration must be set in the entry itself.
+                Will only be applied for the current chat. Enabling an effect that was already active refreshes the duration.
+                If the last chat message is swiped or deleted, the effect will be removed.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/wi-set-timed-effect file=chatLore uid=123 effect=sticky on</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'wi-get-timed-effect',
+        callback: getTimedEffectCallback,
+        helpString: `
+            <div>
+                Get the current state of the timed effect for the record with the UID from the specified book.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <code>/wi-get-timed-effect file=chatLore format=bool effect=sticky 123</code> - returns true or false if the effect is active or not
+                    </li>
+                    <li>
+                        <code>/wi-get-timed-effect file=chatLore format=number effect=sticky 123</code> - returns the remaining duration of the effect, or 0 if inactive
+                    </li>
+                </ul>
+            </div>
+        `,
+        returns: 'state of the effect',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'file',
+                description: 'book name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: commonEnumProviders.worlds,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'effect',
+                description: 'effect name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.timedEffects,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'format',
+                description: 'output format',
+                isRequired: false,
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: ARGUMENT_TYPE.BOOLEAN,
+                enumList: [ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.NUMBER],
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'record UID',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.wiUids,
+            }),
+        ],
+    }));
 }
 
 // World Info Editor
@@ -945,8 +1491,8 @@ async function loadWorldInfoData(name) {
         return;
     }
 
-    if (worldInfoCache[name]) {
-        return worldInfoCache[name];
+    if (worldInfoCache.has(name)) {
+        return worldInfoCache.get(name);
     }
 
     const response = await fetch('/api/worldinfo/get', {
@@ -958,7 +1504,7 @@ async function loadWorldInfoData(name) {
 
     if (response.ok) {
         const data = await response.json();
-        worldInfoCache[name] = data;
+        worldInfoCache.set(name, data);
         return data;
     }
 
@@ -1390,6 +1936,8 @@ const originalDataKeyMap = {
     'vectorized': 'extensions.vectorized',
     'groupOverride': 'extensions.group_override',
     'groupWeight': 'extensions.group_weight',
+    'sticky': 'extensions.sticky',
+    'cooldown': 'extensions.cooldown',
 };
 
 /** Checks the state of the current search, and adds/removes the search sorting option accordingly */
@@ -1518,7 +2066,8 @@ function customTokenizer(input, _selection, callback) {
 
             // Now remove the token from the current input, and the comma too
             current = current.slice(i + 1);
-            insideRegex = false, regexClosed = false;
+            insideRegex = false;
+            regexClosed = false;
             i = 0;
         }
     }
@@ -2010,6 +2559,32 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     groupWeightInput.val(entry.groupWeight ?? DEFAULT_WEIGHT).trigger('input');
+
+    // sticky
+    const sticky = template.find('input[name="sticky"]');
+    sticky.data('uid', entry.uid);
+    sticky.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = Number($(this).val());
+        data.entries[uid].sticky = !isNaN(value) ? value : null;
+
+        setOriginalDataValue(data, uid, 'extensions.sticky', data.entries[uid].sticky);
+        saveWorldInfo(name, data);
+    });
+    sticky.val(entry.sticky > 0 ? entry.sticky : '').trigger('input');
+
+    // cooldown
+    const cooldown = template.find('input[name="cooldown"]');
+    cooldown.data('uid', entry.uid);
+    cooldown.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = Number($(this).val());
+        data.entries[uid].cooldown = !isNaN(value) ? value : null;
+
+        setOriginalDataValue(data, uid, 'extensions.cooldown', data.entries[uid].cooldown);
+        saveWorldInfo(name, data);
+    });
+    cooldown.val(entry.cooldown > 0 ? entry.cooldown : '').trigger('input');
 
     // probability
     if (entry.probability === undefined) {
@@ -2559,12 +3134,20 @@ const newEntryDefinition = {
     useGroupScoring: { default: null, type: 'boolean?' },
     automationId: { default: '', type: 'string' },
     role: { default: 0, type: 'enum' },
+    sticky: { default: null, type: 'number?' },
+    cooldown: { default: null, type: 'number?' },
 };
 
 const newEntryTemplate = Object.fromEntries(
     Object.entries(newEntryDefinition).map(([key, value]) => [key, value.default]),
 );
 
+/**
+ * Creates a new world info entry from template.
+ * @param {string} _name Name of the WI (unused)
+ * @param {any} data WI data
+ * @returns {object | undefined} New entry object or undefined if failed
+ */
 function createWorldInfoEntry(_name, data) {
     const newUid = getFreeWorldEntryUid(data);
 
@@ -2593,7 +3176,7 @@ async function saveWorldInfo(name, data, immediately) {
         return;
     }
 
-    delete worldInfoCache[name];
+    worldInfoCache.delete(name);
 
     if (immediately) {
         return await _save(name, data);
@@ -2863,10 +3446,11 @@ export async function getSortedEntries() {
  * Performs a scan on the chat and returns the world info activated.
  * @param {string[]} chat The chat messages to scan.
  * @param {number} maxContext The maximum context size of the generation.
+ * @param {boolean} isDryRun Whether to perform a dry run.
  * @typedef {{ worldInfoBefore: string, worldInfoAfter: string, EMEntries: any[], WIDepthEntries: any[], allActivatedEntries: Set<any> }} WIActivated
  * @returns {Promise<WIActivated>} The world info activated.
  */
-async function checkWorldInfo(chat, maxContext) {
+async function checkWorldInfo(chat, maxContext, isDryRun) {
     const context = getContext();
     const buffer = new WorldInfoBuffer(chat);
 
@@ -2899,6 +3483,9 @@ async function checkWorldInfo(chat, maxContext) {
 
     console.debug(`Context size: ${maxContext}; WI budget: ${budget} (max% = ${world_info_budget}%, cap = ${world_info_budget_cap})`);
     const sortedEntries = await getSortedEntries();
+    const timedEffects = new WorldInfoTimedEffects(chat, sortedEntries);
+
+    !isDryRun && timedEffects.checkTimedEffects();
 
     if (sortedEntries.length === 0) {
         return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], EMEntries: [], allActivatedEntries: new Set() };
@@ -2941,6 +3528,14 @@ async function checkWorldInfo(chat, maxContext) {
                 }
             }
 
+            const isSticky = timedEffects.isEffectActive('sticky', entry);
+            const isCooldown = timedEffects.isEffectActive('cooldown', entry);
+
+            if (isCooldown && !isSticky) {
+                console.debug(`WI entry ${entry.uid} suppressed by cooldown`);
+                continue;
+            }
+
             if (failedProbabilityChecks.has(entry)) {
                 continue;
             }
@@ -2949,7 +3544,7 @@ async function checkWorldInfo(chat, maxContext) {
                 continue;
             }
 
-            if (entry.constant || buffer.isExternallyActivated(entry)) {
+            if (entry.constant || buffer.isExternallyActivated(entry) || isSticky) {
                 activatedNow.add(entry);
                 continue;
             }
@@ -3037,9 +3632,12 @@ async function checkWorldInfo(chat, maxContext) {
             const rollValue = Math.random() * 100;
 
             if (entry.useProbability && rollValue > entry.probability) {
-                console.debug(`WI entry ${entry.uid} ${entry.key} failed probability check, skipping`);
-                failedProbabilityChecks.add(entry);
-                continue;
+                const isSticky = timedEffects.isEffectActive('sticky', entry);
+                if (!isSticky) {
+                    console.debug(`WI entry ${entry.uid} ${entry.key} failed probability check, skipping`);
+                    failedProbabilityChecks.add(entry);
+                    continue;
+                }
             } else { console.debug(`uid:${entry.uid} passed probability check, inserting to prompt`); }
 
             // Substitute macros inline, for both this checking and also future processing
@@ -3167,7 +3765,9 @@ async function checkWorldInfo(chat, maxContext) {
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
     }
 
-    buffer.cleanExternalActivations();
+    !isDryRun && timedEffects.setTimedEffects(Array.from(allActivatedEntries));
+    buffer.resetExternalEffects();
+    timedEffects.cleanUp();
 
     return { worldInfoBefore, worldInfoAfter, EMEntries, WIDepthEntries, allActivatedEntries };
 }
@@ -3328,6 +3928,8 @@ function convertAgnaiMemoryBook(inputObj) {
             useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
+            sticky: null,
+            cooldown: null,
         };
     });
 
@@ -3367,6 +3969,8 @@ function convertRisuLorebook(inputObj) {
             useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
+            sticky: null,
+            cooldown: null,
         };
     });
 
@@ -3411,6 +4015,8 @@ function convertNovelLorebook(inputObj) {
             useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
+            sticky: null,
+            cooldown: null,
         };
     });
 
@@ -3457,6 +4063,8 @@ function convertCharacterBook(characterBook) {
             automationId: entry.extensions?.automation_id ?? '',
             role: entry.extensions?.role ?? extension_prompt_roles.SYSTEM,
             vectorized: entry.extensions?.vectorized ?? false,
+            sticky: entry.extensions?.sticky ?? null,
+            cooldown: entry.extensions?.cooldown ?? null,
         };
     });
 
