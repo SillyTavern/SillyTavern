@@ -1551,10 +1551,10 @@ function saveModelList(data) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
-        $('#model_custom_select').empty();
-        $('#model_custom_select').append('<option value="">None</option>');
+        $('.model_custom_select').empty();
+        $('.model_custom_select').append('<option value="">None</option>');
         model_list.forEach((model) => {
-            $('#model_custom_select').append(
+            $('.model_custom_select').append(
                 $('<option>', {
                     value: model.id,
                     text: model.id,
@@ -3164,7 +3164,7 @@ async function getStatusOpen() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.CUSTOM) {
-        $('#model_custom_select').empty();
+        $('.model_custom_select').empty();
         data.custom_url = oai_settings.custom_url;
         data.custom_include_headers = oai_settings.custom_include_headers;
     }
