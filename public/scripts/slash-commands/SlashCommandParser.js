@@ -904,6 +904,14 @@ export class SlashCommandParser {
             listValues.push(assignment);
         }
         if (isList) {
+            const firstVal = listValues[0];
+            if (typeof firstVal.value == 'string') {
+                firstVal.value = firstVal.value.trimStart();
+            }
+            const lastVal = listValues.slice(-1)[0];
+            if (typeof lastVal.value == 'string') {
+                lastVal.value = lastVal.value.trimEnd();
+            }
             return listValues;
         }
         this.indexMacros(this.index - value.length, value);
