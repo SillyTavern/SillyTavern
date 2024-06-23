@@ -620,7 +620,7 @@ export class QuickReply {
             this.clone.style.visibility = 'hidden';
             const mo = new MutationObserver(muts=>{
                 if (muts.find(it=>[...it.removedNodes].includes(this.editorMessage) || [...it.removedNodes].find(n=>n.contains(this.editorMessage)))) {
-                    this.clone.remove();
+                    this.clone?.remove();
                     this.clone = null;
                 }
             });
