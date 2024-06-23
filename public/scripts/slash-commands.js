@@ -522,7 +522,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     callback: hideMessageCallback,
     unnamedArgumentList: [
         SlashCommandArgument.fromProps({
-            description: 'message index or range',
+            description: 'message index (starts with 0) or range',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
             isRequired: true,
             enumProvider: commonEnumProviders.messages(),
@@ -535,7 +535,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     callback: unhideMessageCallback,
     unnamedArgumentList: [
         SlashCommandArgument.fromProps({
-            description: 'message index or range',
+            description: 'message index (starts with 0) or range',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
             isRequired: true,
             enumProvider: commonEnumProviders.messages(),
@@ -549,7 +549,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     aliases: ['disable', 'disablemember', 'memberdisable'],
     unnamedArgumentList: [
         SlashCommandArgument.fromProps({
-            description: 'member index or name',
+            description: 'member index (starts with 0) or name',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING],
             isRequired: true,
             enumProvider: commonEnumProviders.groupMembers(),
@@ -563,7 +563,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     callback: enableGroupMemberCallback,
     unnamedArgumentList: [
         SlashCommandArgument.fromProps({
-            description: 'member index or name',
+            description: 'member index (starts with 0) or name',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING],
             isRequired: true,
             enumProvider: commonEnumProviders.groupMembers(),
@@ -603,7 +603,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     aliases: ['removemember', 'memberremove'],
     unnamedArgumentList: [
         SlashCommandArgument.fromProps({
-            description: 'member index or name',
+            description: 'member index (starts with 0) or name',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING],
             isRequired: true,
             enumProvider: commonEnumProviders.groupMembers(),
@@ -630,7 +630,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     aliases: ['upmember', 'memberup'],
     unnamedArgumentList: [
         SlashCommandArgument.fromProps({
-            description: 'member index or name',
+            description: 'member index (starts with 0) or name',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING],
             isRequired: true,
             enumProvider: commonEnumProviders.groupMembers(),
@@ -644,7 +644,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     aliases: ['downmember', 'memberdown'],
     unnamedArgumentList: [
         SlashCommandArgument.fromProps({
-            description: 'member index or name',
+            description: 'member index (starts with 0) or name',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING],
             isRequired: true,
             enumProvider: commonEnumProviders.groupMembers(),
@@ -657,10 +657,10 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     callback: peekCallback,
     unnamedArgumentList: [
         SlashCommandArgument.fromProps({
-            description: 'message index or range',
-            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
+            description: 'member index (starts with 0) or name',
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING],
             isRequired: true,
-            enumProvider: commonEnumProviders.messages(),
+            enumProvider: commonEnumProviders.groupMembers(),
         }),
     ],
     helpString: `
@@ -671,12 +671,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             <strong>Examples:</strong>
             <ul>
                 <li>
-                    <pre><code>/peek 5</code></pre>
-                    Shows the character card for the 5th message.
-                </li>
-                <li>
-                    <pre><code>/peek 2-5</code></pre>
-                    Shows the character cards for messages 2 through 5.
+                    <pre><code>/peek Gloria</code></pre>
+                    Shows the character card for the character named "Gloria".
                 </li>
             </ul>
         </div>
