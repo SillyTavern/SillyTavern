@@ -133,16 +133,15 @@ dialog {
 
 .popup .popup-button-close {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 21px;
-    height: 21px;
-    font-size: 18px;
+    top: -6px;
+    right: -6px;
+    width: 24px;
+    height: 24px;
+    font-size: 20px;
     padding: 2px 3px 3px 2px;
 
-    filter: brightness(0.4);
+    filter: brightness(0.8);
 
     /* Fix weird animation issue with font-scaling during popup open */
     backface-visibility: hidden;
 }
-
