@@ -69,7 +69,7 @@ const showPopupHelper = {
         const value = await popup.show();
         return value ? String(value) : null;
     },
-}
+};
 
 export class Popup {
     /** @type {POPUP_TYPE} */ type;
@@ -188,6 +188,7 @@ export class Popup {
             case POPUP_TYPE.DISPLAY: {
                 this.controls.style.display = 'none';
                 this.closeButton.style.display = 'block';
+                break;
             }
             default: {
                 console.warn('Unknown popup type.', type);
@@ -216,7 +217,7 @@ export class Popup {
         this.dlg.addEventListener('focusin', (evt) => { if (evt.target instanceof HTMLElement && evt.target != this.dlg) this.lastFocus = evt.target; });
 
         // Bind event listeners for all result controls to their defined event type
-        this.dlg.querySelectorAll(`[data-result]`).forEach(resultControl => {
+        this.dlg.querySelectorAll('[data-result]').forEach(resultControl => {
             if (!(resultControl instanceof HTMLElement)) return;
             const result = Number(resultControl.dataset.result);
             if (isNaN(result)) throw new Error('Invalid result control. Result must be a number. ' + resultControl.dataset.result);
@@ -284,7 +285,7 @@ export class Popup {
 
         runAfterAnimation(this.dlg, () => {
             this.dlg.removeAttribute('opening');
-        })
+        });
 
         this.promise = new Promise((resolve) => {
             this.resolver = resolve;
@@ -431,7 +432,7 @@ export class Popup {
         getTopmostModalLayer() {
             return getTopmostModalLayer();
         },
-    }
+    };
 }
 
 class PopupUtils {
