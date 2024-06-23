@@ -2051,7 +2051,7 @@ function migrateSettings() {
             const isCustom = extension_settings.expressions.custom?.includes(expression);
             return new SlashCommandEnumValue(expression, null, isCustom ? enumTypes.name : enumTypes.enum, isCustom ? 'C' : 'D');
         }),
-    }
+    };
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sprite',
@@ -2088,7 +2088,7 @@ function migrateSettings() {
                 description: 'character name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: commonEnumProviders.characters(),
+                enumProvider: commonEnumProviders.characters('character'),
             }),
         ],
         helpString: 'Returns the last set sprite / expression for the named character.',

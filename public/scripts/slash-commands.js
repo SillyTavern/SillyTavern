@@ -213,7 +213,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'at',
             description: 'position to insert the message',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true })
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true }),
         }),
     ],
     unnamedArgumentList: [
@@ -267,7 +267,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'at',
             description: 'position to insert the message',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true })
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true }),
         }),
     ],
     unnamedArgumentList: [
@@ -452,7 +452,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'at',
             description: 'position to insert the message',
             typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true })
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true }),
         }),
         SlashCommandNamedArgument.fromProps({
             name: 'name',
@@ -461,7 +461,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             defaultValue: '{{user}}',
             enumProvider: () => [
                 ...commonEnumProviders.characters('character')(),
-                ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; })
+                ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; }),
             ],
         }),
     ],
@@ -1302,7 +1302,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
                 ...commonEnumProviders.injects(),
                 ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; }),
             ],
-        })
+        }),
     ],
     callback: flushInjectsCallback,
     helpString: 'Removes a script injection for the current chat. If no ID is provided, removes all script injections.',
@@ -1310,7 +1310,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'tokens',
     callback: (_, text) => {
-        if (text instanceof SlashCommandClosure || Array.isArray(text)) throw new Error('Unnamed argument cannot be a closure for command /tokens')
+        if (text instanceof SlashCommandClosure || Array.isArray(text)) throw new Error('Unnamed argument cannot be a closure for command /tokens');
         return getTokenCountAsync(text).then(count => String(count));
     },
     returns: 'number of tokens',
@@ -1359,7 +1359,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
                 const promptManager = setupChatCompletionPromptManager(oai_settings);
                 const prompts = promptManager.serviceSettings.prompts;
                 return prompts.map(prompt => new SlashCommandEnumValue(prompt.name, prompt.identifier, enumTypes.enum));
-            }
+            },
         }),
     ],
     unnamedArgumentList: [
