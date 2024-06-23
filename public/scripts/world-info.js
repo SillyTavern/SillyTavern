@@ -946,9 +946,9 @@ async function loadWorldInfoData(name) {
         return;
     }
 
-    // if (worldInfoCache[name]) {
-    //     return worldInfoCache[name];
-    // }
+    if (worldInfoCache[name]) {
+        return worldInfoCache[name];
+    }
 
     const response = await fetch('/api/worldinfo/get', {
         method: 'POST',
@@ -2563,7 +2563,7 @@ const newEntryDefinition = {
 };
 
 const newEntryTemplate = Object.fromEntries(
-    Object.entries(newEntryDefinition).map(([key, value]) => [key, value.default])
+    Object.entries(newEntryDefinition).map(([key, value]) => [key, value.default]),
 );
 
 function createWorldInfoEntry(_name, data) {
@@ -2594,7 +2594,7 @@ async function saveWorldInfo(name, data, immediately) {
         return;
     }
 
-    // delete worldInfoCache[name];
+    delete worldInfoCache[name];
 
     if (immediately) {
         return await _save(name, data);
