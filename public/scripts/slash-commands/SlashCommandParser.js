@@ -524,7 +524,7 @@ export class SlashCommandParser {
             const startIdx = this.index - value.length + idx;
             const endIdx = this.index - value.length + idx + match.length;
             // store pipe
-            const pipeName = `_PARSER_${uuidv4()}`;
+            const pipeName = `_PARSER_PIPE_${uuidv4()}`;
             const storePipe = new SlashCommandExecutor(startIdx); {
                 storePipe.end = endIdx;
                 storePipe.command = this.commands['let'];
@@ -540,14 +540,14 @@ export class SlashCommandParser {
             const getvar = new SlashCommandExecutor(startIdx); {
                 getvar.end = endIdx;
                 getvar.command = this.commands[cmd];
-                getvar.name = 'cmd';
+                getvar.name = cmd;
                 const nameAss = new SlashCommandUnnamedArgumentAssignment();
                 nameAss.value = name;
                 getvar.unnamedArgumentList = [nameAss];
                 this.closure.executorList.push(getvar);
             }
             // set to temp scoped var
-            const varName = `_PARSER_${uuidv4()}`;
+            const varName = `_PARSER_VAR_${uuidv4()}`;
             const setvar = new SlashCommandExecutor(startIdx); {
                 setvar.end = endIdx;
                 setvar.command = this.commands['let'];
