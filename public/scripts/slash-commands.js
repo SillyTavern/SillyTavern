@@ -1799,7 +1799,7 @@ async function inputCallback(args, prompt) {
     await delay(1);
     const result = await callGenericPopup(safeValue, POPUP_TYPE.INPUT, defaultInput, popupOptions);
     await delay(1);
-    return String(result);
+    return String(result || '');
 }
 
 /**
