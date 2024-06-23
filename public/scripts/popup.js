@@ -3,17 +3,22 @@ import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
 /** @readonly */
 /** @enum {Number} */
 export const POPUP_TYPE = {
-    'TEXT': 1,
-    'CONFIRM': 2,
-    'INPUT': 3,
+    /** Main popup type. Containing any content displayed, with buttons below. Can also contain additional input controls. */
+    TEXT: 1,
+    /** Popup mainly made to confirm something, answering with a simple Yes/No or similar. Focus on the button controls. */
+    CONFIRM: 2,
+    /** Popup who's main focus is the input text field, which is displayed here. Can contain additional content above. Return value for this is the input string. */
+    INPUT: 3,
+    /** Popup without any button controls. Used to simply display content, with a small X in the corner. */
+    DISPLAY: 4,
 };
 
 /** @readonly */
 /** @enum {number?} */
 export const POPUP_RESULT = {
-    'AFFIRMATIVE': 1,
-    'NEGATIVE': 0,
-    'CANCELLED': null,
+    AFFIRMATIVE: 1,
+    NEGATIVE: 0,
+    CANCELLED: null,
 };
 
 /**
@@ -75,8 +80,9 @@ export class Popup {
     /** @type {HTMLElement} */ content;
     /** @type {HTMLTextAreaElement} */ input;
     /** @type {HTMLElement} */ controls;
-    /** @type {HTMLElement} */ ok;
-    /** @type {HTMLElement} */ cancel;
+    /** @type {HTMLElement} */ okButton;
+    /** @type {HTMLElement} */ cancelButton;
+    /** @type {HTMLElement} */ closeButton;
     /** @type {POPUP_RESULT|number?} */ defaultResult;
     /** @type {CustomPopupButton[]|string[]?} */ customButtons;
 
@@ -118,8 +124,9 @@ export class Popup {
         this.content = this.dlg.querySelector('.popup-content');
         this.input = this.dlg.querySelector('.popup-input');
         this.controls = this.dlg.querySelector('.popup-controls');
-        this.ok = this.dlg.querySelector('.popup-button-ok');
-        this.cancel = this.dlg.querySelector('.popup-button-cancel');
+        this.okButton = this.dlg.querySelector('.popup-button-ok');
+        this.cancelButton = this.dlg.querySelector('.popup-button-cancel');
+        this.closeButton = this.dlg.querySelector('.popup-button-close');
 
         this.dlg.setAttribute('data-id', this.id);
         if (wide) this.dlg.classList.add('wide_dialogue_popup');
@@ -129,8 +136,8 @@ export class Popup {
         if (allowVerticalScrolling) this.dlg.classList.add('vertical_scrolling_dialogue_popup');
 
         // If custom button captions are provided, we set them beforehand
-        this.ok.textContent = typeof okButton === 'string' ? okButton : 'OK';
-        this.cancel.textContent = typeof cancelButton === 'string' ? cancelButton : template.getAttribute('popup-button-cancel');
+        this.okButton.textContent = typeof okButton === 'string' ? okButton : 'OK';
+        this.cancelButton.textContent = typeof cancelButton === 'string' ? cancelButton : template.getAttribute('popup-button-cancel');
 
         this.defaultResult = defaultResult;
         this.customButtons = customButtons;
@@ -141,17 +148,14 @@ export class Popup {
             const buttonElement = document.createElement('div');
             buttonElement.classList.add('menu_button', 'popup-button-custom', 'result-control');
             buttonElement.classList.add(...(button.classes ?? []));
-            buttonElement.setAttribute('data-result', String(button.result ?? undefined));
+            buttonElement.dataset.result = String(button.result ?? undefined);
             buttonElement.textContent = button.text;
             buttonElement.tabIndex = 0;
-
-            if (button.action) buttonElement.addEventListener('click', button.action);
-            if (button.result) buttonElement.addEventListener('click', () => this.complete(button.result));
 
             if (button.appendAtEnd) {
                 this.controls.appendChild(buttonElement);
             } else {
-                this.controls.insertBefore(buttonElement, this.ok);
+                this.controls.insertBefore(buttonElement, this.okButton);
             }
         });
 
@@ -159,22 +163,29 @@ export class Popup {
         const defaultButton = this.controls.querySelector(`[data-result="${this.defaultResult}"]`);
         if (defaultButton) defaultButton.classList.add('menu_button_default');
 
+        // Styling differences depending on the popup type
+        // General styling for all types first, that might be overriden for specific types below
+        this.input.style.display = 'none';
+        this.closeButton.style.display = 'none';
+
         switch (type) {
             case POPUP_TYPE.TEXT: {
-                this.input.style.display = 'none';
-                if (!cancelButton) this.cancel.style.display = 'none';
+                if (!cancelButton) this.cancelButton.style.display = 'none';
                 break;
             }
             case POPUP_TYPE.CONFIRM: {
-                this.input.style.display = 'none';
-                if (!okButton) this.ok.textContent = template.getAttribute('popup-button-yes');
-                if (!cancelButton) this.cancel.textContent = template.getAttribute('popup-button-no');
+                if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-yes');
+                if (!cancelButton) this.cancelButton.textContent = template.getAttribute('popup-button-no');
                 break;
             }
             case POPUP_TYPE.INPUT: {
                 this.input.style.display = 'block';
-                if (!okButton) this.ok.textContent = template.getAttribute('popup-button-save');
+                if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-save');
                 break;
+            }
+            case POPUP_TYPE.DISPLAY: {
+                this.controls.style.display = 'none';
+                this.closeButton.style.display = 'block';
             }
             default: {
                 console.warn('Unknown popup type.', type);
@@ -202,8 +213,14 @@ export class Popup {
         // Set focus event that remembers the focused element
         this.dlg.addEventListener('focusin', (evt) => { if (evt.target instanceof HTMLElement && evt.target != this.dlg) this.lastFocus = evt.target; });
 
-        this.ok.addEventListener('click', () => this.complete(POPUP_RESULT.AFFIRMATIVE));
-        this.cancel.addEventListener('click', () => this.complete(POPUP_RESULT.NEGATIVE));
+        // Bind event listeners for all result controls to their defined event type
+        this.dlg.querySelectorAll(`[data-result]`).forEach(resultControl => {
+            if (!(resultControl instanceof HTMLElement)) return;
+            const result = Number(resultControl.dataset.result);
+            if (isNaN(result)) throw new Error('Invalid result control. Result must be a number. ' + resultControl.dataset.result);
+            const type = resultControl.dataset.resultEvent || 'click';
+            resultControl.addEventListener(type, () => this.complete(result));
+        });
 
         // Bind dialog listeners manually, so we can be sure context is preserved
         const cancelListener = (evt) => {
@@ -296,6 +313,9 @@ export class Popup {
 
         if (applyAutoFocus) {
             control.setAttribute('autofocus', '');
+            // Manually enable tabindex too, as this might only be applied by the interactable functionality in the background, but too late for HTML autofocus
+            // interactable only gets applied when inserted into the DOM
+            control.tabIndex = 0;
         } else {
             control.focus();
         }

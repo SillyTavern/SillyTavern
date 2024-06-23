@@ -587,7 +587,7 @@ function enlargeMessageImage() {
     const titleEmpty = !title || title.trim().length === 0;
     imgContainer.find('pre').toggle(!titleEmpty);
     addCopyToCodeBlocks(imgContainer);
-    callGenericPopup(imgContainer, POPUP_TYPE.TEXT, '', { wide: true, large: true });
+    callGenericPopup(imgContainer, POPUP_TYPE.DISPLAY, '', { large: true });
 }
 
 async function deleteMessageImage() {
