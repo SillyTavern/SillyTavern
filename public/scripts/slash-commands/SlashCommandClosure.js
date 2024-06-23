@@ -33,7 +33,7 @@ export class SlashCommandClosure {
     }
 
     toString() {
-        return '[Closure]';
+        return `[Closure]${this.executeNow ? '()' : ''}`;
     }
 
     /**
