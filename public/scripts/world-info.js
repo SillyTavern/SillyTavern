@@ -1791,7 +1791,8 @@ function customTokenizer(input, _selection, callback) {
 
             // Now remove the token from the current input, and the comma too
             current = current.slice(i + 1);
-            insideRegex = false, regexClosed = false;
+            insideRegex = false;
+            regexClosed = false;
             i = 0;
         }
     }
@@ -2866,6 +2867,12 @@ const newEntryTemplate = Object.fromEntries(
     Object.entries(newEntryDefinition).map(([key, value]) => [key, value.default]),
 );
 
+/**
+ * Creates a new world info entry from template.
+ * @param {string} _name Name of the WI (unused)
+ * @param {any} data WI data
+ * @returns {object | undefined} New entry object or undefined if failed
+ */
 function createWorldInfoEntry(_name, data) {
     const newUid = getFreeWorldEntryUid(data);
 
