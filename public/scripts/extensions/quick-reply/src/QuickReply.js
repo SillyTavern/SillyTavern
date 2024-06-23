@@ -673,6 +673,33 @@ export class QuickReply {
         if (this.editorExecuteHide.checked) {
             this.editorPopup.dlg.classList.add('qr--hide');
         }
+        const syntax = this.editorDom.querySelector('#qr--modal-messageSyntaxInner');
+        const updateScroll = (evt) => {
+            let left = syntax.scrollLeft;
+            let top = syntax.scrollTop;
+            if (evt) {
+                evt.preventDefault();
+                left = syntax.scrollLeft + evt.deltaX;
+                top = syntax.scrollTop + evt.deltaY;
+                syntax.scrollTo({
+                    behavior: 'instant',
+                    left,
+                    top,
+                });
+            }
+            this.editorMessage.scrollTo({
+                behavior: 'instant',
+                left,
+                top,
+            });
+        };
+        const updateScrollDebounced = updateScroll;
+        syntax.addEventListener('wheel', (evt)=>{
+            updateScrollDebounced(evt);
+        });
+        syntax.addEventListener('scroll', (evt)=>{
+            updateScrollDebounced();
+        });
         try {
             this.abortController = new SlashCommandAbortController();
             this.debugController = new SlashCommandDebugController();
@@ -693,7 +720,7 @@ export class QuickReply {
                         wrap.classList.add('qr--scope');
                         if (isCurrent) {
                             const executor = this.debugController.cmdStack.slice(-1)[0];
-                            {
+                            { // named args
                                 const namedTitle = document.createElement('div'); {
                                     namedTitle.classList.add('qr--title');
                                     namedTitle.textContent = `Named Args - /${executor.name}`;
@@ -762,7 +789,7 @@ export class QuickReply {
                                     }
                                 }
                             }
-                            {
+                            { // unnamed args
                                 const unnamedTitle = document.createElement('div'); {
                                     unnamedTitle.classList.add('qr--title');
                                     unnamedTitle.textContent = `Unnamed Args - /${executor.name}`;
@@ -842,20 +869,21 @@ export class QuickReply {
                                 }
                             }
                         }
+                        // current scope
                         const title = document.createElement('div'); {
                             title.classList.add('qr--title');
                             title.textContent = isCurrent ? 'Current Scope' : 'Parent Scope';
                             let hi;
                             title.addEventListener('pointerenter', ()=>{
                                 const loc = this.getEditorPosition(Math.max(0, c.executorList[0].start - 1), c.executorList.slice(-1)[0].end);
-                                const layer = this.editorPopup.dlg.getBoundingClientRect();
+                                const layer = syntax.getBoundingClientRect();
                                 hi = document.createElement('div');
                                 hi.classList.add('qr--highlight-secondary');
                                 hi.style.left = `${loc.left - layer.left}px`;
                                 hi.style.width = `${loc.right - loc.left}px`;
                                 hi.style.top = `${loc.top - layer.top}px`;
                                 hi.style.height = `${loc.bottom - loc.top}px`;
-                                this.editorPopup.dlg.append(hi);
+                                syntax.append(hi);
                             });
                             title.addEventListener('pointerleave', ()=>hi?.remove());
                             wrap.append(title);
@@ -987,14 +1015,14 @@ export class QuickReply {
                                 let hi;
                                 item.addEventListener('pointerenter', ()=>{
                                     const loc = this.getEditorPosition(Math.max(0, executor.start - 1), executor.end);
-                                    const layer = this.editorPopup.dlg.getBoundingClientRect();
+                                    const layer = syntax.getBoundingClientRect();
                                     hi = document.createElement('div');
                                     hi.classList.add('qr--highlight-secondary');
                                     hi.style.left = `${loc.left - layer.left}px`;
                                     hi.style.width = `${loc.right - loc.left}px`;
                                     hi.style.top = `${loc.top - layer.top}px`;
                                     hi.style.height = `${loc.bottom - loc.top}px`;
-                                    this.editorPopup.dlg.append(hi);
+                                    syntax.append(hi);
                                 });
                                 item.addEventListener('pointerleave', ()=>hi?.remove());
                                 wrap.append(item);
@@ -1007,7 +1035,7 @@ export class QuickReply {
                 this.editorDebugState.append(buildStack());
                 this.editorDebugState.classList.add('qr--active');
                 const loc = this.getEditorPosition(Math.max(0, executor.start - 1), executor.end);
-                const layer = this.editorPopup.dlg.getBoundingClientRect();
+                const layer = syntax.getBoundingClientRect();
                 const hi = document.createElement('div');
                 hi.classList.add('qr--highlight');
                 if (this.debugController.namedArguments === undefined) {
@@ -1017,7 +1045,7 @@ export class QuickReply {
                 hi.style.width = `${loc.right - loc.left}px`;
                 hi.style.top = `${loc.top - layer.top}px`;
                 hi.style.height = `${loc.bottom - loc.top}px`;
-                this.editorPopup.dlg.append(hi);
+                syntax.append(hi);
                 const isStepping = await this.debugController.awaitContinue();
                 hi.remove();
                 this.editorDebugState.textContent = '';

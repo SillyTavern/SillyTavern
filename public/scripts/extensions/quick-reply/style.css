@@ -242,7 +242,7 @@
   display: none;
 }
 .popup:has(#qr--modalEditor):has(.qr--isExecuting) .qr--highlight {
-  position: fixed;
+  position: absolute;
   z-index: 50000;
   pointer-events: none;
   background-color: rgba(47, 150, 180, 0.5);
@@ -251,7 +251,7 @@
   background-color: rgba(255, 255, 0, 0.5);
 }
 .popup:has(#qr--modalEditor):has(.qr--isExecuting) .qr--highlight-secondary {
-  position: fixed;
+  position: absolute;
   z-index: 50000;
   pointer-events: none;
   border: 3px solid red;
