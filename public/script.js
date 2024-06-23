@@ -8838,7 +8838,7 @@ jQuery(async function () {
             SlashCommandArgument.fromProps({
                 description: 'API to connect to',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
+                isRequired: false,
                 enumList: Object.entries(CONNECT_API_MAP).map(([api, { selected }]) =>
                     new SlashCommandEnumValue(api, selected, enumTypes.getBasedOnIndex(uniqueAPIs.findIndex(x => x === selected)),
                         selected[0].toUpperCase() ?? enumIcons.default)),
