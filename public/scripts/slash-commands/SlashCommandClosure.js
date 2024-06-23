@@ -190,8 +190,8 @@ export class SlashCommandClosure {
                     step = await stepper.next();
                     // get next executor
                     step = await stepper.next();
-                    const hasImmediateClosureInNamedArgs = step.value.namedArgumentList.find(it=>it.value instanceof SlashCommandClosure && it.executeNow);
-                    const hasImmediateClosureInUnnamedArgs = step.value.unnamedArgumentList.find(it=>it.value instanceof SlashCommandClosure && it.executeNow);
+                    const hasImmediateClosureInNamedArgs = step.value.namedArgumentList.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
+                    const hasImmediateClosureInUnnamedArgs = step.value.unnamedArgumentList.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
                     if (hasImmediateClosureInNamedArgs || hasImmediateClosureInUnnamedArgs) {
                         this.debugController.isStepping = yield { closure:this, executor:step.value };
                     } else {
