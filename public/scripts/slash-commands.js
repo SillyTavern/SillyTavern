@@ -1251,9 +1251,17 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'inject',
     callback: injectCallback,
     namedArgumentList: [
-        new SlashCommandNamedArgument(
-            'id', 'injection ID', [ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'id',
+            description: 'injection ID or variable name pointing to ID',
+            typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+            isRequired: true,
+
+            enumProvider: () => [
+                ...commonEnumProviders.injects(),
+                ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; }),
+            ],
+        }),
         new SlashCommandNamedArgument(
             'position', 'injection position', [ARGUMENT_TYPE.STRING], false, false, 'after', ['before', 'after', 'chat'],
         ),
