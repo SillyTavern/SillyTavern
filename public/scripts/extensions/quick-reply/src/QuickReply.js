@@ -376,9 +376,26 @@ export class QuickReply {
             message.addEventListener('scroll', (evt)=>{
                 updateScrollDebounced();
             });
+            const removeBreakpoint = (bp)=>{
+                // start at -1 because "/" is not included in start-end
+                let start = bp.start - 1;
+                // step left until forward slash "/"
+                while (message.value[start] != '/') start--;
+                // step left while whitespace (except newline) before start
+                while (/[^\S\n]/.test(message.value[start - 1])) start--;
+                // if newline before indent, include the newline for removal
+                if (message.value[start - 1] == '\n') start--;
+                let end = bp.end;
+                // step right while whitespace
+                while (/\s/.test(message.value[end])) end++;
+                // if pipe after whitepace, include pipe for removal
+                if (message.value[end] == '|') end++;
+                const v = `${message.value.slice(0, start)}${message.value.slice(end)}`;
+                message.value = v;
+                message.dispatchEvent(new Event('input', { bubbles:true }));
+            };
             message.addEventListener('pointerup', async(evt)=>{
                 if (!evt.ctrlKey) return;
-                const selIdx = message.selectionStart;
                 const parser = new SlashCommandParser();
                 parser.parse(message.value, false);
                 const cmdIdx = parser.commandIndex.findLastIndex(it=>it.start <= message.selectionStart && it.end >= message.selectionStart);
@@ -386,40 +403,10 @@ export class QuickReply {
                     const cmd = parser.commandIndex[cmdIdx];
                     if (cmd instanceof SlashCommandBreakPoint) {
                         const bp = cmd;
-                        // start at -1 because "/" is not included in start-end
-                        let start = bp.start - 1;
-                        // step left until forward slash "/"
-                        while (message.value[start] != '/') start--;
-                        // step left while whitespace (except newline) before start
-                        while (/[^\S\n]/.test(message.value[start - 1])) start--;
-                        // if newline before indent, include the newline for removal
-                        if (message.value[start - 1] == '\n') start--;
-                        let end = bp.end;
-                        // step right while whitespace
-                        while (/\s/.test(message.value[end])) end++;
-                        // if pipe after whitepace, include pipe for removal
-                        if (message.value[end ] == '|') end++;
-                        const v = `${message.value.slice(0, start)}${message.value.slice(end)}`;
-                        message.value = v;
-                        message.dispatchEvent(new Event('input', { bubbles:true }));
+                        removeBreakpoint(bp);
                     } else if (parser.commandIndex[cmdIdx - 1] instanceof SlashCommandBreakPoint) {
                         const bp = parser.commandIndex[cmdIdx - 1];
-                        // start at -1 because "/" is not included in start-end
-                        let start = bp.start - 1;
-                        // step left until forward slash "/"
-                        while (message.value[start] != '/') start--;
-                        // step left while whitespace (except newline) before start
-                        while (/[^\S\n]/.test(message.value[start - 1])) start--;
-                        // if newline before indent, include the newline for removal
-                        if (message.value[start - 1] == '\n') start--;
-                        let end = bp.end;
-                        // step right while whitespace
-                        while (/\s/.test(message.value[end])) end++;
-                        // if pipe after whitepace, include pipe for removal
-                        if (message.value[end] == '|') end++;
-                        const v = `${message.value.slice(0, start)}${message.value.slice(end)}`;
-                        message.value = v;
-                        message.dispatchEvent(new Event('input', { bubbles:true }));
+                        removeBreakpoint(bp);
                     } else {
                         // start at -1 because "/" is not included in start-end
                         let start = cmd.start - 1;
