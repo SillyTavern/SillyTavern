@@ -1372,6 +1372,7 @@ export function registerVariableCommands() {
             ),
         ],
         splitUnnamedArgument: true,
+        splitUnnamedArgumentCount: 1,
         helpString: `
             <div>
                 Execute any valid slash command enclosed in quotes <code>repeats</code> number of times.
@@ -2001,6 +2002,7 @@ export function registerVariableCommands() {
             ),
         ],
         splitUnnamedArgument: true,
+        splitUnnamedArgumentCount: 1,
         helpString: `
             <div>
                 Get or set a variable.
@@ -2043,6 +2045,7 @@ export function registerVariableCommands() {
             ),
         ],
         splitUnnamedArgument: true,
+        splitUnnamedArgumentCount: 1,
         helpString: `
             <div>
                 Declares a new variable in the current scope.
