@@ -680,9 +680,10 @@ export class SlashCommandParser {
     }
     parseBreakPoint() {
         const bp = new SlashCommandBreakPoint();
-        bp.start = this.index;
+        bp.start = this.index + 1;
         this.take('/breakpoint'.length);
         bp.end = this.index;
+        this.commandIndex.push(bp);
         return bp;
     }
 

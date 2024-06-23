@@ -1,10 +1,12 @@
 import { POPUP_TYPE, Popup } from '../../../popup.js';
 import { setSlashCommandAutoComplete } from '../../../slash-commands.js';
 import { SlashCommandAbortController } from '../../../slash-commands/SlashCommandAbortController.js';
+import { SlashCommandBreakPoint } from '../../../slash-commands/SlashCommandBreakPoint.js';
 import { SlashCommandClosure } from '../../../slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from '../../../slash-commands/SlashCommandClosureResult.js';
 import { SlashCommandDebugController } from '../../../slash-commands/SlashCommandDebugController.js';
 import { SlashCommandExecutor } from '../../../slash-commands/SlashCommandExecutor.js';
+import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommandParserError } from '../../../slash-commands/SlashCommandParserError.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
 import { debounce, getSortableDelay } from '../../../utils.js';
@@ -373,6 +375,72 @@ export class QuickReply {
             });
             message.addEventListener('scroll', (evt)=>{
                 updateScrollDebounced();
+            });
+            message.addEventListener('pointerup', async(evt)=>{
+                if (!evt.ctrlKey) return;
+                const selIdx = message.selectionStart;
+                const parser = new SlashCommandParser();
+                parser.parse(message.value, false);
+                const cmdIdx = parser.commandIndex.findLastIndex(it=>it.start <= message.selectionStart && it.end >= message.selectionStart);
+                if (cmdIdx > -1) {
+                    const cmd = parser.commandIndex[cmdIdx];
+                    if (cmd instanceof SlashCommandBreakPoint) {
+                        const bp = cmd;
+                        // start at -1 because "/" is not included in start-end
+                        let start = bp.start - 1;
+                        // step left until forward slash "/"
+                        while (message.value[start] != '/') start--;
+                        // step left while whitespace (except newline) before start
+                        while (/[^\S\n]/.test(message.value[start - 1])) start--;
+                        // if newline before indent, include the newline for removal
+                        if (message.value[start - 1] == '\n') start--;
+                        let end = bp.end;
+                        // step right while whitespace
+                        while (/\s/.test(message.value[end])) end++;
+                        // if pipe after whitepace, include pipe for removal
+                        if (message.value[end ] == '|') end++;
+                        const v = `${message.value.slice(0, start)}${message.value.slice(end)}`;
+                        message.value = v;
+                        message.dispatchEvent(new Event('input', { bubbles:true }));
+                    } else if (parser.commandIndex[cmdIdx - 1] instanceof SlashCommandBreakPoint) {
+                        const bp = parser.commandIndex[cmdIdx - 1];
+                        // start at -1 because "/" is not included in start-end
+                        let start = bp.start - 1;
+                        // step left until forward slash "/"
+                        while (message.value[start] != '/') start--;
+                        // step left while whitespace (except newline) before start
+                        while (/[^\S\n]/.test(message.value[start - 1])) start--;
+                        // if newline before indent, include the newline for removal
+                        if (message.value[start - 1] == '\n') start--;
+                        let end = bp.end;
+                        // step right while whitespace
+                        while (/\s/.test(message.value[end])) end++;
+                        // if pipe after whitepace, include pipe for removal
+                        if (message.value[end] == '|') end++;
+                        const v = `${message.value.slice(0, start)}${message.value.slice(end)}`;
+                        message.value = v;
+                        message.dispatchEvent(new Event('input', { bubbles:true }));
+                    } else {
+                        // start at -1 because "/" is not included in start-end
+                        let start = cmd.start - 1;
+                        let indent = '';
+                        // step left until forward slash "/"
+                        while (message.value[start] != '/') start--;
+                        // step left while whitespace (except newline) before start, collect the whitespace to help build indentation
+                        while (/[^\S\n]/.test(message.value[start - 1])) {
+                            start--;
+                            indent += message.value[start];
+                        }
+                        // if newline before indent, include the newline
+                        if (message.value[start - 1] == '\n') {
+                            start--;
+                            indent += `\n${indent}`;
+                        }
+                        const v = `${message.value.slice(0, start)}${indent}/breakpoint |${message.value.slice(start)}`;
+                        message.value = v;
+                        message.dispatchEvent(new Event('input', { bubbles:true }));
+                    }
+                }
             });
             /** @type {any} */
             const resizeListener = debounce((evt) => {
