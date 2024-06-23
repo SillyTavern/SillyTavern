@@ -143,7 +143,7 @@ export const commonEnumProviders = {
             ...isAll || types.includes('global') ? Object.keys(extension_settings.variables.global ?? []).map(name => new SlashCommandEnumValue(name, null, enumTypes.macro, enumIcons.globalVariable)) : [],
             ...isAll || types.includes('local') ? Object.keys(chat_metadata.variables ?? []).map(name => new SlashCommandEnumValue(name, null, enumTypes.name, enumIcons.localVariable)) : [],
             ...isAll || types.includes('scope') ? [].map(name => new SlashCommandEnumValue(name, null, enumTypes.variable, enumIcons.scopeVariable)) : [], // TODO: Add scoped variables here, Lenny
-        ]
+        ];
     },
 
     /**
