@@ -2877,11 +2877,12 @@
                             </div>
                             <h4 data-i18n="Enter a Model ID">Enter a Model ID</h4>
                             <div class="flex-container">
-                                <input id="custom_model_id" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-i18n="[placeholder]Example: gpt-3.5-turbo" placeholder="Example: gpt-3.5-turbo">
+                                <input list="model_custom_select_fill" id="custom_model_id" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-i18n="[placeholder]Example: gpt-3.5-turbo" placeholder="Example: gpt-3.5-turbo">
+                                <datalist id="model_custom_select_fill" class="text_pole model_custom_select"></datalist>
                             </div>
                             <h4 data-i18n="Available Models">Available Models</h4>
                             <div class="flex-container">
-                                <select id="model_custom_select" class="text_pole"></select>
+                                <select id="model_custom_select" class="text_pole model_custom_select"></select>
                             </div>
                             <h4 data-i18n="Prompt Post-Processing">Prompt Post-Processing</h4>
                             <select id="custom_prompt_post_processing" class="text_pole" title="Applies additional processing to the prompt before sending it to the API." data-i18n="[title]Applies additional processing to the prompt before sending it to the API.">
