@@ -1189,8 +1189,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
             enumList: [
-                new SlashCommandEnumValue('start', null, enumTypes.enum, '⬅️'),
-                new SlashCommandEnumValue('end', null, enumTypes.enum, '➡️'),
+                new SlashCommandEnumValue('start', null, enumTypes.enum, '⏪'),
+                new SlashCommandEnumValue('end', null, enumTypes.enum, '⏩'),
             ],
         }),
     ],
