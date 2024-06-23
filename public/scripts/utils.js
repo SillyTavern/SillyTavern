@@ -75,6 +75,20 @@ export function onlyUnique(value, index, array) {
 }
 
 /**
+ * Removes the first occurrence of a specified item from an array
+ *
+ * @param {*[]} array - The array from which to remove the item
+ * @param {*} item - The item to remove from the array
+ * @returns {boolean} - Returns true if the item was successfully removed, false otherwise.
+ */
+export function removeFromArray(array, item) {
+    const index = array.indexOf(item);
+    if (index === -1) return false;
+    array.splice(index, 1);
+    return true;
+}
+
+/**
  * Checks if a string only contains digits.
  * @param {string} str The string to check.
  * @returns {boolean} True if the string only contains digits, false otherwise.
@@ -292,6 +306,9 @@ export function throttle(func, limit = 300) {
  * @returns {boolean} True if the element is in the viewport, false otherwise.
  */
 export function isElementInViewport(el) {
+    if (!el) {
+        return false;
+    }
     if (typeof jQuery === 'function' && el instanceof jQuery) {
         el = el[0];
     }
@@ -481,14 +498,16 @@ export function trimToEndSentence(input, include_newline = false) {
         return '';
     }
 
+    const isEmoji = x => /(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu.test(x);
     const punctuation = new Set(['.', '!', '?', '*', '"', ')', '}', '`', ']', '$', '。', '！', '？', '”', '）', '】', '’', '」', '_']); // extend this as you see fit
     let last = -1;
 
-    for (let i = input.length - 1; i >= 0; i--) {
-        const char = input[i];
+    const characters = Array.from(input);
+    for (let i = characters.length - 1; i >= 0; i--) {
+        const char = characters[i];
 
-        if (punctuation.has(char)) {
-            if (i > 0 && /[\s\n]/.test(input[i - 1])) {
+        if (punctuation.has(char) || isEmoji(char)) {
+            if (i > 0 && /[\s\n]/.test(characters[i - 1])) {
                 last = i - 1;
             } else {
                 last = i;
@@ -506,7 +525,7 @@ export function trimToEndSentence(input, include_newline = false) {
         return input.trimEnd();
     }
 
-    return input.substring(0, last + 1).trimEnd();
+    return characters.slice(0, last + 1).join('').trimEnd();
 }
 
 export function trimToStartSentence(input) {
@@ -640,11 +659,11 @@ function parseTimestamp(timestamp) {
     }
 
     // Unix time (legacy TAI / tags)
-    if (typeof timestamp === 'number') {
+    if (typeof timestamp === 'number' || /^\d+$/.test(timestamp)) {
         if (isNaN(timestamp) || !isFinite(timestamp) || timestamp < 0) {
             return moment.invalid();
         }
-        return moment(timestamp);
+        return moment(Number(timestamp));
     }
 
     // ST "humanized" format pattern
@@ -1261,6 +1280,9 @@ export async function waitUntilCondition(condition, timeout = 1000, interval = 1
  * uuidv4(); // '3e2fd9e1-0a7a-4f6d-9aaf-8a7a4babe7eb'
  */
 export function uuidv4() {
+    if ('randomUUID' in crypto) {
+        return crypto.randomUUID();
+    }
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -1508,6 +1530,35 @@ export function setValueByPath(obj, path, value) {
 export function flashHighlight(element, timespan = 2000) {
     element.addClass('flash animated');
     setTimeout(() => element.removeClass('flash animated'), timespan);
+}
+
+/**
+ * Checks if the given control has an animation applied to it
+ *
+ * @param {HTMLElement} control - The control element to check for animation
+ * @returns {boolean} Whether the control has an animation applied
+ */
+export function hasAnimation(control) {
+    const animatioName = getComputedStyle(control, null)["animation-name"];
+    return animatioName != "none";
+}
+
+/**
+ * Run an action once an animation on a control ends. If the control has no animation, the action will be executed immediately.
+ *
+ * @param {HTMLElement} control - The control element to listen for animation end event
+ * @param {(control:*?) => void} callback - The callback function to be executed when the animation ends
+ */
+export function runAfterAnimation(control, callback) {
+    if (hasAnimation(control)) {
+        const onAnimationEnd = () => {
+            control.removeEventListener('animationend', onAnimationEnd);
+            callback(control);
+        };
+        control.addEventListener('animationend', onAnimationEnd);
+    } else {
+        callback(control);
+    }
 }
 
 /**
@@ -1765,4 +1816,23 @@ export async function checkOverwriteExistingData(type, existingNames, name, { in
     }
 
     return true;
+}
+
+/**
+ * Generates a free name by appending a counter to the given name if it already exists in the list
+ *
+ * @param {string} name - The original name to check for existence in the list
+ * @param {string[]} list - The list of names to check for existence
+ * @param {(n: number) => string} [numberFormatter=(n) => ` #${n}`] - The function used to format the counter
+ * @returns {string} The generated free name
+ */
+export function getFreeName(name, list, numberFormatter = (n) => ` #${n}`) {
+    if (!list.includes(name)) {
+        return name;
+    }
+    let counter = 1;
+    while (list.includes(`${name} #${counter}`)) {
+        counter++;
+    }
+    return `${name}${numberFormatter(counter)}`;
 }

@@ -148,7 +148,7 @@ export class SettingsUi {
         this.onQrSetChange();
     }
     onQrSetChange() {
-        this.currentQrSet = QuickReplySet.get(this.currentSet.value);
+        this.currentQrSet = QuickReplySet.get(this.currentSet.value) ?? new QuickReplySet();
         this.disableSend.checked = this.currentQrSet.disableSend;
         this.placeBeforeInput.checked = this.currentQrSet.placeBeforeInput;
         this.injectInput.checked = this.currentQrSet.injectInput;

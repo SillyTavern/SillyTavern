@@ -1,5 +1,6 @@
 import { substituteParams } from '../../script.js';
 import { delay, escapeRegex } from '../utils.js';
+import { SlashCommand } from './SlashCommand.js';
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandClosureExecutor } from './SlashCommandClosureExecutor.js';
 import { SlashCommandClosureResult } from './SlashCommandClosureResult.js';
@@ -17,6 +18,7 @@ export class SlashCommandClosure {
     /**@type {SlashCommandExecutor[]}*/ executorList = [];
     /**@type {SlashCommandAbortController}*/ abortController;
     /**@type {(done:number, total:number)=>void}*/ onProgress;
+    /**@type {string}*/ rawText;
 
     /**@type {number}*/
     get commandCount() {
@@ -91,7 +93,7 @@ export class SlashCommandClosure {
 
     /**
      *
-     * @returns Promise<SlashCommandClosureResult>
+     * @returns {Promise<SlashCommandClosureResult>}
      */
     async execute() {
         const closure = this.getCopy();
@@ -148,6 +150,9 @@ export class SlashCommandClosure {
         }
 
         let done = 0;
+        if (this.executorList.length == 0) {
+            this.scope.pipe = '';
+        }
         for (const executor of this.executorList) {
             this.onProgress?.(done, this.commandCount);
             if (executor instanceof SlashCommandClosureExecutor) {
@@ -158,10 +163,12 @@ export class SlashCommandClosure {
                 const result = await closure.execute();
                 this.scope.pipe = result.pipe;
             } else {
+                /**@type {import('./SlashCommand.js').NamedArguments} */
                 let args = {
                     _scope: this.scope,
                     _parserFlags: executor.parserFlags,
                     _abortController: this.abortController,
+                    _hasUnnamedArgument: executor.unnamedArgumentList.length > 0,
                 };
                 let value;
                 // substitute named arguments
@@ -191,6 +198,7 @@ export class SlashCommandClosure {
                 if (executor.unnamedArgumentList.length == 0) {
                     if (executor.injectPipe) {
                         value = this.scope.pipe;
+                        args._hasUnnamedArgument = this.scope.pipe !== null && this.scope.pipe !== undefined;
                     }
                 } else {
                     value = [];
@@ -214,7 +222,7 @@ export class SlashCommandClosure {
                         if (value.length == 1) {
                             value = value[0];
                         } else if (!value.find(it=>it instanceof SlashCommandClosure)) {
-                            value = value.join(' ');
+                            value = value.join('');
                         }
                     }
                 }
@@ -241,6 +249,7 @@ export class SlashCommandClosure {
                 }
                 executor.onProgress = (subDone, subTotal)=>this.onProgress?.(done + subDone, this.commandCount);
                 this.scope.pipe = await executor.command.callback(args, value ?? '');
+                this.#lintPipe(executor.command);
                 done += executor.commandCount;
                 this.onProgress?.(done, this.commandCount);
                 abortResult = await this.testAbortController();
@@ -267,6 +276,17 @@ export class SlashCommandClosure {
             result.isQuietlyAborted = this.abortController.signal.isQuiet;
             result.abortReason = this.abortController.signal.reason.toString();
             return result;
+        }
+    }
+
+    /**
+     * Auto-fixes the pipe if it is not a valid result for STscript.
+     * @param {SlashCommand} command Command being executed
+     */
+    #lintPipe(command) {
+        if (this.scope.pipe === undefined || this.scope.pipe === null) {
+            console.warn(`${command.name} returned undefined or null. Auto-fixing to empty string.`);
+            this.scope.pipe = '';
         }
     }
 }

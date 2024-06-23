@@ -28,6 +28,7 @@ import {
     setOnlineStatus,
     startStatusLoading,
     substituteParams,
+    substituteParamsExtended,
     system_message_types,
     this_chid,
 } from '../script.js';
@@ -69,6 +70,8 @@ import { saveLogprobsForActiveMessage } from './logprobs.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
+import { renderTemplateAsync } from './templates.js';
+import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 
 export {
     openai_messages_count,
@@ -197,16 +200,18 @@ const custom_prompt_post_processing_types = {
     CLAUDE: 'claude',
 };
 
-const prefixMap = selected_group ? {
-    assistant: '',
-    user: '',
-    system: 'OOC: ',
+function getPrefixMap() {
+    return selected_group ? {
+        assistant: '',
+        user: '',
+        system: 'OOC: ',
+    }
+        : {
+            assistant: '{{char}}:',
+            user: '{{user}}:',
+            system: '',
+        };
 }
-    : {
-        assistant: '{{char}}:',
-        user: '{{user}}:',
-        system: '',
-    };
 
 const default_settings = {
     preset_settings_openai: 'Default',
@@ -722,7 +727,7 @@ function populationInjectionPrompts(prompts, messages) {
             const jointPrompt = [rolePrompts, extensionPrompt].filter(x => x).map(x => x.trim()).join(separator);
 
             if (jointPrompt && jointPrompt.length) {
-                roleMessages.push({ 'role': role, 'content': jointPrompt });
+                roleMessages.push({ 'role': role, 'content': jointPrompt, injected: true });
             }
         }
 
@@ -775,7 +780,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         const promptObject = {
             identifier: 'continueNudge',
             role: 'system',
-            content: oai_settings.continue_nudge_prompt.replace('{{lastChatMessage}}', String(cyclePrompt).trim()),
+            content: substituteParamsExtended(oai_settings.continue_nudge_prompt, { lastChatMessage: String(cyclePrompt).trim() }),
             system_prompt: true,
         };
         const continuePrompt = new Prompt(promptObject);
@@ -794,6 +799,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
     // Insert chat messages as long as there is budget available
     const chatPool = [...messages].reverse();
+    const firstNonInjected = chatPool.find(x => !x.injected);
     for (let index = 0; index < chatPool.length; index++) {
         const chatPrompt = chatPool[index];
 
@@ -812,6 +818,12 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         }
 
         if (chatCompletion.canAfford(chatMessage)) {
+            if (type === 'continue' && oai_settings.continue_prefill && chatPrompt === firstNonInjected) {
+                const collection = new MessageCollection('continuePrefill', chatMessage);
+                chatCompletion.add(collection, -1);
+                continue;
+            }
+
             chatCompletion.insertAtStart(chatMessage, 'chatHistory');
         } else {
             break;
@@ -1700,7 +1712,7 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     if (isAI21) {
         const joinedMsgs = messages.reduce((acc, obj) => {
-            const prefix = prefixMap[obj.role];
+            const prefix = getPrefixMap()[obj.role];
             return acc + (prefix ? (selected_group ? '\n' : prefix + ' ') : '') + obj.content + '\n';
         }, '');
         messages = substituteParams(joinedMsgs) + (isImpersonate ? `${name1}:` : `${name2}:`);
@@ -3691,8 +3703,8 @@ function onSettingsPresetChange() {
         preset.assistant_impersonation = preset.assistant_prefill;
     }
 
-    const updateInput = (selector, value) => $(selector).val(value).trigger('input');
-    const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
+    const updateInput = (selector, value) => $(selector).val(value).trigger('input', { source: 'preset' });
+    const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input', { source: 'preset' });
 
     // Allow subscribers to alter the preset before applying deltas
     eventSource.emit(event_types.OAI_PRESET_CHANGED_BEFORE, {
@@ -4401,23 +4413,8 @@ function updateScaleForm() {
     }
 }
 
-function onCustomizeParametersClick() {
-    const template = $(`
-    <div class="flex-container flexFlowColumn height100p">
-        <h3>Additional Parameters</h3>
-        <div class="flex1 flex-container flexFlowColumn">
-            <h4>Include Body Parameters</h4>
-            <textarea id="custom_include_body" class="flex1" placeholder="Parameters to be included in the Chat Completion request body (YAML object)&#10;&#10;Example:&#10;- top_k: 20&#10;- repetition_penalty: 1.1"></textarea>
-        </div>
-        <div class="flex1 flex-container flexFlowColumn">
-            <h4>Exclude Body Parameters</h4>
-            <textarea id="custom_exclude_body" class="flex1" placeholder="Parameters to be excluded from the Chat Completion request body (YAML array)&#10;&#10;Example:&#10;- frequency_penalty&#10;- presence_penalty"></textarea>
-        </div>
-        <div class="flex1 flex-container flexFlowColumn">
-            <h4>Include Request Headers</h4>
-            <textarea id="custom_include_headers" class="flex1" placeholder="Additional headers for Chat Completion requests (YAML object)&#10;&#10;Example:&#10;- CustomHeader: custom-value&#10;- AnotherHeader: custom-value"></textarea>
-        </div>
-    </div>`);
+async function onCustomizeParametersClick() {
+    const template = $(await renderTemplateAsync('customEndpointAdditionalParameters'));
 
     template.find('#custom_include_body').val(oai_settings.custom_include_body).on('input', function () {
         oai_settings.custom_include_body = String($(this).val());
@@ -4608,9 +4605,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     returns: 'current proxy',
     namedArgumentList: [],
     unnamedArgumentList: [
-        new SlashCommandArgument(
-            'name', [ARGUMENT_TYPE.STRING], true,
-        ),
+        SlashCommandArgument.fromProps({
+            description: 'name',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            enumProvider: () => proxies.map(preset => new SlashCommandEnumValue(preset.name, preset.url)),
+        }),
     ],
     helpString: 'Sets a proxy preset by name.',
 }));
@@ -4863,9 +4863,11 @@ $(document).ready(async function () {
         eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
     });
 
-    $('#oai_max_context_unlocked').on('input', function () {
+    $('#oai_max_context_unlocked').on('input', function (_e, data) {
         oai_settings.max_context_unlocked = !!$(this).prop('checked');
-        $('#chat_completion_source').trigger('change');
+        if (data?.source !== 'preset') {
+            $('#chat_completion_source').trigger('change');
+        }
         saveSettingsDebounced();
     });
 

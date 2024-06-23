@@ -6,6 +6,7 @@ const fs = require('fs');
 const { jsonParser, urlencodedParser } = require('../express-common');
 const { getConfigValue, mergeObjectWithYaml, excludeKeysByYaml, trimV1 } = require('../util');
 const { setAdditionalHeaders } = require('../additional-headers');
+const { OPENROUTER_HEADERS } = require('../constants');
 
 const router = express.Router();
 
@@ -80,7 +81,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (request.body.api === 'openrouter') {
             apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-            headers['HTTP-Referer'] = request.headers.referer;
+            Object.assign(headers, OPENROUTER_HEADERS);
         }
 
         if (request.body.api === 'openai') {

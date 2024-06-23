@@ -73,7 +73,7 @@ import {
     depth_prompt_role_default,
     shouldAutoContinue,
 } from '../script.js';
-import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
+import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { isExternalMediaAllowed } from './chats.js';
 
@@ -183,6 +183,7 @@ export async function getGroupChat(groupId, reload = false) {
     const group = groups.find((x) => x.id === groupId);
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
+    let freshChat = false;
 
     await loadItemizedPrompts(getCurrentChatId());
 
@@ -216,6 +217,7 @@ export async function getGroupChat(groupId, reload = false) {
             }
         }
         await saveGroupChat(groupId, false);
+        freshChat = true;
     }
 
     if (group) {
@@ -228,11 +230,23 @@ export async function getGroupChat(groupId, reload = false) {
     }
 
     await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+    if (freshChat) await eventSource.emit(event_types.GROUP_CHAT_CREATED);
+}
+
+/**
+ * Retrieves the members of a group
+ *
+ * @param {string} [groupId=selected_group] - The ID of the group to retrieve members from. Defaults to the currently selected group.
+ * @returns {import('../script.js').Character[]} An array of character objects representing the members of the group. If the group is not found, an empty array is returned.
+ */
+export function getGroupMembers(groupId = selected_group) {
+    const group = groups.find((x) => x.id === groupId);
+    return group?.members.map(member => characters.find(x => x.avatar === member)) ?? [];
 }
 
 /**
  * Finds the character ID for a group member.
- * @param {string} arg 1-based member index or character name
+ * @param {string} arg 0-based member index or character name
  * @returns {number} 0-based character ID
  */
 export function findGroupMemberId(arg) {
@@ -250,8 +264,7 @@ export function findGroupMemberId(arg) {
         return;
     }
 
-    // Index is 1-based
-    const index = parseInt(arg) - 1;
+    const index = parseInt(arg);
     const searchByName = isNaN(index);
 
     if (searchByName) {
@@ -1356,7 +1369,7 @@ function select_group_chats(groupId, skipAnimation) {
     }
 
     // render tags
-    printTagList($('#groupTagList'), { forEntityOrKey: groupId, tagOptions: { removable: true } });
+    applyTagsOnGroupSelect(groupId);
 
     // render characters list
     printGroupCandidates();

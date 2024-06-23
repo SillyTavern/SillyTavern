@@ -39,6 +39,7 @@ import { textgen_types, textgenerationwebui_settings as textgen_settings, getTex
 import { debounce_timeout } from './constants.js';
 
 import Bowser from '../lib/bowser.min.js';
+import { Popup } from './popup.js';
 
 var RPanelPin = document.getElementById('rm_button_panel_pin');
 var LPanelPin = document.getElementById('lm_button_panel_pin');
@@ -303,7 +304,7 @@ export async function favsToHotswap() {
         return;
     }
 
-    buildAvatarList(container, favs, { selectable: true, highlightFavs: false });
+    buildAvatarList(container, favs, { interactable: true, highlightFavs: false });
 }
 
 //changes input bar and send button display depending on connection status
@@ -1096,6 +1097,9 @@ export function initRossMods() {
         }
 
         if (event.key == 'Escape') { //closes various panels
+            // Do not close panels if we are currently inside a popup
+            if (Popup.util.isPopupOpen())
+                return;
 
             //dont override Escape hotkey functions from script.js
             //"close edit box" and "cancel stream generation".

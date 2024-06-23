@@ -404,6 +404,11 @@ redirect('/api/content/import', '/api/content/importURL');
 // Redirect deprecated moving UI endpoints
 redirect('/savemovingui', '/api/moving-ui/save');
 
+// Redirect Serp endpoints
+redirect('/api/serpapi/search', '/api/search/serpapi');
+redirect('/api/serpapi/visit', '/api/search/visit');
+redirect('/api/serpapi/transcript', '/api/search/transcript');
+
 // Moving UI
 app.use('/api/moving-ui', require('./src/endpoints/moving-ui').router);
 
@@ -499,8 +504,8 @@ app.use('/api/extra/classify', require('./src/endpoints/classify').router);
 // Image captioning
 app.use('/api/extra/caption', require('./src/endpoints/caption').router);
 
-// Web search extension
-app.use('/api/serpapi', require('./src/endpoints/serpapi').router);
+// Web search and scraping
+app.use('/api/search', require('./src/endpoints/search').router);
 
 // The different text generation APIs
 

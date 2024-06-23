@@ -38,6 +38,7 @@ const chara_note_position = {
 function setNoteTextCommand(_, text) {
     $('#extension_floating_prompt').val(text).trigger('input');
     toastr.success('Author\'s Note text updated');
+    return '';
 }
 
 function setNoteDepthCommand(_, text) {
@@ -50,6 +51,7 @@ function setNoteDepthCommand(_, text) {
 
     $('#extension_floating_depth').val(Math.abs(value)).trigger('input');
     toastr.success('Author\'s Note depth updated');
+    return '';
 }
 
 function setNoteIntervalCommand(_, text) {
@@ -62,6 +64,7 @@ function setNoteIntervalCommand(_, text) {
 
     $('#extension_floating_interval').val(Math.abs(value)).trigger('input');
     toastr.success('Author\'s Note frequency updated');
+    return '';
 }
 
 function setNotePositionCommand(_, text) {
@@ -79,6 +82,7 @@ function setNotePositionCommand(_, text) {
 
     $(`input[name="extension_floating_position"][value="${position}"]`).prop('checked', true).trigger('input');
     toastr.info('Author\'s Note position updated');
+    return '';
 }
 
 function updateSettings() {

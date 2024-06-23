@@ -1,5 +1,6 @@
 const vectra = require('vectra');
 const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const sanitize = require('sanitize-filename');
 const { jsonParser } = require('../express-common');
@@ -16,6 +17,7 @@ const SOURCES = [
     'cohere',
     'ollama',
     'llamacpp',
+    'vllm',
 ];
 
 /**
@@ -45,6 +47,8 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
             return require('../vectors/cohere-vectors').getCohereVector(text, isQuery, directories, sourceSettings.model);
         case 'llamacpp':
             return require('../vectors/llamacpp-vectors').getLlamaCppVector(text, sourceSettings.apiUrl, directories);
+        case 'vllm':
+            return require('../vectors/vllm-vectors').getVllmVector(text, sourceSettings.apiUrl, sourceSettings.model, directories);
         case 'ollama':
             return require('../vectors/ollama-vectors').getOllamaVector(text, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories);
     }
@@ -90,6 +94,9 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 break;
             case 'llamacpp':
                 results.push(...await require('../vectors/llamacpp-vectors').getLlamaCppBatchVector(batch, sourceSettings.apiUrl, directories));
+                break;
+            case 'vllm':
+                results.push(...await require('../vectors/vllm-vectors').getVllmBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, directories));
                 break;
             case 'ollama':
                 results.push(...await require('../vectors/ollama-vectors').getOllamaBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories));
@@ -278,6 +285,14 @@ function getSourceSettings(source, request) {
         return {
             apiUrl: apiUrl,
         };
+    } else if (source === 'vllm') {
+        const apiUrl = String(request.headers['x-vllm-url']);
+        const model = String(request.headers['x-vllm-model']);
+
+        return {
+            apiUrl: apiUrl,
+            model: model,
+        };
     } else if (source === 'ollama') {
         const apiUrl = String(request.headers['x-ollama-url']);
         const model = String(request.headers['x-ollama-model']);
@@ -423,6 +438,24 @@ router.post('/delete', jsonParser, async (req, res) => {
         return res.sendStatus(200);
     } catch (error) {
         return regenerateCorruptedIndexErrorHandler(req, res, error);
+    }
+});
+
+router.post('/purge-all', jsonParser, async (req, res) => {
+    try {
+        for (const source of SOURCES) {
+            const sourcePath = path.join(req.user.directories.vectors, sanitize(source));
+            if (!fs.existsSync(sourcePath)) {
+                continue;
+            }
+            await fs.promises.rm(sourcePath, { recursive: true });
+            console.log(`Deleted vector source store at ${sourcePath}`);
+        }
+
+        return res.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
     }
 });
 

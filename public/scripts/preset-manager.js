@@ -22,6 +22,8 @@ import { kai_settings } from './kai-settings.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
+import { enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import {
     textgenerationwebui_preset_names,
@@ -140,7 +142,10 @@ class PresetManager {
      * @param {string} value Preset option value
      */
     selectPreset(value) {
-        $(this.select).find(`option[value=${value}]`).prop('selected', true);
+        const option = $(this.select).filter(function() {
+            return $(this).val() === value;
+        });
+        option.prop('selected', true);
         $(this.select).val(value).trigger('change');
     }
 
@@ -479,11 +484,12 @@ export async function initPresetManager() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'preset',
         callback: presetCommandCallback,
         returns: 'current preset',
-        namedArgumentList: [],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'name', [ARGUMENT_TYPE.STRING], false,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: () => getPresetManager().getAllPresets().map(preset => new SlashCommandEnumValue(preset, null, enumTypes.enum, enumIcons.preset)),
+            }),
         ],
         helpString: `
             <div>

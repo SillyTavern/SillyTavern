@@ -220,7 +220,7 @@
 }
 
 .monospace {
-    font-family: monospace;
+    font-family: var(--monoFontFamily);
 }
 
 .expander {
@@ -292,6 +292,14 @@
     flex-wrap: nowrap;
 }
 
+.inline-flex {
+    display: inline-flex;
+}
+
+.inline-block {
+    display: inline-block;
+}
+
 .alignitemscenter,
 .alignItemsCenter {
     align-items: center;
@@ -346,6 +354,10 @@
 
 .margin-r5 {
     margin-right: 5px;
+}
+
+.margin-r2 {
+    margin-right: 2px;
 }
 
 .flex0 {

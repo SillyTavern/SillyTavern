@@ -3,6 +3,7 @@
         "checkJs": true,
         "target": "ESNext",
         "module": "ESNext",
+        "moduleResolution": "node",
         "allowUmdGlobalAccess": true,
         "allowSyntheticDefaultImports": true
     },
