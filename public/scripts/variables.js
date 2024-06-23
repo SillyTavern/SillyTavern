@@ -1448,7 +1448,7 @@ export function registerVariableCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'add',
-        callback: addValuesCallback,
+        callback: (args, /**@type {string[]}*/value) => addValuesCallback(args, value.join(' ')),
         returns: 'sum of the provided values',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -1460,6 +1460,7 @@ export function registerVariableCommands() {
                 forceEnum: false,
             }),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Performs an addition of the set of values and passes the result down the pipe.
