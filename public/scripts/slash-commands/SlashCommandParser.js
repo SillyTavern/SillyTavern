@@ -214,7 +214,7 @@ export class SlashCommandParser {
         };
         const ABORT = {
             scope: 'abort',
-            begin: /\/abort/,
+            begin: /\/(abort|breakpoint)/,
             end: /\||$|:}/,
             contains: [],
         };
