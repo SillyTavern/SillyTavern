@@ -1228,7 +1228,7 @@ export function registerVariableCommands() {
                     new SlashCommandEnumValue('not', '!a'),
                     new SlashCommandEnumValue('in', 'a includes b'),
                     new SlashCommandEnumValue('nin', 'a not includes b'),
-            ],
+                ],
             ),
             new SlashCommandNamedArgument(
                 'else', 'command to execute if not true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], false,
@@ -1306,7 +1306,7 @@ export function registerVariableCommands() {
                     new SlashCommandEnumValue('not', '!a'),
                     new SlashCommandEnumValue('in', 'a includes b'),
                     new SlashCommandEnumValue('nin', 'a not includes b'),
-            ],
+                ],
             ),
             new SlashCommandNamedArgument(
                 'guard', 'disable loop iteration limit', [ARGUMENT_TYPE.STRING], false, false, null, commonEnumProviders.boolean('onOff')(),
@@ -1400,8 +1400,8 @@ export function registerVariableCommands() {
         unnamedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'key',
-                description: 'variable name',
-                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                description: 'variable name or closure that returns a variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.CLOSURE],
                 enumProvider: commonEnumProviders.variables('local'),
             }),
         ],
@@ -1426,8 +1426,8 @@ export function registerVariableCommands() {
         unnamedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'key',
-                description: 'variable name',
-                typeList: [ARGUMENT_TYPE.VARIABLE_NAME],
+                description: 'variable name or closure that returns a variable name',
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.CLOSURE],
                 enumProvider: commonEnumProviders.variables('global'),
             }),
         ],
