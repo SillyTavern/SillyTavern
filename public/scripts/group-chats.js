@@ -246,7 +246,7 @@ export function getGroupMembers(groupId = selected_group) {
 
 /**
  * Finds the character ID for a group member.
- * @param {string} arg 1-based member index or character name
+ * @param {string} arg 0-based member index or character name
  * @returns {number} 0-based character ID
  */
 export function findGroupMemberId(arg) {
@@ -264,8 +264,7 @@ export function findGroupMemberId(arg) {
         return;
     }
 
-    // Index is 1-based
-    const index = parseInt(arg) - 1;
+    const index = parseInt(arg);
     const searchByName = isNaN(index);
 
     if (searchByName) {
