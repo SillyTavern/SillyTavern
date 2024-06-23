@@ -624,6 +624,25 @@ export function isFalseBoolean(arg) {
 }
 
 /**
+ * Parses an array either as a comma-separated string or as a JSON array.
+ * @param {string} value String to parse
+ * @returns {string[]} The parsed array.
+ */
+export function parseStringArray(value) {
+    if (!value || typeof value !== 'string') return [];
+
+    try {
+        const parsedValue = JSON.parse(value);
+        if (!Array.isArray(parsedValue)) {
+            throw new Error('Not an array');
+        }
+        return parsedValue.map(x => String(x));
+    } catch (e) {
+        return value.split(',').map(x => x.trim()).filter(x => x);
+    }
+}
+
+/**
  * Checks if a number is odd.
  * @param {number} number The number to check.
  * @returns {boolean} True if the number is odd, false otherwise.
@@ -1539,8 +1558,8 @@ export function flashHighlight(element, timespan = 2000) {
  * @returns {boolean} Whether the control has an animation applied
  */
 export function hasAnimation(control) {
-    const animatioName = getComputedStyle(control, null)["animation-name"];
-    return animatioName != "none";
+    const animatioName = getComputedStyle(control, null)['animation-name'];
+    return animatioName != 'none';
 }
 
 /**
