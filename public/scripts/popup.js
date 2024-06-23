@@ -23,18 +23,19 @@ export const POPUP_RESULT = {
 
 /**
  * @typedef {object} PopupOptions
- * @property {string|boolean?} [okButton] - Custom text for the OK button, or `true` to use the default (If set, the button will always be displayed, no matter the type of popup)
- * @property {string|boolean?} [cancelButton] - Custom text for the Cancel button, or `true` to use the default (If set, the button will always be displayed, no matter the type of popup)
- * @property {number?} [rows] - The number of rows for the input field
- * @property {boolean?} [wide] - Whether to display the popup in wide mode (wide screen, 1/1 aspect ratio)
- * @property {boolean?} [wider] - Whether to display the popup in wider mode (just wider, no height scaling)
- * @property {boolean?} [large] - Whether to display the popup in large mode (90% of screen)
- * @property {boolean?} [allowHorizontalScrolling] - Whether to allow horizontal scrolling in the popup
- * @property {boolean?} [allowVerticalScrolling] - Whether to allow vertical scrolling in the popup
- * @property {POPUP_RESULT|number?} [defaultResult] - The default result of this popup when Enter is pressed. Can be changed from `POPUP_RESULT.AFFIRMATIVE`.
- * @property {CustomPopupButton[]|string[]?} [customButtons] - Custom buttons to add to the popup. If only strings are provided, the buttons will be added with default options, and their result will be in order from `2` onward.
- * @property {(popup: Popup) => boolean?} [onClosing] - Handler called before the popup closes, return `false` to cancel the close
- * @property {(popup: Popup) => void?} [onClose] - Handler called after the popup closes, but before the DOM is cleaned up
+ * @property {string|boolean?} [okButton=null] - Custom text for the OK button, or `true` to use the default (If set, the button will always be displayed, no matter the type of popup)
+ * @property {string|boolean?} [cancelButton=null] - Custom text for the Cancel button, or `true` to use the default (If set, the button will always be displayed, no matter the type of popup)
+ * @property {number?} [rows=1] - The number of rows for the input field
+ * @property {boolean?} [wide=false] - Whether to display the popup in wide mode (wide screen, 1/1 aspect ratio)
+ * @property {boolean?} [wider=false] - Whether to display the popup in wider mode (just wider, no height scaling)
+ * @property {boolean?} [large=false] - Whether to display the popup in large mode (90% of screen)
+ * @property {boolean?} [transparent=false] - Whether to display the popup in transparent mode (no background, border, shadow or anything, only its content)
+ * @property {boolean?} [allowHorizontalScrolling=false] - Whether to allow horizontal scrolling in the popup
+ * @property {boolean?} [allowVerticalScrolling=false] - Whether to allow vertical scrolling in the popup
+ * @property {POPUP_RESULT|number?} [defaultResult=POPUP_RESULT.AFFIRMATIVE] - The default result of this popup when Enter is pressed. Can be changed from `POPUP_RESULT.AFFIRMATIVE`.
+ * @property {CustomPopupButton[]|string[]?} [customButtons=null] - Custom buttons to add to the popup. If only strings are provided, the buttons will be added with default options, and their result will be in order from `2` onward.
+ * @property {(popup: Popup) => boolean?} [onClosing=null] - Handler called before the popup closes, return `false` to cancel the close
+ * @property {(popup: Popup) => void?} [onClose=null] - Handler called after the popup closes, but before the DOM is cleaned up
  */
 
 /**
@@ -105,7 +106,7 @@ export class Popup {
      * @param {string} [inputValue=''] - The initial value of the input field
      * @param {PopupOptions} [options={}] - Additional options for the popup
      */
-    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, onClosing = null, onClose = null } = {}) {
+    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, onClosing = null, onClose = null } = {}) {
         Popup.util.popups.push(this);
 
         // Make this popup uniquely identifiable
@@ -132,6 +133,7 @@ export class Popup {
         if (wide) this.dlg.classList.add('wide_dialogue_popup');
         if (wider) this.dlg.classList.add('wider_dialogue_popup');
         if (large) this.dlg.classList.add('large_dialogue_popup');
+        if (transparent) this.dlg.classList.add('transparent_dialogue_popup');
         if (allowHorizontalScrolling) this.dlg.classList.add('horizontal_scrolling_dialogue_popup');
         if (allowVerticalScrolling) this.dlg.classList.add('vertical_scrolling_dialogue_popup');
 

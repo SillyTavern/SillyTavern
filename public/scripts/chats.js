@@ -35,7 +35,7 @@ import {
     extractTextFromOffice,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
-import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { ScraperManager } from './scrapers.js';
 import { DragAndDropHandler } from './dragdrop.js';
 
@@ -566,7 +566,7 @@ export function isExternalMediaAllowed() {
     return !power_user.forbid_external_media;
 }
 
-function enlargeMessageImage() {
+async function enlargeMessageImage() {
     const mesBlock = $(this).closest('.mes');
     const mesId = mesBlock.attr('mesid');
     const message = chat[mesId];
@@ -580,14 +580,28 @@ function enlargeMessageImage() {
     const img = document.createElement('img');
     img.classList.add('img_enlarged');
     img.src = imgSrc;
+    const imgHolder = document.createElement('div');
+    imgHolder.classList.add('img_enlarged_holder');
+    imgHolder.append(img);
     const imgContainer = $('<div><pre><code></code></pre></div>');
-    imgContainer.prepend(img);
+    imgContainer.prepend(imgHolder);
     imgContainer.addClass('img_enlarged_container');
     imgContainer.find('code').addClass('txt').text(title);
     const titleEmpty = !title || title.trim().length === 0;
     imgContainer.find('pre').toggle(!titleEmpty);
     addCopyToCodeBlocks(imgContainer);
-    callGenericPopup(imgContainer, POPUP_TYPE.DISPLAY, '', { large: true });
+
+    const popup = new Popup(imgContainer, POPUP_TYPE.DISPLAY, '', { large: true, transparent: true });
+
+    popup.dlg.style.width = 'unset';
+    popup.dlg.style.height = 'unset';
+
+    img.addEventListener('click', () => {
+        const shouldZoom = !img.classList.contains('zoomed');
+        img.classList.toggle('zoomed', shouldZoom);
+    });
+
+    await popup.show();
 }
 
 async function deleteMessageImage() {

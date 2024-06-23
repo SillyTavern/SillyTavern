@@ -135,9 +135,14 @@ dialog {
     position: absolute;
     top: -8px;
     right: -8px;
-    width: 20px;
-    height: 20px;
-    font-size: 19px;
+    width: 21px;
+    height: 21px;
+    font-size: 18px;
+    padding: 2px 3px 3px 2px;
+
     filter: brightness(0.4);
+
+    /* Fix weird animation issue with font-scaling during popup open */
+    backface-visibility: hidden;
 }
 
