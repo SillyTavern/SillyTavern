@@ -4873,11 +4873,14 @@
         </div>
     </div>
     <!-- various fullscreen popups -->
-    <template id="popup_template" data-i18n="[popup-button-save]popup-button-save;[popup-button-yes]popup-button-yes;[popup-button-no]popup-button-no;[popup-button-cancel]popup-button-cancel;[popup-button-import]popup-button-import" popup-button-save="Save" popup-button-yes="Yes" popup-button-no="No" popup-button-cancel="Cancel" popup-button-import="Import"> <!-- localization data holder for popups -->
+    <template id="popup_template" data-i18n="[popup-button-save]popup-button-save;[popup-button-yes]popup-button-yes;[popup-button-no]popup-button-no;[popup-button-cancel]popup-button-cancel;[popup-button-import]popup-button-import;[popup-button-crop]popup-button-crop" popup-button-save="Save" popup-button-yes="Yes" popup-button-no="No" popup-button-cancel="Cancel" popup-button-import="Import" popup-button-crop="Crop"> <!-- localization data holder for popups -->
         <dialog class="popup">
             <div class="popup-body">
                 <div class="popup-content">
                     <h3 class="popup-header">text</h3>
+                </div>
+                <div class="popup-crop-wrap">
+                    <img class="popup-crop-image" src="">
                 </div>
                 <textarea class="popup-input text_pole result-control" rows="1" data-result="1" data-result-event="submit"></textarea>
                 <div class="popup-controls">

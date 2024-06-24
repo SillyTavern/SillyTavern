@@ -1,3 +1,4 @@
+import { power_user } from './power-user.js';
 import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
 
 /** @readonly */
@@ -11,6 +12,8 @@ export const POPUP_TYPE = {
     INPUT: 3,
     /** Popup without any button controls. Used to simply display content, with a small X in the corner. */
     DISPLAY: 4,
+    /** Popup that displays an image to crop. Returns a cropped image in result. */
+    CROP: 5,
 };
 
 /** @readonly */
@@ -36,6 +39,8 @@ export const POPUP_RESULT = {
  * @property {CustomPopupButton[]|string[]?} [customButtons=null] - Custom buttons to add to the popup. If only strings are provided, the buttons will be added with default options, and their result will be in order from `2` onward.
  * @property {(popup: Popup) => boolean?} [onClosing=null] - Handler called before the popup closes, return `false` to cancel the close
  * @property {(popup: Popup) => void?} [onClose=null] - Handler called after the popup closes, but before the DOM is cleaned up
+ * @property {number?} [cropAspect=null] - Aspect ratio for the crop popup
+ * @property {string?} [cropImage=null] - Image URL to display in the crop popup
  */
 
 /**
@@ -84,6 +89,8 @@ export class Popup {
     /** @type {HTMLElement} */ okButton;
     /** @type {HTMLElement} */ cancelButton;
     /** @type {HTMLElement} */ closeButton;
+    /** @type {HTMLElement} */ cropWrap;
+    /** @type {HTMLImageElement} */ cropImage;
     /** @type {POPUP_RESULT|number?} */ defaultResult;
     /** @type {CustomPopupButton[]|string[]?} */ customButtons;
 
@@ -92,6 +99,7 @@ export class Popup {
 
     /** @type {POPUP_RESULT|number} */ result;
     /** @type {any} */ value;
+    /** @type {any} */ cropData;
 
     /** @type {HTMLElement} */ lastFocus;
 
@@ -106,7 +114,7 @@ export class Popup {
      * @param {string} [inputValue=''] - The initial value of the input field
      * @param {PopupOptions} [options={}] - Additional options for the popup
      */
-    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, onClosing = null, onClose = null } = {}) {
+    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, onClosing = null, onClose = null, cropAspect = null, cropImage = null } = {}) {
         Popup.util.popups.push(this);
 
         // Make this popup uniquely identifiable
@@ -128,6 +136,8 @@ export class Popup {
         this.okButton = this.dlg.querySelector('.popup-button-ok');
         this.cancelButton = this.dlg.querySelector('.popup-button-cancel');
         this.closeButton = this.dlg.querySelector('.popup-button-close');
+        this.cropWrap = this.dlg.querySelector('.popup-crop-wrap');
+        this.cropImage = this.dlg.querySelector('.popup-crop-image');
 
         this.dlg.setAttribute('data-id', this.id);
         if (wide) this.dlg.classList.add('wide_dialogue_popup');
@@ -169,6 +179,7 @@ export class Popup {
         // General styling for all types first, that might be overriden for specific types below
         this.input.style.display = 'none';
         this.closeButton.style.display = 'none';
+        this.cropWrap.style.display = 'none';
 
         switch (type) {
             case POPUP_TYPE.TEXT: {
@@ -188,6 +199,22 @@ export class Popup {
             case POPUP_TYPE.DISPLAY: {
                 this.controls.style.display = 'none';
                 this.closeButton.style.display = 'block';
+                break;
+            }
+            case POPUP_TYPE.CROP: {
+                this.cropWrap.style.display = 'block';
+                this.cropImage.src = cropImage;
+                if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-crop');
+                $(this.cropImage).cropper({
+                    aspectRatio: cropAspect ?? 2 / 3,
+                    autoCropArea: 1,
+                    viewMode: 2,
+                    rotatable: false,
+                    crop: function (event) {
+                        this.cropData = event.detail;
+                        this.cropData.want_resize = !power_user.never_resize_avatars;
+                    },
+                });
                 break;
             }
             default: {
@@ -345,6 +372,13 @@ export class Popup {
             else if (result === POPUP_RESULT.NEGATIVE) value = false;
             else if (result === POPUP_RESULT.CANCELLED) value = null;
             else value = false; // Might a custom negative value?
+        }
+
+        // Cropped image should be returned as a data URL
+        if (this.type === POPUP_TYPE.CROP) {
+            value = result >= POPUP_RESULT.AFFIRMATIVE
+                ? $(this.cropImage).data('cropper').getCroppedCanvas().toDataURL('image/jpeg')
+                : null;
         }
 
         this.value = value;

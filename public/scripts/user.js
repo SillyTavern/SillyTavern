@@ -1,4 +1,4 @@
-import { callPopup, getCropPopup, getRequestHeaders } from '../script.js';
+import { getRequestHeaders } from '../script.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 import { renderTemplateAsync } from './templates.js';
 import { ensureImageFormatSupported, getBase64Async, humanFileSize } from './utils.js';
@@ -727,14 +727,14 @@ async function openUserProfile() {
  */
 async function cropAndUploadAvatar(handle, file) {
     const dataUrl = await getBase64Async(await ensureImageFormatSupported(file));
-    const croppedImage = await callPopup(getCropPopup(dataUrl), 'avatarToCrop', '', { cropAspect: 1 });
+    const croppedImage = await callGenericPopup('Set the crop position of the avatar image', POPUP_TYPE.CROP, '', { cropAspect: 1, cropImage: dataUrl });
     if (!croppedImage) {
         return;
     }
 
     await changeAvatar(handle, String(croppedImage));
 
-    return croppedImage;
+    return String(croppedImage);
 }
 
 /**
