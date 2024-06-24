@@ -210,7 +210,7 @@ export class Popup {
                     autoCropArea: 1,
                     viewMode: 2,
                     rotatable: false,
-                    crop: function (event) {
+                    crop: (event) => {
                         this.cropData = event.detail;
                         this.cropData.want_resize = !power_user.never_resize_avatars;
                     },

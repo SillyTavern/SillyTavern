@@ -3,11 +3,9 @@ import {
     characters,
     chat,
     chat_metadata,
-    crop_data,
     default_avatar,
     eventSource,
     event_types,
-    getCropPopup,
     getRequestHeaders,
     getThumbnailUrl,
     name1,
@@ -24,6 +22,7 @@ import { PAGINATION_TEMPLATE, debounce, delay, download, ensureImageFormatSuppor
 import { debounce_timeout } from './constants.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { selected_group } from './group-chats.js';
+import { POPUP_TYPE, Popup } from './popup.js';
 
 let savePersonasPage = 0;
 const GRID_STORAGE_KEY = 'Personas_GridView';
@@ -278,13 +277,15 @@ async function changeUserAvatar(e) {
     let url = '/api/avatars/upload';
 
     if (!power_user.never_resize_avatars) {
-        const confirmation = await callPopup(getCropPopup(dataUrl), 'avatarToCrop', '', { okButton: 'Crop', large: true, wide: true });
-        if (!confirmation) {
+        const dlg = new Popup('Set the crop position of the avatar image', POPUP_TYPE.CROP, '', { cropImage: dataUrl });
+        const result = await dlg.show();
+
+        if (!result) {
             return;
         }
 
-        if (crop_data !== undefined) {
-            url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
+        if (dlg.cropData !== undefined) {
+            url += `?crop=${encodeURIComponent(JSON.stringify(dlg.cropData))}`;
         }
     }
 
