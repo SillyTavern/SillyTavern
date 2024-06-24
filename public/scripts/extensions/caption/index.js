@@ -409,7 +409,7 @@ jQuery(async function () {
     }
     async function addSettings() {
         const html = await renderExtensionTemplateAsync('caption', 'settings');
-        $('#extensions_settings2').append(html);
+        $('#caption_container').append(html);
     }
 
     await addSettings();

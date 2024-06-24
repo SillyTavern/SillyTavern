@@ -3392,7 +3392,7 @@ jQuery(async () => {
 
 
     const template = await renderExtensionTemplateAsync('stable-diffusion', 'settings', defaultSettings);
-    $('#extensions_settings').append(template);
+    $('#sd_container').append(template);
     $('#sd_source').on('change', onSourceChange);
     $('#sd_scale').on('input', onScaleInput);
     $('#sd_steps').on('input', onStepsInput);

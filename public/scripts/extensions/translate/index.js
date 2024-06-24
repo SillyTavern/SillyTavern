@@ -572,7 +572,7 @@ jQuery(async () => {
 
     const buttonHtml = await renderExtensionTemplateAsync('translate', 'buttons');
     $('#extensionsMenu').append(buttonHtml);
-    $('#extensions_settings2').append(html);
+    $('#translation_container').append(html);
     $('#translate_chat').on('click', onTranslateChatClick);
     $('#translate_input_message').on('click', onTranslateInputMessageClick);
     $('#translation_clear').on('click', onTranslationsClearClick);

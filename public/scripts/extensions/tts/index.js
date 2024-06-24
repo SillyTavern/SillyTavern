@@ -1162,7 +1162,7 @@ $(document).ready(function () {
             </div>
         </div>
         `;
-        $('#extensions_settings').append(settingsHtml);
+        $('#tts_container').append(settingsHtml);
         $('#tts_refresh').on('click', onRefreshClick);
         $('#tts_enabled').on('click', onEnableClick);
         $('#tts_narrate_dialogues').on('click', onNarrateDialoguesClick);
