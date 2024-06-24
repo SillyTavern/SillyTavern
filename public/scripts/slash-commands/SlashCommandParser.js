@@ -700,24 +700,28 @@ export class SlashCommandParser {
         return this.testSymbol(/\/breakpoint\s*\|/);
     }
     parseBreakPoint() {
-        const bp = new SlashCommandBreakPoint();
-        bp.start = this.index + 1;
+        const cmd = new SlashCommandBreakPoint();
+        cmd.name = 'breakpoint';
+        cmd.command = this.commands['breakpoint'];
+        cmd.start = this.index + 1;
         this.take('/breakpoint'.length);
-        bp.end = this.index;
-        this.commandIndex.push(bp);
-        return bp;
+        cmd.end = this.index;
+        this.commandIndex.push(cmd);
+        return cmd;
     }
 
     testBreak() {
         return this.testSymbol(/\/break(\s|\||$)/);
     }
     parseBreak() {
-        const b = new SlashCommandBreak();
-        b.start = this.index + 1;
+        const cmd = new SlashCommandBreak();
+        cmd.name = 'break';
+        cmd.command = this.commands['break'];
+        cmd.start = this.index + 1;
         this.take('/break'.length);
-        b.end = this.index;
-        this.commandIndex.push(b);
-        return b;
+        cmd.end = this.index;
+        this.commandIndex.push(cmd);
+        return cmd;
     }
 
     testComment() {
