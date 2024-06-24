@@ -461,7 +461,7 @@ function existsGlobalVariable(name) {
  * @param {object} args Command arguments
  * @returns {{a: string | number, b: string | number, rule: string}} Boolean operands
  */
-function parseBooleanOperands(args) {
+export function parseBooleanOperands(args) {
     // Resolution order: numeric literal, local variable, global variable, string literal
     /**
      * @param {string} operand Boolean operand candidate
