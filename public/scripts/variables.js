@@ -510,36 +510,15 @@ function parseBooleanOperands(args) {
  * @param {string|number} b The right operand
  * @returns {boolean} True if the rule yields true, false otherwise
  */
-function evalBoolean(rule, a, b) {
+export function evalBoolean(rule, a, b) {
     if (!rule) {
         toastr.warning('The rule must be specified for the boolean comparison.', 'Invalid command');
         throw new Error('Invalid command.');
     }
 
     let result = false;
-
-    if (typeof a === 'string' && typeof b !== 'number') {
-        const aString = String(a).toLowerCase();
-        const bString = String(b).toLowerCase();
-
-        switch (rule) {
-            case 'in':
-                result = aString.includes(bString);
-                break;
-            case 'nin':
-                result = !aString.includes(bString);
-                break;
-            case 'eq':
-                result = aString === bString;
-                break;
-            case 'neq':
-                result = aString !== bString;
-                break;
-            default:
-                toastr.error('Unknown boolean comparison rule for type string.', 'Invalid /if command');
-                throw new Error('Invalid command.');
-        }
-    } else if (typeof a === 'number') {
+    if (typeof a === 'number' && typeof b === 'number') {
+        // only do numeric comparison if both operands are numbers
         const aNumber = Number(a);
         const bNumber = Number(b);
 
@@ -567,6 +546,38 @@ function evalBoolean(rule, a, b) {
                 break;
             default:
                 toastr.error('Unknown boolean comparison rule for type number.', 'Invalid command');
+                throw new Error('Invalid command.');
+        }
+    } else {
+        // otherwise do case-insensitive string comparsion, stringify non-strings
+        let aString;
+        let bString;
+        if (typeof a == 'string') {
+            aString = a.toLowerCase();
+        } else {
+            aString = JSON.stringify(a).toLowerCase();
+        }
+        if (typeof b == 'string') {
+            bString = b.toLowerCase();
+        } else {
+            bString = JSON.stringify(b).toLowerCase();
+        }
+
+        switch (rule) {
+            case 'in':
+                result = aString.includes(bString);
+                break;
+            case 'nin':
+                result = !aString.includes(bString);
+                break;
+            case 'eq':
+                result = aString === bString;
+                break;
+            case 'neq':
+                result = aString !== bString;
+                break;
+            default:
+                toastr.error('Unknown boolean comparison rule for type string.', 'Invalid /if command');
                 throw new Error('Invalid command.');
         }
     }
