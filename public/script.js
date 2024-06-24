@@ -228,7 +228,7 @@ import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, de
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
-import { POPUP_TYPE, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
+import { POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { ScraperManager } from './scripts/scrapers.js';
 import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
@@ -525,7 +525,7 @@ let dialogueResolve = null;
 let dialogueCloseStop = false;
 export let chat_metadata = {};
 export let streamingProcessor = null;
-export let crop_data = undefined;
+let crop_data = undefined;
 let is_delete_mode = false;
 let fav_ch_checked = false;
 let scrollLock = false;
@@ -5754,17 +5754,20 @@ async function read_avatar_load(input) {
             create_save.avatar = input.files;
         }
 
+        crop_data = undefined;
         const file = input.files[0];
         const fileData = await getBase64Async(file);
 
         if (!power_user.never_resize_avatars) {
-            $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
-            const croppedImage = await callPopup(getCropPopup(fileData), 'avatarToCrop');
+            const dlg = new Popup('Set the crop position of the avatar image', POPUP_TYPE.CROP, '', { cropImage: fileData });
+            const croppedImage = await dlg.show();
+
             if (!croppedImage) {
                 return;
             }
 
-            $('#avatar_load_preview').attr('src', croppedImage);
+            crop_data = dlg.cropData;
+            $('#avatar_load_preview').attr('src', String(croppedImage));
         } else {
             $('#avatar_load_preview').attr('src', fileData);
         }
@@ -5805,13 +5808,6 @@ async function read_avatar_load(input) {
 
         console.log('Avatar refreshed');
     }
-}
-
-export function getCropPopup(src) {
-    return `<h3>Set the crop position of the avatar image and click Accept to confirm.</h3>
-            <div id='avatarCropWrap'>
-                <img id='avatarToCrop' src='${src}'>
-            </div>`;
 }
 
 export function getThumbnailUrl(type, file) {
@@ -7122,9 +7118,7 @@ function onScenarioOverrideRemoveClick() {
  */
 export function callPopup(text, type, inputValue = '', { okButton, rows, wide, wider, large, allowHorizontalScrolling, allowVerticalScrolling, cropAspect } = {}) {
     function getOkButtonText() {
-        if (['avatarToCrop'].includes(popup_type)) {
-            return okButton ?? 'Accept';
-        } else if (['text', 'alternate_greeting', 'char_not_selected'].includes(popup_type)) {
+        if (['text', 'alternate_greeting', 'char_not_selected'].includes(popup_type)) {
             $dialoguePopupCancel.css('display', 'none');
             return okButton ?? 'Ok';
         } else if (['delete_extension'].includes(popup_type)) {
@@ -7163,22 +7157,6 @@ export function callPopup(text, type, inputValue = '', { okButton, rows, wide, w
 
     if (popup_type == 'input') {
         $dialoguePopupInput.trigger('focus');
-    }
-
-    if (popup_type == 'avatarToCrop') {
-        // unset existing data
-        crop_data = undefined;
-
-        $('#avatarToCrop').cropper({
-            aspectRatio: cropAspect ?? 2 / 3,
-            autoCropArea: 1,
-            viewMode: 2,
-            rotatable: false,
-            crop: function (event) {
-                crop_data = event.detail;
-                crop_data.want_resize = !power_user.never_resize_avatars;
-            },
-        });
     }
 
     $shadowPopup.transition({
@@ -9178,12 +9156,6 @@ jQuery(async function () {
             $('#dialogue_popup').removeClass('large_dialogue_popup');
             $('#dialogue_popup').removeClass('wide_dialogue_popup');
         }, animation_duration);
-
-        //      $("#shadow_popup").css("opacity:", 0.0);
-
-        if (popup_type == 'avatarToCrop') {
-            dialogueResolve($('#avatarToCrop').data('cropper').getCroppedCanvas().toDataURL('image/jpeg'));
-        }
 
         if (popup_type == 'del_chat') {
             //close past chat popup

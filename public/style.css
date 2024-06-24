@@ -4154,19 +4154,13 @@ h5 {
     grid-template-columns: 340px auto;
 }
 
-#avatarCropWrap,
 .popup-crop-wrap {
     margin: 10px auto;
-    max-height: 90%;
+    max-height: 75vh;
+    max-height: 75svh;
     max-width: 100%;
 }
 
-.popup-crop-wrap {
-    max-height: 75vh;
-    max-height: 75svh;
-}
-
-#avatarToCrop,
 .popup-crop-wrap img {
     max-width: 100%;
     /* This rule is very important, please do not ignore this! */
