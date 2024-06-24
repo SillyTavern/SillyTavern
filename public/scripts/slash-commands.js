@@ -1940,8 +1940,8 @@ async function generateCallback(args, value) {
 }
 
 async function echoCallback(args, value) {
-    const safeValue = DOMPurify.sanitize(String(value) || '');
-    if (safeValue === '') {
+    // Note: We don't need to sanitize input, as toastr is set up by default to escape HTML via toastr options
+    if (value === '') {
         console.warn('WARN: No argument provided for /echo command');
         return;
     }
@@ -1949,17 +1949,17 @@ async function echoCallback(args, value) {
     const severity = args?.severity !== undefined && typeof args?.severity === 'string' ? args.severity : 'info';
     switch (severity) {
         case 'error':
-            toastr.error(safeValue, title);
+            toastr.error(value, title);
             break;
         case 'warning':
-            toastr.warning(safeValue, title);
+            toastr.warning(value, title);
             break;
         case 'success':
-            toastr.success(safeValue, title);
+            toastr.success(value, title);
             break;
         case 'info':
         default:
-            toastr.info(safeValue, title);
+            toastr.info(value, title);
             break;
     }
     return value;
