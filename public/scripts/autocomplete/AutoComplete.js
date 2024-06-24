@@ -538,32 +538,34 @@ export class AutoComplete {
     updateFloatingPosition() {
         const location = this.getCursorPosition();
         const rect = this.textarea.getBoundingClientRect();
+        const layerRect = this.textarea.closest('dialog, body').getBoundingClientRect();
         // cursor is out of view -> hide
         if (location.bottom < rect.top || location.top > rect.bottom || location.left < rect.left || location.left > rect.right) {
             return this.hide();
         }
-        const left = Math.max(rect.left, location.left);
+        const left = Math.max(rect.left, location.left) - layerRect.left;
         this.domWrap.style.setProperty('--targetOffset', `${left}`);
         if (location.top <= window.innerHeight / 2) {
             // if cursor is in lower half of window, show list above line
-            this.domWrap.style.top = `${location.bottom}px`;
+            this.domWrap.style.top = `${location.bottom - layerRect.top}px`;
             this.domWrap.style.bottom = 'auto';
-            this.domWrap.style.maxHeight = `calc(${location.bottom}px - 1vh)`;
+            this.domWrap.style.maxHeight = `calc(${location.bottom - layerRect.top}px - ${this.textarea.closest('dialog') ? '0' : '1vh'})`;
         } else {
             // if cursor is in upper half of window, show list below line
             this.domWrap.style.top = 'auto';
-            this.domWrap.style.bottom = `calc(100vh - ${location.top}px)`;
-            this.domWrap.style.maxHeight = `calc(${location.top}px - 1vh)`;
+            this.domWrap.style.bottom = `calc(${layerRect.height}px - ${location.top - layerRect.top}px)`;
+            this.domWrap.style.maxHeight = `calc(${location.top - layerRect.top}px - ${this.textarea.closest('dialog') ? '0' : '1vh'})`;
         }
     }
 
     updateFloatingDetailsPosition(location = null) {
         if (!location) location = this.getCursorPosition();
         const rect = this.textarea.getBoundingClientRect();
+        const layerRect = this.textarea.closest('dialog, body').getBoundingClientRect();
         if (location.bottom < rect.top || location.top > rect.bottom || location.left < rect.left || location.left > rect.right) {
             return this.hide();
         }
-        const left = Math.max(rect.left, location.left);
+        const left = Math.max(rect.left, location.left) - layerRect.left;
         this.detailsWrap.style.setProperty('--targetOffset', `${left}`);
         if (this.isReplaceable) {
             this.detailsWrap.classList.remove('full');
@@ -583,14 +585,14 @@ export class AutoComplete {
         }
         if (location.top <= window.innerHeight / 2) {
             // if cursor is in lower half of window, show list above line
-            this.detailsWrap.style.top = `${location.bottom}px`;
+            this.detailsWrap.style.top = `${location.bottom - layerRect.top}px`;
             this.detailsWrap.style.bottom = 'auto';
-            this.detailsWrap.style.maxHeight = `calc(${location.bottom}px - 1vh)`;
+            this.detailsWrap.style.maxHeight = `calc(${location.bottom - layerRect.top}px - ${this.textarea.closest('dialog') ? '0' : '1vh'})`;
         } else {
             // if cursor is in upper half of window, show list below line
             this.detailsWrap.style.top = 'auto';
-            this.detailsWrap.style.bottom = `calc(100vh - ${location.top}px)`;
-            this.detailsWrap.style.maxHeight = `calc(${location.top}px - 1vh)`;
+            this.detailsWrap.style.bottom = `calc(${layerRect.height}px - ${location.top - layerRect.top}px)`;
+            this.detailsWrap.style.maxHeight = `calc(${location.top - layerRect.top}px - ${this.textarea.closest('dialog') ? '0' : '1vh'})`;
         }
     }
 
@@ -608,7 +610,7 @@ export class AutoComplete {
             }
             this.clone.style.position = 'fixed';
             this.clone.style.visibility = 'hidden';
-            getTopmostModalLayer().append(this.clone);
+            document.body.append(this.clone);
             const mo = new MutationObserver(muts=>{
                 if (muts.find(it=>Array.from(it.removedNodes).includes(this.textarea))) {
                     this.clone.remove();
