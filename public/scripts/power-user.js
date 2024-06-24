@@ -1485,12 +1485,18 @@ function loadPowerUserSettings(settings, data) {
             if (power_user.stscript.autocomplete.font === undefined) {
                 power_user.stscript.autocomplete.font = defaultStscript.autocomplete.font;
             }
+            if (power_user.stscript.autocomplete.style === undefined) {
+                power_user.stscript.autocomplete.style = power_user.stscript.autocomplete_style || defaultStscript.autocomplete.style;
+            }
         }
         if (power_user.stscript.parser === undefined) {
             power_user.stscript.parser = defaultStscript.parser;
         } else if (power_user.stscript.parser.flags === undefined) {
             power_user.stscript.parser.flags = defaultStscript.parser.flags;
         }
+
+        // Cleanup old flags
+        delete power_user.stscript.autocomplete_style;
     }
 
     if (data.themes !== undefined) {
@@ -1643,8 +1649,8 @@ function loadPowerUserSettings(settings, data) {
 
     $('#stscript_autocomplete_autoHide').prop('checked', power_user.stscript.autocomplete.autoHide ?? false).trigger('input');
     $('#stscript_matching').val(power_user.stscript.matching ?? 'fuzzy');
-    $('#stscript_autocomplete_style').val(power_user.stscript.autocomplete_style ?? 'theme');
-    document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete_style);
+    $('#stscript_autocomplete_style').val(power_user.stscript.autocomplete.style ?? 'theme');
+    document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete.style);
     $('#stscript_parser_flag_strict_escaping').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.STRICT_ESCAPING] ?? false);
     $('#stscript_parser_flag_replace_getvar').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.REPLACE_GETVAR] ?? false);
     $('#stscript_autocomplete_font_scale').val(power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale);
@@ -3781,8 +3787,8 @@ $(document).ready(() => {
 
     $('#stscript_autocomplete_style').on('change', function () {
         const value = $(this).find(':selected').val();
-        power_user.stscript.autocomplete_style = String(value);
-        document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete_style);
+        power_user.stscript.autocomplete.style = String(value);
+        document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete.style);
         saveSettingsDebounced();
     });
 

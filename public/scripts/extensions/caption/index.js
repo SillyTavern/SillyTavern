@@ -344,7 +344,7 @@ jQuery(async function () {
             Generate Caption
         </div>`);
 
-        $('#extensionsMenu').prepend(sendButton);
+        $('#caption_wand_container').append(sendButton);
         $(sendButton).on('click', () => {
             const hasCaptionModule =
                 (modules.includes('caption') && extension_settings.caption.source === 'extras') ||
@@ -409,7 +409,7 @@ jQuery(async function () {
     }
     async function addSettings() {
         const html = await renderExtensionTemplateAsync('caption', 'settings');
-        $('#extensions_settings2').append(html);
+        $('#caption_container').append(html);
     }
 
     await addSettings();

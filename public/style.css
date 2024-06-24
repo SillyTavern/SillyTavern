@@ -827,7 +827,7 @@ body .panelControlBar {
 }
 
 .font-family-reset {
-    font-family:  var(--mainFontFamily);
+    font-family: var(--mainFontFamily);
     font-size: var(--mainFontSize);
     font-weight: 400;
 }
@@ -885,7 +885,8 @@ body .panelControlBar {
 }
 
 .options-content a,
-#extensionsMenu>div,
+#extensionsMenu>.extension_container>div,
+#extensionsMenu>div:not(.extension_container),
 .list-group>div,
 .list-group .list-group-item,
 #sd_dropdown .list-group span {
@@ -899,13 +900,15 @@ body .panelControlBar {
     align-items: baseline;
 }
 
-#extensionsMenu>div,
+#extensionsMenu>.extension_container>div,
+#extensionsMenu>div:not(.extension_container),
 .options-content a,
 .list-group-item {
     opacity: 0.5;
 }
 
-#extensionsMenu>div:hover,
+#extensionsMenu>.extension_container>div:hover,
+#extensionsMenu>div:not(.extension_container):hover,
 .options-content a:hover,
 .list-group-item:hover {
     opacity: 1;

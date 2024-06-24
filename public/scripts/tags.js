@@ -717,7 +717,7 @@ async function importTags(character, { forceShow = false } = {}) {
     // Gather the tags to import based on the selected setting
     const tagNamesToImport = await handleTagImport(character, { forceShow });
     if (!tagNamesToImport?.length) {
-        toastr.info('No tags imported', 'Importing Tags');
+        toastr.info('No tags to import', 'Importing Tags');
         return;
     }
 
@@ -756,8 +756,12 @@ async function handleTagImport(character, { forceShow = false } = {}) {
             return [...existingTags, ...newTags, ...folderTags].map(t => t.name);
         case tag_import_setting.ONLY_EXISTING:
             return [...existingTags, ...folderTags].map(t => t.name);
-        case tag_import_setting.ASK:
+        case tag_import_setting.ASK: {
+            if (!existingTags.length && !newTags.length && !folderTags.length) {
+                return [];
+            }
             return await showTagImportPopup(character, existingTags, newTags, folderTags);
+        }
         case tag_import_setting.NONE:
             return [];
         default: throw new Error(`Invalid tag import setting: ${setting}`);

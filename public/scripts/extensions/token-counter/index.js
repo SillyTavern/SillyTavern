@@ -132,7 +132,7 @@ jQuery(() => {
             <div class="fa-solid fa-1 extensionsMenuExtensionButton" /></div>
             Token Counter
         </div>`;
-    $('#extensionsMenu').prepend(buttonHtml);
+    $('#token_counter_wand_container').append(buttonHtml);
     $('#token_counter').on('click', doTokenCounter);
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'count',
         callback: async () => String(await doCount()),

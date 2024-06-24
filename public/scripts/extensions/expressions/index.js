@@ -1929,7 +1929,7 @@ function migrateSettings() {
     }
     async function addSettings() {
         const template = await renderExtensionTemplateAsync(MODULE_NAME, 'settings');
-        $('#extensions_settings').append(template);
+        $('#expressions_container').append(template);
         $('#expression_override_button').on('click', onClickExpressionOverrideButton);
         $('#expressions_show_default').on('input', onExpressionsShowDefaultInput);
         $('#expression_upload_pack_button').on('click', onClickExpressionUploadPackButton);

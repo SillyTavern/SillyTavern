@@ -197,8 +197,10 @@ async function enableDataBankAttachment(args, value) {
 }
 
 jQuery(async () => {
-    const buttons = await renderExtensionTemplateAsync('attachments', 'buttons', {});
-    $('#extensionsMenu').prepend(buttons);
+    const manageButton = await renderExtensionTemplateAsync('attachments', 'manage-button', {});
+    const attachButton = await renderExtensionTemplateAsync('attachments', 'attach-button', {});
+    $('#data_bank_wand_container').append(manageButton);
+    $('#attach_file_wand_container').append(attachButton);
 
     /** A collection of local enum providers for this context of data bank */
     const localEnumProviders = {

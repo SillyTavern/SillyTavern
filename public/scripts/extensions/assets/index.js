@@ -440,7 +440,7 @@ jQuery(async () => {
     });
 
     windowHtml.find('#assets_filters').hide();
-    $('#extensions_settings').append(windowHtml);
+    $('#assets_container').append(windowHtml);
 
     eventSource.on(event_types.OPEN_CHARACTER_LIBRARY, async (forceDefault) => {
         openCharacterBrowser(forceDefault);

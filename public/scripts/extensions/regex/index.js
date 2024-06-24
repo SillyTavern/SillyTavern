@@ -470,7 +470,7 @@ jQuery(async () => {
     }
 
     const settingsHtml = $(await renderExtensionTemplateAsync('regex', 'dropdown'));
-    $('#extensions_settings2').append(settingsHtml);
+    $('#regex_container').append(settingsHtml);
     $('#open_regex_editor').on('click', function () {
         onRegexEditorOpenClick(false, false);
     });

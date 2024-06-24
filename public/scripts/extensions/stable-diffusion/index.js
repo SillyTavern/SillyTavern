@@ -3158,7 +3158,7 @@ async function addSDGenButtons() {
     const buttonHtml = await renderExtensionTemplateAsync('stable-diffusion', 'button');
     const dropdownHtml = await renderExtensionTemplateAsync('stable-diffusion', 'dropdown');
 
-    $('#extensionsMenu').prepend(buttonHtml);
+    $('#sd_wand_container').append(buttonHtml);
     $(document.body).append(dropdownHtml);
 
     const messageButton = $('.sd_message_gen');
@@ -3392,7 +3392,7 @@ jQuery(async () => {
 
 
     const template = await renderExtensionTemplateAsync('stable-diffusion', 'settings', defaultSettings);
-    $('#extensions_settings').append(template);
+    $('#sd_container').append(template);
     $('#sd_source').on('change', onSourceChange);
     $('#sd_scale').on('input', onScaleInput);
     $('#sd_steps').on('input', onStepsInput);
