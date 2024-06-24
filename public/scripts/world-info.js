@@ -105,6 +105,7 @@ const MAX_SCAN_DEPTH = 1000;
  * @property {number} hash Hash of the entry that triggered the effect
  * @property {number} start The chat index where the effect starts
  * @property {number} end The chat index where the effect ends
+ * @property {boolean} protected The protected effect can't be removed if the chat does not advance
  */
 
 /**
@@ -363,11 +364,6 @@ class WorldInfoTimedEffects {
     #entries = [];
 
     /**
-     * Set of entries to ignore chat advancement requirement for.
-     */
-    #entryIgnoreAdvancement = [];
-
-    /**
      * Buffer for active timed effects.
      * @type {Record<TimedEffectType, WIScanEntry[]>}
      */
@@ -392,12 +388,11 @@ class WorldInfoTimedEffects {
             }
 
             const key = this.#getEntryKey(entry);
-            const effect = this.#getEntryTimedEffect(entry, 'cooldown');
+            const effect = this.#getEntryTimedEffect('cooldown', entry, true);
             chat_metadata.timedWorldInfo.cooldown[key] = effect;
-            console.log(`Adding cooldown entry ${key} on ended sticky: start=${effect.start}, end=${effect.end}`);
+            console.log(`Adding cooldown entry ${key} on ended sticky: start=${effect.start}, end=${effect.end}, protected=${effect.protected}`);
             // Set the cooldown immediately for this evaluation
-            this.#buffer['cooldown'].push(entry);
-            this.#entryIgnoreAdvancement.push(entry);
+            this.#buffer.cooldown.push(entry);
         },
 
         /**
@@ -470,25 +465,18 @@ class WorldInfoTimedEffects {
 
     /**
      * Gets a timed effect for a WI entry.
-     * @param {WIScanEntry} entry WI entry
      * @param {TimedEffectType} type Type of timed effect
+     * @param {WIScanEntry} entry WI entry
+     * @param {boolean} isProtected If the effect should be protected
      * @returns {WITimedEffect} Timed effect for the entry
      */
-    #getEntryTimedEffect(entry, type) {
+    #getEntryTimedEffect(type, entry, isProtected) {
         return {
             hash: this.#getEntryHash(entry),
             start: this.#chat.length,
             end: this.#chat.length + Number(entry[type]),
+            protected: !!isProtected,
         };
-    }
-
-    /**
-     * Gets if the entry should be ignored for chat advancement requirement.
-     * @param {WIScanEntry} entry WI entry
-     * @returns {boolean} True if the entry should be ignored
-     */
-    #isChatAdvancementIgnored(entry) {
-        return entry && this.#entryIgnoreAdvancement.some(x => this.#getEntryHash(x) === this.#getEntryHash(entry));
     }
 
     /**
@@ -504,7 +492,7 @@ class WorldInfoTimedEffects {
             console.log(`Processing ${type} entry ${key}`, value);
             const entry = this.#entries.find(x => String(this.#getEntryHash(x)) === String(value.hash));
 
-            if (this.#chat.length <= Number(value.start) && !this.#isChatAdvancementIgnored(entry)) {
+            if (this.#chat.length <= Number(value.start) && !value.protected) {
                 console.log(`Removing ${type} entry ${key} from timedWorldInfo: chat not advanced`, value);
                 delete chat_metadata.timedWorldInfo[type][key];
                 continue;
@@ -512,7 +500,7 @@ class WorldInfoTimedEffects {
 
             // Missing entries (they could be from another character's lorebook)
             if (!entry) {
-                if (this.#chat.length > Number(value.end)) {
+                if (this.#chat.length >= Number(value.end)) {
                     console.log(`Removing ${type} entry from timedWorldInfo: entry not found and interval passed`, entry);
                     delete chat_metadata.timedWorldInfo[type][key];
                 }
@@ -526,7 +514,7 @@ class WorldInfoTimedEffects {
                 continue;
             }
 
-            if (this.#chat.length > Number(value.end)) {
+            if (this.#chat.length >= Number(value.end)) {
                 console.log(`Removing ${type} entry from timedWorldInfo: ${type} interval passed`, entry);
                 delete chat_metadata.timedWorldInfo[type][key];
                 if (typeof onEnded === 'function') {
@@ -577,10 +565,10 @@ class WorldInfoTimedEffects {
         const key = this.#getEntryKey(entry);
 
         if (!chat_metadata.timedWorldInfo[type][key]) {
-            const effect = this.#getEntryTimedEffect(entry, type);
+            const effect = this.#getEntryTimedEffect(type, entry, false);
             chat_metadata.timedWorldInfo[type][key] = effect;
 
-            console.log(`Adding ${type} entry ${key}: start=${effect.start}, end=${effect.end}`);
+            console.log(`Adding ${type} entry ${key}: start=${effect.start}, end=${effect.end}, protected=${effect.protected}`);
         }
     }
 
@@ -610,9 +598,9 @@ class WorldInfoTimedEffects {
         delete chat_metadata.timedWorldInfo[type][key];
 
         if (newState) {
-            const effect = this.#getEntryTimedEffect(entry, type);
+            const effect = this.#getEntryTimedEffect(type, entry, false);
             chat_metadata.timedWorldInfo[type][key] = effect;
-            console.log(`Adding ${type} entry ${key}: start=${effect.start}, end=${effect.end}`);
+            console.log(`Adding ${type} entry ${key}: start=${effect.start}, end=${effect.end}, protected=${effect.protected}`);
         }
     }
 
@@ -646,7 +634,6 @@ class WorldInfoTimedEffects {
         for (const buffer of Object.values(this.#buffer)) {
             buffer.splice(0, buffer.length);
         }
-        this.#entryIgnoreAdvancement.splice(0, this.#entryIgnoreAdvancement.length);
     }
 }
 
