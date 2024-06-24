@@ -2,6 +2,8 @@ import { substituteParams } from '../../script.js';
 import { delay, escapeRegex } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
+import { SlashCommandBreak } from './SlashCommandBreak.js';
+import { SlashCommandBreakController } from './SlashCommandBreakController.js';
 import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
 import { SlashCommandClosureResult } from './SlashCommandClosureResult.js';
 import { SlashCommandDebugController } from './SlashCommandDebugController.js';
@@ -18,6 +20,7 @@ export class SlashCommandClosure {
     /**@type {SlashCommandNamedArgumentAssignment[]}*/ providedArgumentList = [];
     /**@type {SlashCommandExecutor[]}*/ executorList = [];
     /**@type {SlashCommandAbortController}*/ abortController;
+    /**@type {SlashCommandBreakController}*/ breakController;
     /**@type {SlashCommandDebugController}*/ debugController;
     /**@type {(done:number, total:number)=>void}*/ onProgress;
     /**@type {string}*/ rawText;
@@ -89,6 +92,7 @@ export class SlashCommandClosure {
         closure.providedArgumentList = this.providedArgumentList;
         closure.executorList = this.executorList;
         closure.abortController = this.abortController;
+        closure.breakController = this.breakController;
         closure.debugController = this.debugController;
         closure.onProgress = this.onProgress;
         return closure;
@@ -131,6 +135,7 @@ export class SlashCommandClosure {
                 /**@type {SlashCommandClosure}*/
                 const closure = v;
                 closure.scope.parent = this.scope;
+                closure.breakController = this.breakController;
                 if (closure.executeNow) {
                     v = (await closure.execute())?.pipe;
                 } else {
@@ -154,6 +159,7 @@ export class SlashCommandClosure {
                 /**@type {SlashCommandClosure}*/
                 const closure = v;
                 closure.scope.parent = this.scope;
+                closure.breakController = this.breakController;
                 if (closure.executeNow) {
                     v = (await closure.execute())?.pipe;
                 } else {
@@ -172,13 +178,12 @@ export class SlashCommandClosure {
             this.scope.setVariable(arg.name, v);
         }
 
-        let done = 0;
         if (this.executorList.length == 0) {
             this.scope.pipe = '';
         }
         const stepper = this.executeStep();
         let step;
-        while (!step?.done) {
+        while (!step?.done && !this.breakController?.isBreak) {
             // get executor before execution
             step = await stepper.next();
             if (step.value instanceof SlashCommandBreakPoint) {
@@ -189,8 +194,8 @@ export class SlashCommandClosure {
                     step = await stepper.next();
                     // get next executor
                     step = await stepper.next();
-                    const hasImmediateClosureInNamedArgs = step.value.namedArgumentList.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
-                    const hasImmediateClosureInUnnamedArgs = step.value.unnamedArgumentList.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
+                    const hasImmediateClosureInNamedArgs = step.value?.namedArgumentList?.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
+                    const hasImmediateClosureInUnnamedArgs = step.value?.unnamedArgumentList?.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
                     if (hasImmediateClosureInNamedArgs || hasImmediateClosureInUnnamedArgs) {
                         this.debugController.isStepping = yield { closure:this, executor:step.value };
                     } else {
@@ -198,10 +203,16 @@ export class SlashCommandClosure {
                         this.debugController.stepStack[this.debugController.stepStack.length - 1] = true;
                     }
                 }
+            } else if (step.value instanceof SlashCommandBreak) {
+                console.log('encountered SlashCommandBreak');
+                if (this.breakController) {
+                    this.breakController?.break();
+                    break;
+                }
             } else if (!step.done && this.debugController?.testStepping(this)) {
                 this.debugController.isSteppingInto = false;
-                const hasImmediateClosureInNamedArgs = step.value.namedArgumentList.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
-                const hasImmediateClosureInUnnamedArgs = step.value.unnamedArgumentList.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
+                const hasImmediateClosureInNamedArgs = step.value?.namedArgumentList?.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
+                const hasImmediateClosureInUnnamedArgs = step.value?.unnamedArgumentList?.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
                 if (hasImmediateClosureInNamedArgs || hasImmediateClosureInUnnamedArgs) {
                     this.debugController.isStepping = yield { closure:this, executor:step.value };
                 }
@@ -222,7 +233,7 @@ export class SlashCommandClosure {
             return step.value;
         }
         /**@type {SlashCommandClosureResult} */
-        const result = Object.assign(new SlashCommandClosureResult(), { pipe: this.scope.pipe });
+        const result = Object.assign(new SlashCommandClosureResult(), { pipe: this.scope.pipe, isBreak: this.breakController?.isBreak ?? false });
         this.debugController?.up();
         return result;
     }
@@ -235,6 +246,9 @@ export class SlashCommandClosure {
             if (executor instanceof SlashCommandBreakPoint) {
                 // no execution for breakpoints, just raise counter
                 done++;
+                yield executor;
+            } else if (executor instanceof SlashCommandBreak) {
+                done += this.executorList.length - this.executorList.indexOf(executor);
                 yield executor;
             } else {
                 /**@type {import('./SlashCommand.js').NamedArguments} */
@@ -251,6 +265,7 @@ export class SlashCommandClosure {
                         /**@type {SlashCommandClosure}*/
                         const closure = arg.value;
                         closure.scope.parent = this.scope;
+                        closure.breakController = this.breakController;
                         if (closure.executeNow) {
                             args[arg.name] = (await closure.execute())?.pipe;
                         } else {
@@ -282,6 +297,7 @@ export class SlashCommandClosure {
                             /**@type {SlashCommandClosure}*/
                             const closure = v;
                             closure.scope.parent = this.scope;
+                            closure.breakController = this.breakController;
                             if (closure.executeNow) {
                                 v = (await closure.execute())?.pipe;
                             } else {

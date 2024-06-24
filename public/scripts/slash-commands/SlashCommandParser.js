@@ -20,6 +20,7 @@ import { MacroAutoCompleteOption } from '../autocomplete/MacroAutoCompleteOption
 import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
 import { SlashCommandDebugController } from './SlashCommandDebugController.js';
 import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
+import { SlashCommandBreak } from './SlashCommandBreak.js';
 
 /** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
 /** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
@@ -160,6 +161,11 @@ export class SlashCommandParser {
         if (!Object.keys(this.commands).includes('breakpoint')) {
             SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({ name: 'breakpoint',
                 helpString: 'Set a breakpoint for debugging in the QR Editor.',
+            }));
+        }
+        if (!Object.keys(this.commands).includes('break')) {
+            SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({ name: 'break',
+                helpString: 'Break out of a loop.',
             }));
         }
 
@@ -644,6 +650,9 @@ export class SlashCommandParser {
                 if (this.debugController) {
                     closure.executorList.push(bp);
                 }
+            } else if (this.testBreak()) {
+                const b = this.parseBreak();
+                closure.executorList.push(b);
             } else if (this.testCommand()) {
                 const cmd = this.parseCommand();
                 cmd.injectPipe = injectPipe;
@@ -685,6 +694,18 @@ export class SlashCommandParser {
         bp.end = this.index;
         this.commandIndex.push(bp);
         return bp;
+    }
+
+    testBreak() {
+        return this.testSymbol(/\/break(\s|\||$)/);
+    }
+    parseBreak() {
+        const b = new SlashCommandBreak();
+        b.start = this.index + 1;
+        this.take('/break'.length);
+        b.end = this.index;
+        this.commandIndex.push(b);
+        return b;
     }
 
     testComment() {
