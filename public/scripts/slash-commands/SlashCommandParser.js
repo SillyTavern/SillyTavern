@@ -81,7 +81,7 @@ export class SlashCommandParser {
         } else if (command.isExtension) {
             command.source = stack.find(it=>it.includes('/scripts/extensions/')).replace(/^.*?\/scripts\/extensions\/([^/]+)\/.*$/, '$1');
         } else {
-            const idx = stack.findLastIndex(it=>it.includes('at SlashCommandParser\.')) + 1;
+            const idx = stack.findLastIndex(it=>it.includes('at SlashCommandParser.')) + 1;
             command.source = stack[idx].replace(/^.*?\/((?:scripts\/)?(?:[^/]+)\.js).*$/, '$1');
         }
 
