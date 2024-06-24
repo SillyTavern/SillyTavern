@@ -62,7 +62,6 @@ import {
     event_types,
     getCurrentChatId,
     setScenarioOverride,
-    getCropPopup,
     system_avatar,
     isChatSaving,
     setExternalAbortController,
@@ -76,6 +75,7 @@ import {
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { isExternalMediaAllowed } from './chats.js';
+import { POPUP_TYPE, callGenericPopup } from './popup.js';
 
 export {
     selected_group,
@@ -1450,13 +1450,13 @@ async function uploadGroupAvatar(event) {
 
     $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
 
-    const croppedImage = await callPopup(getCropPopup(result), 'avatarToCrop');
+    const croppedImage = await callGenericPopup('Set the crop position of the avatar image', POPUP_TYPE.CROP, '', { cropImage: result });
 
     if (!croppedImage) {
         return;
     }
 
-    let thumbnail = await createThumbnail(croppedImage, 200, 300);
+    let thumbnail = await createThumbnail(String(croppedImage), 200, 300);
     //remove data:image/whatever;base64
     thumbnail = thumbnail.replace(/^data:image\/[a-z]+;base64,/, '');
     let _thisGroup = groups.find((x) => x.id == openGroupId);
