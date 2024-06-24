@@ -63,6 +63,10 @@ export class SlashCommand {
     /**@type {Object.<string, HTMLElement>}*/ helpCache = {};
     /**@type {Object.<string, DocumentFragment>}*/ helpDetailsCache = {};
 
+    /**@type {boolean}*/ isExtension = false;
+    /**@type {boolean}*/ isThirdParty = false;
+    /**@type {string}*/ source;
+
     renderHelpItem(key = null) {
         key = key ?? this.name;
         if (!this.helpCache[key]) {
@@ -227,12 +231,35 @@ export class SlashCommand {
             const aliasList = [cmd.name, ...(cmd.aliases ?? [])].filter(it=>it != key);
             const specs = document.createElement('div'); {
                 specs.classList.add('specs');
-                const name = document.createElement('div'); {
-                    name.classList.add('name');
-                    name.classList.add('monospace');
-                    name.title = 'command name';
-                    name.textContent = `/${key}`;
-                    specs.append(name);
+                const head = document.createElement('div'); {
+                    head.classList.add('head');
+                    const name = document.createElement('div'); {
+                        name.classList.add('name');
+                        name.classList.add('monospace');
+                        name.title = 'command name';
+                        name.textContent = `/${key}`;
+                        head.append(name);
+                    }
+                    const src = document.createElement('div'); {
+                        src.classList.add('source');
+                        src.classList.add('fa-solid');
+                        if (this.isExtension) {
+                            src.classList.add('isExtension');
+                            src.classList.add('fa-cubes');
+                            if (this.isThirdParty) src.classList.add('isThirdParty');
+                            else src.classList.add('isCore');
+                        } else {
+                            src.classList.add('isCore');
+                            src.classList.add('fa-star-of-life');
+                        }
+                        src.title = [
+                            this.isExtension ? 'Extension' : 'Core',
+                            this.isThirdParty ? 'Third Party' : (this.isExtension ? 'Core' : null),
+                            this.source,
+                        ].filter(it=>it).join('\n');
+                        head.append(src);
+                    }
+                    specs.append(head);
                 }
                 const body = document.createElement('div'); {
                     body.classList.add('body');

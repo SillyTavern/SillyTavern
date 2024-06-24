@@ -73,6 +73,18 @@ export class SlashCommandParser {
             console.trace('WARN: Duplicate slash command registered!', [command.name, ...command.aliases]);
         }
 
+        const stack = new Error().stack.split('\n').map(it=>it.trim());
+        command.isExtension = stack.find(it=>it.includes('/scripts/extensions/')) != null;
+        command.isThirdParty = stack.find(it=>it.includes('/scripts/extensions/third-party/')) != null;
+        if (command.isThirdParty) {
+            command.source = stack.find(it=>it.includes('/scripts/extensions/third-party/')).replace(/^.*?\/scripts\/extensions\/third-party\/([^/]+)\/.*$/, '$1');
+        } else if (command.isExtension) {
+            command.source = stack.find(it=>it.includes('/scripts/extensions/')).replace(/^.*?\/scripts\/extensions\/([^/]+)\/.*$/, '$1');
+        } else {
+            const idx = stack.findLastIndex(it=>it.includes('at SlashCommandParser\.')) + 1;
+            command.source = stack[idx].replace(/^.*?\/((?:scripts\/)?(?:[^/]+)\.js).*$/, '$1');
+        }
+
         this.commands[command.name] = command;
 
         if (Array.isArray(command.aliases)) {
