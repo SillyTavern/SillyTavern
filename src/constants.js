@@ -259,6 +259,7 @@ const TOGETHERAI_KEYS = [
 // https://github.com/jmorganca/ollama/blob/main/docs/api.md#request-with-options
 const OLLAMA_KEYS = [
     'num_predict',
+    'num_ctx',
     'stop',
     'temperature',
     'repeat_penalty',

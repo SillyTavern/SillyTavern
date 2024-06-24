@@ -861,7 +861,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
 
     return async function* streamData() {
         let text = '';
-        /** @type {import('logprobs.js').TokenLogprobs | null} */
+        /** @type {import('./logprobs.js').TokenLogprobs | null} */
         let logprobs = null;
         const swipes = [];
         while (true) {
@@ -893,7 +893,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
  * Probabilities feature.
  * @param {string} token - the text of the token that the logprobs are for
  * @param {Object} logprobs - logprobs object returned from the API
- * @returns {import('logprobs.js').TokenLogprobs | null} - converted logprobs
+ * @returns {import('./logprobs.js').TokenLogprobs | null} - converted logprobs
  */
 export function parseTextgenLogprobs(token, logprobs) {
     if (!logprobs) {
@@ -1112,6 +1112,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'tfs_z': settings.tfs,
         'repeat_last_n': settings.rep_pen_range,
         'n_predict': maxTokens,
+        'num_predict': maxTokens,
+        'num_ctx': max_context,
         'mirostat': settings.mirostat_mode,
         'ignore_eos': settings.ban_eos_token,
         'n_probs': power_user.request_token_probabilities ? 10 : undefined,
