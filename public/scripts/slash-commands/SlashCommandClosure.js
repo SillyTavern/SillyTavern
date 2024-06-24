@@ -3,7 +3,6 @@ import { delay, escapeRegex } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
-import { SlashCommandClosureExecutor } from './SlashCommandClosureExecutor.js';
 import { SlashCommandClosureResult } from './SlashCommandClosureResult.js';
 import { SlashCommandDebugController } from './SlashCommandDebugController.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
@@ -233,14 +232,7 @@ export class SlashCommandClosure {
             this.onProgress?.(done, this.commandCount);
             this.debugController?.setExecutor(executor);
             yield executor;
-            if (executor instanceof SlashCommandClosureExecutor) {
-                const closure = this.scope.getVariable(executor.name);
-                if (!closure || !(closure instanceof SlashCommandClosure)) throw new Error(`${executor.name} is not a closure.`);
-                closure.scope.parent = this.scope;
-                closure.providedArgumentList = executor.providedArgumentList;
-                const result = await closure.execute();
-                this.scope.pipe = result.pipe;
-            } else if (executor instanceof SlashCommandBreakPoint) {
+            if (executor instanceof SlashCommandBreakPoint) {
                 // no execution for breakpoints, just raise counter
                 done++;
                 yield executor;
