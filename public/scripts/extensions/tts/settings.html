@@ -1,0 +1,83 @@
+<div id="tts_settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>TTS</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div id="tts_status">
+            </div>
+            <span>Select TTS Provider</span> </br>
+            <div class="tts_block">
+                <select id="tts_provider" class="flex1">
+                </select>
+                <input id="tts_refresh" class="menu_button" type="submit" value="Reload" />
+            </div>
+            <div>
+                <label class="checkbox_label" for="tts_enabled">
+                    <input type="checkbox" id="tts_enabled" name="tts_enabled">
+                    <small>Enabled</small>
+                </label>
+                <label class="checkbox_label" for="tts_narrate_user">
+                    <input type="checkbox" id="tts_narrate_user">
+                    <small>Narrate user messages</small>
+                </label>
+                <label class="checkbox_label" for="tts_auto_generation">
+                    <input type="checkbox" id="tts_auto_generation">
+                    <small>Auto Generation</small>
+                </label>
+                <label class="checkbox_label" for="tts_periodic_auto_generation" title="Requires auto generation to be enabled.">
+                    <input type="checkbox" id="tts_periodic_auto_generation">
+                    <small>Narrate by paragraphs (when streaming)</small>
+                </label>
+                <label class="checkbox_label" for="tts_narrate_quoted">
+                    <input type="checkbox" id="tts_narrate_quoted">
+                    <small>Only narrate "quotes"</small>
+                </label>
+                <label class="checkbox_label" for="tts_narrate_dialogues">
+                    <input type="checkbox" id="tts_narrate_dialogues">
+                    <small>Ignore *text, even "quotes", inside asterisks*</small>
+                </label>
+                <label class="checkbox_label" for="tts_narrate_translated_only">
+                    <input type="checkbox" id="tts_narrate_translated_only">
+                    <small>Narrate only the translated text</small>
+                </label>
+                <label class="checkbox_label" for="tts_skip_codeblocks">
+                    <input type="checkbox" id="tts_skip_codeblocks">
+                    <small>Skip codeblocks</small>
+                </label>
+                <label class="checkbox_label" for="tts_skip_tags">
+                    <input type="checkbox" id="tts_skip_tags">
+                    <small>Skip &lt;tagged&gt; blocks</small>
+                </label>
+                <label class="checkbox_label" for="tts_pass_asterisks">
+                <input type="checkbox" id="tts_pass_asterisks">
+                <small>Pass Asterisks to TTS Engine</small>
+                </label>
+            </div>
+            <div id="playback_rate_block" class="range-block">
+                <hr>
+                <div class="range-block-title justifyLeft" data-i18n="Audio Playback Speed">
+                    <small>Audio Playback Speed</small>
+                </div>
+                <div class="range-block-range-and-counter">
+                    <div class="range-block-range">
+                        <input type="range" id="playback_rate" name="volume" min="0" max="3" step="0.05">
+                    </div>
+                    <div class="range-block-counter">
+                        <input type="number" min="0" max="3" step="0.05" data-for="playback_rate" id="playback_rate_counter">
+                    </div>
+                </div>
+            </div>
+            <div id="tts_voicemap_block">
+            </div>
+            <hr>
+            <form id="tts_provider_settings" class="inline-drawer-content">
+            </form>
+            <div class="tts_buttons">
+                <input id="tts_voices" class="menu_button" type="submit" value="Available voices" />
+            </div>
+            </div>
+        </div>
+    </div>
+</div>
