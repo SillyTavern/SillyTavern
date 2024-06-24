@@ -476,6 +476,7 @@ async function onTranslateInputMessageClick() {
     const toast = toastr.info('Input Message is translating', 'Please wait...');
     const translatedText = await translate(textarea.value, extension_settings.translate.internal_language);
     textarea.value = translatedText;
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
     toastr.clear(toast);
 }
 
@@ -569,9 +570,9 @@ window['translate'] = translate;
 
 jQuery(async () => {
     const html = await renderExtensionTemplateAsync('translate', 'index');
-
     const buttonHtml = await renderExtensionTemplateAsync('translate', 'buttons');
-    $('#extensionsMenu').append(buttonHtml);
+
+    $('#translate_wand_container').append(buttonHtml);
     $('#translation_container').append(html);
     $('#translate_chat').on('click', onTranslateChatClick);
     $('#translate_input_message').on('click', onTranslateInputMessageClick);

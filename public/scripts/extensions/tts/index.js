@@ -345,7 +345,7 @@ function onAudioControlClicked() {
 
 function addAudioControl() {
 
-    $('#extensionsMenu').prepend(`
+    $('#tts_wand_container').append(`
         <div id="ttsExtensionMenuItem" class="list-group-item flex-container flexGap5">
             <div id="tts_media_control" class="extensionsMenuExtensionButton "/></div>
             TTS Playback

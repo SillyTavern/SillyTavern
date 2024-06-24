@@ -101,3 +101,7 @@ input.extension_missing[type="checkbox"] {
 .extension_container {
     display: contents;
 }
+
+#extensionsMenu>div.extension_container:empty {
+    display: none;
+}

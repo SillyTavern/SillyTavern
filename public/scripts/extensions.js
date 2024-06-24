@@ -347,13 +347,11 @@ function autoConnectInputHandler() {
     saveSettingsDebounced();
 }
 
-function addExtensionsButtonAndMenu() {
-    const buttonHTML =
-        '<div id="extensionsMenuButton" style="display: none;" class="fa-solid fa-magic-wand-sparkles interactable" title="Extras Extensions" /></div>';
-    const extensionsMenuHTML = '<div id="extensionsMenu" class="options-content" style="display: none;"></div>';
+async function addExtensionsButtonAndMenu() {
+    const buttonHTML = await renderTemplateAsync('wandButton');
+    const extensionsMenuHTML = await renderTemplateAsync('wandMenu');
 
     $(document.body).append(extensionsMenuHTML);
-
     $('#leftSendForm').append(buttonHTML);
 
     const button = $('#extensionsMenuButton');
@@ -961,8 +959,8 @@ export async function writeExtensionField(characterId, key, value) {
     }
 }
 
-jQuery(function () {
-    addExtensionsButtonAndMenu();
+jQuery(async function () {
+    await addExtensionsButtonAndMenu();
     $('#extensionsMenuButton').css('display', 'flex');
 
     $('#extensions_connect').on('click', connectClickHandler);
