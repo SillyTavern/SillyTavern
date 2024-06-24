@@ -4,6 +4,7 @@ import { executeSlashCommandsWithOptions } from './slash-commands.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortController.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
+import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -348,11 +349,13 @@ async function whileCallback(args, value) {
 
         if (result && command) {
             if (command instanceof SlashCommandClosure) {
+                command.breakController = new SlashCommandBreakController();
                 commandResult = await command.execute();
             } else {
                 commandResult = await executeSubCommands(command, args._scope, args._parserFlags, args._abortController);
             }
             if (commandResult.isAborted) break;
+            if (commandResult.isBreak) break;
         } else {
             break;
         }
@@ -390,8 +393,8 @@ async function timesCallback(args, value) {
     const iterations = Math.min(Number(repeats), isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS);
     let result;
     for (let i = 0; i < iterations; i++) {
-        /**@type {SlashCommandClosureResult}*/
         if (command instanceof SlashCommandClosure) {
+            command.breakController = new SlashCommandBreakController();
             command.scope.setMacro('timesIndex', i);
             result = await command.execute();
         }
@@ -399,6 +402,7 @@ async function timesCallback(args, value) {
             result = await executeSubCommands(command.replace(/\{\{timesIndex\}\}/g, i.toString()), args._scope, args._parserFlags, args._abortController);
         }
         if (result.isAborted) break;
+        if (result.isBreak) break;
     }
 
     return result?.pipe ?? '';
