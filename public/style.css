@@ -827,7 +827,7 @@ body .panelControlBar {
 }
 
 .font-family-reset {
-    font-family:  var(--mainFontFamily);
+    font-family: var(--mainFontFamily);
     font-size: var(--mainFontSize);
     font-weight: 400;
 }
