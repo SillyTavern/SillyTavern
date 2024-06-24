@@ -820,22 +820,26 @@ export class QuickReply {
                                         const vResolved = document.createElement('div'); {
                                             vResolved.classList.add('qr--val');
                                             vResolved.classList.add('qr--singleCol');
-                                            const val = this.debugController.namedArguments[key];
-                                            if (val instanceof SlashCommandClosure) {
-                                                vResolved.classList.add('qr--closure');
-                                                vResolved.title = val.rawText;
-                                                vResolved.textContent = val.toString();
-                                            } else if (val === undefined) {
-                                                vResolved.classList.add('qr--undefined');
-                                                vResolved.textContent = 'undefined';
+                                            if (this.debugController.namedArguments === undefined) {
+                                                vResolved.classList.add('qr--unresolved');
                                             } else {
-                                                let jsonVal;
-                                                try { jsonVal = JSON.parse(val); } catch { /* empty */ }
-                                                if (jsonVal && typeof jsonVal == 'object') {
-                                                    vResolved.textContent = JSON.stringify(jsonVal, null, 2);
+                                                const val = this.debugController.namedArguments?.[key];
+                                                if (val instanceof SlashCommandClosure) {
+                                                    vResolved.classList.add('qr--closure');
+                                                    vResolved.title = val.rawText;
+                                                    vResolved.textContent = val.toString();
+                                                } else if (val === undefined) {
+                                                    vResolved.classList.add('qr--undefined');
+                                                    vResolved.textContent = 'undefined';
                                                 } else {
-                                                    vResolved.textContent = val;
-                                                    vResolved.classList.add('qr--simple');
+                                                    let jsonVal;
+                                                    try { jsonVal = JSON.parse(val); } catch { /* empty */ }
+                                                    if (jsonVal && typeof jsonVal == 'object') {
+                                                        vResolved.textContent = JSON.stringify(jsonVal, null, 2);
+                                                    } else {
+                                                        vResolved.textContent = val;
+                                                        vResolved.classList.add('qr--simple');
+                                                    }
                                                 }
                                             }
                                             item.append(vResolved);
