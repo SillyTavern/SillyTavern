@@ -642,7 +642,7 @@ async function showExtensionsDetails() {
                 popup.complete(POPUP_RESULT.AFFIRMATIVE);
             },
         };
-        const popup = new Popup(`<div class="extensions_info">${html}</div>`, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, customButtons: [updateAllButton] });
+        const popup = new Popup(`<div class="extensions_info">${html}</div>`, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, customButtons: [updateAllButton], allowVerticalScrolling: true });
         popupPromise = popup.show();
     } catch (error) {
         toastr.error('Error loading extensions. See browser console for details.');

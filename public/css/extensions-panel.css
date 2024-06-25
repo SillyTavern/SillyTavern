@@ -36,9 +36,6 @@ label[for="extensions_autoconnect"] {
 
 .extensions_info {
     text-align: left;
-    max-height: 100%;
-    overflow-y: auto;
-    padding-right: 1em;
 }
 
 .extensions_info h3 {
