@@ -48,6 +48,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashComma
 import { AUTOCOMPLETE_WIDTH } from './autocomplete/AutoComplete.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { POPUP_TYPE, callGenericPopup } from './popup.js';
 
 export {
     loadPowerUserSettings,
@@ -2207,7 +2208,8 @@ async function deleteTheme() {
         return;
     }
 
-    const confirm = await callPopup(`Are you sure you want to delete the theme "${themeName}"?`, 'confirm', '', { okButton: 'Yes' });
+    const template = $(await renderTemplateAsync('themeDelete', { themeName }));
+    const confirm = await callGenericPopup(template, POPUP_TYPE.CONFIRM);
 
     if (!confirm) {
         return;
