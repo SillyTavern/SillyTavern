@@ -358,6 +358,15 @@ export class Popup {
         Popup.util.lastResult = { value, result };
         this.hide();
     }
+    completeAffirmative() {
+        return this.complete(POPUP_RESULT.AFFIRMATIVE);
+    }
+    completeNegative() {
+        return this.complete(POPUP_RESULT.NEGATIVE);
+    }
+    completeCancelled() {
+        return this.complete(POPUP_RESULT.CANCELLED);
+    }
 
     /**
      * Hides the popup, using the internal resolver to return the value to the original show promise
