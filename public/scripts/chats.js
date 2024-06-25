@@ -4,7 +4,6 @@ import css from '../lib/css-parser.mjs';
 import {
     addCopyToCodeBlocks,
     appendMediaToMessage,
-    callPopup,
     characters,
     chat,
     eventSource,
@@ -38,6 +37,7 @@ import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { ScraperManager } from './scrapers.js';
 import { DragAndDropHandler } from './dragdrop.js';
+import { renderTemplateAsync } from './templates.js';
 
 /**
  * @typedef {Object} FileAttachment
@@ -524,7 +524,7 @@ async function openExternalMediaOverridesDialog() {
         return;
     }
 
-    const template = $('#forbid_media_override_template > .forbid_media_override').clone();
+    const template = $(await renderTemplateAsync('forbidMedia'));
     template.find('.forbid_media_global_state_forbidden').toggle(power_user.forbid_external_media);
     template.find('.forbid_media_global_state_allowed').toggle(!power_user.forbid_external_media);
 
@@ -538,7 +538,7 @@ async function openExternalMediaOverridesDialog() {
         template.find('#forbid_media_override_global').prop('checked', true);
     }
 
-    callPopup(template, 'text', '', { wide: false, large: false });
+    callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: false, large: false });
 }
 
 export function getCurrentEntityId() {
@@ -1465,7 +1465,7 @@ jQuery(function () {
             });
         }
 
-        callPopup(wrapper, 'text', '', { wide: true, large: true });
+        callGenericPopup(wrapper, POPUP_TYPE.TEXT, '', { wide: true, large: true });
     });
 
     $(document).on('click', 'body.documentstyle .mes .mes_text', function () {
