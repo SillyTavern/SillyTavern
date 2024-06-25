@@ -46,7 +46,7 @@ export const POPUP_RESULT = {
 /**
  * @typedef {object} CustomPopupButton
  * @property {string} text - The text of the button
- * @property {POPUP_RESULT|number?} result - The result of the button - can also be a custom result value to make be able to find out that this button was clicked. If no result is specified, this button will **not** close the popup.
+ * @property {POPUP_RESULT|number?} [result] - The result of the button - can also be a custom result value to make be able to find out that this button was clicked. If no result is specified, this button will **not** close the popup.
  * @property {string[]|string?} [classes] - Optional custom CSS classes applied to the button
  * @property {()=>void?} [action] - Optional action to perform when the button is clicked
  * @property {boolean?} [appendAtEnd] - Whether to append the button to the end of the popup - by default it will be prepended
@@ -169,6 +169,10 @@ export class Popup {
             } else {
                 this.controls.insertBefore(buttonElement, this.okButton);
             }
+
+            if (typeof button.action === 'function') {
+                buttonElement.addEventListener('click', button.action);
+            }
         });
 
         // Set the default button class
@@ -247,6 +251,7 @@ export class Popup {
         this.dlg.querySelectorAll('[data-result]').forEach(resultControl => {
             if (!(resultControl instanceof HTMLElement)) return;
             const result = Number(resultControl.dataset.result);
+            if (String(undefined) === String(resultControl.dataset.result)) return;
             if (isNaN(result)) throw new Error('Invalid result control. Result must be a number. ' + resultControl.dataset.result);
             const type = resultControl.dataset.resultEvent || 'click';
             resultControl.addEventListener(type, () => this.complete(result));

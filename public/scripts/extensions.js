@@ -1,5 +1,6 @@
-import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration } from '../script.js';
+import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration } from '../script.js';
 import { hideLoader, showLoader } from './loader.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { renderTemplate, renderTemplateAsync } from './templates.js';
 import { isSubsetOf, setValueByPath } from './utils.js';
 export {
@@ -631,7 +632,18 @@ async function showExtensionsDetails() {
             ${htmlDefault}
             ${htmlExternal}
         `;
-        popupPromise = callPopup(`<div class="extensions_info">${html}</div>`, 'text', '', { okButton: 'Close', wide: true, large: true });
+        /** @type {import('./popup.js').CustomPopupButton} */
+        const updateAllButton = {
+            text: 'Update all',
+            appendAtEnd: true,
+            action: async () => {
+                requiresReload = true;
+                await autoUpdateExtensions(true);
+                popup.complete(POPUP_RESULT.AFFIRMATIVE);
+            },
+        };
+        const popup = new Popup(`<div class="extensions_info">${html}</div>`, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, customButtons: [updateAllButton] });
+        popupPromise = popup.show();
     } catch (error) {
         toastr.error('Error loading extensions. See browser console for details.');
         console.error(error);
@@ -700,8 +712,8 @@ async function updateExtension(extensionName, quiet) {
 async function onDeleteClick() {
     const extensionName = $(this).data('name');
     // use callPopup to create a popup for the user to confirm before delete
-    const confirmation = await callPopup(`Are you sure you want to delete ${extensionName}?`, 'delete_extension');
-    if (confirmation) {
+    const confirmation = await callGenericPopup(`Are you sure you want to delete ${extensionName}?`, POPUP_TYPE.CONFIRM, '', {});
+    if (confirmation === POPUP_RESULT.AFFIRMATIVE) {
         await deleteExtension(extensionName);
     }
 }
@@ -797,7 +809,7 @@ async function loadExtensionSettings(settings, versionChanged) {
     manifests = await getManifests(extensionNames);
 
     if (versionChanged) {
-        await autoUpdateExtensions();
+        await autoUpdateExtensions(false);
     }
 
     await activateExtensions();
@@ -860,7 +872,12 @@ async function checkForExtensionUpdates(force) {
     }
 }
 
-async function autoUpdateExtensions() {
+/**
+ * Updates all 3rd-party extensions that have auto-update enabled.
+ * @param {boolean} forceAll Force update all even if not auto-updating
+ * @returns {Promise<void>}
+ */
+async function autoUpdateExtensions(forceAll) {
     if (!Object.values(manifests).some(x => x.auto_update)) {
         return;
     }
@@ -868,7 +885,7 @@ async function autoUpdateExtensions() {
     const banner = toastr.info('Auto-updating extensions. This may take several minutes.', 'Please wait...', { timeOut: 10000, extendedTimeOut: 10000 });
     const promises = [];
     for (const [id, manifest] of Object.entries(manifests)) {
-        if (manifest.auto_update && id.startsWith('third-party')) {
+        if ((forceAll || manifest.auto_update) && id.startsWith('third-party')) {
             console.debug(`Auto-updating 3rd-party extension: ${manifest.display_name} (${id})`);
             promises.push(updateExtension(id.replace('third-party', ''), true));
         }
@@ -988,14 +1005,14 @@ jQuery(async function () {
     <p><b>Disclaimer:</b> Please be aware that using external extensions can have unintended side effects and may pose security risks. Always make sure you trust the source before importing an extension. We are not responsible for any damage caused by third-party extensions.</p>
     <br>
     <p>Example: <tt> https://github.com/author/extension-name </tt></p>`;
-        const input = await callPopup(html, 'input');
+        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '');
 
         if (!input) {
             console.debug('Extension install cancelled');
             return;
         }
 
-        const url = input.trim();
+        const url = String(input).trim();
         await installExtension(url);
     });
 });
