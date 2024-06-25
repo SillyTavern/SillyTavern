@@ -30,12 +30,23 @@ export class MacrosParser {
             throw new Error('Macro key must be a string');
         }
 
-        if (this.#macros.has(key)) {
-            console.warn(`Macro ${key} is already registered`);
+        // Allowing surrounding whitespace would just create more confusion...
+        key = key.trim();
+
+        if (!key) {
+            throw new Error('Macro key must not be empty or whitespace only');
+        }
+
+        if (key.startsWith('{{') || key.endsWith('}}')) {
+            throw new Error('Macro key must not include the surrounding braces');
         }
 
         if (typeof value !== 'string' && typeof value !== 'function') {
             throw new Error('Macro value must be a string or a function that returns a string');
+        }
+
+        if (this.#macros.has(key)) {
+            console.warn(`Macro ${key} is already registered`);
         }
 
         this.#macros.set(key, value);
