@@ -395,7 +395,7 @@ export class QuickReply {
                 message.dispatchEvent(new Event('input', { bubbles:true }));
             };
             message.addEventListener('pointerup', async(evt)=>{
-                if (!evt.ctrlKey) return;
+                if (!evt.ctrlKey || !evt.altKey || message.selectionStart != message.selectionEnd) return;
                 const parser = new SlashCommandParser();
                 parser.parse(message.value, false);
                 const cmdIdx = parser.commandIndex.findLastIndex(it=>it.start <= message.selectionStart && it.end >= message.selectionStart);
