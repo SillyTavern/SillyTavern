@@ -393,20 +393,56 @@ export class QuickReply {
                 const v = `${message.value.slice(0, start)}${message.value.slice(end)}`;
                 message.value = v;
                 message.dispatchEvent(new Event('input', { bubbles:true }));
+                let postStart = preBreakPointStart;
+                let postEnd = preBreakPointEnd;
+                // set caret back to where it was
+                if (preBreakPointStart <= start) {
+                    // do nothing
+                } else if (preBreakPointStart > start && preBreakPointEnd < end) {
+                    // selection start was inside breakpoint: move to index before breakpoint
+                    postStart = start;
+                } else if (preBreakPointStart >= end) {
+                    // selection was behind breakpoint: move back by length of removed string
+                    postStart = preBreakPointStart - (end - start);
+                }
+                if (preBreakPointEnd <= start) {
+                    // do nothing
+                } else if (preBreakPointEnd > start && preBreakPointEnd < end) {
+                    // selection start was inside breakpoint: move to index before breakpoint
+                    postEnd = start;
+                } else if (preBreakPointEnd >= end) {
+                    // selection was behind breakpoint: move back by length of removed string
+                    postEnd = preBreakPointEnd - (end - start);
+                }
+                return { start:postStart, end:postEnd };
             };
+            let preBreakPointStart;
+            let preBreakPointEnd;
+            message.addEventListener('pointerdown', (evt)=>{
+                if (!evt.ctrlKey || !evt.altKey) return;
+                preBreakPointStart = message.selectionStart;
+                preBreakPointEnd = message.selectionEnd;
+            });
             message.addEventListener('pointerup', async(evt)=>{
                 if (!evt.ctrlKey || !evt.altKey || message.selectionStart != message.selectionEnd) return;
+                const idx = message.selectionStart;
+                let postStart = preBreakPointStart;
+                let postEnd = preBreakPointEnd;
                 const parser = new SlashCommandParser();
                 parser.parse(message.value, false);
-                const cmdIdx = parser.commandIndex.findLastIndex(it=>it.start <= message.selectionStart && it.end >= message.selectionStart);
+                const cmdIdx = parser.commandIndex.findLastIndex(it=>it.start <= idx && it.end >= idx);
                 if (cmdIdx > -1) {
                     const cmd = parser.commandIndex[cmdIdx];
                     if (cmd instanceof SlashCommandBreakPoint) {
                         const bp = cmd;
-                        removeBreakpoint(bp);
+                        const { start, end } = removeBreakpoint(bp);
+                        postStart = start;
+                        postEnd = end;
                     } else if (parser.commandIndex[cmdIdx - 1] instanceof SlashCommandBreakPoint) {
                         const bp = parser.commandIndex[cmdIdx - 1];
-                        removeBreakpoint(bp);
+                        const { start, end } = removeBreakpoint(bp);
+                        postStart = start;
+                        postEnd = end;
                     } else {
                         // start at -1 because "/" is not included in start-end
                         let start = cmd.start - 1;
@@ -421,12 +457,14 @@ export class QuickReply {
                         // if newline before indent, include the newline
                         if (message.value[start - 1] == '\n') {
                             start--;
-                            indent += `\n${indent}`;
+                            indent = `\n${indent}`;
                         }
                         const v = `${message.value.slice(0, start)}${indent}/breakpoint |${message.value.slice(start)}`;
                         message.value = v;
                         message.dispatchEvent(new Event('input', { bubbles:true }));
                     }
+                    message.selectionStart = postStart;
+                    message.selectionEnd = postEnd;
                 }
             });
             /** @type {any} */
