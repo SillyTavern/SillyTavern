@@ -42,7 +42,8 @@ export class MacrosParser {
         }
 
         if (typeof value !== 'string' && typeof value !== 'function') {
-            throw new Error('Macro value must be a string or a function that returns a string');
+            console.warn(`Macro value for "${key}" will be converted to a string`);
+            value = this.sanitizeMacroValue(value);
         }
 
         if (this.#macros.has(key)) {
@@ -71,6 +72,27 @@ export class MacrosParser {
         for (const [key, value] of this.#macros) {
             env[key] = value;
         }
+    }
+
+    /**
+     * Performs a type-check on the macro value and returns a sanitized version of it.
+     * @param {any} value Value returned by a macro
+     * @returns {string} Sanitized value
+     */
+    static sanitizeMacroValue(value) {
+        if (typeof value === 'string') {
+            return value;
+        }
+
+        if (value === null || value === undefined) {
+            return '';
+        }
+
+        if (typeof value === 'object') {
+            return JSON.stringify(value);
+        }
+
+        return String(value);
     }
 }
 
@@ -384,7 +406,7 @@ export function evaluateMacros(content, env) {
         if (!Object.hasOwn(env, varName)) continue;
 
         const param = env[varName];
-        const value = typeof param === 'function' ? param() : param;
+        const value = MacrosParser.sanitizeMacroValue(typeof param === 'function' ? param() : param);
         content = content.replace(new RegExp(`{{${escapeRegex(varName)}}}`, 'gi'), value);
     }
 
