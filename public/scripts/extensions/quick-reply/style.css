@@ -356,6 +356,11 @@
   background-color: var(--ac-style-color-background);
   color: var(--ac-style-color-text);
 }
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::-webkit-scrollbar,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::-webkit-scrollbar-thumb {
+  visibility: visible;
+  cursor: unset;
+}
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::selection {
   color: unset;
   background-color: rgba(108 171 251 / 0.25);
