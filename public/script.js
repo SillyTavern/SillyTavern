@@ -4728,17 +4728,14 @@ function addChatsSeparator(mesSendString) {
     }
 }
 
-async function DupeChar() {
+async function duplicateCharacter() {
     if (!this_chid) {
         toastr.warning('You must first select a character to duplicate!');
         return '';
     }
 
-    const confirmMessage = `
-    <h3>Are you sure you want to duplicate this character?</h3>
-    <span>If you just want to start a new chat with the same character, use "Start new chat" option in the bottom-left options menu.</span><br><br>`;
-
-    const confirm = await callPopup(confirmMessage, 'confirm');
+    const confirmMessage = $(await renderTemplateAsync('duplicateConfirm'));
+    const confirm = await callGenericPopup(confirmMessage, POPUP_TYPE.CONFIRM);
 
     if (!confirm) {
         console.log('User cancelled duplication');
@@ -4755,7 +4752,7 @@ async function DupeChar() {
         toastr.success('Character Duplicated');
         const data = await response.json();
         await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: body.avatar_url, newAvatar: data.path });
-        getCharacters();
+        await getCharacters();
     }
 
     return '';
@@ -8807,7 +8804,7 @@ jQuery(async function () {
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'dupe',
-        callback: DupeChar,
+        callback: duplicateCharacter,
         helpString: 'Duplicates the currently selected character.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
@@ -10244,7 +10241,7 @@ jQuery(async function () {
     });
 
     $('#dupe_button').click(async function () {
-        await DupeChar();
+        await duplicateCharacter();
     });
 
     $(document).on('click', '.select_chat_block, .bookmark_link, .mes_bookmark', async function () {
