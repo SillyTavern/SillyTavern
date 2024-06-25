@@ -915,7 +915,7 @@ function getCharacters(unrestricted) {
 
 function sanitizeId(input) {
     // Remove any non-alphanumeric characters except underscore (_) and hyphen (-)
-    let sanitized = input.replace(/[^a-zA-Z0-9-_]/g, '');
+    let sanitized = encodeURIComponent(input).replace(/[^a-zA-Z0-9-_]/g, '');
 
     // Ensure first character is always a letter
     if (!/^[a-zA-Z]/.test(sanitized)) {
