@@ -1,5 +1,5 @@
 import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId, substituteParams } from '../script.js';
-import { timestampToMoment, isDigitsOnly, getStringHash, escapeRegex } from './utils.js';
+import { timestampToMoment, isDigitsOnly, getStringHash, escapeRegex, uuidv4 } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { replaceInstructMacros } from './instruct-mode.js';
 import { replaceVariableMacros } from './variables.js';
@@ -16,14 +16,14 @@ Handlebars.registerHelper('helperMissing', function () {
 export class MacrosParser {
     /**
      * A map of registered macros.
-     * @type {Map<string, string|(() => string)>}
+     * @type {Map<string, string|((nonce: string) => string)>}
      */
     static #macros = new Map();
 
     /**
      * Registers a global macro that can be used anywhere where substitution is allowed.
      * @param {string} key Macro name (key)
-     * @param {string|(() => string)} value A string or a function that returns a string
+     * @param {string|((nonce: string) => string)} value A string or a function that returns a string
      */
     static registerMacro(key, value) {
         if (typeof key !== 'string') {
@@ -399,15 +399,18 @@ export function evaluateMacros(content, env) {
     content = content.replace(/{{input}}/gi, () => String($('#send_textarea').val()));
 
     // Add all registered macros to the env object
+    const nonce = uuidv4();
     MacrosParser.populateEnv(env);
 
     // Substitute passed-in variables
     for (const varName in env) {
         if (!Object.hasOwn(env, varName)) continue;
 
-        const param = env[varName];
-        const value = MacrosParser.sanitizeMacroValue(typeof param === 'function' ? param() : param);
-        content = content.replace(new RegExp(`{{${escapeRegex(varName)}}}`, 'gi'), value);
+        content = content.replace(new RegExp(`{{${escapeRegex(varName)}}}`, 'gi'), () => {
+            const param = env[varName];
+            const value = MacrosParser.sanitizeMacroValue(typeof param === 'function' ? param(nonce) : param);
+            return value;
+        });
     }
 
     content = content.replace(/{{maxPrompt}}/gi, () => String(getMaxContextSize()));
