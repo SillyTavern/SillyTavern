@@ -1,5 +1,5 @@
 import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId, substituteParams } from '../script.js';
-import { timestampToMoment, isDigitsOnly, getStringHash } from './utils.js';
+import { timestampToMoment, isDigitsOnly, getStringHash, escapeRegex } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { replaceInstructMacros } from './instruct-mode.js';
 import { replaceVariableMacros } from './variables.js';
@@ -12,6 +12,56 @@ Handlebars.registerHelper('helperMissing', function () {
     const macroName = options.name;
     return substituteParams(`{{${macroName}}}`);
 });
+
+export class MacrosParser {
+    /**
+     * A map of registered macros.
+     * @type {Map<string, string|(() => string)>}
+     */
+    static #macros = new Map();
+
+    /**
+     * Registers a global macro that can be used anywhere where substitution is allowed.
+     * @param {string} key Macro name (key)
+     * @param {string|(() => string)} value A string or a function that returns a string
+     */
+    static registerMacro(key, value) {
+        if (typeof key !== 'string') {
+            throw new Error('Macro key must be a string');
+        }
+
+        if (this.#macros.has(key)) {
+            console.warn(`Macro ${key} is already registered`);
+        }
+
+        if (typeof value !== 'string' && typeof value !== 'function') {
+            throw new Error('Macro value must be a string or a function that returns a string');
+        }
+
+        this.#macros.set(key, value);
+    }
+
+    /**
+     * Populate the env object with macro values from the current context.
+     * @param {Object<string, *>} env Env object for the current evaluation context
+     * @returns {void}
+     */
+    static populateEnv(env) {
+        if (!env || typeof env !== 'object') {
+            console.warn('Env object is not provided');
+            return;
+        }
+
+        // No macros are registered
+        if (this.#macros.size === 0) {
+            return;
+        }
+
+        for (const [key, value] of this.#macros) {
+            env[key] = value;
+        }
+    }
+}
 
 /**
  * Gets a hashed id of the current chat from the metadata.
@@ -315,12 +365,16 @@ export function evaluateMacros(content, env) {
     content = content.replace(/{{noop}}/gi, '');
     content = content.replace(/{{input}}/gi, () => String($('#send_textarea').val()));
 
+    // Add all registered macros to the env object
+    MacrosParser.populateEnv(env);
+
     // Substitute passed-in variables
     for (const varName in env) {
         if (!Object.hasOwn(env, varName)) continue;
 
         const param = env[varName];
-        content = content.replace(new RegExp(`{{${varName}}}`, 'gi'), param);
+        const value = typeof param === 'function' ? param() : param;
+        content = content.replace(new RegExp(`{{${escapeRegex(varName)}}}`, 'gi'), value);
     }
 
     content = content.replace(/{{maxPrompt}}/gi, () => String(getMaxContextSize()));
