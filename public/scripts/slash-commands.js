@@ -2703,6 +2703,8 @@ export async function sendMessageAs(args, text) {
             bias: bias.trim().length ? bias : null,
             gen_id: Date.now(),
             isSmallSys: compact,
+            api: 'manual',
+            model: 'slash command',
         },
     };
 
@@ -2715,6 +2717,7 @@ export async function sendMessageAs(args, text) {
         extra: {
             bias: message.extra.bias,
             gen_id: message.extra.gen_id,
+            isSmallSys: compact,
             api: 'manual',
             model: 'slash command',
         },
@@ -2762,6 +2765,8 @@ export async function sendNarratorMessage(args, text) {
             bias: bias.trim().length ? bias : null,
             gen_id: Date.now(),
             isSmallSys: compact,
+            api: 'manual',
+            model: 'slash command',
         },
     };
 
@@ -2812,6 +2817,8 @@ export async function promptQuietForLoudResponse(who, text) {
         extra: {
             type: system_message_types.COMMENT,
             gen_id: Date.now(),
+            api: 'manual',
+            model: 'slash command',
         },
     };
 
@@ -2840,6 +2847,8 @@ async function sendCommentMessage(args, text) {
             type: system_message_types.COMMENT,
             gen_id: Date.now(),
             isSmallSys: compact,
+            api: 'manual',
+            model: 'slash command',
         },
     };
 
