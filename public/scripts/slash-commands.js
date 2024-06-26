@@ -1998,6 +1998,9 @@ async function addSwipeCallback(_, arg) {
         lastMessage.swipe_info = [{}];
         lastMessage.swipe_id = 0;
     }
+    if (!Array.isArray(lastMessage.swipe_info)) {
+        lastMessage.swipe_info = lastMessage.swipes.map(() => ({}));
+    }
 
     lastMessage.swipes.push(arg);
     lastMessage.swipe_info.push({
