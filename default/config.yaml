@@ -19,7 +19,7 @@ basicAuthMode: false
 # Basic authentication credentials
 basicAuthUser:
   username: "user"
-  password: "password"
+  password: "********"
 # Enables CORS proxy middleware
 enableCorsProxy: false
 # Enable multi-user mode
