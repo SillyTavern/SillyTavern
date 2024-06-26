@@ -228,7 +228,7 @@ import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, de
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
-import { POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { ScraperManager } from './scripts/scrapers.js';
 import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
@@ -10085,26 +10085,32 @@ jQuery(async function () {
 
     $(document).on('click', '.mes_edit_delete', async function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
-        const swipeExists = (!Array.isArray(chat[this_edit_mes_id].swipes) || chat[this_edit_mes_id].swipes.length <= 1 || chat[this_edit_mes_id].is_user || parseInt(this_edit_mes_id) !== chat.length - 1);
+        const canDeleteSwipe = (Array.isArray(chat[this_edit_mes_id].swipes) && chat[this_edit_mes_id].swipes.length > 1 && !chat[this_edit_mes_id].is_user && parseInt(this_edit_mes_id) === chat.length - 1);
+
+        let deleteOnlySwipe = false;
         if (power_user.confirm_message_delete && fromSlashCommand !== true) {
-            const confirmation = swipeExists ? await callPopup('Are you sure you want to delete this message?', 'confirm')
-                : await callPopup('<h3>Delete this...</h3> <select id=\'del_type\'><option value=\'swipe\'>Swipe</option><option value=\'message\'>Message</option></select>', 'confirm');
-            if (!confirmation) {
+            const result = await callGenericPopup('Are you sure you want to delete this?', POPUP_TYPE.CONFIRM, null, {
+                okButton: canDeleteSwipe ? 'Delete Swipe' : 'Delete Message',
+                cancelButton: 'Cancel',
+                customButtons: canDeleteSwipe ? ['Delete Message'] : null,
+            });
+            if (!result) {
                 return;
             }
+            deleteOnlySwipe = canDeleteSwipe && result === 1; // Default button, not the custom one
         }
 
-        const mes = $(this).closest('.mes');
-
-        if (!mes) {
+        const messageElement = $(this).closest('.mes');
+        if (!messageElement) {
             return;
         }
 
-        if ($('#del_type').val() === 'swipe') {
-            const swipe_id = chat[this_edit_mes_id]['swipe_id'];
-            chat[this_edit_mes_id]['swipes'].splice(swipe_id, 1);
-            if (Array.isArray(chat[this_edit_mes_id]['swipe_info']) && chat[this_edit_mes_id]['swipe_info'].length) {
-                chat[this_edit_mes_id].swipe_info.splice(swipe_id, 1);
+        if (deleteOnlySwipe) {
+            const message = chat[this_edit_mes_id];
+            const swipe_id = message.swipe_id;
+            message.swipes.splice(swipe_id, 1);
+            if (Array.isArray(message.swipe_info) && message.swipe_info.length) {
+                message.swipe_info.splice(swipe_id, 1);
             }
             if (swipe_id > 0) {
                 $('.swipe_left:last').click();
@@ -10113,7 +10119,7 @@ jQuery(async function () {
             }
         } else {
             chat.splice(this_edit_mes_id, 1);
-            mes.remove();
+            messageElement.remove();
         }
 
         let startFromZero = Number(this_edit_mes_id) === 0;
