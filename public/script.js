@@ -454,6 +454,7 @@ export const event_types = {
     OPEN_CHARACTER_LIBRARY: 'open_character_library',
     LLM_FUNCTION_TOOL_REGISTER: 'llm_function_tool_register',
     LLM_FUNCTION_TOOL_CALL: 'llm_function_tool_call',
+    ONLINE_STATUS_CHANGED: 'online_status_changed',
 };
 
 export const eventSource = new EventEmitter();
@@ -1050,10 +1051,10 @@ export async function clearItemizedPrompts() {
 async function getStatusHorde() {
     try {
         const hordeStatus = await checkHordeStatus();
-        online_status = hordeStatus ? 'Connected' : 'no_connection';
+        setOnlineStatus(hordeStatus ? 'Connected' : 'no_connection');
     }
     catch {
-        online_status = 'no_connection';
+        setOnlineStatus('no_connection');
     }
 
     return resultCheckStatus();
@@ -1064,7 +1065,7 @@ async function getStatusKobold() {
 
     if (!endpoint) {
         console.warn('No endpoint for status check');
-        online_status = 'no_connection';
+        setOnlineStatus('no_connection');
         return resultCheckStatus();
     }
 
@@ -1081,7 +1082,7 @@ async function getStatusKobold() {
 
         const data = await response.json();
 
-        online_status = data?.model ?? 'no_connection';
+        setOnlineStatus(data?.model ?? 'no_connection');
 
         if (!data.koboldUnitedVersion) {
             throw new Error('Missing mandatory Kobold version in data:', data);
@@ -1099,7 +1100,7 @@ async function getStatusKobold() {
         }
     } catch (err) {
         console.error('Error getting status', err);
-        online_status = 'no_connection';
+        setOnlineStatus('no_connection');
     }
 
     return resultCheckStatus();
@@ -1112,12 +1113,12 @@ async function getStatusTextgen() {
 
     if (!endpoint) {
         console.warn('No endpoint for status check');
-        online_status = 'no_connection';
+        setOnlineStatus('no_connection');
         return resultCheckStatus();
     }
 
     if (textgen_settings.type == OOBA && textgen_settings.bypass_status_check) {
-        online_status = 'Status check bypassed';
+        setOnlineStatus('Status check bypassed');
         return resultCheckStatus();
     }
 
@@ -1137,34 +1138,34 @@ async function getStatusTextgen() {
 
         if (textgen_settings.type === MANCER) {
             loadMancerModels(data?.data);
-            online_status = textgen_settings.mancer_model;
+            setOnlineStatus(textgen_settings.mancer_model);
         } else if (textgen_settings.type === TOGETHERAI) {
             loadTogetherAIModels(data?.data);
-            online_status = textgen_settings.togetherai_model;
+            setOnlineStatus(textgen_settings.togetherai_model);
         } else if (textgen_settings.type === OLLAMA) {
             loadOllamaModels(data?.data);
-            online_status = textgen_settings.ollama_model || 'Connected';
+            setOnlineStatus(textgen_settings.ollama_model || 'Connected');
         } else if (textgen_settings.type === INFERMATICAI) {
             loadInfermaticAIModels(data?.data);
-            online_status = textgen_settings.infermaticai_model;
+            setOnlineStatus(textgen_settings.infermaticai_model);
         } else if (textgen_settings.type === DREAMGEN) {
             loadDreamGenModels(data?.data);
-            online_status = textgen_settings.dreamgen_model;
+            setOnlineStatus(textgen_settings.dreamgen_model);
         } else if (textgen_settings.type === OPENROUTER) {
             loadOpenRouterModels(data?.data);
-            online_status = textgen_settings.openrouter_model;
+            setOnlineStatus(textgen_settings.openrouter_model);
         } else if (textgen_settings.type === VLLM) {
             loadVllmModels(data?.data);
-            online_status = textgen_settings.vllm_model;
+            setOnlineStatus(textgen_settings.vllm_model);
         } else if (textgen_settings.type === APHRODITE) {
             loadAphroditeModels(data?.data);
-            online_status = textgen_settings.aphrodite_model;
+            setOnlineStatus(textgen_settings.aphrodite_model);
         } else {
-            online_status = data?.result;
+            setOnlineStatus(data?.result);
         }
 
         if (!online_status) {
-            online_status = 'no_connection';
+            setOnlineStatus('no_connection');
         }
 
         // Determine instruct mode preset
@@ -1176,7 +1177,7 @@ async function getStatusTextgen() {
         }
     } catch (err) {
         console.error('Error getting status', err);
-        online_status = 'no_connection';
+        setOnlineStatus('no_connection');
     }
 
     return resultCheckStatus();
@@ -1190,9 +1191,9 @@ async function getStatusNovel() {
             throw new Error('Could not load subscription data');
         }
 
-        online_status = getNovelTier();
+        setOnlineStatus(getNovelTier());
     } catch {
-        online_status = 'no_connection';
+        setOnlineStatus('no_connection');
     }
 
     resultCheckStatus();
@@ -5526,9 +5527,17 @@ export function setCharacterName(value) {
     name2 = value;
 }
 
+/**
+ * Sets the API connection status of the application
+ * @param {string|'no_connection'} value Connection status value
+ */
 export function setOnlineStatus(value) {
+    const previousStatus = online_status;
     online_status = value;
     displayOnlineStatus();
+    if (previousStatus !== online_status) {
+        eventSource.emitAndWait(event_types.ONLINE_STATUS_CHANGED, online_status);
+    }
 }
 
 export function setEditedMessageId(value) {
@@ -6096,7 +6105,7 @@ export function changeMainAPI() {
     }
 
     main_api = selectedVal;
-    online_status = 'no_connection';
+    setOnlineStatus('no_connection');
 
     if (main_api == 'openai' && oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
         $('#api_button_openai').trigger('click');
