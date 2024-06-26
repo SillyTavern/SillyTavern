@@ -10052,7 +10052,7 @@ jQuery(async function () {
     });
 
     $(document).on('click', '.mes_edit_copy', async function () {
-        const confirmation = await callPopup('Create a copy of this message?', 'confirm');
+        const confirmation = await callGenericPopup('Create a copy of this message?', POPUP_TYPE.CONFIRM);
         if (!confirmation) {
             return;
         }
@@ -10082,7 +10082,7 @@ jQuery(async function () {
 
         let deleteOnlySwipe = false;
         if (power_user.confirm_message_delete && fromSlashCommand !== true) {
-            const result = await callGenericPopup('Are you sure you want to delete this?', POPUP_TYPE.CONFIRM, null, {
+            const result = await callGenericPopup('Are you sure you want to delete this message?', POPUP_TYPE.CONFIRM, null, {
                 okButton: canDeleteSwipe ? 'Delete Swipe' : 'Delete Message',
                 cancelButton: 'Cancel',
                 customButtons: canDeleteSwipe ? ['Delete Message'] : null,
