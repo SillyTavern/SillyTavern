@@ -16,6 +16,7 @@ import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandE
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
+import { Popup } from './popup.js';
 
 export {
     world_info,
@@ -1684,8 +1685,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
     // Regardless of whether success is displayed or not. Make sure the delete button is available.
     // Do not put this code behind.
     $('#world_popup_delete').off('click').on('click', async () => {
-        const confirmation = await callPopup(`<h3>Delete the World/Lorebook: "${name}"?</h3>This action is irreversible!`, 'confirm');
-
+        const confirmation = await Popup.show.confirm(`Delete the World/Lorebook: "${name}"?`, `This action is irreversible!`);
         if (!confirmation) {
             return;
         }
@@ -1862,7 +1862,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
 
     $('#world_duplicate').off('click').on('click', async () => {
         const tempName = getFreeWorldName();
-        const finalName = await callPopup('<h3>Create a new World Info?</h3>Enter a name for the new file:', 'input', tempName);
+        const finalName = await Popup.show.input('Create a new World Info?', 'Enter a name for the new file:', tempName);
 
         if (finalName) {
             await saveWorldInfo(finalName, data, true);
@@ -3190,7 +3190,7 @@ async function saveWorldInfo(name, data, immediately) {
 
 async function renameWorldInfo(name, data) {
     const oldName = name;
-    const newName = await callPopup('<h3>Rename World Info</h3>Enter a new name:', 'input', oldName);
+    const newName = await Popup.show.input('Rename World Info', 'Enter a new name:', oldName);
 
     if (oldName === newName || !newName) {
         console.debug('World info rename cancelled');
@@ -4138,11 +4138,9 @@ export async function importEmbeddedWorldInfo(skipPopup = false) {
     }
 
     const bookName = characters[chid]?.data?.character_book?.name || `${characters[chid]?.name}'s Lorebook`;
-    const confirmationText = (`<h3>Are you sure you want to import "${bookName}"?</h3>`) + (world_names.includes(bookName) ? 'It will overwrite the World/Lorebook with the same name.' : '');
 
     if (!skipPopup) {
-        const confirmation = await callPopup(confirmationText, 'confirm');
-
+        const confirmation = await Popup.show.confirm(`Are you sure you want to import "${bookName}"?`, world_names.includes(bookName) ? 'It will overwrite the World/Lorebook with the same name.' : '');
         if (!confirmation) {
             return;
         }
@@ -4382,7 +4380,7 @@ jQuery(() => {
 
     $('#world_create_button').on('click', async () => {
         const tempName = getFreeWorldName();
-        const finalName = await callPopup('<h3>Create a new World Info?</h3>Enter a name for the new file:', 'input', tempName);
+        const finalName = await Popup.show.input('Create a new World Info', 'Enter a name for the new file:', tempName);
 
         if (finalName) {
             await createNewWorldInfo(finalName, { interactive: true });
