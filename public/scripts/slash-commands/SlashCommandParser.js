@@ -707,6 +707,7 @@ export class SlashCommandParser {
         this.take('/breakpoint'.length);
         cmd.end = this.index;
         this.commandIndex.push(cmd);
+        this.scopeIndex.push(this.scope.getCopy());
         return cmd;
     }
 
@@ -721,6 +722,7 @@ export class SlashCommandParser {
         this.take('/break'.length);
         cmd.end = this.index;
         this.commandIndex.push(cmd);
+        this.scopeIndex.push(this.scope.getCopy());
         return cmd;
     }
 
