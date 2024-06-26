@@ -16,7 +16,6 @@ import {
     eventSource,
     menu_type,
     substituteParams,
-    callPopup,
     sendTextareaMessage,
 } from '../script.js';
 
@@ -1004,20 +1003,21 @@ export function initRossMods() {
                 if (skipConfirm) {
                     doRegenerate();
                 } else {
-                    const popupText = `
-                    <div class="marginBot10">Are you sure you want to regenerate the latest message?</div>
-                    <label class="checkbox_label justifyCenter" for="regenerateWithCtrlEnter">
-                        <input type="checkbox" id="regenerateWithCtrlEnter">
-                        Don't ask again
-                    </label>`;
-                    callPopup(popupText, 'confirm').then(result => {
-                        if (!result) {
-                            return;
-                        }
-                        const regenerateWithCtrlEnter = $('#regenerateWithCtrlEnter').prop('checked');
-                        SaveLocal(skipConfirmKey, regenerateWithCtrlEnter);
-                        doRegenerate();
-                    });
+                    Popup.show.confirm('Regenerate Message', `
+                        <span>Are you sure you want to regenerate the latest message?</span>
+                        <label class="checkbox_label justifyCenter marginTop10" for="regenerateWithCtrlEnter">
+                            <input type="checkbox" id="regenerateWithCtrlEnter">
+                            Don't ask again
+                        </label>`, {
+                        onClose: (popup) => {
+                            if (!popup.result) {
+                                return;
+                            }
+                            const regenerateWithCtrlEnter = $('#regenerateWithCtrlEnter').prop('checked');
+                            SaveLocal(skipConfirmKey, regenerateWithCtrlEnter);
+                            doRegenerate();
+                        },
+                    })
                 }
                 return;
             } else {

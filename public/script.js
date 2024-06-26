@@ -228,7 +228,7 @@ import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, de
 import { initPresetManager } from './scripts/preset-manager.js';
 import { MacrosParser, evaluateMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
-import { POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { ScraperManager } from './scripts/scrapers.js';
 import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
@@ -512,9 +512,6 @@ let optionsPopper = Popper.createPopper(document.getElementById('options_button'
 });
 let exportPopper = Popper.createPopper(document.getElementById('export_button'), document.getElementById('export_format_popup'), {
     placement: 'left',
-});
-let rawPromptPopper = Popper.createPopper(document.getElementById('dialogue_popup'), document.getElementById('rawPromptPopup'), {
-    placement: 'right',
 });
 
 // Saved here for performance reasons
@@ -4890,14 +4887,44 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
 
     const params = await itemizedParams(itemizedPrompts, thisPromptSet);
 
-    if (params.this_main_api == 'openai') {
-        const template = await renderTemplateAsync('itemizationChat', params);
-        callPopup(template, 'text');
+    const template = params.this_main_api == 'openai'
+        ? await renderTemplateAsync('itemizationChat', params)
+        : await renderTemplateAsync('itemizationText', params);
 
-    } else {
-        const template = await renderTemplateAsync('itemizationText', params);
-        callPopup(template, 'text');
-    }
+    const popup = new Popup(template, POPUP_TYPE.TEXT);
+
+    popup.dlg.querySelector('#copyPromptToClipboard').addEventListener('click', function () {
+        let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
+        let rawPromptValues = rawPrompt;
+
+        if (Array.isArray(rawPrompt)) {
+            rawPromptValues = rawPrompt.map(x => x.content).join('\n');
+        }
+
+        navigator.clipboard.writeText(rawPromptValues);
+        toastr.info('Copied!');
+    });
+
+    popup.dlg.querySelector('#showRawPrompt').addEventListener('click', function () {
+        //console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
+        console.log(PromptArrayItemForRawPromptDisplay);
+        console.log(itemizedPrompts);
+        console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
+
+        let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
+        let rawPromptValues = rawPrompt;
+
+        if (Array.isArray(rawPrompt)) {
+            rawPromptValues = rawPrompt.map(x => x.content).join('\n');
+        }
+
+        //let DisplayStringifiedPrompt = JSON.stringify(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt).replace(/\n+/g, '<br>');
+        const rawPromptWrapper = document.getElementById('rawPromptWrapper');
+        rawPromptWrapper.innerText = rawPromptValues;
+        $('#rawPromptPopup').slideToggle();
+    });
+
+    await popup.show();
 }
 
 function setInContextMessages(lastmsg, type) {
@@ -9184,13 +9211,6 @@ jQuery(async function () {
         if (popup_type == 'alternate_greeting' && menu_type !== 'create') {
             createOrEditCharacter();
         }
-        if (popup_type === 'del_group') {
-            const groupId = $('#dialogue_popup').data('group_id');
-
-            if (groupId) {
-                deleteGroup(groupId);
-            }
-        }
         //Make a new chat for selected character
         if (
             popup_type == 'new_chat' &&
@@ -9223,9 +9243,6 @@ jQuery(async function () {
                 if (isDelChatCheckbox) await delChat(chat_file_for_del + '.jsonl');
             }
         }
-
-        rawPromptPopper.update();
-        $('#rawPromptPopup').hide();
 
         if (dialogueResolve) {
             if (popup_type == 'input') {
@@ -9817,43 +9834,12 @@ jQuery(async function () {
         });
     }
 
-    $(document).on('pointerup', '.mes_prompt', function () {
+    $(document).on('pointerup', '.mes_prompt', async function () {
         let mesIdForItemization = $(this).closest('.mes').attr('mesId');
         console.log(`looking for mesID: ${mesIdForItemization}`);
         if (itemizedPrompts.length !== undefined && itemizedPrompts.length !== 0) {
-            promptItemize(itemizedPrompts, mesIdForItemization);
+            await promptItemize(itemizedPrompts, mesIdForItemization);
         }
-    });
-
-    $(document).on('pointerup', '#copyPromptToClipboard', function () {
-        let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
-        let rawPromptValues = rawPrompt;
-
-        if (Array.isArray(rawPrompt)) {
-            rawPromptValues = rawPrompt.map(x => x.content).join('\n');
-        }
-
-        navigator.clipboard.writeText(rawPromptValues);
-        toastr.info('Copied!', '', { timeOut: 2000 });
-    });
-
-    $(document).on('pointerup', '#showRawPrompt', function () {
-        //console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
-        console.log(PromptArrayItemForRawPromptDisplay);
-        console.log(itemizedPrompts);
-        console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
-
-        let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
-        let rawPromptValues = rawPrompt;
-
-        if (Array.isArray(rawPrompt)) {
-            rawPromptValues = rawPrompt.map(x => x.content).join('\n');
-        }
-
-        //let DisplayStringifiedPrompt = JSON.stringify(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt).replace(/\n+/g, '<br>');
-        $('#rawPromptWrapper').text(rawPromptValues);
-        rawPromptPopper.update();
-        $('#rawPromptPopup').toggle();
     });
 
     //********************
@@ -10060,7 +10046,7 @@ jQuery(async function () {
     });
 
     $(document).on('click', '.mes_edit_copy', async function () {
-        const confirmation = await callPopup('Create a copy of this message?', 'confirm');
+        const confirmation = await callGenericPopup('Create a copy of this message?', POPUP_TYPE.CONFIRM);
         if (!confirmation) {
             return;
         }
@@ -10086,24 +10072,33 @@ jQuery(async function () {
 
     $(document).on('click', '.mes_edit_delete', async function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
-        const swipeExists = (!Array.isArray(chat[this_edit_mes_id].swipes) || chat[this_edit_mes_id].swipes.length <= 1 || chat[this_edit_mes_id].is_user || parseInt(this_edit_mes_id) !== chat.length - 1);
+        const canDeleteSwipe = (Array.isArray(chat[this_edit_mes_id].swipes) && chat[this_edit_mes_id].swipes.length > 1 && !chat[this_edit_mes_id].is_user && parseInt(this_edit_mes_id) === chat.length - 1);
+
+        let deleteOnlySwipe = false;
         if (power_user.confirm_message_delete && fromSlashCommand !== true) {
-            const confirmation = swipeExists ? await callPopup('Are you sure you want to delete this message?', 'confirm')
-                : await callPopup('<h3>Delete this...</h3> <select id=\'del_type\'><option value=\'swipe\'>Swipe</option><option value=\'message\'>Message</option></select>', 'confirm');
-            if (!confirmation) {
+            const result = await callGenericPopup('Are you sure you want to delete this message?', POPUP_TYPE.CONFIRM, null, {
+                okButton: canDeleteSwipe ? 'Delete Swipe' : 'Delete Message',
+                cancelButton: 'Cancel',
+                customButtons: canDeleteSwipe ? ['Delete Message'] : null,
+            });
+            if (!result) {
                 return;
             }
+            deleteOnlySwipe = canDeleteSwipe && result === 1; // Default button, not the custom one
         }
 
-        const mes = $(this).closest('.mes');
-
-        if (!mes) {
+        const messageElement = $(this).closest('.mes');
+        if (!messageElement) {
             return;
         }
 
-        if ($('#del_type').val() === 'swipe') {
-            const swipe_id = chat[this_edit_mes_id]['swipe_id'];
-            chat[this_edit_mes_id]['swipes'].splice(swipe_id, 1);
+        if (deleteOnlySwipe) {
+            const message = chat[this_edit_mes_id];
+            const swipe_id = message.swipe_id;
+            message.swipes.splice(swipe_id, 1);
+            if (Array.isArray(message.swipe_info) && message.swipe_info.length) {
+                message.swipe_info.splice(swipe_id, 1);
+            }
             if (swipe_id > 0) {
                 $('.swipe_left:last').click();
             } else {
@@ -10111,7 +10106,7 @@ jQuery(async function () {
             }
         } else {
             chat.splice(this_edit_mes_id, 1);
-            mes.remove();
+            messageElement.remove();
         }
 
         let startFromZero = Number(this_edit_mes_id) === 0;

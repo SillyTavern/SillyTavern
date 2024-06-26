@@ -504,7 +504,7 @@ function addExtensionScript(name, manifest) {
  * @param {boolean} isDisabled - Whether the extension is disabled or not.
  * @param {boolean} isExternal - Whether the extension is external or not.
  * @param {string} checkboxClass - The class for the checkbox HTML element.
- * @return {string} - The HTML string that represents the extension.
+ * @return {Promise<string>} - The HTML string that represents the extension.
  */
 async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal, checkboxClass) {
     const displayName = manifest.display_name;
@@ -556,8 +556,10 @@ async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExt
     } else if (!isDisabled) { // Neither active nor disabled
         const requirements = new Set(manifest.requires);
         modules.forEach(x => requirements.delete(x));
-        const requirementsString = DOMPurify.sanitize([...requirements].join(', '));
-        extensionHtml += `<p>Missing modules: <span class="failure">${requirementsString}</span></p>`;
+        if (requirements.size > 0) {
+            const requirementsString = DOMPurify.sanitize([...requirements].join(', '));
+            extensionHtml += `<p>Missing modules: <span class="failure">${requirementsString}</span></p>`;
+        }
     }
 
     return extensionHtml;
@@ -642,7 +644,7 @@ async function showExtensionsDetails() {
                 popup.complete(POPUP_RESULT.AFFIRMATIVE);
             },
         };
-        const popup = new Popup(`<div class="extensions_info">${html}</div>`, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, customButtons: [updateAllButton] });
+        const popup = new Popup(`<div class="extensions_info">${html}</div>`, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, customButtons: [updateAllButton], allowVerticalScrolling: true });
         popupPromise = popup.show();
     } catch (error) {
         toastr.error('Error loading extensions. See browser console for details.');
