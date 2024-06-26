@@ -10103,6 +10103,9 @@ jQuery(async function () {
         if ($('#del_type').val() === 'swipe') {
             const swipe_id = chat[this_edit_mes_id]['swipe_id'];
             chat[this_edit_mes_id]['swipes'].splice(swipe_id, 1);
+            if (Array.isArray(chat[this_edit_mes_id]['swipe_info']) && chat[this_edit_mes_id]['swipe_info'].length) {
+                chat[this_edit_mes_id].swipe_info.splice(swipe_id, 1);
+            }
             if (swipe_id > 0) {
                 $('.swipe_left:last').click();
             } else {
