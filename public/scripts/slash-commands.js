@@ -46,7 +46,7 @@ import { extension_settings, getContext, saveMetadataDebounced } from './extensi
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { findGroupMemberId, getGroupMembers, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
 import { chat_completion_sources, oai_settings, setupChatCompletionPromptManager } from './openai.js';
-import { autoSelectPersona, retriggerFirstMessageOnEmptyChat, user_avatar } from './personas.js';
+import { autoSelectPersona, retriggerFirstMessageOnEmptyChat, setPersonaLockState, togglePersonaLock, user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync } from './tokenizers.js';
@@ -118,9 +118,18 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'lock',
-    callback: bindCallback,
+    callback: lockPersonaCallback,
     aliases: ['bind'],
     helpString: 'Locks/unlocks a persona (name and avatar) to the current chat',
+    unnamedArgumentList: [
+        SlashCommandArgument.fromProps({
+            description: 'state',
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: true,
+            defaultValue: 'toggle',
+            enumProvider: commonEnumProviders.boolean('onOffToggle'),
+        }),
+    ],
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'bg',
@@ -2576,8 +2585,23 @@ function syncCallback() {
     return '';
 }
 
-function bindCallback() {
-    $('#lock_user_name').trigger('click');
+async function lockPersonaCallback(_args, value) {
+    if (['toggle', 't', ''].includes(value.trim().toLowerCase())) {
+        await togglePersonaLock();
+        return '';
+    }
+
+    if (isTrueBoolean(value)) {
+        await setPersonaLockState(true);
+        return '';
+    }
+
+    if (isFalseBoolean(value)) {
+        await setPersonaLockState(false);
+        return '';
+
+    }
+
     return '';
 }
 
