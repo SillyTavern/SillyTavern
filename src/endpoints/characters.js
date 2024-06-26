@@ -11,7 +11,7 @@ const mime = require('mime-types');
 
 const jimp = require('jimp');
 
-const { UPLOADS_PATH, AVATAR_WIDTH, AVATAR_HEIGHT } = require('../constants');
+const { AVATAR_WIDTH, AVATAR_HEIGHT } = require('../constants');
 const { jsonParser, urlencodedParser } = require('../express-common');
 const { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer } = require('../util');
 const { TavernCardValidator } = require('../validator/TavernCardValidator');
@@ -730,7 +730,7 @@ router.post('/create', urlencodedParser, async function (request, response) {
             return response.send(avatarName);
         } else {
             const crop = tryParse(request.query.crop);
-            const uploadPath = path.join(UPLOADS_PATH, request.file.filename);
+            const uploadPath = path.join(request.file.destination, request.file.filename);
             await writeCharacterData(uploadPath, char, internalName, request, crop);
             fs.unlinkSync(uploadPath);
             return response.send(avatarName);
@@ -813,7 +813,7 @@ router.post('/edit', urlencodedParser, async function (request, response) {
             await writeCharacterData(avatarPath, char, targetFile, request);
         } else {
             const crop = tryParse(request.query.crop);
-            const newAvatarPath = path.join(UPLOADS_PATH, request.file.filename);
+            const newAvatarPath = path.join(request.file.destination, request.file.filename);
             invalidateThumbnail(request.user.directories, 'avatar', request.body.avatar_url);
             await writeCharacterData(newAvatarPath, char, targetFile, request, crop);
             fs.unlinkSync(newAvatarPath);
@@ -1097,7 +1097,7 @@ function getPreservedName(request) {
 router.post('/import', urlencodedParser, async function (request, response) {
     if (!request.body || !request.file) return response.sendStatus(400);
 
-    const uploadPath = path.join(UPLOADS_PATH, request.file.filename);
+    const uploadPath = path.join(request.file.destination, request.file.filename);
     const format = request.body.file_type;
     const preservedFileName = getPreservedName(request);
 

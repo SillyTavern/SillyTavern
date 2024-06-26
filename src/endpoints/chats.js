@@ -6,7 +6,6 @@ const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 
 const { jsonParser, urlencodedParser } = require('../express-common');
-const { UPLOADS_PATH } = require('../constants');
 const { getConfigValue, humanizedISO8601DateTime, tryParse, generateTimestamp, removeOldBackups } = require('../util');
 
 /**
@@ -323,7 +322,7 @@ router.post('/group/import', urlencodedParser, function (request, response) {
         }
 
         const chatname = humanizedISO8601DateTime();
-        const pathToUpload = path.join(UPLOADS_PATH, filedata.filename);
+        const pathToUpload = path.join(filedata.destination, filedata.filename);
         const pathToNewFile = path.join(request.user.directories.groupChats, `${chatname}.jsonl`);
         fs.copyFileSync(pathToUpload, pathToNewFile);
         fs.unlinkSync(pathToUpload);
@@ -347,9 +346,11 @@ router.post('/import', urlencodedParser, function (request, response) {
     }
 
     try {
-        const data = fs.readFileSync(path.join(UPLOADS_PATH, request.file.filename), 'utf8');
+        const pathToUpload = path.join(request.file.destination, request.file.filename);
+        const data = fs.readFileSync(pathToUpload, 'utf8');
 
         if (format === 'json') {
+            fs.unlinkSync(pathToUpload);
             const jsonData = JSON.parse(data);
             if (jsonData.histories !== undefined) {
                 // CAI Tools format
@@ -388,7 +389,8 @@ router.post('/import', urlencodedParser, function (request, response) {
             if (jsonData.user_name !== undefined || jsonData.name !== undefined) {
                 const fileName = `${characterName} - ${humanizedISO8601DateTime()} imported.jsonl`;
                 const filePath = path.join(request.user.directories.chats, avatarUrl, fileName);
-                fs.copyFileSync(path.join(UPLOADS_PATH, request.file.filename), filePath);
+                fs.copyFileSync(pathToUpload, filePath);
+                fs.unlinkSync(pathToUpload);
                 response.send({ res: true });
             } else {
                 console.log('Incorrect chat format .jsonl');

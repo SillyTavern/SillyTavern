@@ -4,7 +4,6 @@ const express = require('express');
 const sanitize = require('sanitize-filename');
 
 const { jsonParser, urlencodedParser } = require('../express-common');
-const { UPLOADS_PATH } = require('../constants');
 const { invalidateThumbnail } = require('./thumbnails');
 const { getImages } = require('../util');
 
@@ -60,7 +59,7 @@ router.post('/rename', jsonParser, function (request, response) {
 router.post('/upload', urlencodedParser, function (request, response) {
     if (!request.body || !request.file) return response.sendStatus(400);
 
-    const img_path = path.join(UPLOADS_PATH, request.file.filename);
+    const img_path = path.join(request.file.destination, request.file.filename);
     const filename = request.file.originalname;
 
     try {
