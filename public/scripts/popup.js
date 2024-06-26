@@ -451,9 +451,9 @@ export class Popup {
                     else popup.setAutoFocus();
                 }
             }
-        });
 
-        this.resolver(this.value);
+            this.resolver(this.value);
+        });
     }
 
     /**
