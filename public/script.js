@@ -9306,7 +9306,7 @@ jQuery(async function () {
                 <label for="del_char_checkbox" class="checkbox_label justifyCenter">
                     <input type="checkbox" id="del_char_checkbox" />
                     <small>Also delete the chat files</small>
-                </label><br></b>`, {
+                </label></b>`, {
             onClose: () => deleteChats = !!$('#del_char_checkbox').prop('checked'),
         });
         if (!confirm) {
