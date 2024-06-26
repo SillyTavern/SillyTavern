@@ -2706,6 +2706,20 @@ export async function sendMessageAs(args, text) {
         },
     };
 
+    message.swipe_id = 0;
+    message.swipes = [message.mes];
+    message.swipes_info = [{
+        send_date: message.send_date,
+        gen_started: null,
+        gen_finished: null,
+        extra: {
+            bias: message.extra.bias,
+            gen_id: message.extra.gen_id,
+            api: 'manual',
+            model: 'slash command',
+        },
+    }];
+
     const insertAt = Number(resolveVariable(args.at));
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
