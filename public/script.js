@@ -226,7 +226,7 @@ import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay
 import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
-import { evaluateMacros } from './scripts/macros.js';
+import { MacrosParser, evaluateMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
@@ -7790,6 +7790,7 @@ window['SillyTavern'].getContext = function () {
          * @deprecated Handlebars for extensions are no longer supported.
          */
         registerHelper: () => { },
+        registerMacro: MacrosParser.registerMacro.bind(MacrosParser),
         registedDebugFunction: registerDebugFunction,
         /**
          * @deprecated Use renderExtensionTemplateAsync instead.
