@@ -8659,13 +8659,11 @@ function doCloseChat() {
  * it proceeds to delete character from UI and saves settings.
  * In case of error during the fetch request, it logs the error details.
  *
- * @param {string} popup_type - The type of popup currently active.
  * @param {string} this_chid - The character ID to be deleted.
  * @param {boolean} delete_chats - Whether to delete chats or not.
  */
-export async function handleDeleteCharacter(popup_type, this_chid, delete_chats) {
-    if (popup_type !== 'del_ch' ||
-        !characters[this_chid]) {
+export async function handleDeleteCharacter(this_chid, delete_chats) {
+    if (!characters[this_chid]) {
         return;
     }
 
@@ -8711,6 +8709,8 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
             await eventSource.emit(event_types.CHAT_DELETED, name);
         }
     }
+
+    eventSource.emit(event_types.CHARACTER_DELETED, { id: this_chid, character: characters[this_chid] });
 }
 
 /**
@@ -9212,11 +9212,6 @@ jQuery(async function () {
                 }, 2000);
             }
         }
-        if (popup_type == 'del_ch') {
-            const deleteChats = !!$('#del_char_checkbox').prop('checked');
-            eventSource.emit(event_types.CHARACTER_DELETED, { id: this_chid, character: characters[this_chid] });
-            await handleDeleteCharacter(popup_type, this_chid, deleteChats);
-        }
         if (popup_type == 'alternate_greeting' && menu_type !== 'create') {
             createOrEditCharacter();
         }
@@ -9297,15 +9292,27 @@ jQuery(async function () {
 
     $('#form_create').submit(createOrEditCharacter);
 
-    $('#delete_button').on('click', function () {
-        callPopup(`
-                <h3>Delete the character?</h3>
-                <b>THIS IS PERMANENT!<br><br>
+    $('#delete_button').on('click', async function () {
+        if (!this_chid) {
+            toastr.warning('No character selected.');
+            return;
+        }
+
+        let deleteChats = false;
+
+        const confirm = await Popup.show.confirm('Delete the character?', `
+            <b>THIS IS PERMANENT!<br><br>
                 <label for="del_char_checkbox" class="checkbox_label justifyCenter">
                     <input type="checkbox" id="del_char_checkbox" />
                     <small>Also delete the chat files</small>
-                </label><br></b>`, 'del_ch', '',
-        );
+                </label><br></b>`, {
+            onClose: () => deleteChats = !!$('#del_char_checkbox').prop('checked'),
+        });
+        if (!confirm) {
+            return;
+        }
+
+        await deleteCharacter(characters[this_chid].avatar, { deleteChats: deleteChats });
     });
 
     //////// OPTIMIZED ALL CHAR CREATION/EDITING TEXTAREA LISTENERS ///////////////
