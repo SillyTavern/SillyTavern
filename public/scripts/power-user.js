@@ -22,6 +22,7 @@ import {
     setActiveGroup,
     setActiveCharacter,
     entitiesFilter,
+    doNewChat,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -39,11 +40,11 @@ import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
-import { countOccurrences, debounce, delay, download, getFileText, isOdd, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { countOccurrences, debounce, delay, download, getFileText, isOdd, isTrueBoolean, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 import { FILTER_TYPES } from './filters.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { AUTOCOMPLETE_WIDTH } from './autocomplete/AutoComplete.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -2530,14 +2531,6 @@ async function resetMovablePanels(type) {
     });
 }
 
-async function doNewChat() {
-    $('#option_start_new_chat').trigger('click');
-    await delay(1);
-    $('#dialogue_popup_ok').trigger('click');
-    await delay(1);
-    return '';
-}
-
 /**
  * Finds the ID of the tag with the given name.
  * @param {string} name
@@ -3926,7 +3919,20 @@ $(document).ready(() => {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'newchat',
-        callback: doNewChat,
+        /** @type {(args: { delete: string?}, string) => Promise<''>} */
+        callback: async (args, _) => {
+            await doNewChat({ deleteCurrentChat: isTrueBoolean(args.delete) });
+            return '';
+        },
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'delete',
+                description: 'delete the current chat',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
         helpString: 'Start a new chat with the current character',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
