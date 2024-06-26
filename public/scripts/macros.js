@@ -13,17 +13,22 @@ Handlebars.registerHelper('helperMissing', function () {
     return substituteParams(`{{${macroName}}}`);
 });
 
+/**
+ * @typedef {Object<string, *>} EnvObject
+ * @typedef {(nonce: string) => string} MacroFunction
+ */
+
 export class MacrosParser {
     /**
      * A map of registered macros.
-     * @type {Map<string, string|((nonce: string) => string)>}
+     * @type {Map<string, string|MacroFunction>}
      */
     static #macros = new Map();
 
     /**
      * Registers a global macro that can be used anywhere where substitution is allowed.
      * @param {string} key Macro name (key)
-     * @param {string|((nonce: string) => string)} value A string or a function that returns a string
+     * @param {string|MacroFunction} value A string or a function that returns a string
      */
     static registerMacro(key, value) {
         if (typeof key !== 'string') {
@@ -55,7 +60,7 @@ export class MacrosParser {
 
     /**
      * Populate the env object with macro values from the current context.
-     * @param {Object<string, *>} env Env object for the current evaluation context
+     * @param {EnvObject} env Env object for the current evaluation context
      * @returns {void}
      */
     static populateEnv(env) {
@@ -86,6 +91,20 @@ export class MacrosParser {
 
         if (value === null || value === undefined) {
             return '';
+        }
+
+        if (value instanceof Promise) {
+            console.warn('Promises are not supported as macro values');
+            return '';
+        }
+
+        if (typeof value === 'function') {
+            console.warn('Functions are not supported as macro values');
+            return '';
+        }
+
+        if (value instanceof Date) {
+            return value.toISOString();
         }
 
         if (typeof value === 'object') {
@@ -367,7 +386,7 @@ function timeDiffReplace(input) {
 /**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
- * @param {Object<string, *>} env - Map of macro names to the values they'll be substituted with. If the param
+ * @param {EnvObject} env - Map of macro names to the values they'll be substituted with. If the param
  * values are functions, those functions will be called and their return values are used.
  * @returns {string} The string with substituted parameters.
  */
