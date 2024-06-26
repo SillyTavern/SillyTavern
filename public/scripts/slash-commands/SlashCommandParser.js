@@ -946,10 +946,16 @@ export class SlashCommandParser {
             const firstVal = listValues[0];
             if (typeof firstVal.value == 'string') {
                 firstVal.value = firstVal.value.trimStart();
+                if (firstVal.value.length == 0) {
+                    listValues.shift();
+                }
             }
             const lastVal = listValues.slice(-1)[0];
             if (typeof lastVal.value == 'string') {
                 lastVal.value = lastVal.value.trimEnd();
+                if (lastVal.value.length == 0) {
+                    listValues.pop();
+                }
             }
             return listValues;
         }
