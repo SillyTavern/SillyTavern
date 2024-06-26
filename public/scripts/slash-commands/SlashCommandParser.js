@@ -217,10 +217,10 @@ export class SlashCommandParser {
 
         function getQuotedRunRegex() {
             try {
-                return new RegExp('(".+?(?<!\\\\)")|(\\S+?)');
+                return new RegExp('(".+?(?<!\\\\)")|(\\S+?)(\\||$|\\s)');
             } catch {
                 // fallback for browsers that don't support lookbehind
-                return /(".+?")|(\S+?)/;
+                return /(".+?")|(\S+?)(\||$|\s)/;
             }
         }
 
