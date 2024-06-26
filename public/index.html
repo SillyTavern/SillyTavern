@@ -5425,7 +5425,7 @@
                             </div>
                         </div>
                         <div class="flex-container wide100p flexGap10">
-                            <div class="flex3 flex-container flexFlowColumn flexNoGap">
+                            <div class="flex4 flex-container flexFlowColumn flexNoGap">
                                 <div class="flex-container justifySpaceBetween">
                                     <small for="group">
                                         <span data-i18n="Inclusion Group">Inclusion Group</span>
@@ -5447,7 +5447,7 @@
                                     <input type="text" class="text_pole margin0" name="group" rows="1" data-i18n="[placeholder]Only one entry with the same label will be activated" placeholder="Only one entry with the same label will be activated">
                                 </div>
                             </div>
-                            <div class="flex1 flex-container flexFlowColumn flexNoGap" data-i18n="[title]A relative likelihood of entry activation within the group" title="A relative likelihood of entry activation within the group">
+                            <div class="flex2 flex-container flexFlowColumn flexNoGap" data-i18n="[title]A relative likelihood of entry activation within the group" title="A relative likelihood of entry activation within the group">
                                 <div class="flex-container justifySpaceBetween marginBot5">
                                     <small for="groupWeight" data-i18n="Group Weight">
                                         Group Weight
@@ -5481,6 +5481,19 @@
                                 </div>
                                 <div class="range-block-range">
                                     <input class="text_pole margin0" name="cooldown" type="number" placeholder="No cooldown" min="0" max="999999">
+                                </div>
+                            </div>
+                            <div class="flex2 flex-container flexFlowColumn flexNoGap" data-i18n="[title]Entries with a delay can't be activated until there are N messages present in the chat." title="Entries with a delay can't be activated until there are N messages present in the chat.">
+                                <div class="flex-container justifySpaceBetween marginBot5">
+                                    <small class="flex-container alignItemsBaseline" for="delay" data-i18n="Delay">
+                                        <span data-i18n="Delay">
+                                            Delay
+                                        </span>
+                                        <i class="fa-solid fa-comments fa-xs"></i>
+                                    </small>
+                                </div>
+                                <div class="range-block-range">
+                                    <input class="text_pole margin0" name="delay" type="number" placeholder="No delay" min="0" max="999999">
                                 </div>
                             </div>
                         </div>
