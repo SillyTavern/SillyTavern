@@ -346,9 +346,11 @@ router.post('/import', urlencodedParser, function (request, response) {
     }
 
     try {
-        const data = fs.readFileSync(path.join(request.file.destination, request.file.filename), 'utf8');
+        const pathToUpload = path.join(request.file.destination, request.file.filename);
+        const data = fs.readFileSync(pathToUpload, 'utf8');
 
         if (format === 'json') {
+            fs.unlinkSync(pathToUpload);
             const jsonData = JSON.parse(data);
             if (jsonData.histories !== undefined) {
                 // CAI Tools format
@@ -387,7 +389,8 @@ router.post('/import', urlencodedParser, function (request, response) {
             if (jsonData.user_name !== undefined || jsonData.name !== undefined) {
                 const fileName = `${characterName} - ${humanizedISO8601DateTime()} imported.jsonl`;
                 const filePath = path.join(request.user.directories.chats, avatarUrl, fileName);
-                fs.copyFileSync(path.join(request.file.destination, request.file.filename), filePath);
+                fs.copyFileSync(pathToUpload, filePath);
+                fs.unlinkSync(pathToUpload);
                 response.send({ res: true });
             } else {
                 console.log('Incorrect chat format .jsonl');
