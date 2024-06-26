@@ -78,8 +78,8 @@ const showPopupHelper = {
     /**
      * Asynchronously displays a confirmation popup with the given header and text, returning the clicked result button value.
      *
-     * @param {string} header - The header text for the popup.
-     * @param {string} text - The main text for the popup.
+     * @param {string?} header - The header text for the popup.
+     * @param {string?} text - The main text for the popup.
      * @param {PopupOptions} [popupOptions={}] - Options for the popup.
      * @return {Promise<POPUP_RESULT>} A Promise that resolves with the result of the user's interaction.
      */
@@ -491,9 +491,17 @@ export class Popup {
 }
 
 class PopupUtils {
+    /**
+     * Builds popup content with header and text below
+     *
+     * @param {string} header - The header to be added to the text
+     * @param {string} text - The main text content
+     */
     static BuildTextWithHeader(header, text) {
-        return `
-            <h3>${header}</h1>
+        if (!header) {
+            return text;
+        }
+        return `<h3>${header}</h3>
             ${text}`;
     }
 }

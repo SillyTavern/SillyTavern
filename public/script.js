@@ -8553,7 +8553,7 @@ async function doImpersonate(args, prompt) {
 
 async function doNewChat({ deleteCurrentChat = false } = {}) {
     //Make a new chat for selected character
-    if ((!selected_group && this_chid == undefined) || menu_type != 'create') {
+    if ((!selected_group && this_chid == undefined) || menu_type == 'create') {
         return;
     }
 
