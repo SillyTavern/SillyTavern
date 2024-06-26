@@ -513,9 +513,6 @@ let optionsPopper = Popper.createPopper(document.getElementById('options_button'
 let exportPopper = Popper.createPopper(document.getElementById('export_button'), document.getElementById('export_format_popup'), {
     placement: 'left',
 });
-let rawPromptPopper = Popper.createPopper(document.getElementById('dialogue_popup'), document.getElementById('rawPromptPopup'), {
-    placement: 'right',
-});
 
 // Saved here for performance reasons
 const messageTemplate = $('#message_template .mes');
@@ -4890,14 +4887,44 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
 
     const params = await itemizedParams(itemizedPrompts, thisPromptSet);
 
-    if (params.this_main_api == 'openai') {
-        const template = await renderTemplateAsync('itemizationChat', params);
-        callPopup(template, 'text');
+    const template = params.this_main_api == 'openai'
+        ? await renderTemplateAsync('itemizationChat', params)
+        : await renderTemplateAsync('itemizationText', params);
 
-    } else {
-        const template = await renderTemplateAsync('itemizationText', params);
-        callPopup(template, 'text');
-    }
+    const popup = new Popup(template, POPUP_TYPE.TEXT);
+
+    popup.dlg.querySelector('#copyPromptToClipboard').addEventListener('click', function () {
+        let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
+        let rawPromptValues = rawPrompt;
+
+        if (Array.isArray(rawPrompt)) {
+            rawPromptValues = rawPrompt.map(x => x.content).join('\n');
+        }
+
+        navigator.clipboard.writeText(rawPromptValues);
+        toastr.info('Copied!');
+    });
+
+    popup.dlg.querySelector('#showRawPrompt').addEventListener('click', function () {
+        //console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
+        console.log(PromptArrayItemForRawPromptDisplay);
+        console.log(itemizedPrompts);
+        console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
+
+        let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
+        let rawPromptValues = rawPrompt;
+
+        if (Array.isArray(rawPrompt)) {
+            rawPromptValues = rawPrompt.map(x => x.content).join('\n');
+        }
+
+        //let DisplayStringifiedPrompt = JSON.stringify(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt).replace(/\n+/g, '<br>');
+        const rawPromptWrapper = document.getElementById('rawPromptWrapper');
+        rawPromptWrapper.innerText = rawPromptValues;
+        $('#rawPromptPopup').slideToggle();
+    });
+
+    await popup.show();
 }
 
 function setInContextMessages(lastmsg, type) {
@@ -9223,9 +9250,6 @@ jQuery(async function () {
             }
         }
 
-        rawPromptPopper.update();
-        $('#rawPromptPopup').hide();
-
         if (dialogueResolve) {
             if (popup_type == 'input') {
                 dialogueResolve($('#dialogue_popup_input').val());
@@ -9816,43 +9840,12 @@ jQuery(async function () {
         });
     }
 
-    $(document).on('pointerup', '.mes_prompt', function () {
+    $(document).on('pointerup', '.mes_prompt', async function () {
         let mesIdForItemization = $(this).closest('.mes').attr('mesId');
         console.log(`looking for mesID: ${mesIdForItemization}`);
         if (itemizedPrompts.length !== undefined && itemizedPrompts.length !== 0) {
-            promptItemize(itemizedPrompts, mesIdForItemization);
+            await promptItemize(itemizedPrompts, mesIdForItemization);
         }
-    });
-
-    $(document).on('pointerup', '#copyPromptToClipboard', function () {
-        let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
-        let rawPromptValues = rawPrompt;
-
-        if (Array.isArray(rawPrompt)) {
-            rawPromptValues = rawPrompt.map(x => x.content).join('\n');
-        }
-
-        navigator.clipboard.writeText(rawPromptValues);
-        toastr.info('Copied!', '', { timeOut: 2000 });
-    });
-
-    $(document).on('pointerup', '#showRawPrompt', function () {
-        //console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
-        console.log(PromptArrayItemForRawPromptDisplay);
-        console.log(itemizedPrompts);
-        console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
-
-        let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
-        let rawPromptValues = rawPrompt;
-
-        if (Array.isArray(rawPrompt)) {
-            rawPromptValues = rawPrompt.map(x => x.content).join('\n');
-        }
-
-        //let DisplayStringifiedPrompt = JSON.stringify(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt).replace(/\n+/g, '<br>');
-        $('#rawPromptWrapper').text(rawPromptValues);
-        rawPromptPopper.update();
-        $('#rawPromptPopup').toggle();
     });
 
     //********************
