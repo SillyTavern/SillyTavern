@@ -9210,13 +9210,6 @@ jQuery(async function () {
         if (popup_type == 'alternate_greeting' && menu_type !== 'create') {
             createOrEditCharacter();
         }
-        if (popup_type === 'del_group') {
-            const groupId = $('#dialogue_popup').data('group_id');
-
-            if (groupId) {
-                deleteGroup(groupId);
-            }
-        }
         //Make a new chat for selected character
         if (
             popup_type == 'new_chat' &&
