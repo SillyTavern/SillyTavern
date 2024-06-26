@@ -369,7 +369,7 @@ export class AutoComplete {
                 // update replacer and add quotes if necessary
                 const optionName = option.valueProvider ? option.valueProvider(this.name) : option.name;
                 if (this.effectiveParserResult.canBeQuoted) {
-                    option.replacer = optionName.includes(' ') || this.startQuote || this.endQuote ? `"${optionName}"` : `${optionName}`;
+                    option.replacer = optionName.includes(' ') || this.startQuote || this.endQuote ? `"${optionName.replace(/"/g, '\\"')}"` : `${optionName}`;
                 } else {
                     option.replacer = optionName;
                 }
