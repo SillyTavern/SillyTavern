@@ -8551,6 +8551,39 @@ async function doImpersonate(args, prompt) {
     return '';
 }
 
+async function doNewChat({ deleteCurrentChat = false } = {}) {
+    //Make a new chat for selected character
+    if ((!selected_group && this_chid == undefined) || menu_type != 'create') {
+        return;
+    }
+
+    //Fix it; New chat doesn't create while open create character menu
+    await clearChat();
+    chat.length = 0;
+
+    chat_file_for_del = getCurrentChatDetails()?.sessionName;
+
+    // Make it easier to find in backups
+    if (deleteCurrentChat) {
+        await saveChatConditional();
+    }
+
+    if (selected_group) {
+        await createNewGroupChat(selected_group);
+        if (deleteCurrentChat) await deleteGroupChat(selected_group, chat_file_for_del);
+    }
+    else {
+        //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
+        chat_metadata = {};
+        characters[this_chid].chat = `${name2} - ${humanizedDateTime()}`;
+        $('#selected_chat_pole').val(characters[this_chid].chat);
+        await getChat();
+        await createOrEditCharacter(new CustomEvent('newChat'));
+        if (deleteCurrentChat) await delChat(chat_file_for_del + '.jsonl');
+    }
+
+}
+
 async function doDeleteChat() {
     await displayPastChats();
     let currentChatDeleteButton = $('.select_chat_block[highlight=\'true\']').parent().find('.PastChat_cross');
@@ -9215,38 +9248,6 @@ jQuery(async function () {
         if (popup_type == 'alternate_greeting' && menu_type !== 'create') {
             createOrEditCharacter();
         }
-        //Make a new chat for selected character
-        if (
-            popup_type == 'new_chat' &&
-            (selected_group || this_chid !== undefined) &&
-            menu_type != 'create'
-        ) {
-            //Fix it; New chat doesn't create while open create character menu
-            await clearChat();
-            chat.length = 0;
-
-            chat_file_for_del = getCurrentChatDetails()?.sessionName;
-            const isDelChatCheckbox = document.getElementById('del_chat_checkbox')?.checked;
-
-            // Make it easier to find in backups
-            if (isDelChatCheckbox) {
-                await saveChatConditional();
-            }
-
-            if (selected_group) {
-                await createNewGroupChat(selected_group);
-                if (isDelChatCheckbox) await deleteGroupChat(selected_group, chat_file_for_del);
-            }
-            else {
-                //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
-                chat_metadata = {};
-                characters[this_chid].chat = `${name2} - ${humanizedDateTime()}`;
-                $('#selected_chat_pole').val(characters[this_chid].chat);
-                await getChat();
-                await createOrEditCharacter(new CustomEvent('newChat'));
-                if (isDelChatCheckbox) await delChat(chat_file_for_del + '.jsonl');
-            }
-        }
 
         if (dialogueResolve) {
             if (popup_type == 'input') {
@@ -9574,14 +9575,20 @@ jQuery(async function () {
 
         else if (id == 'option_start_new_chat') {
             if ((selected_group || this_chid !== undefined) && !is_send_press) {
-                callPopup(`
-                    <h3>Start new chat?</h3><br>
+                let deleteCurrentChat = false;
+                const result = await Popup.show.confirm('Start new chat?', `
                     <label for="del_chat_checkbox" class="checkbox_label justifyCenter"
                     title="If necessary, you can later restore this chat file from the /backups folder">
                         <input type="checkbox" id="del_chat_checkbox" />
                         <small>Also delete the current chat file</small>
-                    </label><br>
-                `, 'new_chat', '');
+                    </label>`, {
+                    onClose: () => deleteCurrentChat = !!$('#del_chat_checkbox').prop('checked'),
+                });
+                if (!result) {
+                    return;
+                }
+
+                await doNewChat({ deleteCurrentChat: deleteCurrentChat });
             }
         }
 
