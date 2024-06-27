@@ -212,6 +212,7 @@ const TEXTGEN_TYPES = {
     INFERMATICAI: 'infermaticai',
     DREAMGEN: 'dreamgen',
     OPENROUTER: 'openrouter',
+    FEATHERLESS: 'featherless',
 };
 
 const INFERMATICAI_KEYS = [
@@ -225,6 +226,49 @@ const INFERMATICAI_KEYS = [
     'stream',
     'stop',
 ];
+
+const FEATHERLESS_KEYS = [
+    'model',
+    'prompt',
+    'best_of',
+    'echo',
+    'frequency_penalty',
+    'logit_bias',
+    'logprobs',
+    'max_tokens',
+    'n',
+    'presence_penalty',
+    'seed',
+    'stop',
+    'stream',
+    'suffix',
+    'temperature',
+    'top_p',
+    'user',
+
+    'use_beam_search',
+    'top_k',
+    'min_p',
+    'repetition_penalty',
+    'length_penalty',
+    'early_stopping',
+    'stop_token_ids',
+    'ignore_eos',
+    'min_tokens',
+    'skip_special_tokens',
+    'spaces_between_special_tokens',
+    'truncate_prompt_tokens',
+
+    'include_stop_str_in_output',
+    'response_format',
+    'guided_json',
+    'guided_regex',
+    'guided_choice',
+    'guided_grammar',
+    'guided_decoding_backend',
+    'guided_whitespace_pattern',
+];
+
 
 // https://dreamgen.com/docs/api#openai-text
 const DREAMGEN_KEYS = [
@@ -366,4 +410,5 @@ module.exports = {
     OPENROUTER_HEADERS,
     OPENROUTER_KEYS,
     VLLM_KEYS,
+    FEATHERLESS_KEYS,
 };

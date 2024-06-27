@@ -2038,6 +2038,7 @@
                                     <option value="tabby">TabbyAPI</option>
                                     <option value="togetherai">TogetherAI</option>
                                     <option value="vllm">vLLM</option>
+                                    <option value="featherless">Featherless</option>
                                 </select>
                             </div>
                             <div data-tg-type="togetherai" class="flex-container flexFlowColumn">
@@ -2182,6 +2183,39 @@
                                 </div>
                                 <input id="custom_model_textgenerationwebui" class="text_pole wide100p" maxlength="500" placeholder="Custom model (optional)" data-i18n="[placeholder]Custom model (optional)" type="text">
                             </div>
+
+
+
+                            <div data-tg-type="featherless" class="flex-container flexFlowColumn">
+                                <div class="flex-container flexFlowColumn">
+                                    <a href="https://featherless.ai/models/" target="_blank">
+                                        featherless.ai
+                                    </a>
+
+                                </div>
+                                <h4 data-i18n="API key (optional)">API key</h4>
+                                <div class="flex-container">
+                                    <input id="api_key_featherless" name="api_key_featherless" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_featherless">
+                                    </div>
+                                </div>
+                                <div data-for="api_key_featherless" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                    For privacy reasons, your API key will be hidden after you reload the page.
+                                </div>
+                                <div class="flex1">
+                                    <h4 data-i18n="Server url">Server URL</h4>
+                                    <small data-i18n="Example: 127.0.0.1:5000">Try: Api.Featherless.ai/v1</small>
+                                    <input id="featherless_api_url_text" name="featherless_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_blocking">
+                                </div>
+                                <input id="custom_model_featherless" class="text_pole wide100p" maxlength="500" placeholder="Custom model (optional)" data-i18n="[placeholder]Custom model (optional)" type="text">
+                            </div>
+
+
+
+
+
+
+
                             <div data-tg-type="vllm">
                                 <div class="flex-container flexFlowColumn">
                                     <a href="https://github.com/vllm-project/vllm" target="_blank" data-i18n="vllm-project/vllm">

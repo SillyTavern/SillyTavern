@@ -28,6 +28,7 @@ export const SECRET_KEYS = {
     PERPLEXITY: 'api_key_perplexity',
     GROQ: 'api_key_groq',
     AZURE_TTS: 'api_key_azure_tts',
+    FEATHERLESS: 'api_key_featherless',
 };
 
 const INPUT_MAP = {
