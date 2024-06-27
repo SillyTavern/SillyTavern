@@ -183,7 +183,6 @@
 .tag.selected {
     opacity: 1 !important;
     filter: none !important;
-    border: 1px solid lightgreen;
 }
 
 .tag.excluded {

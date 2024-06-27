@@ -16,6 +16,7 @@ import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandE
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
+import { Popup } from './popup.js';
 
 export {
     world_info,
@@ -98,6 +99,7 @@ const MAX_SCAN_DEPTH = 1000;
  * @property {number} [selectiveLogic] The logic to use for selective activation
  * @property {number} [sticky] The sticky value of the entry
  * @property {number} [cooldown] The cooldown of the entry
+ * @property {number} [delay] The delay of the entry
  */
 
 /**
@@ -110,7 +112,7 @@ const MAX_SCAN_DEPTH = 1000;
 
 /**
  * @typedef TimedEffectType Type of timed effect
- * @type {'sticky'|'cooldown'}
+ * @type {'sticky'|'cooldown'|'delay'}
  */
 // End typedef area
 
@@ -370,6 +372,7 @@ class WorldInfoTimedEffects {
     #buffer = {
         'sticky': [],
         'cooldown': [],
+        'delay': [],
     };
 
     /**
@@ -403,6 +406,8 @@ class WorldInfoTimedEffects {
         'cooldown': (entry) => {
             console.debug('Cooldown ended for entry', entry.uid);
         },
+
+        'delay': () => {},
     };
 
     /**
@@ -529,11 +534,30 @@ class WorldInfoTimedEffects {
     }
 
     /**
+     * Processes entries for the "delay" timed effect.
+     * @param {WIScanEntry[]} buffer Buffer to store the entries
+     */
+    #checkDelayEffect(buffer) {
+        for (const entry of this.#entries) {
+            if (!entry.delay) {
+                continue;
+            }
+
+            if (this.#chat.length < entry.delay) {
+                buffer.push(entry);
+                console.log('Timed effect "delay" applied to entry', entry);
+            }
+        }
+
+    }
+
+    /**
      * Checks for timed effects on chat messages.
      */
     checkTimedEffects() {
         this.#checkTimedEffectOfType('sticky', this.#buffer.sticky, this.#onEnded.sticky.bind(this));
         this.#checkTimedEffectOfType('cooldown', this.#buffer.cooldown, this.#onEnded.cooldown.bind(this));
+        this.#checkDelayEffect(this.#buffer.delay);
     }
 
     /**
@@ -610,7 +634,7 @@ class WorldInfoTimedEffects {
      * @returns {boolean} Is recognized type
      */
     isValidEffectType(type) {
-        return typeof type === 'string' && ['sticky', 'cooldown'].includes(type.trim().toLowerCase());
+        return typeof type === 'string' && ['sticky', 'cooldown', 'delay'].includes(type.trim().toLowerCase());
     }
 
     /**
@@ -1684,8 +1708,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
     // Regardless of whether success is displayed or not. Make sure the delete button is available.
     // Do not put this code behind.
     $('#world_popup_delete').off('click').on('click', async () => {
-        const confirmation = await callPopup(`<h3>Delete the World/Lorebook: "${name}"?</h3>This action is irreversible!`, 'confirm');
-
+        const confirmation = await Popup.show.confirm(`Delete the World/Lorebook: "${name}"?`, 'This action is irreversible!');
         if (!confirmation) {
             return;
         }
@@ -1733,14 +1756,21 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
         return entriesArray;
     }
 
+    const storageKey = 'WI_PerPage';
+    const perPageDefault = 25;
     let startPage = 1;
 
     if (navigation === navigation_option.previous) {
         startPage = $('#world_info_pagination').pagination('getCurrentPageNum');
     }
 
-    const storageKey = 'WI_PerPage';
-    const perPageDefault = 25;
+    if (typeof navigation === 'number' && Number(navigation) >= 0) {
+        const data = getDataArray();
+        const uidIndex = data.findIndex(x => x.uid === navigation);
+        const perPage = Number(localStorage.getItem(storageKey)) || perPageDefault;
+        startPage = Math.floor(uidIndex / perPage) + 1;
+    }
+
     $('#world_info_pagination').pagination({
         dataSource: getDataArray,
         pageSize: Number(localStorage.getItem(storageKey)) || perPageDefault,
@@ -1801,15 +1831,8 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
         },
     });
 
-
-
     if (typeof navigation === 'number' && Number(navigation) >= 0) {
         const selector = `#world_popup_entries_list [uid="${navigation}"]`;
-        const data = getDataArray();
-        const uidIndex = data.findIndex(x => x.uid === navigation);
-        const perPage = Number(localStorage.getItem(storageKey)) || perPageDefault;
-        const page = Math.floor(uidIndex / perPage) + 1;
-        $('#world_info_pagination').pagination('go', page);
         waitUntilCondition(() => document.querySelector(selector) !== null).finally(() => {
             const element = $(selector);
 
@@ -1862,7 +1885,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
 
     $('#world_duplicate').off('click').on('click', async () => {
         const tempName = getFreeWorldName();
-        const finalName = await callPopup('<h3>Create a new World Info?</h3>Enter a name for the new file:', 'input', tempName);
+        const finalName = await Popup.show.input('Create a new World Info?', 'Enter a name for the new file:', tempName);
 
         if (finalName) {
             await saveWorldInfo(finalName, data, true);
@@ -1941,6 +1964,7 @@ const originalDataKeyMap = {
     'groupWeight': 'extensions.group_weight',
     'sticky': 'extensions.sticky',
     'cooldown': 'extensions.cooldown',
+    'delay': 'extensions.delay',
 };
 
 /** Checks the state of the current search, and adds/removes the search sorting option accordingly */
@@ -2589,6 +2613,19 @@ function getWorldEntry(name, data, entry) {
     });
     cooldown.val(entry.cooldown > 0 ? entry.cooldown : '').trigger('input');
 
+    // delay
+    const delay = template.find('input[name="delay"]');
+    delay.data('uid', entry.uid);
+    delay.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = Number($(this).val());
+        data.entries[uid].delay = !isNaN(value) ? value : null;
+
+        setOriginalDataValue(data, uid, 'extensions.delay', data.entries[uid].delay);
+        saveWorldInfo(name, data);
+    });
+    delay.val(entry.delay > 0 ? entry.delay : '').trigger('input');
+
     // probability
     if (entry.probability === undefined) {
         entry.probability = null;
@@ -3139,6 +3176,7 @@ const newEntryDefinition = {
     role: { default: 0, type: 'enum' },
     sticky: { default: null, type: 'number?' },
     cooldown: { default: null, type: 'number?' },
+    delay: { default: null, type: 'number?' },
 };
 
 const newEntryTemplate = Object.fromEntries(
@@ -3190,7 +3228,7 @@ async function saveWorldInfo(name, data, immediately) {
 
 async function renameWorldInfo(name, data) {
     const oldName = name;
-    const newName = await callPopup('<h3>Rename World Info</h3>Enter a new name:', 'input', oldName);
+    const newName = await Popup.show.input('Rename World Info', 'Enter a new name:', oldName);
 
     if (oldName === newName || !newName) {
         console.debug('World info rename cancelled');
@@ -3533,9 +3571,15 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
 
             const isSticky = timedEffects.isEffectActive('sticky', entry);
             const isCooldown = timedEffects.isEffectActive('cooldown', entry);
+            const isDelay = timedEffects.isEffectActive('delay', entry);
+
+            if (isDelay) {
+                console.debug(`WI entry ${entry.uid} suppressed by delay`, entry);
+                continue;
+            }
 
             if (isCooldown && !isSticky) {
-                console.debug(`WI entry ${entry.uid} suppressed by cooldown`);
+                console.debug(`WI entry ${entry.uid} suppressed by cooldown`, entry);
                 continue;
             }
 
@@ -3933,6 +3977,7 @@ function convertAgnaiMemoryBook(inputObj) {
             role: extension_prompt_roles.SYSTEM,
             sticky: null,
             cooldown: null,
+            delay: null,
         };
     });
 
@@ -3974,6 +4019,7 @@ function convertRisuLorebook(inputObj) {
             role: extension_prompt_roles.SYSTEM,
             sticky: null,
             cooldown: null,
+            delay: null,
         };
     });
 
@@ -4020,6 +4066,7 @@ function convertNovelLorebook(inputObj) {
             role: extension_prompt_roles.SYSTEM,
             sticky: null,
             cooldown: null,
+            delay: null,
         };
     });
 
@@ -4068,6 +4115,7 @@ function convertCharacterBook(characterBook) {
             vectorized: entry.extensions?.vectorized ?? false,
             sticky: entry.extensions?.sticky ?? null,
             cooldown: entry.extensions?.cooldown ?? null,
+            delay: entry.extensions?.delay ?? null,
         };
     });
 
@@ -4138,11 +4186,9 @@ export async function importEmbeddedWorldInfo(skipPopup = false) {
     }
 
     const bookName = characters[chid]?.data?.character_book?.name || `${characters[chid]?.name}'s Lorebook`;
-    const confirmationText = (`<h3>Are you sure you want to import "${bookName}"?</h3>`) + (world_names.includes(bookName) ? 'It will overwrite the World/Lorebook with the same name.' : '');
 
     if (!skipPopup) {
-        const confirmation = await callPopup(confirmationText, 'confirm');
-
+        const confirmation = await Popup.show.confirm(`Are you sure you want to import "${bookName}"?`, world_names.includes(bookName) ? 'It will overwrite the World/Lorebook with the same name.' : '');
         if (!confirmation) {
             return;
         }
@@ -4382,7 +4428,7 @@ jQuery(() => {
 
     $('#world_create_button').on('click', async () => {
         const tempName = getFreeWorldName();
-        const finalName = await callPopup('<h3>Create a new World Info?</h3>Enter a name for the new file:', 'input', tempName);
+        const finalName = await Popup.show.input('Create a new World Info', 'Enter a name for the new file:', tempName);
 
         if (finalName) {
             await createNewWorldInfo(finalName, { interactive: true });

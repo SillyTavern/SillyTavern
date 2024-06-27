@@ -8,3 +8,5 @@ Start.bat
 cloudflared.exe
 access.log
 /data
+/cache
+.DS_Store

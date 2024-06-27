@@ -5,7 +5,6 @@ const express = require('express');
 const mime = require('mime-types');
 const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
-const { UPLOADS_PATH } = require('../constants');
 const { getImageBuffers } = require('../util');
 const { jsonParser, urlencodedParser } = require('../express-common');
 
@@ -190,7 +189,7 @@ router.post('/upload-zip', urlencodedParser, async (request, response) => {
             return response.sendStatus(404);
         }
 
-        const spritePackPath = path.join(UPLOADS_PATH, file.filename);
+        const spritePackPath = path.join(file.destination, file.filename);
         const sprites = await getImageBuffers(spritePackPath);
         const files = fs.readdirSync(spritesPath);
 
@@ -248,7 +247,7 @@ router.post('/upload', urlencodedParser, async (request, response) => {
         }
 
         const filename = label + path.parse(file.originalname).ext;
-        const spritePath = path.join(UPLOADS_PATH, file.filename);
+        const spritePath = path.join(file.destination, file.filename);
         const pathToFile = path.join(spritesPath, filename);
         // Copy uploaded file to sprites folder
         fs.cpSync(spritePath, pathToFile);

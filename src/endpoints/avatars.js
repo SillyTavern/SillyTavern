@@ -4,7 +4,7 @@ const fs = require('fs');
 const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const { jsonParser, urlencodedParser } = require('../express-common');
-const { AVATAR_WIDTH, AVATAR_HEIGHT, UPLOADS_PATH } = require('../constants');
+const { AVATAR_WIDTH, AVATAR_HEIGHT } = require('../constants');
 const { getImages, tryParse } = require('../util');
 
 // image processing related library imports
@@ -39,7 +39,7 @@ router.post('/upload', urlencodedParser, async (request, response) => {
     if (!request.file) return response.sendStatus(400);
 
     try {
-        const pathToUpload = path.join(UPLOADS_PATH, request.file.filename);
+        const pathToUpload = path.join(request.file.destination, request.file.filename);
         const crop = tryParse(request.query.crop);
         let rawImg = await jimp.read(pathToUpload);
 

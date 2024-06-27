@@ -24,7 +24,6 @@ import {
     characters,
     default_avatar,
     addOneMessage,
-    callPopup,
     clearChat,
     Generate,
     select_rm_info,
@@ -62,7 +61,6 @@ import {
     event_types,
     getCurrentChatId,
     setScenarioOverride,
-    getCropPopup,
     system_avatar,
     isChatSaving,
     setExternalAbortController,
@@ -76,6 +74,7 @@ import {
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { isExternalMediaAllowed } from './chats.js';
+import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 
 export {
     selected_group,
@@ -1300,14 +1299,20 @@ function isGroupMemberDisabled(avatarId) {
     return Boolean(thisGroup && thisGroup.disabled_members.includes(avatarId));
 }
 
-function onDeleteGroupClick() {
+async function onDeleteGroupClick() {
+    if (!openGroupId) {
+        toastr.warning('Currently no group selected.');
+        return;
+    }
     if (is_group_generating) {
         toastr.warning('Not so fast! Wait for the characters to stop typing before deleting the group.');
         return;
     }
 
-    $('#dialogue_popup').data('group_id', openGroupId);
-    callPopup('<h3>Delete the group?</h3><p>This will also delete all your chats with that group. If you want to delete a single conversation, select a "View past chats" option in the lower left menu.</p>', 'del_group');
+    const confirm = await Popup.show.confirm('Delete the group?', '<p>This will also delete all your chats with that group. If you want to delete a single conversation, select a "View past chats" option in the lower left menu.</p>');
+    if (confirm) {
+        deleteGroup(openGroupId);
+    }
 }
 
 async function onFavoriteGroupClick() {
@@ -1450,13 +1455,13 @@ async function uploadGroupAvatar(event) {
 
     $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
 
-    const croppedImage = await callPopup(getCropPopup(result), 'avatarToCrop');
+    const croppedImage = await callGenericPopup('Set the crop position of the avatar image', POPUP_TYPE.CROP, '', { cropImage: result });
 
     if (!croppedImage) {
         return;
     }
 
-    let thumbnail = await createThumbnail(croppedImage, 200, 300);
+    let thumbnail = await createThumbnail(String(croppedImage), 200, 300);
     //remove data:image/whatever;base64
     thumbnail = thumbnail.replace(/^data:image\/[a-z]+;base64,/, '');
     let _thisGroup = groups.find((x) => x.id == openGroupId);
@@ -1476,8 +1481,7 @@ async function uploadGroupAvatar(event) {
 }
 
 async function restoreGroupAvatar() {
-    const confirm = await callPopup('<h3>Are you sure you want to restore the group avatar?</h3> Your custom image will be deleted, and a collage will be used instead.', 'confirm');
-
+    const confirm = await Popup.show.confirm('Are you sure you want to restore the group avatar?', 'Your custom image will be deleted, and a collage will be used instead.');
     if (!confirm) {
         return;
     }

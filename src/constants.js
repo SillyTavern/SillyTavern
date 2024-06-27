@@ -196,7 +196,10 @@ const CHAT_COMPLETION_SOURCES = {
     GROQ: 'groq',
 };
 
-const UPLOADS_PATH = './uploads';
+/**
+ * Path to multer file uploads under the data root.
+ */
+const UPLOADS_DIRECTORY = '_uploads';
 
 // TODO: this is copied from the client code; there should be a way to de-duplicate it eventually
 const TEXTGEN_TYPES = {
@@ -364,7 +367,7 @@ module.exports = {
     PUBLIC_DIRECTORIES,
     USER_DIRECTORY_TEMPLATE,
     UNSAFE_EXTENSIONS,
-    UPLOADS_PATH,
+    UPLOADS_DIRECTORY,
     GEMINI_SAFETY,
     BISON_SAFETY,
     TEXTGEN_TYPES,

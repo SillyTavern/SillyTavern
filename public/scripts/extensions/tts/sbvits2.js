@@ -276,7 +276,8 @@ class SBVits2TtsProvider {
     async fetchTtsGeneration(inputText, voiceId) {
         console.info(`Generating new TTS for voice_id ${voiceId}`);
 
-        const [model_id, speaker_id, style] = voiceId.split('-');
+        const [model_id, speaker_id, ...rest] = voiceId.split('-');
+        const style = rest.join('-');
         const params = new URLSearchParams();
         // restore for auto_split
         inputText = inputText.replaceAll('<br>', '\n');

@@ -1,8 +1,9 @@
 import { getContext } from './extensions.js';
-import { callPopup, getRequestHeaders } from '../script.js';
+import { getRequestHeaders } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
 import { collapseNewlines } from './power-user.js';
 import { debounce_timeout } from './constants.js';
+import { Popup } from './popup.js';
 
 /**
  * Pagination status string template.
@@ -1821,7 +1822,7 @@ export async function checkOverwriteExistingData(type, existingNames, name, { in
         return true;
     }
 
-    const overwrite = interactive ? await callPopup(`<h3>${type} ${actionName}</h3><p>A ${type.toLowerCase()} with the same name already exists:<br />${existing}</p>Do you want to overwrite it?`, 'confirm') : false;
+    const overwrite = interactive && await Popup.show.confirm(`${type} ${actionName}`, `<p>A ${type.toLowerCase()} with the same name already exists:<br />${existing}</p>Do you want to overwrite it?`);
     if (!overwrite) {
         toastr.warning(`${type} ${actionName.toLowerCase()} cancelled. A ${type.toLowerCase()} with the same name already exists:<br />${existing}`, `${type} ${actionName}`, { escapeHtml: false });
         return false;

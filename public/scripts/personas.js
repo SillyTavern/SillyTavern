@@ -3,11 +3,9 @@ import {
     characters,
     chat,
     chat_metadata,
-    crop_data,
     default_avatar,
     eventSource,
     event_types,
-    getCropPopup,
     getRequestHeaders,
     getThumbnailUrl,
     name1,
@@ -24,6 +22,7 @@ import { PAGINATION_TEMPLATE, debounce, delay, download, ensureImageFormatSuppor
 import { debounce_timeout } from './constants.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { selected_group } from './group-chats.js';
+import { POPUP_TYPE, Popup } from './popup.js';
 
 let savePersonasPage = 0;
 const GRID_STORAGE_KEY = 'Personas_GridView';
@@ -278,13 +277,15 @@ async function changeUserAvatar(e) {
     let url = '/api/avatars/upload';
 
     if (!power_user.never_resize_avatars) {
-        const confirmation = await callPopup(getCropPopup(dataUrl), 'avatarToCrop', '', { okButton: 'Crop', large: true, wide: true });
-        if (!confirmation) {
+        const dlg = new Popup('Set the crop position of the avatar image', POPUP_TYPE.CROP, '', { cropImage: dataUrl });
+        const result = await dlg.show();
+
+        if (!result) {
             return;
         }
 
-        if (crop_data !== undefined) {
-            url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
+        if (dlg.cropData !== undefined) {
+            url += `?crop=${encodeURIComponent(JSON.stringify(dlg.cropData))}`;
         }
     }
 
@@ -589,7 +590,37 @@ function selectCurrentPersona() {
     }
 }
 
-async function lockUserNameToChat() {
+/**
+ * Checks if the persona is locked for the current chat.
+ * @returns {boolean} Whether the persona is locked
+ */
+function isPersonaLocked() {
+    return !!chat_metadata['persona'];
+}
+
+/**
+ * Locks or unlocks the persona for the current chat.
+ * @param {boolean} state Desired lock state
+ * @returns {Promise<void>}
+ */
+export async function setPersonaLockState(state) {
+    return state ? await lockPersona() : await unlockPersona();
+}
+
+/**
+ * Toggle the persona lock state for the current chat.
+ * @returns {Promise<void>}
+ */
+export async function togglePersonaLock() {
+    return isPersonaLocked()
+        ? await unlockPersona()
+        : await lockPersona();
+}
+
+/**
+ * Unlock the persona for the current chat.
+ */
+async function unlockPersona() {
     if (chat_metadata['persona']) {
         console.log(`Unlocking persona for this chat ${chat_metadata['persona']}`);
         delete chat_metadata['persona'];
@@ -598,9 +629,13 @@ async function lockUserNameToChat() {
             toastr.info('User persona is now unlocked for this chat. Click the "Lock" again to revert.', 'Persona unlocked');
         }
         updateUserLockIcon();
-        return;
     }
+}
 
+/**
+ * Lock the persona for the current chat.
+ */
+async function lockPersona() {
     if (!(user_avatar in power_user.personas)) {
         console.log(`Creating a new persona ${user_avatar}`);
         if (power_user.persona_show_notifications) {
@@ -623,6 +658,7 @@ async function lockUserNameToChat() {
     }
     updateUserLockIcon();
 }
+
 
 async function deleteUserAvatar(e) {
     e?.stopPropagation();
@@ -972,7 +1008,7 @@ export function initPersonas() {
     $(document).on('click', '.bind_user_name', bindUserNameToPersona);
     $(document).on('click', '.set_default_persona', setDefaultPersona);
     $(document).on('click', '.delete_avatar', deleteUserAvatar);
-    $('#lock_user_name').on('click', lockUserNameToChat);
+    $('#lock_user_name').on('click', togglePersonaLock);
     $('#create_dummy_persona').on('click', createDummyPersona);
     $('#persona_description').on('input', onPersonaDescriptionInput);
     $('#persona_description_position').on('input', onPersonaDescriptionPositionInput);

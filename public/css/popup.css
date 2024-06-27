@@ -115,12 +115,10 @@ dialog {
     background-color: var(--crimson-hover);
 }
 
-.menu_button.popup-button-custom {
-    /* Custom buttons should not scale to smallest size, otherwise they will always break to multiline */
-    width: unset;
-}
-
 .popup-controls .menu_button {
+    /* Popup buttons should not scale to smallest size, otherwise they will always break to multiline if multiple words */
+    width: unset;
+
     /* Fix weird animation issue with fonts on brightness filter */
     backface-visibility: hidden;
     transform: translateZ(0);

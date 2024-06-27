@@ -4873,11 +4873,14 @@
         </div>
     </div>
     <!-- various fullscreen popups -->
-    <template id="popup_template" data-i18n="[popup-button-save]popup-button-save;[popup-button-yes]popup-button-yes;[popup-button-no]popup-button-no;[popup-button-cancel]popup-button-cancel;[popup-button-import]popup-button-import" popup-button-save="Save" popup-button-yes="Yes" popup-button-no="No" popup-button-cancel="Cancel" popup-button-import="Import"> <!-- localization data holder for popups -->
+    <template id="popup_template" data-i18n="[popup-button-save]popup-button-save;[popup-button-yes]popup-button-yes;[popup-button-no]popup-button-no;[popup-button-cancel]popup-button-cancel;[popup-button-import]popup-button-import;[popup-button-crop]popup-button-crop" popup-button-save="Save" popup-button-yes="Yes" popup-button-no="No" popup-button-cancel="Cancel" popup-button-import="Import" popup-button-crop="Crop"> <!-- localization data holder for popups -->
         <dialog class="popup">
             <div class="popup-body">
                 <div class="popup-content">
                     <h3 class="popup-header">text</h3>
+                </div>
+                <div class="popup-crop-wrap">
+                    <img class="popup-crop-image" src="">
                 </div>
                 <textarea class="popup-input text_pole result-control" rows="1" data-result="1" data-result-event="submit"></textarea>
                 <div class="popup-controls">
@@ -5422,7 +5425,7 @@
                             </div>
                         </div>
                         <div class="flex-container wide100p flexGap10">
-                            <div class="flex3 flex-container flexFlowColumn flexNoGap">
+                            <div class="flex4 flex-container flexFlowColumn flexNoGap">
                                 <div class="flex-container justifySpaceBetween">
                                     <small for="group">
                                         <span data-i18n="Inclusion Group">Inclusion Group</span>
@@ -5444,7 +5447,7 @@
                                     <input type="text" class="text_pole margin0" name="group" rows="1" data-i18n="[placeholder]Only one entry with the same label will be activated" placeholder="Only one entry with the same label will be activated">
                                 </div>
                             </div>
-                            <div class="flex1 flex-container flexFlowColumn flexNoGap" data-i18n="[title]A relative likelihood of entry activation within the group" title="A relative likelihood of entry activation within the group">
+                            <div class="flex2 flex-container flexFlowColumn flexNoGap" data-i18n="[title]A relative likelihood of entry activation within the group" title="A relative likelihood of entry activation within the group">
                                 <div class="flex-container justifySpaceBetween marginBot5">
                                     <small for="groupWeight" data-i18n="Group Weight">
                                         Group Weight
@@ -5478,6 +5481,19 @@
                                 </div>
                                 <div class="range-block-range">
                                     <input class="text_pole margin0" name="cooldown" type="number" placeholder="No cooldown" min="0" max="999999">
+                                </div>
+                            </div>
+                            <div class="flex2 flex-container flexFlowColumn flexNoGap" data-i18n="[title]Entries with a delay can't be activated until there are N messages present in the chat." title="Entries with a delay can't be activated until there are N messages present in the chat.">
+                                <div class="flex-container justifySpaceBetween marginBot5">
+                                    <small class="flex-container alignItemsBaseline" for="delay" data-i18n="Delay">
+                                        <span data-i18n="Delay">
+                                            Delay
+                                        </span>
+                                        <i class="fa-solid fa-comments fa-xs"></i>
+                                    </small>
+                                </div>
+                                <div class="range-block-range">
+                                    <input class="text_pole margin0" name="delay" type="number" placeholder="No delay" min="0" max="999999">
                                 </div>
                             </div>
                         </div>
@@ -5905,32 +5921,7 @@
             <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="50000" value="" autocomplete="off" rows="16"></textarea>
         </div>
     </div>
-    <div id="forbid_media_override_template" class="template_element">
-        <div class="forbid_media_override flex-container flexFlowColumn">
-            <h4 data-i18n="Forbid Media Override explanation" class="margin0">
-                Ability of the current character/group to use external media in chats.
-            </h4>
-            <small data-i18n="Forbid Media Override subtitle" class="marginBot5">
-                Media: images, videos, audio. External: not hosted on the local server.
-            </small>
-            <label class="checkbox_label" for="forbid_media_override_global">
-                <input type="radio" id="forbid_media_override_global" name="forbid_media_override" />
-                <span>
-                    <span data-i18n="Use global setting">Use global setting</span>
-                    <b class="forbid_media_global_state_forbidden">(forbidden)</b>
-                    <b class="forbid_media_global_state_allowed">(allowed)</b>
-                </span>
-            </label>
-            <label class="checkbox_label" for="forbid_media_override_forbidden">
-                <input type="radio" id="forbid_media_override_forbidden" name="forbid_media_override" />
-                <span data-i18n="Always forbidden">Always forbidden</span>
-            </label>
-            <label class="checkbox_label" for="forbid_media_override_allowed">
-                <input type="radio" id="forbid_media_override_allowed" name="forbid_media_override" />
-                <span data-i18n="Always allowed">Always allowed</span>
-            </label>
-        </div>
-    </div>
+
     <!-- chat and input bar -->
     <div id="typing_indicator_template" class="template_element">
         <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
@@ -6422,9 +6413,6 @@
             </div>
         </div>
     </template>
-    <div id="rawPromptPopup" class="list-group">
-        <div id="rawPromptWrapper" class="tokenItemizingSubclass"></div>
-    </div>
     <div id="user_avatar_template" class="template_element">
         <div class="avatar-container">
             <div imgfile="" class="avatar">

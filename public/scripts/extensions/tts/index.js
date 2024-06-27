@@ -1,4 +1,4 @@
-import { callPopup, cancelTtsPlay, eventSource, event_types, isStreamingEnabled, name2, saveSettingsDebounced, substituteParams } from '../../../script.js';
+import { cancelTtsPlay, eventSource, event_types, isStreamingEnabled, name2, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique } from '../../utils.js';
 import { EdgeTtsProvider } from './edge.js';
@@ -21,6 +21,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { debounce_timeout } from '../../constants.js';
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000;
@@ -310,7 +311,7 @@ async function onTtsVoicesClick() {
         popupText = 'Could not load voices list. Check your API key.';
     }
 
-    callPopup(popupText, 'text');
+    callGenericPopup(popupText, POPUP_TYPE.TEXT, '', { allowVerticalScrolling: true });
 }
 
 function updateUiAudioPlayState() {
@@ -915,7 +916,7 @@ function getCharacters(unrestricted) {
 
 function sanitizeId(input) {
     // Remove any non-alphanumeric characters except underscore (_) and hyphen (-)
-    let sanitized = input.replace(/[^a-zA-Z0-9-_]/g, '');
+    let sanitized = encodeURIComponent(input).replace(/[^a-zA-Z0-9-_]/g, '');
 
     // Ensure first character is always a letter
     if (!/^[a-zA-Z]/.test(sanitized)) {
