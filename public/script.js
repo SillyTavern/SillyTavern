@@ -1124,6 +1124,7 @@ async function getStatusTextgen() {
             online_status = textgen_settings.aphrodite_model;
         } else if (textgen_settings.type === FEATHERLESS) {
             loadFeatherlessModels(data?.data);
+            online_status = textgen_settings.featherless_model;
         } else {
             online_status = data?.result;
         }

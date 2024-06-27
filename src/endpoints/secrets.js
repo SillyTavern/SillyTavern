@@ -4,6 +4,7 @@ const express = require('express');
 const { getConfigValue } = require('../util');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const { jsonParser } = require('../express-common');
+const { FEATHERLESS_KEYS } = require('../constants');
 
 const SECRETS_FILE = 'secrets.json';
 const SECRET_KEYS = {
@@ -40,6 +41,7 @@ const SECRET_KEYS = {
     PERPLEXITY: 'api_key_perplexity',
     GROQ: 'api_key_groq',
     AZURE_TTS: 'api_key_azure_tts',
+    FEATHERLESS: 'api_key_featherless',
 };
 
 // These are the keys that are safe to expose, even if allowKeysExposure is false
