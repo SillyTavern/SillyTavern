@@ -102,24 +102,24 @@ const showPopupHelper = {
 };
 
 export class Popup {
-    /** @type {POPUP_TYPE} */ type;
+    /** @readonly @type {POPUP_TYPE} */ type;
 
-    /** @type {string} */ id;
+    /** @readonly @type {string} */ id;
 
-    /** @type {HTMLDialogElement} */ dlg;
-    /** @type {HTMLDivElement} */ body;
-    /** @type {HTMLDivElement} */ content;
-    /** @type {HTMLTextAreaElement} */ mainInput;
-    /** @type {HTMLDivElement} */ inputControls;
-    /** @type {HTMLDivElement} */ buttonControls;
-    /** @type {HTMLDivElement} */ okButton;
-    /** @type {HTMLDivElement} */ cancelButton;
-    /** @type {HTMLDivElement} */ closeButton;
-    /** @type {HTMLDivElement} */ cropWrap;
-    /** @type {HTMLImageElement} */ cropImage;
-    /** @type {POPUP_RESULT|number?} */ defaultResult;
-    /** @type {CustomPopupButton[]|string[]?} */ customButtons;
-    /** @type {CustomPopupInput[]} */ customInputs;
+    /** @readonly @type {HTMLDialogElement} */ dlg;
+    /** @readonly @type {HTMLDivElement} */ body;
+    /** @readonly @type {HTMLDivElement} */ content;
+    /** @readonly @type {HTMLTextAreaElement} */ mainInput;
+    /** @readonly @type {HTMLDivElement} */ inputControls;
+    /** @readonly @type {HTMLDivElement} */ buttonControls;
+    /** @readonly @type {HTMLDivElement} */ okButton;
+    /** @readonly @type {HTMLDivElement} */ cancelButton;
+    /** @readonly @type {HTMLDivElement} */ closeButton;
+    /** @readonly @type {HTMLDivElement} */ cropWrap;
+    /** @readonly @type {HTMLImageElement} */ cropImage;
+    /** @readonly @type {POPUP_RESULT|number?} */ defaultResult;
+    /** @readonly @type {CustomPopupButton[]|string[]?} */ customButtons;
+    /** @readonly @type {CustomPopupInput[]} */ customInputs;
 
     /** @type {(popup: Popup) => boolean?} */ onClosing;
     /** @type {(popup: Popup) => void?} */ onClose;
@@ -131,8 +131,8 @@ export class Popup {
 
     /** @type {HTMLElement} */ lastFocus;
 
-    /** @type {Promise<any>} */ promise;
-    /** @type {(result: any) => any} */ resolver;
+    /** @type {Promise<any>} */ #promise;
+    /** @type {(result: any) => any} */ #resolver;
 
     /**
      * Constructs a new Popup object with the given text content, type, inputValue, and options
@@ -378,10 +378,10 @@ export class Popup {
             this.dlg.removeAttribute('opening');
         });
 
-        this.promise = new Promise((resolve) => {
-            this.resolver = resolve;
+        this.#promise = new Promise((resolve) => {
+            this.#resolver = resolve;
         });
-        return this.promise;
+        return this.#promise;
     }
 
     setAutoFocus({ applyAutoFocus = false } = {}) {
@@ -462,14 +462,13 @@ export class Popup {
         }
 
         Popup.util.lastResult = { value, result };
-        this.hide();
+        this.#hide();
     }
 
     /**
      * Hides the popup, using the internal resolver to return the value to the original show promise
-     * @private
      */
-    hide() {
+    #hide() {
         // We close the dialog, first running the animation
         this.dlg.setAttribute('closing', '');
 
@@ -503,7 +502,7 @@ export class Popup {
                 }
             }
 
-            this.resolver(this.value);
+            this.#resolver(this.value);
         });
     }
 
