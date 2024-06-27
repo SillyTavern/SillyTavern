@@ -747,6 +747,7 @@ export class QuickReply {
     }
     async executeFromEditor() {
         if (this.isExecuting) return;
+        const oText = this.message;
         this.isExecuting = true;
         this.editorDom.classList.add('qr--isExecuting');
         const noSyntax = this.editorDom.querySelector('#qr--modal-messageHolder').classList.contains('qr--noSyntax');
@@ -797,6 +798,12 @@ export class QuickReply {
             this.abortController = new SlashCommandAbortController();
             this.debugController = new SlashCommandDebugController();
             this.debugController.onBreakPoint = async(closure, executor)=>{
+                //TODO move debug code into its own element, separate from the QR
+                //TODO populate debug code from closure.fullText and get locations, highlights, etc. from that
+                //TODO keep some kind of reference (human identifier) *where* the closure code comes from?
+                //TODO QR name, chat input, deserialized closure, ... ?
+                this.editorMessage.value = closure.fullText;
+                this.editorMessage.dispatchEvent(new Event('input', { bubbles:true }));
                 this.editorDebugState.innerHTML = '';
                 let ci = -1;
                 const varNames = [];
@@ -1177,6 +1184,8 @@ export class QuickReply {
         if (noSyntax) {
             this.editorDom.querySelector('#qr--modal-messageHolder').classList.add('qr--noSyntax');
         }
+        this.editorMessage.value = oText;
+        this.editorMessage.dispatchEvent(new Event('input', { bubbles:true }));
         this.editorExecutePromise = null;
         this.editorExecuteBtn.classList.remove('qr--busy');
         this.editorPopup.dlg.classList.remove('qr--hide');

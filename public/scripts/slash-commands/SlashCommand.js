@@ -1,6 +1,7 @@
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandArgument, SlashCommandNamedArgument } from './SlashCommandArgument.js';
 import { SlashCommandClosure } from './SlashCommandClosure.js';
+import { SlashCommandDebugController } from './SlashCommandDebugController.js';
 import { PARSER_FLAG } from './SlashCommandParser.js';
 import { SlashCommandScope } from './SlashCommandScope.js';
 
@@ -12,6 +13,7 @@ import { SlashCommandScope } from './SlashCommandScope.js';
  * _scope:SlashCommandScope,
  * _parserFlags:{[id:PARSER_FLAG]:boolean},
  * _abortController:SlashCommandAbortController,
+ * _debugController:SlashCommandDebugController,
  * _hasUnnamedArgument:boolean,
  * [id:string]:string|SlashCommandClosure,
  * }} NamedArguments

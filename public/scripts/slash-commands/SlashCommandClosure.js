@@ -24,6 +24,8 @@ export class SlashCommandClosure {
     /**@type {SlashCommandDebugController}*/ debugController;
     /**@type {(done:number, total:number)=>void}*/ onProgress;
     /**@type {string}*/ rawText;
+    /**@type {string}*/ fullText;
+    /**@type {string}*/ parserContext;
 
     /**@type {number}*/
     get commandCount() {
@@ -58,6 +60,12 @@ export class SlashCommandClosure {
             const after = remaining.slice(match.index + match[0].length);
             const replacer = match[1] ? scope.pipe : match[2] ? scope.getVariable(match[2], match[3]) : scope.macroList.find(it=>it.key == match[4])?.value;
             if (replacer instanceof SlashCommandClosure) {
+                replacer.abortController = this.abortController;
+                replacer.breakController = this.breakController;
+                replacer.scope.parent = this.scope;
+                if (this.debugController && !replacer.debugController) {
+                    replacer.debugController = this.debugController;
+                }
                 isList = true;
                 if (match.index > 0) {
                     listValues.push(before);
@@ -94,6 +102,9 @@ export class SlashCommandClosure {
         closure.abortController = this.abortController;
         closure.breakController = this.breakController;
         closure.debugController = this.debugController;
+        closure.rawText = this.rawText;
+        closure.fullText = this.fullText;
+        closure.parserContext = this.parserContext;
         closure.onProgress = this.onProgress;
         return closure;
     }
@@ -256,6 +267,7 @@ export class SlashCommandClosure {
                     _scope: this.scope,
                     _parserFlags: executor.parserFlags,
                     _abortController: this.abortController,
+                    _debugController: this.debugController,
                     _hasUnnamedArgument: executor.unnamedArgumentList.length > 0,
                 };
                 let value;
@@ -266,6 +278,9 @@ export class SlashCommandClosure {
                         const closure = arg.value;
                         closure.scope.parent = this.scope;
                         closure.breakController = this.breakController;
+                        if (this.debugController && !closure.debugController) {
+                            closure.debugController = this.debugController;
+                        }
                         if (closure.executeNow) {
                             args[arg.name] = (await closure.execute())?.pipe;
                         } else {
@@ -285,6 +300,7 @@ export class SlashCommandClosure {
 
                 // substitute unnamed argument
                 if (executor.unnamedArgumentList.length == 0) {
+                    //TODO no pipe injection on first executor in a closure?
                     if (executor.injectPipe) {
                         value = this.scope.pipe;
                         args._hasUnnamedArgument = this.scope.pipe !== null && this.scope.pipe !== undefined;
@@ -298,6 +314,9 @@ export class SlashCommandClosure {
                             const closure = v;
                             closure.scope.parent = this.scope;
                             closure.breakController = this.breakController;
+                            if (this.debugController && !closure.debugController) {
+                                closure.debugController = this.debugController;
+                            }
                             if (closure.executeNow) {
                                 v = (await closure.execute())?.pipe;
                             } else {

@@ -117,6 +117,8 @@ export class SlashCommandParser {
     /**@type {SlashCommandExecutor[]}*/ commandIndex;
     /**@type {SlashCommandScope[]}*/ scopeIndex;
 
+    /**@type {string}*/ parserContext;
+
     get userIndex() { return this.index; }
 
     get ahead() {
@@ -610,6 +612,7 @@ export class SlashCommandParser {
         this.commandIndex = [];
         this.scopeIndex = [];
         this.macroIndex = [];
+        this.parserContext = uuidv4();
         const closure = this.parseClosure(true);
         return closure;
     }
@@ -637,6 +640,8 @@ export class SlashCommandParser {
         if (!isRoot) this.take(2); // discard opening {:
         const textStart = this.index;
         let closure = new SlashCommandClosure(this.scope);
+        closure.parserContext = this.parserContext;
+        closure.fullText = this.text;
         closure.abortController = this.abortController;
         closure.debugController = this.debugController;
         this.scope = closure.scope;

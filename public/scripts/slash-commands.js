@@ -1737,6 +1737,10 @@ async function runCallback(args, name) {
             throw new Error(`"${name}" is not callable.`);
         }
         closure.scope.parent = scope;
+        if (args._debugController && !closure.debugController) {
+            closure.debugController = args._debugController;
+        }
+        while (closure.providedArgumentList.pop());
         closure.argumentList.forEach(arg => {
             if (Object.keys(args).includes(arg.name)) {
                 const providedArg = new SlashCommandNamedArgumentAssignment();
