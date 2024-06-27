@@ -92,6 +92,24 @@ dialog {
     text-align: left;
 }
 
+.popup-crop-wrap {
+    margin: 10px auto;
+    max-height: 75vh;
+    max-height: 75svh;
+    max-width: 100%;
+}
+
+.popup-crop-wrap img {
+    max-width: 100%;
+    /* This rule is very important, please do not ignore this! */
+}
+
+.popup-inputs {
+    margin-top: 10px;
+    font-size: smaller;
+    opacity: 0.7;
+}
+
 .popup-input {
     margin-top: 10px;
 }

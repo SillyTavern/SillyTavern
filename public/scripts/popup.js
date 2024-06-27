@@ -37,6 +37,7 @@ export const POPUP_RESULT = {
  * @property {boolean?} [allowVerticalScrolling=false] - Whether to allow vertical scrolling in the popup
  * @property {POPUP_RESULT|number?} [defaultResult=POPUP_RESULT.AFFIRMATIVE] - The default result of this popup when Enter is pressed. Can be changed from `POPUP_RESULT.AFFIRMATIVE`.
  * @property {CustomPopupButton[]|string[]?} [customButtons=null] - Custom buttons to add to the popup. If only strings are provided, the buttons will be added with default options, and their result will be in order from `2` onward.
+ * @property {CustomPopupInput[]?} [customInputs=null] - Custom inputs to add to the popup. The display below the content and the input box, one by one.
  * @property {(popup: Popup) => boolean?} [onClosing=null] - Handler called before the popup closes, return `false` to cancel the close
  * @property {(popup: Popup) => void?} [onClose=null] - Handler called after the popup closes, but before the DOM is cleaned up
  * @property {number?} [cropAspect=null] - Aspect ratio for the crop popup
@@ -50,6 +51,14 @@ export const POPUP_RESULT = {
  * @property {string[]|string?} [classes] - Optional custom CSS classes applied to the button
  * @property {()=>void?} [action] - Optional action to perform when the button is clicked
  * @property {boolean?} [appendAtEnd] - Whether to append the button to the end of the popup - by default it will be prepended
+ */
+
+/**
+ * @typedef {object} CustomPopupInput
+ * @property {string} id - The id for the html element
+ * @property {string} label - The label text for the input
+ * @property {string?} [tooltip=null] - Optional tooltip icon displayed behind the label
+ * @property {boolean?} [defaultState=false] - The default state when opening the popup (false if not set)
  */
 
 /**
@@ -98,23 +107,26 @@ export class Popup {
     /** @type {string} */ id;
 
     /** @type {HTMLDialogElement} */ dlg;
-    /** @type {HTMLElement} */ body;
-    /** @type {HTMLElement} */ content;
-    /** @type {HTMLTextAreaElement} */ input;
-    /** @type {HTMLElement} */ controls;
-    /** @type {HTMLElement} */ okButton;
-    /** @type {HTMLElement} */ cancelButton;
-    /** @type {HTMLElement} */ closeButton;
-    /** @type {HTMLElement} */ cropWrap;
+    /** @type {HTMLDivElement} */ body;
+    /** @type {HTMLDivElement} */ content;
+    /** @type {HTMLTextAreaElement} */ mainInput;
+    /** @type {HTMLDivElement} */ inputControls;
+    /** @type {HTMLDivElement} */ buttonControls;
+    /** @type {HTMLDivElement} */ okButton;
+    /** @type {HTMLDivElement} */ cancelButton;
+    /** @type {HTMLDivElement} */ closeButton;
+    /** @type {HTMLDivElement} */ cropWrap;
     /** @type {HTMLImageElement} */ cropImage;
     /** @type {POPUP_RESULT|number?} */ defaultResult;
     /** @type {CustomPopupButton[]|string[]?} */ customButtons;
+    /** @type {CustomPopupInput[]} */ customInputs;
 
     /** @type {(popup: Popup) => boolean?} */ onClosing;
     /** @type {(popup: Popup) => void?} */ onClose;
 
     /** @type {POPUP_RESULT|number} */ result;
     /** @type {any} */ value;
+    /** @type {Map<string,boolean>?} */ inputResults;
     /** @type {any} */ cropData;
 
     /** @type {HTMLElement} */ lastFocus;
@@ -130,7 +142,7 @@ export class Popup {
      * @param {string} [inputValue=''] - The initial value of the input field
      * @param {PopupOptions} [options={}] - Additional options for the popup
      */
-    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, onClosing = null, onClose = null, cropAspect = null, cropImage = null } = {}) {
+    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, customInputs = null, onClosing = null, onClose = null, cropAspect = null, cropImage = null } = {}) {
         Popup.util.popups.push(this);
 
         // Make this popup uniquely identifiable
@@ -147,8 +159,9 @@ export class Popup {
         this.dlg = template.content.cloneNode(true).querySelector('.popup');
         this.body = this.dlg.querySelector('.popup-body');
         this.content = this.dlg.querySelector('.popup-content');
-        this.input = this.dlg.querySelector('.popup-input');
-        this.controls = this.dlg.querySelector('.popup-controls');
+        this.mainInput = this.dlg.querySelector('.popup-input');
+        this.inputControls = this.dlg.querySelector('.popup-inputs');
+        this.buttonControls = this.dlg.querySelector('.popup-controls');
         this.okButton = this.dlg.querySelector('.popup-button-ok');
         this.cancelButton = this.dlg.querySelector('.popup-button-cancel');
         this.closeButton = this.dlg.querySelector('.popup-button-close');
@@ -181,9 +194,9 @@ export class Popup {
             buttonElement.tabIndex = 0;
 
             if (button.appendAtEnd) {
-                this.controls.appendChild(buttonElement);
+                this.buttonControls.appendChild(buttonElement);
             } else {
-                this.controls.insertBefore(buttonElement, this.okButton);
+                this.buttonControls.insertBefore(buttonElement, this.okButton);
             }
 
             if (typeof button.action === 'function') {
@@ -191,13 +204,43 @@ export class Popup {
             }
         });
 
+        this.customInputs = customInputs;
+        this.customInputs?.forEach(input => {
+            if (!input.id || !(typeof input.id === 'string')) {
+                console.warn('Given custom input does not have a valid id set')
+                return;
+            }
+
+            const label = document.createElement('label');
+            label.classList.add('checkbox_label', 'justifyCenter');
+            label.setAttribute('for', input.id);
+            const inputElement = document.createElement('input');
+            inputElement.type = 'checkbox';
+            inputElement.id = input.id;
+            inputElement.checked = input.defaultState ?? false;
+            label.appendChild(inputElement);
+            const labelText = document.createElement('span');
+            labelText.innerText = input.label;
+            label.appendChild(labelText);
+
+            if (input.tooltip) {
+                const tooltip = document.createElement('div');
+                tooltip.title = input.tooltip;
+                tooltip.classList.add('fa-solid', 'fa-circle-info', 'opacity50p');
+                label.appendChild(tooltip);
+            }
+
+            this.inputControls.appendChild(label);
+        });
+
         // Set the default button class
-        const defaultButton = this.controls.querySelector(`[data-result="${this.defaultResult}"]`);
+        const defaultButton = this.buttonControls.querySelector(`[data-result="${this.defaultResult}"]`);
         if (defaultButton) defaultButton.classList.add('menu_button_default');
 
         // Styling differences depending on the popup type
         // General styling for all types first, that might be overriden for specific types below
-        this.input.style.display = 'none';
+        this.mainInput.style.display = 'none';
+        this.inputControls.style.display = customInputs ? 'block' : 'none';
         this.closeButton.style.display = 'none';
         this.cropWrap.style.display = 'none';
 
@@ -212,12 +255,12 @@ export class Popup {
                 break;
             }
             case POPUP_TYPE.INPUT: {
-                this.input.style.display = 'block';
+                this.mainInput.style.display = 'block';
                 if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-save');
                 break;
             }
             case POPUP_TYPE.DISPLAY: {
-                this.controls.style.display = 'none';
+                this.buttonControls.style.display = 'none';
                 this.closeButton.style.display = 'block';
                 break;
             }
@@ -243,8 +286,8 @@ export class Popup {
             }
         }
 
-        this.input.value = inputValue;
-        this.input.rows = rows ?? 1;
+        this.mainInput.value = inputValue;
+        this.mainInput.rows = rows ?? 1;
 
         this.content.innerHTML = '';
         if (content instanceof jQuery) {
@@ -352,12 +395,12 @@ export class Popup {
         if (!control) {
             switch (this.type) {
                 case POPUP_TYPE.INPUT: {
-                    control = this.input;
+                    control = this.mainInput;
                     break;
                 }
                 default:
                     // Select default button
-                    control = this.controls.querySelector(`[data-result="${this.defaultResult}"]`);
+                    control = this.buttonControls.querySelector(`[data-result="${this.defaultResult}"]`);
                     break;
             }
         }
@@ -389,7 +432,7 @@ export class Popup {
         let value = result;
         // Input type have special results, so the input can be accessed directly without the need to save the popup and access both result and value
         if (this.type === POPUP_TYPE.INPUT) {
-            if (result >= POPUP_RESULT.AFFIRMATIVE) value = this.input.value;
+            if (result >= POPUP_RESULT.AFFIRMATIVE) value = this.mainInput.value;
             else if (result === POPUP_RESULT.NEGATIVE) value = false;
             else if (result === POPUP_RESULT.CANCELLED) value = null;
             else value = false; // Might a custom negative value?
@@ -400,6 +443,14 @@ export class Popup {
             value = result >= POPUP_RESULT.AFFIRMATIVE
                 ? $(this.cropImage).data('cropper').getCroppedCanvas().toDataURL('image/jpeg')
                 : null;
+        }
+
+        if (this.customInputs?.length) {
+            this.inputResults = new Map(this.customInputs.map(input => {
+                /** @type {HTMLInputElement} */
+                const inputControl = this.dlg.querySelector(`#${input.id}`);
+                return [inputControl.id, inputControl.checked];
+            }));
         }
 
         this.value = value;
