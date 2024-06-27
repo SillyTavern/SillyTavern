@@ -178,7 +178,9 @@ export class Popup {
 
         // If custom button captions are provided, we set them beforehand
         this.okButton.textContent = typeof okButton === 'string' ? okButton : 'OK';
+        this.okButton.dataset.i18n = this.okButton.textContent;
         this.cancelButton.textContent = typeof cancelButton === 'string' ? cancelButton : template.getAttribute('popup-button-cancel');
+        this.cancelButton.dataset.i18n = this.cancelButton.textContent;
 
         this.defaultResult = defaultResult;
         this.customButtons = customButtons;
@@ -191,6 +193,7 @@ export class Popup {
             buttonElement.classList.add(...(button.classes ?? []));
             buttonElement.dataset.result = String(button.result ?? undefined);
             buttonElement.textContent = button.text;
+            buttonElement.dataset.i18n = buttonElement.textContent;
             buttonElement.tabIndex = 0;
 
             if (button.appendAtEnd) {
@@ -226,8 +229,9 @@ export class Popup {
 
             if (input.tooltip) {
                 const tooltip = document.createElement('div');
-                tooltip.title = input.tooltip;
                 tooltip.classList.add('fa-solid', 'fa-circle-info', 'opacity50p');
+                tooltip.title = input.tooltip;
+                tooltip.dataset.i18n = '[title]' + input.tooltip;
                 label.appendChild(tooltip);
             }
 
@@ -462,7 +466,7 @@ export class Popup {
             if (!shouldClose) return;
         }
 
-        Popup.util.lastResult = { value, result };
+        Popup.util.lastResult = { value, result, inputResults: this.inputResults };
         this.#hide();
     }
 
@@ -518,10 +522,10 @@ export class Popup {
      * Contains the list of all currently open popups, and it'll remember the result of the last closed popup.
      */
     static util = {
-        /** @type {Popup[]} Remember all popups */
+        /** @readonly @type {Popup[]} Remember all popups */
         popups: [],
 
-        /** @type {{value: any, result: POPUP_RESULT|number?}?} Last popup result */
+        /** @type {{value: any, result: POPUP_RESULT|number?, inputResults: Map<string, boolean>?}?} Last popup result */
         lastResult: null,
 
         /** @returns {boolean} Checks if any modal popup dialog is open */
