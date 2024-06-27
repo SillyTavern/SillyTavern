@@ -221,6 +221,7 @@ export class Popup {
             label.appendChild(inputElement);
             const labelText = document.createElement('span');
             labelText.innerText = input.label;
+            labelText.dataset.i18n = input.label;
             label.appendChild(labelText);
 
             if (input.tooltip) {
