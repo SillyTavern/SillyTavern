@@ -801,8 +801,7 @@ async function showTagImportPopup(character, existingTags, newTags, folderTags) 
     if (folderTags.length === 0) popupContent.find('#folder_tags_block').hide();
 
     function onCloseRemember(/** @type {Popup} */ popup) {
-        const rememberCheckbox = document.getElementById('import_remember_option');
-        if (rememberCheckbox instanceof HTMLInputElement && rememberCheckbox.checked) {
+        if (popup.result && popup.inputResults.get('import_remember_option')) {
             const setting = buttonSettingsMap[popup.result];
             if (!setting) return;
             power_user.tag_import_setting = setting;
@@ -812,7 +811,12 @@ async function showTagImportPopup(character, existingTags, newTags, folderTags) 
         }
     }
 
-    const result = await callGenericPopup(popupContent, POPUP_TYPE.TEXT, null, { wider: true, okButton: 'Import', cancelButton: true, customButtons: Object.values(importButtons), onClose: onCloseRemember });
+    const result = await callGenericPopup(popupContent, POPUP_TYPE.TEXT, null, {
+        wider: true, okButton: 'Import', cancelButton: true,
+        customButtons: Object.values(importButtons),
+        customInputs: [{ id: 'import_remember_option', label: 'Remember my choice', tooltip: 'Remember the chosen import option\nIf anything besides \'Cancel\' is selected, this dialog will not show up anymore.\nTo change this, go to the settings and modify "Tag Import Option".\n\nIf the "Import" option is chosen, the global setting will stay on "Ask".' }],
+        onClose: onCloseRemember
+    });
     if (!result) {
         return [];
     }

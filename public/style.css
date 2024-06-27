@@ -4150,18 +4150,6 @@ h5 {
     grid-template-columns: 340px auto;
 }
 
-.popup-crop-wrap {
-    margin: 10px auto;
-    max-height: 75vh;
-    max-height: 75svh;
-    max-width: 100%;
-}
-
-.popup-crop-wrap img {
-    max-width: 100%;
-    /* This rule is very important, please do not ignore this! */
-}
-
 body .ui-autocomplete {
     max-height: 300px;
     overflow-y: auto;
