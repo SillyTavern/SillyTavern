@@ -1119,7 +1119,7 @@ async function openAttachmentManager() {
     const cleanupFn = await renderButtons();
     await verifyAttachments();
     await renderAttachments();
-    await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'Close' });
+    await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'Close', allowVerticalScrolling: true });
 
     cleanupFn();
     dragDropHandler.destroy();
