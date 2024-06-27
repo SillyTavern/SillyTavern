@@ -8289,6 +8289,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_openai',
         source: chat_completion_sources.GROQ,
     },
+    '01ai': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.ZEROONEAI,
+    },
     'infermaticai': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
