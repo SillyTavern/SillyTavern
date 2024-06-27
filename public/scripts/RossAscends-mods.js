@@ -926,8 +926,8 @@ export function initRossMods() {
         return false;
     }
 
-    $(document).on('keydown', function (event) {
-        processHotkeys(event.originalEvent);
+    $(document).on('keydown', async function (event) {
+        await processHotkeys(event.originalEvent);
     });
 
     const hotkeyTargets = {
@@ -939,7 +939,7 @@ export function initRossMods() {
     /**
      * @param {KeyboardEvent} event
      */
-    function processHotkeys(event) {
+    async function processHotkeys(event) {
         //Enter to send when send_textarea in focus
         if (document.activeElement == hotkeyTargets['send_textarea']) {
             const sendOnEnter = shouldSendOnEnter();
@@ -1003,21 +1003,17 @@ export function initRossMods() {
                 if (skipConfirm) {
                     doRegenerate();
                 } else {
-                    Popup.show.confirm('Regenerate Message', `
-                        <span>Are you sure you want to regenerate the latest message?</span>
-                        <label class="checkbox_label justifyCenter marginTop10" for="regenerateWithCtrlEnter">
-                            <input type="checkbox" id="regenerateWithCtrlEnter">
-                            Don't ask again
-                        </label>`, {
-                        onClose: (popup) => {
-                            if (!popup.result) {
-                                return;
-                            }
-                            const regenerateWithCtrlEnter = $('#regenerateWithCtrlEnter').prop('checked');
-                            SaveLocal(skipConfirmKey, regenerateWithCtrlEnter);
-                            doRegenerate();
-                        },
-                    })
+                    let regenerateWithCtrlEnter = false;
+                    const result = await Popup.show.confirm('Regenerate Message', 'Are you sure you want to regenerate the latest message?', {
+                        customInputs: [{ id: 'regenerateWithCtrlEnter', label: 'Don\'t ask again' }],
+                        onClose: (popup) => regenerateWithCtrlEnter = popup.inputResults.get('regenerateWithCtrlEnter') ?? false,
+                    });
+                    if (!result) {
+                        return;
+                    }
+
+                    SaveLocal(skipConfirmKey, regenerateWithCtrlEnter);
+                    doRegenerate();
                 }
                 return;
             } else {
