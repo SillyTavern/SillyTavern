@@ -2686,7 +2686,7 @@ export async function sendMessageAs(args, text) {
     }
 
     const insertAt = Number(args.at);
-    const insertAtDepth = (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) ? insertAt : null;
+    const insertAtDepth = (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) ? chat.length - insertAt : null;
 
     // Requires a regex check after the slash command is pushed to output
     mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND, { characterOverride: name, depth: insertAtDepth ?? 0 });
@@ -2741,11 +2741,11 @@ export async function sendMessageAs(args, text) {
     }];
 
     if (insertAtDepth) {
-        chat.splice(insertAtDepth, 0, message);
+        chat.splice(insertAt, 0, message);
         await saveChatConditional();
-        await eventSource.emit(event_types.MESSAGE_RECEIVED, insertAtDepth);
+        await eventSource.emit(event_types.MESSAGE_RECEIVED, insertAt);
         await reloadCurrentChat();
-        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, insertAtDepth);
+        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, insertAt);
     } else {
         chat.push(message);
         await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));

@@ -4607,7 +4607,7 @@ export function removeMacros(str) {
  * @returns {Promise<void>} A promise that resolves when the message is inserted.
  */
 export async function sendMessageAsUser(messageText, messageBias, insertAt = null, compact = false, name = name1, avatar = user_avatar) {
-    const insertAtDepth = (typeof insertAt === 'number' && insertAt >= 0 && insertAt <= chat.length) ? insertAt : null;
+    const insertAtDepth = (typeof insertAt === 'number' && insertAt >= 0 && insertAt <= chat.length) ? chat.length - insertAt : null;
 
     messageText = getRegexedString(messageText, regex_placement.USER_INPUT, { depth: insertAtDepth ?? 0 });
 
@@ -4640,11 +4640,11 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
     statMesProcess(message, 'user', characters, this_chid, '');
 
     if (insertAtDepth) {
-        chat.splice(insertAtDepth, 0, message);
+        chat.splice(insertAt, 0, message);
         await saveChatConditional();
-        await eventSource.emit(event_types.MESSAGE_SENT, insertAtDepth);
+        await eventSource.emit(event_types.MESSAGE_SENT, insertAt);
         await reloadCurrentChat();
-        await eventSource.emit(event_types.USER_MESSAGE_RENDERED, insertAtDepth);
+        await eventSource.emit(event_types.USER_MESSAGE_RENDERED, insertAt);
     } else {
         chat.push(message);
         const chat_id = (chat.length - 1);
