@@ -4184,18 +4184,6 @@ h5 {
     grid-template-columns: 340px auto;
 }
 
-.popup-crop-wrap {
-    margin: 10px auto;
-    max-height: 75vh;
-    max-height: 75svh;
-    max-width: 100%;
-}
-
-.popup-crop-wrap img {
-    max-width: 100%;
-    /* This rule is very important, please do not ignore this! */
-}
-
 body .ui-autocomplete {
     max-height: 300px;
     overflow-y: auto;
@@ -4593,6 +4581,13 @@ a {
     display: block;
     overflow-x: auto;
     padding: 1em;
+}
+
+.img_enlarged_container pre {
+    max-height: 25vh;
+    max-height: 25svh;
+    flex-shrink: 0;
+    overflow: auto;
 }
 
 .popup:has(.img_enlarged.zoomed).large_dialogue_popup {

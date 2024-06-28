@@ -1,3 +1,5 @@
+@import url('./popup-safari-fix.css');
+
 dialog {
     color: var(--SmartThemeBodyColor);
 }
@@ -13,6 +15,10 @@ dialog {
     border-radius: 10px;
     display: flex;
     flex-direction: column;
+
+    max-height: calc(100svh - 2em);
+    max-width: calc(100svw - 2em);
+    min-height: fit-content;
 
     /* Overflow visible so elements (like toasts) can appear outside of the dialog. '.popup-body' is hiding overflow for the real content. */
     overflow: visible;
@@ -72,6 +78,11 @@ dialog {
     background-color: var(--black30a);
 }
 
+body.no-blur .popup[open]::backdrop {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
 /* Closing animation */
 .popup[closing] {
     animation: pop-out var(--animation-duration-slow) ease-in-out;
@@ -90,6 +101,24 @@ dialog {
 
     /* Fix text align, popups are centered by default. toasts should not. */
     text-align: left;
+}
+
+.popup-crop-wrap {
+    margin: 10px auto;
+    max-height: 75vh;
+    max-height: 75svh;
+    max-width: 100%;
+}
+
+.popup-crop-wrap img {
+    max-width: 100%;
+    /* This rule is very important, please do not ignore this! */
+}
+
+.popup-inputs {
+    margin-top: 10px;
+    font-size: smaller;
+    opacity: 0.7;
 }
 
 .popup-input {
@@ -143,3 +172,4 @@ dialog {
     /* Fix weird animation issue with font-scaling during popup open */
     backface-visibility: hidden;
 }
+

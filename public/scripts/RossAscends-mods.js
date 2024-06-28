@@ -360,6 +360,7 @@ function RA_autoconnect(PrevApi) {
                     || (textgen_settings.type === textgen_types.INFERMATICAI && secret_state[SECRET_KEYS.INFERMATICAI])
                     || (textgen_settings.type === textgen_types.DREAMGEN && secret_state[SECRET_KEYS.DREAMGEN])
                     || (textgen_settings.type === textgen_types.OPENROUTER && secret_state[SECRET_KEYS.OPENROUTER])
+                    || (textgen_settings.type === textgen_types.FEATHERLESS && secret_state[SECRET_KEYS.FEATHERLESS])
                 ) {
                     $('#api_button_textgenerationwebui').trigger('click');
                 }
@@ -379,6 +380,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.COHERE] && oai_settings.chat_completion_source == chat_completion_sources.COHERE)
                     || (secret_state[SECRET_KEYS.PERPLEXITY] && oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY)
                     || (secret_state[SECRET_KEYS.GROQ] && oai_settings.chat_completion_source == chat_completion_sources.GROQ)
+                    || (secret_state[SECRET_KEYS.ZEROONEAI] && oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                 ) {
                     $('#api_button_openai').trigger('click');
@@ -476,8 +478,8 @@ export function dragElement(elmnt) {
         }
 
         const style = getComputedStyle(target);
-        height = parseInt(style.height)
-        width = parseInt(style.width)
+        height = parseInt(style.height);
+        width = parseInt(style.width);
         top = parseInt(style.top);
         left = parseInt(style.left);
         right = parseInt(style.right);
@@ -723,6 +725,10 @@ export function initRossMods() {
         RA_autoconnect();
     }
 
+    if (getParsedUA()?.os?.name === 'iOS') {
+        document.body.classList.add('ios');
+    }
+
     $('#main_api').change(function () {
         var PrevAPI = main_api;
         setTimeout(() => RA_autoconnect(PrevAPI), 100);
@@ -926,8 +932,8 @@ export function initRossMods() {
         return false;
     }
 
-    $(document).on('keydown', function (event) {
-        processHotkeys(event.originalEvent);
+    $(document).on('keydown', async function (event) {
+        await processHotkeys(event.originalEvent);
     });
 
     const hotkeyTargets = {
@@ -939,7 +945,7 @@ export function initRossMods() {
     /**
      * @param {KeyboardEvent} event
      */
-    function processHotkeys(event) {
+    async function processHotkeys(event) {
         //Enter to send when send_textarea in focus
         if (document.activeElement == hotkeyTargets['send_textarea']) {
             const sendOnEnter = shouldSendOnEnter();
@@ -1003,21 +1009,17 @@ export function initRossMods() {
                 if (skipConfirm) {
                     doRegenerate();
                 } else {
-                    Popup.show.confirm('Regenerate Message', `
-                        <span>Are you sure you want to regenerate the latest message?</span>
-                        <label class="checkbox_label justifyCenter marginTop10" for="regenerateWithCtrlEnter">
-                            <input type="checkbox" id="regenerateWithCtrlEnter">
-                            Don't ask again
-                        </label>`, {
-                        onClose: (popup) => {
-                            if (!popup.result) {
-                                return;
-                            }
-                            const regenerateWithCtrlEnter = $('#regenerateWithCtrlEnter').prop('checked');
-                            SaveLocal(skipConfirmKey, regenerateWithCtrlEnter);
-                            doRegenerate();
-                        },
-                    })
+                    let regenerateWithCtrlEnter = false;
+                    const result = await Popup.show.confirm('Regenerate Message', 'Are you sure you want to regenerate the latest message?', {
+                        customInputs: [{ id: 'regenerateWithCtrlEnter', label: 'Don\'t ask again' }],
+                        onClose: (popup) => regenerateWithCtrlEnter = popup.inputResults.get('regenerateWithCtrlEnter') ?? false,
+                    });
+                    if (!result) {
+                        return;
+                    }
+
+                    SaveLocal(skipConfirmKey, regenerateWithCtrlEnter);
+                    doRegenerate();
                 }
                 return;
             } else {

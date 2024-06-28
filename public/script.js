@@ -22,7 +22,7 @@ import {
     parseTabbyLogprobs,
 } from './scripts/textgen-settings.js';
 
-const { MANCER, TOGETHERAI, OOBA, VLLM, APHRODITE, TABBY, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER } = textgen_types;
+const { MANCER, TOGETHERAI, OOBA, VLLM, APHRODITE, TABBY, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER, FEATHERLESS } = textgen_types;
 
 import {
     world_info,
@@ -223,7 +223,7 @@ import {
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
+import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { MacrosParser, evaluateMacros } from './scripts/macros.js';
@@ -1160,6 +1160,9 @@ async function getStatusTextgen() {
         } else if (textgen_settings.type === APHRODITE) {
             loadAphroditeModels(data?.data);
             setOnlineStatus(textgen_settings.aphrodite_model);
+        } else if (textgen_settings.type === FEATHERLESS) {
+            loadFeatherlessModels(data?.data);
+            setOnlineStatus(textgen_settings.featherless_model);
         } else {
             setOnlineStatus(data?.result);
         }
@@ -5775,6 +5778,7 @@ export async function saveChat(chat_name, withMetadata, mesId) {
         contentType: 'application/json',
         success: function (data) { },
         error: function (jqXHR, exception) {
+            toastr.error('Check the server connection and reload the page to prevent data loss.', 'Chat could not be saved');
             console.log(exception);
             console.log(jqXHR);
         },
@@ -7800,6 +7804,7 @@ window['SillyTavern'].getContext = function () {
          */
         registerHelper: () => { },
         registerMacro: MacrosParser.registerMacro.bind(MacrosParser),
+        unregisterMacro: MacrosParser.unregisterMacro.bind(MacrosParser),
         registedDebugFunction: registerDebugFunction,
         /**
          * @deprecated Use renderExtensionTemplateAsync instead.
@@ -8289,6 +8294,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_openai',
         source: chat_completion_sources.GROQ,
     },
+    '01ai': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.ZEROONEAI,
+    },
     'infermaticai': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
@@ -8303,6 +8313,11 @@ const CONNECT_API_MAP = {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
         type: textgen_types.OPENROUTER,
+    },
+    'huggingface': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.HUGGINGFACE,
     },
 };
 
@@ -8551,6 +8566,39 @@ async function doImpersonate(args, prompt) {
     return '';
 }
 
+export async function doNewChat({ deleteCurrentChat = false } = {}) {
+    //Make a new chat for selected character
+    if ((!selected_group && this_chid == undefined) || menu_type == 'create') {
+        return;
+    }
+
+    //Fix it; New chat doesn't create while open create character menu
+    await clearChat();
+    chat.length = 0;
+
+    chat_file_for_del = getCurrentChatDetails()?.sessionName;
+
+    // Make it easier to find in backups
+    if (deleteCurrentChat) {
+        await saveChatConditional();
+    }
+
+    if (selected_group) {
+        await createNewGroupChat(selected_group);
+        if (deleteCurrentChat) await deleteGroupChat(selected_group, chat_file_for_del);
+    }
+    else {
+        //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
+        chat_metadata = {};
+        characters[this_chid].chat = `${name2} - ${humanizedDateTime()}`;
+        $('#selected_chat_pole').val(characters[this_chid].chat);
+        await getChat();
+        await createOrEditCharacter(new CustomEvent('newChat'));
+        if (deleteCurrentChat) await delChat(chat_file_for_del + '.jsonl');
+    }
+
+}
+
 async function doDeleteChat() {
     await displayPastChats();
     let currentChatDeleteButton = $('.select_chat_block[highlight=\'true\']').parent().find('.PastChat_cross');
@@ -8659,13 +8707,11 @@ function doCloseChat() {
  * it proceeds to delete character from UI and saves settings.
  * In case of error during the fetch request, it logs the error details.
  *
- * @param {string} popup_type - The type of popup currently active.
  * @param {string} this_chid - The character ID to be deleted.
  * @param {boolean} delete_chats - Whether to delete chats or not.
  */
-export async function handleDeleteCharacter(popup_type, this_chid, delete_chats) {
-    if (popup_type !== 'del_ch' ||
-        !characters[this_chid]) {
+export async function handleDeleteCharacter(this_chid, delete_chats) {
+    if (!characters[this_chid]) {
         return;
     }
 
@@ -8711,6 +8757,8 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
             await eventSource.emit(event_types.CHAT_DELETED, name);
         }
     }
+
+    eventSource.emit(event_types.CHARACTER_DELETED, { id: this_chid, character: characters[this_chid] });
 }
 
 /**
@@ -9212,45 +9260,8 @@ jQuery(async function () {
                 }, 2000);
             }
         }
-        if (popup_type == 'del_ch') {
-            const deleteChats = !!$('#del_char_checkbox').prop('checked');
-            eventSource.emit(event_types.CHARACTER_DELETED, { id: this_chid, character: characters[this_chid] });
-            await handleDeleteCharacter(popup_type, this_chid, deleteChats);
-        }
         if (popup_type == 'alternate_greeting' && menu_type !== 'create') {
             createOrEditCharacter();
-        }
-        //Make a new chat for selected character
-        if (
-            popup_type == 'new_chat' &&
-            (selected_group || this_chid !== undefined) &&
-            menu_type != 'create'
-        ) {
-            //Fix it; New chat doesn't create while open create character menu
-            await clearChat();
-            chat.length = 0;
-
-            chat_file_for_del = getCurrentChatDetails()?.sessionName;
-            const isDelChatCheckbox = document.getElementById('del_chat_checkbox')?.checked;
-
-            // Make it easier to find in backups
-            if (isDelChatCheckbox) {
-                await saveChatConditional();
-            }
-
-            if (selected_group) {
-                await createNewGroupChat(selected_group);
-                if (isDelChatCheckbox) await deleteGroupChat(selected_group, chat_file_for_del);
-            }
-            else {
-                //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
-                chat_metadata = {};
-                characters[this_chid].chat = `${name2} - ${humanizedDateTime()}`;
-                $('#selected_chat_pole').val(characters[this_chid].chat);
-                await getChat();
-                await createOrEditCharacter(new CustomEvent('newChat'));
-                if (isDelChatCheckbox) await delChat(chat_file_for_del + '.jsonl');
-            }
         }
 
         if (dialogueResolve) {
@@ -9297,15 +9308,27 @@ jQuery(async function () {
 
     $('#form_create').submit(createOrEditCharacter);
 
-    $('#delete_button').on('click', function () {
-        callPopup(`
-                <h3>Delete the character?</h3>
-                <b>THIS IS PERMANENT!<br><br>
+    $('#delete_button').on('click', async function () {
+        if (!this_chid) {
+            toastr.warning('No character selected.');
+            return;
+        }
+
+        let deleteChats = false;
+
+        const confirm = await Popup.show.confirm('Delete the character?', `
+            <b>THIS IS PERMANENT!<br><br>
                 <label for="del_char_checkbox" class="checkbox_label justifyCenter">
                     <input type="checkbox" id="del_char_checkbox" />
                     <small>Also delete the chat files</small>
-                </label><br></b>`, 'del_ch', '',
-        );
+                </label></b>`, {
+            onClose: () => deleteChats = !!$('#del_char_checkbox').prop('checked'),
+        });
+        if (!confirm) {
+            return;
+        }
+
+        await deleteCharacter(characters[this_chid].avatar, { deleteChats: deleteChats });
     });
 
     //////// OPTIMIZED ALL CHAR CREATION/EDITING TEXTAREA LISTENERS ///////////////
@@ -9456,6 +9479,8 @@ jQuery(async function () {
             { id: 'api_key_openrouter-tg', secret: SECRET_KEYS.OPENROUTER },
             { id: 'api_key_koboldcpp', secret: SECRET_KEYS.KOBOLDCPP },
             { id: 'api_key_llamacpp', secret: SECRET_KEYS.LLAMACPP },
+            { id: 'api_key_featherless', secret: SECRET_KEYS.FEATHERLESS },
+            { id: 'api_key_huggingface', secret: SECRET_KEYS.HUGGINGFACE },
         ];
 
         for (const key of keys) {
@@ -9567,14 +9592,20 @@ jQuery(async function () {
 
         else if (id == 'option_start_new_chat') {
             if ((selected_group || this_chid !== undefined) && !is_send_press) {
-                callPopup(`
-                    <h3>Start new chat?</h3><br>
+                let deleteCurrentChat = false;
+                const result = await Popup.show.confirm('Start new chat?', `
                     <label for="del_chat_checkbox" class="checkbox_label justifyCenter"
                     title="If necessary, you can later restore this chat file from the /backups folder">
                         <input type="checkbox" id="del_chat_checkbox" />
                         <small>Also delete the current chat file</small>
-                    </label><br>
-                `, 'new_chat', '');
+                    </label>`, {
+                    onClose: () => deleteCurrentChat = !!$('#del_chat_checkbox').prop('checked'),
+                });
+                if (!result) {
+                    return;
+                }
+
+                await doNewChat({ deleteCurrentChat: deleteCurrentChat });
             }
         }
 

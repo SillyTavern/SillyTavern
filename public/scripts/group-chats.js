@@ -492,7 +492,13 @@ async function saveGroupChat(groupId, shouldSaveGroup) {
         body: JSON.stringify({ id: chat_id, chat: [...chat] }),
     });
 
-    if (shouldSaveGroup && response.ok) {
+    if (!response.ok) {
+        toastr.error('Check the server connection and reload the page to prevent data loss.', 'Group Chat could not be saved');
+        console.error('Group chat could not be saved', response);
+        return;
+    }
+
+    if (shouldSaveGroup) {
         await editGroup(groupId, false, false);
     }
 }
@@ -546,9 +552,11 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
                             body: JSON.stringify({ id: chatId, chat: [...messages] }),
                         });
 
-                        if (saveChatResponse.ok) {
-                            console.log(`Renamed character ${newName} in group chat: ${chatId}`);
+                        if (!saveChatResponse.ok) {
+                            throw new Error('Group member could not be renamed');
                         }
+
+                        console.log(`Renamed character ${newName} in group chat: ${chatId}`);
                     }
                 }
             }
@@ -1828,11 +1836,16 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId) {
 
     await editGroup(groupId, true, false);
 
-    await fetch('/api/chats/group/save', {
+    const response = await fetch('/api/chats/group/save', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: name, chat: [...trimmed_chat] }),
     });
+
+    if (!response.ok) {
+        toastr.error('Check the server connection and reload the page to prevent data loss.', 'Group chat could not be saved');
+        console.error('Group chat could not be saved', response);
+    }
 }
 
 function onSendTextareaInput() {

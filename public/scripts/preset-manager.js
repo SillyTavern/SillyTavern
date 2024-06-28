@@ -182,17 +182,19 @@ class PresetManager {
     async savePreset(name, settings) {
         const preset = settings ?? this.getPresetSettings(name);
 
-        const res = await fetch('/api/presets/save', {
+        const response = await fetch('/api/presets/save', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ preset, name, apiId: this.apiId }),
         });
 
-        if (!res.ok) {
-            toastr.error('Failed to save preset');
+        if (!response.ok) {
+            toastr.error('Check the server connection and reload the page to prevent data loss.', 'Preset could not be saved');
+            console.error('Preset could not be saved', response);
+            throw new Error('Preset could not be saved');
         }
 
-        const data = await res.json();
+        const data = await response.json();
         name = data.name;
 
         this.updateList(name, preset);
@@ -327,6 +329,7 @@ class PresetManager {
             'infermaticai_model',
             'dreamgen_model',
             'openrouter_model',
+            'featherless_model',
             'max_tokens_second',
             'openrouter_providers',
         ];

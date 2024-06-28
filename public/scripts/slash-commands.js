@@ -179,8 +179,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         SlashCommandNamedArgument.fromProps({
             name: 'at',
             description: 'position to insert the message',
-            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true }),
+            typeList: [ARGUMENT_TYPE.NUMBER],
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
         }),
     ],
     unnamedArgumentList: [
@@ -222,8 +222,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         SlashCommandNamedArgument.fromProps({
             name: 'at',
             description: 'position to insert the message',
-            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true }),
+            typeList: [ARGUMENT_TYPE.NUMBER],
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
         }),
     ],
     unnamedArgumentList: [
@@ -276,8 +276,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         SlashCommandNamedArgument.fromProps({
             name: 'at',
             description: 'position to insert the message',
-            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true }),
+            typeList: [ARGUMENT_TYPE.NUMBER],
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
         }),
     ],
     unnamedArgumentList: [
@@ -461,18 +461,15 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         SlashCommandNamedArgument.fromProps({
             name: 'at',
             description: 'position to insert the message',
-            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true }),
+            typeList: [ARGUMENT_TYPE.NUMBER],
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
         }),
         SlashCommandNamedArgument.fromProps({
             name: 'name',
             description: 'display name',
-            typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+            typeList: [ARGUMENT_TYPE.STRING],
             defaultValue: '{{user}}',
-            enumProvider: () => [
-                ...commonEnumProviders.characters('character')(),
-                ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; }),
-            ],
+            enumProvider: commonEnumProviders.characters('character'),
         }),
     ],
     unnamedArgumentList: [
@@ -1268,13 +1265,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         SlashCommandNamedArgument.fromProps({
             name: 'id',
             description: 'injection ID or variable name pointing to ID',
-            typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+            typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-
-            enumProvider: () => [
-                ...commonEnumProviders.injects(),
-                ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; }),
-            ],
+            enumProvider: commonEnumProviders.injects,
         }),
         new SlashCommandNamedArgument(
             'position', 'injection position', [ARGUMENT_TYPE.STRING], false, false, 'after', ['before', 'after', 'chat'],
@@ -1318,12 +1311,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     unnamedArgumentList: [
         SlashCommandArgument.fromProps({
             description: 'injection ID or a variable name pointing to ID',
-            typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+            typeList: [ARGUMENT_TYPE.STRING],
             defaultValue: '',
-            enumProvider: () => [
-                ...commonEnumProviders.injects(),
-                ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; }),
-            ],
+            enumProvider: commonEnumProviders.injects,
         }),
     ],
     callback: flushInjectsCallback,
@@ -1416,7 +1406,7 @@ function injectCallback(args, value) {
         'assistant': extension_prompt_roles.ASSISTANT,
     };
 
-    const id = resolveVariable(args?.id);
+    const id = args?.id;
     const ephemeral = isTrueBoolean(args?.ephemeral);
 
     if (!id) {
@@ -1494,16 +1484,16 @@ function listInjectsCallback() {
 
 /**
  * Flushes script injections for the current chat.
- * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args Named arguments
+ * @param {import('./slash-commands/SlashCommand.js').NamedArguments} _ Named arguments
  * @param {string} value Unnamed argument
  * @returns {string} Empty string
  */
-function flushInjectsCallback(args, value) {
+function flushInjectsCallback(_, value) {
     if (!chat_metadata.script_injects) {
         return '';
     }
 
-    const idArgument = resolveVariable(value, args._scope);
+    const idArgument = value;
 
     for (const [id, inject] of Object.entries(chat_metadata.script_injects)) {
         if (idArgument && id !== idArgument) {
@@ -2443,10 +2433,10 @@ async function sendUserMessageCallback(args, text) {
     text = text.trim();
     const compact = isTrueBoolean(args?.compact);
     const bias = extractMessageBias(text);
-    const insertAt = Number(resolveVariable(args?.at));
+    const insertAt = Number(args?.at);
 
     if ('name' in args) {
-        const name = resolveVariable(args.name) || '';
+        const name = args.name || '';
         const avatar = findPersonaByName(name) || user_avatar;
         await sendMessageAsUser(text, bias, insertAt, compact, name, avatar);
     }
@@ -2752,7 +2742,7 @@ export async function sendMessageAs(args, text) {
         },
     }];
 
-    const insertAt = Number(resolveVariable(args.at));
+    const insertAt = Number(args.at);
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -2799,7 +2789,7 @@ export async function sendNarratorMessage(args, text) {
         },
     };
 
-    const insertAt = Number(resolveVariable(args.at));
+    const insertAt = Number(args.at);
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -2881,7 +2871,7 @@ async function sendCommentMessage(args, text) {
         },
     };
 
-    const insertAt = Number(resolveVariable(args.at));
+    const insertAt = Number(args.at);
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -2999,6 +2989,7 @@ function getModelOptions() {
         { id: 'model_cohere_select', api: 'openai', type: chat_completion_sources.COHERE },
         { id: 'model_perplexity_select', api: 'openai', type: chat_completion_sources.PERPLEXITY },
         { id: 'model_groq_select', api: 'openai', type: chat_completion_sources.GROQ },
+        { id: 'model_01ai_select', api: 'openai', type: chat_completion_sources.ZEROONEAI },
         { id: 'model_novel_select', api: 'novel', type: null },
         { id: 'horde_model', api: 'koboldhorde', type: null },
     ];
@@ -3300,9 +3291,9 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
         document.querySelector('#form_sheld').classList.add('script_error');
         result = new SlashCommandClosureResult();
         result.isError = true;
-        result.errorMessage = e.message;
+        result.errorMessage = e.message || 'An unknown error occurred';
         if (e.cause !== 'abort') {
-            toastr.error(e.message);
+            toastr.error(result.errorMessage);
         }
     } finally {
         delay(1000).then(() => clearCommandProgressDebounced());

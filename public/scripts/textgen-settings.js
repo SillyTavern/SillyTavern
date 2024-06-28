@@ -38,9 +38,26 @@ export const textgen_types = {
     INFERMATICAI: 'infermaticai',
     DREAMGEN: 'dreamgen',
     OPENROUTER: 'openrouter',
+    FEATHERLESS: 'featherless',
+    HUGGINGFACE: 'huggingface',
 };
 
-const { MANCER, VLLM, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, DREAMGEN, OPENROUTER, KOBOLDCPP } = textgen_types;
+const {
+    MANCER,
+    VLLM,
+    APHRODITE,
+    TABBY,
+    TOGETHERAI,
+    OOBA,
+    OLLAMA,
+    LLAMACPP,
+    INFERMATICAI,
+    DREAMGEN,
+    OPENROUTER,
+    KOBOLDCPP,
+    HUGGINGFACE,
+    FEATHERLESS,
+} = textgen_types;
 
 const LLAMACPP_DEFAULT_ORDER = [
     'top_k',
@@ -75,6 +92,7 @@ let TOGETHERAI_SERVER = 'https://api.together.xyz';
 let INFERMATICAI_SERVER = 'https://api.totalgpt.ai';
 let DREAMGEN_SERVER = 'https://dreamgen.com';
 let OPENROUTER_SERVER = 'https://openrouter.ai/api';
+let FEATHERLESS_SERVER = 'https://api.featherless.ai/v1';
 
 const SERVER_INPUTS = {
     [textgen_types.OOBA]: '#textgenerationwebui_api_url_text',
@@ -84,6 +102,7 @@ const SERVER_INPUTS = {
     [textgen_types.KOBOLDCPP]: '#koboldcpp_api_url_text',
     [textgen_types.LLAMACPP]: '#llamacpp_api_url_text',
     [textgen_types.OLLAMA]: '#ollama_api_url_text',
+    [textgen_types.HUGGINGFACE]: '#huggingface_api_url_text',
 };
 
 const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
@@ -265,6 +284,8 @@ export function validateTextGenUrl() {
 
 export function getTextGenServer() {
     switch (settings.type) {
+        case FEATHERLESS:
+            return FEATHERLESS_SERVER;
         case MANCER:
             return MANCER_SERVER;
         case TOGETHERAI:
@@ -1009,6 +1030,10 @@ export function getTextGenModel() {
                 throw new Error('No Ollama model selected');
             }
             return settings.ollama_model;
+        case FEATHERLESS:
+            return settings.featherless_model;
+        case HUGGINGFACE:
+            return 'tgi';
         default:
             return undefined;
     }
@@ -1144,6 +1169,12 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
 
     if (settings.type === KOBOLDCPP) {
         params.grammar = settings.grammar_string;
+    }
+
+    if (settings.type === HUGGINGFACE) {
+        params.top_p = Math.min(Math.max(Number(params.top_p), 0.0), 0.999);
+        params.stop = Array.isArray(params.stop) ? params.stop.slice(0, 4) : [];
+        nonAphroditeParams.seed = settings.seed >= 0 ? settings.seed : undefined;
     }
 
     if (settings.type === MANCER) {

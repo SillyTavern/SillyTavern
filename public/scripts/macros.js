@@ -59,6 +59,30 @@ export class MacrosParser {
     }
 
     /**
+     * Unregisters a global macro with the given key
+     *
+     * @param {string} key Macro name (key)
+     */
+    static unregisterMacro(key) {
+        if (typeof key !== 'string') {
+            throw new Error('Macro key must be a string');
+        }
+
+        // Allowing surrounding whitespace would just create more confusion...
+        key = key.trim();
+
+        if (!key) {
+            throw new Error('Macro key must not be empty or whitespace only');
+        }
+
+        const deleted = this.#macros.delete(key);
+
+        if (!deleted) {
+            console.warn(`Macro ${key} was not registered`);
+        }
+    }
+
+    /**
      * Populate the env object with macro values from the current context.
      * @param {EnvObject} env Env object for the current evaluation context
      * @returns {void}

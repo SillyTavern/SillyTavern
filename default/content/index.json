@@ -12,6 +12,14 @@
         "type": "theme"
     },
     {
+        "filename": "themes/Celestial Macaron.json",
+        "type": "theme"
+    },
+    {
+        "filename": "themes/Dark V 1.0.json",
+        "type": "theme"
+    },
+    {
         "filename": "backgrounds/__transparent.png",
         "type": "background"
     },
