@@ -57,6 +57,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.COHERE]: '#api_key_cohere',
     [SECRET_KEYS.PERPLEXITY]: '#api_key_perplexity',
     [SECRET_KEYS.GROQ]: '#api_key_groq',
+    [SECRET_KEYS.FEATHERLESS]: '#api_key_featherless',
 };
 
 async function clearSecret() {

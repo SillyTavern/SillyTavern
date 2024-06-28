@@ -1013,6 +1013,8 @@ export function getTextGenModel() {
                 throw new Error('No Ollama model selected');
             }
             return settings.ollama_model;
+        case FEATHERLESS:
+            return settings.featherless_model;
         default:
             return undefined;
     }
