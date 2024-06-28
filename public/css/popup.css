@@ -32,7 +32,7 @@ dialog {
     flex-direction: column;
     overflow: hidden;
     width: 100%;
-    height: auto;
+    height: 100%;
     padding: 1px;
 }
 
@@ -169,4 +169,10 @@ body.no-blur .popup[open]::backdrop {
 
     /* Fix weird animation issue with font-scaling during popup open */
     backface-visibility: hidden;
+}
+
+@media screen and (max-width: 1000px) {
+    .popup .popup-body {
+        height: auto;
+    }
 }
