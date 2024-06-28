@@ -5775,6 +5775,7 @@ export async function saveChat(chat_name, withMetadata, mesId) {
         contentType: 'application/json',
         success: function (data) { },
         error: function (jqXHR, exception) {
+            toastr.error('Check the server connection and reload the page to prevent data loss.', 'Chat could not be saved');
             console.log(exception);
             console.log(jqXHR);
         },
