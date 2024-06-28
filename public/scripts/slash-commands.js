@@ -466,12 +466,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         SlashCommandNamedArgument.fromProps({
             name: 'name',
             description: 'display name',
-            typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+            typeList: [ARGUMENT_TYPE.STRING],
             defaultValue: '{{user}}',
-            enumProvider: () => [
-                ...commonEnumProviders.characters('character')(),
-                ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; }),
-            ],
+            enumProvider: commonEnumProviders.characters('character'),
         }),
     ],
     unnamedArgumentList: [
@@ -2437,7 +2434,7 @@ async function sendUserMessageCallback(args, text) {
     const insertAt = Number(resolveVariable(args?.at));
 
     if ('name' in args) {
-        const name = resolveVariable(args.name) || '';
+        const name = args.name || '';
         const avatar = findPersonaByName(name) || user_avatar;
         await sendMessageAsUser(text, bias, insertAt, compact, name, avatar);
     }
