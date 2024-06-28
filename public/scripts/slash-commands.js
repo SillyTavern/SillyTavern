@@ -3295,9 +3295,9 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
         document.querySelector('#form_sheld').classList.add('script_error');
         result = new SlashCommandClosureResult();
         result.isError = true;
-        result.errorMessage = e.message;
-        if (e.cause !== 'abort' && e.message) {
-            toastr.error(e.message);
+        result.errorMessage = e.message || 'An unknown error occurred';
+        if (e.cause !== 'abort') {
+            toastr.error(result.errorMessage);
         }
     } finally {
         delay(1000).then(() => clearCommandProgressDebounced());
