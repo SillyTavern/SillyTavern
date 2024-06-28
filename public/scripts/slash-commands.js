@@ -1267,13 +1267,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         SlashCommandNamedArgument.fromProps({
             name: 'id',
             description: 'injection ID or variable name pointing to ID',
-            typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+            typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-
-            enumProvider: () => [
-                ...commonEnumProviders.injects(),
-                ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; }),
-            ],
+            enumProvider: commonEnumProviders.injects,
         }),
         new SlashCommandNamedArgument(
             'position', 'injection position', [ARGUMENT_TYPE.STRING], false, false, 'after', ['before', 'after', 'chat'],
@@ -1415,7 +1411,7 @@ function injectCallback(args, value) {
         'assistant': extension_prompt_roles.ASSISTANT,
     };
 
-    const id = resolveVariable(args?.id);
+    const id = args?.id;
     const ephemeral = isTrueBoolean(args?.ephemeral);
 
     if (!id) {
