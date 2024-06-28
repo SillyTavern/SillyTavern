@@ -2319,7 +2319,7 @@ async function saveTheme(name = undefined, theme = undefined) {
     if (!response.ok) {
         toastr.error('Check the server connection and reload the page to prevent data loss.', 'Theme could not be saved');
         console.error('Theme could not be saved', response);
-        return;
+        throw new Error('Theme could not be saved');
     }
 
     const themeIndex = themes.findIndex(x => x.name == name);
@@ -2405,11 +2405,13 @@ function getNewTheme(parsed) {
 }
 
 async function saveMovingUI() {
-    const name = await callGenericPopup('Enter a name for the MovingUI Preset:', POPUP_TYPE.INPUT);
+    const popupResult = await callGenericPopup('Enter a name for the MovingUI Preset:', POPUP_TYPE.INPUT);
 
-    if (!name) {
+    if (!popupResult) {
         return;
     }
+
+    const name = String(popupResult);
 
     const movingUIPreset = {
         name,
@@ -2442,7 +2444,7 @@ async function saveMovingUI() {
         power_user.movingUIPreset = name;
         saveSettingsDebounced();
     } else {
-        toastr.warning('failed to save MovingUI state.');
+        toastr.error('Failed to save MovingUI state.');
         console.error('MovingUI could not be saved', response);
     }
 }
