@@ -14,6 +14,10 @@ dialog {
     display: flex;
     flex-direction: column;
 
+    max-height: calc(100svh - 2em);
+    max-width: calc(100svw - 2em);
+    min-height: fit-content;
+
     /* Overflow visible so elements (like toasts) can appear outside of the dialog. '.popup-body' is hiding overflow for the real content. */
     overflow: visible;
 
