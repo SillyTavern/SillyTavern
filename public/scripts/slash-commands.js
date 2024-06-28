@@ -178,8 +178,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         SlashCommandNamedArgument.fromProps({
             name: 'at',
             description: 'position to insert the message',
-            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true }),
+            typeList: [ARGUMENT_TYPE.NUMBER],
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
         }),
     ],
     unnamedArgumentList: [
@@ -221,8 +221,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         SlashCommandNamedArgument.fromProps({
             name: 'at',
             description: 'position to insert the message',
-            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true }),
+            typeList: [ARGUMENT_TYPE.NUMBER],
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
         }),
     ],
     unnamedArgumentList: [
@@ -275,8 +275,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         SlashCommandNamedArgument.fromProps({
             name: 'at',
             description: 'position to insert the message',
-            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true }),
+            typeList: [ARGUMENT_TYPE.NUMBER],
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
         }),
     ],
     unnamedArgumentList: [
@@ -460,8 +460,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         SlashCommandNamedArgument.fromProps({
             name: 'at',
             description: 'position to insert the message',
-            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
-            enumProvider: commonEnumProviders.messages({ allowIdAfter: true, allowVars: true }),
+            typeList: [ARGUMENT_TYPE.NUMBER],
+            enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
         }),
         SlashCommandNamedArgument.fromProps({
             name: 'name',
@@ -2428,7 +2428,7 @@ async function sendUserMessageCallback(args, text) {
     text = text.trim();
     const compact = isTrueBoolean(args?.compact);
     const bias = extractMessageBias(text);
-    const insertAt = Number(resolveVariable(args?.at));
+    const insertAt = Number(args?.at);
 
     if ('name' in args) {
         const name = args.name || '';
@@ -2737,7 +2737,7 @@ export async function sendMessageAs(args, text) {
         },
     }];
 
-    const insertAt = Number(resolveVariable(args.at));
+    const insertAt = Number(args.at);
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -2784,7 +2784,7 @@ export async function sendNarratorMessage(args, text) {
         },
     };
 
-    const insertAt = Number(resolveVariable(args.at));
+    const insertAt = Number(args.at);
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -2866,7 +2866,7 @@ async function sendCommentMessage(args, text) {
         },
     };
 
-    const insertAt = Number(resolveVariable(args.at));
+    const insertAt = Number(args.at);
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
