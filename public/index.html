@@ -2029,6 +2029,7 @@
                                     <option value="ooba" data-i18n="Default (completions compatible)">Default [OpenAI /completions compatible: oobabooga, LM Studio, etc.]</option>
                                     <option value="aphrodite">Aphrodite</option>
                                     <option value="dreamgen">DreamGen</option>
+                                    <option value="featherless">Featherless</option>
                                     <option value="huggingface">HuggingFace (Inference Endpoint)</option>
                                     <option value="infermaticai">InfermaticAI</option>
                                     <option value="koboldcpp">KoboldCpp</option>
@@ -2182,6 +2183,27 @@
                                     <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_blocking">
                                 </div>
                                 <input id="custom_model_textgenerationwebui" class="text_pole wide100p" maxlength="500" placeholder="Custom model (optional)" data-i18n="[placeholder]Custom model (optional)" type="text">
+                            </div>
+                            <div data-tg-type="featherless" class="flex-container flexFlowColumn">
+                                <div class="flex-container flexFlowColumn">
+                                    <a href="https://featherless.ai/models/" target="_blank" rel="noopener noreferrer">
+                                        featherless.ai
+                                    </a>
+                                </div>
+                                <h4 data-i18n="API key (optional)">API key</h4>
+                                <div class="flex-container">
+                                    <input id="api_key_featherless" name="api_key_featherless" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_featherless">
+                                    </div>
+                                </div>
+                                <div data-for="api_key_featherless" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                    For privacy reasons, your API key will be hidden after you reload the page.
+                                </div>
+                                <select id="featherless_model">
+                                    <option data-i18n="-- Connect to the API --">
+                                        -- Connect to the API --
+                                    </option>
+                                </select>
                             </div>
                             <div data-tg-type="vllm">
                                 <div class="flex-container flexFlowColumn">

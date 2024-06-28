@@ -38,6 +38,7 @@ export const textgen_types = {
     INFERMATICAI: 'infermaticai',
     DREAMGEN: 'dreamgen',
     OPENROUTER: 'openrouter',
+    FEATHERLESS: 'featherless',
     HUGGINGFACE: 'huggingface',
 };
 
@@ -55,6 +56,7 @@ const {
     OPENROUTER,
     KOBOLDCPP,
     HUGGINGFACE,
+    FEATHERLESS,
 } = textgen_types;
 
 const LLAMACPP_DEFAULT_ORDER = [
@@ -90,6 +92,7 @@ let TOGETHERAI_SERVER = 'https://api.together.xyz';
 let INFERMATICAI_SERVER = 'https://api.totalgpt.ai';
 let DREAMGEN_SERVER = 'https://dreamgen.com';
 let OPENROUTER_SERVER = 'https://openrouter.ai/api';
+let FEATHERLESS_SERVER = 'https://api.featherless.ai/v1';
 
 const SERVER_INPUTS = {
     [textgen_types.OOBA]: '#textgenerationwebui_api_url_text',
@@ -281,6 +284,8 @@ export function validateTextGenUrl() {
 
 export function getTextGenServer() {
     switch (settings.type) {
+        case FEATHERLESS:
+            return FEATHERLESS_SERVER;
         case MANCER:
             return MANCER_SERVER;
         case TOGETHERAI:
@@ -1025,6 +1030,8 @@ export function getTextGenModel() {
                 throw new Error('No Ollama model selected');
             }
             return settings.ollama_model;
+        case FEATHERLESS:
+            return settings.featherless_model;
         case HUGGINGFACE:
             return 'tgi';
         default:

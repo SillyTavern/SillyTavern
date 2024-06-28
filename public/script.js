@@ -22,7 +22,7 @@ import {
     parseTabbyLogprobs,
 } from './scripts/textgen-settings.js';
 
-const { MANCER, TOGETHERAI, OOBA, VLLM, APHRODITE, TABBY, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER } = textgen_types;
+const { MANCER, TOGETHERAI, OOBA, VLLM, APHRODITE, TABBY, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER, FEATHERLESS } = textgen_types;
 
 import {
     world_info,
@@ -223,7 +223,7 @@ import {
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
+import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { MacrosParser, evaluateMacros } from './scripts/macros.js';
@@ -1160,6 +1160,9 @@ async function getStatusTextgen() {
         } else if (textgen_settings.type === APHRODITE) {
             loadAphroditeModels(data?.data);
             setOnlineStatus(textgen_settings.aphrodite_model);
+        } else if (textgen_settings.type === FEATHERLESS) {
+            loadFeatherlessModels(data?.data);
+            setOnlineStatus(textgen_settings.featherless_model);
         } else {
             setOnlineStatus(data?.result);
         }
@@ -9476,6 +9479,7 @@ jQuery(async function () {
             { id: 'api_key_openrouter-tg', secret: SECRET_KEYS.OPENROUTER },
             { id: 'api_key_koboldcpp', secret: SECRET_KEYS.KOBOLDCPP },
             { id: 'api_key_llamacpp', secret: SECRET_KEYS.LLAMACPP },
+            { id: 'api_key_featherless', secret: SECRET_KEYS.FEATHERLESS },
             { id: 'api_key_huggingface', secret: SECRET_KEYS.HUGGINGFACE },
         ];
 
