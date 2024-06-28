@@ -1,3 +1,5 @@
+@import url('./popup-safari-fix.css');
+
 dialog {
     color: var(--SmartThemeBodyColor);
 }
@@ -171,10 +173,3 @@ body.no-blur .popup[open]::backdrop {
     backface-visibility: hidden;
 }
 
-@media screen and (max-width: 1000px) {
-    .popup .popup-body {
-        height: fit-content;
-        max-height: 95vh;
-        max-height: 95svh;
-    }
-}

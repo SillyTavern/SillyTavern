@@ -725,6 +725,10 @@ export function initRossMods() {
         RA_autoconnect();
     }
 
+    if (getParsedUA()?.os?.name === 'iOS') {
+        document.body.classList.add('ios');
+    }
+
     $('#main_api').change(function () {
         var PrevAPI = main_api;
         setTimeout(() => RA_autoconnect(PrevAPI), 100);
