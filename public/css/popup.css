@@ -76,6 +76,11 @@ dialog {
     background-color: var(--black30a);
 }
 
+body.no-blur .popup[open]::backdrop {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
 /* Closing animation */
 .popup[closing] {
     animation: pop-out var(--animation-duration-slow) ease-in-out;
