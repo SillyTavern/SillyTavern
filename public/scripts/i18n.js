@@ -32,6 +32,49 @@ const observer = new MutationObserver(mutations => {
 });
 
 /**
+ * Translates a template string with named arguments
+ *
+ * Uses the template literal with all values replaced by index placeholder for translation key.
+ *
+ * @example
+ * ```js
+ * toastr.warn(t`Tag ${tagName} not found.`);
+ * ```
+ * Should be translated in the translation files as:
+ * ```
+ * Tag ${0} not found. -> Tag ${0} nicht gefunden.
+ * ```
+ *
+ * @param {TemplateStringsArray} strings - Template strings array
+ * @param  {...any} values - Values for placeholders in the template string
+ * @returns {string} Translated and formatted string
+ */
+export function t(strings, ...values) {
+    let str = strings.reduce((result, string, i) => result + string + (values[i] !== undefined ? `\${${i}}` : ''), '');
+    let translatedStr = translate(str);
+
+    // Replace indexed placeholders with actual values
+    return translatedStr.replace(/\$\{(\d+)\}/g, (match, index) => values[index]);
+}
+
+/**
+ * Translates a given key or text
+ *
+ * If the translation is based on a key, that one is used to find a possible translation in the translation file.
+ * The original text still has to be provided, as that is the default value being returned if no translation is found.
+ *
+ * For in-code text translation on a format string, using the template literal `t` is preferred.
+ *
+ * @param {string} text - The text to translate
+ * @param {string?} key - The key to use for translation. If not provided, text is used as the key.
+ * @returns {string} - The translated text
+ */
+export function translate(text, key = null) {
+    const translationKey = key || text;
+    return localeData?.[translationKey] || text;
+}
+
+/**
  * Fetches the locale data for the given language.
  * @param {string} language Language code
  * @returns {Promise<Record<string, string>>} Locale data
