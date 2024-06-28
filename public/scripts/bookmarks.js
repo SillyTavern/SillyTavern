@@ -336,6 +336,7 @@ async function convertSoloToGroupChat() {
 
     if (!createChatResponse.ok) {
         console.error('Group chat creation unsuccessful');
+        toastr.error('Group chat creation unsuccessful');
         return;
     }
 

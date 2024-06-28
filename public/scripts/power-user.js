@@ -2316,25 +2316,29 @@ async function saveTheme(name = undefined, theme = undefined) {
         body: JSON.stringify(theme),
     });
 
-    if (response.ok) {
-        const themeIndex = themes.findIndex(x => x.name == name);
-
-        if (themeIndex == -1) {
-            themes.push(theme);
-            const option = document.createElement('option');
-            option.selected = true;
-            option.value = name;
-            option.innerText = name;
-            $('#themes').append(option);
-        }
-        else {
-            themes[themeIndex] = theme;
-            $(`#themes option[value="${name}"]`).attr('selected', true);
-        }
-
-        power_user.theme = name;
-        saveSettingsDebounced();
+    if (!response.ok) {
+        toastr.error('Check the server connection and reload the page to prevent data loss.', 'Theme could not be saved');
+        console.error('Theme could not be saved', response);
+        return;
     }
+
+    const themeIndex = themes.findIndex(x => x.name == name);
+
+    if (themeIndex == -1) {
+        themes.push(theme);
+        const option = document.createElement('option');
+        option.selected = true;
+        option.value = name;
+        option.innerText = name;
+        $('#themes').append(option);
+    }
+    else {
+        themes[themeIndex] = theme;
+        $(`#themes option[value="${name}"]`).attr('selected', true);
+    }
+
+    power_user.theme = name;
+    saveSettingsDebounced();
 
     return theme;
 }
@@ -2439,6 +2443,7 @@ async function saveMovingUI() {
         saveSettingsDebounced();
     } else {
         toastr.warning('failed to save MovingUI state.');
+        console.error('MovingUI could not be saved', response);
     }
 }
 

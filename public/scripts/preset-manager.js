@@ -182,17 +182,19 @@ class PresetManager {
     async savePreset(name, settings) {
         const preset = settings ?? this.getPresetSettings(name);
 
-        const res = await fetch('/api/presets/save', {
+        const response = await fetch('/api/presets/save', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ preset, name, apiId: this.apiId }),
         });
 
-        if (!res.ok) {
-            toastr.error('Failed to save preset');
+        if (!response.ok) {
+            toastr.error('Check the server connection and reload the page to prevent data loss.', 'Preset could not be saved');
+            console.error('Preset could not be saved', response);
+            return;
         }
 
-        const data = await res.json();
+        const data = await response.json();
         name = data.name;
 
         this.updateList(name, preset);
