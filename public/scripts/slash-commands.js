@@ -3296,7 +3296,7 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
         result = new SlashCommandClosureResult();
         result.isError = true;
         result.errorMessage = e.message;
-        if (e.cause !== 'abort') {
+        if (e.cause !== 'abort' && e.message) {
             toastr.error(e.message);
         }
     } finally {
