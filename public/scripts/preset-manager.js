@@ -191,7 +191,7 @@ class PresetManager {
         if (!response.ok) {
             toastr.error('Check the server connection and reload the page to prevent data loss.', 'Preset could not be saved');
             console.error('Preset could not be saved', response);
-            return;
+            throw new Error('Preset could not be saved');
         }
 
         const data = await response.json();
