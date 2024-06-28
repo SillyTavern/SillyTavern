@@ -360,6 +360,7 @@ function RA_autoconnect(PrevApi) {
                     || (textgen_settings.type === textgen_types.INFERMATICAI && secret_state[SECRET_KEYS.INFERMATICAI])
                     || (textgen_settings.type === textgen_types.DREAMGEN && secret_state[SECRET_KEYS.DREAMGEN])
                     || (textgen_settings.type === textgen_types.OPENROUTER && secret_state[SECRET_KEYS.OPENROUTER])
+                    || (textgen_settings.type === textgen_types.FEATHERLESS && secret_state[SECRET_KEYS.FEATHERLESS])
                 ) {
                     $('#api_button_textgenerationwebui').trigger('click');
                 }
@@ -722,6 +723,10 @@ export function initRossMods() {
 
     if (power_user.auto_connect) {
         RA_autoconnect();
+    }
+
+    if (getParsedUA()?.os?.name === 'iOS') {
+        document.body.classList.add('ios');
     }
 
     $('#main_api').change(function () {

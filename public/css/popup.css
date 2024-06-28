@@ -1,3 +1,5 @@
+@import url('./popup-safari-fix.css');
+
 dialog {
     color: var(--SmartThemeBodyColor);
 }
@@ -13,6 +15,10 @@ dialog {
     border-radius: 10px;
     display: flex;
     flex-direction: column;
+
+    max-height: calc(100svh - 2em);
+    max-width: calc(100svw - 2em);
+    min-height: fit-content;
 
     /* Overflow visible so elements (like toasts) can appear outside of the dialog. '.popup-body' is hiding overflow for the real content. */
     overflow: visible;
@@ -70,6 +76,11 @@ dialog {
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     background-color: var(--black30a);
+}
+
+body.no-blur .popup[open]::backdrop {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 /* Closing animation */
@@ -161,3 +172,4 @@ dialog {
     /* Fix weird animation issue with font-scaling during popup open */
     backface-visibility: hidden;
 }
+

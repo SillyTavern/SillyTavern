@@ -329,6 +329,7 @@ class PresetManager {
             'infermaticai_model',
             'dreamgen_model',
             'openrouter_model',
+            'featherless_model',
             'max_tokens_second',
             'openrouter_providers',
         ];
