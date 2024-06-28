@@ -2096,7 +2096,7 @@ async function askCharacter(args, text) {
         }
     }
 
-    mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND);
+    mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND, { characterOverride: name, depth: 0 });
 
     const prevChId = this_chid;
 
@@ -2574,7 +2574,7 @@ export async function generateSystemMessage(_, prompt) {
     // Generate and regex the output if applicable
     toastr.info('Please wait', 'Generating...');
     let message = await generateQuietPrompt(prompt, false, false);
-    message = getRegexedString(message, regex_placement.SLASH_COMMAND);
+    message = getRegexedString(message, regex_placement.SLASH_COMMAND, { depth: 0 });
 
     sendNarratorMessage(_, message);
     return '';
@@ -2695,8 +2695,11 @@ export async function sendMessageAs(args, text) {
         name = name2;
     }
 
+    const insertAt = Number(resolveVariable(args.at));
+    const insertAtDepth = (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) ? insertAt : null;
+
     // Requires a regex check after the slash command is pushed to output
-    mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND, { characterOverride: name });
+    mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND, { characterOverride: name, depth: insertAtDepth ?? 0 });
 
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(mesText);
@@ -2747,14 +2750,12 @@ export async function sendMessageAs(args, text) {
         },
     }];
 
-    const insertAt = Number(resolveVariable(args.at));
-
-    if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
-        chat.splice(insertAt, 0, message);
+    if (insertAtDepth) {
+        chat.splice(insertAtDepth, 0, message);
         await saveChatConditional();
-        await eventSource.emit(event_types.MESSAGE_RECEIVED, insertAt);
+        await eventSource.emit(event_types.MESSAGE_RECEIVED, insertAtDepth);
         await reloadCurrentChat();
-        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, insertAt);
+        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, insertAtDepth);
     } else {
         chat.push(message);
         await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
@@ -2829,7 +2830,7 @@ export async function promptQuietForLoudResponse(who, text) {
     //text = `${text}${power_user.instruct.enabled ? '' : '\n'}${(power_user.always_force_name2 && who != 'raw') ? characters[character_id].name + ":" : ""}`
 
     let reply = await generateQuietPrompt(text, true, false);
-    text = await getRegexedString(reply, regex_placement.SLASH_COMMAND);
+    text = await getRegexedString(reply, regex_placement.SLASH_COMMAND, { characterOverride: characters[character_id].name, depth: 0 });
 
     const message = {
         name: characters[character_id].name,

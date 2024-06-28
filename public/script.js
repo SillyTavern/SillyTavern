@@ -4604,7 +4604,9 @@ export function removeMacros(str) {
  * @returns {Promise<void>} A promise that resolves when the message is inserted.
  */
 export async function sendMessageAsUser(messageText, messageBias, insertAt = null, compact = false, name = name1, avatar = user_avatar) {
-    messageText = getRegexedString(messageText, regex_placement.USER_INPUT);
+    const insertAtDepth = (typeof insertAt === 'number' && insertAt >= 0 && insertAt <= chat.length) ? insertAt : null;
+
+    messageText = getRegexedString(messageText, regex_placement.USER_INPUT, { depth: insertAtDepth ?? 0 });
 
     const message = {
         name: name,
@@ -4634,12 +4636,12 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
     await populateFileAttachment(message);
     statMesProcess(message, 'user', characters, this_chid, '');
 
-    if (typeof insertAt === 'number' && insertAt >= 0 && insertAt <= chat.length) {
-        chat.splice(insertAt, 0, message);
+    if (insertAtDepth) {
+        chat.splice(insertAtDepth, 0, message);
         await saveChatConditional();
-        await eventSource.emit(event_types.MESSAGE_SENT, insertAt);
+        await eventSource.emit(event_types.MESSAGE_SENT, insertAtDepth);
         await reloadCurrentChat();
-        await eventSource.emit(event_types.USER_MESSAGE_RENDERED, insertAt);
+        await eventSource.emit(event_types.USER_MESSAGE_RENDERED, insertAtDepth);
     } else {
         chat.push(message);
         const chat_id = (chat.length - 1);
@@ -5966,12 +5968,12 @@ function getFirstMessage() {
         is_user: false,
         is_system: false,
         send_date: getMessageTimeStamp(),
-        mes: getRegexedString(firstMes, regex_placement.AI_OUTPUT),
+        mes: getRegexedString(firstMes, regex_placement.AI_OUTPUT, { depth: 0 }),
         extra: {},
     };
 
     if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
-        const swipes = [message.mes, ...(alternateGreetings.map(greeting => getRegexedString(greeting, regex_placement.AI_OUTPUT)))];
+        const swipes = [message.mes, ...(alternateGreetings.map(greeting => getRegexedString(greeting, regex_placement.AI_OUTPUT, { depth: 0 })))];
 
         if (!message.mes) {
             swipes.shift();
@@ -6444,10 +6446,11 @@ function updateMessage(div) {
     }
 
     // Ignore character override if sent as system
+    const depth = (chat.length - 1) - this_edit_mes_id;
     text = getRegexedString(
         text,
         regexPlacement,
-        { characterOverride: mes.extra?.type === 'narrator' ? undefined : mes.name },
+        { characterOverride: mes.extra?.type === 'narrator' ? undefined : mes.name, depth: depth },
     );
 
 
