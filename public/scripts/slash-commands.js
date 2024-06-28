@@ -1310,12 +1310,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     unnamedArgumentList: [
         SlashCommandArgument.fromProps({
             description: 'injection ID or a variable name pointing to ID',
-            typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+            typeList: [ARGUMENT_TYPE.STRING],
             defaultValue: '',
-            enumProvider: () => [
-                ...commonEnumProviders.injects(),
-                ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; }),
-            ],
+            enumProvider: commonEnumProviders.injects,
         }),
     ],
     callback: flushInjectsCallback,
@@ -1486,16 +1483,16 @@ function listInjectsCallback() {
 
 /**
  * Flushes script injections for the current chat.
- * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args Named arguments
+ * @param {import('./slash-commands/SlashCommand.js').NamedArguments} _ Named arguments
  * @param {string} value Unnamed argument
  * @returns {string} Empty string
  */
-function flushInjectsCallback(args, value) {
+function flushInjectsCallback(_, value) {
     if (!chat_metadata.script_injects) {
         return '';
     }
 
-    const idArgument = resolveVariable(value, args._scope);
+    const idArgument = value;
 
     for (const [id, inject] of Object.entries(chat_metadata.script_injects)) {
         if (idArgument && id !== idArgument) {
