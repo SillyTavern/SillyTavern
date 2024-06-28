@@ -466,12 +466,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         SlashCommandNamedArgument.fromProps({
             name: 'name',
             description: 'display name',
-            typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+            typeList: [ARGUMENT_TYPE.STRING],
             defaultValue: '{{user}}',
-            enumProvider: () => [
-                ...commonEnumProviders.characters('character')(),
-                ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; }),
-            ],
+            enumProvider: commonEnumProviders.characters('character'),
         }),
     ],
     unnamedArgumentList: [
@@ -1267,13 +1264,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         SlashCommandNamedArgument.fromProps({
             name: 'id',
             description: 'injection ID or variable name pointing to ID',
-            typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+            typeList: [ARGUMENT_TYPE.STRING],
             isRequired: true,
-
-            enumProvider: () => [
-                ...commonEnumProviders.injects(),
-                ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; }),
-            ],
+            enumProvider: commonEnumProviders.injects,
         }),
         new SlashCommandNamedArgument(
             'position', 'injection position', [ARGUMENT_TYPE.STRING], false, false, 'after', ['before', 'after', 'chat'],
@@ -1317,12 +1310,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     unnamedArgumentList: [
         SlashCommandArgument.fromProps({
             description: 'injection ID or a variable name pointing to ID',
-            typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+            typeList: [ARGUMENT_TYPE.STRING],
             defaultValue: '',
-            enumProvider: () => [
-                ...commonEnumProviders.injects(),
-                ...commonEnumProviders.variables('all')().map(x => { x.description = 'Variable'; return x; }),
-            ],
+            enumProvider: commonEnumProviders.injects,
         }),
     ],
     callback: flushInjectsCallback,
@@ -1415,7 +1405,7 @@ function injectCallback(args, value) {
         'assistant': extension_prompt_roles.ASSISTANT,
     };
 
-    const id = resolveVariable(args?.id);
+    const id = args?.id;
     const ephemeral = isTrueBoolean(args?.ephemeral);
 
     if (!id) {
@@ -1493,16 +1483,16 @@ function listInjectsCallback() {
 
 /**
  * Flushes script injections for the current chat.
- * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args Named arguments
+ * @param {import('./slash-commands/SlashCommand.js').NamedArguments} _ Named arguments
  * @param {string} value Unnamed argument
  * @returns {string} Empty string
  */
-function flushInjectsCallback(args, value) {
+function flushInjectsCallback(_, value) {
     if (!chat_metadata.script_injects) {
         return '';
     }
 
-    const idArgument = resolveVariable(value, args._scope);
+    const idArgument = value;
 
     for (const [id, inject] of Object.entries(chat_metadata.script_injects)) {
         if (idArgument && id !== idArgument) {
@@ -2441,7 +2431,7 @@ async function sendUserMessageCallback(args, text) {
     const insertAt = Number(resolveVariable(args?.at));
 
     if ('name' in args) {
-        const name = resolveVariable(args.name) || '';
+        const name = args.name || '';
         const avatar = findPersonaByName(name) || user_avatar;
         await sendMessageAsUser(text, bias, insertAt, compact, name, avatar);
     }

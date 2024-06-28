@@ -447,7 +447,7 @@ async function summarizeCallback(args, text) {
     }
 
     const source = args.source || extension_settings.memory.source;
-    const prompt = substituteParamsExtended((resolveVariable(args.prompt) || extension_settings.memory.prompt), { words: extension_settings.memory.promptWords });
+    const prompt = substituteParamsExtended((args.prompt || extension_settings.memory.prompt), { words: extension_settings.memory.promptWords });
 
     try {
         switch (source) {
@@ -923,10 +923,8 @@ jQuery(async function () {
             SlashCommandNamedArgument.fromProps({
                 name: 'prompt',
                 description: 'prompt to use for summarization',
-                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '',
-                enumProvider: commonEnumProviders.variables('all'),
-                forceEnum: false,
             }),
         ],
         unnamedArgumentList: [
