@@ -4639,7 +4639,7 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
     await populateFileAttachment(message);
     statMesProcess(message, 'user', characters, this_chid, '');
 
-    if (insertAtDepth) {
+    if (insertAtDepth !== null) {
         chat.splice(insertAt, 0, message);
         await saveChatConditional();
         await eventSource.emit(event_types.MESSAGE_SENT, insertAt);

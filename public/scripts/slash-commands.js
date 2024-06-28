@@ -2740,7 +2740,7 @@ export async function sendMessageAs(args, text) {
         },
     }];
 
-    if (insertAtDepth) {
+    if (insertAtDepth !== null) {
         chat.splice(insertAt, 0, message);
         await saveChatConditional();
         await eventSource.emit(event_types.MESSAGE_RECEIVED, insertAt);
