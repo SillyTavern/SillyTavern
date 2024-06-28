@@ -4549,6 +4549,13 @@ a {
     padding: 1em;
 }
 
+.img_enlarged_container pre {
+    max-height: 25vh;
+    max-height: 25svh;
+    flex-shrink: 0;
+    overflow: auto;
+}
+
 .popup:has(.img_enlarged.zoomed).large_dialogue_popup {
     height: 100vh !important;
     height: 100svh !important;
