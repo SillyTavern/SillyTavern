@@ -1,2 +1,3 @@
-* **Please check if the PR fulfills these requirements**
-- [ ] I have read the [contribution guidelines](https://github.com/SillyTavern/SillyTavern/blob/release/CONTRIBUTING.md)
+## Checklist:
+
+- [ ] I have read the [Contributing guidelines](https://github.com/SillyTavern/SillyTavern/blob/release/CONTRIBUTING.md).
