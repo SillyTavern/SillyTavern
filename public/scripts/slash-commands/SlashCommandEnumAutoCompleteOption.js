@@ -13,7 +13,7 @@ export class SlashCommandEnumAutoCompleteOption extends AutoCompleteOption {
      * @param {SlashCommandEnumValue} enumValue
      */
     constructor(cmd, enumValue) {
-        super(enumValue.value, '◊');
+        super(enumValue.value, enumValue.typeIcon, enumValue.type);
         this.cmd = cmd;
         this.enumValue = enumValue;
     }
@@ -21,9 +21,9 @@ export class SlashCommandEnumAutoCompleteOption extends AutoCompleteOption {
 
     renderItem() {
         let li;
-        li = this.makeItem(this.name, '◊', true, [], [], null, this.enumValue.description);
+        li = this.makeItem(this.name, this.typeIcon, true, [], [], null, this.enumValue.description);
         li.setAttribute('data-name', this.name);
-        li.setAttribute('data-option-type', 'enum');
+        li.setAttribute('data-option-type', this.type);
         return li;
     }
 

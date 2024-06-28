@@ -17,6 +17,7 @@ const API_COHERE = 'https://api.cohere.ai/v1';
 const API_PERPLEXITY = 'https://api.perplexity.ai';
 const API_GROQ = 'https://api.groq.com/openai/v1';
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
+const API_01AI = 'https://api.01.ai/v1';
 
 /**
  * Applies a post-processing step to the generated messages.
@@ -119,7 +120,7 @@ async function sendClaudeRequest(request, response) {
         let use_system_prompt = (request.body.model.startsWith('claude-2') || request.body.model.startsWith('claude-3')) && request.body.claude_use_sysprompt;
         let converted_prompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, use_system_prompt, request.body.human_sysprompt_message, request.body.char_name, request.body.user_name);
         // Add custom stop sequences
-        const stopSequences = ['\n\nHuman:', '\n\nSystem:', '\n\nAssistant:'];
+        const stopSequences = [];
         if (Array.isArray(request.body.stop)) {
             stopSequences.push(...request.body.stop);
         }
@@ -670,6 +671,10 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         api_url = API_COHERE;
         api_key_openai = readSecret(request.user.directories, SECRET_KEYS.COHERE);
         headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZEROONEAI) {
+        api_url = API_01AI;
+        api_key_openai = readSecret(request.user.directories, SECRET_KEYS.ZEROONEAI);
+        headers = {};
     } else {
         console.log('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
@@ -931,6 +936,11 @@ router.post('/generate', jsonParser, function (request, response) {
                 request.body.tool_choice = 'none';
             }
         }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZEROONEAI) {
+        apiUrl = API_01AI;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.ZEROONEAI);
+        headers = {};
+        bodyParams = {};
     } else {
         console.log('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });

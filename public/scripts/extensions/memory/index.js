@@ -11,7 +11,7 @@ import {
     generateQuietPrompt,
     is_send_press,
     saveSettingsDebounced,
-    substituteParams,
+    substituteParamsExtended,
     generateRaw,
     getMaxContextSize,
 } from '../../../script.js';
@@ -24,6 +24,7 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { resolveVariable } from '../../variables.js';
+import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
@@ -43,8 +44,7 @@ const formatMemoryValue = function (value) {
     value = value.trim();
 
     if (extension_settings.memory.template) {
-        let result = extension_settings.memory.template.replace(/{{summary}}/i, value);
-        return substituteParams(result);
+        return substituteParamsExtended(extension_settings.memory.template, { summary: value });
     } else {
         return `Summary: ${value}`;
     }
@@ -447,7 +447,7 @@ async function summarizeCallback(args, text) {
     }
 
     const source = args.source || extension_settings.memory.source;
-    const prompt = substituteParams((resolveVariable(args.prompt) || extension_settings.memory.prompt)?.replace(/{{words}}/gi, extension_settings.memory.promptWords));
+    const prompt = substituteParamsExtended((args.prompt || extension_settings.memory.prompt), { words: extension_settings.memory.promptWords });
 
     try {
         switch (source) {
@@ -534,7 +534,7 @@ async function summarizeChatMain(context, force, skipWIAN) {
     }
 
     console.log('Summarizing chat, messages since last summary: ' + messagesSinceLastSummary, 'words since last summary: ' + wordsSinceLastSummary);
-    const prompt = extension_settings.memory.prompt?.replace(/{{words}}/gi, extension_settings.memory.promptWords);
+    const prompt = substituteParamsExtended(extension_settings.memory.prompt, { words: extension_settings.memory.promptWords });
 
     if (!prompt) {
         console.debug('Summarization prompt is empty. Skipping summarization.');
@@ -900,7 +900,7 @@ function setupListeners() {
 jQuery(async function () {
     async function addExtensionControls() {
         const settingsHtml = await renderExtensionTemplateAsync('memory', 'settings', { defaultSettings });
-        $('#extensions_settings2').append(settingsHtml);
+        $('#summarize_container').append(settingsHtml);
         setupListeners();
         $('#summaryExtensionPopoutButton').off('click').on('click', function (e) {
             doPopout(e);
@@ -920,7 +920,12 @@ jQuery(async function () {
         callback: summarizeCallback,
         namedArgumentList: [
             new SlashCommandNamedArgument('source', 'API to use for summarization', [ARGUMENT_TYPE.STRING], false, false, '', ['main', 'extras']),
-            new SlashCommandNamedArgument('prompt', 'prompt to use for summarization', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME], false, false, ''),
+            SlashCommandNamedArgument.fromProps({
+                name: 'prompt',
+                description: 'prompt to use for summarization',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: '',
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument('text to summarize', [ARGUMENT_TYPE.STRING], false, false, ''),

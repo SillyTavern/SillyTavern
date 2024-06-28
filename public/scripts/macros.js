@@ -1,5 +1,5 @@
 import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId, substituteParams } from '../script.js';
-import { timestampToMoment, isDigitsOnly, getStringHash } from './utils.js';
+import { timestampToMoment, isDigitsOnly, getStringHash, escapeRegex, uuidv4 } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { replaceInstructMacros } from './instruct-mode.js';
 import { replaceVariableMacros } from './variables.js';
@@ -12,6 +12,132 @@ Handlebars.registerHelper('helperMissing', function () {
     const macroName = options.name;
     return substituteParams(`{{${macroName}}}`);
 });
+
+/**
+ * @typedef {Object<string, *>} EnvObject
+ * @typedef {(nonce: string) => string} MacroFunction
+ */
+
+export class MacrosParser {
+    /**
+     * A map of registered macros.
+     * @type {Map<string, string|MacroFunction>}
+     */
+    static #macros = new Map();
+
+    /**
+     * Registers a global macro that can be used anywhere where substitution is allowed.
+     * @param {string} key Macro name (key)
+     * @param {string|MacroFunction} value A string or a function that returns a string
+     */
+    static registerMacro(key, value) {
+        if (typeof key !== 'string') {
+            throw new Error('Macro key must be a string');
+        }
+
+        // Allowing surrounding whitespace would just create more confusion...
+        key = key.trim();
+
+        if (!key) {
+            throw new Error('Macro key must not be empty or whitespace only');
+        }
+
+        if (key.startsWith('{{') || key.endsWith('}}')) {
+            throw new Error('Macro key must not include the surrounding braces');
+        }
+
+        if (typeof value !== 'string' && typeof value !== 'function') {
+            console.warn(`Macro value for "${key}" will be converted to a string`);
+            value = this.sanitizeMacroValue(value);
+        }
+
+        if (this.#macros.has(key)) {
+            console.warn(`Macro ${key} is already registered`);
+        }
+
+        this.#macros.set(key, value);
+    }
+
+    /**
+     * Unregisters a global macro with the given key
+     *
+     * @param {string} key Macro name (key)
+     */
+    static unregisterMacro(key) {
+        if (typeof key !== 'string') {
+            throw new Error('Macro key must be a string');
+        }
+
+        // Allowing surrounding whitespace would just create more confusion...
+        key = key.trim();
+
+        if (!key) {
+            throw new Error('Macro key must not be empty or whitespace only');
+        }
+
+        const deleted = this.#macros.delete(key);
+
+        if (!deleted) {
+            console.warn(`Macro ${key} was not registered`);
+        }
+    }
+
+    /**
+     * Populate the env object with macro values from the current context.
+     * @param {EnvObject} env Env object for the current evaluation context
+     * @returns {void}
+     */
+    static populateEnv(env) {
+        if (!env || typeof env !== 'object') {
+            console.warn('Env object is not provided');
+            return;
+        }
+
+        // No macros are registered
+        if (this.#macros.size === 0) {
+            return;
+        }
+
+        for (const [key, value] of this.#macros) {
+            env[key] = value;
+        }
+    }
+
+    /**
+     * Performs a type-check on the macro value and returns a sanitized version of it.
+     * @param {any} value Value returned by a macro
+     * @returns {string} Sanitized value
+     */
+    static sanitizeMacroValue(value) {
+        if (typeof value === 'string') {
+            return value;
+        }
+
+        if (value === null || value === undefined) {
+            return '';
+        }
+
+        if (value instanceof Promise) {
+            console.warn('Promises are not supported as macro values');
+            return '';
+        }
+
+        if (typeof value === 'function') {
+            console.warn('Functions are not supported as macro values');
+            return '';
+        }
+
+        if (value instanceof Date) {
+            return value.toISOString();
+        }
+
+        if (typeof value === 'object') {
+            return JSON.stringify(value);
+        }
+
+        return String(value);
+    }
+}
 
 /**
  * Gets a hashed id of the current chat from the metadata.
@@ -284,7 +410,7 @@ function timeDiffReplace(input) {
 /**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
- * @param {Object<string, *>} env - Map of macro names to the values they'll be substituted with. If the param
+ * @param {EnvObject} env - Map of macro names to the values they'll be substituted with. If the param
  * values are functions, those functions will be called and their return values are used.
  * @returns {string} The string with substituted parameters.
  */
@@ -315,12 +441,19 @@ export function evaluateMacros(content, env) {
     content = content.replace(/{{noop}}/gi, '');
     content = content.replace(/{{input}}/gi, () => String($('#send_textarea').val()));
 
+    // Add all registered macros to the env object
+    const nonce = uuidv4();
+    MacrosParser.populateEnv(env);
+
     // Substitute passed-in variables
     for (const varName in env) {
         if (!Object.hasOwn(env, varName)) continue;
 
-        const param = env[varName];
-        content = content.replace(new RegExp(`{{${varName}}}`, 'gi'), param);
+        content = content.replace(new RegExp(`{{${escapeRegex(varName)}}}`, 'gi'), () => {
+            const param = env[varName];
+            const value = MacrosParser.sanitizeMacroValue(typeof param === 'function' ? param(nonce) : param);
+            return value;
+        });
     }
 
     content = content.replace(/{{maxPrompt}}/gi, () => String(getMaxContextSize()));

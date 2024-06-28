@@ -264,6 +264,13 @@ export class QuickReply {
             const updateSyntax = ()=>{
                 messageSyntaxInner.innerHTML = hljs.highlight(`${message.value}${message.value.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value;
             };
+            const updateSyntaxEnabled = ()=>{
+                if (JSON.parse(localStorage.getItem('qr--syntax'))) {
+                    dom.querySelector('#qr--modal-messageHolder').classList.remove('qr--noSyntax');
+                } else {
+                    dom.querySelector('#qr--modal-messageHolder').classList.add('qr--noSyntax');
+                }
+            };
             /**@type {HTMLInputElement}*/
             const tabSize = dom.querySelector('#qr--modal-tabSize');
             tabSize.value = JSON.parse(localStorage.getItem('qr--tabSize') ?? '4');
@@ -281,6 +288,13 @@ export class QuickReply {
             executeShortcut.checked = JSON.parse(localStorage.getItem('qr--executeShortcut') ?? 'true');
             executeShortcut.addEventListener('click', () => {
                 localStorage.setItem('qr--executeShortcut', JSON.stringify(executeShortcut.checked));
+            });
+            /**@type {HTMLInputElement}*/
+            const syntax = dom.querySelector('#qr--modal-syntax');
+            syntax.checked = JSON.parse(localStorage.getItem('qr--syntax') ?? 'true');
+            syntax.addEventListener('click', () => {
+                localStorage.setItem('qr--syntax', JSON.stringify(syntax.checked));
+                updateSyntaxEnabled();
             });
             /**@type {HTMLTextAreaElement}*/
             const message = dom.querySelector('#qr--modal-message');
@@ -352,8 +366,7 @@ export class QuickReply {
                 }
             });
             window.addEventListener('resize', resizeListener);
-            message.style.color = 'transparent';
-            message.style.background = 'transparent';
+            updateSyntaxEnabled();
             message.style.setProperty('text-shadow', 'none', 'important');
             /**@type {HTMLElement}*/
             const messageSyntaxInner = dom.querySelector('#qr--modal-messageSyntaxInner');
@@ -544,7 +557,7 @@ export class QuickReply {
         this.editorExecuteErrors.innerHTML = '';
         this.editorExecuteResult.innerHTML = '';
         if (this.editorExecuteHide.checked) {
-            this.editorPopup.dom.classList.add('qr--hide');
+            this.editorPopup.dlg.classList.add('qr--hide');
         }
         try {
             this.editorExecutePromise = this.execute({}, true);
@@ -575,7 +588,7 @@ export class QuickReply {
         }
         this.editorExecutePromise = null;
         this.editorExecuteBtn.classList.remove('qr--busy');
-        this.editorPopup.dom.classList.remove('qr--hide');
+        this.editorPopup.dlg.classList.remove('qr--hide');
     }
 
     updateEditorProgress(done, total) {

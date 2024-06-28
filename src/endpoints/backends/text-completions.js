@@ -95,13 +95,14 @@ router.post('/status', jsonParser, async function (request, response) {
 
         setAdditionalHeaders(request, args, baseUrl);
 
+        const apiType = request.body.api_type;
         let url = baseUrl;
         let result = '';
 
         if (request.body.legacy_api) {
             url += '/v1/model';
         } else {
-            switch (request.body.api_type) {
+            switch (apiType) {
                 case TEXTGEN_TYPES.OOBA:
                 case TEXTGEN_TYPES.VLLM:
                 case TEXTGEN_TYPES.APHRODITE:
@@ -129,6 +130,9 @@ router.post('/status', jsonParser, async function (request, response) {
                 case TEXTGEN_TYPES.FEATHERLESS:
                     url += '/v1/models';
                     break;
+                case TEXTGEN_TYPES.HUGGINGFACE:
+                    url += '/info';
+                    break;
             }
         }
 
@@ -138,7 +142,7 @@ router.post('/status', jsonParser, async function (request, response) {
             console.log('Models endpoint is offline.');
             return response.status(400);
         }
-        console.log("url for models", url)
+        console.log('url for models', url);
         let data = await modelsReply.json();
 
         if (request.body.legacy_api) {
@@ -147,12 +151,16 @@ router.post('/status', jsonParser, async function (request, response) {
         }
 
         // Rewrap to OAI-like response
-        if (request.body.api_type === TEXTGEN_TYPES.TOGETHERAI && Array.isArray(data)) {
+        if (apiType === TEXTGEN_TYPES.TOGETHERAI && Array.isArray(data)) {
             data = { data: data.map(x => ({ id: x.name, ...x })) };
         }
 
-        if (request.body.api_type === TEXTGEN_TYPES.OLLAMA && Array.isArray(data.models)) {
+        if (apiType === TEXTGEN_TYPES.OLLAMA && Array.isArray(data.models)) {
             data = { data: data.models.map(x => ({ id: x.name, ...x })) };
+        }
+
+        if (apiType === TEXTGEN_TYPES.HUGGINGFACE) {
+            data = { data: [] };
         }
 
         if (!Array.isArray(data.data)) {
@@ -166,7 +174,7 @@ router.post('/status', jsonParser, async function (request, response) {
         // Set result to the first model ID
         result = modelIds[0] || 'Valid';
 
-        if (request.body.api_type === TEXTGEN_TYPES.OOBA) {
+        if (apiType === TEXTGEN_TYPES.OOBA) {
             try {
                 const modelInfoUrl = baseUrl + '/v1/internal/model/info';
                 const modelInfoReply = await fetch(modelInfoUrl, args);
@@ -181,7 +189,7 @@ router.post('/status', jsonParser, async function (request, response) {
             } catch (error) {
                 console.error(`Failed to get Ooba model info: ${error}`);
             }
-        } else if (request.body.api_type === TEXTGEN_TYPES.TABBY) {
+        } else if (apiType === TEXTGEN_TYPES.TABBY) {
             try {
                 const modelInfoUrl = baseUrl + '/v1/model';
                 const modelInfoReply = await fetch(modelInfoUrl, args);
@@ -245,6 +253,7 @@ router.post('/generate', jsonParser, async function (request, response) {
                 case TEXTGEN_TYPES.KOBOLDCPP:
                 case TEXTGEN_TYPES.TOGETHERAI:
                 case TEXTGEN_TYPES.INFERMATICAI:
+                case TEXTGEN_TYPES.HUGGINGFACE:
                     url += '/v1/completions';
                     break;
                 case TEXTGEN_TYPES.DREAMGEN:
@@ -349,7 +358,7 @@ router.post('/generate', jsonParser, async function (request, response) {
 
                 // Map InfermaticAI response to OAI completions format
                 if (apiType === TEXTGEN_TYPES.INFERMATICAI) {
-                    data['choices'] = (data?.choices || []).map(choice => ({ text: choice?.message?.content || choice.text }));
+                    data['choices'] = (data?.choices || []).map(choice => ({ text: choice?.message?.content || choice.text, logprobs: choice?.logprobs, index: choice?.index }));
                 }
 
                 return response.send(data);

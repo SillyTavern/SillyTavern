@@ -16,7 +16,6 @@ import {
     eventSource,
     menu_type,
     substituteParams,
-    callPopup,
     sendTextareaMessage,
 } from '../script.js';
 
@@ -39,6 +38,7 @@ import { textgen_types, textgenerationwebui_settings as textgen_settings, getTex
 import { debounce_timeout } from './constants.js';
 
 import Bowser from '../lib/bowser.min.js';
+import { Popup } from './popup.js';
 
 var RPanelPin = document.getElementById('rm_button_panel_pin');
 var LPanelPin = document.getElementById('lm_button_panel_pin');
@@ -303,7 +303,7 @@ export async function favsToHotswap() {
         return;
     }
 
-    buildAvatarList(container, favs, { selectable: true, highlightFavs: false });
+    buildAvatarList(container, favs, { interactable: true, highlightFavs: false });
 }
 
 //changes input bar and send button display depending on connection status
@@ -380,6 +380,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.COHERE] && oai_settings.chat_completion_source == chat_completion_sources.COHERE)
                     || (secret_state[SECRET_KEYS.PERPLEXITY] && oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY)
                     || (secret_state[SECRET_KEYS.GROQ] && oai_settings.chat_completion_source == chat_completion_sources.GROQ)
+                    || (secret_state[SECRET_KEYS.ZEROONEAI] && oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                 ) {
                     $('#api_button_openai').trigger('click');
@@ -477,8 +478,8 @@ export function dragElement(elmnt) {
         }
 
         const style = getComputedStyle(target);
-        height = parseInt(style.height)
-        width = parseInt(style.width)
+        height = parseInt(style.height);
+        width = parseInt(style.width);
         top = parseInt(style.top);
         left = parseInt(style.left);
         right = parseInt(style.right);
@@ -927,8 +928,8 @@ export function initRossMods() {
         return false;
     }
 
-    $(document).on('keydown', function (event) {
-        processHotkeys(event.originalEvent);
+    $(document).on('keydown', async function (event) {
+        await processHotkeys(event.originalEvent);
     });
 
     const hotkeyTargets = {
@@ -940,7 +941,7 @@ export function initRossMods() {
     /**
      * @param {KeyboardEvent} event
      */
-    function processHotkeys(event) {
+    async function processHotkeys(event) {
         //Enter to send when send_textarea in focus
         if (document.activeElement == hotkeyTargets['send_textarea']) {
             const sendOnEnter = shouldSendOnEnter();
@@ -1004,20 +1005,17 @@ export function initRossMods() {
                 if (skipConfirm) {
                     doRegenerate();
                 } else {
-                    const popupText = `
-                    <div class="marginBot10">Are you sure you want to regenerate the latest message?</div>
-                    <label class="checkbox_label justifyCenter" for="regenerateWithCtrlEnter">
-                        <input type="checkbox" id="regenerateWithCtrlEnter">
-                        Don't ask again
-                    </label>`;
-                    callPopup(popupText, 'confirm').then(result => {
-                        if (!result) {
-                            return;
-                        }
-                        const regenerateWithCtrlEnter = $('#regenerateWithCtrlEnter').prop('checked');
-                        SaveLocal(skipConfirmKey, regenerateWithCtrlEnter);
-                        doRegenerate();
+                    let regenerateWithCtrlEnter = false;
+                    const result = await Popup.show.confirm('Regenerate Message', 'Are you sure you want to regenerate the latest message?', {
+                        customInputs: [{ id: 'regenerateWithCtrlEnter', label: 'Don\'t ask again' }],
+                        onClose: (popup) => regenerateWithCtrlEnter = popup.inputResults.get('regenerateWithCtrlEnter') ?? false,
                     });
+                    if (!result) {
+                        return;
+                    }
+
+                    SaveLocal(skipConfirmKey, regenerateWithCtrlEnter);
+                    doRegenerate();
                 }
                 return;
             } else {
@@ -1097,6 +1095,9 @@ export function initRossMods() {
         }
 
         if (event.key == 'Escape') { //closes various panels
+            // Do not close panels if we are currently inside a popup
+            if (Popup.util.isPopupOpen())
+                return;
 
             //dont override Escape hotkey functions from script.js
             //"close edit box" and "cancel stream generation".

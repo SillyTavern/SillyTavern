@@ -9,10 +9,10 @@ import { SlashCommandScope } from './SlashCommandScope.js';
 
 /**
  * @typedef {{
- * _pipe:string|SlashCommandClosure,
  * _scope:SlashCommandScope,
  * _parserFlags:{[id:PARSER_FLAG]:boolean},
  * _abortController:SlashCommandAbortController,
+ * _hasUnnamedArgument:boolean,
  * [id:string]:string|SlashCommandClosure,
  * }} NamedArguments
  */
@@ -33,7 +33,7 @@ export class SlashCommand {
      * Creates a SlashCommand from a properties object.
      * @param {Object} props
      * @param {string} [props.name]
-     * @param {(namedArguments:NamedArguments|NamedArgumentsCapture, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|void|Promise<string|SlashCommandClosure|void>} [props.callback]
+     * @param {(namedArguments:NamedArguments|NamedArgumentsCapture, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|Promise<string|SlashCommandClosure>} [props.callback]
      * @param {string} [props.helpString]
      * @param {boolean} [props.splitUnnamedArgument]
      * @param {string[]} [props.aliases]
@@ -174,6 +174,11 @@ export class SlashCommand {
                         specs.append(body);
                     }
                     li.append(specs);
+                }
+                const stopgap = document.createElement('span'); {
+                    stopgap.classList.add('stopgap');
+                    stopgap.textContent = '';
+                    li.append(stopgap);
                 }
                 const help = document.createElement('span'); {
                     help.classList.add('help');

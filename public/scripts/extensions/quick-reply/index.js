@@ -169,7 +169,7 @@ const init = async () => {
     log('settings: ', settings);
 
     manager = new SettingsUi(settings);
-    document.querySelector('#extensions_settings2').append(await manager.render());
+    document.querySelector('#qr_container').append(await manager.render());
 
     buttons = new ButtonUi(settings);
     buttons.show();

@@ -6,6 +6,7 @@ import { BlankAutoCompleteOption } from './BlankAutoCompleteOption.js';
 // eslint-disable-next-line no-unused-vars
 import { AutoCompleteNameResult } from './AutoCompleteNameResult.js';
 import { AutoCompleteSecondaryNameResult } from './AutoCompleteSecondaryNameResult.js';
+import { Popup, getTopmostModalLayer } from '../popup.js';
 
 /**@readonly*/
 /**@enum {Number}*/
@@ -386,11 +387,15 @@ export class AutoComplete {
                 // no result and no input? hide autocomplete
                 return this.hide();
             }
+            if (this.effectiveParserResult instanceof AutoCompleteSecondaryNameResult && !this.effectiveParserResult.forceMatch) {
+                // no result and matching is no forced? hide autocomplete
+                return this.hide();
+            }
             // otherwise add "no match" notice
             const option = new BlankAutoCompleteOption(
                 this.name.length ?
                     this.effectiveParserResult.makeNoMatchText()
-                    : this.effectiveParserResult.makeNoOptionstext()
+                    : this.effectiveParserResult.makeNoOptionsText()
                 ,
             );
             this.result.push(option);
@@ -438,7 +443,7 @@ export class AutoComplete {
             }
             this.dom.append(frag);
             this.updatePosition();
-            document.body.append(this.domWrap);
+            getTopmostModalLayer().append(this.domWrap);
         } else {
             this.domWrap.remove();
         }
@@ -453,7 +458,7 @@ export class AutoComplete {
         if (!this.isShowingDetails && this.isReplaceable) return this.detailsWrap.remove();
         this.detailsDom.innerHTML = '';
         this.detailsDom.append(this.selectedItem?.renderDetails() ?? 'NO ITEM');
-        document.body.append(this.detailsWrap);
+        getTopmostModalLayer().append(this.detailsWrap);
         this.updateDetailsPositionDebounced();
     }
 
@@ -469,7 +474,7 @@ export class AutoComplete {
             const rect = {};
             rect[AUTOCOMPLETE_WIDTH.INPUT] = this.textarea.getBoundingClientRect();
             rect[AUTOCOMPLETE_WIDTH.CHAT] = document.querySelector('#sheld').getBoundingClientRect();
-            rect[AUTOCOMPLETE_WIDTH.FULL] = document.body.getBoundingClientRect();
+            rect[AUTOCOMPLETE_WIDTH.FULL] = getTopmostModalLayer().getBoundingClientRect();
             this.domWrap.style.setProperty('--bottom', `${window.innerHeight - rect[AUTOCOMPLETE_WIDTH.INPUT].top}px`);
             this.dom.style.setProperty('--bottom', `${window.innerHeight - rect[AUTOCOMPLETE_WIDTH.INPUT].top}px`);
             this.domWrap.style.bottom = `${window.innerHeight - rect[AUTOCOMPLETE_WIDTH.INPUT].top}px`;
@@ -481,8 +486,8 @@ export class AutoComplete {
                 this.domWrap.style.setProperty('--leftOffset', `max(1vw, ${rect[power_user.stscript.autocomplete.width.left].left}px)`);
                 this.domWrap.style.setProperty('--rightOffset', `calc(100vw - min(99vw, ${rect[power_user.stscript.autocomplete.width.right].right}px)`);
             }
-            this.updateDetailsPosition();
         }
+        this.updateDetailsPosition();
     }
 
     /**
@@ -496,7 +501,7 @@ export class AutoComplete {
                 const rect = {};
                 rect[AUTOCOMPLETE_WIDTH.INPUT] = this.textarea.getBoundingClientRect();
                 rect[AUTOCOMPLETE_WIDTH.CHAT] = document.querySelector('#sheld').getBoundingClientRect();
-                rect[AUTOCOMPLETE_WIDTH.FULL] = document.body.getBoundingClientRect();
+                rect[AUTOCOMPLETE_WIDTH.FULL] = getTopmostModalLayer().getBoundingClientRect();
                 if (this.isReplaceable) {
                     this.detailsWrap.classList.remove('full');
                     const selRect = this.selectedItem.dom.children[0].getBoundingClientRect();
@@ -592,7 +597,7 @@ export class AutoComplete {
             }
             this.clone.style.position = 'fixed';
             this.clone.style.visibility = 'hidden';
-            document.body.append(this.clone);
+            getTopmostModalLayer().append(this.clone);
             const mo = new MutationObserver(muts=>{
                 if (muts.find(it=>Array.from(it.removedNodes).includes(this.textarea))) {
                     this.clone.remove();
@@ -745,8 +750,10 @@ export class AutoComplete {
         }
         // autocomplete shown or not, cursor anywhere
         switch (evt.key) {
+            // The first is a non-breaking space, the second is a regular space.
+            case ' ':
             case ' ': {
-                if (evt.ctrlKey) {
+                if (evt.ctrlKey || evt.altKey) {
                     if (this.isActive && this.isReplaceable) {
                         // ctrl-space to toggle details for selected item
                         this.toggleDetails();
@@ -754,6 +761,8 @@ export class AutoComplete {
                         // ctrl-space to force show autocomplete
                         this.show(false, true);
                     }
+                    evt.preventDefault();
+                    evt.stopPropagation();
                     return;
                 }
                 break;

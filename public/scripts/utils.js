@@ -1,8 +1,9 @@
 import { getContext } from './extensions.js';
-import { callPopup, getRequestHeaders } from '../script.js';
+import { getRequestHeaders } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
 import { collapseNewlines } from './power-user.js';
 import { debounce_timeout } from './constants.js';
+import { Popup } from './popup.js';
 
 /**
  * Pagination status string template.
@@ -72,6 +73,20 @@ export function stringToRange(input, min, max) {
  */
 export function onlyUnique(value, index, array) {
     return array.indexOf(value) === index;
+}
+
+/**
+ * Removes the first occurrence of a specified item from an array
+ *
+ * @param {*[]} array - The array from which to remove the item
+ * @param {*} item - The item to remove from the array
+ * @returns {boolean} - Returns true if the item was successfully removed, false otherwise.
+ */
+export function removeFromArray(array, item) {
+    const index = array.indexOf(item);
+    if (index === -1) return false;
+    array.splice(index, 1);
+    return true;
 }
 
 /**
@@ -292,6 +307,9 @@ export function throttle(func, limit = 300) {
  * @returns {boolean} True if the element is in the viewport, false otherwise.
  */
 export function isElementInViewport(el) {
+    if (!el) {
+        return false;
+    }
     if (typeof jQuery === 'function' && el instanceof jQuery) {
         el = el[0];
     }
@@ -481,14 +499,16 @@ export function trimToEndSentence(input, include_newline = false) {
         return '';
     }
 
+    const isEmoji = x => /(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu.test(x);
     const punctuation = new Set(['.', '!', '?', '*', '"', ')', '}', '`', ']', '$', '。', '！', '？', '”', '）', '】', '’', '」', '_']); // extend this as you see fit
     let last = -1;
 
-    for (let i = input.length - 1; i >= 0; i--) {
-        const char = input[i];
+    const characters = Array.from(input);
+    for (let i = characters.length - 1; i >= 0; i--) {
+        const char = characters[i];
 
-        if (punctuation.has(char)) {
-            if (i > 0 && /[\s\n]/.test(input[i - 1])) {
+        if (punctuation.has(char) || isEmoji(char)) {
+            if (i > 0 && /[\s\n]/.test(characters[i - 1])) {
                 last = i - 1;
             } else {
                 last = i;
@@ -506,7 +526,7 @@ export function trimToEndSentence(input, include_newline = false) {
         return input.trimEnd();
     }
 
-    return input.substring(0, last + 1).trimEnd();
+    return characters.slice(0, last + 1).join('').trimEnd();
 }
 
 export function trimToStartSentence(input) {
@@ -605,6 +625,25 @@ export function isFalseBoolean(arg) {
 }
 
 /**
+ * Parses an array either as a comma-separated string or as a JSON array.
+ * @param {string} value String to parse
+ * @returns {string[]} The parsed array.
+ */
+export function parseStringArray(value) {
+    if (!value || typeof value !== 'string') return [];
+
+    try {
+        const parsedValue = JSON.parse(value);
+        if (!Array.isArray(parsedValue)) {
+            throw new Error('Not an array');
+        }
+        return parsedValue.map(x => String(x));
+    } catch (e) {
+        return value.split(',').map(x => x.trim()).filter(x => x);
+    }
+}
+
+/**
  * Checks if a number is odd.
  * @param {number} number The number to check.
  * @returns {boolean} True if the number is odd, false otherwise.
@@ -640,11 +679,11 @@ function parseTimestamp(timestamp) {
     }
 
     // Unix time (legacy TAI / tags)
-    if (typeof timestamp === 'number') {
+    if (typeof timestamp === 'number' || /^\d+$/.test(timestamp)) {
         if (isNaN(timestamp) || !isFinite(timestamp) || timestamp < 0) {
             return moment.invalid();
         }
-        return moment(timestamp);
+        return moment(Number(timestamp));
     }
 
     // ST "humanized" format pattern
@@ -1261,6 +1300,9 @@ export async function waitUntilCondition(condition, timeout = 1000, interval = 1
  * uuidv4(); // '3e2fd9e1-0a7a-4f6d-9aaf-8a7a4babe7eb'
  */
 export function uuidv4() {
+    if ('randomUUID' in crypto) {
+        return crypto.randomUUID();
+    }
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -1511,6 +1553,35 @@ export function flashHighlight(element, timespan = 2000) {
 }
 
 /**
+ * Checks if the given control has an animation applied to it
+ *
+ * @param {HTMLElement} control - The control element to check for animation
+ * @returns {boolean} Whether the control has an animation applied
+ */
+export function hasAnimation(control) {
+    const animatioName = getComputedStyle(control, null)['animation-name'];
+    return animatioName != 'none';
+}
+
+/**
+ * Run an action once an animation on a control ends. If the control has no animation, the action will be executed immediately.
+ *
+ * @param {HTMLElement} control - The control element to listen for animation end event
+ * @param {(control:*?) => void} callback - The callback function to be executed when the animation ends
+ */
+export function runAfterAnimation(control, callback) {
+    if (hasAnimation(control)) {
+        const onAnimationEnd = () => {
+            control.removeEventListener('animationend', onAnimationEnd);
+            callback(control);
+        };
+        control.addEventListener('animationend', onAnimationEnd);
+    } else {
+        callback(control);
+    }
+}
+
+/**
  * A common base function for case-insensitive and accent-insensitive string comparisons.
  *
  * @param {string} a - The first string to compare.
@@ -1751,7 +1822,7 @@ export async function checkOverwriteExistingData(type, existingNames, name, { in
         return true;
     }
 
-    const overwrite = interactive ? await callPopup(`<h3>${type} ${actionName}</h3><p>A ${type.toLowerCase()} with the same name already exists:<br />${existing}</p>Do you want to overwrite it?`, 'confirm') : false;
+    const overwrite = interactive && await Popup.show.confirm(`${type} ${actionName}`, `<p>A ${type.toLowerCase()} with the same name already exists:<br />${existing}</p>Do you want to overwrite it?`);
     if (!overwrite) {
         toastr.warning(`${type} ${actionName.toLowerCase()} cancelled. A ${type.toLowerCase()} with the same name already exists:<br />${existing}`, `${type} ${actionName}`, { escapeHtml: false });
         return false;
@@ -1765,4 +1836,23 @@ export async function checkOverwriteExistingData(type, existingNames, name, { in
     }
 
     return true;
+}
+
+/**
+ * Generates a free name by appending a counter to the given name if it already exists in the list
+ *
+ * @param {string} name - The original name to check for existence in the list
+ * @param {string[]} list - The list of names to check for existence
+ * @param {(n: number) => string} [numberFormatter=(n) => ` #${n}`] - The function used to format the counter
+ * @returns {string} The generated free name
+ */
+export function getFreeName(name, list, numberFormatter = (n) => ` #${n}`) {
+    if (!list.includes(name)) {
+        return name;
+    }
+    let counter = 1;
+    while (list.includes(`${name} #${counter}`)) {
+        counter++;
+    }
+    return `${name}${numberFormatter(counter)}`;
 }

@@ -1,0 +1,12 @@
+{
+    "story_string": "<|start_header_id|>system<|end_header_id|>\n\n{{#if system}}{{system}}\n\n\n{{/if}}## Overall plot description:\n\n{{#if scenario}}{{scenario}}{{else}}Conversation between {{char}} and {{user}}.{{/if}}{{#if wiBefore}}\n\n{{wiBefore}}{{/if}}\n\n\n## Characters:\n\n### {{char}}\n\n{{#if description}}{{description}}\n\n{{/if}}{{#if personality}}{{personality}}\n\n{{/if}}### {{user}}\n\n{{#if persona}}{{persona}}{{else}}{{user}} is the protagonist of the role-play.{{/if}}{{#if wiAfter}}\n\n{{wiAfter}}{{/if}}{{#if mesExamples}}\n\n{{mesExamples}}{{/if}}",
+    "example_separator": "<|eot_id|>\n<|start_header_id|>user<|end_header_id|>\n\nWrite an example narrative / conversation that is not part of the main story.",
+    "chat_start": "<|eot_id|>\n<|start_header_id|>user<|end_header_id|>\n\nStart the role-play between {{char}} and {{user}}.",
+    "use_stop_strings": false,
+    "allow_jailbreak": false,
+    "always_force_name2": false,
+    "trim_sentences": true,
+    "include_newline": false,
+    "single_line": false,
+    "name": "DreamGen Role-Play V1 Llama3"
+}

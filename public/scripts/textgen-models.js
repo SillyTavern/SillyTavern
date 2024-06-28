@@ -40,6 +40,8 @@ const OPENROUTER_PROVIDERS = [
     'Novita',
     'Lynn',
     'Lynn 2',
+    'DeepSeek',
+    'Infermatic',
 ];
 
 export async function loadOllamaModels(data) {

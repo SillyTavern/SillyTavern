@@ -686,6 +686,23 @@ class PromptManager {
     }
 
     /**
+     * Get the scroll position of the prompt manager
+     * @returns {number} - Scroll position of the prompt manager
+     */
+    #getScrollPosition() {
+        return document.getElementById(this.configuration.prefix + 'prompt_manager')?.closest('.scrollableInner')?.scrollTop;
+    }
+
+    /**
+     * Set the scroll position of the prompt manager
+     * @param {number} scrollPosition - The scroll position to set
+     */
+    #setScrollPosition(scrollPosition) {
+        if (scrollPosition === undefined || scrollPosition === null) return;
+        document.getElementById(this.configuration.prefix + 'prompt_manager')?.closest('.scrollableInner')?.scrollTo(0, scrollPosition);
+    }
+
+    /**
      * Main rendering function
      *
      * @param afterTryGenerate - Whether a dry run should be attempted before rendering
@@ -703,17 +720,21 @@ class PromptManager {
                 this.tryGenerate().finally(async () => {
                     this.profileEnd('filling context');
                     this.profileStart('render');
+                    const scrollPosition = this.#getScrollPosition();
                     await this.renderPromptManager();
                     await this.renderPromptManagerListItems();
                     this.makeDraggable();
+                    this.#setScrollPosition(scrollPosition);
                     this.profileEnd('render');
                 });
             } else {
                 // Executed during live communication
                 this.profileStart('render');
+                const scrollPosition = this.#getScrollPosition();
                 await this.renderPromptManager();
                 await this.renderPromptManagerListItems();
                 this.makeDraggable();
+                this.#setScrollPosition(scrollPosition);
                 this.profileEnd('render');
             }
         }).catch(() => {
