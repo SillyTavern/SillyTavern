@@ -603,6 +603,12 @@ jQuery(function () {
             width: '100%',
             templateResult: getAphroditeModelTemplate,
         });
+        $('#featherless_model').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+        });
         providersSelect.select2({
             sorter: data => data.sort((a, b) => a.text.localeCompare(b.text)),
             placeholder: 'Select providers. No selection = all providers.',
