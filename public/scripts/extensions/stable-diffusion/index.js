@@ -2206,7 +2206,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
     }
 
     const dimensions = setTypeSpecificDimensions(generationType);
-    let negativePromptPrefix = resolveVariable(args?.negative) || '';
+    let negativePromptPrefix = args?.negative || '';
     let imagePath = '';
 
     try {
@@ -3356,8 +3356,7 @@ jQuery(async () => {
             SlashCommandNamedArgument.fromProps({
                 name: 'negative',
                 description: 'negative prompt prefix',
-                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
-                enumProvider: commonEnumProviders.variables('all'),
+                typeList: [ARGUMENT_TYPE.STRING],
             }),
         ],
         unnamedArgumentList: [
