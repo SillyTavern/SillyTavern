@@ -142,7 +142,7 @@ router.post('/status', jsonParser, async function (request, response) {
             console.log('Models endpoint is offline.');
             return response.status(400);
         }
-        console.log('url for models', url);
+
         let data = await modelsReply.json();
 
         if (request.body.legacy_api) {
