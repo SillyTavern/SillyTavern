@@ -10,6 +10,28 @@ const langs = await fetch('/locales/lang.json').then(response => response.json()
 var localeData = await getLocaleData(localeFile);
 
 /**
+ * An observer that will check if any new i18n elements are added to the document
+ * @type {MutationObserver}
+ */
+const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+        mutation.addedNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE && node instanceof Element) {
+                if (node.hasAttribute('data-i18n')) {
+                    translateElement(node);
+                }
+                node.querySelectorAll('[data-i18n]').forEach(element => {
+                    translateElement(element);
+                });
+            }
+        });
+        if (mutation.attributeName === 'data-i18n' && mutation.target instanceof Element) {
+            translateElement(mutation.target);
+        }
+    });
+});
+
+/**
  * Fetches the locale data for the given language.
  * @param {string} language Language code
  * @returns {Promise<Record<string, string>>} Locale data
@@ -39,6 +61,29 @@ function findLang(language) {
     }
     return supportedLang;
 }
+
+/**
+ * Translates a given element based on its data-i18n attribute.
+ * @param {Element} element The element to translate
+ */
+function translateElement(element) {
+    const keys = element.getAttribute('data-i18n').split(';'); // Multi-key entries are ; delimited
+    for (const key of keys) {
+        const attributeMatch = key.match(/\[(\S+)\](.+)/); // [attribute]key
+        if (attributeMatch) { // attribute-tagged key
+            const localizedValue = localeData?.[attributeMatch[2]];
+            if (localizedValue || localizedValue === '') {
+                element.setAttribute(attributeMatch[1], localizedValue);
+            }
+        } else { // No attribute tag, treat as 'text'
+            const localizedValue = localeData?.[key];
+            if (localizedValue || localizedValue === '') {
+                element.textContent = localizedValue;
+            }
+        }
+    }
+}
+
 
 async function getMissingTranslations() {
     const missingData = [];
@@ -103,29 +148,13 @@ export function applyLocale(root = document) {
 
     //find all the elements with `data-i18n` attribute
     $root.find('[data-i18n]').each(function () {
-        //read the translation from the language data
-        const keys = $(this).data('i18n').split(';'); // Multi-key entries are ; delimited
-        for (const key of keys) {
-            const attributeMatch = key.match(/\[(\S+)\](.+)/); // [attribute]key
-            if (attributeMatch) { // attribute-tagged key
-                const localizedValue = localeData?.[attributeMatch[2]];
-                if (localizedValue || localizedValue == '') {
-                    $(this).attr(attributeMatch[1], localizedValue);
-                }
-            } else { // No attribute tag, treat as 'text'
-                const localizedValue = localeData?.[key];
-                if (localizedValue || localizedValue == '') {
-                    $(this).text(localizedValue);
-                }
-            }
-        }
+        translateElement(this);
     });
 
     if (root !== document) {
         return $root.get(0).body.innerHTML;
     }
 }
-
 
 function addLanguagesToDropdown() {
     const uiLanguageSelects = $('#ui_language_select, #onboarding_ui_language_select');
@@ -157,6 +186,13 @@ export function initLocales() {
         }
 
         location.reload();
+    });
+
+    observer.observe(document, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['data-i18n'],
     });
 
     registerDebugFunction('getMissingTranslations', 'Get missing translations', 'Detects missing localization data in the current locale and dumps the data into the browser console. If the current locale is English, searches all other locales.', getMissingTranslations);
