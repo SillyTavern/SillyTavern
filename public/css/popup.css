@@ -173,6 +173,8 @@ body.no-blur .popup[open]::backdrop {
 
 @media screen and (max-width: 1000px) {
     .popup .popup-body {
-        height: auto;
+        height: fit-content;
+        max-height: 95vh;
+        max-height: 95svh;
     }
 }
