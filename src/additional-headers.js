@@ -147,6 +147,19 @@ function getKoboldCppHeaders(directories) {
     }) : {};
 }
 
+/**
+ * Gets the headers for the HuggingFace API.
+ * @param {import('./users').UserDirectoryList} directories
+ * @returns {object} Headers for the request
+ */
+function getHuggingFaceHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.HUGGINGFACE);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
 function getOverrideHeaders(urlHost) {
     const requestOverrides = getConfigValue('requestOverrides', []);
     const overrideHeaders = requestOverrides?.find((e) => e.hosts?.includes(urlHost))?.headers;
@@ -187,6 +200,7 @@ function setAdditionalHeadersByType(requestHeaders, type, server, directories) {
         [TEXTGEN_TYPES.OPENROUTER]: getOpenRouterHeaders,
         [TEXTGEN_TYPES.KOBOLDCPP]: getKoboldCppHeaders,
         [TEXTGEN_TYPES.LLAMACPP]: getLlamaCppHeaders,
+        [TEXTGEN_TYPES.HUGGINGFACE]: getHuggingFaceHeaders,
     };
 
     const getHeaders = headerGetters[type];

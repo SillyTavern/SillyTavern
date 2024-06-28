@@ -38,9 +38,24 @@ export const textgen_types = {
     INFERMATICAI: 'infermaticai',
     DREAMGEN: 'dreamgen',
     OPENROUTER: 'openrouter',
+    HUGGINGFACE: 'huggingface',
 };
 
-const { MANCER, VLLM, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, DREAMGEN, OPENROUTER, KOBOLDCPP } = textgen_types;
+const {
+    MANCER,
+    VLLM,
+    APHRODITE,
+    TABBY,
+    TOGETHERAI,
+    OOBA,
+    OLLAMA,
+    LLAMACPP,
+    INFERMATICAI,
+    DREAMGEN,
+    OPENROUTER,
+    KOBOLDCPP,
+    HUGGINGFACE,
+} = textgen_types;
 
 const LLAMACPP_DEFAULT_ORDER = [
     'top_k',
@@ -84,6 +99,7 @@ const SERVER_INPUTS = {
     [textgen_types.KOBOLDCPP]: '#koboldcpp_api_url_text',
     [textgen_types.LLAMACPP]: '#llamacpp_api_url_text',
     [textgen_types.OLLAMA]: '#ollama_api_url_text',
+    [textgen_types.HUGGINGFACE]: '#huggingface_api_url_text',
 };
 
 const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
@@ -1009,6 +1025,8 @@ export function getTextGenModel() {
                 throw new Error('No Ollama model selected');
             }
             return settings.ollama_model;
+        case HUGGINGFACE:
+            return 'tgi';
         default:
             return undefined;
     }
@@ -1144,6 +1162,12 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
 
     if (settings.type === KOBOLDCPP) {
         params.grammar = settings.grammar_string;
+    }
+
+    if (settings.type === HUGGINGFACE) {
+        params.top_p = Math.min(Math.max(Number(params.top_p), 0.0), 0.999);
+        params.stop = Array.isArray(params.stop) ? params.stop.slice(0, 4) : [];
+        nonAphroditeParams.seed = settings.seed >= 0 ? settings.seed : undefined;
     }
 
     if (settings.type === MANCER) {

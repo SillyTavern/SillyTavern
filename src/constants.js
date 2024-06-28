@@ -216,6 +216,7 @@ const TEXTGEN_TYPES = {
     INFERMATICAI: 'infermaticai',
     DREAMGEN: 'dreamgen',
     OPENROUTER: 'openrouter',
+    HUGGINGFACE: 'huggingface',
 };
 
 const INFERMATICAI_KEYS = [

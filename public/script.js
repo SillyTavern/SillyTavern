@@ -8311,6 +8311,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_textgenerationwebui',
         type: textgen_types.OPENROUTER,
     },
+    'huggingface': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.HUGGINGFACE,
+    },
 };
 
 async function selectContextCallback(_, name) {
@@ -9471,6 +9476,7 @@ jQuery(async function () {
             { id: 'api_key_openrouter-tg', secret: SECRET_KEYS.OPENROUTER },
             { id: 'api_key_koboldcpp', secret: SECRET_KEYS.KOBOLDCPP },
             { id: 'api_key_llamacpp', secret: SECRET_KEYS.LLAMACPP },
+            { id: 'api_key_huggingface', secret: SECRET_KEYS.HUGGINGFACE },
         ];
 
         for (const key of keys) {
