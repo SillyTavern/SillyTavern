@@ -319,12 +319,10 @@ export function hasPendingFileAttachment() {
 
 /**
  * Displays file information in the message sending form.
+ * @param {File} file File object
  * @returns {Promise<void>}
  */
-async function onFileAttach() {
-    const fileInput = document.getElementById('file_form_input');
-    if (!(fileInput instanceof HTMLInputElement)) return;
-    const file = fileInput.files[0];
+async function onFileAttach(file) {
     if (!file) return;
 
     const isValid = await validateFile(file);
@@ -1503,8 +1501,28 @@ jQuery(function () {
     $(document).on('click', '.mes_img_enlarge', enlargeMessageImage);
     $(document).on('click', '.mes_img_delete', deleteMessageImage);
 
-    $('#file_form_input').on('change', onFileAttach);
+    $('#file_form_input').on('change', async () => {
+        const fileInput = document.getElementById('file_form_input');
+        if (!(fileInput instanceof HTMLInputElement)) return;
+        const file = fileInput.files[0];
+        await onFileAttach(file);
+    });
     $('#file_form').on('reset', function () {
         $('#file_form').addClass('displayNone');
+    });
+
+    document.getElementById('send_textarea').addEventListener('paste', async function (event) {
+        if (event.clipboardData.files.length === 0) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const fileInput = document.getElementById('file_form_input');
+        if (!(fileInput instanceof HTMLInputElement)) return;
+
+        fileInput.files = event.clipboardData.files;
+        await onFileAttach(fileInput.files[0]);
     });
 });
