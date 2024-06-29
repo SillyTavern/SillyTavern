@@ -2079,14 +2079,23 @@ export function updateMessageBlock(messageId, message) {
     appendMediaToMessage(message, messageElement);
 }
 
-export function appendMediaToMessage(mes, messageElement) {
+/**
+ * Appends image or file to the message element.
+ * @param {object} mes Message object
+ * @param {JQuery<HTMLElement>} messageElement Message element
+ * @param {boolean} [adjustScroll=true] Whether to adjust the scroll position after appending the media
+ */
+export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
     // Add image to message
     if (mes.extra?.image) {
         const chatHeight = $('#chat').prop('scrollHeight');
         const image = messageElement.find('.mes_img');
         const text = messageElement.find('.mes_text');
         const isInline = !!mes.extra?.inline_image;
-        image.on('load', function () {
+        image.off('load').on('load', function () {
+            if (!adjustScroll) {
+                return;
+            }
             const scrollPosition = $('#chat').scrollTop();
             const newChatHeight = $('#chat').prop('scrollHeight');
             const diff = newChatHeight - chatHeight;
@@ -5636,7 +5645,7 @@ export async function renameCharacter(name = null, { silent = false, renameChats
         }
     }
     catch (error) {
-    // Reloading to prevent data corruption
+        // Reloading to prevent data corruption
         if (!silent) await callPopup('Something went wrong. The page will be reloaded.', 'text');
         else toastr.error('Something went wrong. The page will be reloaded.', 'Rename Character');
 

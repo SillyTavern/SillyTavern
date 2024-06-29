@@ -1,6 +1,6 @@
 import { ensureImageFormatSupported, getBase64Async, isTrueBoolean, saveBase64AsFile } from '../../utils.js';
 import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules, renderExtensionTemplateAsync } from '../../extensions.js';
-import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced, substituteParamsExtended } from '../../../script.js';
+import { appendMediaToMessage, callPopup, eventSource, event_types, getRequestHeaders, saveChatConditional, saveSettingsDebounced, substituteParamsExtended } from '../../../script.js';
 import { getMessageTimeStamp } from '../../RossAscends-mods.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getMultimodalCaption } from '../shared.js';
@@ -514,6 +514,15 @@ jQuery(async function () {
     eventSource.on(event_types.MESSAGE_SENT, onMessageEvent);
     eventSource.on(event_types.MESSAGE_FILE_EMBEDDED, onMessageEvent);
 
+    $(document).on('click', '.mes_img_caption', async function () {
+        const messageBlock = $(this).closest('.mes');
+        const index = Number(messageBlock.attr('mesid'));
+        const data = getContext().chat[index];
+        await captionExistingMessage(data);
+        appendMediaToMessage(data, messageBlock, false);
+        await saveChatConditional();
+    });
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'caption',
         callback: captionCommandCallback,
         returns: 'caption',
@@ -548,4 +557,6 @@ jQuery(async function () {
             </div>
         `,
     }));
+
+    document.body.classList.add('caption');
 });
