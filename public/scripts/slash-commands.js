@@ -745,6 +745,32 @@ export function initDefaultSlashCommands() {
                     new SlashCommandEnumValue('success', 'success', enumTypes.enum, '✅'),
                 ],
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'timeOut',
+                description: 'time in milliseconds to display the toast message. Set this and \'extendedTimeout\' to 0 to show indefinitely until dismissed.',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                defaultValue: `${toastr.options.timeOut}`,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'extendedTimeout',
+                description: 'time in milliseconds to display the toast message. Set this and \'timeOut\' to 0 to show indefinitely until dismissed.',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                defaultValue: `${toastr.options.extendedTimeOut}`,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'preventDuplicates',
+                description: 'prevent duplicate toasts with the same message from being displayed.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'awaitDismissal',
+                description: 'wait for the toast to be dismissed before continuing.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -1939,31 +1965,66 @@ async function generateCallback(args, value) {
     }
 }
 
+/**
+ *
+ * @param {{title?: string, severity?: string, timeOut?: string, extendedTimeOut?: string, preventDuplicates?: string, awaitDismissal?: string}} args - named arguments from the slash command
+ * @param {string} value - The string to echo (unnamed argument from the slash command)
+ * @returns {Promise<string>} The text that was echoed
+ */
 async function echoCallback(args, value) {
     // Note: We don't need to sanitize input, as toastr is set up by default to escape HTML via toastr options
     if (value === '') {
         console.warn('WARN: No argument provided for /echo command');
-        return;
+        return '';
     }
-    const title = args?.title !== undefined && typeof args?.title === 'string' ? args.title : undefined;
-    const severity = args?.severity !== undefined && typeof args?.severity === 'string' ? args.severity : 'info';
+
+    if (args.severity && !['error', 'warning', 'success', 'info'].includes(args.severity)) {
+        toastr.warning(`Invalid severity provided for /echo command: ${args.severity}`);
+        args.severity = null;
+    }
+
+    const title = args.title ? args.title : undefined;
+    const severity = args.severity ? args.severity : 'info';
+
+    /** @type {ToastrOptions} */
+    const options = {};
+    if (args.timeOut && !isNaN(parseInt(args.timeOut))) options.timeOut = parseInt(args.timeOut);
+    if (args.extendedTimeOut && !isNaN(parseInt(args.extendedTimeOut))) options.extendedTimeOut = parseInt(args.extendedTimeOut);
+    if (isTrueBoolean(args.preventDuplicates)) options.preventDuplicates = true;
+
+    // Prepare possible await handling
+    let awaitDismissal = isTrueBoolean(args.awaitDismissal);
+    let resolveToastDismissal;
+
+    if (awaitDismissal) {
+        options.onHidden = () => resolveToastDismissal(value);
+    }
+
     switch (severity) {
         case 'error':
-            toastr.error(value, title);
+            toastr.error(value, title, options);
             break;
         case 'warning':
-            toastr.warning(value, title);
+            toastr.warning(value, title, options);
             break;
         case 'success':
-            toastr.success(value, title);
+            toastr.success(value, title, options);
             break;
         case 'info':
         default:
-            toastr.info(value, title);
+            toastr.info(value, title, options);
             break;
     }
-    return value;
+
+    if (awaitDismissal) {
+        return new Promise((resolve) => {
+            resolveToastDismissal = resolve;
+        });
+    } else {
+        return value;
+    }
 }
+
 
 async function addSwipeCallback(_, arg) {
     const lastMessage = chat[chat.length - 1];
