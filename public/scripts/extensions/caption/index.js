@@ -515,12 +515,17 @@ jQuery(async function () {
     eventSource.on(event_types.MESSAGE_FILE_EMBEDDED, onMessageEvent);
 
     $(document).on('click', '.mes_img_caption', async function () {
+        const animationClass = 'fa-fade';
         const messageBlock = $(this).closest('.mes');
+        const messageImg = messageBlock.find('.mes_img');
+        if (messageImg.hasClass(animationClass)) return;
+        messageImg.addClass(animationClass);
         const index = Number(messageBlock.attr('mesid'));
         const data = getContext().chat[index];
         await captionExistingMessage(data);
         appendMediaToMessage(data, messageBlock, false);
         await saveChatConditional();
+        messageImg.removeClass(animationClass);
     });
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'caption',
