@@ -783,7 +783,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         const promptObject = {
             identifier: 'continueNudge',
             role: 'system',
-            content: substituteParamsExtended(oai_settings.continue_nudge_prompt, { lastChatMessage: String(cyclePrompt).trim() }),
+            content: substituteParamsExtended(oai_settings.continue_nudge_prompt, { lastChatMessage: String(cyclePrompt) }),
             system_prompt: true,
         };
         const continuePrompt = new Prompt(promptObject);
