@@ -746,14 +746,14 @@ export function initDefaultSlashCommands() {
                 ],
             }),
             SlashCommandNamedArgument.fromProps({
-                name: 'timeOut',
+                name: 'timeout',
                 description: 'time in milliseconds to display the toast message. Set this and \'extendedTimeout\' to 0 to show indefinitely until dismissed.',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 defaultValue: `${toastr.options.timeOut}`,
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'extendedTimeout',
-                description: 'time in milliseconds to display the toast message. Set this and \'timeOut\' to 0 to show indefinitely until dismissed.',
+                description: 'time in milliseconds to display the toast message. Set this and \'timeout\' to 0 to show indefinitely until dismissed.',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 defaultValue: `${toastr.options.extendedTimeOut}`,
             }),
@@ -1967,7 +1967,7 @@ async function generateCallback(args, value) {
 
 /**
  *
- * @param {{title?: string, severity?: string, timeOut?: string, extendedTimeOut?: string, preventDuplicates?: string, awaitDismissal?: string}} args - named arguments from the slash command
+ * @param {{title?: string, severity?: string, timeout?: string, extendedTimeout?: string, preventDuplicates?: string, awaitDismissal?: string}} args - named arguments from the slash command
  * @param {string} value - The string to echo (unnamed argument from the slash command)
  * @returns {Promise<string>} The text that was echoed
  */
@@ -1988,8 +1988,8 @@ async function echoCallback(args, value) {
 
     /** @type {ToastrOptions} */
     const options = {};
-    if (args.timeOut && !isNaN(parseInt(args.timeOut))) options.timeOut = parseInt(args.timeOut);
-    if (args.extendedTimeOut && !isNaN(parseInt(args.extendedTimeOut))) options.extendedTimeOut = parseInt(args.extendedTimeOut);
+    if (args.timeout && !isNaN(parseInt(args.timeout))) options.timeOut = parseInt(args.timeout);
+    if (args.extendedTimeout && !isNaN(parseInt(args.extendedTimeout))) options.extendedTimeOut = parseInt(args.extendedTimeout);
     if (isTrueBoolean(args.preventDuplicates)) options.preventDuplicates = true;
 
     // Prepare possible await handling
