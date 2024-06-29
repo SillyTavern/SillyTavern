@@ -84,14 +84,14 @@
             </div>
             <div id="caption_prompt_block">
                 <label for="caption_prompt" data-i18n="Caption Prompt">Caption Prompt</label>
-                <textarea id="caption_prompt" class="text_pole" rows="1" placeholder="&lt; Use default &gt;">${PROMPT_DEFAULT}</textarea>
+                <textarea id="caption_prompt" class="text_pole" rows="1" placeholder="&lt; Use default &gt;">{{PROMPT_DEFAULT}}</textarea>
                 <label class="checkbox_label margin-bot-10px" for="caption_prompt_ask" title="Ask for a custom prompt every time an image is captioned.">
                     <input id="caption_prompt_ask" type="checkbox" class="checkbox">
                     <span data-i18n="Ask every time">Ask every time</span>
                 </label>
             </div>
             <label for="caption_template"><span data-i18n="Message Template">Message Template</span> <small><span data-i18n="(use _space">(use </span> <code>&lcub;&lcub;caption&rcub;&rcub;</code> <span data-i18n="macro)">macro)</span></small></label>
-            <textarea id="caption_template" class="text_pole" rows="2" placeholder="&lt; Use default &gt;">${TEMPLATE_DEFAULT}</textarea>
+            <textarea id="caption_template" class="text_pole" rows="2" placeholder="&lt; Use default &gt;">{{TEMPLATE_DEFAULT}}</textarea>
             <label class="checkbox_label margin-bot-10px" for="caption_refine_mode">
                 <input id="caption_refine_mode" type="checkbox" class="checkbox">
                 <span data-i18n="Edit captions before saving">Edit captions before saving</span>
