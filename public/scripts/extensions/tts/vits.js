@@ -39,6 +39,12 @@ class VITSTtsProvider {
         'ko': 'ko-KR',
     };
 
+    modelTypes = {
+        VITS: 'VITS',
+        W2V2_VITS: 'W2V2-VITS',
+        BERT_VITS2: 'BERT-VITS2',
+    };
+
     defaultSettings = {
         provider_endpoint: 'http://localhost:23456',
         format: 'wav',
@@ -48,6 +54,13 @@ class VITSTtsProvider {
         noisew: 0.4,
         segment_size: 50,
         streaming: false,
+        dim_emotion: 0,
+        sdp_ratio: 0.2,
+        emotion: 0,
+        reference_audio_path: '',
+        text_prompt: '',
+        style_text: '',
+        style_weight: 1,
     };
 
     get settingsHtml() {
@@ -70,7 +83,7 @@ class VITSTtsProvider {
         <input id="vits_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
         <span>Use <a target="_blank" href="https://github.com/Artrajz/vits-simple-api">vits-simple-api</a>.</span><br/>
 
-        <label for="vits_format">Audio format</label>
+        <label for="vits_format">Audio format:</label>
         <select id="vits_format">`;
 
         for (let format of this.audioFormats) {
@@ -98,7 +111,31 @@ class VITSTtsProvider {
         <label for="vits_streaming" class="checkbox_label">
             <input id="vits_streaming" type="checkbox" />
             <span>Streaming</span>
-        </label>`;
+        </label>
+
+        <label>W2V2-VITS Settings:</label><br/>
+        <label for="vits_dim_emotion">Dimensional emotion:</label>
+        <input id="vits_dim_emotion" type="number" class="text_pole" min="0" max="5457" step="1" value="${this.defaultSettings.dim_emotion}"/>
+
+        <label>BERT-VITS2 Settings:</label><br/>
+        <label for="vits_sdp_ratio">sdp_ratio: <span id="vits_sdp_ratio_output">${this.defaultSettings.sdp_ratio}</span></label>
+        <input id="vits_sdp_ratio" type="range" value="${this.defaultSettings.sdp_ratio}" min="0.0" max="1" step="0.01" />
+
+        <label for="vits_emotion">emotion: <span id="vits_emotion_output">${this.defaultSettings.emotion}</span></label>
+        <input id="vits_emotion" type="range" value="${this.defaultSettings.emotion}" min="0" max="9" step="1" />
+
+        <label for="vits_reference_audio_path">Reference audio path:</label>
+        <input id="vits_reference_audio_path" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.reference_audio_path}"/>
+
+        <label for="vits_text_prompt">Text Prompt:</label>
+        <input id="vits_text_prompt" type="text" class="text_pole" maxlength="512" value="${this.defaultSettings.text_prompt}"/>
+
+        <label for="vits_style_text">Style text:</label>
+        <input id="vits_style_text" type="text" class="text_pole" maxlength="512" value="${this.defaultSettings.style_text}"/>
+
+        <label for="vits_style_weight">Style weight <span id="vits_style_weight_output">${this.defaultSettings.style_weight}</span></label>
+        <input id="vits_style_weight" type="range" value="${this.defaultSettings.style_weight}" min="0" max="1" step="0.01" />
+        `;
 
         return html;
     }
@@ -108,6 +145,10 @@ class VITSTtsProvider {
         this.settings.provider_endpoint = $('#vits_endpoint').val();
         this.settings.lang = $('#vits_lang').val();
         this.settings.format = $('#vits_format').val();
+        this.settings.dim_emotion = $('#vits_dim_emotion').val();
+        this.settings.reference_audio_path = $('#vits_reference_audio_path').val();
+        this.settings.text_prompt = $('#vits_text_prompt').val();
+        this.settings.style_text = $('#vits_style_text').val();
 
         // Update the default TTS settings based on input fields
         this.settings.length = $('#vits_length').val();
@@ -115,12 +156,18 @@ class VITSTtsProvider {
         this.settings.noisew = $('#vits_noisew').val();
         this.settings.segment_size = $('#vits_segment_size').val();
         this.settings.streaming = $('#vits_streaming').is(':checked');
+        this.settings.sdp_ratio = $('#vits_sdp_ratio').val();
+        this.settings.emotion = $('#vits_emotion').val();
+        this.settings.style_weight = $('#vits_style_weight').val();
 
         // Update the UI to reflect changes
         $('#vits_length_output').text(this.settings.length);
         $('#vits_noise_output').text(this.settings.noise);
         $('#vits_noisew_output').text(this.settings.noisew);
         $('#vits_segment_size_output').text(this.settings.segment_size);
+        $('#vits_sdp_ratio_output').text(this.settings.sdp_ratio);
+        $('#vits_emotion_output').text(this.settings.emotion);
+        $('#vits_style_weight_output').text(this.settings.style_weight);
 
         saveTtsProviderSettings();
         this.changeTTSSettings();
@@ -152,12 +199,22 @@ class VITSTtsProvider {
         $('#vits_noisew').val(this.settings.noisew);
         $('#vits_segment_size').val(this.settings.segment_size);
         $('#vits_streaming').prop('checked', this.settings.streaming);
+        $('#vits_dim_emotion').val(this.settings.dim_emotion);
+        $('#vits_sdp_ratio').val(this.settings.sdp_ratio);
+        $('#vits_emotion').val(this.settings.emotion);
+        $('#vits_reference_audio_path').val(this.settings.reference_audio_path);
+        $('#vits_text_prompt').val(this.settings.text_prompt);
+        $('#vits_style_text').val(this.settings.style_text);
+        $('#vits_style_weight').val(this.settings.style_weight);
 
         // Update the UI to reflect changes
         $('#vits_length_output').text(this.settings.length);
         $('#vits_noise_output').text(this.settings.noise);
         $('#vits_noisew_output').text(this.settings.noisew);
         $('#vits_segment_size_output').text(this.settings.segment_size);
+        $('#vits_sdp_ratio_output').text(this.settings.sdp_ratio);
+        $('#vits_emotion_output').text(this.settings.emotion);
+        $('#vits_style_weight_output').text(this.settings.style_weight);
 
         // Register input/change event listeners to update settings on user interaction
         $('#vits_endpoint').on('input', () => { this.onSettingsChange(); });
@@ -168,6 +225,13 @@ class VITSTtsProvider {
         $('#vits_noisew').on('change', () => { this.onSettingsChange(); });
         $('#vits_segment_size').on('change', () => { this.onSettingsChange(); });
         $('#vits_streaming').on('change', () => { this.onSettingsChange(); });
+        $('#vits_dim_emotion').on('change', () => { this.onSettingsChange(); });
+        $('#vits_sdp_ratio').on('change', () => { this.onSettingsChange(); });
+        $('#vits_emotion').on('change', () => { this.onSettingsChange(); });
+        $('#vits_reference_audio_path').on('change', () => { this.onSettingsChange(); });
+        $('#vits_text_prompt').on('change', () => { this.onSettingsChange(); });
+        $('#vits_style_text').on('change', () => { this.onSettingsChange(); });
+        $('#vits_style_weight').on('change', () => { this.onSettingsChange(); });
 
         await this.checkReady();
 
@@ -239,10 +303,9 @@ class VITSTtsProvider {
                 });
             });
         };
-
-        addVoices('VITS');
-        addVoices('W2V2-VITS');
-        addVoices('BERT-VITS2');
+        for (const key in this.modelTypes) {
+            addVoices(this.modelTypes[key]);
+        }
 
         this.voices = voices; // Assign to the class property
         return voices; // Also return this list
@@ -276,6 +339,23 @@ class VITSTtsProvider {
         params.append('noisew', this.settings.noisew);
         params.append('segment_size', this.settings.segment_size);
         params.append('streaming', streaming);
+
+        if (model_type == this.modelTypes.W2V2_VITS) {
+            params.append('emotion', this.settings.dim_emotion);
+        }
+        else if (model_type == this.modelTypes.BERT_VITS2) {
+            params.append('emotion', this.settings.emotion);
+            if (this.settings.text_prompt) {
+                params.append('text_prompt', this.settings.text_prompt);
+            }
+            if (this.settings.style_text) {
+                params.append('style_text', this.settings.style_text);
+                params.append('style_weight', this.settings.style_weight);
+            }
+            if (this.settings.reference_audio_path) {
+                params.append('reference_audio', this.settings.reference_audio_path);
+            }
+        }
 
         const url = `${this.settings.provider_endpoint}/voice/${model_type.toLowerCase()}?${params.toString()}`;
 
