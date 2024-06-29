@@ -408,6 +408,7 @@ export const event_types = {
     MESSAGE_EDITED: 'message_edited',
     MESSAGE_DELETED: 'message_deleted',
     MESSAGE_UPDATED: 'message_updated',
+    MESSAGE_FILE_EMBEDDED: 'message_file_embedded',
     IMPERSONATE_READY: 'impersonate_ready',
     CHAT_CHANGED: 'chat_id_changed',
     GENERATION_STARTED: 'generation_started',
@@ -3403,6 +3404,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         let regexedMessage = getRegexedString(message, regexType, options);
         regexedMessage = await appendFileContent(chatItem, regexedMessage);
+
+        if (chatItem?.extra?.append_title && chatItem?.extra?.title) {
+            regexedMessage = `${regexedMessage}\n\n${chatItem.extra.title}`;
+        }
 
         return {
             ...chatItem,

@@ -417,6 +417,7 @@ function embedMessageFile(messageId, messageBlock) {
         }
 
         await populateFileAttachment(message, 'embed_file_input');
+        await eventSource.emit(event_types.MESSAGE_FILE_EMBEDDED, messageId);
         appendMediaToMessage(message, messageBlock);
         await saveChatConditional();
     }
@@ -614,6 +615,8 @@ async function deleteMessageImage() {
     const message = chat[mesId];
     delete message.extra.image;
     delete message.extra.inline_image;
+    delete message.extra.title;
+    delete message.extra.append_title;
     mesBlock.find('.mes_img_container').removeClass('img_extra');
     mesBlock.find('.mes_img').attr('src', '');
     await saveChatConditional();
