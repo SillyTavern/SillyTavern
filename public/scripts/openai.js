@@ -779,12 +779,19 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     // Reserve budget for continue nudge
     let continueMessage = null;
     const instruct = isOpenRouterWithInstruct();
-    if (type === 'continue' && cyclePrompt && !instruct && !oai_settings.continue_prefill) {
-        const promptObject = {
+    if (type === 'continue' && cyclePrompt && !instruct) {
+        const promptObject = !oai_settings.continue_prefill ?
+        { // promptObject when continue_prefill is disabled (Default behavior)
             identifier: 'continueNudge',
             role: 'system',
             content: substituteParamsExtended(oai_settings.continue_nudge_prompt, { lastChatMessage: String(cyclePrompt) }),
             system_prompt: true,
+        } :
+        { // promptObject when continue_prefill is enabled (Claude-exclusive option as of 2024-06-29)
+            identifier: 'continueNudge',
+            role: 'assistant',
+            content: substituteParamsExtended(oai_settings.continue_nudge_prompt, { lastChatMessage: String(cyclePrompt) }).trimEnd(),
+            system_prompt: false,
         };
         const continuePrompt = new Prompt(promptObject);
         const preparedPrompt = promptManager.preparePrompt(continuePrompt);
@@ -822,7 +829,8 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
         if (chatCompletion.canAfford(chatMessage)) {
             if (type === 'continue' && oai_settings.continue_prefill && chatPrompt === firstNonInjected) {
-                const collection = new MessageCollection('continuePrefill', chatMessage);
+                const collection = new MessageCollection('continuePrefill', continueMessage);
+                chatCompletion.freeBudget(continueMessage);
                 chatCompletion.add(collection, -1);
                 continue;
             }
@@ -1809,7 +1817,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
         generate_data['human_sysprompt_message'] = substituteParams(oai_settings.human_sysprompt_message);
         // Don't add a prefill on quiet gens (summarization)
-        if (!isQuiet) {
+        if (!isQuiet && !isContinue) {
             generate_data['assistant_prefill'] = isImpersonate ? substituteParams(oai_settings.assistant_impersonation) : substituteParams(oai_settings.assistant_prefill);
         }
     }
