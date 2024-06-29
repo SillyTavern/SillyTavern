@@ -177,7 +177,7 @@ export function initDefaultSlashCommands() {
             ),
             SlashCommandNamedArgument.fromProps({
                 name: 'at',
-                description: 'position to insert the message',
+                description: 'position to insert the message (index-based, corresponding to message id). If not set, the message will be inserted at the end of the chat.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will insert the message right before the last message in chat.',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
             }),
@@ -220,7 +220,7 @@ export function initDefaultSlashCommands() {
             ),
             SlashCommandNamedArgument.fromProps({
                 name: 'at',
-                description: 'position to insert the message',
+                description: 'position to insert the message (index-based, corresponding to message id). If not set, the message will be inserted at the end of the chat.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will insert the message right before the last message in chat.',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
             }),
@@ -274,7 +274,7 @@ export function initDefaultSlashCommands() {
             ),
             SlashCommandNamedArgument.fromProps({
                 name: 'at',
-                description: 'position to insert the message',
+                description: 'position to insert the message (index-based, corresponding to message id). If not set, the message will be inserted at the end of the chat.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will insert the message right before the last message in chat.',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
             }),
@@ -459,7 +459,7 @@ export function initDefaultSlashCommands() {
             ),
             SlashCommandNamedArgument.fromProps({
                 name: 'at',
-                description: 'position to insert the message',
+                description: 'position to insert the message (index-based, corresponding to message id). If not set, the message will be inserted at the end of the chat.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will insert the message right before the last message in chat.',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
             }),
@@ -2429,7 +2429,14 @@ async function sendUserMessageCallback(args, text) {
     text = text.trim();
     const compact = isTrueBoolean(args?.compact);
     const bias = extractMessageBias(text);
-    const insertAt = Number(args?.at);
+
+    let insertAt = Number(args?.at);
+
+    // Convert possible depth parameter to index
+    if (!isNaN(insertAt) && (insertAt < 0 || insertAt === Number(-0))) {
+        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
+        insertAt = chat.length + insertAt;
+    }
 
     if ('name' in args) {
         const name = args.name || '';
@@ -2738,7 +2745,13 @@ export async function sendMessageAs(args, text) {
         },
     }];
 
-    const insertAt = Number(args.at);
+    let insertAt = Number(args.at);
+
+    // Convert possible depth parameter to index
+    if (!isNaN(insertAt) && (insertAt < 0 || insertAt === Number(-0))) {
+        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
+        insertAt = chat.length + insertAt;
+    }
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -2785,7 +2798,13 @@ export async function sendNarratorMessage(args, text) {
         },
     };
 
-    const insertAt = Number(args.at);
+    let insertAt = Number(args.at);
+
+    // Convert possible depth parameter to index
+    if (!isNaN(insertAt) && (insertAt < 0 || insertAt === Number(-0))) {
+        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
+        insertAt = chat.length + insertAt;
+    }
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -2867,7 +2886,13 @@ async function sendCommentMessage(args, text) {
         },
     };
 
-    const insertAt = Number(args.at);
+    let insertAt = Number(args.at);
+
+    // Convert possible depth parameter to index
+    if (!isNaN(insertAt) && (insertAt < 0 || insertAt === Number(-0))) {
+        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
+        insertAt = chat.length + insertAt;
+    }
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
