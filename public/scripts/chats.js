@@ -185,18 +185,19 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
         const file = fileInput.files[0];
         if (!file) return;
 
+        const slug = getStringHash(file.name);
+        const fileNamePrefix = `${Date.now()}_${slug}`;
         const fileBase64 = await getBase64Async(file);
         let base64Data = fileBase64.split(',')[1];
 
         // If file is image
         if (file.type.startsWith('image/')) {
             const extension = file.type.split('/')[1];
-            const imageUrl = await saveBase64AsFile(base64Data, name2, file.name, extension);
+            const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
             message.extra.image = imageUrl;
             message.extra.inline_image = true;
         } else {
-            const slug = getStringHash(file.name);
-            const uniqueFileName = `${Date.now()}_${slug}.txt`;
+            const uniqueFileName = `${fileNamePrefix}.txt`;
 
             if (isConvertible(file.type)) {
                 try {
