@@ -57,7 +57,6 @@ class VITSTtsProvider {
         dim_emotion: 0,
         sdp_ratio: 0.2,
         emotion: 0,
-        reference_audio_path: '',
         text_prompt: '',
         style_text: '',
         style_weight: 1,
@@ -124,9 +123,6 @@ class VITSTtsProvider {
         <label for="vits_emotion">emotion: <span id="vits_emotion_output">${this.defaultSettings.emotion}</span></label>
         <input id="vits_emotion" type="range" value="${this.defaultSettings.emotion}" min="0" max="9" step="1" />
 
-        <label for="vits_reference_audio_path">Reference audio path:</label>
-        <input id="vits_reference_audio_path" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.reference_audio_path}"/>
-
         <label for="vits_text_prompt">Text Prompt:</label>
         <input id="vits_text_prompt" type="text" class="text_pole" maxlength="512" value="${this.defaultSettings.text_prompt}"/>
 
@@ -146,7 +142,6 @@ class VITSTtsProvider {
         this.settings.lang = $('#vits_lang').val();
         this.settings.format = $('#vits_format').val();
         this.settings.dim_emotion = $('#vits_dim_emotion').val();
-        this.settings.reference_audio_path = $('#vits_reference_audio_path').val();
         this.settings.text_prompt = $('#vits_text_prompt').val();
         this.settings.style_text = $('#vits_style_text').val();
 
@@ -202,7 +197,6 @@ class VITSTtsProvider {
         $('#vits_dim_emotion').val(this.settings.dim_emotion);
         $('#vits_sdp_ratio').val(this.settings.sdp_ratio);
         $('#vits_emotion').val(this.settings.emotion);
-        $('#vits_reference_audio_path').val(this.settings.reference_audio_path);
         $('#vits_text_prompt').val(this.settings.text_prompt);
         $('#vits_style_text').val(this.settings.style_text);
         $('#vits_style_weight').val(this.settings.style_weight);
@@ -228,7 +222,6 @@ class VITSTtsProvider {
         $('#vits_dim_emotion').on('change', () => { this.onSettingsChange(); });
         $('#vits_sdp_ratio').on('change', () => { this.onSettingsChange(); });
         $('#vits_emotion').on('change', () => { this.onSettingsChange(); });
-        $('#vits_reference_audio_path').on('change', () => { this.onSettingsChange(); });
         $('#vits_text_prompt').on('change', () => { this.onSettingsChange(); });
         $('#vits_style_text').on('change', () => { this.onSettingsChange(); });
         $('#vits_style_weight').on('change', () => { this.onSettingsChange(); });
@@ -321,16 +314,19 @@ class VITSTtsProvider {
      * @param {string} voiceId Voice ID to use (model_type&speaker_id))
      * @returns {Promise<Response|string>} Fetch response
      */
-    async fetchTtsGeneration(inputText, voiceId, foceNoStreaming = false) {
+    async fetchTtsGeneration(inputText, voiceId, forceNoStreaming = false) {
         console.info(`Generating new TTS for voice_id ${voiceId}`);
 
-        const streaming = !foceNoStreaming && this.settings.streaming;
+        const streaming = !forceNoStreaming && this.settings.streaming;
         const [model_type, speaker_id] = voiceId.split('&');
         const params = new URLSearchParams();
         params.append('text', inputText);
         params.append('id', speaker_id);
-        if (!streaming) {
+        if (streaming) {
+            params.append('streaming', streaming);
             // Streaming response only supports MP3
+        }
+        else {
             params.append('format', this.settings.format);
         }
         params.append('lang', this.settings.lang);
@@ -338,12 +334,12 @@ class VITSTtsProvider {
         params.append('noise', this.settings.noise);
         params.append('noisew', this.settings.noisew);
         params.append('segment_size', this.settings.segment_size);
-        params.append('streaming', streaming);
 
         if (model_type == this.modelTypes.W2V2_VITS) {
             params.append('emotion', this.settings.dim_emotion);
         }
         else if (model_type == this.modelTypes.BERT_VITS2) {
+            params.append('sdp_ratio', this.settings.sdp_ratio);
             params.append('emotion', this.settings.emotion);
             if (this.settings.text_prompt) {
                 params.append('text_prompt', this.settings.text_prompt);
@@ -351,9 +347,6 @@ class VITSTtsProvider {
             if (this.settings.style_text) {
                 params.append('style_text', this.settings.style_text);
                 params.append('style_weight', this.settings.style_weight);
-            }
-            if (this.settings.reference_audio_path) {
-                params.append('reference_audio', this.settings.reference_audio_path);
             }
         }
 
