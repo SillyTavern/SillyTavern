@@ -77,7 +77,7 @@ class VITSTtsProvider {
 
         html += `
         </select>
-        <label>VITS/W2V2-VITS/Bert-VITS2 Settings:</label><br/>
+        <label>VITS / W2V2-VITS / Bert-VITS2 Settings:</label><br/>
         <label for="vits_endpoint">Provider Endpoint:</label>
         <input id="vits_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
         <span>Use <a target="_blank" href="https://github.com/Artrajz/vits-simple-api">vits-simple-api</a>.</span><br/>
