@@ -209,7 +209,7 @@ import {
     instruct_presets,
     selectContextPreset,
 } from './scripts/instruct-mode.js';
-import { initLocales } from './scripts/i18n.js';
+import { initLocales, t, translate } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
 import {
     user_avatar,
@@ -7826,6 +7826,8 @@ window['SillyTavern'].getContext = function () {
         messageFormatting: messageFormatting,
         shouldSendOnEnter: shouldSendOnEnter,
         isMobile: isMobile,
+        t: t,
+        translate: translate,
         tags: tags,
         tagMap: tag_map,
         menuType: menu_type,
