@@ -350,13 +350,22 @@ class VITSTtsProvider {
             }
         }
 
-        const url = `${this.settings.provider_endpoint}/voice/${model_type.toLowerCase()}?${params.toString()}`;
+        const url = `${this.settings.provider_endpoint}/voice/${model_type.toLowerCase()}`;
 
         if (streaming) {
-            return url;
+            return url + `?${params.toString()}`;
         }
 
-        const response = await fetch(url);
+        const response = await fetch(
+            url,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: params,
+            },
+        );
         if (!response.ok) {
             toastr.error(response.statusText, 'TTS Generation Failed');
             throw new Error(`HTTP ${response.status}: ${await response.text()}`);
