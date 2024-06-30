@@ -35,6 +35,7 @@ let lastMessage = null;
 let lastMessageHash = null;
 let periodicMessageGenerationTimer = null;
 let lastPositionOfParagraphEnd = -1;
+let currentInitVoiceMapPromise = null;
 
 const DEFAULT_VOICE_MARKER = '[Default Voice]';
 const DISABLED_VOICE_MARKER = 'disabled';
@@ -1010,9 +1011,33 @@ class VoiceMapEntry {
 
 /**
  * Init voiceMapEntries for character select list.
+ * If an initialization is already in progress, it returns the existing Promise instead of starting a new one.
  * @param {boolean} unrestricted - If true, will include all characters in voiceMapEntries, even if they are not in the current chat.
+ * @returns {Promise} A promise that resolves when the initialization is complete.
  */
 export async function initVoiceMap(unrestricted = false) {
+    // Preventing parallel execution
+    if (currentInitVoiceMapPromise) {
+        return currentInitVoiceMapPromise;
+    }
+
+    currentInitVoiceMapPromise = (async () => {
+        try {
+            await initVoiceMapInternal(unrestricted);
+        } finally {
+            currentInitVoiceMapPromise = null;
+        }
+    })();
+
+    return currentInitVoiceMapPromise;
+}
+
+/**
+ * Init voiceMapEntries for character select list.
+ * @param {boolean} unrestricted - If true, will include all characters in voiceMapEntries, even if they are not in the current chat.
+ */
+async function initVoiceMapInternal(unrestricted) {
+
     // Gate initialization if not enabled or TTS Provider not ready. Prevents error popups.
     const enabled = $('#tts_enabled').is(':checked');
     if (!enabled) {
