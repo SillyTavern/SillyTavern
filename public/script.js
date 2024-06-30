@@ -7898,7 +7898,7 @@ function swipe_left() {      // when we swipe left..but no generation.
         }
         $(this).parent().children('.mes_block').transition({
             x: swipe_range,
-            duration: swipe_duration,
+            duration: animation_duration > 0 ? swipe_duration : 0,
             easing: animation_easing,
             queue: false,
             complete: async function () {
@@ -7941,7 +7941,7 @@ function swipe_left() {      // when we swipe left..but no generation.
                     complete: function () {
                         $(this).parent().children('.mes_block').transition({
                             x: '0px',
-                            duration: swipe_duration,
+                            duration: animation_duration > 0 ? swipe_duration : 0,
                             easing: animation_easing,
                             queue: false,
                             complete: async function () {
@@ -7956,7 +7956,7 @@ function swipe_left() {      // when we swipe left..but no generation.
 
         $(this).parent().children('.avatar').transition({
             x: swipe_range,
-            duration: swipe_duration,
+            duration: animation_duration > 0 ? swipe_duration : 0,
             easing: animation_easing,
             queue: false,
             complete: function () {
@@ -7968,7 +7968,7 @@ function swipe_left() {      // when we swipe left..but no generation.
                     complete: function () {
                         $(this).parent().children('.avatar').transition({
                             x: '0px',
-                            duration: swipe_duration,
+                            duration: animation_duration > 0 ? swipe_duration : 0,
                             easing: animation_easing,
                             queue: false,
                             complete: function () {
@@ -8075,7 +8075,7 @@ const swipe_right = () => {
         this_mes_div.children('.swipe_left').css('display', 'flex');
         this_mes_div.children('.mes_block').transition({        // this moves the div back and forth
             x: '-' + swipe_range,
-            duration: swipe_duration,
+            duration: animation_duration > 0 ? swipe_duration : 0,
             easing: animation_easing,
             queue: false,
             complete: async function () {
@@ -8134,7 +8134,7 @@ const swipe_right = () => {
                     complete: function () {
                         this_mes_div.children('.mes_block').transition({
                             x: '0px',
-                            duration: swipe_duration,
+                            duration: animation_duration > 0 ? swipe_duration : 0,
                             easing: animation_easing,
                             queue: false,
                             complete: async function () {
@@ -8157,7 +8157,7 @@ const swipe_right = () => {
         });
         this_mes_div.children('.avatar').transition({ // moves avatar along with swipe
             x: '-' + swipe_range,
-            duration: swipe_duration,
+            duration: animation_duration > 0 ? swipe_duration : 0,
             easing: animation_easing,
             queue: false,
             complete: function () {
@@ -8169,7 +8169,7 @@ const swipe_right = () => {
                     complete: function () {
                         this_mes_div.children('.avatar').transition({
                             x: '0px',
-                            duration: swipe_duration,
+                            duration: animation_duration > 0 ? swipe_duration : 0,
                             easing: animation_easing,
                             queue: false,
                             complete: function () {
