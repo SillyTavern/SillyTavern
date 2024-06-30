@@ -374,7 +374,7 @@ async function addExtensionsButtonAndMenu() {
 
     $('html').on('click', function (e) {
         const clickTarget = $(e.target);
-        const noCloseTargets = ['#sd_gen', '#extensionsMenuButton'];
+        const noCloseTargets = ['#sd_gen', '#extensionsMenuButton', '#roll_dice'];
         if (dropdown.is(':visible') && !noCloseTargets.some(id => clickTarget.closest(id).length > 0)) {
             $(dropdown).fadeOut(animation_duration);
         }
