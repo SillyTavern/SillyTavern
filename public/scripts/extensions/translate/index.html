@@ -1,0 +1,38 @@
+<div class="translation_settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b data-i18n="ext_translate_title">Chat Translation</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <label for="translation_auto_mode" class="checkbox_label" data-i18n="ext_translate_auto_mode">Auto-mode</label>
+            <select id="translation_auto_mode">
+                <option data-i18n="ext_translate_mode_none" value="none">None</option>
+                <option data-i18n="ext_translate_mode_responses" value="responses">Translate responses</option>
+                <option data-i18n="ext_translate_mode_inputs" value="inputs">Translate inputs</option>
+                <option data-i18n="ext_translate_mode_both" value="both">Translate both</option>
+            </select>
+            <label data-i18n="ext_translate_mode_provider" for="translation_provider">Provider</label>
+            <div class="flex-container gap5px flexnowrap marginBot5">
+                <select id="translation_provider" name="provider" class="margin0">
+                    <option value="libre">Libre</option>
+                    <option value="google">Google</option>
+                    <option value="lingva">Lingva</option>
+                    <option value="deepl">DeepL</option>
+                    <option value="deeplx">DeepLX</option>
+                    <option value="bing">Bing</option>
+                    <option value="oneringtranslator">OneRingTranslator</option>
+                    <option value="yandex">Yandex</option>
+                <select>
+                <div id="translate_key_button" class="menu_button fa-solid fa-key margin0"></div>
+                <div id="translate_url_button" class="menu_button fa-solid fa-link margin0"></div>
+            </div>
+            <label data-i18n="ext_translate_target_lang" for="translation_target_language">Target Language</label>
+            <select id="translation_target_language" name="target_language"></select>
+            <div id="translation_clear" class="menu_button">
+                <i class="fa-solid fa-trash-can"></i>
+                <span data-i18n="ext_translate_clear">Clear Translations</span>
+            </div>
+        </div>
+    </div>
+</div>

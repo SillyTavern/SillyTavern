@@ -75,9 +75,9 @@ class ElevenLabsTtsProvider {
         this.settings.style_exaggeration = $('#elevenlabs_tts_style_exaggeration').val();
         this.settings.speaker_boost = $('#elevenlabs_tts_speaker_boost').is(':checked');
         this.settings.model = $('#elevenlabs_tts_model').find(':selected').val();
-        $('#elevenlabs_tts_stability_output').text(this.settings.stability * 100 + '%');
-        $('#elevenlabs_tts_similarity_boost_output').text(this.settings.similarity_boost * 100 + '%');
-        $('#elevenlabs_tts_style_exaggeration_output').text(this.settings.style_exaggeration * 100 + '%');
+        $('#elevenlabs_tts_stability_output').text(Math.round(this.settings.stability * 100) + '%');
+        $('#elevenlabs_tts_similarity_boost_output').text(Math.round(this.settings.similarity_boost * 100) + '%');
+        $('#elevenlabs_tts_style_exaggeration_output').text(Math.round(this.settings.style_exaggeration * 100) + '%');
         $('#elevenlabs_tts_v2_options').toggle(this.shouldInvolveExtendedSettings());
         saveTtsProviderSettings();
     }
@@ -117,9 +117,9 @@ class ElevenLabsTtsProvider {
         $('#elevenlabs_tts_style_exaggeration').on('input', this.onSettingsChange.bind(this));
         $('#elevenlabs_tts_speaker_boost').on('change', this.onSettingsChange.bind(this));
         $('#elevenlabs_tts_model').on('change', this.onSettingsChange.bind(this));
-        $('#elevenlabs_tts_stability_output').text(this.settings.stability);
-        $('#elevenlabs_tts_similarity_boost_output').text(this.settings.similarity_boost);
-        $('#elevenlabs_tts_style_exaggeration_output').text(this.settings.style_exaggeration);
+        $('#elevenlabs_tts_stability_output').text(Math.round(this.settings.stability * 100) + '%');
+        $('#elevenlabs_tts_similarity_boost_output').text(Math.round(this.settings.similarity_boost * 100) + '%');
+        $('#elevenlabs_tts_style_exaggeration_output').text(Math.round(this.settings.style_exaggeration * 100) + '%');
         $('#elevenlabs_tts_v2_options').toggle(this.shouldInvolveExtendedSettings());
         try {
             await this.checkReady();
@@ -311,8 +311,8 @@ class ElevenLabsTtsProvider {
             },
         };
         if (this.shouldInvolveExtendedSettings()) {
-            request.voice_settings.style_exaggeration = Number(this.settings.style_exaggeration);
-            request.voice_settings.speaker_boost = Boolean(this.settings.speaker_boost);
+            request.voice_settings.style = Number(this.settings.style_exaggeration);
+            request.voice_settings.use_speaker_boost = Boolean(this.settings.speaker_boost);
         }
         const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
             method: 'POST',

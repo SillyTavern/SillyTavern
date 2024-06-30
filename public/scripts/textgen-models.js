@@ -9,6 +9,7 @@ let infermaticAIModels = [];
 let dreamGenModels = [];
 let vllmModels = [];
 let aphroditeModels = [];
+let featherlessModels = [];
 export let openRouterModels = [];
 
 /**
@@ -39,6 +40,8 @@ const OPENROUTER_PROVIDERS = [
     'Novita',
     'Lynn',
     'Lynn 2',
+    'DeepSeek',
+    'Infermatic',
 ];
 
 export async function loadOllamaModels(data) {
@@ -230,6 +233,35 @@ export async function loadAphroditeModels(data) {
         $('#aphrodite_model').append(option);
     }
 }
+
+export async function loadFeatherlessModels(data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid Featherless models data', data);
+        return;
+    }
+
+    featherlessModels = data;
+
+    if (!data.find(x => x.id === textgen_settings.featherless_model)) {
+        textgen_settings.featherless_model = data[0]?.id || '';
+    }
+
+    $('#featherless_model').empty();
+    for (const model of data) {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.featherless_model;
+        $('#featherless_model').append(option);
+    }
+}
+
+function onFeatherlessModelSelect() {
+    const modelId = String($('#featherless_model').val());
+    textgen_settings.featherless_model = modelId;
+    $('#api_button_textgenerationwebui').trigger('click');
+}
+
 
 function onMancerModelSelect() {
     const modelId = String($('#mancer_model').val());
@@ -505,6 +537,7 @@ jQuery(function () {
     $('#ollama_download_model').on('click', downloadOllamaModel);
     $('#vllm_model').on('change', onVllmModelSelect);
     $('#aphrodite_model').on('change', onAphroditeModelSelect);
+    $('#featherless_model').on('change', onFeatherlessModelSelect);
 
     const providersSelect = $('.openrouter_providers');
     for (const provider of OPENROUTER_PROVIDERS) {
@@ -569,6 +602,12 @@ jQuery(function () {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getAphroditeModelTemplate,
+        });
+        $('#featherless_model').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
         });
         providersSelect.select2({
             sorter: data => data.sort((a, b) => a.text.localeCompare(b.text)),

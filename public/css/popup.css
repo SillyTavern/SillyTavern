@@ -1,0 +1,175 @@
+@import url('./popup-safari-fix.css');
+
+dialog {
+    color: var(--SmartThemeBodyColor);
+}
+
+/* Closed state of the dialog */
+.popup {
+    width: 500px;
+    text-align: center;
+    box-shadow: 0px 0px 14px var(--black70a);
+    border: 1px solid var(--SmartThemeBorderColor);
+    padding: 4px 14px;
+    background-color: var(--SmartThemeBlurTintColor);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+
+    max-height: calc(100svh - 2em);
+    max-width: calc(100svw - 2em);
+    min-height: fit-content;
+
+    /* Overflow visible so elements (like toasts) can appear outside of the dialog. '.popup-body' is hiding overflow for the real content. */
+    overflow: visible;
+
+    /* Fix weird animation issue with font-scaling during popup open */
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    -webkit-font-smoothing: subpixel-antialiased;
+}
+
+.popup .popup-body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    padding: 1px;
+}
+
+.popup .popup-content {
+    margin-top: 10px;
+    padding: 0 8px;
+    overflow: hidden;
+    flex-grow: 1;
+}
+
+.popup .popup-content h3:first-child {
+    /* No double spacing for the first heading needed, the .popup-content already has margin */
+    margin-top: 0px;
+}
+
+.popup.vertical_scrolling_dialogue_popup .popup-content {
+    overflow-y: auto;
+}
+
+.popup.horizontal_scrolling_dialogue_popup .popup-content {
+    overflow-x: auto;
+}
+
+/* Opening animation */
+.popup[opening] {
+    animation: pop-in var(--animation-duration-slow) ease-in-out;
+}
+
+.popup[opening]::backdrop {
+    animation: fade-in var(--animation-duration-slow) ease-in-out;
+}
+
+/* Open state of the dialog */
+.popup[open] {
+    color: var(--SmartThemeBodyColor);
+}
+
+.popup[open]::backdrop {
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+    background-color: var(--black30a);
+}
+
+body.no-blur .popup[open]::backdrop {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* Closing animation */
+.popup[closing] {
+    animation: pop-out var(--animation-duration-slow) ease-in-out;
+}
+
+.popup[closing]::backdrop {
+    animation: fade-out var(--animation-duration-slow) ease-in-out;
+}
+
+.popup #toast-container {
+    /* Fix toastr in dialogs by actually placing it at the top of the screen via transform */
+    height: 100svh;
+    top: calc(50% + var(--topBarBlockSize));
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    /* Fix text align, popups are centered by default. toasts should not. */
+    text-align: left;
+}
+
+.popup-crop-wrap {
+    margin: 10px auto;
+    max-height: 75vh;
+    max-height: 75svh;
+    max-width: 100%;
+}
+
+.popup-crop-wrap img {
+    max-width: 100%;
+    /* This rule is very important, please do not ignore this! */
+}
+
+.popup-inputs {
+    margin-top: 10px;
+    font-size: smaller;
+    opacity: 0.7;
+}
+
+.popup-input {
+    margin-top: 10px;
+}
+
+.popup-controls {
+    margin-top: 10px;
+    display: flex;
+    align-self: center;
+    gap: 20px;
+}
+
+.menu_button.menu_button_default {
+    box-shadow: 0 0 5px var(--white20a);
+}
+
+.menu_button.popup-button-ok {
+    background-color: var(--crimson70a);
+}
+
+.menu_button.popup-button-ok:hover {
+    background-color: var(--crimson-hover);
+}
+
+.popup-controls .menu_button {
+    /* Popup buttons should not scale to smallest size, otherwise they will always break to multiline if multiple words */
+    width: unset;
+
+    /* Fix weird animation issue with fonts on brightness filter */
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    -webkit-font-smoothing: subpixel-antialiased;
+}
+
+.popup-controls .menu_button:hover:focus-visible {
+    filter: brightness(1.3) saturate(1.3);
+}
+
+.popup .popup-button-close {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 24px;
+    height: 24px;
+    font-size: 20px;
+    padding: 2px 3px 3px 2px;
+
+    filter: brightness(0.8);
+
+    /* Fix weird animation issue with font-scaling during popup open */
+    backface-visibility: hidden;
+}
+

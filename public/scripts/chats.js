@@ -4,7 +4,6 @@ import css from '../lib/css-parser.mjs';
 import {
     addCopyToCodeBlocks,
     appendMediaToMessage,
-    callPopup,
     characters,
     chat,
     eventSource,
@@ -35,8 +34,10 @@ import {
     extractTextFromOffice,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
-import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { ScraperManager } from './scrapers.js';
+import { DragAndDropHandler } from './dragdrop.js';
+import { renderTemplateAsync } from './templates.js';
 
 /**
  * @typedef {Object} FileAttachment
@@ -184,18 +185,19 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
         const file = fileInput.files[0];
         if (!file) return;
 
+        const slug = getStringHash(file.name);
+        const fileNamePrefix = `${Date.now()}_${slug}`;
         const fileBase64 = await getBase64Async(file);
         let base64Data = fileBase64.split(',')[1];
 
         // If file is image
         if (file.type.startsWith('image/')) {
             const extension = file.type.split('/')[1];
-            const imageUrl = await saveBase64AsFile(base64Data, name2, file.name, extension);
+            const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
             message.extra.image = imageUrl;
             message.extra.inline_image = true;
         } else {
-            const slug = getStringHash(file.name);
-            const uniqueFileName = `${Date.now()}_${slug}.txt`;
+            const uniqueFileName = `${fileNamePrefix}.txt`;
 
             if (isConvertible(file.type)) {
                 try {
@@ -318,12 +320,10 @@ export function hasPendingFileAttachment() {
 
 /**
  * Displays file information in the message sending form.
+ * @param {File} file File object
  * @returns {Promise<void>}
  */
-async function onFileAttach() {
-    const fileInput = document.getElementById('file_form_input');
-    if (!(fileInput instanceof HTMLInputElement)) return;
-    const file = fileInput.files[0];
+async function onFileAttach(file) {
     if (!file) return;
 
     const isValid = await validateFile(file);
@@ -418,6 +418,7 @@ function embedMessageFile(messageId, messageBlock) {
         }
 
         await populateFileAttachment(message, 'embed_file_input');
+        await eventSource.emit(event_types.MESSAGE_FILE_EMBEDDED, messageId);
         appendMediaToMessage(message, messageBlock);
         await saveChatConditional();
     }
@@ -523,7 +524,7 @@ async function openExternalMediaOverridesDialog() {
         return;
     }
 
-    const template = $('#forbid_media_override_template > .forbid_media_override').clone();
+    const template = $(await renderTemplateAsync('forbidMedia'));
     template.find('.forbid_media_global_state_forbidden').toggle(power_user.forbid_external_media);
     template.find('.forbid_media_global_state_allowed').toggle(!power_user.forbid_external_media);
 
@@ -537,7 +538,7 @@ async function openExternalMediaOverridesDialog() {
         template.find('#forbid_media_override_global').prop('checked', true);
     }
 
-    callPopup(template, 'text', '', { wide: false, large: false });
+    callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: false, large: false });
 }
 
 export function getCurrentEntityId() {
@@ -565,7 +566,7 @@ export function isExternalMediaAllowed() {
     return !power_user.forbid_external_media;
 }
 
-function enlargeMessageImage() {
+async function enlargeMessageImage() {
     const mesBlock = $(this).closest('.mes');
     const mesId = mesBlock.attr('mesid');
     const message = chat[mesId];
@@ -579,14 +580,28 @@ function enlargeMessageImage() {
     const img = document.createElement('img');
     img.classList.add('img_enlarged');
     img.src = imgSrc;
+    const imgHolder = document.createElement('div');
+    imgHolder.classList.add('img_enlarged_holder');
+    imgHolder.append(img);
     const imgContainer = $('<div><pre><code></code></pre></div>');
-    imgContainer.prepend(img);
+    imgContainer.prepend(imgHolder);
     imgContainer.addClass('img_enlarged_container');
     imgContainer.find('code').addClass('txt').text(title);
     const titleEmpty = !title || title.trim().length === 0;
     imgContainer.find('pre').toggle(!titleEmpty);
     addCopyToCodeBlocks(imgContainer);
-    callGenericPopup(imgContainer, POPUP_TYPE.TEXT, '', { wide: true, large: true });
+
+    const popup = new Popup(imgContainer, POPUP_TYPE.DISPLAY, '', { large: true, transparent: true });
+
+    popup.dlg.style.width = 'unset';
+    popup.dlg.style.height = 'unset';
+
+    img.addEventListener('click', () => {
+        const shouldZoom = !img.classList.contains('zoomed');
+        img.classList.toggle('zoomed', shouldZoom);
+    });
+
+    await popup.show();
 }
 
 async function deleteMessageImage() {
@@ -601,6 +616,8 @@ async function deleteMessageImage() {
     const message = chat[mesId];
     delete message.extra.image;
     delete message.extra.inline_image;
+    delete message.extra.title;
+    delete message.extra.append_title;
     mesBlock.find('.mes_img_container').removeClass('img_extra');
     mesBlock.find('.mes_img').attr('src', '');
     await saveChatConditional();
@@ -991,49 +1008,24 @@ async function openAttachmentManager() {
         template.find('.chatAttachmentsName').text(chatName);
     }
 
-    function addDragAndDrop() {
-        $(document.body).on('dragover', '.dialogue_popup', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            $(event.target).closest('.dialogue_popup').addClass('dragover');
+    const dragDropHandler = new DragAndDropHandler('.popup', async (files, event) => {
+        let selectedTarget = ATTACHMENT_SOURCE.GLOBAL;
+        const targets = getAvailableTargets();
+
+        const targetSelectTemplate = $(await renderExtensionTemplateAsync('attachments', 'files-dropped', { count: files.length, targets: targets }));
+        targetSelectTemplate.find('.droppedFilesTarget').on('input', function () {
+            selectedTarget = String($(this).val());
         });
-
-        $(document.body).on('dragleave', '.dialogue_popup', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            $(event.target).closest('.dialogue_popup').removeClass('dragover');
-        });
-
-        $(document.body).on('drop', '.dialogue_popup', async (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            $(event.target).closest('.dialogue_popup').removeClass('dragover');
-
-            const files = Array.from(event.originalEvent.dataTransfer.files);
-            let selectedTarget = ATTACHMENT_SOURCE.GLOBAL;
-            const targets = getAvailableTargets();
-
-            const targetSelectTemplate = $(await renderExtensionTemplateAsync('attachments', 'files-dropped', { count: files.length, targets: targets }));
-            targetSelectTemplate.find('.droppedFilesTarget').on('input', function () {
-                selectedTarget = String($(this).val());
-            });
-            const result = await callGenericPopup(targetSelectTemplate, POPUP_TYPE.CONFIRM, '', { wide: false, large: false, okButton: 'Upload', cancelButton: 'Cancel' });
-            if (result !== POPUP_RESULT.AFFIRMATIVE) {
-                console.log('File upload cancelled');
-                return;
-            }
-            for (const file of files) {
-                await uploadFileAttachmentToServer(file, selectedTarget);
-            }
-            renderAttachments();
-        });
-    }
-
-    function removeDragAndDrop() {
-        $(document.body).off('dragover', '.shadow_popup');
-        $(document.body).off('dragleave', '.shadow_popup');
-        $(document.body).off('drop', '.shadow_popup');
-    }
+        const result = await callGenericPopup(targetSelectTemplate, POPUP_TYPE.CONFIRM, '', { wide: false, large: false, okButton: 'Upload', cancelButton: 'Cancel' });
+        if (result !== POPUP_RESULT.AFFIRMATIVE) {
+            console.log('File upload cancelled');
+            return;
+        }
+        for (const file of files) {
+            await uploadFileAttachmentToServer(file, selectedTarget);
+        }
+        renderAttachments();
+    });
 
     let sortField = localStorage.getItem('DataBank_sortField') || 'created';
     let sortOrder = localStorage.getItem('DataBank_sortOrder') || 'desc';
@@ -1056,43 +1048,61 @@ async function openAttachmentManager() {
         localStorage.setItem('DataBank_sortOrder', sortOrder);
         renderAttachments();
     });
-    template.find('.bulkActionDelete').on('click', async () => {
-        const selectedAttachments =  document.querySelectorAll('.attachmentListItemCheckboxContainer .attachmentListItemCheckbox:checked');
+    function handleBulkAction(action) {
+        return async () => {
+            const selectedAttachments = document.querySelectorAll('.attachmentListItemCheckboxContainer .attachmentListItemCheckbox:checked');
 
-        if (selectedAttachments.length === 0) {
-            toastr.info('No attachments selected.', 'Data Bank');
-            return;
-        }
-
-        const confirm = await callGenericPopup('Are you sure you want to delete the selected attachments?', POPUP_TYPE.CONFIRM);
-
-        if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
-            return;
-        }
-
-        const attachments = getDataBankAttachments();
-        selectedAttachments.forEach(async (checkbox) => {
-            const listItem = checkbox.closest('.attachmentListItem');
-            if (!(listItem instanceof HTMLElement)) {
+            if (selectedAttachments.length === 0) {
+                toastr.info('No attachments selected.', 'Data Bank');
                 return;
             }
-            const url = listItem.dataset.attachmentUrl;
-            const source = listItem.dataset.attachmentSource;
-            const attachment = attachments.find(a => a.url === url);
-            if (!attachment) {
-                return;
-            }
-            await deleteAttachment(attachment, source, () => {}, false);
-        });
 
-        document.querySelectorAll('.attachmentListItemCheckbox, .attachmentsBulkEditCheckbox').forEach(checkbox => {
-            if (checkbox instanceof HTMLInputElement) {
-                checkbox.checked = false;
+            if (action.confirmMessage) {
+                const confirm = await callGenericPopup(action.confirmMessage, POPUP_TYPE.CONFIRM);
+                if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
+                    return;
+                }
             }
-        });
 
-        await renderAttachments();
-    });
+            const includeDisabled = true;
+            const attachments = getDataBankAttachments(includeDisabled);
+            selectedAttachments.forEach(async (checkbox) => {
+                const listItem = checkbox.closest('.attachmentListItem');
+                if (!(listItem instanceof HTMLElement)) {
+                    return;
+                }
+                const url = listItem.dataset.attachmentUrl;
+                const source = listItem.dataset.attachmentSource;
+                const attachment = attachments.find(a => a.url === url);
+                if (!attachment) {
+                    return;
+                }
+                await action.perform(attachment, source);
+            });
+
+            document.querySelectorAll('.attachmentListItemCheckbox, .attachmentsBulkEditCheckbox').forEach(checkbox => {
+                if (checkbox instanceof HTMLInputElement) {
+                    checkbox.checked = false;
+                }
+            });
+
+            await renderAttachments();
+        };
+    }
+
+    template.find('.bulkActionDisable').on('click', handleBulkAction({
+        perform: (attachment) => disableAttachment(attachment, () => { }),
+    }));
+
+    template.find('.bulkActionEnable').on('click', handleBulkAction({
+        perform: (attachment) => enableAttachment(attachment, () => { }),
+    }));
+
+    template.find('.bulkActionDelete').on('click', handleBulkAction({
+        confirmMessage: 'Are you sure you want to delete the selected attachments?',
+        perform: async (attachment, source) => await deleteAttachment(attachment, source, () => { }, false),
+    }));
+
     template.find('.bulkActionSelectAll').on('click', () => {
         $('.attachmentListItemCheckbox:visible').each((_, checkbox) => {
             if (checkbox instanceof HTMLInputElement) {
@@ -1111,11 +1121,10 @@ async function openAttachmentManager() {
     const cleanupFn = await renderButtons();
     await verifyAttachments();
     await renderAttachments();
-    addDragAndDrop();
-    await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'Close' });
+    await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'Close', allowVerticalScrolling: true });
 
     cleanupFn();
-    removeDragAndDrop();
+    dragDropHandler.destroy();
 }
 
 /**
@@ -1458,7 +1467,7 @@ jQuery(function () {
             });
         }
 
-        callPopup(wrapper, 'text', '', { wide: true, large: true });
+        callGenericPopup(wrapper, POPUP_TYPE.TEXT, '', { wide: true, large: true });
     });
 
     $(document).on('click', 'body.documentstyle .mes .mes_text', function () {
@@ -1496,8 +1505,28 @@ jQuery(function () {
     $(document).on('click', '.mes_img_enlarge', enlargeMessageImage);
     $(document).on('click', '.mes_img_delete', deleteMessageImage);
 
-    $('#file_form_input').on('change', onFileAttach);
+    $('#file_form_input').on('change', async () => {
+        const fileInput = document.getElementById('file_form_input');
+        if (!(fileInput instanceof HTMLInputElement)) return;
+        const file = fileInput.files[0];
+        await onFileAttach(file);
+    });
     $('#file_form').on('reset', function () {
         $('#file_form').addClass('displayNone');
+    });
+
+    document.getElementById('send_textarea').addEventListener('paste', async function (event) {
+        if (event.clipboardData.files.length === 0) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const fileInput = document.getElementById('file_form_input');
+        if (!(fileInput instanceof HTMLInputElement)) return;
+
+        fileInput.files = event.clipboardData.files;
+        await onFileAttach(fileInput.files[0]);
     });
 });

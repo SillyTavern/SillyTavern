@@ -6,6 +6,7 @@ import { AutoCompleteFuzzyScore } from './AutoCompleteFuzzyScore.js';
 export class AutoCompleteOption {
     /**@type {string}*/ name;
     /**@type {string}*/ typeIcon;
+    /**@type {string}*/ type;
     /**@type {number}*/ nameOffset = 0;
     /**@type {AutoCompleteFuzzyScore}*/ score;
     /**@type {string}*/ replacer;
@@ -24,9 +25,10 @@ export class AutoCompleteOption {
     /**
      * @param {string} name
      */
-    constructor(name, typeIcon = ' ') {
+    constructor(name, typeIcon = ' ', type = '') {
         this.name = name;
         this.typeIcon = typeIcon;
+        this.type = type;
     }
 
 
@@ -141,6 +143,11 @@ export class AutoCompleteOption {
                 }
                 li.append(specs);
             }
+            const stopgap = document.createElement('span'); {
+                stopgap.classList.add('stopgap');
+                stopgap.textContent = '';
+                li.append(stopgap);
+            }
             const help = document.createElement('span'); {
                 help.classList.add('help');
                 const content = document.createElement('span'); {
@@ -181,6 +188,7 @@ export class AutoCompleteOption {
         let li;
         li = this.makeItem(this.name, this.typeIcon, true);
         li.setAttribute('data-name', this.name);
+        li.setAttribute('data-option-type', this.type);
         return li;
     }
 

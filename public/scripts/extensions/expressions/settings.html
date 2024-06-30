@@ -1,65 +1,65 @@
 <div class="expression_settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <b>Character Expressions</b>
+            <b data-i18n="Character Expressions">Character Expressions</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
 
         <div class="inline-drawer-content">
             <label class="checkbox_label" for="expression_translate" title="Use the selected API from Chat Translation extension settings.">
                 <input id="expression_translate" type="checkbox">
-                <span>Translate text to English before classification</span>
+                <span data-i18n="Translate text to English before classification">Translate text to English before classification</span>
             </label>
             <label class="checkbox_label" for="expressions_show_default">
                 <input id="expressions_show_default" type="checkbox">
-                <span>Show default images (emojis) if sprite missing</span>
+                <span data-i18n="Show default images (emojis) if sprite missing">Show default images (emojis) if sprite missing</span>
             </label>
             <label id="image_type_block" class="checkbox_label" for="image_type_toggle">
                 <input id="image_type_toggle" type="checkbox">
-                <span>Image Type - talkinghead (extras)</span>
+                <span data-i18n="Image Type - talkinghead (extras)">Image Type - talkinghead (extras)</span>
             </label>
             <div class="expression_api_block m-b-1 m-t-1">
-                <label for="expression_api">Classifier API</label>
-                <small>Select the API for classifying expressions.</small>
+                <label for="expression_api" data-i18n="Classifier API">Classifier API</label>
+                <small data-i18n="Select the API for classifying expressions.">Select the API for classifying expressions.</small>
                 <select id="expression_api" class="flex1 margin0">
-                    <option value="0">Local</option>
-                    <option value="1">Extras</option>
-                    <option value="2">LLM</option>
+                    <option value="0" data-i18n="Local">Local</option>
+                    <option value="1" data-i18n="Extras">Extras</option>
+                    <option value="2" data-i18n="LLM">LLM</option>
                 </select>
             </div>
             <div class="expression_llm_prompt_block m-b-1 m-t-1">
                 <label for="expression_llm_prompt" class="title_restorable">
-                    <span>LLM Prompt</span>
+                    <span data-i18n="LLM Prompt">LLM Prompt</span>
                     <div id="expression_llm_prompt_restore" title="Restore default value" class="right_menu_button">
                         <i class="fa-solid fa-clock-rotate-left fa-sm"></i>
                     </div>
                 </label>
-                <small>Will be used if the API doesn't support JSON schemas or function calling.</small>
+                <small data-i18n="Will be used if the API doesn't support JSON schemas or function calling.">Will be used if the API doesn't support JSON schemas or function calling.</small>
                 <textarea id="expression_llm_prompt" type="text" class="text_pole textarea_compact" rows="2" placeholder="Use &lcub;&lcub;labels&rcub;&rcub; special macro."></textarea>
             </div>
             <div class="expression_fallback_block m-b-1 m-t-1">
-                <label for="expression_fallback">Default / Fallback Expression</label>
-                <small>Set the default and fallback expression being used when no matching expression is found.</small>
+                <label for="expression_fallback" data-i18n="Default / Fallback Expression">Default / Fallback Expression</label>
+                <small data-i18n="Set the default and fallback expression being used when no matching expression is found.">Set the default and fallback expression being used when no matching expression is found.</small>
                 <select id="expression_fallback" class="flex1 margin0" data-i18n="Fallback Expression" placeholder="Fallback Expression"></select>
             </div>
             <div class="expression_custom_block m-b-1 m-t-1">
-                <label for="expression_custom">Custom Expressions</label>
-                <small>Can be set manually or with an <tt>/emote</tt> slash command.</small>
+                <label for="expression_custom" data-i18n="Custom Expressions">Custom Expressions</label>
+                <small><span data-i18n="Can be set manually or with an _space">Can be set manually or with an </span><tt>/emote</tt><span data-i18n="space_ slash command."> slash command.</span></small>
                 <div class="flex-container">
                     <select id="expression_custom" class="flex1 margin0"><select>
                     <i id="expression_custom_add" class="menu_button fa-solid fa-plus margin0" title="Add"></i>
                     <i id="expression_custom_remove" class="menu_button fa-solid fa-xmark margin0" title="Remove"></i>
                 </div>
             </div>
-            <div id="no_chat_expressions">
+            <div id="no_chat_expressions" data-i18n="Open a chat to see the character expressions.">
                 Open a chat to see the character expressions.
             </div>
             <div id="open_chat_expressions">
                 <div class="offline_mode">
-                    <small>You are in offline mode. Click on the image below to set the expression.</small>
+                    <small data-i18n="You are in offline mode. Click on the image below to set the expression.">You are in offline mode. Click on the image below to set the expression.</small>
                 </div>
-                <label for="expression_override">Sprite Folder Override</label>
-                <small>Use a forward slash to specify a subfolder. Example: <tt>Bob/formal</tt></small>
+                <label for="expression_override" data-i18n="Sprite Folder Override">Sprite Folder Override</label>
+                <small><span data-i18n="Use a forward slash to specify a subfolder. Example: _space">Use a forward slash to specify a subfolder. Example: </span><tt>Bob/formal</tt></small>
                 <div class="flex-container flexnowrap">
                     <input id="expression_override" type="text" class="text_pole" placeholder="Override folder name" />
                     <input id="expression_override_button" class="menu_button" type="submit" value="Submit" />
@@ -67,17 +67,17 @@
                 <div class="expression_buttons flex-container spaceEvenly">
                     <div id="expression_upload_pack_button" class="menu_button">
                         <i class="fa-solid fa-file-zipper"></i>
-                        <span>Upload sprite pack (ZIP)</span>
+                        <span data-i18n="Upload sprite pack (ZIP)">Upload sprite pack (ZIP)</span>
                     </div>
                     <div id="expression_override_cleanup_button" class="menu_button">
                         <i class="fa-solid fa-trash-can"></i>
-                        <span>Remove all image overrides</span>
+                        <span data-i18n="Remove all image overrides">Remove all image overrides</span>
                     </div>
                 </div>
-                <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>/characters/</b> folder of your user data directory and name it as the name of the character.
-                Put images with expressions there. File names should follow the pattern: <tt>[expression_label].[image_format]</tt></i></p>
+                <p class="hint"><b data-i18n="Hint:">Hint:</b> <i><span data-i18n="Create new folder in the _space">Create new folder in the </span><b>/characters/</b> <span data-i18n="folder of your user data directory and name it as the name of the character.">folder of your user data directory and name it as the name of the character.</span>
+                <span data-i18n="Put images with expressions there. File names should follow the pattern:">Put images with expressions there. File names should follow the pattern: </span><tt data-i18n="expression_label_pattern">[expression_label].[image_format]</tt></i></p>
                 <h3 id="image_list_header">
-                    <strong>Sprite set:</strong>&nbsp;<span id="image_list_header_name"></span>
+                    <strong data-i18n="Sprite set:">Sprite set:</strong>&nbsp;<span id="image_list_header_name"></span>
                 </h3>
                 <div id="image_list"></div>
 

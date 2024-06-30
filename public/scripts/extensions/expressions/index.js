@@ -1,4 +1,4 @@
-import { callPopup, eventSource, event_types, generateQuietPrompt, getRequestHeaders, online_status, saveSettingsDebounced, substituteParams } from '../../../script.js';
+import { callPopup, eventSource, event_types, generateQuietPrompt, getRequestHeaders, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types } from '../../../script.js';
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, power_user } from '../../power-user.js';
@@ -10,6 +10,8 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { isFunctionCallingSupported } from '../../openai.js';
+import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
+import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -87,6 +89,7 @@ function getFallbackExpression() {
  */
 function toggleTalkingHeadCommand(_) {
     setTalkingHeadState(!extension_settings.expressions.talkinghead);
+    return String(extension_settings.expressions.talkinghead);
 }
 
 function isVisualNovelMode() {
@@ -914,6 +917,7 @@ async function setSpriteSetCommand(_, folder) {
     // moduleWorker();
     const vnMode = isVisualNovelMode();
     await sendExpressionCall(folder, lastExpression, true, vnMode);
+    return '';
 }
 
 async function classifyCommand(_, text) {
@@ -935,7 +939,7 @@ async function classifyCommand(_, text) {
 async function setSpriteSlashCommand(_, spriteId) {
     if (!spriteId) {
         console.log('No sprite id provided');
-        return;
+        return '';
     }
 
     spriteId = spriteId.trim().toLowerCase();
@@ -955,7 +959,7 @@ async function setSpriteSlashCommand(_, spriteId) {
 
         if (!spriteItem) {
             console.log('No sprite found for search term ' + spriteId);
-            return;
+            return '';
         }
 
         label = spriteItem.label;
@@ -963,6 +967,7 @@ async function setSpriteSlashCommand(_, spriteId) {
 
     const vnMode = isVisualNovelMode();
     await sendExpressionCall(spriteFolderName, label, true, vnMode);
+    return label;
 }
 
 /**
@@ -1008,8 +1013,7 @@ async function getLlmPrompt(labels) {
     }
 
     const labelsString = labels.map(x => `"${x}"`).join(', ');
-    const prompt = substituteParams(String(extension_settings.expressions.llmPrompt))
-        .replace(/{{labels}}/gi, labelsString);
+    const prompt = substituteParamsExtended(String(extension_settings.expressions.llmPrompt), { labels: labelsString });
     return prompt;
 }
 
@@ -1187,7 +1191,7 @@ function getLastCharacterMessage() {
     const reversedChat = context.chat.slice().reverse();
 
     for (let mes of reversedChat) {
-        if (mes.is_user || mes.is_system) {
+        if (mes.is_user || mes.is_system || mes.extra?.type === system_message_types.NARRATOR) {
             continue;
         }
 
@@ -1326,10 +1330,18 @@ async function renderFallbackExpressionPicker() {
     }
 }
 
+function getCachedExpressions() {
+    if (!Array.isArray(expressionsList)) {
+        return [];
+    }
+
+    return [...expressionsList, ...extension_settings.expressions.custom].filter(onlyUnique);
+}
+
 async function getExpressionsList() {
     // Return cached list if available
     if (Array.isArray(expressionsList)) {
-        return [...expressionsList, ...extension_settings.expressions.custom].filter(onlyUnique);
+        return getCachedExpressions();
     }
 
     /**
@@ -1917,7 +1929,7 @@ function migrateSettings() {
     }
     async function addSettings() {
         const template = await renderExtensionTemplateAsync(MODULE_NAME, 'settings');
-        $('#extensions_settings').append(template);
+        $('#expressions_container').append(template);
         $('#expression_override_button').on('click', onClickExpressionOverrideButton);
         $('#expressions_show_default').on('input', onExpressionsShowDefaultInput);
         $('#expression_upload_pack_button').on('click', onClickExpressionUploadPackButton);
@@ -2033,17 +2045,31 @@ function migrateSettings() {
     });
     eventSource.on(event_types.MOVABLE_PANELS_RESET, updateVisualNovelModeDebounced);
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sprite',
+
+    const localEnumProviders = {
+        expressions: () => getCachedExpressions().map(expression => {
+            const isCustom = extension_settings.expressions.custom?.includes(expression);
+            return new SlashCommandEnumValue(expression, null, isCustom ? enumTypes.name : enumTypes.enum, isCustom ? 'C' : 'D');
+        }),
+    };
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'sprite',
         aliases: ['emote'],
         callback: setSpriteSlashCommand,
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'spriteId', [ARGUMENT_TYPE.STRING], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'spriteId',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.expressions,
+            }),
         ],
         helpString: 'Force sets the sprite for the current character.',
+        returns: 'label',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'spriteoverride',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'spriteoverride',
         aliases: ['costume'],
         callback: setSpriteSetCommand,
         unnamedArgumentList: [
@@ -2053,22 +2079,29 @@ function migrateSettings() {
         ],
         helpString: 'Sets an override sprite folder for the current character. If the name starts with a slash or a backslash, selects a sub-folder in the character-named folder. Empty value to reset to default.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'lastsprite',
-        callback: (_, value) => lastExpression[value.trim()] ?? '',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'lastsprite',
+        callback: (_, value) => lastExpression[String(value).trim()] ?? '',
         returns: 'sprite',
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'charName', [ARGUMENT_TYPE.STRING], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'character name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: commonEnumProviders.characters('character'),
+            }),
         ],
         helpString: 'Returns the last set sprite / expression for the named character.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'th',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'th',
         callback: toggleTalkingHeadCommand,
         aliases: ['talkinghead'],
         helpString: 'Character Expressions: toggles <i>Image Type - talkinghead (extras)</i> on/off.',
+        returns: ARGUMENT_TYPE.BOOLEAN,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'classify',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'classify',
         callback: classifyCommand,
         unnamedArgumentList: [
             new SlashCommandArgument(

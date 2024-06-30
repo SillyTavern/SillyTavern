@@ -1,0 +1,122 @@
+/* Fade animations with opacity */
+@keyframes fade-in {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes fade-out {
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+/* Pop animations with opacity and vertical scaling */
+@keyframes pop-in {
+    0% {
+        opacity: 0;
+        transform: scaleY(0);
+    }
+
+    /* Make the scaling faster on pop-in, otherwise it looks a bit weird */
+    33% {
+        transform: scaleY(1);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+}
+
+@keyframes pop-out {
+    0% {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scaleY(0);
+    }
+}
+
+/* Flashing for highlighting animation */
+@keyframes flash {
+
+    20%,
+    60%,
+    100% {
+        opacity: 1;
+    }
+
+    0%,
+    40%,
+    80% {
+        opacity: 0.2;
+    }
+}
+
+/* Pulsing highlight, slightly resizing the element */
+@keyframes pulse {
+    from {
+        transform: scale(1);
+        filter: brightness(1.1);
+    }
+
+    to {
+        transform: scale(1.01);
+        filter: brightness(1.3);
+    }
+}
+
+/* Ellipsis animation */
+@keyframes ellipsis {
+    0% {
+        content: ""
+    }
+
+    25% {
+        content: "."
+    }
+
+    50% {
+        content: ".."
+    }
+
+    75% {
+        content: "..."
+    }
+}
+
+/* HEINOUS */
+@keyframes infinite-spinning {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* STscript animation */
+@keyframes script_progress_pulse {
+
+    0%,
+    100% {
+        border-top-color: var(--progColor);
+    }
+
+    50% {
+        border-top-color: var(--progFlashColor);
+    }
+}

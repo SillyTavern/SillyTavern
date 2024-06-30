@@ -136,7 +136,7 @@ const disableCsrf = cliArguments.disableCsrf ?? getConfigValue('disableCsrfProte
 const basicAuthMode = cliArguments.basicAuthMode ?? getConfigValue('basicAuthMode', DEFAULT_BASIC_AUTH);
 const enableAccounts = getConfigValue('enableUserAccounts', DEFAULT_ACCOUNTS);
 
-const { UPLOADS_PATH } = require('./src/constants');
+const uploadsPath = path.join(dataRoot, require('./src/constants').UPLOADS_DIRECTORY);
 
 // CORS Settings //
 const CORS = cors({
@@ -286,7 +286,7 @@ app.use(userModule.requireLoginMiddleware);
 app.get('/api/ping', (_, response) => response.sendStatus(204));
 
 // File uploads
-app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
+app.use(multer({ dest: uploadsPath, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
 app.use(require('./src/middleware/multerMonkeyPatch'));
 
 // User data mount
@@ -303,8 +303,8 @@ app.get('/version', async function (_, response) {
 
 function cleanUploads() {
     try {
-        if (fs.existsSync(UPLOADS_PATH)) {
-            const uploads = fs.readdirSync(UPLOADS_PATH);
+        if (fs.existsSync(uploadsPath)) {
+            const uploads = fs.readdirSync(uploadsPath);
 
             if (!uploads.length) {
                 return;
@@ -312,7 +312,7 @@ function cleanUploads() {
 
             console.debug(`Cleaning uploads folder (${uploads.length} files)`);
             uploads.forEach(file => {
-                const pathToFile = path.join(UPLOADS_PATH, file);
+                const pathToFile = path.join(uploadsPath, file);
                 fs.unlinkSync(pathToFile);
             });
         }
@@ -403,6 +403,11 @@ redirect('/api/content/import', '/api/content/importURL');
 
 // Redirect deprecated moving UI endpoints
 redirect('/savemovingui', '/api/moving-ui/save');
+
+// Redirect Serp endpoints
+redirect('/api/serpapi/search', '/api/search/serpapi');
+redirect('/api/serpapi/visit', '/api/search/visit');
+redirect('/api/serpapi/transcript', '/api/search/transcript');
 
 // Moving UI
 app.use('/api/moving-ui', require('./src/endpoints/moving-ui').router);
@@ -499,8 +504,8 @@ app.use('/api/extra/classify', require('./src/endpoints/classify').router);
 // Image captioning
 app.use('/api/extra/caption', require('./src/endpoints/caption').router);
 
-// Web search extension
-app.use('/api/serpapi', require('./src/endpoints/serpapi').router);
+// Web search and scraping
+app.use('/api/search', require('./src/endpoints/search').router);
 
 // The different text generation APIs
 

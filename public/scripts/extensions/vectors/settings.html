@@ -1,12 +1,12 @@
 <div class="vectors_settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <b>Vector Storage</b>
+            <b data-i18n="Vector Storage">Vector Storage</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
             <div class="flex-container flexFlowColumn">
-                <label for="vectors_source">
+                <label for="vectors_source" data-i18n="Vectorization Source">
                     Vectorization Source
                 </label>
                 <select id="vectors_source" class="text_pole">
@@ -14,37 +14,41 @@
                     <option value="extras">Extras</option>
                     <option value="palm">Google MakerSuite</option>
                     <option value="llamacpp">llama.cpp</option>
-                    <option value="transformers">Local (Transformers)</option>
+                    <option value="transformers" data-i18n="Local (Transformers)">Local (Transformers)</option>
                     <option value="mistral">MistralAI</option>
                     <option value="nomicai">NomicAI</option>
                     <option value="ollama">Ollama</option>
                     <option value="openai">OpenAI</option>
                     <option value="togetherai">TogetherAI</option>
+                    <option value="vllm">vLLM</option>
                 </select>
             </div>
             <div class="flex-container flexFlowColumn" id="ollama_vectorsModel">
-                <label for="vectors_ollama_model">
+                <label for="vectors_ollama_model" data-i18n="Vectorization Model">
                     Vectorization Model
                 </label>
                 <input id="vectors_ollama_model" class="text_pole" type="text" placeholder="Model tag, e.g. llama3" />
                 <label for="vectors_ollama_keep" class="checkbox_label" title="When checked, the model will not be unloaded after use.">
                     <input id="vectors_ollama_keep" type="checkbox" />
-                    <span>Keep model in memory</span>
+                    <span data-i18n="Keep model in memory">Keep model in memory</span>
                 </label>
-                <i>
-                    Hint: Download models and set the URL in the API connection settings.
+                <div>
+                    The model must be downloaded first! Do it with the <code>ollama pull</code> command or <a href="#" id="vectors_ollama_pull">click here</a>.
+                </div>
+                <i data-i18n="Hint: Set the URL in the API connection settings.">
+                    Hint: Set the URL in the API connection settings.
                 </i>
             </div>
             <div class="flex-container flexFlowColumn" id="llamacpp_vectorsModel">
-                <span>
+                <span data-i18n="The server MUST be started with the --embedding flag to use this feature!">
                     The server MUST be started with the <code>--embedding</code> flag to use this feature!
                 </span>
-                <i>
+                <i data-i18n="Hint: Set the URL in the API connection settings.">
                     Hint: Set the URL in the API connection settings.
                 </i>
             </div>
             <div class="flex-container flexFlowColumn" id="openai_vectorsModel">
-                <label for="vectors_openai_model">
+                <label for="vectors_openai_model" data-i18n="Vectorization Model">
                     Vectorization Model
                 </label>
                 <select id="vectors_openai_model" class="text_pole">
@@ -54,7 +58,7 @@
                 </select>
             </div>
             <div class="flex-container flexFlowColumn" id="cohere_vectorsModel">
-                <label for="vectors_cohere_model">
+                <label for="vectors_cohere_model" data-i18n="Vectorization Model">
                     Vectorization Model
                 </label>
                 <select id="vectors_cohere_model" class="text_pole">
@@ -68,7 +72,7 @@
                 </select>
             </div>
             <div class="flex-container flexFlowColumn" id="together_vectorsModel">
-                <label for="vectors_togetherai_model">
+                <label for="vectors_togetherai_model" data-i18n="Vectorization Model">
                     Vectorization Model
                 </label>
                 <select id="vectors_togetherai_model" class="text_pole">
@@ -82,6 +86,15 @@
                     <option value="bert-base-uncased">Bert Base Uncased</option>
                 </select>
             </div>
+            <div class="flex-container flexFlowColumn" id="vllm_vectorsModel">
+                <label for="vectors_vllm_model" data-i18n="Vectorization Model">
+                    Vectorization Model
+                </label>
+                <input id="vectors_vllm_model" class="text_pole" type="text" placeholder="Model name, e.g. intfloat/e5-mistral-7b-instruct" />
+                <i data-i18n="Hint: Set the URL in the API connection settings.">
+                    Hint: Set the URL in the API connection settings.
+                </i>
+            </div>
 
             <small id="vectors_modelWarning">
                 <i class="fa-solid fa-exclamation-triangle"></i>
@@ -92,7 +105,7 @@
 
             <div class="flex-container flexFlowColumn" id="nomicai_apiKey">
                 <label for="api_key_nomicai">
-                    <span>NomicAI API Key</span>
+                    <span data-i18n="NomicAI API Key">NomicAI API Key</span>
                 </label>
                 <div class="flex-container">
                     <input id="api_key_nomicai" name="api_key_nomicai" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
@@ -107,48 +120,54 @@
             <div class="flex-container marginTopBot5">
                 <div class="flex-container flex1 flexFlowColumn" title="How many last messages will be matched for relevance.">
                     <label for="vectors_query">
-                        <span>Query messages</span>
+                        <small data-i18n="Query messages">Query messages</small>
                     </label>
-                    <input type="number" id="vectors_query" class="text_pole widthUnset" min="1" max="99" />
+                    <input type="number" id="vectors_query" class="text_pole" min="1" max="99" />
                 </div>
                 <div class="flex-container flex1 flexFlowColumn" title="Cut-off score for relevance. Helps to filter out irrelevant data.">
                     <label for="vectors_query">
-                        <span>Score threshold</span>
+                        <small data-i18n="Score threshold">Score threshold</small>
                     </label>
-                    <input type="number" id="vectors_score_threshold" class="text_pole widthUnset" min="0" max="1" step="0.05" />
+                    <input type="number" id="vectors_score_threshold" class="text_pole" min="0" max="1" step="0.05" />
+                </div>
+                <div class="flex-container flex1 flexFlowColumn" title="Prioritize chunking on the preferred delimiter.">
+                    <label for="vectors_force_chunk_delimiter">
+                        <small data-i18n="Chunk boundary">Chunk boundary</small>
+                    </label>
+                    <textarea id="vectors_force_chunk_delimiter" class="text_pole" rows="1" placeholder="(None)"></textarea>
                 </div>
             </div>
 
             <div class="flex-container">
                 <label class="checkbox_label expander" for="vectors_include_wi" title="Query results can activate World Info entries.">
                     <input id="vectors_include_wi" type="checkbox" class="checkbox">
-                    Include in World Info Scanning
+                    <span data-i18n="Include in World Info Scanning">Include in World Info Scanning</span>
                 </label>
             </div>
 
             <hr>
 
-            <h4>
+            <h4 data-i18n="World Info settings">
                 World Info settings
             </h4>
 
             <label class="checkbox_label" for="vectors_enabled_world_info" title="Enable activation of World Info entries based on vector similarity.">
                 <input id="vectors_enabled_world_info" type="checkbox" class="checkbox">
-                Enabled for World Info
+                <span data-i18n="Enable for World Info">Enable for World Info</span>
             </label>
 
             <div id="vectors_world_info_settings" class="marginTopBot5">
                 <div class="flex-container">
                     <label for="vectors_enabled_for_all" class="checkbox_label">
                         <input id="vectors_enabled_for_all" type="checkbox" />
-                        <span>Enabled for all entries</span>
+                        <span data-i18n="Enabled for all entries">Enabled for all entries</span>
                     </label>
                     <ul class="margin0">
                         <li>
-                            <small>Checked: all entries except ❌ status can be activated.</small>
+                            <small data-i18n="Checked: all entries except ❌ status can be activated.">Checked: all entries except ❌ status can be activated.</small>
                         </li>
                         <li>
-                            <small>Unchecked: only entries with 🔗 status can be activated.</small>
+                            <small data-i18n="Unchecked: only entries with ❌ status can be activated.">Unchecked: only entries with 🔗 status can be activated.</small>
                         </li>
                     </ul>
                 </div>
@@ -158,7 +177,7 @@
                     </div>
                     <div class="flex1" title="Maximum number of entries to be activated">
                         <label for="vectors_max_entries" >
-                            <small>Max Entries</small>
+                            <small data-i18n="Max Entries">Max Entries</small>
                         </label>
                         <input id="vectors_max_entries" type="number" class="text_pole widthUnset" min="1" max="9999" />
                     </div>
@@ -168,13 +187,13 @@
                 </div>
             </div>
 
-            <h4>
+            <h4 data-i18n="File vectorization settings">
                 File vectorization settings
             </h4>
 
             <label class="checkbox_label" for="vectors_enabled_files">
                 <input id="vectors_enabled_files" type="checkbox" class="checkbox">
-                Enabled for files
+                <span data-i18n="Enable for files">Enable for files</span>
             </label>
 
             <div id="vectors_files_settings" class="marginTopBot5">
@@ -186,152 +205,153 @@
                     <i class="fa-solid fa-flask" title="Experimental feature"></i>
                 </label>
                 <div class="flex justifyCenter" title="These settings apply to files attached directly to messages.">
-                    <span>Message attachments</span>
+                    <span data-i18n="Message attachments">Message attachments</span>
                 </div>
                 <div class="flex-container">
                     <div class="flex1" title="Only files past this size will be vectorized.">
                         <label for="vectors_size_threshold">
-                            <small>Size threshold (KB)</small>
+                            <small data-i18n="Size threshold (KB)">Size threshold (KB)</small>
                         </label>
                         <input id="vectors_size_threshold" type="number" class="text_pole" min="1" max="99999" />
                     </div>
                     <div class="flex1" title="Chunk size for file splitting.">
                         <label for="vectors_chunk_size">
-                            <small>Chunk size (chars)</small>
+                            <small data-i18n="Chunk size (chars)">Chunk size (chars)</small>
                         </label>
                         <input id="vectors_chunk_size" type="number" class="text_pole" min="1" max="99999" />
                     </div>
                     <div class="flex1" title="The overlap between adjacent chunks in % from chunk size. The overlap text is trimmed to sentence boundaries. 0 = disabled.">
                         <label for="vectors_overlap_percent">
-                            <small>Chunk overlap (%)</small>
+                            <small data-i18n="Chunk overlap (%)">Chunk overlap (%)</small>
                         </label>
                         <input id="vectors_overlap_percent" type="number" class="text_pole" min="0" max="99" step="1" />
                     </div>
                     <div class="flex1" title="How many chunks to retrieve when querying.">
                         <label for="vectors_chunk_count">
-                            <small>Retrieve chunks</small>
+                            <small data-i18n="Retrieve chunks">Retrieve chunks</small>
                         </label>
                         <input id="vectors_chunk_count" type="number" class="text_pole" min="1" max="99999" />
                     </div>
                 </div>
                 <div class="flex justifyCenter" title="These settings apply to files stored in the Data Bank.">
-                    <span>Data Bank files</span>
+                    <span data-i18n="Data Bank files">Data Bank files</span>
                 </div>
                 <div class="flex-container">
                     <div class="flex1" title="Only files past this size will be vectorized.">
                         <label for="vectors_size_threshold_db">
-                            <small>Size threshold (KB)</small>
+                            <small data-i18n="Size threshold (KB)">Size threshold (KB)</small>
                         </label>
                         <input id="vectors_size_threshold_db" type="number" class="text_pole" min="1" max="99999" />
                     </div>
                     <div class="flex1" title="Chunk size for file splitting.">
                         <label for="vectors_chunk_size_db">
-                            <small>Chunk size (chars)</small>
+                            <small data-i18n="Chunk size (chars)">Chunk size (chars)</small>
                         </label>
                         <input id="vectors_chunk_size_db" type="number" class="text_pole" min="1" max="99999" />
                     </div>
                     <div class="flex1" title="The overlap between adjacent chunks in % from chunk size. The overlap text is trimmed to sentence boundaries. 0 = disabled.">
                         <label for="vectors_overlap_percent_db">
-                            <small>Chunk overlap (%)</small>
+                            <small data-i18n="Chunk overlap (%)">Chunk overlap (%)</small>
                         </label>
                         <input id="vectors_overlap_percent_db" type="number" class="text_pole" min="0" max="99" step="1" />
                     </div>
                     <div class="flex1" title="How many chunks to retrieve when querying.">
                         <label for="vectors_chunk_count_db">
-                            <small>Retrieve chunks</small>
+                            <small data-i18n="Retrieve chunks">Retrieve chunks</small>
                         </label>
                         <input id="vectors_chunk_count_db" type="number" class="text_pole" min="1" max="99999" />
                     </div>
                 </div>
                 <div class="flex-container flexFlowColumn">
                     <label for="vectors_file_template_db">
-                        <span>Injection Template</span>
+                        <span data-i18n="Injection Template">Injection Template</span>
                     </label>
                     <textarea id="vectors_file_template_db" class="margin0 text_pole textarea_compact" rows="3" placeholder="Use &lcub;&lcub;text&rcub;&rcub; macro to specify the position of retrieved text."></textarea>
-                    <label for="vectors_file_position_db">Injection Position</label>
+                    <label for="vectors_file_position_db" data-i18n="Injection Position">Injection Position</label>
                     <div class="radio_group">
                         <label>
                             <input type="radio" name="vectors_file_position_db" value="2" />
-                            <span>Before Main Prompt / Story String</span>
+                            <span data-i18n="Before Main Prompt / Story String">Before Main Prompt / Story String</span>
                         </label>
                         <!--Keep these as 0 and 1 to interface with the setExtensionPrompt function-->
                         <label>
                             <input type="radio" name="vectors_file_position_db" value="0" />
-                            <span>After Main Prompt / Story String</span>
+                            <span data-i18n="After Main Prompt / Story String">After Main Prompt / Story String</span>
                         </label>
                         <label for="vectors_file_depth_db" title="How many messages before the current end of the chat." data-i18n="[title]How many messages before the current end of the chat.">
                             <input type="radio" name="vectors_file_position_db" value="1" />
-                            <span>In-chat @ Depth</span>
+                            <span data-i18n="In-chat @ Depth">In-chat @ Depth</span>
                             <input id="vectors_file_depth_db" class="text_pole widthUnset" type="number" min="0" max="999" />
                             <span>as</span>
                             <select id="vectors_file_depth_role_db"  class="text_pole widthNatural">
-                                <option value="0">System</option>
-                                <option value="1">User</option>
-                                <option value="2">Assistant</option>
+                                <option value="0" data-i18n="System">System</option>
+                                <option value="1" data-i18n="User">User</option>
+                                <option value="2" data-i18n="Assistant">Assistant</option>
                             </select>
                         </label>
                     </div>
                 </div>
                 <div class="flex-container">
                     <div id="vectors_files_vectorize_all" class="menu_button menu_button_icon" title="Vectorize all files in the Data Bank and current chat.">
-                        Vectorize All
+                        <span data-i18n="Vectorize All">Vectorize All</span>
                     </div>
                     <div id="vectors_files_purge" class="menu_button menu_button_icon" title="Purge all file vectors in the Data Bank and current chat.">
-                        Purge Vectors
+                        <span data-i18n="Purge Vectors">Purge Vectors</span>
                     </div>
                 </div>
             </div>
 
             <hr>
 
-            <h4>
+            <h4 data-i18n="Chat vectorization settings">
                 Chat vectorization settings
             </h4>
             <label class="checkbox_label" for="vectors_enabled_chats">
                 <input id="vectors_enabled_chats" type="checkbox" class="checkbox">
-                Enabled for chat messages
+                <span data-i18n="Enabled for chat messages">Enabled for chat messages</span>
             </label>
 
             <hr>
 
             <div id="vectors_chats_settings">
                 <div id="vectors_advanced_settings">
-                    <label for="vectors_template">
+                    <label for="vectors_template" data-i18n="Injection Template">
                         Injection Template
                     </label>
                     <textarea id="vectors_template" class="text_pole textarea_compact" rows="3" placeholder="Use &lcub;&lcub;text&rcub;&rcub; macro to specify the position of retrieved text."></textarea>
-                    <label for="vectors_position">Injection Position</label>
+                    <label for="vectors_position" data-i18n="Injection Position">Injection Position</label>
                     <div class="radio_group">
                         <label>
                             <input type="radio" name="vectors_position" value="2" />
-                            Before Main Prompt / Story String
+                            <span data-i18n="Before Main Prompt / Story String">Before Main Prompt / Story String</span>
                         </label>
                         <!--Keep these as 0 and 1 to interface with the setExtensionPrompt function-->
                         <label>
                             <input type="radio" name="vectors_position" value="0" />
-                            After Main Prompt / Story String
+                            <span data-i18n="After Main Prompt / Story String">After Main Prompt / Story String</span>
                         </label>
                         <label for="vectors_depth" title="How many messages before the current end of the chat." data-i18n="[title]How many messages before the current end of the chat.">
                             <input type="radio" name="vectors_position" value="1" />
-                            In-chat @ Depth <input id="vectors_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
+                            <span data-i18n="In-chat @ Depth">In-chat @ Depth </span>
+                            <input id="vectors_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
                         </label>
                     </div>
                     <div class="flex-container">
                         <div class="flex1" title="Can increase the retrieval quality for the cost of processing. 0 = disabled.">
                             <label for="vectors_message_chunk_size">
-                                <small>Chunk size (chars)</small>
+                                <small data-i18n="Chunk size (chars)">Chunk size (chars)</small>
                             </label>
                             <input id="vectors_message_chunk_size" type="number" class="text_pole widthUnset" min="0" max="9999" />
                         </div>
                         <div class="flex1" title="Prevents last N messages from being placed out of order.">
                             <label for="vectors_protect">
-                                <small>Retain#</small>
+                                <small data-i18n="Retain#">Retain#</small>
                             </label>
                             <input type="number" id="vectors_protect" class="text_pole widthUnset" min="1" max="9999" />
                         </div>
                         <div class="flex1" title="How many past messages to insert as memories.">
                             <label for="vectors_insert">
-                                <small>Insert#</small>
+                                <small data-i18n="Insert#">Insert#</small>
                             </label>
                             <input type="number" id="vectors_insert" class="text_pole widthUnset" min="1" max="9999" />
                         </div>
@@ -340,43 +360,43 @@
                     <div class="flex-container flexFlowColumn">
                         <div class="flex-container alignitemscenter justifyCenter">
                             <i class="fa-solid fa-flask" title="Summarization for vectors is an experimental feature that may improve vectors or may worsen them. Use at your own discretion."></i>
-                            <span>Vector Summarization</span>
+                            <span data-i18n="Vector Summarization">Vector Summarization</span>
                         </div>
                         <label class="checkbox_label expander" for="vectors_summarize" title="Summarize chat messages before generating embeddings.">
                             <input id="vectors_summarize" type="checkbox" class="checkbox">
-                            Summarize chat messages for vector generation
+                            <span data-i18n="Summarize chat messages for vector generation">Summarize chat messages for vector generation</span>
                         </label>
-                        <i class="failure">Warning: This will slow down vector generation drastically, as all messages have to be summarized first.</i>
+                        <i class="failure" data-i18n="Warning: This will slow down vector generation drastically, as all messages have to be summarized first.">Warning: This will slow down vector generation drastically, as all messages have to be summarized first.</i>
 
                         <label class="checkbox_label expander" for="vectors_summarize_user" title="Summarize sent chat messages before generating embeddings.">
                             <input id="vectors_summarize_user" type="checkbox" class="checkbox">
-                            Summarize chat messages when sending
+                            <span data-i18n="Summarize chat messages when sending">Summarize chat messages when sending</span>
                         </label>
-                        <i class="failure">Warning: This might cause your sent messages to take a bit to process and slow down response time.</i>
+                        <i class="failure" data-i18n="Warning: This might cause your sent messages to take a bit to process and slow down response time.">Warning: This might cause your sent messages to take a bit to process and slow down response time.</i>
 
-                        <label for="vectors_summary_source">Summarize with:</label>
+                        <label for="vectors_summary_source" title="Summarize with:">Summarize with:</label>
                         <select id="vectors_summary_source" class="text_pole">
-                            <option value="main">Main API</option>
-                            <option value="extras">Extras API</option>
+                            <option value="main" data-i18n="Main API">Main API</option>
+                            <option value="extras" data-i18n="Extras API">Extras API</option>
                         </select>
 
-                        <label for="vectors_summary_prompt">Summary Prompt:</label>
-                        <small>Only used when Main API is selected.</small>
+                        <label for="vectors_summary_prompt" title="Summary Prompt:">Summary Prompt:</label>
+                        <small data-i18n="Only used when Main API is selected.">Only used when Main API is selected.</small>
                         <textarea id="vectors_summary_prompt" class="text_pole textarea_compact" rows="6" placeholder="This prompt will be sent to AI to request the summary generation."></textarea>
                     </div>
                 </div>
-                <small>
+                <small data-i18n="Old messages are vectorized gradually as you chat. To process all previous messages, click the button below.">
                     Old messages are vectorized gradually as you chat.
                     To process all previous messages, click the button below.
                 </small>
                 <div class="flex-container">
-                    <div id="vectors_vectorize_all" class="menu_button menu_button_icon">
+                    <div id="vectors_vectorize_all" class="menu_button menu_button_icon" data-i18n="Vectorize All">
                         Vectorize All
                     </div>
-                    <div id="vectors_purge" class="menu_button menu_button_icon">
+                    <div id="vectors_purge" class="menu_button menu_button_icon" data-i18n="Purge Vectors">
                         Purge Vectors
                     </div>
-                    <div id="vectors_view_stats" class="menu_button menu_button_icon">
+                    <div id="vectors_view_stats" class="menu_button menu_button_icon" data-i18n="View Stats">
                         View Stats
                     </div>
                 </div>
