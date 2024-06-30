@@ -681,27 +681,19 @@ async function createBackupArchive(handle, response) {
 }
 
 /**
- * Checks if any admin users are not password protected. If so, logs a warning.
- * @returns {Promise<void>}
+ * Gets all of the users.
+ * @returns {Promise<User[]>}
  */
-async function checkAccountsProtection() {
+async function getAllUsers() {
     if (!ENABLE_ACCOUNTS) {
-        return;
+        return [];
     }
 
     /**
      * @type {User[]}
      */
     const users = await storage.values();
-    const unprotectedUsers = users.filter(x => x.enabled && x.admin && !x.password);
-    if (unprotectedUsers.length > 0) {
-        console.warn(color.red('The following admin users are not password protected:'));
-        unprotectedUsers.forEach(x => console.warn(color.yellow(x.handle)));
-        console.log();
-        console.warn('Please disable them or set a password in the admin panel.');
-        console.log();
-        await delay(3000);
-    }
+    return users.filter(x => !x.enabled);
 }
 
 /**
@@ -738,6 +730,6 @@ module.exports = {
     shouldRedirectToLogin,
     createBackupArchive,
     tryAutoLogin,
-    checkAccountsProtection,
+    getAllUsers,
     router,
 };
