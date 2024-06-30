@@ -624,8 +624,13 @@ export function fixToastrForDialogs() {
     // Now another case is if we only have one popup and that is currently closing. In that case the toastr container exists,
     // but we don't have an open dialog to move it into. It's just inside the existing one that will be gone in milliseconds.
     // To prevent new toasts from being showing up in there and then vanish in an instant,
-    // we move the toastr back to the main body
+    // we move the toastr back to the main body, or delete if its empty
     if (!dlg && isAlreadyPresent) {
-        document.body.appendChild(toastContainer);
+        if (!toastContainer.childNodes.length) {
+            toastContainer.remove();
+        } else {
+            document.body.appendChild(toastContainer);
+            toastContainer.classList.add('toast-top-center');
+        }
     }
 }
