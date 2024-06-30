@@ -43,7 +43,6 @@ import {
     saveGroupChat,
     getGroups,
     generateGroupWrapper,
-    deleteGroup,
     is_group_generating,
     resetSelectedGroup,
     select_group_chats,
@@ -228,7 +227,7 @@ import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, de
 import { initPresetManager } from './scripts/preset-manager.js';
 import { MacrosParser, evaluateMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
-import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
+import { POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { ScraperManager } from './scripts/scrapers.js';
 import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
@@ -266,8 +265,6 @@ await new Promise((resolve) => {
 });
 
 showLoader();
-// Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
-document.getElementById('preloader').remove();
 
 // Configure toast library:
 toastr.options.escapeHtml = true; // Prevent raw HTML inserts
@@ -7829,6 +7826,8 @@ window['SillyTavern'].getContext = function () {
         registerDataBankScraper: ScraperManager.registerDataBankScraper,
         callPopup: callPopup,
         callGenericPopup: callGenericPopup,
+        showLoader: showLoader,
+        hideLoader: hideLoader,
         mainApi: main_api,
         extensionSettings: extension_settings,
         ModuleWorkerWrapper: ModuleWorkerWrapper,

@@ -35,6 +35,7 @@ export const POPUP_RESULT = {
  * @property {boolean?} [transparent=false] - Whether to display the popup in transparent mode (no background, border, shadow or anything, only its content)
  * @property {boolean?} [allowHorizontalScrolling=false] - Whether to allow horizontal scrolling in the popup
  * @property {boolean?} [allowVerticalScrolling=false] - Whether to allow vertical scrolling in the popup
+ * @property {'slow'|'fast'|'none'?} [animation='slow'] - Animation speed for the popup (opening, closing, ...)
  * @property {POPUP_RESULT|number?} [defaultResult=POPUP_RESULT.AFFIRMATIVE] - The default result of this popup when Enter is pressed. Can be changed from `POPUP_RESULT.AFFIRMATIVE`.
  * @property {CustomPopupButton[]|string[]?} [customButtons=null] - Custom buttons to add to the popup. If only strings are provided, the buttons will be added with default options, and their result will be in order from `2` onward.
  * @property {CustomPopupInput[]?} [customInputs=null] - Custom inputs to add to the popup. The display below the content and the input box, one by one.
@@ -98,7 +99,7 @@ const showPopupHelper = {
         const result = await popup.show();
         if (typeof result === 'string' || typeof result === 'boolean') throw new Error(`Invalid popup result. CONFIRM popups only support numbers, or null. Result: ${result}`);
         return result;
-    }
+    },
 };
 
 export class Popup {
@@ -142,7 +143,7 @@ export class Popup {
      * @param {string} [inputValue=''] - The initial value of the input field
      * @param {PopupOptions} [options={}] - Additional options for the popup
      */
-    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, customInputs = null, onClosing = null, onClose = null, cropAspect = null, cropImage = null } = {}) {
+    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, animation = 'slow', defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, customInputs = null, onClosing = null, onClose = null, cropAspect = null, cropImage = null } = {}) {
         Popup.util.popups.push(this);
 
         // Make this popup uniquely identifiable
@@ -175,6 +176,7 @@ export class Popup {
         if (transparent) this.dlg.classList.add('transparent_dialogue_popup');
         if (allowHorizontalScrolling) this.dlg.classList.add('horizontal_scrolling_dialogue_popup');
         if (allowVerticalScrolling) this.dlg.classList.add('vertical_scrolling_dialogue_popup');
+        if (animation) this.dlg.classList.add('popup--animation-' + animation);
 
         // If custom button captions are provided, we set them beforehand
         this.okButton.textContent = typeof okButton === 'string' ? okButton : 'OK';
@@ -210,7 +212,7 @@ export class Popup {
         this.customInputs = customInputs;
         this.customInputs?.forEach(input => {
             if (!input.id || !(typeof input.id === 'string')) {
-                console.warn('Given custom input does not have a valid id set')
+                console.warn('Given custom input does not have a valid id set');
                 return;
             }
 
@@ -318,20 +320,20 @@ export class Popup {
             if (String(undefined) === String(resultControl.dataset.result)) return;
             if (isNaN(result)) throw new Error('Invalid result control. Result must be a number. ' + resultControl.dataset.result);
             const type = resultControl.dataset.resultEvent || 'click';
-            resultControl.addEventListener(type, () => this.complete(result));
+            resultControl.addEventListener(type, async () => await this.complete(result));
         });
 
         // Bind dialog listeners manually, so we can be sure context is preserved
-        const cancelListener = (evt) => {
-            this.complete(POPUP_RESULT.CANCELLED);
+        const cancelListener = async (evt) => {
             evt.preventDefault();
             evt.stopPropagation();
+            await this.complete(POPUP_RESULT.CANCELLED);
             window.removeEventListener('cancel', cancelListenerBound);
         };
         const cancelListenerBound = cancelListener.bind(this);
         this.dlg.addEventListener('cancel', cancelListenerBound);
 
-        const keyListener = (evt) => {
+        const keyListener = async (evt) => {
             switch (evt.key) {
                 case 'Enter': {
                     // CTRL+Enter counts as a closing action, but all other modifiers (ALT, SHIFT) should not trigger this
@@ -347,10 +349,10 @@ export class Popup {
                     if (!resultControl)
                         return;
 
-                    const result = Number(document.activeElement.getAttribute('data-result') ?? this.defaultResult);
-                    this.complete(result);
                     evt.preventDefault();
                     evt.stopPropagation();
+                    const result = Number(document.activeElement.getAttribute('data-result') ?? this.defaultResult);
+                    await this.complete(result);
                     window.removeEventListener('keydown', keyListenerBound);
 
                     break;
@@ -430,8 +432,10 @@ export class Popup {
      * - All other will return the result value as provided as `POPUP_RESULT` or a custom number value
      *
      * @param {POPUP_RESULT|number} result - The result of the popup (either an existing `POPUP_RESULT` or a custom result value)
+     *
+     * @returns {Promise<string|number|boolean?>} A promise that resolves with the value of the popup when it is completed.
      */
-    complete(result) {
+    async complete(result) {
         // In all cases besides INPUT the popup value should be the result
         /** @type {POPUP_RESULT|number|boolean|string?} */
         let value = result;
@@ -468,6 +472,8 @@ export class Popup {
 
         Popup.util.lastResult = { value, result, inputResults: this.inputResults };
         this.#hide();
+
+        return this.#promise;
     }
 
     /**
