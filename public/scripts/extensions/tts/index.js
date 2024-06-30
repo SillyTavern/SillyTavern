@@ -1037,7 +1037,6 @@ export async function initVoiceMap(unrestricted = false) {
  * @param {boolean} unrestricted - If true, will include all characters in voiceMapEntries, even if they are not in the current chat.
  */
 async function initVoiceMapInternal(unrestricted) {
-
     // Gate initialization if not enabled or TTS Provider not ready. Prevents error popups.
     const enabled = $('#tts_enabled').is(':checked');
     if (!enabled) {
