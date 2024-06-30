@@ -1,4 +1,4 @@
-import { cancelTtsPlay, eventSource, event_types, isStreamingEnabled, name2, saveSettingsDebounced, substituteParams } from '../../../script.js';
+import { cancelTtsPlay, eventSource, event_types, getCurrentChatId, isStreamingEnabled, name2, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique } from '../../utils.js';
 import { EdgeTtsProvider } from './edge.js';
@@ -1022,10 +1022,17 @@ export async function initVoiceMap(unrestricted = false) {
     }
 
     currentInitVoiceMapPromise = (async () => {
+        const initialChatId = getCurrentChatId();
         try {
             await initVoiceMapInternal(unrestricted);
         } finally {
             currentInitVoiceMapPromise = null;
+        }
+        const currentChatId = getCurrentChatId();
+
+        if (initialChatId !== currentChatId) {
+            // Chat changed during initialization, reinitialize
+            await initVoiceMap(unrestricted);
         }
     })();
 
