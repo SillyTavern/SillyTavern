@@ -14,7 +14,7 @@ export function showLoader() {
     loaderPopup = new Popup(`
         <div id="loader">
             <div id="load-spinner" class="fa-solid fa-gear fa-spin fa-3x"></div>
-        </div>`, POPUP_TYPE.DISPLAY, null, { transparent: true, animation: 'fast' });
+        </div>`, POPUP_TYPE.DISPLAY, null, { transparent: true, animation: 'none' });
 
     // No close button, loaders are not closable
     loaderPopup.closeButton.style.display = 'none';
@@ -23,19 +23,19 @@ export function showLoader() {
 }
 
 export async function hideLoader() {
-    // Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
-    // If it's present, we remove it once and then it's gone.
-    yoinkPreloader();
-
     if (!loaderPopup) {
         console.warn('There is no loader showing to hide');
         return Promise.resolve();
     }
 
     return new Promise((resolve) => {
-        //Sets up a 2-step animation. Spinner blurs/fades out, and then the loader shadow does the same  (by utilizing the popup closing transition)
+        // Spinner blurs/fades out
         $('#load-spinner').on('transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd', function () {
             $(`#${ELEMENT_ID}`).remove();
+            // Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
+            // If it's present, we remove it once and then it's gone.
+            yoinkPreloader();
+
             loaderPopup.complete(POPUP_RESULT.AFFIRMATIVE).then(() => {
                 loaderPopup = null;
                 resolve();
