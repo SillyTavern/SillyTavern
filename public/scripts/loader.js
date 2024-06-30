@@ -23,10 +23,6 @@ export function showLoader() {
 }
 
 export async function hideLoader() {
-    // Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
-    // If it's present, we remove it once and then it's gone.
-    yoinkPreloader();
-
     if (!loaderPopup) {
         console.warn('There is no loader showing to hide');
         return Promise.resolve();
@@ -38,6 +34,9 @@ export async function hideLoader() {
             $(`#${ELEMENT_ID}`)
                 //only fade out the spinner and replace with login screen
                 .animate({ opacity: 0 }, 300, function () {
+                    // Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
+                    // If it's present, we remove it once and then it's gone.
+                    yoinkPreloader();
                     $(`#${ELEMENT_ID}`).remove();
                     loaderPopup.complete(POPUP_RESULT.AFFIRMATIVE).then(() => {
                         loaderPopup = null;
