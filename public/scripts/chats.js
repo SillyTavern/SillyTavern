@@ -1526,7 +1526,13 @@ jQuery(function () {
         const fileInput = document.getElementById('file_form_input');
         if (!(fileInput instanceof HTMLInputElement)) return;
 
-        fileInput.files = event.clipboardData.files;
+        // Workaround for Firefox: Use a DataTransfer object to indirectly set fileInput.files
+        const dataTransfer = new DataTransfer();
+        for (let i = 0; i < event.clipboardData.files.length; i++) {
+            dataTransfer.items.add(event.clipboardData.files[i]);
+        }
+
+        fileInput.files = dataTransfer.files;
         await onFileAttach(fileInput.files[0]);
     });
 });
