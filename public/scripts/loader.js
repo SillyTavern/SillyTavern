@@ -6,7 +6,7 @@ const ELEMENT_ID = 'loader';
 let loaderPopup;
 
 export function showLoader() {
-    // Two loaders don't make sense
+    // Two loaders don't make sense. Don't await, we can overlay the old loader while it closes
     if (loaderPopup) loaderPopup.complete(POPUP_RESULT.CANCELLED);
 
     loaderPopup = new Popup(`
@@ -23,24 +23,28 @@ export function showLoader() {
 export async function hideLoader() {
     if (!loaderPopup) {
         console.warn('There is no loader showing to hide');
-        return;
+        return Promise.resolve();
     }
 
-    //Sets up a 2-step animation. Spinner blurs/fades out, and then the loader shadow does the same.
-    $('#load-spinner').on('transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd', function () {
-        $(`#${ELEMENT_ID}`)
-            //only fade out the spinner and replace with login screen
-            .animate({ opacity: 0 }, 300, function () {
-                $(`#${ELEMENT_ID}`).remove();
-                loaderPopup.complete(POPUP_RESULT.AFFIRMATIVE);
-                loaderPopup = null;
-            });
-    });
-
-    $('#load-spinner')
-        .css({
-            'filter': 'blur(15px)',
-            'opacity': '0',
+    return new Promise((resolve) => {
+        //Sets up a 2-step animation. Spinner blurs/fades out, and then the loader shadow does the same.
+        $('#load-spinner').on('transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd', function () {
+            $(`#${ELEMENT_ID}`)
+                //only fade out the spinner and replace with login screen
+                .animate({ opacity: 0 }, 300, function () {
+                    $(`#${ELEMENT_ID}`).remove();
+                    loaderPopup.complete(POPUP_RESULT.AFFIRMATIVE).then(() => {
+                        loaderPopup = null;
+                        resolve();
+                    });
+                });
         });
 
+        $('#load-spinner')
+            .css({
+                'filter': 'blur(15px)',
+                'opacity': '0',
+            });
+    });
 }
+

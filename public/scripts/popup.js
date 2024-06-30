@@ -98,7 +98,7 @@ const showPopupHelper = {
         const result = await popup.show();
         if (typeof result === 'string' || typeof result === 'boolean') throw new Error(`Invalid popup result. CONFIRM popups only support numbers, or null. Result: ${result}`);
         return result;
-    }
+    },
 };
 
 export class Popup {
@@ -210,7 +210,7 @@ export class Popup {
         this.customInputs = customInputs;
         this.customInputs?.forEach(input => {
             if (!input.id || !(typeof input.id === 'string')) {
-                console.warn('Given custom input does not have a valid id set')
+                console.warn('Given custom input does not have a valid id set');
                 return;
             }
 
@@ -318,20 +318,20 @@ export class Popup {
             if (String(undefined) === String(resultControl.dataset.result)) return;
             if (isNaN(result)) throw new Error('Invalid result control. Result must be a number. ' + resultControl.dataset.result);
             const type = resultControl.dataset.resultEvent || 'click';
-            resultControl.addEventListener(type, () => this.complete(result));
+            resultControl.addEventListener(type, async () => await this.complete(result));
         });
 
         // Bind dialog listeners manually, so we can be sure context is preserved
-        const cancelListener = (evt) => {
-            this.complete(POPUP_RESULT.CANCELLED);
+        const cancelListener = async (evt) => {
             evt.preventDefault();
             evt.stopPropagation();
+            await this.complete(POPUP_RESULT.CANCELLED);
             window.removeEventListener('cancel', cancelListenerBound);
         };
         const cancelListenerBound = cancelListener.bind(this);
         this.dlg.addEventListener('cancel', cancelListenerBound);
 
-        const keyListener = (evt) => {
+        const keyListener = async (evt) => {
             switch (evt.key) {
                 case 'Enter': {
                     // CTRL+Enter counts as a closing action, but all other modifiers (ALT, SHIFT) should not trigger this
@@ -347,10 +347,10 @@ export class Popup {
                     if (!resultControl)
                         return;
 
-                    const result = Number(document.activeElement.getAttribute('data-result') ?? this.defaultResult);
-                    this.complete(result);
                     evt.preventDefault();
                     evt.stopPropagation();
+                    const result = Number(document.activeElement.getAttribute('data-result') ?? this.defaultResult);
+                    await this.complete(result);
                     window.removeEventListener('keydown', keyListenerBound);
 
                     break;
@@ -430,8 +430,10 @@ export class Popup {
      * - All other will return the result value as provided as `POPUP_RESULT` or a custom number value
      *
      * @param {POPUP_RESULT|number} result - The result of the popup (either an existing `POPUP_RESULT` or a custom result value)
+     *
+     * @returns {Promise<string|number|boolean?>} A promise that resolves with the value of the popup when it is completed.
      */
-    complete(result) {
+    async complete(result) {
         // In all cases besides INPUT the popup value should be the result
         /** @type {POPUP_RESULT|number|boolean|string?} */
         let value = result;
@@ -468,6 +470,8 @@ export class Popup {
 
         Popup.util.lastResult = { value, result, inputResults: this.inputResults };
         this.#hide();
+
+        return this.#promise;
     }
 
     /**

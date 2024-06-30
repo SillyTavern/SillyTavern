@@ -1653,8 +1653,8 @@ async function buttonsCallback(args, text) {
                 const buttonElement = document.createElement('div');
                 buttonElement.classList.add('menu_button', 'result-control', 'wide100p');
                 buttonElement.dataset.result = String(result);
-                buttonElement.addEventListener('click', () => {
-                    popup?.complete(result);
+                buttonElement.addEventListener('click', async () => {
+                    await popup.complete(result);
                 });
                 buttonElement.innerText = button;
                 buttonContainer.appendChild(buttonElement);
