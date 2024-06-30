@@ -644,6 +644,13 @@ async function showExtensionsDetails() {
                 popup.complete(POPUP_RESULT.AFFIRMATIVE);
             },
         };
+
+        // If we are updating an extension, the "old" popup is still active. We should close that.
+        const oldPopup = Popup.util.popups.find(popup => popup.content.querySelector('.extensions_info'));
+        if (oldPopup) {
+            oldPopup.complete(POPUP_RESULT.CANCELLED);
+        }
+
         const popup = new Popup(`<div class="extensions_info">${html}</div>`, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, customButtons: [updateAllButton], allowVerticalScrolling: true });
         popupPromise = popup.show();
     } catch (error) {
