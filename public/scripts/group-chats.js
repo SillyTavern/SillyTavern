@@ -1576,6 +1576,8 @@ export async function openGroupById(groupId) {
     }
 
     if (!is_send_press && !is_group_generating) {
+        select_group_chats(groupId);
+
         if (selected_group !== groupId) {
             await clearChat();
             cancelTtsPlay();
@@ -1587,8 +1589,6 @@ export async function openGroupById(groupId) {
             chat.length = 0;
             await getGroupChat(groupId);
         }
-
-        select_group_chats(groupId);
     }
 }
 
