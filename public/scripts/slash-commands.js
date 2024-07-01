@@ -2762,7 +2762,7 @@ export async function sendMessageAs(args, text) {
     const isSystem = bias && !removeMacros(mesText).length;
     const compact = isTrueBoolean(args?.compact);
 
-    const character = characters.find(x => x.name === name);
+    const character = characters.find(x => x.avatar === name) ?? characters.find(x => x.name === name);
     let force_avatar, original_avatar;
 
     if (character && character.avatar !== 'none') {
