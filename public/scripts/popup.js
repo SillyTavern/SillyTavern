@@ -1,3 +1,4 @@
+import { shouldSendOnEnter } from './RossAscends-mods.js';
 import { power_user } from './power-user.js';
 import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
 
@@ -344,9 +345,17 @@ export class Popup {
                     if (this.dlg != document.activeElement?.closest('.popup'))
                         return;
 
-                    // Check if the current focus is a result control. Only should we apply the compelete action
+                    // Check if the current focus is a result control. Only should we apply the complete action
                     const resultControl = document.activeElement?.closest('.result-control');
                     if (!resultControl)
+                        return;
+
+                    // Check if we are inside an input type text or a textarea field and send on enter is disabled
+                    const textarea = document.activeElement?.closest('textarea');
+                    if (textarea instanceof HTMLTextAreaElement && !shouldSendOnEnter())
+                        return;
+                    const input = document.activeElement?.closest('input[type="text"]');
+                    if (input instanceof HTMLInputElement && !shouldSendOnEnter())
                         return;
 
                     evt.preventDefault();
