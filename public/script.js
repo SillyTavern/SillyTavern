@@ -154,6 +154,7 @@ import {
     ensureImageFormatSupported,
     flashHighlight,
     isTrueBoolean,
+    throttle,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -9169,24 +9170,16 @@ jQuery(async function () {
         chooseBogusFolder($(this), tagId);
     });
 
-    const editTextAreaInputThrottle = (func, limit) => {
-        let inThrottle;
-        return (...args) => {
-            if (!inThrottle) {
-                func(...args);
-                inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
-            }
-        };
-    };
-    const editTextAreaAdjustHeight = editTextAreaInputThrottle(e => {
-        scroll_holder = document.getElementById('chat').scrollTop;
+    const editTextAreaAdjustHeight = throttle(e => {
+        scroll_holder = chatElement[0].scrollTop;
         e.style.height = '0';
-        e.style.height = 4 + e.scrollHeight + 'px';
+        e.style.height = `${e.scrollHeight + 3}px`;
         is_use_scroll_holder = true;
-    }, 200);
+    }, debounce_timeout.standard);
     document.addEventListener('input', e => {
-        if (e.target.classList.contains('edit_textarea')) editTextAreaAdjustHeight(e.target);
+        if (e.target instanceof HTMLTextAreaElement && e.target.classList.contains('edit_textarea')) {
+            editTextAreaAdjustHeight(e.target);
+        }
     });
     document.getElementById('chat').addEventListener('scroll', function() {
         if (is_use_scroll_holder) {
