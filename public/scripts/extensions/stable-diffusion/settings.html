@@ -47,6 +47,7 @@
                 <option value="auto">Stable Diffusion Web UI (AUTOMATIC1111)</option>
                 <option value="horde">Stable Horde</option>
                 <option value="togetherai">TogetherAI</option>
+                <option value="stability">Stability AI</option>
             </select>
             <div data-sd-source="auto">
                 <label for="sd_auto_url">SD Web UI URL</label>
@@ -189,7 +190,40 @@
                     </label>
                 </div>
             </div>
-
+            <div data-sd-source="stability">
+                <label for="sd_stability_url">Stability AI API URL</label>
+                <div class="flex-container flexnowrap">
+                    <input id="sd_stability_url" type="text" class="text_pole" data-i18n="[placeholder]sd_stability_url" placeholder="Example: https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image" value="" />
+                    <div id="sd_stability_validate" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-check"></i>
+                        <span data-i18n="Connect">
+                            Connect
+                        </span>
+                    </div>
+                </div>
+                <label for="sd_stability_key">API Key</label>
+                <input id="sd_stability_key" type="password" class="text_pole" placeholder="Enter your Stability AI API key" />
+                <i>You can find your API key in the Stability AI dashboard.</i>
+                <div class="flex-container">
+                    <div class="flex1">
+                        <label for="sd_stability_engine">Engine</label>
+                        <select id="sd_stability_engine">
+                            <option value="stable-diffusion-xl-1024-v1-0">SDXL 1.0</option>
+                            <option value="stable-diffusion-v1-5">SD 1.5</option>
+                             <!-- More can be added -->
+                        </select>
+                    </div>
+                    <div class="flex1">
+                        <label for="sd_stability_style_preset">Style Preset</label>
+                        <select id="sd_stability_style_preset">
+                            <option value="enhance">Enhance</option>
+                            <option value="anime">Anime</option>
+                            <option value="photographic">Photographic</option>
+                            <!-- More can be added -->
+                        </select>
+                    </div>
+                </div>                
+            </div>
             <div class="flex-container">
                 <div class="flex1">
                     <label for="sd_model" data-i18n="Model">Model</label>
