@@ -9169,14 +9169,26 @@ jQuery(async function () {
         chooseBogusFolder($(this), tagId);
     });
 
-    $(document).on('input', '.edit_textarea', function () {
-        scroll_holder = $('#chat').scrollTop();
-        $(this).height(0).height(this.scrollHeight);
+    /**
+     * Sets the scroll height of the edit textarea to fit the content.
+     * @param {HTMLTextAreaElement} e Textarea element to auto-fit
+     */
+    function autoFitEditTextArea(e) {
+        scroll_holder = chatElement[0].scrollTop;
+        e.style.height = '0';
+        e.style.height = `${e.scrollHeight + 4}px`;
         is_use_scroll_holder = true;
+    }
+    const autoFitEditTextAreaDebounced = debounce(autoFitEditTextArea, debounce_timeout.short);
+    document.addEventListener('input', e => {
+        if (e.target instanceof HTMLTextAreaElement && e.target.classList.contains('edit_textarea')) {
+            const immediately = e.target.scrollHeight > e.target.offsetHeight || e.target.value === '';
+            immediately ? autoFitEditTextArea(e.target) : autoFitEditTextAreaDebounced(e.target);
+        }
     });
-    $('#chat').on('scroll', function () {
+    document.getElementById('chat').addEventListener('scroll', function () {
         if (is_use_scroll_holder) {
-            $('#chat').scrollTop(scroll_holder);
+            this.scrollTop = scroll_holder;
             is_use_scroll_holder = false;
         }
     });
