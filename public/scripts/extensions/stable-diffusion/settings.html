@@ -191,9 +191,9 @@
                 </div>
             </div>
             <div data-sd-source="stability">
-                <label for="sd_stability_url">Stability AI API URL</label>
+                <label for="sd_stability_key">API Key</label>
                 <div class="flex-container flexnowrap">
-                    <input id="sd_stability_url" type="text" class="text_pole" data-i18n="[placeholder]sd_stability_url" placeholder="Example: https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image" value="" />
+                    <input id="sd_stability_key" type="password" class="text_pole flex1" placeholder="Enter your Stability AI API key" />
                     <div id="sd_stability_validate" class="menu_button menu_button_icon">
                         <i class="fa-solid fa-check"></i>
                         <span data-i18n="Connect">
@@ -201,29 +201,73 @@
                         </span>
                     </div>
                 </div>
-                <label for="sd_stability_key">API Key</label>
-                <input id="sd_stability_key" type="password" class="text_pole" placeholder="Enter your Stability AI API key" />
                 <i>You can find your API key in the Stability AI dashboard.</i>
+            
                 <div class="flex-container">
                     <div class="flex1">
                         <label for="sd_stability_engine">Engine</label>
                         <select id="sd_stability_engine">
-                            <option value="stable-diffusion-xl-1024-v1-0">SDXL 1.0</option>
-                            <option value="stable-diffusion-v1-5">SD 1.5</option>
-                             <!-- More can be added -->
+                            <option value="stable-image-ultra">Stable Image Ultra</option>
+                            <option value="stable-image-core">Stable Image Core</option>
+                            <option value="stable-diffusion-3">Stable Diffusion 3</option>
                         </select>
                     </div>
                     <div class="flex1">
                         <label for="sd_stability_style_preset">Style Preset</label>
                         <select id="sd_stability_style_preset">
-                            <option value="enhance">Enhance</option>
                             <option value="anime">Anime</option>
+                            <option value="3d-model">3D Model</option>
+                            <option value="analog-film">Analog Film</option>
+                            <option value="cinematic">Cinematic</option>
+                            <option value="comic-book">Comic Book</option>
+                            <option value="digital-art">Digital Art</option>
+                            <option value="enhance">Enhance</option>
+                            <option value="fantasy-art">Fantasy Art</option>
+                            <option value="isometric">Isometric</option>
+                            <option value="line-art">Line Art</option>
+                            <option value="low-poly">Low Poly</option>
+                            <option value="modeling-compound">Modeling Compound</option>
+                            <option value="neon-punk">Neon Punk</option>
+                            <option value="origami">Origami</option>
                             <option value="photographic">Photographic</option>
-                            <!-- More can be added -->
+                            <option value="pixel-art">Pixel Art</option>
+                            <option value="tile-texture">Tile Texture</option>
                         </select>
                     </div>
-                </div>                
-            </div>
+                </div>
+            
+                <div class="flex-container">
+                    <div class="flex1">
+                        <label for="sd_stability_aspect_ratio">Aspect Ratio</label>
+                        <select id="sd_stability_aspect_ratio">
+                            <option value="16:9">16:9</option>
+                            <option value="1:1">1:1</option>
+                            <option value="21:9">21:9</option>
+                            <option value="2:3">2:3</option>
+                            <option value="3:2">3:2</option>
+                            <option value="4:5">4:5</option>
+                            <option value="5:4">5:4</option>
+                            <option value="9:16">9:16</option>
+                            <option value="9:21">9:21</option>
+                        </select>
+                    </div>
+                    <div class="flex1">
+                        <label for="sd_stability_seed">Seed</label>
+                        <input id="sd_stability_seed" type="number" class="text_pole" value="0" min="0" max="4294967295" />
+                    </div>
+                </div>
+            
+                <div class="flex-container">
+                    <div class="flex1">
+                        <label for="sd_stability_output_format">Output Format</label>
+                        <select id="sd_stability_output_format">
+                            <option value="png">PNG</option>
+                            <option value="webp">WebP</option>
+                            <option value="jpeg">JPEG</option>
+                        </select>
+                    </div>
+                </div>
+            </div>                             
             <div class="flex-container">
                 <div class="flex1">
                     <label for="sd_model" data-i18n="Model">Model</label>
