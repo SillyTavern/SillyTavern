@@ -154,7 +154,6 @@ import {
     ensureImageFormatSupported,
     flashHighlight,
     isTrueBoolean,
-    throttle,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -9170,18 +9169,24 @@ jQuery(async function () {
         chooseBogusFolder($(this), tagId);
     });
 
-    const editTextAreaAdjustHeight = throttle(e => {
+    /**
+     * Sets the scroll height of the edit textarea to fit the content.
+     * @param {HTMLTextAreaElement} e Textarea element to auto-fit
+     */
+    function autoFitEditTextArea(e) {
         scroll_holder = chatElement[0].scrollTop;
         e.style.height = '0';
-        e.style.height = `${e.scrollHeight + 3}px`;
+        e.style.height = `${e.scrollHeight + 4}px`;
         is_use_scroll_holder = true;
-    }, debounce_timeout.standard);
+    }
+    const autoFitEditTextAreaDebounced = debounce(autoFitEditTextArea, debounce_timeout.short);
     document.addEventListener('input', e => {
         if (e.target instanceof HTMLTextAreaElement && e.target.classList.contains('edit_textarea')) {
-            editTextAreaAdjustHeight(e.target);
+            const immediately = e.target.scrollHeight > e.target.offsetHeight || e.target.value === '';
+            immediately ? autoFitEditTextArea(e.target) : autoFitEditTextAreaDebounced(e.target);
         }
     });
-    document.getElementById('chat').addEventListener('scroll', function() {
+    document.getElementById('chat').addEventListener('scroll', function () {
         if (is_use_scroll_holder) {
             this.scrollTop = scroll_holder;
             is_use_scroll_holder = false;
