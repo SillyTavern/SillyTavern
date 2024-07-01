@@ -368,7 +368,7 @@ function toggleSourceControls() {
         const source = $(this).data('sd-source').split(',');
         $(this).toggle(source.includes(extension_settings.sd.source));
     });
-    const stabilityHiddenControls = $('#sd_steps, #sd_scale, #sd_sampler, #sd_scheduler, #sd_width, #sd_height, #sd_hr_upscaler, #sd_clip_skip');
+    const stabilityHiddenControls = $('#sd_steps, #sd_scale, #sd_sampler, #sd_scheduler, #sd_width, #sd_height, #sd_hr_upscaler, #sd_clip_skip, #sd_steps_value, #sd_scale_value');
     if (extension_settings.sd.source === sources.stability) {
         stabilityHiddenControls.hide();
         $('#sd_resolution').parent().hide();
@@ -1679,21 +1679,29 @@ async function generateStabilityImage(prompt, negativePrompt) {
 }
 
 async function loadStabilityModels() {
-    return [
-        {
-            value: 'stable-image-ultra',
-            text: 'Stable Image Ultra',
-        },
-        {
-            value: 'stable-image-core',
-            text: 'Stable Image Core',
-        },
-        {
-            value: 'stable-diffusion-3',
-            text: 'Stable Diffusion 3',
-        },
-    ];
+    if (!extension_settings.sd.stability_key) {
+        console.debug('Stability API key is not set.');
+        return [];
+    }
+
+    try {
+        const response = await fetch('/api/sd/stability/models', {
+            method: 'GET',
+            headers: getRequestHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch Stability AI models');
+        }
+
+        const data = await response.json();
+        return data.map(model => ({ value: model.id, text: model.name }));
+    } catch (error) {
+        console.error('Error fetching Stability AI models:', error);
+        return [];
+    }
 }
+
 async function loadPollinationsModels() {
     return [
         {
