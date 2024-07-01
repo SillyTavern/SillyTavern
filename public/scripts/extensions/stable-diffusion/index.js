@@ -49,6 +49,7 @@ const sources = {
     togetherai: 'togetherai',
     drawthings: 'drawthings',
     pollinations: 'pollinations',
+    stability: 'stability',
 };
 
 const initiators = {
@@ -282,6 +283,13 @@ const defaultSettings = {
     wand_visible: false,
     command_visible: false,
     interactive_visible: false,
+
+    // Stability AI settings
+    stability_api_key: '',
+    stability_engine: 'stable-image-ultra',
+    stability_style_preset: "anime",
+    stability_aspect_ratio: '1:1',
+    stability_output_format: 'png',
 };
 
 const writePromptFieldsDebounced = debounce(writePromptFields, debounce_timeout.relaxed);
@@ -1084,6 +1092,32 @@ function onComfyWorkflowChange() {
     extension_settings.sd.comfy_workflow = $('#sd_comfy_workflow').find(':selected').val();
     saveSettingsDebounced();
 }
+function onStabilityKeyInput() {
+    extension_settings.sd.stability_key = $('#sd_stability_key').val();
+    saveSettingsDebounced();
+}
+
+function onStabilityEngineChange() {
+    extension_settings.sd.stability_engine = $('#sd_stability_engine').val();
+    saveSettingsDebounced();
+}
+
+function onStabilityStylePresetChange() {
+    extension_settings.sd.stability_style_preset = $('#sd_stability_style_preset').val();
+    saveSettingsDebounced();
+}
+
+function onStabilityAspectRatioChange() {
+    extension_settings.sd.stability_aspect_ratio = $('#sd_stability_aspect_ratio').val();
+    saveSettingsDebounced();
+}
+
+function onStabilityOutputFormatChange() {
+    extension_settings.sd.stability_output_format = $('#sd_stability_output_format').val();
+    saveSettingsDebounced();
+}
+
+
 async function changeComfyWorkflow(_, name) {
     name = name.replace(/(\.json)?$/i, '.json');
     if ($(`#sd_comfy_workflow > [value="${name}"]`).length > 0) {
@@ -1585,6 +1619,13 @@ async function loadModels() {
         case sources.pollinations:
             models = await loadPollinationsModels();
             break;
+         case sources.stability:
+            models = [
+                { value: 'stable-image-ultra', text: 'Stable Image Ultra' },
+                { value: 'stable-image-core', text: 'Stable Image Core' },
+                { value: 'stable-diffusion-3', text: 'Stable Diffusion 3' },
+            ];
+            break;
     }
 
     for (const model of models) {
@@ -1598,6 +1639,33 @@ async function loadModels() {
     if (!extension_settings.sd.model && models.length > 0) {
         extension_settings.sd.model = models[0].value;
         $('#sd_model').val(extension_settings.sd.model).trigger('change');
+    }
+}
+async function generateStabilityImage(prompt, negativePrompt) {
+    const result = await fetch('/api/sd/stability/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            key: extension_settings.sd.stability_key,
+            prompt: prompt,
+            negative_prompt: negativePrompt,
+            model: extension_settings.sd.model,
+            steps: extension_settings.sd.steps,
+            cfg_scale: extension_settings.sd.scale,
+            width: extension_settings.sd.width,
+            height: extension_settings.sd.height,
+            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+            style_preset: extension_settings.sd.stability_style_preset,
+            aspect_ratio: extension_settings.sd.stability_aspect_ratio,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: extension_settings.sd.stability_output_format, data: data.image };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
     }
 }
 
@@ -2485,6 +2553,10 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             case sources.pollinations:
                 result = await generatePollinationsImage(prefixedPrompt, negativePrompt);
                 break;
+            case sources.stability:
+                result = await generateStabilityImage(prefixedPrompt, negativePrompt);
+                break;
+    
         }
 
         if (!result.data) {
@@ -3455,7 +3527,12 @@ jQuery(async () => {
     $('#sd_command_visible').on('input', onCommandVisibleInput);
     $('#sd_interactive_visible').on('input', onInteractiveVisibleInput);
     $('#sd_swap_dimensions').on('click', onSwapDimensionsClick);
-
+    $('#sd_stability_key').on('input', onStabilityKeyInput);
+    $('#sd_stability_engine').on('change', onStabilityEngineChange);
+    $('#sd_stability_style_preset').on('change', onStabilityStylePresetChange);
+    $('#sd_stability_aspect_ratio').on('change', onStabilityAspectRatioChange);
+    $('#sd_stability_output_format').on('change', onStabilityOutputFormatChange);
+    
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($('#sd_prompt_prefix'));
         initScrollHeight($('#sd_negative_prompt'));
