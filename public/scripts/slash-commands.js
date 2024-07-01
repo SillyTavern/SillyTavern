@@ -468,7 +468,7 @@ export function initDefaultSlashCommands() {
                 description: 'display name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{user}}',
-                enumProvider: commonEnumProviders.characters('character'),
+                enumProvider: commonEnumProviders.personas,
             }),
         ],
         unnamedArgumentList: [
