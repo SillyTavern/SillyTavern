@@ -368,6 +368,14 @@ function toggleSourceControls() {
         const source = $(this).data('sd-source').split(',');
         $(this).toggle(source.includes(extension_settings.sd.source));
     });
+    const stabilityHiddenControls = $('#sd_steps, #sd_scale, #sd_sampler, #sd_scheduler, #sd_width, #sd_height, #sd_hr_upscaler, #sd_clip_skip');
+    if (extension_settings.sd.source === sources.stability) {
+        stabilityHiddenControls.hide();
+        $('#sd_resolution').parent().hide();
+    } else {
+        stabilityHiddenControls.show();
+        $('#sd_resolution').parent().show();
+    }
 }
 
 async function loadSettings() {
@@ -452,6 +460,11 @@ async function loadSettings() {
     $('#sd_wand_visible').prop('checked', extension_settings.sd.wand_visible);
     $('#sd_command_visible').prop('checked', extension_settings.sd.command_visible);
     $('#sd_interactive_visible').prop('checked', extension_settings.sd.interactive_visible);
+    $('#sd_stability_key').val(extension_settings.sd.stability_key);
+    $('#sd_stability_engine').val(extension_settings.sd.stability_engine);
+    $('#sd_stability_style_preset').val(extension_settings.sd.stability_style_preset);
+    $('#sd_stability_aspect_ratio').val(extension_settings.sd.stability_aspect_ratio);
+    $('#sd_stability_output_format').val(extension_settings.sd.stability_output_format);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -1227,7 +1240,7 @@ async function onModelChange() {
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
     saveSettingsDebounced();
 
-    const cloudSources = [sources.horde, sources.novel, sources.openai, sources.togetherai, sources.pollinations];
+    const cloudSources = [sources.horde, sources.novel, sources.openai, sources.togetherai, sources.pollinations, sources.stability];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
         return;
@@ -1619,12 +1632,8 @@ async function loadModels() {
         case sources.pollinations:
             models = await loadPollinationsModels();
             break;
-         case sources.stability:
-            models = [
-                { value: 'stable-image-ultra', text: 'Stable Image Ultra' },
-                { value: 'stable-image-core', text: 'Stable Image Core' },
-                { value: 'stable-diffusion-3', text: 'Stable Diffusion 3' },
-            ];
+        case sources.stability:
+            models = await loadStabilityModels();
             break;
     }
 
@@ -1669,6 +1678,22 @@ async function generateStabilityImage(prompt, negativePrompt) {
     }
 }
 
+async function loadStabilityModels() {
+    return [
+        {
+            value: 'stable-image-ultra',
+            text: 'Stable Image Ultra',
+        },
+        {
+            value: 'stable-image-core',
+            text: 'Stable Image Core',
+        },
+        {
+            value: 'stable-diffusion-3',
+            text: 'Stable Diffusion 3',
+        },
+    ];
+}
 async function loadPollinationsModels() {
     return [
         {
@@ -3300,6 +3325,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.TOGETHERAI];
         case sources.pollinations:
             return true;
+        case sources.stability:
+            return !!extension_settings.sd.stability_key;
     }
 }
 
