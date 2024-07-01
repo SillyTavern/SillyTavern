@@ -43,7 +43,6 @@ const {
     getConfigValue,
     color,
     forwardFetchResponse,
-    delay,
 } = require('./src/util');
 const { ensureThumbnailCache } = require('./src/endpoints/thumbnails');
 
@@ -641,38 +640,44 @@ function setWindowTitle(title) {
     }
 }
 
+async function verifySecuritySettings() {
+    // Skip all security checks as listen is set to false
+    if (!listen) {
+        return;
+    }
+
+    if (getConfigValue('securityOverride', false)) {
+        console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
+        return;
+    }
+
+    if (!enableWhitelist && !basicAuthMode && !enableAccounts) {
+        console.error(color.red('Your SillyTavern is currently insecurely open to the public. Enable whitelisting, basic authentication or user accounts.'));
+        return process.exit(1);
+    }
+
+    const users = await userModule.getAllUsers();
+    const unprotectedUsers = users.filter(x => x.enabled && !x.password);
+
+    if (enableAccounts && unprotectedUsers.length > 0) {
+        console.warn(color.red('The following users are not password protected:'));
+        unprotectedUsers.forEach(x => console.warn(color.yellow(x.handle)));
+        console.log();
+        console.warn('Please disable them or set a password in the admin panel.');
+        console.log();
+
+        if (!basicAuthMode || !enableWhitelist) {
+            console.error(color.red('If you are not using basic authentication or whitelisting, you should set a password for all users.'));
+            return process.exit(1);
+        }
+    }
+}
+
 // User storage module needs to be initialized before starting the server
 userModule.initUserStorage(dataRoot)
     .then(userModule.ensurePublicDirectoriesExist)
     .then(userModule.migrateUserData)
-    .then(async () => {
-        if (!listen) return // skip all security checks as listen is set to false
-        if (getConfigValue('securityOverride', false)) {
-            console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
-            return
-        }
-        if (enableWhitelist || basicAuthMode) return // skip all security checks of mutiuser
-        if (!enableAccounts) {
-            console.error(color.red('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication or accounts authentication.'));
-            process.exit(1);
-        }
-        const users = await userModule.getAllUsers();
-        const unprotectedUsers = users.filter(x => x.admin && !x.password);
-        if (unprotectedUsers.length > 0) {
-            console.warn(color.red('The following admin users are not password protected:'));
-            unprotectedUsers.forEach(x => console.warn(color.yellow(x.handle)));
-            console.log();
-            console.warn('Please disable them or set a password in the admin panel.');
-            console.log();
-            process.exit(1);
-        }
-        const nonPassNonAdminUsers = users.filter(x => !x.password && !x.admin);
-        if (nonPassNonAdminUsers.length > 0) {
-            console.warn(color.yellow('The following users are not password protected and not admin:'));
-            nonPassNonAdminUsers.forEach(x => console.warn(color.yellow(x.handle)));
-            console.log();
-        }
-    })
+    .then(verifySecuritySettings)
     .then(preSetupTasks)
     .finally(() => {
         if (cliArguments.ssl) {
