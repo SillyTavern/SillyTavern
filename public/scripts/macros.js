@@ -401,7 +401,7 @@ function timeDiffReplace(input) {
         const time2 = moment(matchPart2);
 
         const timeDifference = moment.duration(time1.diff(time2));
-        return timeDifference.humanize();
+        return timeDifference.humanize(true);
     });
 
     return output;
