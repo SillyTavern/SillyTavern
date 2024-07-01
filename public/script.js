@@ -8449,10 +8449,10 @@ async function connectAPISlash(_, text) {
 /**
  * Imports supported files dropped into the app window.
  * @param {File[]} files Array of files to process
- * @param {boolean?} preserveFileNames Whether to preserve original file names
+ * @param {Map<File, string>} [data] Extra data to pass to the import function
  * @returns {Promise<void>}
  */
-export async function processDroppedFiles(files, preserveFileNames = false) {
+export async function processDroppedFiles(files, data = new Map()) {
     const allowedMimeTypes = [
         'application/json',
         'image/png',
@@ -8469,7 +8469,8 @@ export async function processDroppedFiles(files, preserveFileNames = false) {
     for (const file of files) {
         const extension = file.name.split('.').pop().toLowerCase();
         if (allowedMimeTypes.includes(file.type) || allowedExtensions.includes(extension)) {
-            await importCharacter(file, preserveFileNames);
+            const preservedName = data instanceof Map && data.get(file);
+            await importCharacter(file, preservedName);
         } else {
             toastr.warning('Unsupported file type: ' + file.name);
         }
@@ -8479,10 +8480,10 @@ export async function processDroppedFiles(files, preserveFileNames = false) {
 /**
  * Imports a character from a file.
  * @param {File} file File to import
- * @param {boolean?} preserveFileName Whether to preserve original file name
+ * @param {string?} preserveFileName Whether to preserve original file name
  * @returns {Promise<void>}
  */
-async function importCharacter(file, preserveFileName = false) {
+async function importCharacter(file, preserveFileName = '') {
     if (is_group_generating || is_send_press) {
         toastr.error('Cannot import characters while generating. Stop the request and try again.', 'Import aborted');
         throw new Error('Cannot import character while generating');
@@ -8498,7 +8499,7 @@ async function importCharacter(file, preserveFileName = false) {
     const formData = new FormData();
     formData.append('avatar', file);
     formData.append('file_type', format);
-    formData.append('preserve_file_name', String(preserveFileName));
+    if (preserveFileName) formData.append('preserved_name', preserveFileName);
 
     const data = await jQuery.ajax({
         type: 'POST',
@@ -10637,10 +10638,12 @@ jQuery(async function () {
                         }
 
                         try {
-                            const cloneFile = new File([file], characters[this_chid].avatar, { type: file.type });
                             const chatFile = characters[this_chid]['chat'];
-                            await processDroppedFiles([cloneFile], true);
+                            const data = new Map();
+                            data.set(file, characters[this_chid].avatar);
+                            await processDroppedFiles([file], data);
                             await openCharacterChat(chatFile);
+                            await fetch(getThumbnailUrl('avatar', characters[this_chid].avatar), { cache: 'no-cache' });
                         } catch {
                             toastr.error('Failed to replace the character card.', 'Something went wrong');
                         }
