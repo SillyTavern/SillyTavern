@@ -9708,14 +9708,8 @@ jQuery(async function () {
     });
 
     $('#newChatFromManageScreenButton').on('click', function () {
-        setTimeout(() => {
-            $('#option_start_new_chat').trigger('click');
-        }, 1);
-        setTimeout(() => {
-            $('#dialogue_popup_ok').trigger('click');
-        }, 1);
+        doNewChat({ deleteCurrentChat: false });
         $('#select_chat_cross').trigger('click');
-
     });
 
     //////////////////////////////////////////////////////////////////////////////////////////////
