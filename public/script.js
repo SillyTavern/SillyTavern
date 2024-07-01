@@ -9169,14 +9169,28 @@ jQuery(async function () {
         chooseBogusFolder($(this), tagId);
     });
 
-    $(document).on('input', '.edit_textarea', function () {
-        scroll_holder = $('#chat').scrollTop();
-        $(this).height(0).height(this.scrollHeight);
+    const editTextAreaInputThrottle = (func, limit) => {
+        let inThrottle;
+        return (...args) => {
+            if (!inThrottle) {
+                func(...args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    };
+    const editTextAreaAdjustHeight = editTextAreaInputThrottle(e => {
+        scroll_holder = document.getElementById('chat').scrollTop;
+        e.style.height = '0';
+        e.style.height = 4 + e.scrollHeight + 'px';
         is_use_scroll_holder = true;
+    }, 200);
+    document.addEventListener('input', e => {
+        if (e.target.classList.contains('edit_textarea')) editTextAreaAdjustHeight(e.target);
     });
-    $('#chat').on('scroll', function () {
+    document.getElementById('chat').addEventListener('scroll', function() {
         if (is_use_scroll_holder) {
-            $('#chat').scrollTop(scroll_holder);
+            this.scrollTop = scroll_holder;
             is_use_scroll_holder = false;
         }
     });
