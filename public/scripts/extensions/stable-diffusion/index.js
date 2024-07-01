@@ -286,7 +286,7 @@ const defaultSettings = {
 
     // Stability AI settings
     stability_api_key: '',
-    stability_engine: 'stable-image-ultra',
+    stability_engine: 'V2beta Image Generation',
     stability_style_preset: "anime",
     stability_aspect_ratio: '1:1',
     stability_output_format: 'png',
@@ -1659,8 +1659,7 @@ async function generateStabilityImage(prompt, negativePrompt) {
             prompt: prompt,
             negative_prompt: negativePrompt,
             model: extension_settings.sd.model,
-            steps: extension_settings.sd.steps,
-            cfg_scale: extension_settings.sd.scale,
+            engine: extension_settings.sd.stability_engine,
             width: extension_settings.sd.width,
             height: extension_settings.sd.height,
             seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
@@ -1677,6 +1676,7 @@ async function generateStabilityImage(prompt, negativePrompt) {
         throw new Error(text);
     }
 }
+
 
 async function loadStabilityModels() {
     if (!extension_settings.sd.stability_key) {
