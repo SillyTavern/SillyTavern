@@ -254,7 +254,7 @@ function getCurrentSwipeId() {
     // For swipe macro, we are accepting using the message that is currently being swiped
     const mid = getLastMessageId({ exclude_swipe_in_propress: false });
     const swipeId = chat[mid]?.swipe_id;
-    return swipeId ? swipeId + 1 : null;
+    return swipeId !== null ? swipeId + 1 : null;
 }
 
 /**
