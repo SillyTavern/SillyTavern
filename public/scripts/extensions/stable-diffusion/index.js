@@ -368,14 +368,13 @@ function toggleSourceControls() {
         const source = $(this).data('sd-source').split(',');
         $(this).toggle(source.includes(extension_settings.sd.source));
     });
-    const stabilityHiddenControls = $('#sd_steps, #sd_scale, #sd_sampler, #sd_scheduler, #sd_width, #sd_height, #sd_hr_upscaler, #sd_clip_skip, #sd_steps_value, #sd_scale_value');
-    if (extension_settings.sd.source === sources.stability) {
-        stabilityHiddenControls.hide();
-        $('#sd_resolution').parent().hide();
-    } else {
-        stabilityHiddenControls.show();
-        $('#sd_resolution').parent().show();
-    }
+
+    // Special case for resolution dropdown
+    $('#sd_resolution').parent().toggle(extension_settings.sd.source !== sources.stability);
+
+    // Special case for dimensions block
+    $('#sd_dimensions_block').toggle(extension_settings.sd.source !== sources.stability);
+    $('#sd_sampler').toggle(extension_settings.sd.source !== sources.stability);
 }
 
 async function loadSettings() {
@@ -1651,17 +1650,29 @@ async function loadModels() {
     }
 }
 async function generateStabilityImage(prompt, negativePrompt) {
+    let endpoint;
+    switch (extension_settings.sd.model) {
+        case 'stable-image-ultra':
+            endpoint = '/v2beta/stable-image/generate/ultra';
+            break;
+        case 'stable-image-core':
+            endpoint = '/v2beta/stable-image/generate/core';
+            break;
+        case 'stable-diffusion-3':
+            endpoint = '/v2beta/stable-image/generate/sd3';
+            break;
+        default:
+            throw new Error('Invalid Stability AI model selected');
+    }
+
     const result = await fetch('/api/sd/stability/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
             key: extension_settings.sd.stability_key,
+            endpoint: endpoint,
             prompt: prompt,
             negative_prompt: negativePrompt,
-            model: extension_settings.sd.model,
-            engine: extension_settings.sd.stability_engine,
-            width: extension_settings.sd.width,
-            height: extension_settings.sd.height,
             seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
             style_preset: extension_settings.sd.stability_style_preset,
             aspect_ratio: extension_settings.sd.stability_aspect_ratio,
@@ -1678,28 +1689,13 @@ async function generateStabilityImage(prompt, negativePrompt) {
 }
 
 
+
 async function loadStabilityModels() {
-    if (!extension_settings.sd.stability_key) {
-        console.debug('Stability API key is not set.');
-        return [];
-    }
-
-    try {
-        const response = await fetch('/api/sd/stability/models', {
-            method: 'GET',
-            headers: getRequestHeaders(),
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch Stability AI models');
-        }
-
-        const data = await response.json();
-        return data.map(model => ({ value: model.id, text: model.name }));
-    } catch (error) {
-        console.error('Error fetching Stability AI models:', error);
-        return [];
-    }
+    return [
+        { value: 'stable-image-ultra', text: 'Stable Image Ultra' },
+        { value: 'stable-image-core', text: 'Stable Image Core' },
+        { value: 'stable-diffusion-3', text: 'Stable Diffusion 3' },
+    ];
 }
 
 async function loadPollinationsModels() {
