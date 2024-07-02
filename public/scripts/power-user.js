@@ -2105,6 +2105,9 @@ export function fuzzySearchGroups(searchValue) {
  */
 export function renderStoryString(params) {
     try {
+        // Validate and log possible warnings/errors
+        validateStoryString(power_user.context.story_string, params);
+
         // compile the story string template into a function, with no HTML escaping
         const compiledTemplate = Handlebars.compile(power_user.context.story_string, { noEscape: true });
 
@@ -2130,6 +2133,30 @@ export function renderStoryString(params) {
         console.error('Error rendering story string', e);
         throw e; // rethrow the error
     }
+}
+
+/**
+ * Validate the story string for possible warnings or issues
+ *
+ * @param {string} storyString - The story string
+ * @param {Object} params - The story string parameters
+ */
+function validateStoryString(storyString, params) {
+    function validateMissingField(field, fallbackLegacyField = null) {
+        const contains = storyString.includes(`{{${field}}}`) || (!!fallbackLegacyField && storyString.includes(`{{${fallbackLegacyField}}}`));
+        if (!contains && params[field]) {
+            toastr.warning(`The story string does not contain {{${field}}}, but it would contain content`, 'Story String Validation');
+            console.warn(`The story string does not contain {{${field}}}, but it would contain content:\n`, params[field]);
+        }
+    }
+
+    validateMissingField('description');
+    validateMissingField('personality');
+    validateMissingField('persona');
+    validateMissingField('scenario');
+    validateMissingField('system');
+    validateMissingField('wiBefore', 'loreBefore');
+    validateMissingField('wiAfter', 'loreAfter');
 }
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
