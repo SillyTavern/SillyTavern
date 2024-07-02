@@ -2144,23 +2144,26 @@ export function renderStoryString(params) {
  * @param {Object} params - The story string parameters
  */
 function validateStoryString(storyString, params) {
-    /** @type {{hash: number, fieldsWarned: {[key: string]: boolean}}} */
-    const cache = JSON.parse(localStorage.getItem(storage_keys.storyStringValidationCache)) ?? { hash: '', fieldsWarned: {} };
+    /** @type {{hashCache: {[hash: string]: {fieldsWarned: {[key: string]: boolean}}}}} */
+    const cache = JSON.parse(localStorage.getItem(storage_keys.storyStringValidationCache)) ?? { hashCache: {} };
 
-    // If we have a new story string hash, we empty the cache
     const hash = getStringHash(storyString);
-    if (cache.hash !== hash) {
-        cache.hash = hash;
-        cache.fieldsWarned = {};
+
+    // Initialize the cache for the current hash if it doesn't exist
+    if (!cache.hashCache[hash]) {
+        cache.hashCache[hash] = { fieldsWarned: {} };
     }
+
+    const currentCache = cache.hashCache[hash];
+    const fieldsToWarn = [];
 
     function validateMissingField(field, fallbackLegacyField = null) {
         const contains = storyString.includes(`{{${field}}}`) || (!!fallbackLegacyField && storyString.includes(`{{${fallbackLegacyField}}}`));
         if (!contains && params[field]) {
-            const wasLogged = cache.fieldsWarned[field];
+            const wasLogged = currentCache.fieldsWarned[field];
             if (!wasLogged) {
-                toastr.warning(`The story string does not contain {{${field}}}, but it would contain content`, 'Story String Validation', { preventDuplicates: true });
-                cache.fieldsWarned[field] = true;
+                fieldsToWarn.push(field);
+                currentCache.fieldsWarned[field] = true;
             }
             console.warn(`The story string does not contain {{${field}}}, but it would contain content:\n`, params[field]);
         }
@@ -2174,8 +2177,14 @@ function validateStoryString(storyString, params) {
     validateMissingField('wiBefore', 'loreBefore');
     validateMissingField('wiAfter', 'loreAfter');
 
+    if (fieldsToWarn.length > 0) {
+        const fieldsList = fieldsToWarn.map(field => `{{${field}}}`).join(', ');
+        toastr.warning(`The story string does not contain the following fields, but they would contain content: ${fieldsList}`, 'Story String Validation');
+    }
+
     localStorage.setItem(storage_keys.storyStringValidationCache, JSON.stringify(cache));
 }
+
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
 const compareFunc = (first, second) => {
