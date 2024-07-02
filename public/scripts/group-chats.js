@@ -202,7 +202,7 @@ async function validateGroup(group) {
 export async function getGroupChat(groupId, reload = false) {
     const group = groups.find((x) => x.id === groupId);
     if (!group) {
-        console.warn(`Group not found`, groupId);
+        console.warn('Group not found', groupId);
         return;
     }
 
