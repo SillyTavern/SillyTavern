@@ -2916,25 +2916,25 @@ async function generateComfyImage(prompt, negativePrompt) {
         const text = await workflowResponse.text();
         toastr.error(`Failed to load workflow.\n\n${text}`);
     }
-    let workflow = (await workflowResponse.json()).replace('"%prompt%"', JSON.stringify(prompt));
-    workflow = workflow.replace('"%negative_prompt%"', JSON.stringify(negativePrompt));
+    let workflow = (await workflowResponse.json()).replace(/"%prompt%"/g, JSON.stringify(prompt));
+    workflow = workflow.replace(/"%negative_prompt%"/g, JSON.stringify(negativePrompt));
 
     const seed = extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : Math.round(Math.random() * Number.MAX_SAFE_INTEGER);
-    workflow = workflow.replaceAll('"%seed%"', JSON.stringify(seed));
+    workflow = workflow.replaceAll(/"%seed%"/g, JSON.stringify(seed));
     placeholders.forEach(ph => {
-        workflow = workflow.replace(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
+        workflow = workflow.replace(new RegExp(`"%${ph}%"`, "g"), JSON.stringify(extension_settings.sd[ph]));
     });
     (extension_settings.sd.comfy_placeholders ?? []).forEach(ph => {
-        workflow = workflow.replace(`"%${ph.find}%"`, JSON.stringify(substituteParams(ph.replace)));
+        workflow = workflow.replace(new RegExp(`"%${ph.find}%"`, "g"), JSON.stringify(substituteParams(ph.replace)));
     });
     if (/%user_avatar%/gi.test(workflow)) {
         const response = await fetch(getUserAvatarUrl());
         if (response.ok) {
             const avatarBlob = await response.blob();
             const avatarBase64 = await getBase64Async(avatarBlob);
-            workflow = workflow.replace('"%user_avatar%"', JSON.stringify(avatarBase64));
+            workflow = workflow.replace(/"%user_avatar%"/g, JSON.stringify(avatarBase64));
         } else {
-            workflow = workflow.replace('"%user_avatar%"', JSON.stringify(PNG_PIXEL));
+            workflow = workflow.replace(/"%user_avatar%"/g, JSON.stringify(PNG_PIXEL));
         }
     }
     if (/%char_avatar%/gi.test(workflow)) {
@@ -2942,9 +2942,9 @@ async function generateComfyImage(prompt, negativePrompt) {
         if (response.ok) {
             const avatarBlob = await response.blob();
             const avatarBase64 = await getBase64Async(avatarBlob);
-            workflow = workflow.replace('"%char_avatar%"', JSON.stringify(avatarBase64));
+            workflow = workflow.replace(/"%char_avatar%"/g, JSON.stringify(avatarBase64));
         } else {
-            workflow = workflow.replace('"%char_avatar%"', JSON.stringify(PNG_PIXEL));
+            workflow = workflow.replace(/"%char_avatar%"/g, JSON.stringify(PNG_PIXEL));
         }
     }
     console.log(`{
