@@ -520,6 +520,7 @@ const chatElement = $('#chat');
 let dialogueResolve = null;
 let dialogueCloseStop = false;
 export let chat_metadata = {};
+/** @type {StreamingProcessor} */
 export let streamingProcessor = null;
 let crop_data = undefined;
 let is_delete_mode = false;
@@ -837,6 +838,7 @@ export let main_api;// = "kobold";
 //novel settings
 export let novelai_settings;
 export let novelai_setting_names;
+/** @type {AbortController} */
 let abortController;
 
 //css
@@ -4378,6 +4380,25 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         streamingProcessor = null;
         throw exception;
     }
+}
+
+/**
+ * Stops the generation and any streaming if it is currently running.
+ */
+export function stopGeneration() {
+    let stopped = false;
+    if (streamingProcessor) {
+        streamingProcessor.onStopStreaming();
+        streamingProcessor = null;
+        stopped = true;
+    }
+    if (abortController) {
+        abortController.abort('Clicked stop button');
+        hideStopButton();
+        stopped = true;
+    }
+    eventSource.emit(event_types.GENERATION_STOPPED);
+    return stopped;
 }
 
 /**
@@ -10342,15 +10363,7 @@ jQuery(async function () {
     });
 
     $(document).on('click', '.mes_stop', function () {
-        if (streamingProcessor) {
-            streamingProcessor.onStopStreaming();
-            streamingProcessor = null;
-        }
-        if (abortController) {
-            abortController.abort('Clicked stop button');
-            hideStopButton();
-        }
-        eventSource.emit(event_types.GENERATION_STOPPED);
+        stopGeneration();
     });
 
     $(document).on('click', '#form_sheld .stscript_continue', function () {
@@ -10839,3 +10852,4 @@ jQuery(async function () {
 
     initCustomSelectedSamplers();
 });
+
