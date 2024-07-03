@@ -227,7 +227,7 @@ import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, de
 import { initPresetManager } from './scripts/preset-manager.js';
 import { MacrosParser, evaluateMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
-import { POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { ScraperManager } from './scripts/scrapers.js';
 import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
@@ -520,6 +520,7 @@ const chatElement = $('#chat');
 let dialogueResolve = null;
 let dialogueCloseStop = false;
 export let chat_metadata = {};
+/** @type {StreamingProcessor} */
 export let streamingProcessor = null;
 let crop_data = undefined;
 let is_delete_mode = false;
@@ -837,6 +838,7 @@ export let main_api;// = "kobold";
 //novel settings
 export let novelai_settings;
 export let novelai_setting_names;
+/** @type {AbortController} */
 let abortController;
 
 //css
@@ -4381,6 +4383,25 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 }
 
 /**
+ * Stops the generation and any streaming if it is currently running.
+ */
+export function stopGeneration() {
+    let stopped = false;
+    if (streamingProcessor) {
+        streamingProcessor.onStopStreaming();
+        streamingProcessor = null;
+        stopped = true;
+    }
+    if (abortController) {
+        abortController.abort('Clicked stop button');
+        hideStopButton();
+        stopped = true;
+    }
+    eventSource.emit(event_types.GENERATION_STOPPED);
+    return stopped;
+}
+
+/**
  * Injects extension prompts into chat messages.
  * @param {object[]} messages Array of chat messages
  * @param {boolean} isContinue Whether the generation is a continuation. If true, the extension prompts of depth 0 are injected at position 1.
@@ -7163,7 +7184,8 @@ function onScenarioOverrideRemoveClick() {
  * @param {string} inputValue - Value to set the input to.
  * @param {PopupOptions} options - Options for the popup.
  * @typedef {{okButton?: string, rows?: number, wide?: boolean, wider?: boolean, large?: boolean, allowHorizontalScrolling?: boolean, allowVerticalScrolling?: boolean, cropAspect?: number }} PopupOptions - Options for the popup.
- * @returns
+ * @returns {Promise<any>} A promise that resolves when the popup is closed.
+ * @deprecated Use `callGenericPopup` instead.
  */
 export function callPopup(text, type, inputValue = '', { okButton, rows, wide, wider, large, allowHorizontalScrolling, allowVerticalScrolling, cropAspect } = {}) {
     function getOkButtonText() {
@@ -7794,6 +7816,7 @@ window['SillyTavern'].getContext = function () {
         eventTypes: event_types,
         addOneMessage: addOneMessage,
         generate: Generate,
+        stopGeneration: stopGeneration,
         getTokenCount: getTokenCount,
         extensionPrompts: extension_prompts,
         setExtensionPrompt: setExtensionPrompt,
@@ -7849,6 +7872,8 @@ window['SillyTavern'].getContext = function () {
          * @deprecated Legacy snake-case naming, compatibility with old extensions
          */
         event_types: event_types,
+        POPUP_TYPE: POPUP_TYPE,
+        POPUP_RESULT: POPUP_RESULT,
     };
 };
 
@@ -10342,15 +10367,7 @@ jQuery(async function () {
     });
 
     $(document).on('click', '.mes_stop', function () {
-        if (streamingProcessor) {
-            streamingProcessor.onStopStreaming();
-            streamingProcessor = null;
-        }
-        if (abortController) {
-            abortController.abort('Clicked stop button');
-            hideStopButton();
-        }
-        eventSource.emit(event_types.GENERATION_STOPPED);
+        stopGeneration();
     });
 
     $(document).on('click', '#form_sheld .stscript_continue', function () {
@@ -10839,3 +10856,4 @@ jQuery(async function () {
 
     initCustomSelectedSamplers();
 });
+

@@ -33,6 +33,7 @@ import {
     setCharacterName,
     setExtensionPrompt,
     setUserName,
+    stopGeneration,
     substituteParams,
     system_avatar,
     system_message_types,
@@ -897,6 +898,24 @@ export function initDefaultSlashCommands() {
             ),
         ],
         helpString: 'Adds a swipe to the last chat message.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'stop',
+        callback: () => {
+            const stopped = stopGeneration();
+            return String(stopped);
+        },
+        returns: 'true/false, whether the generation was running and got stopped',
+        helpString: `
+            <div>
+                Stops the generation and any streaming if it is currently running.
+            </div>
+            <div>
+                Note: This command cannot be executed from the chat input, as sending any message or script from there is blocked during generation.
+                But it can be executed via automations or QR scripts/buttons.
+            </div>
+        `,
+        aliases: ['generate-stop'],
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'abort',
