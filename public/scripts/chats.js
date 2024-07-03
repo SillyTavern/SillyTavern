@@ -1430,7 +1430,7 @@ jQuery(function () {
         wrapper.classList.add('flexFlowColumn', 'justifyCenter', 'alignitemscenter');
         const textarea = document.createElement('textarea');
         textarea.value = String(bro.val());
-        textarea.classList.add('height100p', 'wide100p');
+        textarea.classList.add('height100p', 'wide100p', 'maximized_textarea');
         bro.hasClass('monospace') && textarea.classList.add('monospace');
         textarea.addEventListener('input', function () {
             bro.val(textarea.value).trigger('input');

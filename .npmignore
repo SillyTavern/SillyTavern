@@ -8,3 +8,6 @@ secrets.json
 /data
 /cache
 access.log
+.github
+.vscode
+.git
