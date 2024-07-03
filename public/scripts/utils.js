@@ -803,7 +803,7 @@ export function getImageSizeFromDataURL(dataUrl) {
 
 export function getCharaFilename(chid) {
     const context = getContext();
-    const fileName = context.characters[chid ?? context.characterId].avatar;
+    const fileName = context.characters[chid ?? context.characterId]?.avatar;
 
     if (fileName) {
         return fileName.replace(/\.[^/.]+$/, '');

@@ -3,7 +3,6 @@ import {
     systemUserName,
     hideSwipeButtons,
     showSwipeButtons,
-    callPopup,
     getRequestHeaders,
     event_types,
     eventSource,
@@ -29,10 +28,9 @@ import { getMultimodalCaption } from '../shared.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
-import { resolveVariable } from '../../variables.js';
 import { debounce_timeout } from '../../constants.js';
-import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
+import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'sd';
@@ -572,7 +570,7 @@ async function onDeleteStyleClick() {
         return;
     }
 
-    const confirmed = await callPopup(`Are you sure you want to delete the style "${selectedStyle}"?`, 'confirm', '', { okButton: 'Delete' });
+    const confirmed = await callGenericPopup(`Are you sure you want to delete the style "${selectedStyle}"?`, POPUP_TYPE.CONFIRM, '', { okButton: 'Delete', cancelButton: 'Cancel' });
 
     if (!confirmed) {
         return;
@@ -601,7 +599,7 @@ async function onDeleteStyleClick() {
 }
 
 async function onSaveStyleClick() {
-    const userInput = await callPopup('Enter style name:', 'input', '', { okButton: 'Save' });
+    const userInput = await callGenericPopup('Enter style name:', POPUP_TYPE.INPUT);
 
     if (!userInput) {
         return;
@@ -670,7 +668,7 @@ async function refinePrompt(prompt, allowExpand, isNegative = false) {
 
     if (extension_settings.sd.refine_mode) {
         const text = isNegative ? '<h3>Review and edit the <i>negative</i> prompt:</h3>' : '<h3>Review and edit the prompt:</h3>';
-        const refinedPrompt = await callPopup(text + 'Press "Cancel" to abort the image generation.', 'input', prompt.trim(), { rows: 5, okButton: 'Continue' });
+        const refinedPrompt = await callGenericPopup(text + 'Press "Cancel" to abort the image generation.', POPUP_TYPE.INPUT, prompt.trim(), { rows: 5, okButton: 'Continue' });
 
         if (refinedPrompt) {
             return refinedPrompt;
@@ -2918,25 +2916,25 @@ async function generateComfyImage(prompt, negativePrompt) {
         const text = await workflowResponse.text();
         toastr.error(`Failed to load workflow.\n\n${text}`);
     }
-    let workflow = (await workflowResponse.json()).replace('"%prompt%"', JSON.stringify(prompt));
-    workflow = workflow.replace('"%negative_prompt%"', JSON.stringify(negativePrompt));
+    let workflow = (await workflowResponse.json()).replaceAll('"%prompt%"', JSON.stringify(prompt));
+    workflow = workflow.replaceAll('"%negative_prompt%"', JSON.stringify(negativePrompt));
 
     const seed = extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : Math.round(Math.random() * Number.MAX_SAFE_INTEGER);
     workflow = workflow.replaceAll('"%seed%"', JSON.stringify(seed));
     placeholders.forEach(ph => {
-        workflow = workflow.replace(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
+        workflow = workflow.replaceAll(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
     });
     (extension_settings.sd.comfy_placeholders ?? []).forEach(ph => {
-        workflow = workflow.replace(`"%${ph.find}%"`, JSON.stringify(substituteParams(ph.replace)));
+        workflow = workflow.replaceAll(`"%${ph.find}%"`, JSON.stringify(substituteParams(ph.replace)));
     });
     if (/%user_avatar%/gi.test(workflow)) {
         const response = await fetch(getUserAvatarUrl());
         if (response.ok) {
             const avatarBlob = await response.blob();
             const avatarBase64 = await getBase64Async(avatarBlob);
-            workflow = workflow.replace('"%user_avatar%"', JSON.stringify(avatarBase64));
+            workflow = workflow.replaceAll('"%user_avatar%"', JSON.stringify(avatarBase64));
         } else {
-            workflow = workflow.replace('"%user_avatar%"', JSON.stringify(PNG_PIXEL));
+            workflow = workflow.replaceAll('"%user_avatar%"', JSON.stringify(PNG_PIXEL));
         }
     }
     if (/%char_avatar%/gi.test(workflow)) {
@@ -2944,9 +2942,9 @@ async function generateComfyImage(prompt, negativePrompt) {
         if (response.ok) {
             const avatarBlob = await response.blob();
             const avatarBase64 = await getBase64Async(avatarBlob);
-            workflow = workflow.replace('"%char_avatar%"', JSON.stringify(avatarBase64));
+            workflow = workflow.replaceAll('"%char_avatar%"', JSON.stringify(avatarBase64));
         } else {
-            workflow = workflow.replace('"%char_avatar%"', JSON.stringify(PNG_PIXEL));
+            workflow = workflow.replaceAll('"%char_avatar%"', JSON.stringify(PNG_PIXEL));
         }
     }
     console.log(`{
@@ -2978,7 +2976,7 @@ async function onComfyOpenWorkflowEditorClick() {
         }),
     })).json();
     const editorHtml = $(await $.get('scripts/extensions/stable-diffusion/comfyWorkflowEditor.html'));
-    const popupResult = callPopup(editorHtml, 'confirm', undefined, { okButton: 'Save', wide: true, large: true, rows: 1 });
+    const popupResult = callGenericPopup(editorHtml, POPUP_TYPE.CONFIRM, '', { okButton: 'Save', cancelButton: 'Cancel', wide: true, large: true });
     const checkPlaceholders = () => {
         workflow = $('#sd_comfy_workflow_editor_workflow').val().toString();
         $('.sd_comfy_workflow_editor_placeholder_list > li[data-placeholder]').each(function (idx) {
@@ -3058,7 +3056,7 @@ async function onComfyOpenWorkflowEditorClick() {
 }
 
 async function onComfyNewWorkflowClick() {
-    let name = await callPopup('<h3>Workflow name:</h3>', 'input');
+    let name = await callGenericPopup('Workflow name:', POPUP_TYPE.INPUT);
     if (!name) {
         return;
     }
@@ -3085,7 +3083,7 @@ async function onComfyNewWorkflowClick() {
 }
 
 async function onComfyDeleteWorkflowClick() {
-    const confirm = await callPopup('Delete the workflow? This action is irreversible.', 'confirm');
+    const confirm = await callGenericPopup('Delete the workflow? This action is irreversible.', POPUP_TYPE.CONFIRM, '', { okButton: 'Delete', cancelButton: 'Cancel' });
     if (!confirm) {
         return;
     }

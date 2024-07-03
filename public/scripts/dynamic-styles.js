@@ -154,7 +154,7 @@ export function initDynamicStyles() {
     // Process all stylesheets on initial load
     Array.from(document.styleSheets).forEach(sheet => {
         try {
-            applyDynamicFocusStyles(sheet, { fromExtension: sheet.href.toLowerCase().includes('scripts/extensions') });
+            applyDynamicFocusStyles(sheet, { fromExtension: sheet.href?.toLowerCase().includes('scripts/extensions') == true });
         } catch (e) {
             console.warn('Failed to process stylesheet on initial load:', e);
         }

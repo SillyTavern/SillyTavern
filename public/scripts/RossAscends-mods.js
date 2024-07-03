@@ -725,7 +725,9 @@ export function initRossMods() {
         RA_autoconnect();
     }
 
-    if (getParsedUA()?.os?.name === 'iOS') {
+    const isAppleDevice = /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    if (getParsedUA()?.os?.name === 'iOS' || isAppleDevice) {
         document.body.classList.add('ios');
     }
 

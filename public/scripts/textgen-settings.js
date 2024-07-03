@@ -263,6 +263,8 @@ export const setting_names = [
     'bypass_status_check',
 ];
 
+const DYNATEMP_BLOCK = document.getElementById('dynatemp_block_ooba');
+
 export function validateTextGenUrl() {
     const selector = SERVER_INPUTS[settings.type];
 
@@ -1045,6 +1047,10 @@ export function isJsonSchemaSupported() {
     return [TABBY, LLAMACPP].includes(settings.type) && main_api === 'textgenerationwebui';
 }
 
+function isDynamicTemperatureSupported() {
+    return settings.dynatemp && DYNATEMP_BLOCK?.dataset?.tgType?.includes(settings.type);
+}
+
 function getLogprobsNumber() {
     if (settings.type === VLLM || settings.type === INFERMATICAI) {
         return 5;
@@ -1055,6 +1061,7 @@ function getLogprobsNumber() {
 
 export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
+    const dynatemp = isDynamicTemperatureSupported();
     const { banned_tokens, banned_strings } = getCustomTokenBans();
 
     let params = {
@@ -1063,7 +1070,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'max_new_tokens': maxTokens,
         'max_tokens': maxTokens,
         'logprobs': power_user.request_token_probabilities ? getLogprobsNumber() : undefined,
-        'temperature': settings.dynatemp ? (settings.min_temp + settings.max_temp) / 2 : settings.temp,
+        'temperature': dynatemp ? (settings.min_temp + settings.max_temp) / 2 : settings.temp,
         'top_p': settings.top_p,
         'typical_p': settings.typical_p,
         'typical': settings.typical_p,
@@ -1081,11 +1088,11 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'length_penalty': settings.length_penalty,
         'early_stopping': settings.early_stopping,
         'add_bos_token': settings.add_bos_token,
-        'dynamic_temperature': settings.dynatemp ? true : undefined,
-        'dynatemp_low': settings.dynatemp ? settings.min_temp : undefined,
-        'dynatemp_high': settings.dynatemp ? settings.max_temp : undefined,
-        'dynatemp_range': settings.dynatemp ? (settings.max_temp - settings.min_temp) / 2 : undefined,
-        'dynatemp_exponent': settings.dynatemp ? settings.dynatemp_exponent : undefined,
+        'dynamic_temperature': dynatemp ? true : undefined,
+        'dynatemp_low': dynatemp ? settings.min_temp : undefined,
+        'dynatemp_high': dynatemp ? settings.max_temp : undefined,
+        'dynatemp_range': dynatemp ? (settings.max_temp - settings.min_temp) / 2 : undefined,
+        'dynatemp_exponent': dynatemp ? settings.dynatemp_exponent : undefined,
         'smoothing_factor': settings.smoothing_factor,
         'smoothing_curve': settings.smoothing_curve,
         'dry_allowed_length': settings.dry_allowed_length,
