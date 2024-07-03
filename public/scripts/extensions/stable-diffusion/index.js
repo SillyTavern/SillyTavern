@@ -1642,43 +1642,76 @@ async function loadModels() {
         $('#sd_model').val(extension_settings.sd.model).trigger('change');
     }
 }
+
 async function generateStabilityImage(prompt, negativePrompt) {
-    let endpoint;
+    const payload = {
+        prompt: prompt,
+        negative_prompt: negativePrompt,
+        width: extension_settings.sd.width,
+        height: extension_settings.sd.height,
+        seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+        style_preset: extension_settings.sd.stability_style_preset,
+        output_format: extension_settings.sd.stability_output_format,
+    };
+
+    const formData = new FormData();
+    for (const [key, value] of Object.entries(payload)) {
+        if (value !== undefined) {
+            formData.append(key, String(value));
+        }
+    }
+
+    let apiUrl;
     switch (extension_settings.sd.model) {
         case 'stable-image-ultra':
-            endpoint = '/v2beta/stable-image/generate/ultra';
+            apiUrl = 'https://api.stability.ai/v2beta/stable-image/generate/ultra';
             break;
         case 'stable-image-core':
-            endpoint = '/v2beta/stable-image/generate/core';
+            apiUrl = 'https://api.stability.ai/v2beta/stable-image/generate/core';
             break;
         case 'stable-diffusion-3':
-            endpoint = '/v2beta/stable-image/generate/sd3';
+            apiUrl = 'https://api.stability.ai/v2beta/stable-image/generate/sd3';
             break;
         default:
             throw new Error('Invalid Stability AI model selected');
     }
 
-    const result = await fetch('/api/sd/stability/generate', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({
-            key: extension_settings.sd.stability_key,
-            endpoint: endpoint,
-            prompt: prompt,
-            negative_prompt: negativePrompt,
-            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
-            style_preset: extension_settings.sd.stability_style_preset,
-            aspect_ratio: extension_settings.sd.stability_aspect_ratio,
-        }),
-    });
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${extension_settings.sd.stability_key}`,
+                'Accept': 'image/*',
+            },
+            body: formData,
+        });
 
-    if (result.ok) {
-        const data = await result.json();
-        return { format: extension_settings.sd.stability_output_format, data: data.image };
-    } else {
-        const text = await result.text();
-        throw new Error(text);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const base64Image = arrayBufferToBase64(arrayBuffer);
+
+        return {
+            format: extension_settings.sd.stability_output_format,
+            data: base64Image,
+        };
+    } catch (error) {
+        console.error('Error generating image with Stability AI:', error);
+        throw error;
     }
+}
+
+function arrayBufferToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
 }
 
 
