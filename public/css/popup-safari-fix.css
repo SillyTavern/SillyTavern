@@ -1,5 +1,9 @@
 /* iPhone copium land */
-.ios .popup .popup-body {
+body.safari .popup .popup-body:has(.maximized_textarea) {
+    height: 100%;
+}
+
+body.safari .popup .popup-body {
     height: fit-content;
     max-height: 90vh;
     max-height: 90svh;
