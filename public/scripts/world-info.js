@@ -59,9 +59,13 @@ const scan_state = {
      */
     NONE: 0,
     /**
-     * The scan is triggered by a recursion step. Initial state.
+     * Initial state.
      */
-    RECURSION: 1,
+    INITIAL: 1,
+    /**
+     * The scan is triggered by a recursion step.
+     */
+    RECURSION: 2,
     /**
      * The scan is triggered by a min activations depth skew.
      */
@@ -3526,7 +3530,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         }
     }
 
-    let scanState = scan_state.RECURSION;
+    let scanState = scan_state.INITIAL;
     let token_budget_overflowed = false;
     let count = 0;
     let allActivatedEntries = new Set();
@@ -3551,7 +3555,8 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
     }
 
     while (scanState) {
-        // Track how many times the loop has run
+        // Track how many times the loop has run. May be useful for debugging.
+        // eslint-disable-next-line no-unused-vars
         count++;
 
         let activatedNow = new Set();
@@ -3610,7 +3615,13 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             }
 
             // Only use checks for recursion flags if the scan step was activated by recursion
-            if (scanState === scan_state.RECURSION && ((count > 1 && world_info_recursive && entry.excludeRecursion) || (count == 1 && entry.delayUntilRecursion))) {
+            if (scanState !== scan_state.RECURSION && entry.delayUntilRecursion) {
+                console.debug(`WI entry ${entry.uid} suppressed by delay until recursion`, entry);
+                continue;
+            }
+
+            if (scanState === scan_state.RECURSION && world_info_recursive && entry.excludeRecursion) {
+                console.debug(`WI entry ${entry.uid} suppressed by exclude recursion`, entry);
                 continue;
             }
 
