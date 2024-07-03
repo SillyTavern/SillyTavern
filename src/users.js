@@ -688,11 +688,19 @@ async function getAllUsers() {
     if (!ENABLE_ACCOUNTS) {
         return [];
     }
-
     /**
      * @type {User[]}
      */
     const users = await storage.values();
+    return users;
+}
+
+/**
+ * Gets all of the enabled users.
+ * @returns {Promise<User[]>}
+ */
+async function getAllEnabledUsers() {
+    const users = await getAllUsers();
     return users.filter(x => !x.enabled);
 }
 
@@ -731,5 +739,6 @@ module.exports = {
     createBackupArchive,
     tryAutoLogin,
     getAllUsers,
+    getAllEnabledUsers,
     router,
 };

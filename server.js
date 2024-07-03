@@ -640,35 +640,48 @@ function setWindowTitle(title) {
     }
 }
 
+/**
+ * Prints an error message and exits the process if necessary
+ * @param {string} message
+ */
+function security_alart(message) {
+    if (basicAuthMode || enableWhitelist) return; // safe!
+    console.error(color.red(message));
+    if (getConfigValue('securityOverride', false)) {
+        console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
+        return;
+    }
+    process.exit(1);
+}
+
 async function verifySecuritySettings() {
     // Skip all security checks as listen is set to false
     if (!listen) {
         return;
     }
 
-    if (getConfigValue('securityOverride', false)) {
-        console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
-        return;
+    if (!enableAccounts) {
+        security_alart('Your SillyTavern is currently insecurely open to the public. Enable whitelisting, basic authentication or user accounts.');
     }
 
-    if (!enableWhitelist && !basicAuthMode && !enableAccounts) {
-        console.error(color.red('Your SillyTavern is currently insecurely open to the public. Enable whitelisting, basic authentication or user accounts.'));
-        return process.exit(1);
-    }
+    // we don't need to check for enableAccounts as getAllEnabledUsers does it already
+    // and it also was checked in the 'if' before
+    const users = await userModule.getAllEnabledUsers();
+    const unprotectedUsers = users.filter(x => !x.password);
+    const unprotectedAdminUsers = unprotectedUsers.filter(x => x.admin);
 
-    const users = await userModule.getAllUsers();
-    const unprotectedUsers = users.filter(x => x.enabled && !x.password);
-
-    if (enableAccounts && unprotectedUsers.length > 0) {
+    if (unprotectedUsers.length > 0) {
         console.warn(color.red('The following users are not password protected:'));
-        unprotectedUsers.forEach(x => console.warn(color.yellow(x.handle)));
+        unprotectedUsers.forEach(x => console.warn(color.yellow(x.handle) + x.admin ? color.red(' (admin)') : ''));
         console.log();
         console.warn('Please disable them or set a password in the admin panel.');
         console.log();
 
-        if (!basicAuthMode || !enableWhitelist) {
-            console.error(color.red('If you are not using basic authentication or whitelisting, you should set a password for all users.'));
-            return process.exit(1);
+        // Considering that the default account is the administrator account
+        // and that sometimes some people may need to create regular accounts that don't require a password:
+        // I think it's only necessary to exit the program when there's unprotected admin users
+        if (unprotectedAdminUsers.length > 0) {
+            security_alart('If you are not using basic authentication or whitelisting, you should set a password for all users.');
         }
     }
 }
