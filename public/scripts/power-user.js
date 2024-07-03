@@ -40,7 +40,7 @@ import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
-import { countOccurrences, debounce, delay, download, getFileText, isOdd, isTrueBoolean, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { countOccurrences, debounce, delay, download, getFileText, getStringHash, isOdd, isTrueBoolean, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 import { FILTER_TYPES } from './filters.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -335,6 +335,8 @@ const storage_keys = {
     compact_input_area: 'compact_input_area',
     auto_connect_legacy: 'AutoConnectEnabled',
     auto_load_chat_legacy: 'AutoLoadChatEnabled',
+
+    storyStringValidationCache: 'StoryStringValidationCache',
 };
 
 const contextControls = [
@@ -2105,6 +2107,9 @@ export function fuzzySearchGroups(searchValue) {
  */
 export function renderStoryString(params) {
     try {
+        // Validate and log possible warnings/errors
+        validateStoryString(power_user.context.story_string, params);
+
         // compile the story string template into a function, with no HTML escaping
         const compiledTemplate = Handlebars.compile(power_user.context.story_string, { noEscape: true });
 
@@ -2131,6 +2136,55 @@ export function renderStoryString(params) {
         throw e; // rethrow the error
     }
 }
+
+/**
+ * Validate the story string for possible warnings or issues
+ *
+ * @param {string} storyString - The story string
+ * @param {Object} params - The story string parameters
+ */
+function validateStoryString(storyString, params) {
+    /** @type {{hashCache: {[hash: string]: {fieldsWarned: {[key: string]: boolean}}}}} */
+    const cache = JSON.parse(localStorage.getItem(storage_keys.storyStringValidationCache)) ?? { hashCache: {} };
+
+    const hash = getStringHash(storyString);
+
+    // Initialize the cache for the current hash if it doesn't exist
+    if (!cache.hashCache[hash]) {
+        cache.hashCache[hash] = { fieldsWarned: {} };
+    }
+
+    const currentCache = cache.hashCache[hash];
+    const fieldsToWarn = [];
+
+    function validateMissingField(field, fallbackLegacyField = null) {
+        const contains = storyString.includes(`{{${field}}}`) || (!!fallbackLegacyField && storyString.includes(`{{${fallbackLegacyField}}}`));
+        if (!contains && params[field]) {
+            const wasLogged = currentCache.fieldsWarned[field];
+            if (!wasLogged) {
+                fieldsToWarn.push(field);
+                currentCache.fieldsWarned[field] = true;
+            }
+            console.warn(`The story string does not contain {{${field}}}, but it would contain content:\n`, params[field]);
+        }
+    }
+
+    validateMissingField('description');
+    validateMissingField('personality');
+    validateMissingField('persona');
+    validateMissingField('scenario');
+    validateMissingField('system');
+    validateMissingField('wiBefore', 'loreBefore');
+    validateMissingField('wiAfter', 'loreAfter');
+
+    if (fieldsToWarn.length > 0) {
+        const fieldsList = fieldsToWarn.map(field => `{{${field}}}`).join(', ');
+        toastr.warning(`The story string does not contain the following fields, but they would contain content: ${fieldsList}`, 'Story String Validation');
+    }
+
+    localStorage.setItem(storage_keys.storyStringValidationCache, JSON.stringify(cache));
+}
+
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
 const compareFunc = (first, second) => {
