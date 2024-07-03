@@ -1,5 +1,5 @@
 name: Bug Report 🐛
-description: Report something that's not working the intended way. Support requests for external programs (reverse proxies, 3rd party servers, other peoples' forks) will be refused!
+description: Report something that's not working the intended way. Support requests for external programs (reverse proxies, 3rd party servers, other peoples' forks) will be refused! Please use English only.
 title: '[BUG] <title>'
 labels: ['🐛 Bug']
 body:
