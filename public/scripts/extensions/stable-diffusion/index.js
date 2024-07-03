@@ -368,13 +368,6 @@ function toggleSourceControls() {
         const source = $(this).data('sd-source').split(',');
         $(this).toggle(source.includes(extension_settings.sd.source));
     });
-
-    // Special case for resolution dropdown
-    $('#sd_resolution').parent().toggle(extension_settings.sd.source !== sources.stability);
-
-    // Special case for dimensions block
-    $('#sd_dimensions_block').toggle(extension_settings.sd.source !== sources.stability);
-    $('#sd_sampler').toggle(extension_settings.sd.source !== sources.stability);
 }
 
 async function loadSettings() {
