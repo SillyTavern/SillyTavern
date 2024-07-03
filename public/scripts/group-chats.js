@@ -70,6 +70,7 @@ import {
     animation_duration,
     depth_prompt_role_default,
     shouldAutoContinue,
+    this_chid,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -785,7 +786,8 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         sendSystemMessage(system_message_types.EMPTY, '', { isSmallSys: true });
         return Promise.resolve();
     }
-
+    
+    const showChatQueue = (!(typingIndicator.length === 0 && !isStreamingEnabled()) && openGroupId);
     try {
         throwIfAborted();
         hideSwipeButtons();
@@ -857,7 +859,11 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             await saveChatConditional();
             $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
         }
-
+        if (showChatQueue){
+            for (let i = 0; i < activatedMembers.length; ++i){
+                characters[activatedMembers[i]].queueOrder = (i+1);
+            }
+        }
         // now the real generation begins: cycle through every activated character
         for (const chId of activatedMembers) {
             throwIfAborted();
@@ -865,6 +871,9 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             const generateType = type == 'swipe' || type == 'impersonate' || type == 'quiet' || type == 'continue' ? type : 'group_chat';
             setCharacterId(chId);
             setCharacterName(characters[chId].name);
+            if (showChatQueue){
+                printGroupMembers();
+            }
             await eventSource.emit(event_types.GROUP_MEMBER_DRAFTED, chId);
 
             if (type !== 'swipe' && type !== 'impersonate' && !isStreamingEnabled()) {
@@ -885,6 +894,10 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                     messageChunk = textResult?.messageChunk;
                 }
             }
+            if (showChatQueue){
+                activatedMembers.filter(chidx => characters[chidx].queueOrder > 0)
+                                .forEach(chindex => characters[chindex].queueOrder -= 1);
+            }
         }
     } finally {
         typingIndicator.hide();
@@ -892,6 +905,14 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         is_group_generating = false;
         setSendButtonState(false);
         setCharacterId(undefined);
+        
+        if (showChatQueue){
+            group.members.forEach(avatar => {
+                let character = characters.find(x => x.avatar === avatar || x.name === avatar);
+                character.queueOrder = undefined;
+            });
+            printGroupMembers();
+        }
         setCharacterName('');
         activateSendButtons();
         showSwipeButtons();
@@ -1309,11 +1330,13 @@ function getGroupCharacterBlock(character) {
     const isFav = character.fav || character.fav == 'true';
     template.data('id', character.avatar);
     template.find('.avatar img').attr({ 'src': avatar, 'title': character.avatar });
-    template.find('.ch_name').text(character.name);
-    template.attr('chid', characters.indexOf(character));
+    template.find('.ch_name').text(character.name + (character.queueOrder > 0?'   (#' + character.queueOrder + ')':''));    template.attr('chid', characters.indexOf(character));
     template.find('.ch_fav').val(isFav);
     template.toggleClass('is_fav', isFav);
+    template.toggleClass('is_active', character.queueOrder === 1);
+    template.toggleClass('is_queued', character.queueOrder > 1);
     template.toggleClass('disabled', isGroupMemberDisabled(character.avatar));
+    template.toggleClass('is_active', character.avatar === (this_chid && characters[this_chid] && characters[this_chid].avatar));
 
     // Display inline tags
     const tagsElement = template.find('.tags');
