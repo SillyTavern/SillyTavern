@@ -642,9 +642,10 @@ function setWindowTitle(title) {
 
 /**
  * Prints an error message and exits the process if necessary
- * @param {string} message
+ * @param {string} message The error message to print
+ * @returns {void}
  */
-function security_alart(message) {
+function logSecurityAlert(message) {
     if (basicAuthMode || enableWhitelist) return; // safe!
     console.error(color.red(message));
     if (getConfigValue('securityOverride', false)) {
@@ -661,27 +662,22 @@ async function verifySecuritySettings() {
     }
 
     if (!enableAccounts) {
-        security_alart('Your SillyTavern is currently insecurely open to the public. Enable whitelisting, basic authentication or user accounts.');
+        logSecurityAlert('Your SillyTavern is currently insecurely open to the public. Enable whitelisting, basic authentication or user accounts.');
     }
 
-    // we don't need to check for enableAccounts as getAllEnabledUsers does it already
-    // and it also was checked in the 'if' before
     const users = await userModule.getAllEnabledUsers();
     const unprotectedUsers = users.filter(x => !x.password);
     const unprotectedAdminUsers = unprotectedUsers.filter(x => x.admin);
 
     if (unprotectedUsers.length > 0) {
         console.warn(color.red('The following users are not password protected:'));
-        unprotectedUsers.forEach(x => console.warn(color.yellow(x.handle) + x.admin ? color.red(' (admin)') : ''));
+        unprotectedUsers.map(x => `${color.yellow(x.handle)} ${color.red(x.admin ? '(admin)' : '')}`).forEach(x => console.warn(x));
         console.log();
-        console.warn('Please disable them or set a password in the admin panel.');
+        console.warn(`Please disable them or set a password in the admin panel, or by using the ${color.blue('recover.js')} script.`);
         console.log();
 
-        // Considering that the default account is the administrator account
-        // and that sometimes some people may need to create regular accounts that don't require a password:
-        // I think it's only necessary to exit the program when there's unprotected admin users
         if (unprotectedAdminUsers.length > 0) {
-            security_alart('If you are not using basic authentication or whitelisting, you should set a password for all users.');
+            logSecurityAlert('If you are not using basic authentication or whitelisting, you should set a password for all admin users.');
         }
     }
 }
