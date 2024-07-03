@@ -50,6 +50,24 @@ const world_info_logic = {
     AND_ALL: 3,
 };
 
+/**
+ * @enum {number} Possible states of the WI evaluation
+ */
+const scan_state = {
+    /**
+     * The scan will be stopped.
+     */
+    NONE: 0,
+    /**
+     * The scan is triggered by a recursion step. Initial state.
+     */
+    RECURSION: 1,
+    /**
+     * The scan is triggered by a min activations depth skew.
+     */
+    MIN_ACTIVATIONS: 2,
+};
+
 const WI_ENTRY_EDIT_TEMPLATE = $('#entry_edit_template .world_entry');
 
 let world_info = {};
@@ -3508,7 +3526,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         }
     }
 
-    let needsToScan = true;
+    let scanState = scan_state.RECURSION;
     let token_budget_overflowed = false;
     let count = 0;
     let allActivatedEntries = new Set();
@@ -3532,7 +3550,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], EMEntries: [], allActivatedEntries: new Set() };
     }
 
-    while (needsToScan) {
+    while (scanState) {
         // Track how many times the loop has run
         count++;
 
@@ -3587,7 +3605,12 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 continue;
             }
 
-            if (allActivatedEntries.has(entry) || entry.disable == true || (count > 1 && world_info_recursive && entry.excludeRecursion) || (count == 1 && entry.delayUntilRecursion)) {
+            if (allActivatedEntries.has(entry) || entry.disable == true) {
+                continue;
+            }
+
+            // Only use checks for recursion flags if the scan step was activated by recursion
+            if (scanState === scan_state.RECURSION && ((count > 1 && world_info_recursive && entry.excludeRecursion) || (count == 1 && entry.delayUntilRecursion))) {
                 continue;
             }
 
@@ -3665,7 +3688,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             }
         }
 
-        needsToScan = world_info_recursive && activatedNow.size > 0;
+        scanState = world_info_recursive && activatedNow.size > 0 ? scan_state.RECURSION : scan_state.NONE;
         const newEntries = [...activatedNow]
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
         let newContent = '';
@@ -3697,7 +3720,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                     console.log('Alerting');
                     toastr.warning(`World info budget reached after ${allActivatedEntries.size} entries.`, 'World Info');
                 }
-                needsToScan = false;
+                scanState = scan_state.NONE;
                 token_budget_overflowed = true;
                 break;
             }
@@ -3710,15 +3733,15 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
 
         if ((probabilityChecksAfter - probabilityChecksBefore) === activatedNow.size) {
             console.debug('WI probability checks failed for all activated entries, stopping');
-            needsToScan = false;
+            scanState = scan_state.NONE;
         }
 
         if (newEntries.length === 0) {
             console.debug('No new entries activated, stopping');
-            needsToScan = false;
+            scanState = scan_state.NONE;
         }
 
-        if (needsToScan) {
+        if (scanState) {
             const text = newEntries
                 .filter(x => !failedProbabilityChecks.has(x))
                 .filter(x => !x.preventRecursion)
@@ -3728,7 +3751,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         }
 
         // world_info_min_activations
-        if (!needsToScan && !token_budget_overflowed) {
+        if (!scanState && !token_budget_overflowed) {
             if (world_info_min_activations > 0 && (allActivatedEntries.size < world_info_min_activations)) {
                 let over_max = (
                     world_info_min_activations_depth_max > 0 &&
@@ -3736,7 +3759,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 ) || (buffer.getDepth() > chat.length);
 
                 if (!over_max) {
-                    needsToScan = true; // loop
+                    scanState = scan_state.MIN_ACTIVATIONS; // loop
                     buffer.advanceScanPosition();
                 }
             }
