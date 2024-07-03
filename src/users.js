@@ -701,7 +701,7 @@ async function getAllUsers() {
  */
 async function getAllEnabledUsers() {
     const users = await getAllUsers();
-    return users.filter(x => !x.enabled);
+    return users.filter(x => x.enabled);
 }
 
 /**
