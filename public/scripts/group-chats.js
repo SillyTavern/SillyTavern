@@ -178,8 +178,37 @@ async function loadGroupChat(chatId) {
     return [];
 }
 
+async function validateGroup(group) {
+    if (!group) return;
+
+    // Validate that all members exist as characters
+    let dirty = false;
+    group.members = group.members.filter(member => {
+        const character = characters.find(x => x.avatar === member || x.name === member);
+        if (!character) {
+            const msg = `Warning: Listed member ${member} does not exist as a character. It will be removed from the group.`;
+            toastr.warning(msg, 'Group Validation');
+            console.warn(msg);
+            dirty = true;
+        }
+        return character;
+    });
+
+    if (dirty) {
+        await editGroup(group.id, true, false);
+    }
+}
+
 export async function getGroupChat(groupId, reload = false) {
     const group = groups.find((x) => x.id === groupId);
+    if (!group) {
+        console.warn('Group not found', groupId);
+        return;
+    }
+
+    // Run validation before any loading
+    validateGroup(group);
+
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
     let freshChat = false;
@@ -197,7 +226,6 @@ export async function getGroupChat(groupId, reload = false) {
         if (group && Array.isArray(group.members)) {
             for (let member of group.members) {
                 const character = characters.find(x => x.avatar === member || x.name === member);
-
                 if (!character) {
                     continue;
                 }
@@ -219,10 +247,8 @@ export async function getGroupChat(groupId, reload = false) {
         freshChat = true;
     }
 
-    if (group) {
-        let metadata = group.chat_metadata ?? {};
-        updateChatMetadata(metadata, true);
-    }
+    let metadata = group.chat_metadata ?? {};
+    updateChatMetadata(metadata, true);
 
     if (reload) {
         select_group_chats(groupId, true);
@@ -1576,6 +1602,8 @@ export async function openGroupById(groupId) {
     }
 
     if (!is_send_press && !is_group_generating) {
+        select_group_chats(groupId);
+
         if (selected_group !== groupId) {
             await clearChat();
             cancelTtsPlay();
@@ -1587,8 +1615,6 @@ export async function openGroupById(groupId) {
             chat.length = 0;
             await getGroupChat(groupId);
         }
-
-        select_group_chats(groupId);
     }
 }
 

@@ -374,7 +374,7 @@ async function addExtensionsButtonAndMenu() {
 
     $('html').on('click', function (e) {
         const clickTarget = $(e.target);
-        const noCloseTargets = ['#sd_gen', '#extensionsMenuButton'];
+        const noCloseTargets = ['#sd_gen', '#extensionsMenuButton', '#roll_dice'];
         if (dropdown.is(':visible') && !noCloseTargets.some(id => clickTarget.closest(id).length > 0)) {
             $(dropdown).fadeOut(animation_duration);
         }
@@ -641,9 +641,16 @@ async function showExtensionsDetails() {
             action: async () => {
                 requiresReload = true;
                 await autoUpdateExtensions(true);
-                popup.complete(POPUP_RESULT.AFFIRMATIVE);
+                await popup.complete(POPUP_RESULT.AFFIRMATIVE);
             },
         };
+
+        // If we are updating an extension, the "old" popup is still active. We should close that.
+        const oldPopup = Popup.util.popups.find(popup => popup.content.querySelector('.extensions_info'));
+        if (oldPopup) {
+            await oldPopup.complete(POPUP_RESULT.CANCELLED);
+        }
+
         const popup = new Popup(`<div class="extensions_info">${html}</div>`, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, customButtons: [updateAllButton], allowVerticalScrolling: true });
         popupPromise = popup.show();
     } catch (error) {

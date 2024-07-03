@@ -468,7 +468,7 @@ export function initDefaultSlashCommands() {
                 description: 'display name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{user}}',
-                enumProvider: commonEnumProviders.characters('character'),
+                enumProvider: commonEnumProviders.personas,
             }),
         ],
         unnamedArgumentList: [
@@ -1653,8 +1653,8 @@ async function buttonsCallback(args, text) {
                 const buttonElement = document.createElement('div');
                 buttonElement.classList.add('menu_button', 'result-control', 'wide100p');
                 buttonElement.dataset.result = String(result);
-                buttonElement.addEventListener('click', () => {
-                    popup?.complete(result);
+                buttonElement.addEventListener('click', async () => {
+                    await popup.complete(result);
                 });
                 buttonElement.innerText = button;
                 buttonContainer.appendChild(buttonElement);
@@ -2762,7 +2762,7 @@ export async function sendMessageAs(args, text) {
     const isSystem = bias && !removeMacros(mesText).length;
     const compact = isTrueBoolean(args?.compact);
 
-    const character = characters.find(x => x.name === name);
+    const character = characters.find(x => x.avatar === name) ?? characters.find(x => x.name === name);
     let force_avatar, original_avatar;
 
     if (character && character.avatar !== 'none') {
