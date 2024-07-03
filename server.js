@@ -670,10 +670,10 @@ async function verifySecuritySettings() {
     const unprotectedAdminUsers = unprotectedUsers.filter(x => x.admin);
 
     if (unprotectedUsers.length > 0) {
-        console.warn(color.red('The following users are not password protected:'));
+        console.warn(color.blue('A friendly reminder that the following users are not password protected:'));
         unprotectedUsers.map(x => `${color.yellow(x.handle)} ${color.red(x.admin ? '(admin)' : '')}`).forEach(x => console.warn(x));
         console.log();
-        console.warn(`Please disable them or set a password in the admin panel, or by using the ${color.blue('recover.js')} script.`);
+        console.warn(`Consider disabling them, or set a password in the admin panel or by using the ${color.blue('recover.js')} script.`);
         console.log();
 
         if (unprotectedAdminUsers.length > 0) {
