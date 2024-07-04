@@ -13,6 +13,7 @@ export class AutoCompleteOption {
     /**@type {HTMLElement}*/ dom;
     /**@type {(input:string)=>boolean}*/ matchProvider;
     /**@type {(input:string)=>string}*/ valueProvider;
+    /**@type {boolean}*/ makeSelectable = false;
 
 
     /**
@@ -24,19 +25,20 @@ export class AutoCompleteOption {
     }
 
     get isSelectable() {
-        return !this.valueProvider;
+        return this.makeSelectable || !this.valueProvider;
     }
 
 
     /**
      * @param {string} name
      */
-    constructor(name, typeIcon = ' ', type = '', matchProvider = null, valueProvider = null) {
+    constructor(name, typeIcon = ' ', type = '', matchProvider = null, valueProvider = null, makeSelectable = false) {
         this.name = name;
         this.typeIcon = typeIcon;
         this.type = type;
         this.matchProvider = matchProvider;
         this.valueProvider = valueProvider;
+        this.makeSelectable = makeSelectable;
     }
 
 
