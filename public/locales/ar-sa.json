@@ -1023,7 +1023,6 @@
     "prompt_manager_position": "موضع",
     "Injection position. Next to other prompts (relative) or in-chat (absolute).": "موضع الحقن. بجوار المطالبات الأخرى (نسبية) أو داخل الدردشة (مطلقة).",
     "prompt_manager_relative": "نسبي",
-    "prompt_manager_absolute": "مطلق",
     "prompt_manager_depth": "عمق",
     "Injection depth. 0 = after the last message, 1 = before the last message, etc.": "عمق الحقن. 0 = بعد الرسالة الأخيرة، 1 = قبل الرسالة الأخيرة، الخ.",
     "Prompt": "موضوع",

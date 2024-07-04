@@ -1023,7 +1023,6 @@
     "prompt_manager_position": "위치",
     "Injection position. Next to other prompts (relative) or in-chat (absolute).": "주입 위치. 다른 프롬프트 옆(상대적) 또는 채팅 내(절대적).",
     "prompt_manager_relative": "상대적인",
-    "prompt_manager_absolute": "순수한",
     "prompt_manager_depth": "깊이",
     "Injection depth. 0 = after the last message, 1 = before the last message, etc.": "주입 깊이. 0 = 마지막 메시지 뒤, 1 = 마지막 메시지 앞 등",
     "Prompt": "프롬프트",
