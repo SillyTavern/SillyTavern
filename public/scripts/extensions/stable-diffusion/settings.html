@@ -44,10 +44,10 @@
                 <option value="openai">OpenAI (DALL-E)</option>
                 <option value="pollinations">Pollinations</option>
                 <option value="vlad">SD.Next (vladmandic)</option>
+                <option value="stability">Stability AI</option>
                 <option value="auto">Stable Diffusion Web UI (AUTOMATIC1111)</option>
                 <option value="horde">Stable Horde</option>
                 <option value="togetherai">TogetherAI</option>
-                <option value="stability">Stability AI</option>
             </select>
             <div data-sd-source="auto">
                 <label for="sd_auto_url">SD Web UI URL</label>
@@ -191,27 +191,22 @@
                 </div>
             </div>
             <div data-sd-source="stability">
-                <label for="sd_stability_key">API Key</label>
-                <div class="flex-container flexnowrap">
-                    <input id="sd_stability_key" type="password" class="text_pole flex1" placeholder="Enter your Stability AI API key" />
-                    <div id="sd_stability_validate" class="menu_button menu_button_icon">
-                        <i class="fa-solid fa-check"></i>
-                        <span data-i18n="Connect">
-                            Connect
-                        </span>
+                <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
+                    <strong class="flex1" data-i18n="API Key">API Key</strong>
+                    <div id="sd_stability_key" class="menu_button menu_button_icon">
+                        <i class="fa-fw fa-solid fa-key"></i>
+                        <span data-i18n="Click to set">Click to set</span>
                     </div>
                 </div>
-                <i>You can find your API key in the Stability AI dashboard.</i>
-            
+                <div class="marginBot5">
+                    <i data-i18n="You can find your API key in the Stability AI dashboard.">
+                        You can find your API key in the Stability AI dashboard.
+                    </i>
+                </div>
+
                 <div class="flex-container">
                     <div class="flex1">
-                        <label for="sd_stability_engine">Engine</label>
-                        <select id="sd_stability_engine">
-                            <option value="v2beta">V2beta Image Generation</option>
-                        </select>
-                    </div>
-                    <div class="flex1">
-                        <label for="sd_stability_style_preset">Style Preset</label>
+                        <label for="sd_stability_style_preset" data-i18n="Style Preset">Style Preset</label>
                         <select id="sd_stability_style_preset">
                             <option value="anime">Anime</option>
                             <option value="3d-model">3D Model</option>
@@ -233,39 +228,7 @@
                         </select>
                     </div>
                 </div>
-            
-                <div class="flex-container">
-                    <div class="flex1">
-                        <label for="sd_stability_aspect_ratio">Aspect Ratio</label>
-                        <select id="sd_stability_aspect_ratio">
-                            <option value="16:9">16:9</option>
-                            <option value="1:1">1:1</option>
-                            <option value="21:9">21:9</option>
-                            <option value="2:3">2:3</option>
-                            <option value="3:2">3:2</option>
-                            <option value="4:5">4:5</option>
-                            <option value="5:4">5:4</option>
-                            <option value="9:16">9:16</option>
-                            <option value="9:21">9:21</option>
-                        </select>
-                    </div>
-                    <div class="flex1">
-                        <label for="sd_stability_seed">Seed</label>
-                        <input id="sd_stability_seed" type="number" class="text_pole" value="0" min="0" max="4294967295" />
-                    </div>
-                </div>
-            
-                <div class="flex-container">
-                    <div class="flex1">
-                        <label for="sd_stability_output_format">Output Format</label>
-                        <select id="sd_stability_output_format">
-                            <option value="png">PNG</option>
-                            <option value="webp">WebP</option>
-                            <option value="jpeg">JPEG</option>
-                        </select>
-                    </div>
-                </div>
-            </div>                             
+            </div>
             <div class="flex-container">
                 <div class="flex1">
                     <label for="sd_model" data-i18n="Model">Model</label>
@@ -415,7 +378,7 @@
                 </label>
             </div>
 
-            <div data-sd-source="novel,togetherai,pollinations,comfy,drawthings,vlad,auto,horde,extras" class="marginTop5">
+            <div data-sd-source="novel,togetherai,pollinations,comfy,drawthings,vlad,auto,horde,extras,stability" class="marginTop5">
                 <label for="sd_seed">
                     <span data-i18n="Seed">Seed</span>
                     <small data-i18n="(-1 for random)">(-1 for random)</small>
