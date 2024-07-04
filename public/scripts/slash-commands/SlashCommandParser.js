@@ -645,6 +645,7 @@ export class SlashCommandParser {
         closure.abortController = this.abortController;
         closure.debugController = this.debugController;
         this.scope = closure.scope;
+        const oldClosure = this.closure;
         this.closure = closure;
         this.discardWhitespace();
         while (this.testNamedArgument()) {
@@ -698,6 +699,7 @@ export class SlashCommandParser {
         }
         closureIndexEntry.end = this.index - 1;
         this.scope = closure.scope.parent;
+        this.closure = oldClosure ?? closure;
         return closure;
     }
 
