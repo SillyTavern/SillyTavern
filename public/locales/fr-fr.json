@@ -1023,7 +1023,6 @@
     "prompt_manager_position": "Position",
     "Injection position. Next to other prompts (relative) or in-chat (absolute).": "Position d'injection. À côté d’autres invites (relatives) ou dans le chat (absolues).",
     "prompt_manager_relative": "Relatif",
-    "prompt_manager_absolute": "Absolu",
     "prompt_manager_depth": "Profondeur",
     "Injection depth. 0 = after the last message, 1 = before the last message, etc.": "Profondeur d'injection. 0 = après le dernier message, 1 = avant le dernier message, etc.",
     "Prompt": "Inciter",
