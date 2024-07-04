@@ -1373,7 +1373,11 @@ export function registerVariableCommands() {
         name: 'times',
         callback: timesCallback,
         returns: 'result of the last executed command',
-        namedArgumentList: [],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'guard', 'disable loop iteration limit', [ARGUMENT_TYPE.STRING], false, false, null, commonEnumProviders.boolean('onOff')(),
+            ),
+        ],
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'repeats',

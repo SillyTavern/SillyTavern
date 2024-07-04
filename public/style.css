@@ -4515,7 +4515,8 @@ a {
 }
 
 .mes_img_controls .right_menu_button {
-    filter: brightness(80%);
+    filter: brightness(90%);
+    text-shadow: 1px 1px var(--SmartThemeShadowColor) !important;
     padding: 1px;
     height: 1.25em;
     width: 1.25em;
@@ -4538,6 +4539,10 @@ a {
 
 .mes .mes_img_container.img_extra {
     display: flex;
+}
+
+body:not(.caption) .mes_img_caption {
+    display: none;
 }
 
 .img_enlarged_holder {

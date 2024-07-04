@@ -185,18 +185,19 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
         const file = fileInput.files[0];
         if (!file) return;
 
+        const slug = getStringHash(file.name);
+        const fileNamePrefix = `${Date.now()}_${slug}`;
         const fileBase64 = await getBase64Async(file);
         let base64Data = fileBase64.split(',')[1];
 
         // If file is image
         if (file.type.startsWith('image/')) {
             const extension = file.type.split('/')[1];
-            const imageUrl = await saveBase64AsFile(base64Data, name2, file.name, extension);
+            const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
             message.extra.image = imageUrl;
             message.extra.inline_image = true;
         } else {
-            const slug = getStringHash(file.name);
-            const uniqueFileName = `${Date.now()}_${slug}.txt`;
+            const uniqueFileName = `${fileNamePrefix}.txt`;
 
             if (isConvertible(file.type)) {
                 try {
@@ -319,12 +320,10 @@ export function hasPendingFileAttachment() {
 
 /**
  * Displays file information in the message sending form.
+ * @param {File} file File object
  * @returns {Promise<void>}
  */
-async function onFileAttach() {
-    const fileInput = document.getElementById('file_form_input');
-    if (!(fileInput instanceof HTMLInputElement)) return;
-    const file = fileInput.files[0];
+async function onFileAttach(file) {
     if (!file) return;
 
     const isValid = await validateFile(file);
@@ -419,6 +418,7 @@ function embedMessageFile(messageId, messageBlock) {
         }
 
         await populateFileAttachment(message, 'embed_file_input');
+        await eventSource.emit(event_types.MESSAGE_FILE_EMBEDDED, messageId);
         appendMediaToMessage(message, messageBlock);
         await saveChatConditional();
     }
@@ -616,6 +616,8 @@ async function deleteMessageImage() {
     const message = chat[mesId];
     delete message.extra.image;
     delete message.extra.inline_image;
+    delete message.extra.title;
+    delete message.extra.append_title;
     mesBlock.find('.mes_img_container').removeClass('img_extra');
     mesBlock.find('.mes_img').attr('src', '');
     await saveChatConditional();
@@ -1428,7 +1430,7 @@ jQuery(function () {
         wrapper.classList.add('flexFlowColumn', 'justifyCenter', 'alignitemscenter');
         const textarea = document.createElement('textarea');
         textarea.value = String(bro.val());
-        textarea.classList.add('height100p', 'wide100p');
+        textarea.classList.add('height100p', 'wide100p', 'maximized_textarea');
         bro.hasClass('monospace') && textarea.classList.add('monospace');
         textarea.addEventListener('input', function () {
             bro.val(textarea.value).trigger('input');
@@ -1503,8 +1505,34 @@ jQuery(function () {
     $(document).on('click', '.mes_img_enlarge', enlargeMessageImage);
     $(document).on('click', '.mes_img_delete', deleteMessageImage);
 
-    $('#file_form_input').on('change', onFileAttach);
+    $('#file_form_input').on('change', async () => {
+        const fileInput = document.getElementById('file_form_input');
+        if (!(fileInput instanceof HTMLInputElement)) return;
+        const file = fileInput.files[0];
+        await onFileAttach(file);
+    });
     $('#file_form').on('reset', function () {
         $('#file_form').addClass('displayNone');
+    });
+
+    document.getElementById('send_textarea').addEventListener('paste', async function (event) {
+        if (event.clipboardData.files.length === 0) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const fileInput = document.getElementById('file_form_input');
+        if (!(fileInput instanceof HTMLInputElement)) return;
+
+        // Workaround for Firefox: Use a DataTransfer object to indirectly set fileInput.files
+        const dataTransfer = new DataTransfer();
+        for (let i = 0; i < event.clipboardData.files.length; i++) {
+            dataTransfer.items.add(event.clipboardData.files[i]);
+        }
+
+        fileInput.files = dataTransfer.files;
+        await onFileAttach(fileInput.files[0]);
     });
 });

@@ -371,7 +371,7 @@ function generateTimestamp() {
  * @param {string} prefix File prefix to filter backups by.
  */
 function removeOldBackups(directory, prefix) {
-    const MAX_BACKUPS = 50;
+    const MAX_BACKUPS = Number(getConfigValue('numberOfBackups', 50));
 
     let files = fs.readdirSync(directory).filter(f => f.startsWith(prefix));
     if (files.length > MAX_BACKUPS) {

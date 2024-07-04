@@ -27,8 +27,17 @@ dialog {
     backface-visibility: hidden;
     transform: translateZ(0);
     -webkit-font-smoothing: subpixel-antialiased;
+
+    /* Variables setup */
+    --popup-animation-speed: var(--animation-duration-slow);
 }
 
+/** Popup styles applied to the main popup */
+.popup--animation-fast { --popup-animation-speed: var(--animation-duration); }
+.popup--animation-slow { --popup-animation-speed: var(--animation-duration-slow); }
+.popup--animation-none { --popup-animation-speed: 0ms; }
+
+/* Styling of main popup elements */
 .popup .popup-body {
     display: flex;
     flex-direction: column;
@@ -60,11 +69,11 @@ dialog {
 
 /* Opening animation */
 .popup[opening] {
-    animation: pop-in var(--animation-duration-slow) ease-in-out;
+    animation: pop-in var(--popup-animation-speed) ease-in-out;
 }
 
 .popup[opening]::backdrop {
-    animation: fade-in var(--animation-duration-slow) ease-in-out;
+    animation: fade-in var(--popup-animation-speed) ease-in-out;
 }
 
 /* Open state of the dialog */
@@ -85,11 +94,11 @@ body.no-blur .popup[open]::backdrop {
 
 /* Closing animation */
 .popup[closing] {
-    animation: pop-out var(--animation-duration-slow) ease-in-out;
+    animation: pop-out var(--popup-animation-speed) ease-in-out;
 }
 
 .popup[closing]::backdrop {
-    animation: fade-out var(--animation-duration-slow) ease-in-out;
+    animation: fade-out var(--popup-animation-speed) ease-in-out;
 }
 
 .popup #toast-container {

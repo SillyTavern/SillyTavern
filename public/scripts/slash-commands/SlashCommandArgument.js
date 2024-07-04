@@ -62,7 +62,7 @@ export class SlashCommandArgument {
      * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} enums
      * @param {(executor:SlashCommandExecutor, scope:SlashCommandScope)=>SlashCommandEnumValue[]} enumProvider function that returns auto complete options
      */
-    constructor(description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = [], enumProvider = null, forceEnum = true) {
+    constructor(description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = [], enumProvider = null, forceEnum = false) {
         this.description = description;
         this.typeList = types ? Array.isArray(types) ? types : [types] : [];
         this.isRequired = isRequired ?? false;
@@ -93,7 +93,7 @@ export class SlashCommandNamedArgument extends SlashCommandArgument {
      * @param {string|SlashCommandClosure} [props.defaultValue=null] default value if no value is provided
      * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} [props.enumList=[]] list of accepted values
      * @param {(executor:SlashCommandExecutor, scope:SlashCommandScope)=>SlashCommandEnumValue[]} [props.enumProvider=null] function that returns auto complete options
-     * @param {boolean} [props.forceEnum=true] default: true - whether the input must match one of the enum values
+     * @param {boolean} [props.forceEnum=false] default: false - whether the input must match one of the enum values
      */
     static fromProps(props) {
         return new SlashCommandNamedArgument(
@@ -106,7 +106,7 @@ export class SlashCommandNamedArgument extends SlashCommandArgument {
             props.enumList ?? [],
             props.aliasList ?? [],
             props.enumProvider ?? null,
-            props.forceEnum ?? true,
+            props.forceEnum ?? false,
         );
     }
 
@@ -123,9 +123,9 @@ export class SlashCommandNamedArgument extends SlashCommandArgument {
      * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} [enums=[]]
      * @param {string[]} [aliases=[]]
      * @param {(executor:SlashCommandExecutor, scope:SlashCommandScope)=>SlashCommandEnumValue[]} [enumProvider=null] function that returns auto complete options
-     * @param {boolean} [forceEnum=true]
+     * @param {boolean} [forceEnum=false]
      */
-    constructor(name, description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = [], aliases = [], enumProvider = null, forceEnum = true) {
+    constructor(name, description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = [], aliases = [], enumProvider = null, forceEnum = false) {
         super(description, types, isRequired, acceptsMultiple, defaultValue, enums, enumProvider, forceEnum);
         this.name = name;
         this.aliasList = aliases ? Array.isArray(aliases) ? aliases : [aliases] : [];

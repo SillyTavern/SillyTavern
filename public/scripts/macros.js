@@ -254,7 +254,7 @@ function getCurrentSwipeId() {
     // For swipe macro, we are accepting using the message that is currently being swiped
     const mid = getLastMessageId({ exclude_swipe_in_propress: false });
     const swipeId = chat[mid]?.swipe_id;
-    return swipeId ? swipeId + 1 : null;
+    return swipeId !== null ? swipeId + 1 : null;
 }
 
 /**
@@ -401,7 +401,7 @@ function timeDiffReplace(input) {
         const time2 = moment(matchPart2);
 
         const timeDifference = moment.duration(time1.diff(time2));
-        return timeDifference.humanize();
+        return timeDifference.humanize(true);
     });
 
     return output;

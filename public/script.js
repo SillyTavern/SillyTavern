@@ -43,7 +43,6 @@ import {
     saveGroupChat,
     getGroups,
     generateGroupWrapper,
-    deleteGroup,
     is_group_generating,
     resetSelectedGroup,
     select_group_chats,
@@ -159,7 +158,7 @@ import {
 import { debounce_timeout } from './scripts/constants.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
-import { COMMENT_NAME_DEFAULT, executeSlashCommands, executeSlashCommandsOnChatInput, getSlashCommandsHelp, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, registerSlashCommand, stopScriptExecution } from './scripts/slash-commands.js';
+import { COMMENT_NAME_DEFAULT, executeSlashCommands, executeSlashCommandsOnChatInput, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, registerSlashCommand, stopScriptExecution } from './scripts/slash-commands.js';
 import {
     tag_map,
     tags,
@@ -209,7 +208,7 @@ import {
     instruct_presets,
     selectContextPreset,
 } from './scripts/instruct-mode.js';
-import { initLocales } from './scripts/i18n.js';
+import { initLocales, t, translate } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
 import {
     user_avatar,
@@ -266,8 +265,6 @@ await new Promise((resolve) => {
 });
 
 showLoader();
-// Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
-document.getElementById('preloader').remove();
 
 // Configure toast library:
 toastr.options.escapeHtml = true; // Prevent raw HTML inserts
@@ -408,6 +405,7 @@ export const event_types = {
     MESSAGE_EDITED: 'message_edited',
     MESSAGE_DELETED: 'message_deleted',
     MESSAGE_UPDATED: 'message_updated',
+    MESSAGE_FILE_EMBEDDED: 'message_file_embedded',
     IMPERSONATE_READY: 'impersonate_ready',
     CHAT_CHANGED: 'chat_id_changed',
     GENERATION_STARTED: 'generation_started',
@@ -522,6 +520,7 @@ const chatElement = $('#chat');
 let dialogueResolve = null;
 let dialogueCloseStop = false;
 export let chat_metadata = {};
+/** @type {StreamingProcessor} */
 export let streamingProcessor = null;
 let crop_data = undefined;
 let is_delete_mode = false;
@@ -839,6 +838,7 @@ export let main_api;// = "kobold";
 //novel settings
 export let novelai_settings;
 export let novelai_setting_names;
+/** @type {AbortController} */
 let abortController;
 
 //css
@@ -911,6 +911,7 @@ async function firstLoadInit() {
     initKeyboard();
     initDynamicStyles();
     initTags();
+    initDefaultSlashCommands();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
@@ -2077,14 +2078,23 @@ export function updateMessageBlock(messageId, message) {
     appendMediaToMessage(message, messageElement);
 }
 
-export function appendMediaToMessage(mes, messageElement) {
+/**
+ * Appends image or file to the message element.
+ * @param {object} mes Message object
+ * @param {JQuery<HTMLElement>} messageElement Message element
+ * @param {boolean} [adjustScroll=true] Whether to adjust the scroll position after appending the media
+ */
+export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
     // Add image to message
     if (mes.extra?.image) {
         const chatHeight = $('#chat').prop('scrollHeight');
         const image = messageElement.find('.mes_img');
         const text = messageElement.find('.mes_text');
         const isInline = !!mes.extra?.inline_image;
-        image.on('load', function () {
+        image.off('load').on('load', function () {
+            if (!adjustScroll) {
+                return;
+            }
             const scrollPosition = $('#chat').scrollTop();
             const newChatHeight = $('#chat').prop('scrollHeight');
             const diff = newChatHeight - chatHeight;
@@ -3403,6 +3413,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let regexedMessage = getRegexedString(message, regexType, options);
         regexedMessage = await appendFileContent(chatItem, regexedMessage);
 
+        if (chatItem?.extra?.append_title && chatItem?.extra?.title) {
+            regexedMessage = `${regexedMessage}\n\n${chatItem.extra.title}`;
+        }
+
         return {
             ...chatItem,
             mes: regexedMessage,
@@ -4366,6 +4380,25 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         streamingProcessor = null;
         throw exception;
     }
+}
+
+/**
+ * Stops the generation and any streaming if it is currently running.
+ */
+export function stopGeneration() {
+    let stopped = false;
+    if (streamingProcessor) {
+        streamingProcessor.onStopStreaming();
+        streamingProcessor = null;
+        stopped = true;
+    }
+    if (abortController) {
+        abortController.abort('Clicked stop button');
+        hideStopButton();
+        stopped = true;
+    }
+    eventSource.emit(event_types.GENERATION_STOPPED);
+    return stopped;
 }
 
 /**
@@ -5630,7 +5663,7 @@ export async function renameCharacter(name = null, { silent = false, renameChats
         }
     }
     catch (error) {
-    // Reloading to prevent data corruption
+        // Reloading to prevent data corruption
         if (!silent) await callPopup('Something went wrong. The page will be reloaded.', 'text');
         else toastr.error('Something went wrong. The page will be reloaded.', 'Rename Character');
 
@@ -7151,7 +7184,8 @@ function onScenarioOverrideRemoveClick() {
  * @param {string} inputValue - Value to set the input to.
  * @param {PopupOptions} options - Options for the popup.
  * @typedef {{okButton?: string, rows?: number, wide?: boolean, wider?: boolean, large?: boolean, allowHorizontalScrolling?: boolean, allowVerticalScrolling?: boolean, cropAspect?: number }} PopupOptions - Options for the popup.
- * @returns
+ * @returns {Promise<any>} A promise that resolves when the popup is closed.
+ * @deprecated Use `callGenericPopup` instead.
  */
 export function callPopup(text, type, inputValue = '', { okButton, rows, wide, wider, large, allowHorizontalScrolling, allowVerticalScrolling, cropAspect } = {}) {
     function getOkButtonText() {
@@ -7782,6 +7816,7 @@ window['SillyTavern'].getContext = function () {
         eventTypes: event_types,
         addOneMessage: addOneMessage,
         generate: Generate,
+        stopGeneration: stopGeneration,
         getTokenCount: getTokenCount,
         extensionPrompts: extension_prompts,
         setExtensionPrompt: setExtensionPrompt,
@@ -7814,6 +7849,8 @@ window['SillyTavern'].getContext = function () {
         registerDataBankScraper: ScraperManager.registerDataBankScraper,
         callPopup: callPopup,
         callGenericPopup: callGenericPopup,
+        showLoader: showLoader,
+        hideLoader: hideLoader,
         mainApi: main_api,
         extensionSettings: extension_settings,
         ModuleWorkerWrapper: ModuleWorkerWrapper,
@@ -7825,6 +7862,8 @@ window['SillyTavern'].getContext = function () {
         messageFormatting: messageFormatting,
         shouldSendOnEnter: shouldSendOnEnter,
         isMobile: isMobile,
+        t: t,
+        translate: translate,
         tags: tags,
         tagMap: tag_map,
         menuType: menu_type,
@@ -7833,6 +7872,8 @@ window['SillyTavern'].getContext = function () {
          * @deprecated Legacy snake-case naming, compatibility with old extensions
          */
         event_types: event_types,
+        POPUP_TYPE: POPUP_TYPE,
+        POPUP_RESULT: POPUP_RESULT,
     };
 };
 
@@ -7882,7 +7923,7 @@ function swipe_left() {      // when we swipe left..but no generation.
         }
         $(this).parent().children('.mes_block').transition({
             x: swipe_range,
-            duration: swipe_duration,
+            duration: animation_duration > 0 ? swipe_duration : 0,
             easing: animation_easing,
             queue: false,
             complete: async function () {
@@ -7925,7 +7966,7 @@ function swipe_left() {      // when we swipe left..but no generation.
                     complete: function () {
                         $(this).parent().children('.mes_block').transition({
                             x: '0px',
-                            duration: swipe_duration,
+                            duration: animation_duration > 0 ? swipe_duration : 0,
                             easing: animation_easing,
                             queue: false,
                             complete: async function () {
@@ -7940,7 +7981,7 @@ function swipe_left() {      // when we swipe left..but no generation.
 
         $(this).parent().children('.avatar').transition({
             x: swipe_range,
-            duration: swipe_duration,
+            duration: animation_duration > 0 ? swipe_duration : 0,
             easing: animation_easing,
             queue: false,
             complete: function () {
@@ -7952,7 +7993,7 @@ function swipe_left() {      // when we swipe left..but no generation.
                     complete: function () {
                         $(this).parent().children('.avatar').transition({
                             x: '0px',
-                            duration: swipe_duration,
+                            duration: animation_duration > 0 ? swipe_duration : 0,
                             easing: animation_easing,
                             queue: false,
                             complete: function () {
@@ -8059,7 +8100,7 @@ const swipe_right = () => {
         this_mes_div.children('.swipe_left').css('display', 'flex');
         this_mes_div.children('.mes_block').transition({        // this moves the div back and forth
             x: '-' + swipe_range,
-            duration: swipe_duration,
+            duration: animation_duration > 0 ? swipe_duration : 0,
             easing: animation_easing,
             queue: false,
             complete: async function () {
@@ -8118,7 +8159,7 @@ const swipe_right = () => {
                     complete: function () {
                         this_mes_div.children('.mes_block').transition({
                             x: '0px',
-                            duration: swipe_duration,
+                            duration: animation_duration > 0 ? swipe_duration : 0,
                             easing: animation_easing,
                             queue: false,
                             complete: async function () {
@@ -8141,7 +8182,7 @@ const swipe_right = () => {
         });
         this_mes_div.children('.avatar').transition({ // moves avatar along with swipe
             x: '-' + swipe_range,
-            duration: swipe_duration,
+            duration: animation_duration > 0 ? swipe_duration : 0,
             easing: animation_easing,
             queue: false,
             complete: function () {
@@ -8153,7 +8194,7 @@ const swipe_right = () => {
                     complete: function () {
                         this_mes_div.children('.avatar').transition({
                             x: '0px',
-                            duration: swipe_duration,
+                            duration: animation_duration > 0 ? swipe_duration : 0,
                             easing: animation_easing,
                             queue: false,
                             complete: function () {
@@ -8433,10 +8474,10 @@ async function connectAPISlash(_, text) {
 /**
  * Imports supported files dropped into the app window.
  * @param {File[]} files Array of files to process
- * @param {boolean?} preserveFileNames Whether to preserve original file names
+ * @param {Map<File, string>} [data] Extra data to pass to the import function
  * @returns {Promise<void>}
  */
-export async function processDroppedFiles(files, preserveFileNames = false) {
+export async function processDroppedFiles(files, data = new Map()) {
     const allowedMimeTypes = [
         'application/json',
         'image/png',
@@ -8453,7 +8494,8 @@ export async function processDroppedFiles(files, preserveFileNames = false) {
     for (const file of files) {
         const extension = file.name.split('.').pop().toLowerCase();
         if (allowedMimeTypes.includes(file.type) || allowedExtensions.includes(extension)) {
-            await importCharacter(file, preserveFileNames);
+            const preservedName = data instanceof Map && data.get(file);
+            await importCharacter(file, preservedName);
         } else {
             toastr.warning('Unsupported file type: ' + file.name);
         }
@@ -8463,10 +8505,10 @@ export async function processDroppedFiles(files, preserveFileNames = false) {
 /**
  * Imports a character from a file.
  * @param {File} file File to import
- * @param {boolean?} preserveFileName Whether to preserve original file name
+ * @param {string?} preserveFileName Whether to preserve original file name
  * @returns {Promise<void>}
  */
-async function importCharacter(file, preserveFileName = false) {
+async function importCharacter(file, preserveFileName = '') {
     if (is_group_generating || is_send_press) {
         toastr.error('Cannot import characters while generating. Stop the request and try again.', 'Import aborted');
         throw new Error('Cannot import character while generating');
@@ -8482,7 +8524,7 @@ async function importCharacter(file, preserveFileName = false) {
     const formData = new FormData();
     formData.append('avatar', file);
     formData.append('file_type', format);
-    formData.append('preserve_file_name', String(preserveFileName));
+    if (preserveFileName) formData.append('preserved_name', preserveFileName);
 
     const data = await jQuery.ajax({
         type: 'POST',
@@ -9153,14 +9195,26 @@ jQuery(async function () {
         chooseBogusFolder($(this), tagId);
     });
 
-    $(document).on('input', '.edit_textarea', function () {
-        scroll_holder = $('#chat').scrollTop();
-        $(this).height(0).height(this.scrollHeight);
+    /**
+     * Sets the scroll height of the edit textarea to fit the content.
+     * @param {HTMLTextAreaElement} e Textarea element to auto-fit
+     */
+    function autoFitEditTextArea(e) {
+        scroll_holder = chatElement[0].scrollTop;
+        e.style.height = '0';
+        e.style.height = `${e.scrollHeight + 4}px`;
         is_use_scroll_holder = true;
+    }
+    const autoFitEditTextAreaDebounced = debounce(autoFitEditTextArea, debounce_timeout.short);
+    document.addEventListener('input', e => {
+        if (e.target instanceof HTMLTextAreaElement && e.target.classList.contains('edit_textarea')) {
+            const immediately = e.target.scrollHeight > e.target.offsetHeight || e.target.value === '';
+            immediately ? autoFitEditTextArea(e.target) : autoFitEditTextAreaDebounced(e.target);
+        }
     });
-    $('#chat').on('scroll', function () {
+    document.getElementById('chat').addEventListener('scroll', function () {
         if (is_use_scroll_holder) {
-            $('#chat').scrollTop(scroll_holder);
+            this.scrollTop = scroll_holder;
             is_use_scroll_holder = false;
         }
     });
@@ -9692,14 +9746,8 @@ jQuery(async function () {
     });
 
     $('#newChatFromManageScreenButton').on('click', function () {
-        setTimeout(() => {
-            $('#option_start_new_chat').trigger('click');
-        }, 1);
-        setTimeout(() => {
-            $('#dialogue_popup_ok').trigger('click');
-        }, 1);
+        doNewChat({ deleteCurrentChat: false });
         $('#select_chat_cross').trigger('click');
-
     });
 
     //////////////////////////////////////////////////////////////////////////////////////////////
@@ -10319,15 +10367,7 @@ jQuery(async function () {
     });
 
     $(document).on('click', '.mes_stop', function () {
-        if (streamingProcessor) {
-            streamingProcessor.onStopStreaming();
-            streamingProcessor = null;
-        }
-        if (abortController) {
-            abortController.abort('Clicked stop button');
-            hideStopButton();
-        }
-        eventSource.emit(event_types.GENERATION_STOPPED);
+        stopGeneration();
     });
 
     $(document).on('click', '#form_sheld .stscript_continue', function () {
@@ -10615,10 +10655,12 @@ jQuery(async function () {
                         }
 
                         try {
-                            const cloneFile = new File([file], characters[this_chid].avatar, { type: file.type });
                             const chatFile = characters[this_chid]['chat'];
-                            await processDroppedFiles([cloneFile], true);
+                            const data = new Map();
+                            data.set(file, characters[this_chid].avatar);
+                            await processDroppedFiles([file], data);
                             await openCharacterChat(chatFile);
+                            await fetch(getThumbnailUrl('avatar', characters[this_chid].avatar), { cache: 'no-cache' });
                         } catch {
                             toastr.error('Failed to replace the character card.', 'Something went wrong');
                         }
@@ -10814,3 +10856,4 @@ jQuery(async function () {
 
     initCustomSelectedSamplers();
 });
+

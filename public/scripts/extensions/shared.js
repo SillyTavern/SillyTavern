@@ -34,6 +34,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
     const isCustom = extension_settings.caption.multimodal_api === 'custom';
     const isOoba = extension_settings.caption.multimodal_api === 'ooba';
     const isKoboldCpp = extension_settings.caption.multimodal_api === 'koboldcpp';
+    const isVllm = extension_settings.caption.multimodal_api === 'vllm';
     const base64Bytes = base64Img.length * 0.75;
     const compressionLimit = 2 * 1024 * 1024;
     if ((['google', 'openrouter'].includes(extension_settings.caption.multimodal_api) && base64Bytes > compressionLimit) || isOoba || isKoboldCpp) {
@@ -63,6 +64,14 @@ export async function getMultimodalCaption(base64Img, prompt) {
         }
 
         requestBody.server_url = textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
+    }
+
+    if (isVllm) {
+        if (extension_settings.caption.multimodal_model === 'vllm_current') {
+            requestBody.model = textgenerationwebui_settings.vllm_model;
+        }
+
+        requestBody.server_url = textgenerationwebui_settings.server_urls[textgen_types.VLLM];
     }
 
     if (isLlamaCpp) {
@@ -149,6 +158,14 @@ function throwIfInvalidModel(useReverseProxy) {
 
     if (extension_settings.caption.multimodal_api === 'koboldcpp' && !textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP]) {
         throw new Error('KoboldCpp server URL is not set.');
+    }
+
+    if (extension_settings.caption.multimodal_api === 'vllm' && !textgenerationwebui_settings.server_urls[textgen_types.VLLM]) {
+        throw new Error('vLLM server URL is not set.');
+    }
+
+    if (extension_settings.caption.multimodal_api === 'vllm' && extension_settings.caption.multimodal_model === 'vllm_current' && !textgenerationwebui_settings.vllm_model) {
+        throw new Error('vLLM model is not set.');
     }
 
     if (extension_settings.caption.multimodal_api === 'custom' && !oai_settings.custom_url) {

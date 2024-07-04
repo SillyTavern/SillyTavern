@@ -1,8 +1,10 @@
 /* iPhone copium land */
-@media screen and (max-width: 1000px) {
-    .ios .popup .popup-body {
-        height: fit-content;
-        max-height: 90vh;
-        max-height: 90svh;
-    }
+body.safari .popup .popup-body:has(.maximized_textarea) {
+    height: 100%;
+}
+
+body.safari .popup .popup-body {
+    height: fit-content;
+    max-height: 90vh;
+    max-height: 90svh;
 }

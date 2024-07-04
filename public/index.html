@@ -1969,7 +1969,7 @@
                                 <small data-i18n="Example: http://127.0.0.1:5000/api ">Example: http://127.0.0.1:5000/api </small>
                                 <input id="api_url_text" name="api_url" class="text_pole" placeholder="http://127.0.0.1:5000/api" maxlength="500" value="" autocomplete="off" data-server-history="kobold">
                                 <div id="koboldcpp_hint" class="neutral_warning displayNone">
-                                    We have a dedicated KoboldCpp support under Text Completion ⇒ KoboldCpp.
+                                    KoboldCpp works better when you select the Text Completion API and then KoboldCpp as a type!
                                 </div>
                                 <div class="flex-container">
                                     <div id="api_button" class="api_button menu_button" type="submit" data-i18n="Connect" data-server-connect="kobold">Connect</div>
@@ -3903,8 +3903,8 @@
                                 <label for="tag_import_setting"><small data-i18n="Import Card Tags">Import Card Tags</small></label>
                                 <select id="tag_import_setting" class="widthNatural flex1 margin0">
                                     <option data-i18n="Ask" value="1">Ask</option>
-                                    <option data-i18n="None" value="2">None</option>
-                                    <option data-i18n="All" value="3">All</option>
+                                    <option data-i18n="tag_import_none" value="2">None</option>
+                                    <option data-i18n="tag_import_all" value="3">All</option>
                                     <option data-i18n="Existing" value="4">Existing</option>
                                 </select>
                             </div>
@@ -4796,7 +4796,7 @@
                         <input multiple type="file" id="character_import_file" accept=".json, image/png, .yaml, .yml, .charx" name="avatar">
                         <input id="character_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
                     </form>
-                    <input type="file" id="character_replace_file" accept="image/png" name="replace_avatar" hidden>
+                    <input type="file" id="character_replace_file" accept=".json, image/png, .yaml, .yml, .charx" name="replace_avatar" hidden>
                 </div>
                 <div name="Character List Panel" id="rm_characters_block" class="right_menu">
                     <div id="charListFixedTop">
@@ -5686,10 +5686,11 @@
                         <div class="mes_edit_cancel menu_button  fa-solid fa-xmark" title="Cancel" data-i18n="[title]Cancel"></div>
                     </div>
                 </div>
-                <div class=mes_text></div>
+                <div class="mes_text"></div>
                 <div class="mes_img_container">
                     <div class="mes_img_controls">
                         <div title="Enlarge" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_img_enlarge" data-i18n="[title]Enlarge"></div>
+                        <div title="Caption" class="right_menu_button fa-lg fa-solid fa-envelope-open-text mes_img_caption" data-i18n="[title]Caption"></div>
                         <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_img_delete" data-i18n="[title]Delete"></div>
                     </div>
                     <img class="mes_img" src="" />
