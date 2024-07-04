@@ -807,6 +807,8 @@ stability.post('/generate', jsonParser, async (request, response) => {
 
         const { payload, model } = request.body;
 
+        console.log('Stability AI request:', model, payload);
+
         const formData = new FormData();
         for (const [key, value] of Object.entries(payload)) {
             if (value !== undefined) {
