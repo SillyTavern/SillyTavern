@@ -323,12 +323,13 @@ export class QuickReply {
                 this.updateMessage(message.value);
                 updateScrollDebounced();
             });
-            setSlashCommandAutoComplete(message, true);
             //TODO move tab support for textarea into its own helper(?) and use for both this and .editor_maximize
             message.addEventListener('keydown', async(evt) => {
                 if (this.isExecuting) return;
                 if (evt.key == 'Tab' && !evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
                     evt.preventDefault();
+                    evt.stopImmediatePropagation();
+                    evt.stopPropagation();
                     const start = message.selectionStart;
                     const end = message.selectionEnd;
                     if (end - start > 0 && message.value.substring(start, end).includes('\n')) {
@@ -346,6 +347,8 @@ export class QuickReply {
                     }
                 } else if (evt.key == 'Tab' && evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
                     evt.preventDefault();
+                    evt.stopImmediatePropagation();
+                    evt.stopPropagation();
                     const start = message.selectionStart;
                     const end = message.selectionEnd;
                     const lineStart = message.value.lastIndexOf('\n', start - 1);
@@ -370,6 +373,7 @@ export class QuickReply {
                     message.selectionEnd  = message.selectionStart;
                     updateSyntax();
                 } else if (evt.key == 'Enter' && evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
+                    evt.stopImmediatePropagation();
                     evt.stopPropagation();
                     evt.preventDefault();
                     if (executeShortcut.checked) {
@@ -385,6 +389,7 @@ export class QuickReply {
                     }
                 }
             });
+            setSlashCommandAutoComplete(message, true);
             message.addEventListener('wheel', (evt)=>{
                 updateScrollDebounced(evt);
             });
