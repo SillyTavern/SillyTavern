@@ -56,6 +56,8 @@ export class AutoComplete {
     /**@type {function}*/ updateDetailsPositionDebounced;
     /**@type {function}*/ updateFloatingPositionDebounced;
 
+    /**@type {(item:AutoCompleteOption)=>any}*/ onSelect;
+
     get matchType() {
         return power_user.stscript.matching ?? 'fuzzy';
     }
@@ -669,6 +671,7 @@ export class AutoComplete {
         }
         this.wasForced = false;
         this.textarea.dispatchEvent(new Event('input', { bubbles:true }));
+        this.onSelect?.(this.selectedItem);
     }
 
 
