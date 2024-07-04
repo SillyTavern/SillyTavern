@@ -1023,7 +1023,6 @@
     "prompt_manager_position": "Позиція",
     "Injection position. Next to other prompts (relative) or in-chat (absolute).": "Позиція ін'єкції. Поруч з іншими підказками (відносні) або в чаті (абсолютні).",
     "prompt_manager_relative": "Відносна",
-    "prompt_manager_absolute": "Абсолютний",
     "prompt_manager_depth": "Глибина",
     "Injection depth. 0 = after the last message, 1 = before the last message, etc.": "Глибина ін'єкції. 0 = після останнього повідомлення, 1 = перед останнім повідомленням тощо.",
     "Prompt": "Запит",

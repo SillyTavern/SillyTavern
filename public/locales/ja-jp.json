@@ -1023,7 +1023,6 @@
     "prompt_manager_position": "位置",
     "Injection position. Next to other prompts (relative) or in-chat (absolute).": "挿入位置。他のプロンプトの隣 (相対) またはチャット内 (絶対)。",
     "prompt_manager_relative": "相対的",
-    "prompt_manager_absolute": "絶対",
     "prompt_manager_depth": "深さ",
     "Injection depth. 0 = after the last message, 1 = before the last message, etc.": "注入の深さ。0 = 最後のメッセージの後、1 = 最後のメッセージの前など。",
     "Prompt": "プロンプト",

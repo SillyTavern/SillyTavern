@@ -1025,7 +1025,6 @@
     "prompt_manager_position": "位置",
     "Injection position. Next to other prompts (relative) or in-chat (absolute).": "注入位置。與其他提示詞相鄰（相對位置）或在聊天中（絕對位置）。",
     "prompt_manager_relative": "相對位置",
-    "prompt_manager_absolute": "絕對位置",
     "prompt_manager_depth": "深度",
     "Injection depth. 0 = after the last message, 1 = before the last message, etc.": "注入深度。0 = 在最後一條訊息之後，1 = 在最後一條訊息之前，以此類推。",
     "Prompt": "提示詞",
