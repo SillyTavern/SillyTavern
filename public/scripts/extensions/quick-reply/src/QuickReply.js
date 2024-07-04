@@ -367,9 +367,6 @@ export class QuickReply {
                     const end = message.selectionEnd;
                     const lineStart = message.value.lastIndexOf('\n', start - 1);
                     const indent = /^(\s*)/.exec(message.value.slice(lineStart).replace(/^\n*/, ''))[1] ?? '';
-                    const x = message.value.slice(0, start);
-                    const y = message.value.slice(end);
-                    const z = message.value.slice(lineStart);
                     message.value = `${message.value.slice(0, start)}\n${indent}${message.value.slice(end)}`;
                     message.selectionStart = start + 1 + indent.length;
                     message.selectionEnd  = message.selectionStart;
