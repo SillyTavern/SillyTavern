@@ -855,7 +855,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             const bias = getBiasStrings(userInput, type);
             await sendMessageAsUser(userInput, bias.messageBias);
             await saveChatConditional();
-            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
+            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
         }
 
         // now the real generation begins: cycle through every activated character
@@ -1006,7 +1006,7 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
         }
     }
 
-    let chattyMembers = [];
+    const chattyMembers = [];
     // activation by talkativeness (in shuffled order, except banned)
     const shuffledMembers = shuffle([...members]);
     for (let member of shuffledMembers) {
@@ -1017,14 +1017,13 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
         }
 
         const rollValue = Math.random();
-        let talkativeness = Number(character.talkativeness);
-        talkativeness = Number.isNaN(talkativeness)
+        const talkativeness = isNaN(character.talkativeness)
             ? talkativeness_default
-            : talkativeness;
+            : Number(character.talkativeness);
         if (talkativeness >= rollValue) {
             activatedMembers.push(member);
         }
-        if (talkativeness > 0){
+        if (talkativeness > 0) {
             chattyMembers.push(member);
         }
     }
@@ -1032,7 +1031,7 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
     // pick 1 at random if no one was activated
     let retries = 0;
     // try to limit the selected random character to those with talkativeness > 0
-    let randomPool = chattyMembers.length > 0? chattyMembers : members;
+    const randomPool = chattyMembers.length > 0 ? chattyMembers : members;
     while (activatedMembers.length === 0 && ++retries <= randomPool.length) {
         const randomIndex = Math.floor(Math.random() * randomPool.length);
         const character = characters.find((x) => x.avatar === randomPool[randomIndex]);
