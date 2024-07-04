@@ -1006,6 +1006,7 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
         }
     }
 
+    let chattyMembers = [];
     // activation by talkativeness (in shuffled order, except banned)
     const shuffledMembers = shuffle([...members]);
     for (let member of shuffledMembers) {
@@ -1023,19 +1024,24 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
         if (talkativeness >= rollValue) {
             activatedMembers.push(member);
         }
+        if (talkativeness > 0){
+            chattyMembers.push(member);
+        }
     }
 
     // pick 1 at random if no one was activated
     let retries = 0;
-    while (activatedMembers.length === 0 && ++retries <= members.length) {
-        const randomIndex = Math.floor(Math.random() * members.length);
-        const character = characters.find((x) => x.avatar === members[randomIndex]);
+    // try to limit the selected random character to those with talkativeness > 0
+    let randomPool = chattyMembers.length > 0? chattyMembers : members;
+    while (activatedMembers.length === 0 && ++retries <= randomPool.length) {
+        const randomIndex = Math.floor(Math.random() * randomPool.length);
+        const character = characters.find((x) => x.avatar === randomPool[randomIndex]);
 
         if (!character) {
             continue;
         }
 
-        activatedMembers.push(members[randomIndex]);
+        activatedMembers.push(randomPool[randomIndex]);
     }
 
     // de-duplicate array of character avatars
