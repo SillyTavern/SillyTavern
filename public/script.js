@@ -6154,7 +6154,7 @@ async function doOnboarding(avatarId) {
     template.find('input[name="enable_simple_mode"]').on('input', function () {
         simpleUiMode = $(this).is(':checked');
     });
-    let userName = await callGenericPopup(template, POPUP_TYPE.INPUT, currentUser?.name || name1, { rows: 2 });
+    let userName = await callGenericPopup(template, POPUP_TYPE.INPUT, currentUser?.name || name1, { rows: 2, wide: true, large: true });
 
     if (userName) {
         userName = userName.replace('\n', ' ');
