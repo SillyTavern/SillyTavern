@@ -179,7 +179,12 @@ export class SlashCommandParser {
         }
         if (!Object.keys(this.commands).includes('break')) {
             SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({ name: 'break',
-                helpString: 'Break out of a loop.',
+                helpString: 'Break out of a loop or closure executed through /run or /:',
+                unnamedArgumentList: [
+                    SlashCommandArgument.fromProps({ description: 'value to pass down the pipe instead of the current pipe value',
+                        typeList: Object.values(ARGUMENT_TYPE),
+                    }),
+                ],
             }));
         }
 
