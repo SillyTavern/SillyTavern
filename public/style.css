@@ -2922,6 +2922,14 @@ input[type=search]:focus::-webkit-search-cancel-button {
     position: relative;
 }
 
+.group_member .queue_position:not(:empty)::before {  
+    content: "#";
+}
+
+.group_member .queue_position{
+    margin-right: 1rem;
+}
+
 .group_member.is_queued {
     border: 2px solid var(--golden);
 }

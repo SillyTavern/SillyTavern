@@ -121,6 +121,7 @@ const DEFAULT_AUTO_MODE_DELAY = 5;
 export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, debounce_timeout.quick));
 let autoModeWorker = null;
 const saveGroupDebounced = debounce(async (group, reload) => await _save(group, reload), debounce_timeout.relaxed);
+let groupChatQueueOrder = new Map();
 
 function setAutoModeWorker() {
     clearInterval(autoModeWorker);
@@ -787,7 +788,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         return Promise.resolve();
     }
     
-    const showChatQueue = (!(typingIndicator.length === 0 && !isStreamingEnabled()) && openGroupId);
     try {
         throwIfAborted();
         hideSwipeButtons();
@@ -859,9 +859,11 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             await saveChatConditional();
             $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
         }
-        if (showChatQueue){
+        groupChatQueueOrder = new Map();
+
+        if (power_user.show_group_chat_queue){
             for (let i = 0; i < activatedMembers.length; ++i){
-                characters[activatedMembers[i]].queueOrder = (i+1);
+                groupChatQueueOrder.set(characters[activatedMembers[i]].avatar, i+1);
             }
         }
         // now the real generation begins: cycle through every activated character
@@ -871,7 +873,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             const generateType = type == 'swipe' || type == 'impersonate' || type == 'quiet' || type == 'continue' ? type : 'group_chat';
             setCharacterId(chId);
             setCharacterName(characters[chId].name);
-            if (showChatQueue){
+            if (power_user.show_group_chat_queue){
                 printGroupMembers();
             }
             await eventSource.emit(event_types.GROUP_MEMBER_DRAFTED, chId);
@@ -894,9 +896,9 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                     messageChunk = textResult?.messageChunk;
                 }
             }
-            if (showChatQueue){
-                activatedMembers.filter(chidx => characters[chidx].queueOrder > 0)
-                                .forEach(chindex => characters[chindex].queueOrder -= 1);
+            if (power_user.show_group_chat_queue){
+                groupChatQueueOrder.delete(characters[chId].avatar);
+                groupChatQueueOrder.forEach((value, key, map) => map.set(key, value-1));
             }
         }
     } finally {
@@ -905,12 +907,8 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         is_group_generating = false;
         setSendButtonState(false);
         setCharacterId(undefined);
-        
-        if (showChatQueue){
-            group.members.forEach(avatar => {
-                let character = characters.find(x => x.avatar === avatar || x.name === avatar);
-                character.queueOrder = undefined;
-            });
+        if (power_user.show_group_chat_queue){
+            groupChatQueueOrder = new Map();
             printGroupMembers();
         }
         setCharacterName('');
@@ -1333,10 +1331,15 @@ function getGroupCharacterBlock(character) {
     template.find('.ch_name').text(character.name + (character.queueOrder > 0?'   (#' + character.queueOrder + ')':''));    template.attr('chid', characters.indexOf(character));
     template.find('.ch_fav').val(isFav);
     template.toggleClass('is_fav', isFav);
-    template.toggleClass('is_active', character.queueOrder === 1);
-    template.toggleClass('is_queued', character.queueOrder > 1);
+    
+    let queuePosition = groupChatQueueOrder.get(character.avatar);
+    if (queuePosition){
+        template.find('.queue_position').text(queuePosition);
+        template.toggleClass('is_queued', queuePosition > 1);
+        template.toggleClass('is_active', queuePosition === 1);
+    }
+
     template.toggleClass('disabled', isGroupMemberDisabled(character.avatar));
-    template.toggleClass('is_active', character.avatar === (this_chid && characters[this_chid] && characters[this_chid].avatar));
 
     // Display inline tags
     const tagsElement = template.find('.tags');
