@@ -787,7 +787,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         sendSystemMessage(system_message_types.EMPTY, '', { isSmallSys: true });
         return Promise.resolve();
     }
-    
+
     try {
         throwIfAborted();
         hideSwipeButtons();
@@ -857,13 +857,13 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             const bias = getBiasStrings(userInput, type);
             await sendMessageAsUser(userInput, bias.messageBias);
             await saveChatConditional();
-            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
+            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
         }
         groupChatQueueOrder = new Map();
 
-        if (power_user.show_group_chat_queue){
-            for (let i = 0; i < activatedMembers.length; ++i){
-                groupChatQueueOrder.set(characters[activatedMembers[i]].avatar, i+1);
+        if (power_user.show_group_chat_queue) {
+            for (let i = 0; i < activatedMembers.length; ++i) {
+                groupChatQueueOrder.set(characters[activatedMembers[i]].avatar, i + 1);
             }
         }
         // now the real generation begins: cycle through every activated character
@@ -873,7 +873,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             const generateType = type == 'swipe' || type == 'impersonate' || type == 'quiet' || type == 'continue' ? type : 'group_chat';
             setCharacterId(chId);
             setCharacterName(characters[chId].name);
-            if (power_user.show_group_chat_queue){
+            if (power_user.show_group_chat_queue) {
                 printGroupMembers();
             }
             await eventSource.emit(event_types.GROUP_MEMBER_DRAFTED, chId);
@@ -896,9 +896,9 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                     messageChunk = textResult?.messageChunk;
                 }
             }
-            if (power_user.show_group_chat_queue){
+            if (power_user.show_group_chat_queue) {
                 groupChatQueueOrder.delete(characters[chId].avatar);
-                groupChatQueueOrder.forEach((value, key, map) => map.set(key, value-1));
+                groupChatQueueOrder.forEach((value, key, map) => map.set(key, value - 1));
             }
         }
     } finally {
@@ -907,7 +907,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         is_group_generating = false;
         setSendButtonState(false);
         setCharacterId(undefined);
-        if (power_user.show_group_chat_queue){
+        if (power_user.show_group_chat_queue) {
             groupChatQueueOrder = new Map();
             printGroupMembers();
         }
@@ -1328,12 +1328,12 @@ function getGroupCharacterBlock(character) {
     const isFav = character.fav || character.fav == 'true';
     template.data('id', character.avatar);
     template.find('.avatar img').attr({ 'src': avatar, 'title': character.avatar });
-    template.find('.ch_name').text(character.name + (character.queueOrder > 0?'   (#' + character.queueOrder + ')':''));    template.attr('chid', characters.indexOf(character));
+    template.find('.ch_name').text(character.name + (character.queueOrder > 0 ? '   (#' + character.queueOrder + ')' : '')); template.attr('chid', characters.indexOf(character));
     template.find('.ch_fav').val(isFav);
     template.toggleClass('is_fav', isFav);
-    
+
     let queuePosition = groupChatQueueOrder.get(character.avatar);
-    if (queuePosition){
+    if (queuePosition) {
         template.find('.queue_position').text(queuePosition);
         template.toggleClass('is_queued', queuePosition > 1);
         template.toggleClass('is_active', queuePosition === 1);
