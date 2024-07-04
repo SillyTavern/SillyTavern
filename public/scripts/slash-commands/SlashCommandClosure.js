@@ -218,6 +218,7 @@ export class SlashCommandClosure {
                 console.log('encountered SlashCommandBreak');
                 if (this.breakController) {
                     this.breakController?.break();
+                    this.scope.pipe = step.value.value ?? this.scope.pipe;
                     break;
                 }
             } else if (!step.done && this.debugController?.testStepping(this)) {
@@ -260,6 +261,7 @@ export class SlashCommandClosure {
                 yield executor;
             } else if (executor instanceof SlashCommandBreak) {
                 done += this.executorList.length - this.executorList.indexOf(executor);
+                this.scope.pipe = executor.value ?? this.scope.pipe;
                 yield executor;
             } else {
                 /**@type {import('./SlashCommand.js').NamedArguments} */

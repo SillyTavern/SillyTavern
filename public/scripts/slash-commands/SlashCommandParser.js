@@ -727,6 +727,10 @@ export class SlashCommandParser {
         cmd.command = this.commands['break'];
         cmd.start = this.index + 1;
         this.take('/break'.length);
+        this.discardWhitespace();
+        if (this.testUnnamedArgument()) {
+            cmd.unnamedArgumentList.push(...this.parseUnnamedArgument());
+        }
         cmd.end = this.index;
         this.commandIndex.push(cmd);
         this.scopeIndex.push(this.scope.getCopy());
