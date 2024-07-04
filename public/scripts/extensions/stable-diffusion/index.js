@@ -22,7 +22,7 @@ import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, rend
 import { selected_group } from '../../group-chats.js';
 import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async, delay, isTrueBoolean, debounce } from '../../utils.js';
 import { getMessageTimeStamp, humanizedDateTime } from '../../RossAscends-mods.js';
-import { SECRET_KEYS, secret_state } from '../../secrets.js';
+import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { getNovelUnlimitedImageGeneration, getNovelAnlas, loadNovelSubscriptionData } from '../../nai-settings.js';
 import { getMultimodalCaption } from '../shared.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -49,6 +49,7 @@ const sources = {
     togetherai: 'togetherai',
     drawthings: 'drawthings',
     pollinations: 'pollinations',
+    stability: 'stability',
 };
 
 const initiators = {
@@ -282,6 +283,9 @@ const defaultSettings = {
     wand_visible: false,
     command_visible: false,
     interactive_visible: false,
+
+    // Stability AI settings
+    stability_style_preset: 'anime',
 };
 
 const writePromptFieldsDebounced = debounce(writePromptFields, debounce_timeout.relaxed);
@@ -444,6 +448,7 @@ async function loadSettings() {
     $('#sd_wand_visible').prop('checked', extension_settings.sd.wand_visible);
     $('#sd_command_visible').prop('checked', extension_settings.sd.command_visible);
     $('#sd_interactive_visible').prop('checked', extension_settings.sd.interactive_visible);
+    $('#sd_stability_style_preset').val(extension_settings.sd.stability_style_preset);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -671,7 +676,7 @@ async function refinePrompt(prompt, allowExpand, isNegative = false) {
         const refinedPrompt = await callGenericPopup(text + 'Press "Cancel" to abort the image generation.', POPUP_TYPE.INPUT, prompt.trim(), { rows: 5, okButton: 'Continue' });
 
         if (refinedPrompt) {
-            return refinedPrompt;
+            return String(refinedPrompt);
         } else {
             throw new Error('Generation aborted by user.');
         }
@@ -1084,6 +1089,26 @@ function onComfyWorkflowChange() {
     extension_settings.sd.comfy_workflow = $('#sd_comfy_workflow').find(':selected').val();
     saveSettingsDebounced();
 }
+
+async function onStabilityKeyClick() {
+    const popupText = 'Stability AI API Key:';
+    const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT);
+
+    if (!key) {
+        return;
+    }
+
+    await writeSecret(SECRET_KEYS.STABILITY, String(key));
+
+    toastr.success('API Key saved');
+    await loadSettingOptions();
+}
+
+function onStabilityStylePresetChange() {
+    extension_settings.sd.stability_style_preset = String($('#sd_stability_style_preset').val());
+    saveSettingsDebounced();
+}
+
 async function changeComfyWorkflow(_, name) {
     name = name.replace(/(\.json)?$/i, '.json');
     if ($(`#sd_comfy_workflow > [value="${name}"]`).length > 0) {
@@ -1193,7 +1218,7 @@ async function onModelChange() {
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
     saveSettingsDebounced();
 
-    const cloudSources = [sources.horde, sources.novel, sources.openai, sources.togetherai, sources.pollinations];
+    const cloudSources = [sources.horde, sources.novel, sources.openai, sources.togetherai, sources.pollinations, sources.stability];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
         return;
@@ -1402,6 +1427,9 @@ async function loadSamplers() {
         case sources.pollinations:
             samplers = ['N/A'];
             break;
+        case sources.stability:
+            samplers = ['N/A'];
+            break;
     }
 
     for (const sampler of samplers) {
@@ -1585,6 +1613,9 @@ async function loadModels() {
         case sources.pollinations:
             models = await loadPollinationsModels();
             break;
+        case sources.stability:
+            models = await loadStabilityModels();
+            break;
     }
 
     for (const model of models) {
@@ -1599,6 +1630,16 @@ async function loadModels() {
         extension_settings.sd.model = models[0].value;
         $('#sd_model').val(extension_settings.sd.model).trigger('change');
     }
+}
+
+async function loadStabilityModels() {
+    $('#sd_stability_key').toggleClass('success', !!secret_state[SECRET_KEYS.STABILITY]);
+
+    return [
+        { value: 'stable-image-ultra', text: 'Stable Image Ultra' },
+        { value: 'stable-image-core', text: 'Stable Image Core' },
+        { value: 'stable-diffusion-3', text: 'Stable Diffusion 3' },
+    ];
 }
 
 async function loadPollinationsModels() {
@@ -1932,6 +1973,9 @@ async function loadSchedulers() {
         case sources.comfy:
             schedulers = await loadComfySchedulers();
             break;
+        case sources.stability:
+            schedulers = ['N/A'];
+            break;
     }
 
     for (const scheduler of schedulers) {
@@ -2004,6 +2048,9 @@ async function loadVaes() {
             break;
         case sources.comfy:
             vaes = await loadComfyVaes();
+            break;
+        case sources.stability:
+            vaes = ['N/A'];
             break;
     }
 
@@ -2485,6 +2532,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             case sources.pollinations:
                 result = await generatePollinationsImage(prefixedPrompt, negativePrompt);
                 break;
+            case sources.stability:
+                result = await generateStabilityImage(prefixedPrompt, negativePrompt);
+                break;
         }
 
         if (!result.data) {
@@ -2508,6 +2558,12 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
     return base64Image;
 }
 
+/**
+ * Generates an image using the TogetherAI API.
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
 async function generateTogetherAIImage(prompt, negativePrompt) {
     const result = await fetch('/api/sd/together/generate', {
         method: 'POST',
@@ -2532,6 +2588,12 @@ async function generateTogetherAIImage(prompt, negativePrompt) {
     }
 }
 
+/**
+ * Generates an image using the Pollinations API.
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
 async function generatePollinationsImage(prompt, negativePrompt) {
     const result = await fetch('/api/sd/pollinations/generate', {
         method: 'POST',
@@ -2597,6 +2659,84 @@ async function generateExtrasImage(prompt, negativePrompt) {
     } else {
         const text = await result.text();
         throw new Error(text);
+    }
+}
+
+/**
+ * Gets an aspect ratio for Stability that is the closest to the given width and height.
+ * @param {number} width Target width
+ * @param {number} height Target height
+ * @returns {string} Closest aspect ratio as a string
+ */
+function getClosestAspectRatio(width, height) {
+    const aspectRatios = {
+        '16:9': 16 / 9,
+        '1:1': 1,
+        '21:9': 21 / 9,
+        '2:3': 2 / 3,
+        '3:2': 3 / 2,
+        '4:5': 4 / 5,
+        '5:4': 5 / 4,
+        '9:16': 9 / 16,
+        '9:21': 9 / 21,
+    };
+
+    const aspectRatio = width / height;
+
+    let closestAspectRatio = Object.keys(aspectRatios)[0];
+    let minDiff = Math.abs(aspectRatio - aspectRatios[closestAspectRatio]);
+
+    for (const key in aspectRatios) {
+        const diff = Math.abs(aspectRatio - aspectRatios[key]);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closestAspectRatio = key;
+        }
+    }
+
+    return closestAspectRatio;
+}
+
+/**
+ * Generates an image using Stability AI.
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateStabilityImage(prompt, negativePrompt) {
+    const IMAGE_FORMAT = 'png';
+    const PROMPT_LIMIT = 10000;
+
+    try {
+        const response = await fetch('/api/sd/stability/generate', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                model: extension_settings.sd.model,
+                payload: {
+                    prompt: prompt.slice(0, PROMPT_LIMIT),
+                    negative_prompt: negativePrompt.slice(0, PROMPT_LIMIT),
+                    aspect_ratio: getClosestAspectRatio(extension_settings.sd.width, extension_settings.sd.height),
+                    seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+                    style_preset: extension_settings.sd.stability_style_preset,
+                    output_format: IMAGE_FORMAT,
+                },
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const base64Image = await response.text();
+
+        return {
+            format: IMAGE_FORMAT,
+            data: base64Image,
+        };
+    } catch (error) {
+        console.error('Error generating image with Stability AI:', error);
+        throw error;
     }
 }
 
@@ -3228,6 +3368,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.TOGETHERAI];
         case sources.pollinations:
             return true;
+        case sources.stability:
+            return secret_state[SECRET_KEYS.STABILITY];
     }
 }
 
@@ -3455,6 +3597,8 @@ jQuery(async () => {
     $('#sd_command_visible').on('input', onCommandVisibleInput);
     $('#sd_interactive_visible').on('input', onInteractiveVisibleInput);
     $('#sd_swap_dimensions').on('click', onSwapDimensionsClick);
+    $('#sd_stability_key').on('click', onStabilityKeyClick);
+    $('#sd_stability_style_preset').on('change', onStabilityStylePresetChange);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($('#sd_prompt_prefix'));
