@@ -2725,12 +2725,10 @@ async function generateStabilityImage(prompt, negativePrompt) {
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        const blob = await response.blob();
-        const base64Image = await getBase64Async(blob);
+        const base64Image = await response.text();
 
         return {
             format: IMAGE_FORMAT,

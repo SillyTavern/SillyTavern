@@ -836,6 +836,7 @@ stability.post('/generate', jsonParser, async (request, response) => {
                 'Accept': 'image/*',
             },
             body: formData,
+            timeout: 0,
         });
 
         if (!result.ok) {
@@ -845,7 +846,7 @@ stability.post('/generate', jsonParser, async (request, response) => {
         }
 
         const buffer = await result.buffer();
-        return response.send(buffer);
+        return response.send(buffer.toString('base64'));
     } catch (error) {
         console.log(error);
         return response.sendStatus(500);
