@@ -2927,7 +2927,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .group_member .queue_position {
-    margin-right: 1rem;
+    margin-right: 0.75rem;
+    font-size: calc(var(--mainFontSize) * 0.9);
 }
 
 .group_member.is_queued {
