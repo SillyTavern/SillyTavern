@@ -57,9 +57,9 @@ export class SlashCommandEnumValue {
      * @param {string} value - The value
      * @param {string?} description - Optional description, displayed in a second line
      * @param {EnumType?} type - type of the enum (defining its color)
-     * @param {string} typeIcon - The icon to display (Can be pulled from `enumIcons` for common ones)
+     * @param {string?} typeIcon - The icon to display (Can be pulled from `enumIcons` for common ones)
      */
-    constructor(value, description = null, type = 'enum', typeIcon = '◊', matchProvider, valueProvider) {
+    constructor(value, description = null, type = 'enum', typeIcon = '◊', matchProvider = null, valueProvider = null) {
         this.value = value;
         this.description = description;
         this.type = type ?? 'enum';
