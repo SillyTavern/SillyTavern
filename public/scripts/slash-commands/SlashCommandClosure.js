@@ -251,6 +251,7 @@ export class SlashCommandClosure {
     }
     async * executeStep() {
         let done = 0;
+        let isFirst = true;
         for (const executor of this.executorList) {
             this.onProgress?.(done, this.commandCount);
             this.debugController?.setExecutor(executor);
@@ -259,10 +260,12 @@ export class SlashCommandClosure {
                 // no execution for breakpoints, just raise counter
                 done++;
                 yield executor;
+                isFirst = false;
             } else if (executor instanceof SlashCommandBreak) {
                 done += this.executorList.length - this.executorList.indexOf(executor);
                 this.scope.pipe = executor.value ?? this.scope.pipe;
                 yield executor;
+                isFirst = false;
             } else {
                 /**@type {import('./SlashCommand.js').NamedArguments} */
                 let args = {
@@ -302,8 +305,7 @@ export class SlashCommandClosure {
 
                 // substitute unnamed argument
                 if (executor.unnamedArgumentList.length == 0) {
-                    //TODO no pipe injection on first executor in a closure?
-                    if (executor.injectPipe) {
+                    if (!isFirst && executor.injectPipe) {
                         value = this.scope.pipe;
                         args._hasUnnamedArgument = this.scope.pipe !== null && this.scope.pipe !== undefined;
                     }
@@ -383,6 +385,7 @@ export class SlashCommandClosure {
                 }
             }
             yield executor;
+            isFirst = false;
         }
     }
 
