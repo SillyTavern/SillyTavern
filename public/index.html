@@ -4141,6 +4141,10 @@
                                     <input id="request_token_probabilities" type="checkbox" />
                                     <small data-i18n="Request token probabilities">Request token probabilities</small>
                                 </label>
+                                <label data-newbie-hidden class="checkbox_label" for="show_group_chat_queue" title="In group chat, highlight the character(s) that are currently queued to generate responses and the order in which they will respond." data-i18n="[title]In group chat, highlight the character(s) that are currently queued to generate responses and the order in which they will respond.">
+                                    <input id="show_group_chat_queue" type="checkbox" />
+                                    <small data-i18n="Show group chat queue">Show group chat queue</small>
+                                </label>
                                 <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn">
                                     <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable" title="Automatically reject and re-generate AI message based on configurable criteria." data-i18n="[title]Automatically reject and re-generate AI message based on configurable criteria">
                                         <b><span data-i18n="Auto-swipe">Auto-swipe</span></b>
@@ -5796,6 +5800,7 @@
                 <div class="tags tags_inline"></div>
             </div>
             <input class="ch_fav" value="" hidden />
+            <div class="queue_position"></div>
             <div class="group_member_icon">
                 <div title="Temporarily disable automatic replies from this character" data-action="disable" class="right_menu_button fa-solid fa-lg fa-comment-slash" data-i18n="[title]Temporarily disable automatic replies from this character"></div>
                 <div title="Enable automatic replies from this character" data-action="enable" class="right_menu_button fa-solid fa-lg fa-comment-slash" data-i18n="[title]Enable automatic replies from this character"></div>
