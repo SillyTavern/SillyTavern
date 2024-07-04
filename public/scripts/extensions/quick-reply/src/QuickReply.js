@@ -332,7 +332,7 @@ export class QuickReply {
                     const start = message.selectionStart;
                     const end = message.selectionEnd;
                     if (end - start > 0 && message.value.substring(start, end).includes('\n')) {
-                        const lineStart = message.value.lastIndexOf('\n', start);
+                        const lineStart = message.value.lastIndexOf('\n', start - 1);
                         const count = message.value.substring(lineStart, end).split('\n').length - 1;
                         message.value = `${message.value.substring(0, lineStart)}${message.value.substring(lineStart, end).replace(/\n/g, '\n\t')}${message.value.substring(end)}`;
                         message.selectionStart = start + 1;
@@ -348,7 +348,7 @@ export class QuickReply {
                     evt.preventDefault();
                     const start = message.selectionStart;
                     const end = message.selectionEnd;
-                    const lineStart = message.value.lastIndexOf('\n', start);
+                    const lineStart = message.value.lastIndexOf('\n', start - 1);
                     const count = message.value.substring(lineStart, end).split('\n\t').length - 1;
                     message.value = `${message.value.substring(0, lineStart)}${message.value.substring(lineStart, end).replace(/\n\t/g, '\n')}${message.value.substring(end)}`;
                     message.selectionStart = start - 1;
