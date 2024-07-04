@@ -65,6 +65,7 @@ import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandE
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandDebugController } from './slash-commands/SlashCommandDebugController.js';
+import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -1782,6 +1783,7 @@ async function runCallback(args, name) {
             throw new Error(`"${name}" is not callable.`);
         }
         closure.scope.parent = scope;
+        closure.breakController = new SlashCommandBreakController();
         if (args._debugController && !closure.debugController) {
             closure.debugController = args._debugController;
         }
