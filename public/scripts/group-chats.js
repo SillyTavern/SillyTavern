@@ -121,6 +121,7 @@ const DEFAULT_AUTO_MODE_DELAY = 5;
 export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, debounce_timeout.quick));
 let autoModeWorker = null;
 const saveGroupDebounced = debounce(async (group, reload) => await _save(group, reload), debounce_timeout.relaxed);
+/** @type {Map<string, number>} */
 let groupChatQueueOrder = new Map();
 
 function setAutoModeWorker() {
@@ -1631,6 +1632,7 @@ export async function openGroupById(groupId) {
         select_group_chats(groupId);
 
         if (selected_group !== groupId) {
+            groupChatQueueOrder = new Map();
             await clearChat();
             cancelTtsPlay();
             selected_group = groupId;
