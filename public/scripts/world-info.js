@@ -69,7 +69,7 @@ const scan_state = {
     /**
      * The scan is triggered by a min activations depth skew.
      */
-    MIN_ACTIVATIONS: 2,
+    MIN_ACTIVATIONS: 3,
 };
 
 const WI_ENTRY_EDIT_TEMPLATE = $('#entry_edit_template .world_entry');
