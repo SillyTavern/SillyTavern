@@ -1105,7 +1105,7 @@ async function onStabilityKeyClick() {
 }
 
 function onStabilityStylePresetChange() {
-    extension_settings.sd.stability_style_preset = $('#sd_stability_style_preset').val();
+    extension_settings.sd.stability_style_preset = String($('#sd_stability_style_preset').val());
     saveSettingsDebounced();
 }
 
