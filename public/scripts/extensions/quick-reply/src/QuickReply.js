@@ -328,18 +328,20 @@ export class QuickReply {
                 if (this.isExecuting) return;
                 if (evt.key == 'Tab' && !evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
                     evt.preventDefault();
-                    evt.stopImmediatePropagation();
-                    evt.stopPropagation();
                     const start = message.selectionStart;
                     const end = message.selectionEnd;
                     if (end - start > 0 && message.value.substring(start, end).includes('\n')) {
+                        evt.stopImmediatePropagation();
+                        evt.stopPropagation();
                         const lineStart = message.value.lastIndexOf('\n', start - 1);
                         const count = message.value.substring(lineStart, end).split('\n').length - 1;
                         message.value = `${message.value.substring(0, lineStart)}${message.value.substring(lineStart, end).replace(/\n/g, '\n\t')}${message.value.substring(end)}`;
                         message.selectionStart = start + 1;
                         message.selectionEnd = end + count;
                         updateSyntax();
-                    } else {
+                    } else if (!(ac.isReplaceable && ac.isActive)) {
+                        evt.stopImmediatePropagation();
+                        evt.stopPropagation();
                         message.value = `${message.value.substring(0, start)}\t${message.value.substring(end)}`;
                         message.selectionStart = start + 1;
                         message.selectionEnd = end + 1;
@@ -357,7 +359,7 @@ export class QuickReply {
                     message.selectionStart = start - 1;
                     message.selectionEnd = end - count;
                     updateSyntax();
-                } else if (evt.key == 'Enter' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
+                } else if (evt.key == 'Enter' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey && !(ac.isReplaceable && ac.isActive)) {
                     evt.stopImmediatePropagation();
                     evt.stopPropagation();
                     evt.preventDefault();
@@ -389,7 +391,7 @@ export class QuickReply {
                     }
                 }
             });
-            setSlashCommandAutoComplete(message, true);
+            const ac = await setSlashCommandAutoComplete(message, true);
             message.addEventListener('wheel', (evt)=>{
                 updateScrollDebounced(evt);
             });

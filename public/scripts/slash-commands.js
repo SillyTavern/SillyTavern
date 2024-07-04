@@ -3507,6 +3507,7 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
  *
  * @param {HTMLTextAreaElement} textarea The textarea to receive autocomplete
  * @param {Boolean} isFloating Whether to show the auto complete as a floating window (e.g., large QR editor)
+ * @returns {Promise<AutoComplete>}
  */
 export async function setSlashCommandAutoComplete(textarea, isFloating = false) {
     function canUseNegativeLookbehind() {
@@ -3530,6 +3531,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         async (text, index) => await parser.getNameAt(text, index),
         isFloating,
     );
+    return ac;
 }
 /**@type {HTMLTextAreaElement} */
 const sendTextarea = document.querySelector('#send_textarea');
