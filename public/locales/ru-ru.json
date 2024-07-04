@@ -1025,7 +1025,6 @@
     "prompt_manager_position": "Точка инжекта",
     "Injection position. Next to other prompts (relative) or in-chat (absolute).": "Как рассчитывать позицию для инжекта. Она может располагаться по отношению к другим промптам (относительная) либо по отношению к чату (абсолютная).",
     "prompt_manager_relative": "Относительная",
-    "prompt_manager_absolute": "Абсолютная",
     "prompt_manager_depth": "Глубина",
     "Injection depth. 0 = after the last message, 1 = before the last message, etc.": "Глубина вставки. 0 = после последнего сообщения, 1 = перед последним сообщением, и т.д.",
     "The prompt to be sent.": "Отправляемый ИИ промпт.",

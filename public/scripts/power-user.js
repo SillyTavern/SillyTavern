@@ -179,6 +179,7 @@ let power_user = {
     send_on_enter: send_on_enter_options.AUTO,
     console_log_prompts: false,
     request_token_probabilities: false,
+    show_group_chat_queue: false,
     render_formulas: false,
     allow_name1_display: false,
     allow_name2_display: false,
@@ -1601,6 +1602,7 @@ function loadPowerUserSettings(settings, data) {
 
     $('#console_log_prompts').prop('checked', power_user.console_log_prompts);
     $('#request_token_probabilities').prop('checked', power_user.request_token_probabilities);
+    $('#show_group_chat_queue').prop('checked', power_user.show_group_chat_queue);
     $('#auto_fix_generated_markdown').prop('checked', power_user.auto_fix_generated_markdown);
     $('#auto_scroll_chat_to_bottom').prop('checked', power_user.auto_scroll_chat_to_bottom);
     $('#bogus_folders').prop('checked', power_user.bogus_folders);
@@ -3564,6 +3566,11 @@ $(document).ready(() => {
 
     $('#request_token_probabilities').on('input', function () {
         power_user.request_token_probabilities = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#show_group_chat_queue').on('input', function () {
+        power_user.show_group_chat_queue = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

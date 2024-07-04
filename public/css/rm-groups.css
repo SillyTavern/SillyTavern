@@ -68,9 +68,9 @@
     margin-top: 0.25rem;
     margin-bottom: 0.5rem;
     border: 1px solid var(--SmartThemeBorderColor);
-    ;
     border-radius: 10px;
     background-color: var(--black30a);
+    padding: 2px;
 }
 
 #rm_group_buttons_expander {

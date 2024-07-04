@@ -2956,6 +2956,23 @@ input[type=search]:focus::-webkit-search-cancel-button {
     position: relative;
 }
 
+.group_member .queue_position:not(:empty)::before {
+    content: "#";
+}
+
+.group_member .queue_position {
+    margin-right: 0.75rem;
+    font-size: calc(var(--mainFontSize) * 0.9);
+}
+
+.group_member.is_queued {
+    outline: 2px solid var(--golden);
+}
+
+.group_member.is_active {
+    outline: 2px solid var(--active);
+}
+
 .character_select.is_fav .avatar,
 .group_select.is_fav .avatar,
 .group_member.is_fav .avatar,
