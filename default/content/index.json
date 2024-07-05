@@ -686,13 +686,5 @@
     {
         "filename": "presets/instruct/Gemma 2.json",
         "type": "instruct"
-    },
-    {
-        "filename": "presets/context/Gemma 2-Roleplay.json",
-        "type": "context"
-    },
-    {
-        "filename": "presets/instruct/Gemma 2-Roleplay.json",
-        "type": "instruct"
     }
 ]
