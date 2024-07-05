@@ -30,7 +30,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { debounce_timeout } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
-import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
+import { POPUP_TYPE, Popup, callGenericPopup } from '../../popup.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'sd';
@@ -2976,7 +2976,12 @@ async function onComfyOpenWorkflowEditorClick() {
         }),
     })).json();
     const editorHtml = $(await $.get('scripts/extensions/stable-diffusion/comfyWorkflowEditor.html'));
-    const popupResult = callGenericPopup(editorHtml, POPUP_TYPE.CONFIRM, '', { okButton: 'Save', cancelButton: 'Cancel', wide: true, large: true });
+    const saveValue = (/** @type {Popup} */ _popup) => {
+        workflow = $('#sd_comfy_workflow_editor_workflow').val().toString();
+        return true;
+    };
+    const popup = new Popup(editorHtml, POPUP_TYPE.CONFIRM, '', { okButton: 'Save', cancelButton: 'Cancel', wide: true, large: true, onClosing: saveValue });
+    const popupResult = popup.show();
     const checkPlaceholders = () => {
         workflow = $('#sd_comfy_workflow_editor_workflow').val().toString();
         $('.sd_comfy_workflow_editor_placeholder_list > li[data-placeholder]').each(function (idx) {
@@ -3045,7 +3050,7 @@ async function onComfyOpenWorkflowEditorClick() {
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 file_name: extension_settings.sd.comfy_workflow,
-                workflow: $('#sd_comfy_workflow_editor_workflow').val().toString(),
+                workflow: workflow,
             }),
         });
         if (!response.ok) {
