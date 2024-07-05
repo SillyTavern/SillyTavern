@@ -3445,7 +3445,7 @@ async function getCharacterLore() {
         }
 
         const data = await loadWorldInfoData(worldName);
-        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(x => ({ ...x, world: worldName })) : [];
+        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(({ uid, ...rest }) => ({ uid, world: worldName, ...rest })) : [];
         entries = entries.concat(newEntries);
 
         if (!newEntries.length) {
@@ -3465,7 +3465,7 @@ async function getGlobalLore() {
     let entries = [];
     for (const worldName of selected_world_info) {
         const data = await loadWorldInfoData(worldName);
-        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(x => ({ ...x, world: worldName })) : [];
+        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(({ uid, ...rest }) => ({ uid, world: worldName, ...rest })) : [];
         entries = entries.concat(newEntries);
     }
 
@@ -3487,7 +3487,7 @@ async function getChatLore() {
     }
 
     const data = await loadWorldInfoData(chatWorld);
-    const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(x => ({ ...x, world: chatWorld })) : [];
+    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(({ uid, ...rest }) => ({ uid, world: chatWorld, ...rest })) : [];
 
     console.debug(`[WI] Chat lore has ${entries.length} entries`, [chatWorld]);
 
