@@ -1078,8 +1078,8 @@ export function initDefaultSlashCommands() {
                 description: 'scoped variable or qr label',
                 typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.CLOSURE],
                 isRequired: true,
-                enumProvider: () => [
-                    ...commonEnumProviders.variables('scope')(),
+                enumProvider: (executor, scope) => [
+                    ...commonEnumProviders.variables('scope')(executor, scope),
                     ...(typeof window['qrEnumProviderExecutables'] === 'function') ? window['qrEnumProviderExecutables']() : [],
                 ],
             }),
