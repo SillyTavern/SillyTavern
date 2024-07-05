@@ -135,6 +135,31 @@ router.post('/upscalers', jsonParser, async (request, response) => {
     }
 });
 
+router.post('/vaes', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/sd-vae';
+
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        const names = data.map(x => x.model_name);
+        return response.send(names);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
 router.post('/samplers', jsonParser, async (request, response) => {
     try {
         const url = new URL(request.body.url);

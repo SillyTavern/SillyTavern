@@ -172,6 +172,8 @@ const defaultStyles = [
     },
 ];
 
+const placeholderVae = 'Automatic';
+
 const defaultSettings = {
     source: sources.extras,
 
@@ -931,6 +933,7 @@ async function onSourceChange() {
     extension_settings.sd.model = null;
     extension_settings.sd.sampler = null;
     extension_settings.sd.scheduler = null;
+    extension_settings.sd.vae = null;
     toggleSourceControls();
     saveSettingsDebounced();
     await loadSettingOptions();
@@ -2026,7 +2029,7 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.auto:
-            vaes = ['N/A'];
+            vaes = await loadAutoVaes();
             break;
         case sources.novel:
             vaes = ['N/A'];
@@ -2060,6 +2063,35 @@ async function loadVaes() {
         option.value = vae;
         option.selected = vae === extension_settings.sd.vae;
         $('#sd_vae').append(option);
+    }
+
+    if (!extension_settings.sd.vae && vaes.length > 0 && vaes[0] !== 'N/A') {
+        extension_settings.sd.vae = vaes[0];
+        $('#sd_vae').val(extension_settings.sd.vae).trigger('change');
+    }
+}
+
+async function loadAutoVaes() {
+    if (!extension_settings.sd.auto_url) {
+        return ['N/A'];
+    }
+
+    try {
+        const result = await fetch('/api/sd/vaes', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(getSdRequestBody()),
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        Array.isArray(data) && data.unshift(placeholderVae);
+        return data;
+    } catch (error) {
+        return ['N/A'];
     }
 }
 
@@ -2786,6 +2818,7 @@ async function generateHordeImage(prompt, negativePrompt) {
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
 async function generateAutoImage(prompt, negativePrompt) {
+    const isValidVae = extension_settings.sd.vae && !['N/A', placeholderVae].includes(extension_settings.sd.vae);
     const result = await fetch('/api/sd/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -2809,6 +2842,7 @@ async function generateAutoImage(prompt, negativePrompt) {
             // For AUTO1111
             override_settings: {
                 CLIP_stop_at_last_layers: extension_settings.sd.clip_skip,
+                sd_vae: isValidVae ? extension_settings.sd.vae : undefined,
             },
             override_settings_restore_afterwards: true,
             // For SD.Next
