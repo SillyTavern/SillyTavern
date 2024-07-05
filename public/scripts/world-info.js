@@ -3594,10 +3594,23 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         let activatedNow = new Set();
 
         for (let entry of sortedEntries) {
-            console.debug(`[WI] Entry ${entry.uid} from '${entry.world}' processing`, entry);
+            // Logging preparation
+            let headerLogged = false;
+            function log(...args) {
+                if (!headerLogged) {
+                    console.debug(`[WI] Entry ${entry.uid}`, `from '${entry.world}' processing`, entry);
+                    headerLogged = true;
+                }
+                console.debug(`[WI] Entry ${entry.uid}`, ...args);
+            }
+
+            // Already processed, considered and then skipped entries should still be skipped
+            if (failedProbabilityChecks.has(entry) || allActivatedEntries.has(entry)) {
+                continue;
+            }
 
             if (entry.disable == true) {
-                console.debug(`[WI] Entry ${entry.uid} disabled`);
+                log(`disabled`);
                 continue;
             }
 
@@ -3607,7 +3620,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 const filtered = entry.characterFilter.isExclude ? nameIncluded : !nameIncluded;
 
                 if (filtered) {
-                    console.debug(`[WI] Entry ${entry.uid} filtered out by character`);
+                    log(`filtered out by character`);
                     continue;
                 }
             }
@@ -3624,7 +3637,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                         const filtered = entry.characterFilter.isExclude ? includesTag : !includesTag;
 
                         if (filtered) {
-                            console.debug(`[WI] Entry ${entry.uid} filtered out by tag`);
+                            log(`filtered out by tag`);
                             continue;
                         }
                     }
@@ -3636,52 +3649,47 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             const isDelay = timedEffects.isEffectActive('delay', entry);
 
             if (isDelay) {
-                console.debug(`[WI] Entry ${entry.uid} suppressed by delay`);
+                log(`suppressed by delay`);
                 continue;
             }
 
             if (isCooldown && !isSticky) {
-                console.debug(`[WI] Entry ${entry.uid} suppressed by cooldown`);
-                continue;
-            }
-
-            // Already processed, considered and then skipped entries should still be skipped
-            if (failedProbabilityChecks.has(entry) || allActivatedEntries.has(entry)) {
+                log(`suppressed by cooldown`);
                 continue;
             }
 
             // Only use checks for recursion flags if the scan step was activated by recursion
             if (scanState !== scan_state.RECURSION && entry.delayUntilRecursion) {
-                console.debug(`[WI] Entry ${entry.uid} suppressed by delay until recursion`);
+                log(`suppressed by delay until recursion`);
                 continue;
             }
 
             if (scanState === scan_state.RECURSION && world_info_recursive && entry.excludeRecursion) {
-                console.debug(`[WI] Entry ${entry.uid} suppressed by exclude recursion`);
+                log(`suppressed by exclude recursion`);
                 continue;
             }
 
             // Now do checks for immediate activations
             if (entry.constant) {
-                console.debug(`[WI] Entry ${entry.uid} activated because of constant`);
+                log(`activated because of constant`);
                 activatedNow.add(entry);
                 continue;
             }
 
             if (buffer.isExternallyActivated(entry)) {
-                console.debug(`[WI] Entry ${entry.uid} externally activated`);
+                log(`externally activated`);
                 activatedNow.add(entry);
                 continue;
             }
 
             if (isSticky) {
-                console.debug(`[WI] Entry ${entry.uid} activated because active sticky`);
+                log(`activated because active sticky`);
                 activatedNow.add(entry);
                 continue;
             }
 
             if (!Array.isArray(entry.key) || !entry.key.length) {
-                console.debug(`[WI] Entry ${entry.uid} has no keys defined, skipped`);
+                log(`has no keys defined, skipped`);
                 continue;
             }
 
@@ -3695,7 +3703,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 const substituted = substituteParams(key);
 
                 if (substituted && buffer.matchKeys(textToScan, substituted.trim(), entry)) {
-                    console.debug(`[WI] Entry ${entry.uid} has match on primary keyword`, substituted);
+                    log(`has match on primary keyword`, substituted);
 
                     //selective logic begins
                     if (
@@ -3703,7 +3711,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                         Array.isArray(entry.keysecondary) && //always true
                         entry.keysecondary.length //ignore empties
                     ) {
-                        console.debug(`[WI] Entry ${entry.uid} has secondary keywords. Checking logic`, Object.entries(world_info_logic).find(x => x[1] === entry.selectiveLogic));
+                        log(`has secondary keywords. Checking logic`, Object.entries(world_info_logic).find(x => x[1] === entry.selectiveLogic));
                         let hasAnyMatch = false;
                         let hasAllMatch = true;
                         secondary: for (let keysecondary of entry.keysecondary) {
@@ -3722,9 +3730,9 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                             // If AND ANY logic and the main checks pass OR if NOT ALL logic and the main checks do not pass
                             if ((selectiveLogic === world_info_logic.AND_ANY && hasSecondaryMatch) || (selectiveLogic === world_info_logic.NOT_ALL && !hasSecondaryMatch)) {
                                 if (selectiveLogic === world_info_logic.AND_ANY) {
-                                    console.debug(`[WI] Entry ${entry.uid} activated. (AND ANY) Found match secondary keyword`, secondarySubstituted);
+                                    log(`activated. (AND ANY) Found match secondary keyword`, secondarySubstituted);
                                 } else {
-                                    console.debug(`[WI] Entry ${entry.uid} activated. (NOT ALL) Found not matching secondary keyword`, secondarySubstituted);
+                                    log(`activated. (NOT ALL) Found not matching secondary keyword`, secondarySubstituted);
                                 }
                                 activatedNow.add(entry);
                                 break secondary;
@@ -3733,23 +3741,23 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
 
                         // Handle NOT ANY logic
                         if (selectiveLogic === world_info_logic.NOT_ANY && !hasAnyMatch) {
-                            console.debug(`[WI] Entry ${entry.uid} activated. (NOT ANY) No secondary keywords found`, entry.keysecondary);
+                            log(`activated. (NOT ANY) No secondary keywords found`, entry.keysecondary);
                             activatedNow.add(entry);
                             break primary;
                         }
 
                         // Handle AND ALL logic
                         if (selectiveLogic === world_info_logic.AND_ALL && hasAllMatch) {
-                            console.debug(`[WI] Entry ${entry.uid} activated. (AND ALL) All secondary keywords found`, entry.keysecondary);
+                            log(`activated. (AND ALL) All secondary keywords found`, entry.keysecondary);
                             activatedNow.add(entry);
                             break primary;
                         }
 
-                        console.debug(`[WI] Entry ${entry.uid} skipped. Secondary keywords not satisfied`, entry.keysecondary);
+                        log(`skipped. Secondary keywords not satisfied`, entry.keysecondary);
                         break primary;
                     } else {
                         // Handle cases where secondary is empty
-                        console.debug(`[WI] Entry ${entry.uid} activated by primary keyword`, substituted);
+                        log(`activated by primary keyword`, substituted);
                         activatedNow.add(entry);
                         break primary;
                     }
@@ -3880,7 +3888,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         const content = getRegexedString(entry.content, regex_placement.WORLD_INFO, { depth: regexDepth, isMarkdown: false, isPrompt: true });
 
         if (!content) {
-            console.debug(`[WI] Entry ${entry.uid} skipped adding to prompt due to empty content`, entry);
+            console.debug(`[WI] Entry ${entry.uid}`, 'skipped adding to prompt due to empty content', entry);
             return;
         }
 
@@ -3972,7 +3980,7 @@ function filterGroupsByScoring(groups, buffer, removeEntry, scanState) {
             }
 
             if (scores[i] < maxScore) {
-                console.debug(`[WI] Entry ${group[i].uid} removed as score loser from inclusion group '${key}'`, group[i]);
+                console.debug(`[WI] Entry ${group[i].uid}`, `removed as score loser from inclusion group '${key}'`, group[i]);
                 removeEntry(group[i]);
                 group.splice(i, 1);
                 scores.splice(i, 1);
@@ -4014,7 +4022,7 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanSt
                 continue;
             }
 
-            if (logging) console.debug(`[WI] Entry ${entry.uid} removed as loser from inclusion group '${entry.group}'`, entry);
+            if (logging) console.debug(`[WI] Entry ${entry.uid}`, `removed as loser from inclusion group '${entry.group}'`, entry);
             removeEntry(entry);
         }
     }
@@ -4039,7 +4047,7 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanSt
         // Check for group prio
         const prios = group.filter(x => x.groupOverride).sort(sortFn);
         if (prios.length) {
-            console.debug(`[WI] Entry ${prios[0].uid} activated as prio winner from inclusion group '${key}'`, prios[0]);
+            console.debug(`[WI] Entry ${prios[0].uid}`, `activated as prio winner from inclusion group '${key}'`, prios[0]);
             removeAllBut(group, prios[0]);
             continue;
         }
@@ -4054,7 +4062,7 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanSt
             currentWeight += (entry.groupWeight ?? DEFAULT_WEIGHT);
 
             if (rollValue <= currentWeight) {
-                console.debug(`[WI] Entry ${entry.uid} activated as roll winner from inclusion group '${key}'`, entry);
+                console.debug(`[WI] Entry ${entry.uid}`, `activated as roll winner from inclusion group '${key}'`, entry);
                 winner = entry;
                 break;
             }
