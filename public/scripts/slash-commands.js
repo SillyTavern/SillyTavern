@@ -1812,7 +1812,7 @@ async function runCallback(args, name) {
         name = name.trim();
         return await window['executeQuickReplyByName'](name, args);
     } catch (error) {
-        throw new Error(`Error running Quick Reply "${name}": ${error.message}`, 'Error');
+        throw new Error(`Error running Quick Reply "${name}": ${error.message}`);
     }
 }
 
