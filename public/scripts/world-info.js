@@ -3413,13 +3413,12 @@ async function createNewWorldInfo(worldName, { interactive = false } = {}) {
 async function getCharacterLore() {
     const character = characters[this_chid];
     const name = character?.name;
+    /** @type {Set<string>} */
     let worldsToSearch = new Set();
 
     const baseWorldName = character?.data?.extensions?.world;
     if (baseWorldName) {
         worldsToSearch.add(baseWorldName);
-    } else {
-        console.debug(`Character ${name}'s base world could not be found or is empty! Skipping...`);
     }
 
     // TODO: Maybe make the utility function not use the window context?
@@ -3429,29 +3428,37 @@ async function getCharacterLore() {
         worldsToSearch = new Set([...worldsToSearch, ...extraCharLore.extraBooks]);
     }
 
+    if (!worldsToSearch.size) {
+        return [];
+    }
+
     let entries = [];
     for (const worldName of worldsToSearch) {
         if (selected_world_info.includes(worldName)) {
-            console.debug(`Character ${name}'s world ${worldName} is already activated in global world info! Skipping...`);
+            console.debug(`[WI] Character ${name}'s world ${worldName} is already activated in global world info! Skipping...`);
             continue;
         }
 
         if (chat_metadata[METADATA_KEY] === worldName) {
-            console.debug(`Character ${name}'s world ${worldName} is already activated in chat lore! Skipping...`);
+            console.debug(`[WI] Character ${name}'s world ${worldName} is already activated in chat lore! Skipping...`);
             continue;
         }
 
         const data = await loadWorldInfoData(worldName);
         const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(x => ({ ...x, world: worldName })) : [];
         entries = entries.concat(newEntries);
+
+        if (!newEntries.length) {
+            console.debug(`[WI] Character ${name}'s world ${worldName} could not be found or is empty`);
+        }
     }
 
-    console.debug(`Character ${name} lore (${Array.from(worldsToSearch)}) has ${entries.length} world info entries`);
+    console.debug(`[WI] Character ${name}'s lore has ${entries.length} world info entries`, [...worldsToSearch]);
     return entries;
 }
 
 async function getGlobalLore() {
-    if (!selected_world_info) {
+    if (!selected_world_info?.length) {
         return [];
     }
 
@@ -3462,7 +3469,7 @@ async function getGlobalLore() {
         entries = entries.concat(newEntries);
     }
 
-    console.debug(`Global world info has ${entries.length} entries`);
+    console.debug(`[WI] Global world info has ${entries.length} entries`, selected_world_info);
 
     return entries;
 }
@@ -3475,14 +3482,14 @@ async function getChatLore() {
     }
 
     if (selected_world_info.includes(chatWorld)) {
-        console.debug(`Chat world ${chatWorld} is already activated in global world info! Skipping...`);
+        console.debug(`[WI] Chat world ${chatWorld} is already activated in global world info! Skipping...`);
         return [];
     }
 
     const data = await loadWorldInfoData(chatWorld);
-    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(x => ({ ...x, world: chatWorld })) : [];
+    const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(x => ({ ...x, world: chatWorld })) : [];
 
-    console.debug(`Chat lore has ${entries.length} entries`);
+    console.debug(`[WI] Chat lore has ${entries.length} entries`, [chatWorld]);
 
     return entries;
 }
@@ -3506,7 +3513,7 @@ export async function getSortedEntries() {
                 entries = [...globalLore.sort(sortFn), ...characterLore.sort(sortFn)];
                 break;
             default:
-                console.error('Unknown WI insertion strategy: ', world_info_character_strategy, 'defaulting to evenly');
+                console.error('[WI] Unknown WI insertion strategy:', world_info_character_strategy, 'defaulting to evenly');
                 entries = [...globalLore, ...characterLore].sort(sortFn);
                 break;
         }
@@ -3514,7 +3521,7 @@ export async function getSortedEntries() {
         // Chat lore always goes first
         entries = [...chatLore.sort(sortFn), ...entries];
 
-        console.debug(`Sorted ${entries.length} world lore entries using strategy ${world_info_character_strategy}`);
+        console.debug(`[WI] Found ${entries.length} world lore entries. Sorted by strategy`, Object.entries(world_info_insertion_strategy).find((x) => x[1] === world_info_character_strategy));
 
         // Need to deep clone the entries to avoid modifying the cached data
         return structuredClone(entries);
@@ -3536,6 +3543,8 @@ export async function getSortedEntries() {
 async function checkWorldInfo(chat, maxContext, isDryRun) {
     const context = getContext();
     const buffer = new WorldInfoBuffer(chat);
+
+    console.debug(`[WI] --- START WI SCAN (on ${chat.length} messages) ---`);
 
     // Combine the chat
 
@@ -3560,11 +3569,11 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
     let budget = Math.round(world_info_budget * maxContext / 100) || 1;
 
     if (world_info_budget_cap > 0 && budget > world_info_budget_cap) {
-        console.debug(`Budget ${budget} exceeds cap ${world_info_budget_cap}, using cap`);
+        console.debug(`[WI] Budget ${budget} exceeds cap ${world_info_budget_cap}, using cap`);
         budget = world_info_budget_cap;
     }
 
-    console.debug(`Context size: ${maxContext}; WI budget: ${budget} (max% = ${world_info_budget}%, cap = ${world_info_budget_cap})`);
+    console.debug(`[WI] Context size: ${maxContext}; WI budget: ${budget} (max% = ${world_info_budget}%, cap = ${world_info_budget_cap})`);
     const sortedEntries = await getSortedEntries();
     const timedEffects = new WorldInfoTimedEffects(chat, sortedEntries);
 
@@ -3574,21 +3583,32 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], EMEntries: [], allActivatedEntries: new Set() };
     }
 
+    console.debug(`[WI] --- SEARCHING ENTRIES (on ${sortedEntries.length} entries) ---`);
+
     while (scanState) {
         // Track how many times the loop has run. May be useful for debugging.
         // eslint-disable-next-line no-unused-vars
         count++;
 
+        console.debug(`[WI] Loop #${count}. Search state`, Object.entries(scan_state).find(x => x[1] === scanState));
+
         let activatedNow = new Set();
 
         for (let entry of sortedEntries) {
+            console.debug(`[WI] Entry ${entry.uid} from '${entry.world}' processing`, entry);
+
+            if (entry.disable == true) {
+                console.debug(`[WI] Entry ${entry.uid} disabled`);
+                continue;
+            }
+
             // Check if this entry applies to the character or if it's excluded
             if (entry.characterFilter && entry.characterFilter?.names?.length > 0) {
                 const nameIncluded = entry.characterFilter.names.includes(getCharaFilename());
                 const filtered = entry.characterFilter.isExclude ? nameIncluded : !nameIncluded;
 
                 if (filtered) {
-                    console.debug(`WI entry ${entry.uid} filtered out by character`);
+                    console.debug(`[WI] Entry ${entry.uid} filtered out by character`);
                     continue;
                 }
             }
@@ -3605,7 +3625,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                         const filtered = entry.characterFilter.isExclude ? includesTag : !includesTag;
 
                         if (filtered) {
-                            console.debug(`WI entry ${entry.uid} filtered out by tag`);
+                            console.debug(`[WI] Entry ${entry.uid} filtered out by tag`);
                             continue;
                         }
                     }
@@ -3617,107 +3637,123 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             const isDelay = timedEffects.isEffectActive('delay', entry);
 
             if (isDelay) {
-                console.debug(`WI entry ${entry.uid} suppressed by delay`, entry);
+                console.debug(`[WI] Entry ${entry.uid} suppressed by delay`);
                 continue;
             }
 
             if (isCooldown && !isSticky) {
-                console.debug(`WI entry ${entry.uid} suppressed by cooldown`, entry);
+                console.debug(`[WI] Entry ${entry.uid} suppressed by cooldown`);
                 continue;
             }
 
-            if (failedProbabilityChecks.has(entry)) {
-                continue;
-            }
-
-            if (allActivatedEntries.has(entry) || entry.disable == true) {
+            // Already processed, considered and then skipped entries should still be skipped
+            if (failedProbabilityChecks.has(entry) || allActivatedEntries.has(entry)) {
                 continue;
             }
 
             // Only use checks for recursion flags if the scan step was activated by recursion
             if (scanState !== scan_state.RECURSION && entry.delayUntilRecursion) {
-                console.debug(`WI entry ${entry.uid} suppressed by delay until recursion`, entry);
+                console.debug(`[WI] Entry ${entry.uid} suppressed by delay until recursion`);
                 continue;
             }
 
             if (scanState === scan_state.RECURSION && world_info_recursive && entry.excludeRecursion) {
-                console.debug(`WI entry ${entry.uid} suppressed by exclude recursion`, entry);
+                console.debug(`[WI] Entry ${entry.uid} suppressed by exclude recursion`);
                 continue;
             }
 
-            if (entry.constant || buffer.isExternallyActivated(entry) || isSticky) {
+            // Now do checks for immediate activations
+            if (entry.constant) {
+                console.debug(`[WI] Entry ${entry.uid} activated because of constant`);
                 activatedNow.add(entry);
                 continue;
             }
 
-            if (Array.isArray(entry.key) && entry.key.length) { //check for keywords existing
-                // If selectiveLogic isn't found, assume it's AND, only do this once per entry
-                const selectiveLogic = entry.selectiveLogic ?? 0;
+            if (buffer.isExternallyActivated(entry)) {
+                console.debug(`[WI] Entry ${entry.uid} externally activated`);
+                activatedNow.add(entry);
+                continue;
+            }
 
-                primary: for (let key of entry.key) {
-                    const substituted = substituteParams(key);
-                    const textToScan = buffer.get(entry, scanState);
+            if (isSticky) {
+                console.debug(`[WI] Entry ${entry.uid} activated because active sticky`);
+                activatedNow.add(entry);
+                continue;
+            }
 
-                    if (substituted && buffer.matchKeys(textToScan, substituted.trim(), entry)) {
-                        console.debug(`WI UID ${entry.uid} found by primary match: ${substituted}.`);
+            if (!Array.isArray(entry.key) || !entry.key.length) {
+                console.debug(`[WI] Entry ${entry.uid} has no keys defined, skipped`);
+                continue;
+            }
 
-                        //selective logic begins
-                        if (
-                            entry.selective && //all entries are selective now
-                            Array.isArray(entry.keysecondary) && //always true
-                            entry.keysecondary.length //ignore empties
-                        ) {
-                            console.debug(`WI UID:${entry.uid} found. Checking logic: ${entry.selectiveLogic}`);
-                            let hasAnyMatch = false;
-                            let hasAllMatch = true;
-                            secondary: for (let keysecondary of entry.keysecondary) {
-                                const secondarySubstituted = substituteParams(keysecondary);
-                                const hasSecondaryMatch = secondarySubstituted && buffer.matchKeys(textToScan, secondarySubstituted.trim(), entry);
-                                console.debug(`WI UID:${entry.uid}: Filtering for secondary keyword - "${secondarySubstituted}".`);
+            // If selectiveLogic isn't found, assume it's AND, only do this once per entry
+            const selectiveLogic = entry.selectiveLogic ?? 0;
 
-                                if (hasSecondaryMatch) {
-                                    hasAnyMatch = true;
-                                }
+            primary: for (let key of entry.key) {
+                const substituted = substituteParams(key);
+                const textToScan = buffer.get(entry, scanState);
 
-                                if (!hasSecondaryMatch) {
-                                    hasAllMatch = false;
-                                }
+                if (substituted && buffer.matchKeys(textToScan, substituted.trim(), entry)) {
+                    console.debug(`[WI] Entry ${entry.uid} has match on primary keyword`, substituted);
 
-                                // Simplified AND ANY / NOT ALL if statement. (Proper fix for PR#1356 by Bronya)
-                                // If AND ANY logic and the main checks pass OR if NOT ALL logic and the main checks do not pass
-                                if ((selectiveLogic === world_info_logic.AND_ANY && hasSecondaryMatch) || (selectiveLogic === world_info_logic.NOT_ALL && !hasSecondaryMatch)) {
-                                    // Differ both logic statements in the debugger
-                                    if (selectiveLogic === world_info_logic.AND_ANY) {
-                                        console.debug(`(AND ANY Check) Activating WI Entry ${entry.uid}. Found match for word: ${substituted} ${secondarySubstituted}`);
-                                    } else {
-                                        console.debug(`(NOT ALL Check) Activating WI Entry ${entry.uid}. Found match for word "${substituted}" without secondary keyword: ${secondarySubstituted}`);
-                                    }
-                                    activatedNow.add(entry);
-                                    break secondary;
-                                }
+                    //selective logic begins
+                    if (
+                        entry.selective && //all entries are selective now
+                        Array.isArray(entry.keysecondary) && //always true
+                        entry.keysecondary.length //ignore empties
+                    ) {
+                        console.debug(`[WI] Entry ${entry.uid} has secondary keywords. Checking logic`, Object.entries(world_info_logic).find(x => x[1] === entry.selectiveLogic));
+                        let hasAnyMatch = false;
+                        let hasAllMatch = true;
+                        secondary: for (let keysecondary of entry.keysecondary) {
+                            const secondarySubstituted = substituteParams(keysecondary);
+                            const hasSecondaryMatch = secondarySubstituted && buffer.matchKeys(textToScan, secondarySubstituted.trim(), entry);
+
+                            if (hasSecondaryMatch) {
+                                hasAnyMatch = true;
                             }
 
-                            // Handle NOT ANY logic
-                            if (selectiveLogic === world_info_logic.NOT_ANY && !hasAnyMatch) {
-                                console.debug(`(NOT ANY Check) Activating WI Entry ${entry.uid}, no secondary keywords found.`);
+                            if (!hasSecondaryMatch) {
+                                hasAllMatch = false;
+                            }
+
+                            // Simplified AND ANY / NOT ALL if statement. (Proper fix for PR#1356 by Bronya)
+                            // If AND ANY logic and the main checks pass OR if NOT ALL logic and the main checks do not pass
+                            if ((selectiveLogic === world_info_logic.AND_ANY && hasSecondaryMatch) || (selectiveLogic === world_info_logic.NOT_ALL && !hasSecondaryMatch)) {
+                                if (selectiveLogic === world_info_logic.AND_ANY) {
+                                    console.debug(`[WI] Entry ${entry.uid} activated. (AND ANY) Found match secondary keyword`, secondarySubstituted);
+                                } else {
+                                    console.debug(`[WI] Entry ${entry.uid} activated. (NOT ALL) Found not matching secondary keyword`, secondarySubstituted);
+                                }
                                 activatedNow.add(entry);
+                                break secondary;
                             }
-
-                            // Handle AND ALL logic
-                            if (selectiveLogic === world_info_logic.AND_ALL && hasAllMatch) {
-                                console.debug(`(AND ALL Check) Activating WI Entry ${entry.uid}, all secondary keywords found.`);
-                                activatedNow.add(entry);
-                            }
-                        } else {
-                            // Handle cases where secondary is empty
-                            console.debug(`WI UID ${entry.uid}: Activated without filter logic.`);
-                            activatedNow.add(entry);
-                            break primary;
                         }
+
+                        // Handle NOT ANY logic
+                        if (selectiveLogic === world_info_logic.NOT_ANY && !hasAnyMatch) {
+                            console.debug(`[WI] Entry ${entry.uid} activated. (NOT ANY) No secondary keywords found`, entry.keysecondary);
+                            activatedNow.add(entry);
+                        }
+
+                        // Handle AND ALL logic
+                        if (selectiveLogic === world_info_logic.AND_ALL && hasAllMatch) {
+                            console.debug(`[WI] Entry ${entry.uid} activated. (AND ALL) All secondary keywords found`, entry.keysecondary);
+                            activatedNow.add(entry);
+                        }
+
+                        // console.debug(`[WI] Entry ${entry.uid} skipped. Secondary keywords not satisfied`, entry.keysecondary);
+                    } else {
+                        // Handle cases where secondary is empty
+                        console.debug(`[WI] Entry ${entry.uid} activated by primary keyword`, substituted);
+                        activatedNow.add(entry);
+                        break primary;
                     }
                 }
             }
         }
+
+        console.debug(`[WI] Search done. Found ${activatedNow.size} possible entries.`);
 
         scanState = world_info_recursive && activatedNow.size > 0 ? scan_state.RECURSION : scan_state.NONE;
         const newEntries = [...activatedNow]
@@ -3728,7 +3764,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
 
         filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanState);
 
-        console.debug('-- PROBABILITY CHECKS BEGIN --');
+        console.debug('[WI] --- PROBABILITY CHECKS ---');
         for (const entry of newEntries) {
             const rollValue = Math.random() * 100;
 
@@ -3760,15 +3796,13 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             console.debug('WI entry activated:', entry);
         }
 
-        const probabilityChecksAfter = failedProbabilityChecks.size;
-
-        if ((probabilityChecksAfter - probabilityChecksBefore) === activatedNow.size) {
-            console.debug('WI probability checks failed for all activated entries, stopping');
+        if (newEntries.length && (failedProbabilityChecks.size - probabilityChecksBefore) === activatedNow.size) {
+            console.debug('[WI] Probability checks failed for all activated entries, stopping');
             scanState = scan_state.NONE;
         }
 
         if (newEntries.length === 0) {
-            console.debug('No new entries activated, stopping');
+            console.debug('[WI] No new entries activated, stopping');
             scanState = scan_state.NONE;
         }
 
@@ -3784,18 +3818,25 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         // world_info_min_activations
         if (!scanState && !token_budget_overflowed) {
             if (world_info_min_activations > 0 && (allActivatedEntries.size < world_info_min_activations)) {
+                console.debug('[WI] --- MIN ACTIVATIONS CHECK ---');
+
                 let over_max = (
                     world_info_min_activations_depth_max > 0 &&
                     buffer.getDepth() > world_info_min_activations_depth_max
                 ) || (buffer.getDepth() > chat.length);
 
                 if (!over_max) {
+                    console.debug(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), advancing depth to ${buffer.getDepth() + 1} and checking again`);
                     scanState = scan_state.MIN_ACTIVATIONS; // loop
                     buffer.advanceScanPosition();
+                } else {
+                    console.debug(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), but reached on of depth. Stopping`);
                 }
             }
         }
     }
+
+    console.debug('[WI] --- BUILDING PROMPT ---');
 
     // Forward-sorted list of entries for joining
     const WIBeforeEntries = [];
@@ -3812,7 +3853,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         const content = getRegexedString(entry.content, regex_placement.WORLD_INFO, { depth: regexDepth, isMarkdown: false, isPrompt: true });
 
         if (!content) {
-            console.debug('Skipping adding WI entry to prompt due to empty content:', entry);
+            console.debug(`[WI] Entry ${entry.uid} skipped adding to prompt due to empty content`, entry);
             return;
         }
 
@@ -3870,6 +3911,9 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
     buffer.resetExternalEffects();
     timedEffects.cleanUp();
 
+    console.debug(`[WI] Adding ${allActivatedEntries.size} entries to prompt`);
+    console.debug('[WI] --- DONE ---');
+
     return { worldInfoBefore, worldInfoAfter, EMEntries, WIDepthEntries, allActivatedEntries };
 }
 
@@ -3884,13 +3928,13 @@ function filterGroupsByScoring(groups, buffer, removeEntry, scanState) {
     for (const [key, group] of Object.entries(groups)) {
         // Group scoring is disabled both globally and for the group entries
         if (!world_info_use_group_scoring && !group.some(x => x.useGroupScoring)) {
-            console.debug(`Skipping group scoring for group '${key}'`);
+            console.debug(`[WI] Skipping group scoring for group '${key}'`);
             continue;
         }
 
         const scores = group.map(entry => buffer.getScore(entry, scanState));
         const maxScore = Math.max(...scores);
-        console.debug(`Group '${key}' max score: ${maxScore}`);
+        console.debug(`[WI] Group '${key}' max score:`, maxScore);
         //console.table(group.map((entry, i) => ({ uid: entry.uid, key: JSON.stringify(entry.key), score: scores[i] })));
 
         for (let i = 0; i < group.length; i++) {
@@ -3901,7 +3945,7 @@ function filterGroupsByScoring(groups, buffer, removeEntry, scanState) {
             }
 
             if (scores[i] < maxScore) {
-                console.debug(`Removing score loser from inclusion group '${key}' entry '${group[i].uid}'`, group[i]);
+                console.debug(`[WI] Entry ${group[i].uid} removed as score loser from inclusion group '${key}'`, group[i]);
                 removeEntry(group[i]);
                 group.splice(i, 1);
                 scores.splice(i, 1);
@@ -3919,7 +3963,8 @@ function filterGroupsByScoring(groups, buffer, removeEntry, scanState) {
  * @param {number} scanState The current scan state
  */
 function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanState) {
-    console.debug('-- INCLUSION GROUP CHECKS BEGIN --');
+    console.debug('[WI] --- INCLUSION GROUP CHECKS ---');
+
     const grouped = newEntries.filter(x => x.group).reduce((acc, item) => {
         item.group.split(/,\s*/).filter(x => x).forEach(group => {
             if (!acc[group]) {
@@ -3931,7 +3976,7 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanSt
     }, {});
 
     if (Object.keys(grouped).length === 0) {
-        console.debug('No inclusion groups found');
+        console.debug('[WI] No inclusion groups found');
         return;
     }
 
@@ -3942,7 +3987,7 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanSt
                 continue;
             }
 
-            if (logging) console.debug(`Removing loser from inclusion group '${entry.group}' entry '${entry.uid}'`, entry);
+            if (logging) console.debug(`[WI] Entry ${entry.uid} removed as loser from inclusion group '${entry.group}'`, entry);
             removeEntry(entry);
         }
     }
@@ -3950,24 +3995,24 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanSt
     filterGroupsByScoring(grouped, buffer, removeEntry, scanState);
 
     for (const [key, group] of Object.entries(grouped)) {
-        console.debug(`Checking inclusion group '${key}' with ${group.length} entries`, group);
+        console.debug(`[WI] Checking inclusion group '${key}' with ${group.length} entries`, group);
 
         if (Array.from(allActivatedEntries).some(x => x.group === key)) {
-            console.debug(`Skipping inclusion group check, group already activated '${key}'`);
+            console.debug(`[WI] Skipping inclusion group check, group '${key}' was already activated`);
             // We need to forcefully deactivate all other entries in the group
             removeAllBut(group, null, false);
             continue;
         }
 
         if (!Array.isArray(group) || group.length <= 1) {
-            console.debug('Skipping inclusion group check, only one entry');
+            console.debug('[WI] Skipping inclusion group check, only one entry');
             continue;
         }
 
         // Check for group prio
         const prios = group.filter(x => x.groupOverride).sort(sortFn);
         if (prios.length) {
-            console.debug(`Activated inclusion group '${key}' with by prio winner entry '${prios[0].uid}'`, prios[0]);
+            console.debug(`[WI] Entry ${prios[0].uid} activated as prio winner from inclusion group '${key}'`, prios[0]);
             removeAllBut(group, prios[0]);
             continue;
         }
@@ -3982,14 +4027,14 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanSt
             currentWeight += (entry.groupWeight ?? DEFAULT_WEIGHT);
 
             if (rollValue <= currentWeight) {
-                console.debug(`Activated inclusion group '${key}' with roll winner entry '${entry.uid}'`, entry);
+                console.debug(`[WI] Entry ${entry.uid} activated as roll winner from inclusion group '${key}'`, entry);
                 winner = entry;
                 break;
             }
         }
 
         if (!winner) {
-            console.debug(`Failed to activate inclusion group '${key}', no winner found`);
+            console.debug(`[WI] Failed to activate inclusion group '${key}', no winner found`);
             continue;
         }
 
