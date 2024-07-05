@@ -109,6 +109,7 @@ export class QuickReplySet {
         const parser = new SlashCommandParser();
         const closure = parser.parse(qr.message, true, [], qr.abortController, qr.debugController);
         closure.onProgress = (done, total) => qr.updateEditorProgress(done, total);
+        closure.scope.setMacro('arg::*', '');
         // closure.abortController = qr.abortController;
         // closure.debugController = qr.debugController;
         // const stepper = closure.executeGenerator();

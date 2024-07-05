@@ -1297,6 +1297,7 @@ export class QuickReply {
             for (const key of Object.keys(args)) {
                 scope.setMacro(`arg::${key}`, args[key]);
             }
+            scope.setMacro('arg::*', '');
             if (isEditor) {
                 this.abortController = new SlashCommandAbortController();
             }
