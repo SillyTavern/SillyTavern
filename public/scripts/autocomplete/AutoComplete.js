@@ -17,7 +17,7 @@ export const AUTOCOMPLETE_WIDTH = {
 };
 
 export class AutoComplete {
-    /**@type {HTMLTextAreaElement}*/ textarea;
+    /**@type {HTMLTextAreaElement|HTMLInputElement}*/ textarea;
     /**@type {boolean}*/ isFloating = false;
     /**@type {()=>boolean}*/ checkIfActivate;
     /**@type {(text:string, index:number) => Promise<AutoCompleteNameResult>}*/ getNameAt;
