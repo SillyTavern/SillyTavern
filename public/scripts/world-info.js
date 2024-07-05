@@ -3735,15 +3735,18 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                         if (selectiveLogic === world_info_logic.NOT_ANY && !hasAnyMatch) {
                             console.debug(`[WI] Entry ${entry.uid} activated. (NOT ANY) No secondary keywords found`, entry.keysecondary);
                             activatedNow.add(entry);
+                            break primary;
                         }
 
                         // Handle AND ALL logic
                         if (selectiveLogic === world_info_logic.AND_ALL && hasAllMatch) {
                             console.debug(`[WI] Entry ${entry.uid} activated. (AND ALL) All secondary keywords found`, entry.keysecondary);
                             activatedNow.add(entry);
+                            break primary;
                         }
 
-                        // console.debug(`[WI] Entry ${entry.uid} skipped. Secondary keywords not satisfied`, entry.keysecondary);
+                        console.debug(`[WI] Entry ${entry.uid} skipped. Secondary keywords not satisfied`, entry.keysecondary);
+                        break primary;
                     } else {
                         // Handle cases where secondary is empty
                         console.debug(`[WI] Entry ${entry.uid} activated by primary keyword`, substituted);
