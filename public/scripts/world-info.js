@@ -449,7 +449,7 @@ class WorldInfoTimedEffects {
             console.debug('Cooldown ended for entry', entry.uid);
         },
 
-        'delay': () => {},
+        'delay': () => { },
     };
 
     /**
@@ -3610,7 +3610,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             }
 
             if (entry.disable == true) {
-                log(`disabled`);
+                log('disabled');
                 continue;
             }
 
@@ -3620,7 +3620,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 const filtered = entry.characterFilter.isExclude ? nameIncluded : !nameIncluded;
 
                 if (filtered) {
-                    log(`filtered out by character`);
+                    log('filtered out by character');
                     continue;
                 }
             }
@@ -3637,7 +3637,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                         const filtered = entry.characterFilter.isExclude ? includesTag : !includesTag;
 
                         if (filtered) {
-                            log(`filtered out by tag`);
+                            log('filtered out by tag');
                             continue;
                         }
                     }
@@ -3649,47 +3649,47 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             const isDelay = timedEffects.isEffectActive('delay', entry);
 
             if (isDelay) {
-                log(`suppressed by delay`);
+                log('suppressed by delay');
                 continue;
             }
 
             if (isCooldown && !isSticky) {
-                log(`suppressed by cooldown`);
+                log('suppressed by cooldown');
                 continue;
             }
 
             // Only use checks for recursion flags if the scan step was activated by recursion
             if (scanState !== scan_state.RECURSION && entry.delayUntilRecursion) {
-                log(`suppressed by delay until recursion`);
+                log('suppressed by delay until recursion');
                 continue;
             }
 
             if (scanState === scan_state.RECURSION && world_info_recursive && entry.excludeRecursion) {
-                log(`suppressed by exclude recursion`);
+                log('suppressed by exclude recursion');
                 continue;
             }
 
             // Now do checks for immediate activations
             if (entry.constant) {
-                log(`activated because of constant`);
+                log('activated because of constant');
                 activatedNow.add(entry);
                 continue;
             }
 
             if (buffer.isExternallyActivated(entry)) {
-                log(`externally activated`);
+                log('externally activated');
                 activatedNow.add(entry);
                 continue;
             }
 
             if (isSticky) {
-                log(`activated because active sticky`);
+                log('activated because active sticky');
                 activatedNow.add(entry);
                 continue;
             }
 
             if (!Array.isArray(entry.key) || !entry.key.length) {
-                log(`has no keys defined, skipped`);
+                log('has no keys defined, skipped');
                 continue;
             }
 
@@ -3703,7 +3703,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 const substituted = substituteParams(key);
 
                 if (substituted && buffer.matchKeys(textToScan, substituted.trim(), entry)) {
-                    log(`has match on primary keyword`, substituted);
+                    log('has match on primary keyword', substituted);
 
                     //selective logic begins
                     if (
@@ -3711,7 +3711,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                         Array.isArray(entry.keysecondary) && //always true
                         entry.keysecondary.length //ignore empties
                     ) {
-                        log(`has secondary keywords. Checking logic`, Object.entries(world_info_logic).find(x => x[1] === entry.selectiveLogic));
+                        log('has secondary keywords. Checking logic', Object.entries(world_info_logic).find(x => x[1] === entry.selectiveLogic));
                         let hasAnyMatch = false;
                         let hasAllMatch = true;
                         secondary: for (let keysecondary of entry.keysecondary) {
@@ -3730,9 +3730,9 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                             // If AND ANY logic and the main checks pass OR if NOT ALL logic and the main checks do not pass
                             if ((selectiveLogic === world_info_logic.AND_ANY && hasSecondaryMatch) || (selectiveLogic === world_info_logic.NOT_ALL && !hasSecondaryMatch)) {
                                 if (selectiveLogic === world_info_logic.AND_ANY) {
-                                    log(`activated. (AND ANY) Found match secondary keyword`, secondarySubstituted);
+                                    log('activated. (AND ANY) Found match secondary keyword', secondarySubstituted);
                                 } else {
-                                    log(`activated. (NOT ALL) Found not matching secondary keyword`, secondarySubstituted);
+                                    log('activated. (NOT ALL) Found not matching secondary keyword', secondarySubstituted);
                                 }
                                 activatedNow.add(entry);
                                 break secondary;
@@ -3741,23 +3741,23 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
 
                         // Handle NOT ANY logic
                         if (selectiveLogic === world_info_logic.NOT_ANY && !hasAnyMatch) {
-                            log(`activated. (NOT ANY) No secondary keywords found`, entry.keysecondary);
+                            log('activated. (NOT ANY) No secondary keywords found', entry.keysecondary);
                             activatedNow.add(entry);
                             break primary;
                         }
 
                         // Handle AND ALL logic
                         if (selectiveLogic === world_info_logic.AND_ALL && hasAllMatch) {
-                            log(`activated. (AND ALL) All secondary keywords found`, entry.keysecondary);
+                            log('activated. (AND ALL) All secondary keywords found', entry.keysecondary);
                             activatedNow.add(entry);
                             break primary;
                         }
 
-                        log(`skipped. Secondary keywords not satisfied`, entry.keysecondary);
+                        log('skipped. Secondary keywords not satisfied', entry.keysecondary);
                         break primary;
                     } else {
                         // Handle cases where secondary is empty
-                        log(`activated by primary keyword`, substituted);
+                        log('activated by primary keyword', substituted);
                         activatedNow.add(entry);
                         break primary;
                     }
