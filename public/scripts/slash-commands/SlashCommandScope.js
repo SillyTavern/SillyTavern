@@ -38,8 +38,10 @@ export class SlashCommandScope {
     }
 
 
-    setMacro(key, value) {
-        this.macros[key] = value;
+    setMacro(key, value, overwrite = true) {
+        if (overwrite || !this.macroList.find(it=>it.key == key)) {
+            this.macros[key] = value;
+        }
     }
 
 
