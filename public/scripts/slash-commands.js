@@ -1075,7 +1075,7 @@ export function initDefaultSlashCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'scoped variable or qr label',
-                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING],
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.CLOSURE],
                 isRequired: true,
                 enumProvider: () => [
                     ...commonEnumProviders.variables('scope')(),
@@ -1773,6 +1773,10 @@ function getMessagesCallback(args, value) {
 async function runCallback(args, name) {
     if (!name) {
         throw new Error('No name provided for /run command');
+    }
+
+    if (name instanceof SlashCommandClosure) {
+        return await name.execute();
     }
 
     /**@type {SlashCommandScope} */
