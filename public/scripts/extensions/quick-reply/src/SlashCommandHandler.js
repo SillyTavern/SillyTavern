@@ -63,7 +63,7 @@ export class SlashCommandHandler {
                     ...otherQrs.map(x => new SlashCommandEnumValue(`${x.set.name}.${x.qr.label}`, `${x.qr.title || x.qr.message}`, enumTypes.qr, enumIcons.qr)),
                 ];
             },
-        }
+        };
 
         window['qrEnumProviderExecutables'] = localEnumProviders.qrExecutables;
 
