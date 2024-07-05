@@ -3587,7 +3587,6 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
 
     while (scanState) {
         // Track how many times the loop has run. May be useful for debugging.
-        // eslint-disable-next-line no-unused-vars
         count++;
 
         console.debug(`[WI] Loop #${count}. Search state`, Object.entries(scan_state).find(x => x[1] === scanState));
@@ -3689,9 +3688,11 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             // If selectiveLogic isn't found, assume it's AND, only do this once per entry
             const selectiveLogic = entry.selectiveLogic ?? 0;
 
+            // Cache the text to scan before the loop, it won't change its content
+            const textToScan = buffer.get(entry, scanState);
+
             primary: for (let key of entry.key) {
                 const substituted = substituteParams(key);
-                const textToScan = buffer.get(entry, scanState);
 
                 if (substituted && buffer.matchKeys(textToScan, substituted.trim(), entry)) {
                     console.debug(`[WI] Entry ${entry.uid} has match on primary keyword`, substituted);
