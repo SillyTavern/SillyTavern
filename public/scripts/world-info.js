@@ -3764,32 +3764,50 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
         let newContent = '';
         const textToScanTokens = await getTokenCountAsync(allActivatedText);
-        const probabilityChecksBefore = failedProbabilityChecks.size;
 
         filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanState);
 
         console.debug('[WI] --- PROBABILITY CHECKS ---');
         for (const entry of newEntries) {
-            const rollValue = Math.random() * 100;
-
-            if (entry.useProbability && rollValue > entry.probability) {
-                const isSticky = timedEffects.isEffectActive('sticky', entry);
-                if (!isSticky) {
-                    console.debug(`WI entry ${entry.uid} ${entry.key} failed probability check, skipping`);
-                    failedProbabilityChecks.add(entry);
-                    continue;
+            function verifyProbability() {
+                // If we don't need to roll, it's always true
+                if (!entry.useProbability || entry.probability === 100) {
+                    console.debug(`WI entry ${entry.uid} does not use probability`);
+                    return true;
                 }
-            } else { console.debug(`uid:${entry.uid} passed probability check, inserting to prompt`); }
+
+                const isSticky = timedEffects.isEffectActive('sticky', entry);
+                if (isSticky) {
+                    console.debug(`WI entry ${entry.uid} is sticky, does not need to re-roll probability`);
+                    return true;
+                }
+
+                const rollValue = Math.random() * 100;
+                if (rollValue <= entry.probability) {
+                    console.debug(`WI entry ${entry.uid} passed probability check of ${entry.probability}%`);
+                    return true;
+                }
+
+                failedProbabilityChecks.add(entry);
+                return false;
+            }
+
+            const success = verifyProbability();
+            if (!success) {
+                console.debug(`WI entry ${entry.uid} failed probability check, removing from activated entries`, entry);
+                continue;
+            }
 
             // Substitute macros inline, for both this checking and also future processing
             entry.content = substituteParams(entry.content);
             newContent += `${entry.content}\n`;
 
             if ((textToScanTokens + (await getTokenCountAsync(newContent))) >= budget) {
-                console.debug('WI budget reached, stopping');
                 if (world_info_overflow_alert) {
-                    console.log('Alerting');
+                    console.warn(`[WI] budget of ${budget} reached, stopping after ${allActivatedEntries.size} entries`);
                     toastr.warning(`World info budget reached after ${allActivatedEntries.size} entries.`, 'World Info');
+                } else {
+                    console.debug(`[WI] budget of ${budget} reached, stopping after ${allActivatedEntries.size} entries`);
                 }
                 scanState = scan_state.NONE;
                 token_budget_overflowed = true;
@@ -3797,26 +3815,31 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             }
 
             allActivatedEntries.add(entry);
-            console.debug('WI entry activated:', entry);
+            console.debug(`WI entry ${entry.uid} activation successful, adding to prompt`, entry);
         }
 
-        if (newEntries.length && (failedProbabilityChecks.size - probabilityChecksBefore) === activatedNow.size) {
-            console.debug('[WI] Probability checks failed for all activated entries, stopping');
-            scanState = scan_state.NONE;
-        }
+        const successfulNewEntries = newEntries.filter(x => !failedProbabilityChecks.has(x));
 
-        if (newEntries.length === 0) {
+        if (!newEntries.length) {
             console.debug('[WI] No new entries activated, stopping');
             scanState = scan_state.NONE;
         }
 
+        if (newEntries.length && !successfulNewEntries.length) {
+            console.debug('[WI] Probability checks failed for all activated entries, stopping');
+            scanState = scan_state.NONE;
+        }
+
         if (scanState) {
-            const text = newEntries
-                .filter(x => !failedProbabilityChecks.has(x))
+            const text = successfulNewEntries
                 .filter(x => !x.preventRecursion)
                 .map(x => x.content).join('\n');
             buffer.addRecurse(text);
             allActivatedText = (text + '\n' + allActivatedText);
+        }
+
+        if (successfulNewEntries.length) {
+            console.debug(`[WI] Sucessfully activated ${successfulNewEntries.length} new entries to prompt. ${allActivatedEntries.size} total entries activated.`, successfulNewEntries);
         }
 
         // world_info_min_activations
