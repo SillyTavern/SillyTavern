@@ -1295,6 +1295,7 @@ export class QuickReply {
         if (this.message?.length > 0 && this.onExecute) {
             const scope = new SlashCommandScope();
             for (const key of Object.keys(args)) {
+                if (key[0] == '_') continue;
                 scope.setMacro(`arg::${key}`, args[key]);
             }
             scope.setMacro('arg::*', '');
