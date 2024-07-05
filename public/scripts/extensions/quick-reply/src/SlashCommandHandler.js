@@ -526,6 +526,34 @@ export class SlashCommandHandler {
                 </div>
             `,
         }));
+
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-arg',
+            callback: ({ _scope }, [key, value]) => {
+                _scope.setMacro(`arg::${key}`, value, false);
+                return '';
+            },
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({ description: 'argument name',
+                    typeList: ARGUMENT_TYPE.STRING,
+                    isRequired: true,
+                }),
+                SlashCommandArgument.fromProps({ description: 'argument value',
+                    typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY],
+                    isRequired: true,
+                }),
+            ],
+            splitUnnamedArgument: true,
+            splitUnnamedArgumentCount: 2,
+            helpString: `
+                <div>
+                    Set a fallback value for a Quick Reply argument.
+                </div>
+                <div>
+                    <strong>Example:</strong>
+                    <pre><code>/qr-arg x foo |\n/echo {{arg::x}}</code></pre>
+                </div>
+            `,
+        }));
     }
 
 
