@@ -66,6 +66,7 @@ import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandDebugController } from './slash-commands/SlashCommandDebugController.js';
 import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
+import { SlashCommandExecutionError } from './slash-commands/SlashCommandExecutionError.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -3405,7 +3406,23 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
         result.isError = true;
         result.errorMessage = e.message || 'An unknown error occurred';
         if (e.cause !== 'abort') {
-            toastr.error(result.errorMessage);
+            if (e instanceof SlashCommandExecutionError) {
+                /**@type {SlashCommandExecutionError}*/
+                const ex = e;
+                const toast = `
+                    <div>${ex.message}</div>
+                    <div>Line: ${ex.line} Column: ${ex.column}</div>
+                    <pre style="text-align:left;">${ex.hint}</pre>
+                    `;
+                const clickHint = '<p>Click to see details</p>';
+                toastr.error(
+                    `${toast}${clickHint}`,
+                    'SlashCommandExecutionError',
+                    { escapeHtml: false, timeOut: 10000, onclick: () => callPopup(toast, 'text') },
+                );
+            } else {
+                toastr.error(result.errorMessage);
+            }
         }
     } finally {
         delay(1000).then(() => clearCommandProgressDebounced());
@@ -3474,7 +3491,23 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
         return result;
     } catch (e) {
         if (options.handleExecutionErrors) {
-            toastr.error(e.message);
+            if (e instanceof SlashCommandExecutionError) {
+                /**@type {SlashCommandExecutionError}*/
+                const ex = e;
+                const toast = `
+                    <div>${ex.message}</div>
+                    <div>Line: ${ex.line} Column: ${ex.column}</div>
+                    <pre style="text-align:left;">${ex.hint}</pre>
+                    `;
+                const clickHint = '<p>Click to see details</p>';
+                toastr.error(
+                    `${toast}${clickHint}`,
+                    'SlashCommandExecutionError',
+                    { escapeHtml: false, timeOut: 10000, onclick: () => callPopup(toast, 'text') },
+                );
+            } else {
+                toastr.error(e.message);
+            }
             const result = new SlashCommandClosureResult();
             result.isError = true;
             result.errorMessage = e.message;

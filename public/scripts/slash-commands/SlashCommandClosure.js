@@ -7,6 +7,7 @@ import { SlashCommandBreakController } from './SlashCommandBreakController.js';
 import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
 import { SlashCommandClosureResult } from './SlashCommandClosureResult.js';
 import { SlashCommandDebugController } from './SlashCommandDebugController.js';
+import { SlashCommandExecutionError } from './SlashCommandExecutionError.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 import { SlashCommandNamedArgumentAssignment } from './SlashCommandNamedArgumentAssignment.js';
 import { SlashCommandScope } from './SlashCommandScope.js';
@@ -370,7 +371,11 @@ export class SlashCommandClosure {
                 if (this.debugController) {
                     this.debugController.isStepping = false || this.debugController.isSteppingInto;
                 }
-                this.scope.pipe = await executor.command.callback(args, value ?? '');
+                try {
+                    this.scope.pipe = await executor.command.callback(args, value ?? '');
+                } catch (ex) {
+                    throw new SlashCommandExecutionError(ex, ex.message, executor.name, executor.start, executor.end, this.fullText.slice(executor.start, executor.end), this.fullText);
+                }
                 if (this.debugController) {
                     this.debugController.namedArguments = undefined;
                     this.debugController.unnamedArguments = undefined;
