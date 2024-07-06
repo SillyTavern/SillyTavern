@@ -3921,7 +3921,7 @@ async function onModelChange() {
         oai_settings.groq_model = value;
     }
 
-    if ($(this).is('#model_01ai_select')) {
+    if (value && $(this).is('#model_01ai_select')) {
         console.log('01.AI model changed to', value);
         oai_settings.zerooneai_model = value;
     }
