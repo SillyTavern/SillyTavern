@@ -170,7 +170,7 @@ class WorldInfoBuffer {
     #skew = 0;
 
     /**
-     * @type {number} The starting depth of the global scan depth. Incremented by "min activations" feature to not repeat scans. When > 0 it means a complete scan was done up to #startDepth already, and `advanceScanPosition` was called.
+     * @type {number} The starting depth of the global scan depth.
      */
     #startDepth = 0;
 
@@ -310,10 +310,9 @@ class WorldInfoBuffer {
     }
 
     /**
-     * Increments skew and sets startDepth to previous depth.
+     * Increments skew to advance the scan range.
      */
-    advanceScanPosition() {
-        this.#startDepth = this.getDepth();
+    advanceScan() {
         this.#skew++;
     }
 
@@ -3885,7 +3884,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             if (!over_max) {
                 console.debug(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), advancing depth to ${buffer.getDepth() + 1} and checking again`);
                 nextScanState = scan_state.MIN_ACTIVATIONS; // loop
-                buffer.advanceScanPosition();
+                buffer.advanceScan();
             } else {
                 console.debug(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), but reached on of depth. Stopping`);
             }
