@@ -16,7 +16,7 @@ import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandE
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
-import { Popup } from './popup.js';
+import { callGenericPopup, Popup, POPUP_TYPE } from './popup.js';
 
 export {
     world_info,
@@ -4224,7 +4224,7 @@ export function checkEmbeddedWorld(chid) {
                         importEmbeddedWorldInfo(true);
                     }
                 };
-                callPopup(html, 'confirm', '', { okButton: 'Yes' }).then(checkResult);
+                callGenericPopup(html, POPUP_TYPE.CONFIRM, '', { okButton: 'Yes' }).then(checkResult);
             }
             else {
                 toastr.info(
