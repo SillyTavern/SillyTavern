@@ -784,6 +784,7 @@ router.post('/remote/textgenerationwebui/encode', jsonParser, async function (re
     const text = String(request.body.text) || '';
     const baseUrl = String(request.body.url);
     const legacyApi = Boolean(request.body.legacy_api);
+    const vllmModel = String(request.body.vllm_model) || '';
 
     try {
         const args = {
@@ -814,7 +815,9 @@ router.post('/remote/textgenerationwebui/encode', jsonParser, async function (re
                     args.body = JSON.stringify({ 'content': text });
                     break;
                 case TEXTGEN_TYPES.VLLM:
-                    return response.send({ error: true });
+                    url += '/tokenize';
+                    args.body = JSON.stringify({ 'model': vllmModel, 'prompt': text });
+                    break;
                 case TEXTGEN_TYPES.APHRODITE:
                     url += '/v1/tokenize';
                     args.body = JSON.stringify({ 'prompt': text });
@@ -834,7 +837,7 @@ router.post('/remote/textgenerationwebui/encode', jsonParser, async function (re
         }
 
         const data = await result.json();
-        const count = legacyApi ? data?.results[0]?.tokens : (data?.length ?? data?.value ?? data?.tokens?.length);
+        const count = legacyApi ? data?.results[0]?.tokens : (data?.length ?? data?.count ?? data?.value ?? data?.tokens?.length);
         const ids = legacyApi ? [] : (data?.tokens ?? data?.ids ?? []);
 
         return response.send({ count, ids });
