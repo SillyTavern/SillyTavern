@@ -300,6 +300,14 @@ class WorldInfoBuffer {
     }
 
     /**
+     * Checks if the recursion buffer is not empty.
+     * @returns {boolean} Returns true if the recursion buffer is not empty, otherwise false
+     */
+    hasRecurse() {
+        return this.#recurseBuffer.length > 0;
+    }
+
+    /**
      * Increments skew and sets startDepth to previous depth.
      */
     advanceScanPosition() {
@@ -3847,8 +3855,14 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             console.debug(`[WI] Sucessfully activated ${successfulNewEntries.length} new entries to prompt. ${allActivatedEntries.size} total entries activated.`, successfulNewEntries);
         }
 
-        // After processing and rolling entries is done, see if we should continue with recursion
+        // After processing and rolling entries is done, see if we should continue with normal recursion
         if (world_info_recursive && !token_budget_overflowed && successfulNewEntriesForRecursion.length) {
+            nextScanState = scan_state.RECURSION;
+        }
+
+        // If we are inside min activations scan, and we have recursive buffer, we should do a recursive scan before increasing the buffer again
+        // There might be recurse-trigger-able entries that match the buffer, so we need to check that
+        if (world_info_recursive && !token_budget_overflowed && scanState === scan_state.MIN_ACTIVATIONS && buffer.hasRecurse()) {
             nextScanState = scan_state.RECURSION;
         }
 
