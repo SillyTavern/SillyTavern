@@ -3976,7 +3976,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
     buffer.resetExternalEffects();
     timedEffects.cleanUp();
 
-    console.debug(`[WI] Adding ${allActivatedEntries.size} entries to prompt`);
+    console.log(`[WI] Adding ${allActivatedEntries.size} entries to prompt`, Array.from(allActivatedEntries));
     console.debug('[WI] --- DONE ---');
 
     return { worldInfoBefore, worldInfoAfter, EMEntries, WIDepthEntries, allActivatedEntries };
