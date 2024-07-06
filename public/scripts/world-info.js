@@ -3591,6 +3591,10 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
 
         console.debug(`[WI] Loop #${count}. Search state`, Object.entries(scan_state).find(x => x[1] === scanState));
 
+        // Until decided otherwise, we set the loop to stop scanning after this
+        let nextScanState = scan_state.NONE;
+
+        // Loop and find all entries that can activate here
         let activatedNow = new Set();
 
         for (let entry of sortedEntries) {
@@ -3775,8 +3779,6 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         }
 
         console.debug(`[WI] Search done. Found ${activatedNow.size} possible entries.`);
-
-        scanState = world_info_recursive && activatedNow.size > 0 ? scan_state.RECURSION : scan_state.NONE;
         const newEntries = [...activatedNow]
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
         let newContent = '';
@@ -3826,7 +3828,6 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 } else {
                     console.debug(`[WI] budget of ${budget} reached, stopping after ${allActivatedEntries.size} entries`);
                 }
-                scanState = scan_state.NONE;
                 token_budget_overflowed = true;
                 break;
             }
@@ -3836,47 +3837,47 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         }
 
         const successfulNewEntries = newEntries.filter(x => !failedProbabilityChecks.has(x));
+        const successfulNewEntriesForRecursion = successfulNewEntries.filter(x => !x.preventRecursion);
 
         if (!newEntries.length) {
             console.debug('[WI] No new entries activated, stopping');
-            scanState = scan_state.NONE;
-        }
-
-        if (newEntries.length && !successfulNewEntries.length) {
+        } else if (!successfulNewEntries.length) {
             console.debug('[WI] Probability checks failed for all activated entries, stopping');
-            scanState = scan_state.NONE;
-        }
-
-        if (scanState) {
-            const text = successfulNewEntries
-                .filter(x => !x.preventRecursion)
-                .map(x => x.content).join('\n');
-            buffer.addRecurse(text);
-            allActivatedText = (text + '\n' + allActivatedText);
-        }
-
-        if (successfulNewEntries.length) {
+        } else {
             console.debug(`[WI] Sucessfully activated ${successfulNewEntries.length} new entries to prompt. ${allActivatedEntries.size} total entries activated.`, successfulNewEntries);
         }
 
-        // world_info_min_activations
-        if (!scanState && !token_budget_overflowed) {
-            if (world_info_min_activations > 0 && (allActivatedEntries.size < world_info_min_activations)) {
-                console.debug('[WI] --- MIN ACTIVATIONS CHECK ---');
+        // After processing and rolling entries is done, see if we should continue with recursion
+        if (world_info_recursive && !token_budget_overflowed && successfulNewEntriesForRecursion.length) {
+            nextScanState = scan_state.RECURSION;
+        }
 
-                let over_max = (
-                    world_info_min_activations_depth_max > 0 &&
-                    buffer.getDepth() > world_info_min_activations_depth_max
-                ) || (buffer.getDepth() > chat.length);
+        // If scanning is planned to stop, but min activations is set and not satisfied, check if we should continue
+        const minActivationsNotSatisfied = world_info_min_activations > 0 && (allActivatedEntries.size < world_info_min_activations);
+        if (!nextScanState && !token_budget_overflowed && minActivationsNotSatisfied) {
+            console.debug('[WI] --- MIN ACTIVATIONS CHECK ---');
 
-                if (!over_max) {
-                    console.debug(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), advancing depth to ${buffer.getDepth() + 1} and checking again`);
-                    scanState = scan_state.MIN_ACTIVATIONS; // loop
-                    buffer.advanceScanPosition();
-                } else {
-                    console.debug(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), but reached on of depth. Stopping`);
-                }
+            let over_max = (
+                world_info_min_activations_depth_max > 0 &&
+                buffer.getDepth() > world_info_min_activations_depth_max
+            ) || (buffer.getDepth() > chat.length);
+
+            if (!over_max) {
+                console.debug(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), advancing depth to ${buffer.getDepth() + 1} and checking again`);
+                nextScanState = scan_state.MIN_ACTIVATIONS; // loop
+                buffer.advanceScanPosition();
+            } else {
+                console.debug(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), but reached on of depth. Stopping`);
             }
+        }
+
+        // Final check if we should really continue scan, and extend the current WI recurse buffer
+        scanState = nextScanState;
+        if (scanState) {
+            const text = successfulNewEntriesForRecursion
+                .map(x => x.content).join('\n');
+            buffer.addRecurse(text);
+            allActivatedText = (text + '\n' + allActivatedText);
         }
     }
 
