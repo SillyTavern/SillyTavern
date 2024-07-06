@@ -223,12 +223,12 @@ class WorldInfoBuffer {
         }
 
         if (depth < 0) {
-            console.error(`Invalid WI scan depth ${depth}. Must be >= 0`);
+            console.error(`[WI] Invalid WI scan depth ${depth}. Must be >= 0`);
             return '';
         }
 
         if (depth > MAX_SCAN_DEPTH) {
-            console.warn(`Invalid WI scan depth ${depth}. Truncating to ${MAX_SCAN_DEPTH}`);
+            console.warn(`[WI] Invalid WI scan depth ${depth}. Truncating to ${MAX_SCAN_DEPTH}`);
             depth = MAX_SCAN_DEPTH;
         }
 
@@ -445,7 +445,7 @@ class WorldInfoTimedEffects {
             const key = this.#getEntryKey(entry);
             const effect = this.#getEntryTimedEffect('cooldown', entry, true);
             chat_metadata.timedWorldInfo.cooldown[key] = effect;
-            console.log(`Adding cooldown entry ${key} on ended sticky: start=${effect.start}, end=${effect.end}, protected=${effect.protected}`);
+            console.log(`[WI] Adding cooldown entry ${key} on ended sticky: start=${effect.start}, end=${effect.end}, protected=${effect.protected}`);
             // Set the cooldown immediately for this evaluation
             this.#buffer.cooldown.push(entry);
         },
@@ -456,7 +456,7 @@ class WorldInfoTimedEffects {
          * @param {WIScanEntry} entry Entry that ended cooldown
          */
         'cooldown': (entry) => {
-            console.debug('Cooldown ended for entry', entry.uid);
+            console.debug('[WI] Cooldown ended for entry', entry.uid);
         },
 
         'delay': () => { },
@@ -546,11 +546,11 @@ class WorldInfoTimedEffects {
         /** @type {[string, WITimedEffect][]} */
         const effects = Object.entries(chat_metadata.timedWorldInfo[type]);
         for (const [key, value] of effects) {
-            console.log(`Processing ${type} entry ${key}`, value);
+            console.log(`[WI] Processing ${type} entry ${key}`, value);
             const entry = this.#entries.find(x => String(this.#getEntryHash(x)) === String(value.hash));
 
             if (this.#chat.length <= Number(value.start) && !value.protected) {
-                console.log(`Removing ${type} entry ${key} from timedWorldInfo: chat not advanced`, value);
+                console.log(`[WI] Removing ${type} entry ${key} from timedWorldInfo: chat not advanced`, value);
                 delete chat_metadata.timedWorldInfo[type][key];
                 continue;
             }
@@ -558,7 +558,7 @@ class WorldInfoTimedEffects {
             // Missing entries (they could be from another character's lorebook)
             if (!entry) {
                 if (this.#chat.length >= Number(value.end)) {
-                    console.log(`Removing ${type} entry from timedWorldInfo: entry not found and interval passed`, entry);
+                    console.log(`[WI] Removing ${type} entry from timedWorldInfo: entry not found and interval passed`, entry);
                     delete chat_metadata.timedWorldInfo[type][key];
                 }
                 continue;
@@ -566,13 +566,13 @@ class WorldInfoTimedEffects {
 
             // Ignore invalid entries (not configured for timed effects)
             if (!entry[type]) {
-                console.log(`Removing ${type} entry from timedWorldInfo: entry not ${type}`, entry);
+                console.log(`[WI] Removing ${type} entry from timedWorldInfo: entry not ${type}`, entry);
                 delete chat_metadata.timedWorldInfo[type][key];
                 continue;
             }
 
             if (this.#chat.length >= Number(value.end)) {
-                console.log(`Removing ${type} entry from timedWorldInfo: ${type} interval passed`, entry);
+                console.log(`[WI] Removing ${type} entry from timedWorldInfo: ${type} interval passed`, entry);
                 delete chat_metadata.timedWorldInfo[type][key];
                 if (typeof onEnded === 'function') {
                     onEnded(entry);
@@ -581,7 +581,7 @@ class WorldInfoTimedEffects {
             }
 
             buffer.push(entry);
-            console.log(`Timed effect "${type}" applied to entry`, entry);
+            console.log(`[WI] Timed effect "${type}" applied to entry`, entry);
         }
     }
 
@@ -597,7 +597,7 @@ class WorldInfoTimedEffects {
 
             if (this.#chat.length < entry.delay) {
                 buffer.push(entry);
-                console.log('Timed effect "delay" applied to entry', entry);
+                console.log('[WI] Timed effect "delay" applied to entry', entry);
             }
         }
 
@@ -644,7 +644,7 @@ class WorldInfoTimedEffects {
             const effect = this.#getEntryTimedEffect(type, entry, false);
             chat_metadata.timedWorldInfo[type][key] = effect;
 
-            console.log(`Adding ${type} entry ${key}: start=${effect.start}, end=${effect.end}, protected=${effect.protected}`);
+            console.log(`[WI] Adding ${type} entry ${key}: start=${effect.start}, end=${effect.end}, protected=${effect.protected}`);
         }
     }
 
@@ -676,7 +676,7 @@ class WorldInfoTimedEffects {
         if (newState) {
             const effect = this.#getEntryTimedEffect(type, entry, false);
             chat_metadata.timedWorldInfo[type][key] = effect;
-            console.log(`Adding ${type} entry ${key}: start=${effect.start}, end=${effect.end}, protected=${effect.protected}`);
+            console.log(`[WI] Adding ${type} entry ${key}: start=${effect.start}, end=${effect.end}, protected=${effect.protected}`);
         }
     }
 
@@ -3847,7 +3847,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             }
 
             allActivatedEntries.add(entry);
-            console.debug(`WI entry ${entry.uid} activation successful, adding to prompt`, entry);
+            console.debug(`[WI] Entry ${entry.uid} activation successful, adding to prompt`, entry);
         }
 
         const successfulNewEntries = newEntries.filter(x => !failedProbabilityChecks.has(x));
@@ -3858,7 +3858,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         } else if (!successfulNewEntries.length) {
             console.debug('[WI] Probability checks failed for all activated entries, stopping');
         } else {
-            console.debug(`[WI] Sucessfully activated ${successfulNewEntries.length} new entries to prompt. ${allActivatedEntries.size} total entries activated.`, successfulNewEntries);
+            console.debug(`[WI] Successfully activated ${successfulNewEntries.length} new entries to prompt. ${allActivatedEntries.size} total entries activated.`, successfulNewEntries);
         }
 
         // After processing and rolling entries is done, see if we should continue with normal recursion
