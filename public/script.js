@@ -5020,6 +5020,10 @@ async function sendGenerationRequest(type, data) {
  * @returns {Promise<any>} Streaming generator
  */
 async function sendStreamingRequest(type, data) {
+    if (abortController?.signal?.aborted) {
+        throw new Error('Generation was aborted.');
+    }
+
     switch (main_api) {
         case 'openai':
             return await sendOpenAIRequest(type, data.prompt, streamingProcessor.abortController.signal);
