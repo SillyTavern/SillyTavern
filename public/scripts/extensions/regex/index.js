@@ -349,7 +349,7 @@ function migrateSettings() {
 
 /**
  * /regex slash command callback
- * @param {object} args Named arguments
+ * @param {{name: string}} args Named arguments
  * @param {string} value Unnamed argument
  * @returns {string} The regexed string
  */
@@ -359,11 +359,11 @@ function runRegexCallback(args, value) {
         return value;
     }
 
-    const scriptName = String(resolveVariable(args.name));
+    const scriptName = args.name;
     const scripts = getRegexScripts();
 
     for (const script of scripts) {
-        if (String(script.scriptName).toLowerCase() === String(scriptName).toLowerCase()) {
+        if (script.scriptName.toLowerCase() === scriptName.toLowerCase()) {
             if (script.disabled) {
                 toastr.warning(`Regex script "${scriptName}" is disabled.`);
                 return value;
@@ -588,7 +588,7 @@ jQuery(async () => {
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
                 description: 'script name',
-                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: localEnumProviders.regexScripts,
             }),

@@ -136,7 +136,7 @@ const disableCsrf = cliArguments.disableCsrf ?? getConfigValue('disableCsrfProte
 const basicAuthMode = cliArguments.basicAuthMode ?? getConfigValue('basicAuthMode', DEFAULT_BASIC_AUTH);
 const enableAccounts = getConfigValue('enableUserAccounts', DEFAULT_ACCOUNTS);
 
-const { UPLOADS_PATH } = require('./src/constants');
+const uploadsPath = path.join(dataRoot, require('./src/constants').UPLOADS_DIRECTORY);
 
 // CORS Settings //
 const CORS = cors({
@@ -286,7 +286,7 @@ app.use(userModule.requireLoginMiddleware);
 app.get('/api/ping', (_, response) => response.sendStatus(204));
 
 // File uploads
-app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
+app.use(multer({ dest: uploadsPath, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
 app.use(require('./src/middleware/multerMonkeyPatch'));
 
 // User data mount
@@ -303,8 +303,8 @@ app.get('/version', async function (_, response) {
 
 function cleanUploads() {
     try {
-        if (fs.existsSync(UPLOADS_PATH)) {
-            const uploads = fs.readdirSync(UPLOADS_PATH);
+        if (fs.existsSync(uploadsPath)) {
+            const uploads = fs.readdirSync(uploadsPath);
 
             if (!uploads.length) {
                 return;
@@ -312,7 +312,7 @@ function cleanUploads() {
 
             console.debug(`Cleaning uploads folder (${uploads.length} files)`);
             uploads.forEach(file => {
-                const pathToFile = path.join(UPLOADS_PATH, file);
+                const pathToFile = path.join(uploadsPath, file);
                 fs.unlinkSync(pathToFile);
             });
         }
@@ -609,10 +609,6 @@ const postSetupTasks = async function () {
             console.warn(color.yellow('Basic Authentication is enabled, but username or password is not set or empty!'));
         }
     }
-
-    if (listen && !basicAuthMode && enableAccounts) {
-        await userModule.checkAccountsProtection();
-    }
 };
 
 /**
@@ -631,16 +627,6 @@ async function loadPlugins() {
     }
 }
 
-if (listen && !enableWhitelist && !basicAuthMode) {
-    if (getConfigValue('securityOverride', false)) {
-        console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
-    }
-    else {
-        console.error(color.red('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.'));
-        process.exit(1);
-    }
-}
-
 /**
  * Set the title of the terminal window
  * @param {string} title Desired title for the window
@@ -654,10 +640,53 @@ function setWindowTitle(title) {
     }
 }
 
+/**
+ * Prints an error message and exits the process if necessary
+ * @param {string} message The error message to print
+ * @returns {void}
+ */
+function logSecurityAlert(message) {
+    if (basicAuthMode || enableWhitelist) return; // safe!
+    console.error(color.red(message));
+    if (getConfigValue('securityOverride', false)) {
+        console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
+        return;
+    }
+    process.exit(1);
+}
+
+async function verifySecuritySettings() {
+    // Skip all security checks as listen is set to false
+    if (!listen) {
+        return;
+    }
+
+    if (!enableAccounts) {
+        logSecurityAlert('Your SillyTavern is currently insecurely open to the public. Enable whitelisting, basic authentication or user accounts.');
+    }
+
+    const users = await userModule.getAllEnabledUsers();
+    const unprotectedUsers = users.filter(x => !x.password);
+    const unprotectedAdminUsers = unprotectedUsers.filter(x => x.admin);
+
+    if (unprotectedUsers.length > 0) {
+        console.warn(color.blue('A friendly reminder that the following users are not password protected:'));
+        unprotectedUsers.map(x => `${color.yellow(x.handle)} ${color.red(x.admin ? '(admin)' : '')}`).forEach(x => console.warn(x));
+        console.log();
+        console.warn(`Consider setting a password in the admin panel or by using the ${color.blue('recover.js')} script.`);
+        console.log();
+
+        if (unprotectedAdminUsers.length > 0) {
+            logSecurityAlert('If you are not using basic authentication or whitelisting, you should set a password for all admin users.');
+        }
+    }
+}
+
 // User storage module needs to be initialized before starting the server
 userModule.initUserStorage(dataRoot)
     .then(userModule.ensurePublicDirectoriesExist)
     .then(userModule.migrateUserData)
+    .then(verifySecuritySettings)
     .then(preSetupTasks)
     .finally(() => {
         if (cliArguments.ssl) {

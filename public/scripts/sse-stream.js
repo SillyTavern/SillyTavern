@@ -160,7 +160,7 @@ async function* parseStreamData(json) {
         return;
     }
     // llama.cpp?
-    else if (typeof json.content === 'string' && json.content.length > 0) {
+    else if (typeof json.content === 'string' && json.content.length > 0 && json.object !== 'chat.completion.chunk') {
         for (let i = 0; i < json.content.length; i++) {
             const str = json.content[i];
             yield {

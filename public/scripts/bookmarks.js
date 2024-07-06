@@ -24,6 +24,7 @@ import {
     saveGroupBookmarkChat,
     selected_group,
 } from './group-chats.js';
+import { Popup } from './popup.js';
 import { createTagMapFromList } from './tags.js';
 
 import {
@@ -239,8 +240,7 @@ async function convertSoloToGroupChat() {
         return;
     }
 
-    const confirm = await callPopup('Are you sure you want to convert this chat to a group chat?', 'confirm');
-
+    const confirm = await Popup.show.confirm('Convert to group chat', 'Are you sure you want to convert this chat to a group chat?<br />This cannot be reverted.');
     if (!confirm) {
         return;
     }
@@ -336,6 +336,7 @@ async function convertSoloToGroupChat() {
 
     if (!createChatResponse.ok) {
         console.error('Group chat creation unsuccessful');
+        toastr.error('Group chat creation unsuccessful');
         return;
     }
 

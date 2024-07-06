@@ -48,6 +48,8 @@ allowKeysExposure: false
 skipContentCheck: false
 # Disable automatic chats backup
 disableChatBackup: false
+# Number of backups to keep for each chat and settings file
+numberOfBackups: 50
 # Allowed hosts for card downloads
 whitelistImportDomains:
   - localhost

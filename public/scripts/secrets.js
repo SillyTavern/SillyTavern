@@ -28,6 +28,10 @@ export const SECRET_KEYS = {
     PERPLEXITY: 'api_key_perplexity',
     GROQ: 'api_key_groq',
     AZURE_TTS: 'api_key_azure_tts',
+    FEATHERLESS: 'api_key_featherless',
+    ZEROONEAI: 'api_key_01ai',
+    HUGGINGFACE: 'api_key_huggingface',
+    STABILITY: 'api_key_stability',
 };
 
 const INPUT_MAP = {
@@ -56,6 +60,9 @@ const INPUT_MAP = {
     [SECRET_KEYS.COHERE]: '#api_key_cohere',
     [SECRET_KEYS.PERPLEXITY]: '#api_key_perplexity',
     [SECRET_KEYS.GROQ]: '#api_key_groq',
+    [SECRET_KEYS.FEATHERLESS]: '#api_key_featherless',
+    [SECRET_KEYS.ZEROONEAI]: '#api_key_01ai',
+    [SECRET_KEYS.HUGGINGFACE]: '#api_key_huggingface',
 };
 
 async function clearSecret() {

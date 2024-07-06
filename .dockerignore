@@ -1,4 +1,6 @@
 .git
+.github
+.vscode
 node_modules
 npm-debug.log
 readme*
@@ -8,3 +10,5 @@ Start.bat
 cloudflared.exe
 access.log
 /data
+/cache
+.DS_Store

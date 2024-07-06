@@ -592,7 +592,7 @@ async function viewSettingsSnapshots() {
         }
     }
 
-    callGenericPopup(template, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: false, large: false });
+    callGenericPopup(template, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: false, large: false, allowVerticalScrolling: true });
     template.find('.makeSnapshotButton').on('click', () => makeSnapshot(renderSnapshots));
     renderSnapshots();
 }

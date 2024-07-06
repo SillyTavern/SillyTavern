@@ -1,0 +1,11 @@
+/* iPhone copium land */
+body.safari .popup .popup-body:has(.maximized_textarea),
+body.safari .popup.large_dialogue_popup .popup-body {
+    height: 100%;
+}
+
+body.safari .popup .popup-body {
+    height: fit-content;
+    max-height: 90vh;
+    max-height: 90svh;
+}

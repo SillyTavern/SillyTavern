@@ -7,6 +7,7 @@ const path = require('path');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const { jsonParser } = require('../express-common');
 const { readSecret, SECRET_KEYS } = require('./secrets.js');
+const FormData = require('form-data');
 
 /**
  * Sanitizes a string.
@@ -128,6 +129,31 @@ router.post('/upscalers', jsonParser, async (request, response) => {
         upscalers.splice(1, 0, ...latentUpscalers);
 
         return response.send(upscalers);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/vaes', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/sd-vae';
+
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        const names = data.map(x => x.model_name);
+        return response.send(names);
     } catch (error) {
         console.log(error);
         return response.sendStatus(500);
@@ -793,9 +819,71 @@ pollinations.post('/generate', jsonParser, async (request, response) => {
     }
 });
 
+const stability = express.Router();
+
+stability.post('/generate', jsonParser, async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.STABILITY);
+
+        if (!key) {
+            console.log('Stability AI key not found.');
+            return response.sendStatus(400);
+        }
+
+        const { payload, model } = request.body;
+
+        console.log('Stability AI request:', model, payload);
+
+        const formData = new FormData();
+        for (const [key, value] of Object.entries(payload)) {
+            if (value !== undefined) {
+                formData.append(key, String(value));
+            }
+        }
+
+        let apiUrl;
+        switch (model) {
+            case 'stable-image-ultra':
+                apiUrl = 'https://api.stability.ai/v2beta/stable-image/generate/ultra';
+                break;
+            case 'stable-image-core':
+                apiUrl = 'https://api.stability.ai/v2beta/stable-image/generate/core';
+                break;
+            case 'stable-diffusion-3':
+                apiUrl = 'https://api.stability.ai/v2beta/stable-image/generate/sd3';
+                break;
+            default:
+                throw new Error('Invalid Stability AI model selected');
+        }
+
+        const result = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+                'Accept': 'image/*',
+            },
+            body: formData,
+            timeout: 0,
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.log('Stability AI returned an error.', result.status, result.statusText, text);
+            return response.sendStatus(500);
+        }
+
+        const buffer = await result.buffer();
+        return response.send(buffer.toString('base64'));
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
 router.use('/comfy', comfy);
 router.use('/together', together);
 router.use('/drawthings', drawthings);
 router.use('/pollinations', pollinations);
+router.use('/stability', stability);
 
 module.exports = { router };

@@ -22,6 +22,7 @@ import {
     setActiveGroup,
     setActiveCharacter,
     entitiesFilter,
+    doNewChat,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -39,11 +40,11 @@ import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
-import { countOccurrences, debounce, delay, download, getFileText, isOdd, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { countOccurrences, debounce, delay, download, getFileText, getStringHash, isOdd, isTrueBoolean, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 import { FILTER_TYPES } from './filters.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { AUTOCOMPLETE_WIDTH } from './autocomplete/AutoComplete.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -178,6 +179,7 @@ let power_user = {
     send_on_enter: send_on_enter_options.AUTO,
     console_log_prompts: false,
     request_token_probabilities: false,
+    show_group_chat_queue: false,
     render_formulas: false,
     allow_name1_display: false,
     allow_name2_display: false,
@@ -334,6 +336,8 @@ const storage_keys = {
     compact_input_area: 'compact_input_area',
     auto_connect_legacy: 'AutoConnectEnabled',
     auto_load_chat_legacy: 'AutoLoadChatEnabled',
+
+    storyStringValidationCache: 'StoryStringValidationCache',
 };
 
 const contextControls = [
@@ -1598,6 +1602,7 @@ function loadPowerUserSettings(settings, data) {
 
     $('#console_log_prompts').prop('checked', power_user.console_log_prompts);
     $('#request_token_probabilities').prop('checked', power_user.request_token_probabilities);
+    $('#show_group_chat_queue').prop('checked', power_user.show_group_chat_queue);
     $('#auto_fix_generated_markdown').prop('checked', power_user.auto_fix_generated_markdown);
     $('#auto_scroll_chat_to_bottom').prop('checked', power_user.auto_scroll_chat_to_bottom);
     $('#bogus_folders').prop('checked', power_user.bogus_folders);
@@ -2104,6 +2109,9 @@ export function fuzzySearchGroups(searchValue) {
  */
 export function renderStoryString(params) {
     try {
+        // Validate and log possible warnings/errors
+        validateStoryString(power_user.context.story_string, params);
+
         // compile the story string template into a function, with no HTML escaping
         const compiledTemplate = Handlebars.compile(power_user.context.story_string, { noEscape: true });
 
@@ -2130,6 +2138,55 @@ export function renderStoryString(params) {
         throw e; // rethrow the error
     }
 }
+
+/**
+ * Validate the story string for possible warnings or issues
+ *
+ * @param {string} storyString - The story string
+ * @param {Object} params - The story string parameters
+ */
+function validateStoryString(storyString, params) {
+    /** @type {{hashCache: {[hash: string]: {fieldsWarned: {[key: string]: boolean}}}}} */
+    const cache = JSON.parse(localStorage.getItem(storage_keys.storyStringValidationCache)) ?? { hashCache: {} };
+
+    const hash = getStringHash(storyString);
+
+    // Initialize the cache for the current hash if it doesn't exist
+    if (!cache.hashCache[hash]) {
+        cache.hashCache[hash] = { fieldsWarned: {} };
+    }
+
+    const currentCache = cache.hashCache[hash];
+    const fieldsToWarn = [];
+
+    function validateMissingField(field, fallbackLegacyField = null) {
+        const contains = storyString.includes(`{{${field}}}`) || (!!fallbackLegacyField && storyString.includes(`{{${fallbackLegacyField}}}`));
+        if (!contains && params[field]) {
+            const wasLogged = currentCache.fieldsWarned[field];
+            if (!wasLogged) {
+                fieldsToWarn.push(field);
+                currentCache.fieldsWarned[field] = true;
+            }
+            console.warn(`The story string does not contain {{${field}}}, but it would contain content:\n`, params[field]);
+        }
+    }
+
+    validateMissingField('description');
+    validateMissingField('personality');
+    validateMissingField('persona');
+    validateMissingField('scenario');
+    validateMissingField('system');
+    validateMissingField('wiBefore', 'loreBefore');
+    validateMissingField('wiAfter', 'loreAfter');
+
+    if (fieldsToWarn.length > 0) {
+        const fieldsList = fieldsToWarn.map(field => `{{${field}}}`).join(', ');
+        toastr.warning(`The story string does not contain the following fields, but they would contain content: ${fieldsList}`, 'Story String Validation');
+    }
+
+    localStorage.setItem(storage_keys.storyStringValidationCache, JSON.stringify(cache));
+}
+
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
 const compareFunc = (first, second) => {
@@ -2315,25 +2372,29 @@ async function saveTheme(name = undefined, theme = undefined) {
         body: JSON.stringify(theme),
     });
 
-    if (response.ok) {
-        const themeIndex = themes.findIndex(x => x.name == name);
-
-        if (themeIndex == -1) {
-            themes.push(theme);
-            const option = document.createElement('option');
-            option.selected = true;
-            option.value = name;
-            option.innerText = name;
-            $('#themes').append(option);
-        }
-        else {
-            themes[themeIndex] = theme;
-            $(`#themes option[value="${name}"]`).attr('selected', true);
-        }
-
-        power_user.theme = name;
-        saveSettingsDebounced();
+    if (!response.ok) {
+        toastr.error('Check the server connection and reload the page to prevent data loss.', 'Theme could not be saved');
+        console.error('Theme could not be saved', response);
+        throw new Error('Theme could not be saved');
     }
+
+    const themeIndex = themes.findIndex(x => x.name == name);
+
+    if (themeIndex == -1) {
+        themes.push(theme);
+        const option = document.createElement('option');
+        option.selected = true;
+        option.value = name;
+        option.innerText = name;
+        $('#themes').append(option);
+    }
+    else {
+        themes[themeIndex] = theme;
+        $(`#themes option[value="${name}"]`).attr('selected', true);
+    }
+
+    power_user.theme = name;
+    saveSettingsDebounced();
 
     return theme;
 }
@@ -2400,11 +2461,13 @@ function getNewTheme(parsed) {
 }
 
 async function saveMovingUI() {
-    const name = await callGenericPopup('Enter a name for the MovingUI Preset:', POPUP_TYPE.INPUT);
+    const popupResult = await callGenericPopup('Enter a name for the MovingUI Preset:', POPUP_TYPE.INPUT);
 
-    if (!name) {
+    if (!popupResult) {
         return;
     }
+
+    const name = String(popupResult);
 
     const movingUIPreset = {
         name,
@@ -2437,7 +2500,8 @@ async function saveMovingUI() {
         power_user.movingUIPreset = name;
         saveSettingsDebounced();
     } else {
-        toastr.warning('failed to save MovingUI state.');
+        toastr.error('Failed to save MovingUI state.');
+        console.error('MovingUI could not be saved', response);
     }
 }
 
@@ -2528,14 +2592,6 @@ async function resetMovablePanels(type) {
             toastr.success('Panel positions reset');
         }
     });
-}
-
-async function doNewChat() {
-    $('#option_start_new_chat').trigger('click');
-    await delay(1);
-    $('#dialogue_popup_ok').trigger('click');
-    await delay(1);
-    return '';
 }
 
 /**
@@ -3513,6 +3569,11 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $('#show_group_chat_queue').on('input', function () {
+        power_user.show_group_chat_queue = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
     $('#auto_scroll_chat_to_bottom').on('input', function () {
         power_user.auto_scroll_chat_to_bottom = !!$(this).prop('checked');
         saveSettingsDebounced();
@@ -3926,7 +3987,20 @@ $(document).ready(() => {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'newchat',
-        callback: doNewChat,
+        /** @type {(args: { delete: string?}, string) => Promise<''>} */
+        callback: async (args, _) => {
+            await doNewChat({ deleteCurrentChat: isTrueBoolean(args.delete) });
+            return '';
+        },
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'delete',
+                description: 'delete the current chat',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
         helpString: 'Start a new chat with the current character',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({

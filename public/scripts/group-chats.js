@@ -70,6 +70,7 @@ import {
     animation_duration,
     depth_prompt_role_default,
     shouldAutoContinue,
+    this_chid,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -120,6 +121,8 @@ const DEFAULT_AUTO_MODE_DELAY = 5;
 export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, debounce_timeout.quick));
 let autoModeWorker = null;
 const saveGroupDebounced = debounce(async (group, reload) => await _save(group, reload), debounce_timeout.relaxed);
+/** @type {Map<string, number>} */
+let groupChatQueueOrder = new Map();
 
 function setAutoModeWorker() {
     clearInterval(autoModeWorker);
@@ -178,8 +181,37 @@ async function loadGroupChat(chatId) {
     return [];
 }
 
+async function validateGroup(group) {
+    if (!group) return;
+
+    // Validate that all members exist as characters
+    let dirty = false;
+    group.members = group.members.filter(member => {
+        const character = characters.find(x => x.avatar === member || x.name === member);
+        if (!character) {
+            const msg = `Warning: Listed member ${member} does not exist as a character. It will be removed from the group.`;
+            toastr.warning(msg, 'Group Validation');
+            console.warn(msg);
+            dirty = true;
+        }
+        return character;
+    });
+
+    if (dirty) {
+        await editGroup(group.id, true, false);
+    }
+}
+
 export async function getGroupChat(groupId, reload = false) {
     const group = groups.find((x) => x.id === groupId);
+    if (!group) {
+        console.warn('Group not found', groupId);
+        return;
+    }
+
+    // Run validation before any loading
+    validateGroup(group);
+
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
     let freshChat = false;
@@ -197,7 +229,6 @@ export async function getGroupChat(groupId, reload = false) {
         if (group && Array.isArray(group.members)) {
             for (let member of group.members) {
                 const character = characters.find(x => x.avatar === member || x.name === member);
-
                 if (!character) {
                     continue;
                 }
@@ -219,10 +250,8 @@ export async function getGroupChat(groupId, reload = false) {
         freshChat = true;
     }
 
-    if (group) {
-        let metadata = group.chat_metadata ?? {};
-        updateChatMetadata(metadata, true);
-    }
+    let metadata = group.chat_metadata ?? {};
+    updateChatMetadata(metadata, true);
 
     if (reload) {
         select_group_chats(groupId, true);
@@ -492,7 +521,13 @@ async function saveGroupChat(groupId, shouldSaveGroup) {
         body: JSON.stringify({ id: chat_id, chat: [...chat] }),
     });
 
-    if (shouldSaveGroup && response.ok) {
+    if (!response.ok) {
+        toastr.error('Check the server connection and reload the page to prevent data loss.', 'Group Chat could not be saved');
+        console.error('Group chat could not be saved', response);
+        return;
+    }
+
+    if (shouldSaveGroup) {
         await editGroup(groupId, false, false);
     }
 }
@@ -546,9 +581,11 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
                             body: JSON.stringify({ id: chatId, chat: [...messages] }),
                         });
 
-                        if (saveChatResponse.ok) {
-                            console.log(`Renamed character ${newName} in group chat: ${chatId}`);
+                        if (!saveChatResponse.ok) {
+                            throw new Error('Group member could not be renamed');
                         }
+
+                        console.log(`Renamed character ${newName} in group chat: ${chatId}`);
                     }
                 }
             }
@@ -821,9 +858,15 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             const bias = getBiasStrings(userInput, type);
             await sendMessageAsUser(userInput, bias.messageBias);
             await saveChatConditional();
-            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
+            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
         }
+        groupChatQueueOrder = new Map();
 
+        if (power_user.show_group_chat_queue) {
+            for (let i = 0; i < activatedMembers.length; ++i) {
+                groupChatQueueOrder.set(characters[activatedMembers[i]].avatar, i + 1);
+            }
+        }
         // now the real generation begins: cycle through every activated character
         for (const chId of activatedMembers) {
             throwIfAborted();
@@ -831,6 +874,9 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             const generateType = type == 'swipe' || type == 'impersonate' || type == 'quiet' || type == 'continue' ? type : 'group_chat';
             setCharacterId(chId);
             setCharacterName(characters[chId].name);
+            if (power_user.show_group_chat_queue) {
+                printGroupMembers();
+            }
             await eventSource.emit(event_types.GROUP_MEMBER_DRAFTED, chId);
 
             if (type !== 'swipe' && type !== 'impersonate' && !isStreamingEnabled()) {
@@ -851,6 +897,10 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                     messageChunk = textResult?.messageChunk;
                 }
             }
+            if (power_user.show_group_chat_queue) {
+                groupChatQueueOrder.delete(characters[chId].avatar);
+                groupChatQueueOrder.forEach((value, key, map) => map.set(key, value - 1));
+            }
         }
     } finally {
         typingIndicator.hide();
@@ -858,6 +908,10 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         is_group_generating = false;
         setSendButtonState(false);
         setCharacterId(undefined);
+        if (power_user.show_group_chat_queue) {
+            groupChatQueueOrder = new Map();
+            printGroupMembers();
+        }
         setCharacterName('');
         activateSendButtons();
         showSwipeButtons();
@@ -972,6 +1026,7 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
         }
     }
 
+    const chattyMembers = [];
     // activation by talkativeness (in shuffled order, except banned)
     const shuffledMembers = shuffle([...members]);
     for (let member of shuffledMembers) {
@@ -982,26 +1037,30 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
         }
 
         const rollValue = Math.random();
-        let talkativeness = Number(character.talkativeness);
-        talkativeness = Number.isNaN(talkativeness)
+        const talkativeness = isNaN(character.talkativeness)
             ? talkativeness_default
-            : talkativeness;
+            : Number(character.talkativeness);
         if (talkativeness >= rollValue) {
             activatedMembers.push(member);
+        }
+        if (talkativeness > 0) {
+            chattyMembers.push(member);
         }
     }
 
     // pick 1 at random if no one was activated
     let retries = 0;
-    while (activatedMembers.length === 0 && ++retries <= members.length) {
-        const randomIndex = Math.floor(Math.random() * members.length);
-        const character = characters.find((x) => x.avatar === members[randomIndex]);
+    // try to limit the selected random character to those with talkativeness > 0
+    const randomPool = chattyMembers.length > 0 ? chattyMembers : members;
+    while (activatedMembers.length === 0 && ++retries <= randomPool.length) {
+        const randomIndex = Math.floor(Math.random() * randomPool.length);
+        const character = characters.find((x) => x.avatar === randomPool[randomIndex]);
 
         if (!character) {
             continue;
         }
 
-        activatedMembers.push(members[randomIndex]);
+        activatedMembers.push(randomPool[randomIndex]);
     }
 
     // de-duplicate array of character avatars
@@ -1279,6 +1338,14 @@ function getGroupCharacterBlock(character) {
     template.attr('chid', characters.indexOf(character));
     template.find('.ch_fav').val(isFav);
     template.toggleClass('is_fav', isFav);
+
+    let queuePosition = groupChatQueueOrder.get(character.avatar);
+    if (queuePosition) {
+        template.find('.queue_position').text(queuePosition);
+        template.toggleClass('is_queued', queuePosition > 1);
+        template.toggleClass('is_active', queuePosition === 1);
+    }
+
     template.toggleClass('disabled', isGroupMemberDisabled(character.avatar));
 
     // Display inline tags
@@ -1568,7 +1635,10 @@ export async function openGroupById(groupId) {
     }
 
     if (!is_send_press && !is_group_generating) {
+        select_group_chats(groupId);
+
         if (selected_group !== groupId) {
+            groupChatQueueOrder = new Map();
             await clearChat();
             cancelTtsPlay();
             selected_group = groupId;
@@ -1579,8 +1649,6 @@ export async function openGroupById(groupId) {
             chat.length = 0;
             await getGroupChat(groupId);
         }
-
-        select_group_chats(groupId);
     }
 }
 
@@ -1828,11 +1896,16 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId) {
 
     await editGroup(groupId, true, false);
 
-    await fetch('/api/chats/group/save', {
+    const response = await fetch('/api/chats/group/save', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: name, chat: [...trimmed_chat] }),
     });
+
+    if (!response.ok) {
+        toastr.error('Check the server connection and reload the page to prevent data loss.', 'Group chat could not be saved');
+        console.error('Group chat could not be saved', response);
+    }
 }
 
 function onSendTextareaInput() {

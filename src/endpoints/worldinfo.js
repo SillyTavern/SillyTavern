@@ -5,7 +5,6 @@ const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 
 const { jsonParser, urlencodedParser } = require('../express-common');
-const { UPLOADS_PATH } = require('../constants');
 
 /**
  * Reads a World Info file and returns its contents
@@ -74,7 +73,7 @@ router.post('/import', urlencodedParser, (request, response) => {
     if (request.body.convertedData) {
         fileContents = request.body.convertedData;
     } else {
-        const pathToUpload = path.join(UPLOADS_PATH, request.file.filename);
+        const pathToUpload = path.join(request.file.destination, request.file.filename);
         fileContents = fs.readFileSync(pathToUpload, 'utf8');
         fs.unlinkSync(pathToUpload);
     }

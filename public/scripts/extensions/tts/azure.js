@@ -1,4 +1,5 @@
-import { callPopup, getRequestHeaders } from '../../../script.js';
+import { getRequestHeaders } from '../../../script.js';
+import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { SECRET_KEYS, findSecret, secret_state, writeSecret } from '../../secrets.js';
 import { getPreviewString, saveTtsProviderSettings } from './index.js';
 export { AzureTtsProvider };
@@ -69,13 +70,13 @@ class AzureTtsProvider {
             const popupText = 'Azure TTS API Key';
             const savedKey = secret_state[SECRET_KEYS.AZURE_TTS] ? await findSecret(SECRET_KEYS.AZURE_TTS) : '';
 
-            const key = await callPopup(popupText, 'input', savedKey);
+            const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, savedKey);
 
             if (key == false || key == '') {
                 return;
             }
 
-            await writeSecret(SECRET_KEYS.AZURE_TTS, key);
+            await writeSecret(SECRET_KEYS.AZURE_TTS, String(key));
 
             toastr.success('API Key saved');
             $('#azure_tts_key').addClass('success');

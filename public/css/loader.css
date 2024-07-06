@@ -1,4 +1,4 @@
-#loader, #preloader {
+#preloader {
     position: fixed;
     margin: 0;
     padding: 0;
@@ -10,9 +10,9 @@
     width: 100svw;
     height: 100svh;
     background-color: var(--SmartThemeBlurTintColor);
+    color: var(--SmartThemeBodyColor);
     /*for some reason the full screen blur does not work on iOS*/
     backdrop-filter: blur(30px);
-    color: var(--SmartThemeBodyColor);
     opacity: 1;
 }
 

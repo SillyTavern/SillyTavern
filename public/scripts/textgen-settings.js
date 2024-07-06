@@ -38,9 +38,26 @@ export const textgen_types = {
     INFERMATICAI: 'infermaticai',
     DREAMGEN: 'dreamgen',
     OPENROUTER: 'openrouter',
+    FEATHERLESS: 'featherless',
+    HUGGINGFACE: 'huggingface',
 };
 
-const { MANCER, VLLM, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, DREAMGEN, OPENROUTER, KOBOLDCPP } = textgen_types;
+const {
+    MANCER,
+    VLLM,
+    APHRODITE,
+    TABBY,
+    TOGETHERAI,
+    OOBA,
+    OLLAMA,
+    LLAMACPP,
+    INFERMATICAI,
+    DREAMGEN,
+    OPENROUTER,
+    KOBOLDCPP,
+    HUGGINGFACE,
+    FEATHERLESS,
+} = textgen_types;
 
 const LLAMACPP_DEFAULT_ORDER = [
     'top_k',
@@ -75,6 +92,7 @@ let TOGETHERAI_SERVER = 'https://api.together.xyz';
 let INFERMATICAI_SERVER = 'https://api.totalgpt.ai';
 let DREAMGEN_SERVER = 'https://dreamgen.com';
 let OPENROUTER_SERVER = 'https://openrouter.ai/api';
+let FEATHERLESS_SERVER = 'https://api.featherless.ai/v1';
 
 const SERVER_INPUTS = {
     [textgen_types.OOBA]: '#textgenerationwebui_api_url_text',
@@ -84,6 +102,7 @@ const SERVER_INPUTS = {
     [textgen_types.KOBOLDCPP]: '#koboldcpp_api_url_text',
     [textgen_types.LLAMACPP]: '#llamacpp_api_url_text',
     [textgen_types.OLLAMA]: '#ollama_api_url_text',
+    [textgen_types.HUGGINGFACE]: '#huggingface_api_url_text',
 };
 
 const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
@@ -244,6 +263,8 @@ export const setting_names = [
     'bypass_status_check',
 ];
 
+const DYNATEMP_BLOCK = document.getElementById('dynatemp_block_ooba');
+
 export function validateTextGenUrl() {
     const selector = SERVER_INPUTS[settings.type];
 
@@ -265,6 +286,8 @@ export function validateTextGenUrl() {
 
 export function getTextGenServer() {
     switch (settings.type) {
+        case FEATHERLESS:
+            return FEATHERLESS_SERVER;
         case MANCER:
             return MANCER_SERVER;
         case TOGETHERAI:
@@ -1009,6 +1032,10 @@ export function getTextGenModel() {
                 throw new Error('No Ollama model selected');
             }
             return settings.ollama_model;
+        case FEATHERLESS:
+            return settings.featherless_model;
+        case HUGGINGFACE:
+            return 'tgi';
         default:
             return undefined;
     }
@@ -1018,6 +1045,10 @@ export function getTextGenModel() {
 
 export function isJsonSchemaSupported() {
     return [TABBY, LLAMACPP].includes(settings.type) && main_api === 'textgenerationwebui';
+}
+
+function isDynamicTemperatureSupported() {
+    return settings.dynatemp && DYNATEMP_BLOCK?.dataset?.tgType?.includes(settings.type);
 }
 
 function getLogprobsNumber() {
@@ -1030,6 +1061,7 @@ function getLogprobsNumber() {
 
 export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
+    const dynatemp = isDynamicTemperatureSupported();
     const { banned_tokens, banned_strings } = getCustomTokenBans();
 
     let params = {
@@ -1038,7 +1070,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'max_new_tokens': maxTokens,
         'max_tokens': maxTokens,
         'logprobs': power_user.request_token_probabilities ? getLogprobsNumber() : undefined,
-        'temperature': settings.dynatemp ? (settings.min_temp + settings.max_temp) / 2 : settings.temp,
+        'temperature': dynatemp ? (settings.min_temp + settings.max_temp) / 2 : settings.temp,
         'top_p': settings.top_p,
         'typical_p': settings.typical_p,
         'typical': settings.typical_p,
@@ -1056,11 +1088,11 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'length_penalty': settings.length_penalty,
         'early_stopping': settings.early_stopping,
         'add_bos_token': settings.add_bos_token,
-        'dynamic_temperature': settings.dynatemp ? true : undefined,
-        'dynatemp_low': settings.dynatemp ? settings.min_temp : undefined,
-        'dynatemp_high': settings.dynatemp ? settings.max_temp : undefined,
-        'dynatemp_range': settings.dynatemp ? (settings.max_temp - settings.min_temp) / 2 : undefined,
-        'dynatemp_exponent': settings.dynatemp ? settings.dynatemp_exponent : undefined,
+        'dynamic_temperature': dynatemp ? true : undefined,
+        'dynatemp_low': dynatemp ? settings.min_temp : undefined,
+        'dynatemp_high': dynatemp ? settings.max_temp : undefined,
+        'dynatemp_range': dynatemp ? (settings.max_temp - settings.min_temp) / 2 : undefined,
+        'dynatemp_exponent': dynatemp ? settings.dynatemp_exponent : undefined,
         'smoothing_factor': settings.smoothing_factor,
         'smoothing_curve': settings.smoothing_curve,
         'dry_allowed_length': settings.dry_allowed_length,
@@ -1144,6 +1176,12 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
 
     if (settings.type === KOBOLDCPP) {
         params.grammar = settings.grammar_string;
+    }
+
+    if (settings.type === HUGGINGFACE) {
+        params.top_p = Math.min(Math.max(Number(params.top_p), 0.0), 0.999);
+        params.stop = Array.isArray(params.stop) ? params.stop.slice(0, 4) : [];
+        nonAphroditeParams.seed = settings.seed >= 0 ? settings.seed : undefined;
     }
 
     if (settings.type === MANCER) {

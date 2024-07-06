@@ -15,6 +15,11 @@
         "**/node_modules/*",
         "public/lib",
         "backups/*",
-        "data/*"
+        "data/*",
+        "**/dist/*",
+        "dist/*",
+        "cache/*",
+        "src/tokenizers/*",
+        "docker/*",
     ]
 }

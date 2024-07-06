@@ -5,4 +5,9 @@ node_modules/
 secrets.json
 /dist
 /backups/
+/data
+/cache
 access.log
+.github
+.vscode
+.git

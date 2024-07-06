@@ -24,6 +24,7 @@ export {
     world_info_depth,
     world_info_min_activations,
     world_info_min_activations_depth_max,
+    world_info_include_names,
     world_info_recursive,
     world_info_overflow_alert,
     world_info_case_sensitive,
@@ -50,6 +51,28 @@ const world_info_logic = {
     AND_ALL: 3,
 };
 
+/**
+ * @enum {number} Possible states of the WI evaluation
+ */
+const scan_state = {
+    /**
+     * The scan will be stopped.
+     */
+    NONE: 0,
+    /**
+     * Initial state.
+     */
+    INITIAL: 1,
+    /**
+     * The scan is triggered by a recursion step.
+     */
+    RECURSION: 2,
+    /**
+     * The scan is triggered by a min activations depth skew.
+     */
+    MIN_ACTIVATIONS: 3,
+};
+
 const WI_ENTRY_EDIT_TEMPLATE = $('#entry_edit_template .world_entry');
 
 let world_info = {};
@@ -61,6 +84,7 @@ let world_info_min_activations = 0; // if > 0, will continue seeking chat until 
 let world_info_min_activations_depth_max = 0; // used when (world_info_min_activations > 0)
 
 let world_info_budget = 25;
+let world_info_include_names = true;
 let world_info_recursive = false;
 let world_info_overflow_alert = false;
 let world_info_case_sensitive = false;
@@ -99,6 +123,7 @@ const MAX_SCAN_DEPTH = 1000;
  * @property {number} [selectiveLogic] The logic to use for selective activation
  * @property {number} [sticky] The sticky value of the entry
  * @property {number} [cooldown] The cooldown of the entry
+ * @property {number} [delay] The delay of the entry
  */
 
 /**
@@ -111,7 +136,7 @@ const MAX_SCAN_DEPTH = 1000;
 
 /**
  * @typedef TimedEffectType Type of timed effect
- * @type {'sticky'|'cooldown'}
+ * @type {'sticky'|'cooldown'|'delay'}
  */
 // End typedef area
 
@@ -133,6 +158,11 @@ class WorldInfoBuffer {
      * @type {string[]} Array of strings added by recursive scanning
      */
     #recurseBuffer = [];
+
+    /**
+     * @type {string[]} Array of strings added by prompt injections that are valid for the current scan
+     */
+    #injectBuffer = [];
 
     /**
      * @type {number} The skew of the global scan depth. Used in "min activations"
@@ -183,9 +213,10 @@ class WorldInfoBuffer {
     /**
      * Gets all messages up to the given depth + recursion buffer.
      * @param {WIScanEntry} entry The entry that triggered the scan
+     * @param {number} scanState The state of the scan
      * @returns {string} A slice of buffer until the given depth (inclusive)
      */
-    get(entry) {
+    get(entry, scanState) {
         let depth = entry.scanDepth ?? this.getDepth();
         if (depth <= this.#startDepth) {
             return '';
@@ -203,7 +234,12 @@ class WorldInfoBuffer {
 
         let result = this.#depthBuffer.slice(this.#startDepth, depth).join('\n');
 
-        if (this.#recurseBuffer.length > 0) {
+        if (this.#injectBuffer.length > 0) {
+            result += '\n' + this.#injectBuffer.join('\n');
+        }
+
+        // Min activations should not include the recursion buffer
+        if (this.#recurseBuffer.length > 0 && scanState !== scan_state.MIN_ACTIVATIONS) {
             result += '\n' + this.#recurseBuffer.join('\n');
         }
 
@@ -258,6 +294,14 @@ class WorldInfoBuffer {
     }
 
     /**
+     * Adds an injection to the buffer.
+     * @param {string} message The injection to add
+     */
+    addInject(message) {
+        this.#injectBuffer.push(message);
+    }
+
+    /**
      * Increments skew and sets startDepth to previous depth.
      */
     advanceScanPosition() {
@@ -292,10 +336,11 @@ class WorldInfoBuffer {
     /**
      * Gets the match score for the given entry.
      * @param {WIScanEntry} entry Entry to check
+     * @param {number} scanState The state of the scan
      * @returns {number} The number of key activations for the given entry
      */
-    getScore(entry) {
-        const bufferState = this.get(entry);
+    getScore(entry, scanState) {
+        const bufferState = this.get(entry, scanState);
         let numberOfPrimaryKeys = 0;
         let numberOfSecondaryKeys = 0;
         let primaryScore = 0;
@@ -371,6 +416,7 @@ class WorldInfoTimedEffects {
     #buffer = {
         'sticky': [],
         'cooldown': [],
+        'delay': [],
     };
 
     /**
@@ -404,6 +450,8 @@ class WorldInfoTimedEffects {
         'cooldown': (entry) => {
             console.debug('Cooldown ended for entry', entry.uid);
         },
+
+        'delay': () => {},
     };
 
     /**
@@ -530,11 +578,30 @@ class WorldInfoTimedEffects {
     }
 
     /**
+     * Processes entries for the "delay" timed effect.
+     * @param {WIScanEntry[]} buffer Buffer to store the entries
+     */
+    #checkDelayEffect(buffer) {
+        for (const entry of this.#entries) {
+            if (!entry.delay) {
+                continue;
+            }
+
+            if (this.#chat.length < entry.delay) {
+                buffer.push(entry);
+                console.log('Timed effect "delay" applied to entry', entry);
+            }
+        }
+
+    }
+
+    /**
      * Checks for timed effects on chat messages.
      */
     checkTimedEffects() {
         this.#checkTimedEffectOfType('sticky', this.#buffer.sticky, this.#onEnded.sticky.bind(this));
         this.#checkTimedEffectOfType('cooldown', this.#buffer.cooldown, this.#onEnded.cooldown.bind(this));
+        this.#checkDelayEffect(this.#buffer.delay);
     }
 
     /**
@@ -611,7 +678,7 @@ class WorldInfoTimedEffects {
      * @returns {boolean} Is recognized type
      */
     isValidEffectType(type) {
-        return typeof type === 'string' && ['sticky', 'cooldown'].includes(type.trim().toLowerCase());
+        return typeof type === 'string' && ['sticky', 'cooldown', 'delay'].includes(type.trim().toLowerCase());
     }
 
     /**
@@ -645,6 +712,7 @@ export function getWorldInfoSettings() {
         world_info_min_activations,
         world_info_min_activations_depth_max,
         world_info_budget,
+        world_info_include_names,
         world_info_recursive,
         world_info_overflow_alert,
         world_info_case_sensitive,
@@ -674,7 +742,7 @@ const worldInfoCache = new Map();
 
 /**
  * Gets the world info based on chat messages.
- * @param {string[]} chat The chat messages to scan.
+ * @param {string[]} chat The chat messages to scan, in reverse order.
  * @param {number} maxContext The maximum context size of the generation.
  * @param {boolean} isDryRun If true, the function will not emit any events.
  * @typedef {{worldInfoString: string, worldInfoBefore: string, worldInfoAfter: string, worldInfoExamples: any[], worldInfoDepth: any[]}} WIPromptResult
@@ -711,6 +779,8 @@ function setWorldInfoSettings(settings, data) {
         world_info_min_activations_depth_max = Number(settings.world_info_min_activations_depth_max);
     if (settings.world_info_budget !== undefined)
         world_info_budget = Number(settings.world_info_budget);
+    if (settings.world_info_include_names !== undefined)
+        world_info_include_names = Boolean(settings.world_info_include_names);
     if (settings.world_info_recursive !== undefined)
         world_info_recursive = Boolean(settings.world_info_recursive);
     if (settings.world_info_overflow_alert !== undefined)
@@ -760,6 +830,7 @@ function setWorldInfoSettings(settings, data) {
     $('#world_info_budget_counter').val(world_info_budget);
     $('#world_info_budget').val(world_info_budget);
 
+    $('#world_info_include_names').prop('checked', world_info_include_names);
     $('#world_info_recursive').prop('checked', world_info_recursive);
     $('#world_info_overflow_alert').prop('checked', world_info_overflow_alert);
     $('#world_info_case_sensitive').prop('checked', world_info_case_sensitive);
@@ -1685,7 +1756,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
     // Regardless of whether success is displayed or not. Make sure the delete button is available.
     // Do not put this code behind.
     $('#world_popup_delete').off('click').on('click', async () => {
-        const confirmation = await Popup.show.confirm(`Delete the World/Lorebook: "${name}"?`, `This action is irreversible!`);
+        const confirmation = await Popup.show.confirm(`Delete the World/Lorebook: "${name}"?`, 'This action is irreversible!');
         if (!confirmation) {
             return;
         }
@@ -1733,14 +1804,21 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
         return entriesArray;
     }
 
+    const storageKey = 'WI_PerPage';
+    const perPageDefault = 25;
     let startPage = 1;
 
     if (navigation === navigation_option.previous) {
         startPage = $('#world_info_pagination').pagination('getCurrentPageNum');
     }
 
-    const storageKey = 'WI_PerPage';
-    const perPageDefault = 25;
+    if (typeof navigation === 'number' && Number(navigation) >= 0) {
+        const data = getDataArray();
+        const uidIndex = data.findIndex(x => x.uid === navigation);
+        const perPage = Number(localStorage.getItem(storageKey)) || perPageDefault;
+        startPage = Math.floor(uidIndex / perPage) + 1;
+    }
+
     $('#world_info_pagination').pagination({
         dataSource: getDataArray,
         pageSize: Number(localStorage.getItem(storageKey)) || perPageDefault,
@@ -1801,15 +1879,8 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
         },
     });
 
-
-
     if (typeof navigation === 'number' && Number(navigation) >= 0) {
         const selector = `#world_popup_entries_list [uid="${navigation}"]`;
-        const data = getDataArray();
-        const uidIndex = data.findIndex(x => x.uid === navigation);
-        const perPage = Number(localStorage.getItem(storageKey)) || perPageDefault;
-        const page = Math.floor(uidIndex / perPage) + 1;
-        $('#world_info_pagination').pagination('go', page);
         waitUntilCondition(() => document.querySelector(selector) !== null).finally(() => {
             const element = $(selector);
 
@@ -1941,6 +2012,7 @@ const originalDataKeyMap = {
     'groupWeight': 'extensions.group_weight',
     'sticky': 'extensions.sticky',
     'cooldown': 'extensions.cooldown',
+    'delay': 'extensions.delay',
 };
 
 /** Checks the state of the current search, and adds/removes the search sorting option accordingly */
@@ -2589,6 +2661,19 @@ function getWorldEntry(name, data, entry) {
     });
     cooldown.val(entry.cooldown > 0 ? entry.cooldown : '').trigger('input');
 
+    // delay
+    const delay = template.find('input[name="delay"]');
+    delay.data('uid', entry.uid);
+    delay.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = Number($(this).val());
+        data.entries[uid].delay = !isNaN(value) ? value : null;
+
+        setOriginalDataValue(data, uid, 'extensions.delay', data.entries[uid].delay);
+        saveWorldInfo(name, data);
+    });
+    delay.val(entry.delay > 0 ? entry.delay : '').trigger('input');
+
     // probability
     if (entry.probability === undefined) {
         entry.probability = null;
@@ -3139,6 +3224,7 @@ const newEntryDefinition = {
     role: { default: 0, type: 'enum' },
     sticky: { default: null, type: 'number?' },
     cooldown: { default: null, type: 'number?' },
+    delay: { default: null, type: 'number?' },
 };
 
 const newEntryTemplate = Object.fromEntries(
@@ -3447,7 +3533,7 @@ export async function getSortedEntries() {
 
 /**
  * Performs a scan on the chat and returns the world info activated.
- * @param {string[]} chat The chat messages to scan.
+ * @param {string[]} chat The chat messages to scan, in reverse order.
  * @param {number} maxContext The maximum context size of the generation.
  * @param {boolean} isDryRun Whether to perform a dry run.
  * @typedef {{ worldInfoBefore: string, worldInfoAfter: string, EMEntries: any[], WIDepthEntries: any[], allActivatedEntries: Set<any> }} WIActivated
@@ -3465,12 +3551,12 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         if (context.extensionPrompts[key]?.scan) {
             const prompt = getExtensionPromptByName(key);
             if (prompt) {
-                buffer.addRecurse(prompt);
+                buffer.addInject(prompt);
             }
         }
     }
 
-    let needsToScan = true;
+    let scanState = scan_state.INITIAL;
     let token_budget_overflowed = false;
     let count = 0;
     let allActivatedEntries = new Set();
@@ -3494,8 +3580,9 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], EMEntries: [], allActivatedEntries: new Set() };
     }
 
-    while (needsToScan) {
-        // Track how many times the loop has run
+    while (scanState) {
+        // Track how many times the loop has run. May be useful for debugging.
+        // eslint-disable-next-line no-unused-vars
         count++;
 
         let activatedNow = new Set();
@@ -3533,9 +3620,15 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
 
             const isSticky = timedEffects.isEffectActive('sticky', entry);
             const isCooldown = timedEffects.isEffectActive('cooldown', entry);
+            const isDelay = timedEffects.isEffectActive('delay', entry);
+
+            if (isDelay) {
+                console.debug(`WI entry ${entry.uid} suppressed by delay`, entry);
+                continue;
+            }
 
             if (isCooldown && !isSticky) {
-                console.debug(`WI entry ${entry.uid} suppressed by cooldown`);
+                console.debug(`WI entry ${entry.uid} suppressed by cooldown`, entry);
                 continue;
             }
 
@@ -3543,7 +3636,18 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 continue;
             }
 
-            if (allActivatedEntries.has(entry) || entry.disable == true || (count > 1 && world_info_recursive && entry.excludeRecursion) || (count == 1 && entry.delayUntilRecursion)) {
+            if (allActivatedEntries.has(entry) || entry.disable == true) {
+                continue;
+            }
+
+            // Only use checks for recursion flags if the scan step was activated by recursion
+            if (scanState !== scan_state.RECURSION && entry.delayUntilRecursion) {
+                console.debug(`WI entry ${entry.uid} suppressed by delay until recursion`, entry);
+                continue;
+            }
+
+            if (scanState === scan_state.RECURSION && world_info_recursive && entry.excludeRecursion) {
+                console.debug(`WI entry ${entry.uid} suppressed by exclude recursion`, entry);
                 continue;
             }
 
@@ -3558,7 +3662,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
 
                 primary: for (let key of entry.key) {
                     const substituted = substituteParams(key);
-                    const textToScan = buffer.get(entry);
+                    const textToScan = buffer.get(entry, scanState);
 
                     if (substituted && buffer.matchKeys(textToScan, substituted.trim(), entry)) {
                         console.debug(`WI UID ${entry.uid} found by primary match: ${substituted}.`);
@@ -3621,14 +3725,14 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             }
         }
 
-        needsToScan = world_info_recursive && activatedNow.size > 0;
+        scanState = world_info_recursive && activatedNow.size > 0 ? scan_state.RECURSION : scan_state.NONE;
         const newEntries = [...activatedNow]
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
         let newContent = '';
         const textToScanTokens = await getTokenCountAsync(allActivatedText);
         const probabilityChecksBefore = failedProbabilityChecks.size;
 
-        filterByInclusionGroups(newEntries, allActivatedEntries, buffer);
+        filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanState);
 
         console.debug('-- PROBABILITY CHECKS BEGIN --');
         for (const entry of newEntries) {
@@ -3653,7 +3757,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                     console.log('Alerting');
                     toastr.warning(`World info budget reached after ${allActivatedEntries.size} entries.`, 'World Info');
                 }
-                needsToScan = false;
+                scanState = scan_state.NONE;
                 token_budget_overflowed = true;
                 break;
             }
@@ -3666,15 +3770,15 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
 
         if ((probabilityChecksAfter - probabilityChecksBefore) === activatedNow.size) {
             console.debug('WI probability checks failed for all activated entries, stopping');
-            needsToScan = false;
+            scanState = scan_state.NONE;
         }
 
         if (newEntries.length === 0) {
             console.debug('No new entries activated, stopping');
-            needsToScan = false;
+            scanState = scan_state.NONE;
         }
 
-        if (needsToScan) {
+        if (scanState) {
             const text = newEntries
                 .filter(x => !failedProbabilityChecks.has(x))
                 .filter(x => !x.preventRecursion)
@@ -3684,7 +3788,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         }
 
         // world_info_min_activations
-        if (!needsToScan && !token_budget_overflowed) {
+        if (!scanState && !token_budget_overflowed) {
             if (world_info_min_activations > 0 && (allActivatedEntries.size < world_info_min_activations)) {
                 let over_max = (
                     world_info_min_activations_depth_max > 0 &&
@@ -3692,7 +3796,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 ) || (buffer.getDepth() > chat.length);
 
                 if (!over_max) {
-                    needsToScan = true; // loop
+                    scanState = scan_state.MIN_ACTIVATIONS; // loop
                     buffer.advanceScanPosition();
                 }
             }
@@ -3780,8 +3884,9 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
  * @param {Record<string, WIScanEntry[]>} groups The groups to filter
  * @param {WorldInfoBuffer} buffer The buffer to use for scoring
  * @param {(entry: WIScanEntry) => void} removeEntry The function to remove an entry
+ * @param {number} scanState The current scan state
  */
-function filterGroupsByScoring(groups, buffer, removeEntry) {
+function filterGroupsByScoring(groups, buffer, removeEntry, scanState) {
     for (const [key, group] of Object.entries(groups)) {
         // Group scoring is disabled both globally and for the group entries
         if (!world_info_use_group_scoring && !group.some(x => x.useGroupScoring)) {
@@ -3789,7 +3894,7 @@ function filterGroupsByScoring(groups, buffer, removeEntry) {
             continue;
         }
 
-        const scores = group.map(entry => buffer.getScore(entry));
+        const scores = group.map(entry => buffer.getScore(entry, scanState));
         const maxScore = Math.max(...scores);
         console.debug(`Group '${key}' max score: ${maxScore}`);
         //console.table(group.map((entry, i) => ({ uid: entry.uid, key: JSON.stringify(entry.key), score: scores[i] })));
@@ -3817,8 +3922,9 @@ function filterGroupsByScoring(groups, buffer, removeEntry) {
  * @param {object[]} newEntries Entries activated on current recursion level
  * @param {Set<object>} allActivatedEntries Set of all activated entries
  * @param {WorldInfoBuffer} buffer The buffer to use for scanning
+ * @param {number} scanState The current scan state
  */
-function filterByInclusionGroups(newEntries, allActivatedEntries, buffer) {
+function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanState) {
     console.debug('-- INCLUSION GROUP CHECKS BEGIN --');
     const grouped = newEntries.filter(x => x.group).reduce((acc, item) => {
         item.group.split(/,\s*/).filter(x => x).forEach(group => {
@@ -3847,7 +3953,7 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer) {
         }
     }
 
-    filterGroupsByScoring(grouped, buffer, removeEntry);
+    filterGroupsByScoring(grouped, buffer, removeEntry, scanState);
 
     for (const [key, group] of Object.entries(grouped)) {
         console.debug(`Checking inclusion group '${key}' with ${group.length} entries`, group);
@@ -3933,6 +4039,7 @@ function convertAgnaiMemoryBook(inputObj) {
             role: extension_prompt_roles.SYSTEM,
             sticky: null,
             cooldown: null,
+            delay: null,
         };
     });
 
@@ -3974,6 +4081,7 @@ function convertRisuLorebook(inputObj) {
             role: extension_prompt_roles.SYSTEM,
             sticky: null,
             cooldown: null,
+            delay: null,
         };
     });
 
@@ -4020,6 +4128,7 @@ function convertNovelLorebook(inputObj) {
             role: extension_prompt_roles.SYSTEM,
             sticky: null,
             cooldown: null,
+            delay: null,
         };
     });
 
@@ -4068,6 +4177,7 @@ function convertCharacterBook(characterBook) {
             vectorized: entry.extensions?.vectorized ?? false,
             sticky: entry.extensions?.sticky ?? null,
             cooldown: entry.extensions?.cooldown ?? null,
+            delay: entry.extensions?.delay ?? null,
         };
     });
 
@@ -4426,6 +4536,11 @@ jQuery(() => {
     $('#world_info_budget').on('input', function () {
         world_info_budget = Number($(this).val());
         $('#world_info_budget_counter').val($(this).val());
+        saveSettings();
+    });
+
+    $('#world_info_include_names').on('input', function () {
+        world_info_include_names = !!$(this).prop('checked');
         saveSettings();
     });
 

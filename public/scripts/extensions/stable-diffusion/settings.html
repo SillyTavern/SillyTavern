@@ -44,6 +44,7 @@
                 <option value="openai">OpenAI (DALL-E)</option>
                 <option value="pollinations">Pollinations</option>
                 <option value="vlad">SD.Next (vladmandic)</option>
+                <option value="stability">Stability AI</option>
                 <option value="auto">Stable Diffusion Web UI (AUTOMATIC1111)</option>
                 <option value="horde">Stable Horde</option>
                 <option value="togetherai">TogetherAI</option>
@@ -189,21 +190,59 @@
                     </label>
                 </div>
             </div>
+            <div data-sd-source="stability">
+                <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
+                    <strong class="flex1" data-i18n="API Key">API Key</strong>
+                    <div id="sd_stability_key" class="menu_button menu_button_icon">
+                        <i class="fa-fw fa-solid fa-key"></i>
+                        <span data-i18n="Click to set">Click to set</span>
+                    </div>
+                </div>
+                <div class="marginBot5">
+                    <i data-i18n="You can find your API key in the Stability AI dashboard.">
+                        You can find your API key in the Stability AI dashboard.
+                    </i>
+                </div>
 
+                <div class="flex-container">
+                    <div class="flex1">
+                        <label for="sd_stability_style_preset" data-i18n="Style Preset">Style Preset</label>
+                        <select id="sd_stability_style_preset">
+                            <option value="anime">Anime</option>
+                            <option value="3d-model">3D Model</option>
+                            <option value="analog-film">Analog Film</option>
+                            <option value="cinematic">Cinematic</option>
+                            <option value="comic-book">Comic Book</option>
+                            <option value="digital-art">Digital Art</option>
+                            <option value="enhance">Enhance</option>
+                            <option value="fantasy-art">Fantasy Art</option>
+                            <option value="isometric">Isometric</option>
+                            <option value="line-art">Line Art</option>
+                            <option value="low-poly">Low Poly</option>
+                            <option value="modeling-compound">Modeling Compound</option>
+                            <option value="neon-punk">Neon Punk</option>
+                            <option value="origami">Origami</option>
+                            <option value="photographic">Photographic</option>
+                            <option value="pixel-art">Pixel Art</option>
+                            <option value="tile-texture">Tile Texture</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
             <div class="flex-container">
                 <div class="flex1">
                     <label for="sd_model" data-i18n="Model">Model</label>
                     <select id="sd_model"></select>
                 </div>
 
-                <div class="flex1" data-sd-source="comfy">
+                <div class="flex1" data-sd-source="comfy,auto">
                     <label for="sd_vae">VAE</label>
                     <select id="sd_vae"></select>
                 </div>
             </div>
 
             <div class="flex-container">
-                <div class="flex1">
+                <div class="flex1" data-sd-source="extras,horde,auto,drawthings,novel,vlad,comfy">
                     <label for="sd_sampler" data-i18n="Sampling method">Sampling method</label>
                     <select id="sd_sampler"></select>
                 </div>
@@ -339,7 +378,7 @@
                 </label>
             </div>
 
-            <div data-sd-source="novel,togetherai,pollinations,comfy,drawthings,vlad,auto,horde,extras" class="marginTop5">
+            <div data-sd-source="novel,togetherai,pollinations,comfy,drawthings,vlad,auto,horde,extras,stability" class="marginTop5">
                 <label for="sd_seed">
                     <span data-i18n="Seed">Seed</span>
                     <small data-i18n="(-1 for random)">(-1 for random)</small>

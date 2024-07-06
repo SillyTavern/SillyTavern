@@ -231,6 +231,7 @@ export class QuickReplySet {
             this.rerender();
         } else {
             warn(`Failed to save Quick Reply Set: ${this.name}`);
+            console.error('QR could not be saved', response);
         }
     }
 

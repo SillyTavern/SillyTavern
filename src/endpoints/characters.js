@@ -11,7 +11,7 @@ const mime = require('mime-types');
 
 const jimp = require('jimp');
 
-const { UPLOADS_PATH, AVATAR_WIDTH, AVATAR_HEIGHT } = require('../constants');
+const { AVATAR_WIDTH, AVATAR_HEIGHT } = require('../constants');
 const { jsonParser, urlencodedParser } = require('../express-common');
 const { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer } = require('../util');
 const { TavernCardValidator } = require('../validator/TavernCardValidator');
@@ -485,6 +485,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 vectorized: entry.vectorized ?? false,
                 sticky: entry.sticky ?? null,
                 cooldown: entry.cooldown ?? null,
+                delay: entry.delay ?? null,
             },
         };
 
@@ -498,15 +499,16 @@ function convertWorldInfoToCharacterBook(name, entries) {
  * Import a character from a YAML file.
  * @param {string} uploadPath Path to the uploaded file
  * @param {{ request: import('express').Request, response: import('express').Response }} context Express request and response objects
+ * @param {string|undefined} preservedFileName Preserved file name
  * @returns {Promise<string>} Internal name of the character
  */
-async function importFromYaml(uploadPath, context) {
+async function importFromYaml(uploadPath, context, preservedFileName) {
     const fileText = fs.readFileSync(uploadPath, 'utf8');
     fs.rmSync(uploadPath);
     const yamlData = yaml.parse(fileText);
     console.log('Importing from YAML');
     yamlData.name = sanitize(yamlData.name);
-    const fileName = getPngName(yamlData.name, context.request.user.directories);
+    const fileName = preservedFileName || getPngName(yamlData.name, context.request.user.directories);
     let char = convertToV2({
         'name': yamlData.name,
         'description': yamlData.context ?? '',
@@ -531,9 +533,10 @@ async function importFromYaml(uploadPath, context) {
  * @param {string} uploadPath
  * @param {object} params
  * @param {import('express').Request} params.request
+ * @param {string|undefined} preservedFileName Preserved file name
  * @returns {Promise<string>} Internal name of the character
  */
-async function importFromCharX(uploadPath, { request }) {
+async function importFromCharX(uploadPath, { request }, preservedFileName) {
     const data = fs.readFileSync(uploadPath);
     fs.rmSync(uploadPath);
     console.log('Importing from CharX');
@@ -566,7 +569,7 @@ async function importFromCharX(uploadPath, { request }) {
     unsetFavFlag(card);
     card['create_date'] = humanizedISO8601DateTime();
     card.name = sanitize(card.name);
-    const fileName = getPngName(card.name, request.user.directories);
+    const fileName = preservedFileName || getPngName(card.name, request.user.directories);
     const result = await writeCharacterData(avatar, JSON.stringify(card), fileName, request);
     return result ? fileName : '';
 }
@@ -575,9 +578,10 @@ async function importFromCharX(uploadPath, { request }) {
  * Import a character from a JSON file.
  * @param {string} uploadPath Path to the uploaded file
  * @param {{ request: import('express').Request, response: import('express').Response }} context Express request and response objects
+ * @param {string|undefined} preservedFileName Preserved file name
  * @returns {Promise<string>} Internal name of the character
  */
-async function importFromJson(uploadPath, { request }) {
+async function importFromJson(uploadPath, { request }, preservedFileName) {
     const data = fs.readFileSync(uploadPath, 'utf8');
     fs.unlinkSync(uploadPath);
 
@@ -589,7 +593,7 @@ async function importFromJson(uploadPath, { request }) {
         unsetFavFlag(jsonData);
         jsonData = readFromV2(jsonData);
         jsonData['create_date'] = humanizedISO8601DateTime();
-        const pngName = getPngName(jsonData.data?.name || jsonData.name, request.user.directories);
+        const pngName = preservedFileName || getPngName(jsonData.data?.name || jsonData.name, request.user.directories);
         const char = JSON.stringify(jsonData);
         const result = await writeCharacterData(defaultAvatarPath, char, pngName, request);
         return result ? pngName : '';
@@ -599,7 +603,7 @@ async function importFromJson(uploadPath, { request }) {
         if (jsonData.creator_notes) {
             jsonData.creator_notes = jsonData.creator_notes.replace('Creator\'s notes go here.', '');
         }
-        const pngName = getPngName(jsonData.name, request.user.directories);
+        const pngName = preservedFileName || getPngName(jsonData.name, request.user.directories);
         let char = {
             'name': jsonData.name,
             'description': jsonData.description ?? '',
@@ -625,7 +629,7 @@ async function importFromJson(uploadPath, { request }) {
         if (jsonData.creator_notes) {
             jsonData.creator_notes = jsonData.creator_notes.replace('Creator\'s notes go here.', '');
         }
-        const pngName = getPngName(jsonData.char_name, request.user.directories);
+        const pngName = preservedFileName || getPngName(jsonData.char_name, request.user.directories);
         let char = {
             'name': jsonData.char_name,
             'description': jsonData.char_persona ?? '',
@@ -729,7 +733,7 @@ router.post('/create', urlencodedParser, async function (request, response) {
             return response.send(avatarName);
         } else {
             const crop = tryParse(request.query.crop);
-            const uploadPath = path.join(UPLOADS_PATH, request.file.filename);
+            const uploadPath = path.join(request.file.destination, request.file.filename);
             await writeCharacterData(uploadPath, char, internalName, request, crop);
             fs.unlinkSync(uploadPath);
             return response.send(avatarName);
@@ -812,7 +816,7 @@ router.post('/edit', urlencodedParser, async function (request, response) {
             await writeCharacterData(avatarPath, char, targetFile, request);
         } else {
             const crop = tryParse(request.query.crop);
-            const newAvatarPath = path.join(UPLOADS_PATH, request.file.filename);
+            const newAvatarPath = path.join(request.file.destination, request.file.filename);
             invalidateThumbnail(request.user.directories, 'avatar', request.body.avatar_url);
             await writeCharacterData(newAvatarPath, char, targetFile, request, crop);
             fs.unlinkSync(newAvatarPath);
@@ -1088,15 +1092,15 @@ function getPngName(file, directories) {
  * @returns {string | undefined} - The preserved name if the request is valid, otherwise undefined
  */
 function getPreservedName(request) {
-    return request.body.file_type === 'png' && request.body.preserve_file_name === 'true' && request.file?.originalname
-        ? path.parse(request.file.originalname).name
+    return typeof request.body.preserved_name === 'string' && request.body.preserved_name.length > 0
+        ? path.parse(request.body.preserved_name).name
         : undefined;
 }
 
 router.post('/import', urlencodedParser, async function (request, response) {
     if (!request.body || !request.file) return response.sendStatus(400);
 
-    const uploadPath = path.join(UPLOADS_PATH, request.file.filename);
+    const uploadPath = path.join(request.file.destination, request.file.filename);
     const format = request.body.file_type;
     const preservedFileName = getPreservedName(request);
 
@@ -1120,6 +1124,10 @@ router.post('/import', urlencodedParser, async function (request, response) {
         if (!fileName) {
             console.error('Failed to import character');
             return response.sendStatus(400);
+        }
+
+        if (preservedFileName) {
+            invalidateThumbnail(request.user.directories, 'avatar', `${preservedFileName}.png`);
         }
 
         response.send({ file_name: fileName });

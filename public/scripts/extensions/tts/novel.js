@@ -1,4 +1,5 @@
-import { getRequestHeaders, callPopup } from '../../../script.js';
+import { getRequestHeaders } from '../../../script.js';
+import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { splitRecursive } from '../../utils.js';
 import { getPreviewString, saveTtsProviderSettings } from './index.js';
 import { initVoiceMap } from './index.js';
@@ -56,7 +57,7 @@ class NovelTtsProvider {
 
     // Add a new Novel custom voice to provider
     async addCustomVoice() {
-        const voiceName = await callPopup('<h3>Custom Voice name:</h3>', 'input');
+        const voiceName = await callGenericPopup('Custom Voice name:',  POPUP_TYPE.INPUT);
         this.settings.customVoices.push(voiceName);
         this.populateCustomVoices();
         initVoiceMap(); // Update TTS extension voiceMap

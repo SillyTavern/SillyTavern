@@ -43,6 +43,10 @@
         transform: scaleY(1);
     }
 
+    66% {
+        transform: scaleY(1);
+    }
+
     100% {
         opacity: 0;
         transform: scaleY(0);

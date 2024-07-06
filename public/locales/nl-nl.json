@@ -1023,7 +1023,6 @@
     "prompt_manager_position": "Positie",
     "Injection position. Next to other prompts (relative) or in-chat (absolute).": "Injectiepositie. Naast andere prompts (relatief) of in-chat (absoluut).",
     "prompt_manager_relative": "Familielid",
-    "prompt_manager_absolute": "Absoluut",
     "prompt_manager_depth": "Diepte",
     "Injection depth. 0 = after the last message, 1 = before the last message, etc.": "Injectiediepte. 0 = na het laatste bericht, 1 = voor het laatste bericht, etc.",
     "Prompt": "Prompt",

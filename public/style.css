@@ -82,7 +82,7 @@
     /*base variable calculated in rems*/
     --fontScale: 1;
     --mainFontSize: calc(var(--fontScale) * 15px);
-    --mainFontFamily: "Noto Sans", "Noto Color Emoji", sans-serif;
+    --mainFontFamily: "Noto Sans", sans-serif;
     --monoFontFamily: 'Noto Sans Mono', 'Courier New', Consolas, monospace;
 
     /* base variable for blur strength slider calculations */
@@ -458,7 +458,7 @@ code {
 kbd {
     display: inline-block;
     padding: 2px 4px;
-    font-family: Consolas, monospace;
+    font-family: var(--monoFontFamily);
     white-space: nowrap;
     /* background-color: #eeeeee; */
     background-color: rgba(255, 255, 255, 0.9);
@@ -2922,6 +2922,23 @@ input[type=search]:focus::-webkit-search-cancel-button {
     position: relative;
 }
 
+.group_member .queue_position:not(:empty)::before {
+    content: "#";
+}
+
+.group_member .queue_position {
+    margin-right: 0.75rem;
+    font-size: calc(var(--mainFontSize) * 0.9);
+}
+
+.group_member.is_queued {
+    outline: 2px solid var(--golden);
+}
+
+.group_member.is_active {
+    outline: 2px solid var(--active);
+}
+
 .character_select.is_fav .avatar,
 .group_select.is_fav .avatar,
 .group_member.is_fav .avatar,
@@ -4150,18 +4167,6 @@ h5 {
     grid-template-columns: 340px auto;
 }
 
-.popup-crop-wrap {
-    margin: 10px auto;
-    max-height: 75vh;
-    max-height: 75svh;
-    max-width: 100%;
-}
-
-.popup-crop-wrap img {
-    max-width: 100%;
-    /* This rule is very important, please do not ignore this! */
-}
-
 body .ui-autocomplete {
     max-height: 300px;
     overflow-y: auto;
@@ -4493,7 +4498,8 @@ a {
 }
 
 .mes_img_controls .right_menu_button {
-    filter: brightness(80%);
+    filter: brightness(90%);
+    text-shadow: 1px 1px var(--SmartThemeShadowColor) !important;
     padding: 1px;
     height: 1.25em;
     width: 1.25em;
@@ -4516,6 +4522,10 @@ a {
 
 .mes .mes_img_container.img_extra {
     display: flex;
+}
+
+body:not(.caption) .mes_img_caption {
+    display: none;
 }
 
 .img_enlarged_holder {
@@ -4559,6 +4569,13 @@ a {
     display: block;
     overflow-x: auto;
     padding: 1em;
+}
+
+.img_enlarged_container pre {
+    max-height: 25vh;
+    max-height: 25svh;
+    flex-shrink: 0;
+    overflow: auto;
 }
 
 .popup:has(.img_enlarged.zoomed).large_dialogue_popup {
