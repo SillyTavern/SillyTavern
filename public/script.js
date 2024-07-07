@@ -850,6 +850,7 @@ var kobold_horde_model = '';
 export let token;
 
 var PromptArrayItemForRawPromptDisplay;
+var priorPromptArrayItemForRawPromptDisplay;
 
 /** The tag of the active character. (NOT the id) */
 export let active_character = '';
@@ -4905,6 +4906,9 @@ export function findItemizedPromptSet(itemizedPrompts, incomingMesId) {
             PromptArrayItemForRawPromptDisplay = i;
             console.log(`wanting to raw display of ArrayItem: ${PromptArrayItemForRawPromptDisplay} which is mesID ${incomingMesId}`);
             console.log(itemizedPrompts[thisPromptSet]);
+            break;
+        } else if (itemizedPrompts[i].rawPrompt){
+            priorPromptArrayItemForRawPromptDisplay = i;
         }
     }
     return thisPromptSet;
@@ -4929,7 +4933,30 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
         : await renderTemplateAsync('itemizationText', params);
 
     const popup = new Popup(template, POPUP_TYPE.TEXT);
+    if (priorPromptArrayItemForRawPromptDisplay){
+        popup.dlg.querySelector('#diffPrevPrompt').style.display='';
+        popup.dlg.querySelector('#diffPrevPrompt').addEventListener('click', function () {
+            var dmp = new diff_match_patch();
+            var text1 = itemizedPrompts[priorPromptArrayItemForRawPromptDisplay].rawPrompt;
+            var text2 = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
 
+            dmp.Diff_Timeout = 2.0;
+          
+            var d = dmp.diff_main(text1, text2);
+            var ds = dmp.diff_prettyHtml(d);
+
+            // make it readable
+            ds = ds.replaceAll("background:#e6ffe6;", "background:#b9f3b9; color:black;");
+            ds = ds.replaceAll("background:#ffe6e6;", "background:#f5b4b4; color:black;");
+            ds = ds.replaceAll("&para;", "");
+            ds = "<div style='display:block;'>" + ds + "</div>";
+            const rawPromptWrapper = document.getElementById('rawPromptWrapper');
+            rawPromptWrapper.innerHTML = ds;
+            $('#rawPromptPopup').slideToggle();        
+        });
+    } else {
+        popup.dlg.querySelector('#diffPrevPrompt').style.display='none';
+    }
     popup.dlg.querySelector('#copyPromptToClipboard').addEventListener('click', function () {
         let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
         let rawPromptValues = rawPrompt;
