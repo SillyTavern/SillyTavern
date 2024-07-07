@@ -16,7 +16,7 @@ import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandE
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
-import { Popup } from './popup.js';
+import { callGenericPopup, Popup, POPUP_TYPE } from './popup.js';
 
 export {
     world_info,
@@ -24,6 +24,7 @@ export {
     world_info_depth,
     world_info_min_activations,
     world_info_min_activations_depth_max,
+    world_info_include_names,
     world_info_recursive,
     world_info_overflow_alert,
     world_info_case_sensitive,
@@ -83,6 +84,7 @@ let world_info_min_activations = 0; // if > 0, will continue seeking chat until 
 let world_info_min_activations_depth_max = 0; // used when (world_info_min_activations > 0)
 
 let world_info_budget = 25;
+let world_info_include_names = true;
 let world_info_recursive = false;
 let world_info_overflow_alert = false;
 let world_info_case_sensitive = false;
@@ -710,6 +712,7 @@ export function getWorldInfoSettings() {
         world_info_min_activations,
         world_info_min_activations_depth_max,
         world_info_budget,
+        world_info_include_names,
         world_info_recursive,
         world_info_overflow_alert,
         world_info_case_sensitive,
@@ -739,7 +742,7 @@ const worldInfoCache = new Map();
 
 /**
  * Gets the world info based on chat messages.
- * @param {string[]} chat The chat messages to scan.
+ * @param {string[]} chat The chat messages to scan, in reverse order.
  * @param {number} maxContext The maximum context size of the generation.
  * @param {boolean} isDryRun If true, the function will not emit any events.
  * @typedef {{worldInfoString: string, worldInfoBefore: string, worldInfoAfter: string, worldInfoExamples: any[], worldInfoDepth: any[]}} WIPromptResult
@@ -776,6 +779,8 @@ function setWorldInfoSettings(settings, data) {
         world_info_min_activations_depth_max = Number(settings.world_info_min_activations_depth_max);
     if (settings.world_info_budget !== undefined)
         world_info_budget = Number(settings.world_info_budget);
+    if (settings.world_info_include_names !== undefined)
+        world_info_include_names = Boolean(settings.world_info_include_names);
     if (settings.world_info_recursive !== undefined)
         world_info_recursive = Boolean(settings.world_info_recursive);
     if (settings.world_info_overflow_alert !== undefined)
@@ -825,6 +830,7 @@ function setWorldInfoSettings(settings, data) {
     $('#world_info_budget_counter').val(world_info_budget);
     $('#world_info_budget').val(world_info_budget);
 
+    $('#world_info_include_names').prop('checked', world_info_include_names);
     $('#world_info_recursive').prop('checked', world_info_recursive);
     $('#world_info_overflow_alert').prop('checked', world_info_overflow_alert);
     $('#world_info_case_sensitive').prop('checked', world_info_case_sensitive);
@@ -3527,7 +3533,7 @@ export async function getSortedEntries() {
 
 /**
  * Performs a scan on the chat and returns the world info activated.
- * @param {string[]} chat The chat messages to scan.
+ * @param {string[]} chat The chat messages to scan, in reverse order.
  * @param {number} maxContext The maximum context size of the generation.
  * @param {boolean} isDryRun Whether to perform a dry run.
  * @typedef {{ worldInfoBefore: string, worldInfoAfter: string, EMEntries: any[], WIDepthEntries: any[], allActivatedEntries: Set<any> }} WIActivated
@@ -4218,7 +4224,7 @@ export function checkEmbeddedWorld(chid) {
                         importEmbeddedWorldInfo(true);
                     }
                 };
-                callPopup(html, 'confirm', '', { okButton: 'Yes' }).then(checkResult);
+                callGenericPopup(html, POPUP_TYPE.CONFIRM, '', { okButton: 'Yes' }).then(checkResult);
             }
             else {
                 toastr.info(
@@ -4530,6 +4536,11 @@ jQuery(() => {
     $('#world_info_budget').on('input', function () {
         world_info_budget = Number($(this).val());
         $('#world_info_budget_counter').val($(this).val());
+        saveSettings();
+    });
+
+    $('#world_info_include_names').on('input', function () {
+        world_info_include_names = !!$(this).prop('checked');
         saveSettings();
     });
 

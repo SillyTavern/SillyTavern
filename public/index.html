@@ -3542,6 +3542,12 @@
                                             </div>
                                         </div>
                                         <div id="wiCheckboxes" class="flex1 flex-container flexFlowColumn">
+                                            <label title="Include names with each message into the context for scanning" data-i18n="[title]Include names with each message into the context for scanning" class="checkbox_label flex1">
+                                                <input id="world_info_include_names" type="checkbox" />
+                                                <small data-i18n="Include Names" class="whitespacenowrap flex1">
+                                                    Include Names
+                                                </small>
+                                            </label>
                                             <label title="Entries can activate other entries by mentioning their keywords" data-i18n="[title]Entries can activate other entries by mentioning their keywords" class="checkbox_label flex1">
                                                 <input id="world_info_recursive" type="checkbox" />
                                                 <small data-i18n="Recursive Scan" class="whitespacenowrap flex1">
@@ -6416,6 +6422,7 @@
         </div>
     </div>
     <!-- Script includes -->
+    <script src="lib/diff_match_patch.js"></script>
     <script src="lib/object-hasown.js"></script>
     <script src="lib/jquery-3.5.1.min.js"></script>
     <script src="lib/jquery-ui.min.js"></script>

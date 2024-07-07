@@ -7,7 +7,7 @@ import { kai_flags } from './kai-settings.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer, getTextGenModel } from './textgen-settings.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, openRouterModels } from './textgen-models.js';
 
-const { OOBA, TABBY, KOBOLDCPP, APHRODITE, LLAMACPP, OPENROUTER, DREAMGEN } = textgen_types;
+const { OOBA, TABBY, KOBOLDCPP, VLLM, APHRODITE, LLAMACPP, OPENROUTER, DREAMGEN } = textgen_types;
 
 export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
@@ -39,7 +39,7 @@ export const SENTENCEPIECE_TOKENIZERS = [
     //tokenizers.NERD2,
 ];
 
-export const TEXTGEN_TOKENIZERS = [OOBA, TABBY, KOBOLDCPP, LLAMACPP, APHRODITE];
+export const TEXTGEN_TOKENIZERS = [OOBA, TABBY, KOBOLDCPP, LLAMACPP, VLLM, APHRODITE];
 
 const TOKENIZER_URLS = {
     [tokenizers.GPT2]: {
@@ -769,6 +769,7 @@ function getTextgenAPITokenizationParams(str) {
         api_type: textgen_settings.type,
         url: getTextGenServer(),
         legacy_api: textgen_settings.legacy_api && (textgen_settings.type === OOBA || textgen_settings.type === APHRODITE),
+        vllm_model: textgen_settings.vllm_model,
     };
 }
 

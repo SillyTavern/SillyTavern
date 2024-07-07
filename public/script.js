@@ -35,6 +35,7 @@ import {
     setWorldInfoButtonClass,
     importWorldInfo,
     wi_anchor_position,
+    world_info_include_names,
 } from './scripts/world-info.js';
 
 import {
@@ -850,6 +851,7 @@ var kobold_horde_model = '';
 export let token;
 
 var PromptArrayItemForRawPromptDisplay;
+var priorPromptArrayItemForRawPromptDisplay;
 
 /** The tag of the active character. (NOT the id) */
 export let active_character = '';
@@ -3500,7 +3502,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // Add WI to prompt (and also inject WI to AN value via hijack)
     // Make quiet prompt available for WIAN
     setExtensionPrompt('QUIET_PROMPT', quiet_prompt || '', extension_prompt_types.IN_PROMPT, 0, true);
-    const chatForWI = coreChat.map(x => `${x.name}: ${x.mes}`).reverse();
+    const chatForWI = coreChat.map(x => world_info_include_names ? `${x.name}: ${x.mes}` : x.mes).reverse();
     const { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoExamples, worldInfoDepth } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun);
     setExtensionPrompt('QUIET_PROMPT', '', extension_prompt_types.IN_PROMPT, 0, true);
 
@@ -4905,6 +4907,9 @@ export function findItemizedPromptSet(itemizedPrompts, incomingMesId) {
             PromptArrayItemForRawPromptDisplay = i;
             console.log(`wanting to raw display of ArrayItem: ${PromptArrayItemForRawPromptDisplay} which is mesID ${incomingMesId}`);
             console.log(itemizedPrompts[thisPromptSet]);
+            break;
+        } else if (itemizedPrompts[i].rawPrompt) {
+            priorPromptArrayItemForRawPromptDisplay = i;
         }
     }
     return thisPromptSet;
@@ -4923,6 +4928,7 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
     }
 
     const params = await itemizedParams(itemizedPrompts, thisPromptSet);
+    const flatten = (rawPrompt) => Array.isArray(rawPrompt) ? rawPrompt.map(x => x.content).join('\n') : rawPrompt;
 
     const template = params.this_main_api == 'openai'
         ? await renderTemplateAsync('itemizationChat', params)
@@ -4930,6 +4936,32 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
 
     const popup = new Popup(template, POPUP_TYPE.TEXT);
 
+    /** @type {HTMLElement} */
+    const diffPrevPrompt = popup.dlg.querySelector('#diffPrevPrompt');
+    if (priorPromptArrayItemForRawPromptDisplay) {
+        diffPrevPrompt.style.display = '';
+        diffPrevPrompt.addEventListener('click', function () {
+            const dmp = new diff_match_patch();
+            const text1 = flatten(itemizedPrompts[priorPromptArrayItemForRawPromptDisplay].rawPrompt);
+            const text2 = flatten(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
+
+            dmp.Diff_Timeout = 2.0;
+
+            const d = dmp.diff_main(text1, text2);
+            let ds = dmp.diff_prettyHtml(d);
+            // make it readable
+            ds = ds.replaceAll('background:#e6ffe6;', 'background:#b9f3b9; color:black;');
+            ds = ds.replaceAll('background:#ffe6e6;', 'background:#f5b4b4; color:black;');
+            ds = ds.replaceAll('&para;', '');
+            const container = document.createElement('div');
+            container.innerHTML = DOMPurify.sanitize(ds);
+            const rawPromptWrapper = document.getElementById('rawPromptWrapper');
+            rawPromptWrapper.replaceChildren(container);
+            $('#rawPromptPopup').slideToggle();
+        });
+    } else {
+        diffPrevPrompt.style.display = 'none';
+    }
     popup.dlg.querySelector('#copyPromptToClipboard').addEventListener('click', function () {
         let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
         let rawPromptValues = rawPrompt;
@@ -4948,16 +4980,11 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
         console.log(itemizedPrompts);
         console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
 
-        let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
-        let rawPromptValues = rawPrompt;
-
-        if (Array.isArray(rawPrompt)) {
-            rawPromptValues = rawPrompt.map(x => x.content).join('\n');
-        }
+        const rawPrompt = flatten(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
 
         //let DisplayStringifiedPrompt = JSON.stringify(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt).replace(/\n+/g, '<br>');
         const rawPromptWrapper = document.getElementById('rawPromptWrapper');
-        rawPromptWrapper.innerText = rawPromptValues;
+        rawPromptWrapper.innerText = rawPrompt;
         $('#rawPromptPopup').slideToggle();
     });
 
@@ -5019,6 +5046,10 @@ async function sendGenerationRequest(type, data) {
  * @returns {Promise<any>} Streaming generator
  */
 async function sendStreamingRequest(type, data) {
+    if (abortController?.signal?.aborted) {
+        throw new Error('Generation was aborted.');
+    }
+
     switch (main_api) {
         case 'openai':
             return await sendOpenAIRequest(type, data.prompt, streamingProcessor.abortController.signal);
@@ -6109,7 +6140,7 @@ export function changeMainAPI() {
     }
 
     if (selectedVal === 'textgenerationwebui' || selectedVal === 'novel') {
-        console.log('enabling amount_gen for ooba/novel');
+        console.debug('enabling amount_gen for ooba/novel');
         activeItem.amountGenElem.find('input').prop('disabled', false);
         activeItem.amountGenElem.css('opacity', 1.0);
     }

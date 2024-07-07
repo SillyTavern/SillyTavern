@@ -200,11 +200,30 @@ if (enableCorsProxy) {
     });
 }
 
+function getSessionCookieAge() {
+    // Defaults to 24 hours in seconds if not set
+    const configValue = getConfigValue('sessionTimeout', 24 * 60 * 60);
+
+    // Convert to milliseconds
+    if (configValue > 0) {
+        return configValue * 1000;
+    }
+
+    // "No expiration" is just 400 days as per RFC 6265
+    if (configValue < 0) {
+        return 400 * 24 * 60 * 60 * 1000;
+    }
+
+    // 0 means session cookie is deleted when the browser session ends
+    // (depends on the implementation of the browser)
+    return undefined;
+}
+
 app.use(cookieSession({
     name: userModule.getCookieSessionName(),
     sameSite: 'strict',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    maxAge: getSessionCookieAge(),
     secret: userModule.getCookieSecret(),
 }));
 

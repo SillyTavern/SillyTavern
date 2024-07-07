@@ -307,7 +307,7 @@ async function listSamplers(main_api, arrayOnly = false) {
     }
 
     if (arrayOnly) {
-        console.log('returning full samplers array');
+        console.debug('returning full samplers array');
         return availableSamplers;
     }
 

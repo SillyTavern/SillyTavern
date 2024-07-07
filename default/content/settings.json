@@ -13,6 +13,7 @@
         },
         "world_info_depth": 2,
         "world_info_budget": 25,
+        "world_info_include_names": true,
         "world_info_recursive": true,
         "world_info_overflow_alert": false,
         "world_info_case_sensitive": false,

@@ -1,13 +1,13 @@
 import { callPopup, characters, eventSource, event_types, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced, this_chid } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync, writeExtensionField } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
+import { callGenericPopup, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { download, getFileText, getSortableDelay, uuidv4 } from '../../utils.js';
-import { resolveVariable } from '../../variables.js';
 import { regex_placement, runRegexScript } from './engine.js';
 
 /**
@@ -141,7 +141,7 @@ async function loadRegexScripts() {
             await onRegexEditorOpenClick(scriptHtml.attr('id'), isScoped);
         });
         scriptHtml.find('.move_to_global').on('click', async function () {
-            const confirm = await callPopup('Are you sure you want to move this regex script to global?', 'confirm');
+            const confirm = await callGenericPopup('Are you sure you want to move this regex script to global?', POPUP_TYPE.CONFIRM);
 
             if (!confirm) {
                 return;
@@ -161,7 +161,7 @@ async function loadRegexScripts() {
                 return;
             }
 
-            const confirm = await callPopup('Are you sure you want to move this regex script to scoped?', 'confirm');
+            const confirm = await callGenericPopup('Are you sure you want to move this regex script to scoped?', POPUP_TYPE.CONFIRM);
 
             if (!confirm) {
                 return;
@@ -176,7 +176,7 @@ async function loadRegexScripts() {
             download(fileData, fileName, 'application/json');
         });
         scriptHtml.find('.delete_regex').on('click', async function () {
-            const confirm = await callPopup('Are you sure you want to delete this regex script?', 'confirm');
+            const confirm = await callGenericPopup('Are you sure you want to delete this regex script?', POPUP_TYPE.CONFIRM);
 
             if (!confirm) {
                 return;
@@ -442,7 +442,7 @@ async function checkEmbeddedRegexScripts() {
                 if (!localStorage.getItem(checkKey)) {
                     localStorage.setItem(checkKey, 'true');
                     const template = await renderExtensionTemplateAsync('regex', 'embeddedScripts', {});
-                    const result = await callPopup(template, 'confirm', '', { okButton: 'Yes' });
+                    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: 'Yes' });
 
                     if (result) {
                         extension_settings.character_allowed_regex.push(avatar);
@@ -493,7 +493,7 @@ jQuery(async () => {
         template.find('#regex_import_target_global').on('input', () => target = 'global');
         template.find('#regex_import_target_scoped').on('input', () => target = 'scoped');
 
-        await callPopup(template, 'text');
+        await callGenericPopup(template, POPUP_TYPE.TEXT);
 
         const inputElement = this instanceof HTMLInputElement && this;
         for (const file of inputElement.files) {
