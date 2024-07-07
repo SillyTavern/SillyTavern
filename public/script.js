@@ -851,6 +851,7 @@ var kobold_horde_model = '';
 export let token;
 
 var PromptArrayItemForRawPromptDisplay;
+var priorPromptArrayItemForRawPromptDisplay;
 
 /** The tag of the active character. (NOT the id) */
 export let active_character = '';
@@ -4906,6 +4907,9 @@ export function findItemizedPromptSet(itemizedPrompts, incomingMesId) {
             PromptArrayItemForRawPromptDisplay = i;
             console.log(`wanting to raw display of ArrayItem: ${PromptArrayItemForRawPromptDisplay} which is mesID ${incomingMesId}`);
             console.log(itemizedPrompts[thisPromptSet]);
+            break;
+        } else if (itemizedPrompts[i].rawPrompt) {
+            priorPromptArrayItemForRawPromptDisplay = i;
         }
     }
     return thisPromptSet;
@@ -4924,6 +4928,7 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
     }
 
     const params = await itemizedParams(itemizedPrompts, thisPromptSet);
+    const flatten = (rawPrompt) => Array.isArray(rawPrompt) ? rawPrompt.map(x => x.content).join('\n') : rawPrompt;
 
     const template = params.this_main_api == 'openai'
         ? await renderTemplateAsync('itemizationChat', params)
@@ -4931,6 +4936,32 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
 
     const popup = new Popup(template, POPUP_TYPE.TEXT);
 
+    /** @type {HTMLElement} */
+    const diffPrevPrompt = popup.dlg.querySelector('#diffPrevPrompt');
+    if (priorPromptArrayItemForRawPromptDisplay) {
+        diffPrevPrompt.style.display = '';
+        diffPrevPrompt.addEventListener('click', function () {
+            const dmp = new diff_match_patch();
+            const text1 = flatten(itemizedPrompts[priorPromptArrayItemForRawPromptDisplay].rawPrompt);
+            const text2 = flatten(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
+
+            dmp.Diff_Timeout = 2.0;
+
+            const d = dmp.diff_main(text1, text2);
+            let ds = dmp.diff_prettyHtml(d);
+            // make it readable
+            ds = ds.replaceAll('background:#e6ffe6;', 'background:#b9f3b9; color:black;');
+            ds = ds.replaceAll('background:#ffe6e6;', 'background:#f5b4b4; color:black;');
+            ds = ds.replaceAll('&para;', '');
+            const container = document.createElement('div');
+            container.innerHTML = DOMPurify.sanitize(ds);
+            const rawPromptWrapper = document.getElementById('rawPromptWrapper');
+            rawPromptWrapper.replaceChildren(container);
+            $('#rawPromptPopup').slideToggle();
+        });
+    } else {
+        diffPrevPrompt.style.display = 'none';
+    }
     popup.dlg.querySelector('#copyPromptToClipboard').addEventListener('click', function () {
         let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
         let rawPromptValues = rawPrompt;
@@ -4949,16 +4980,11 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
         console.log(itemizedPrompts);
         console.log(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
 
-        let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
-        let rawPromptValues = rawPrompt;
-
-        if (Array.isArray(rawPrompt)) {
-            rawPromptValues = rawPrompt.map(x => x.content).join('\n');
-        }
+        const rawPrompt = flatten(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
 
         //let DisplayStringifiedPrompt = JSON.stringify(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt).replace(/\n+/g, '<br>');
         const rawPromptWrapper = document.getElementById('rawPromptWrapper');
-        rawPromptWrapper.innerText = rawPromptValues;
+        rawPromptWrapper.innerText = rawPrompt;
         $('#rawPromptPopup').slideToggle();
     });
 
