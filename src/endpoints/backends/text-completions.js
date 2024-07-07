@@ -602,6 +602,23 @@ tabby.post('/download', jsonParser, async function (request, response) {
         }
 
         setAdditionalHeaders(request, args, baseUrl);
+
+        // Check key permissions
+        const permissionResponse = await fetch(`${baseUrl}/v1/auth/permission`, {
+            headers: args.headers
+        });
+
+        if (permissionResponse.ok) {
+            const permissionJson = await permissionResponse.json();
+
+            if (permissionJson['permission'] !== 'admin') {
+                return response.status(403).send({ error: true });
+            }
+        } else {
+            console.log('API Permission error:', permissionResponse.status, permissionResponse.statusText);
+            return response.status(permissionResponse.status).send({ error: true });
+        }
+
         const fetchResponse = await fetch(`${baseUrl}/v1/download`, args);
 
         if (!fetchResponse.ok) {

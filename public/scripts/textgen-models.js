@@ -526,7 +526,10 @@ async function downloadTabbyModel() {
             body: JSON.stringify(params),
         });
 
-        if (!response.ok) {
+        if (response.status === 403) {
+            toastr.error("The provided key has invalid permissions. Please use an admin key for downloading.");
+            return;
+        } else if (!response.ok) {
             throw new Error(response.statusText);
         }
 
