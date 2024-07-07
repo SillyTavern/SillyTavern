@@ -599,13 +599,13 @@ tabby.post('/download', jsonParser, async function (request, response) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(request.body),
             timeout: 0,
-        }
+        };
 
         setAdditionalHeaders(request, args, baseUrl);
 
         // Check key permissions
         const permissionResponse = await fetch(`${baseUrl}/v1/auth/permission`, {
-            headers: args.headers
+            headers: args.headers,
         });
 
         if (permissionResponse.ok) {

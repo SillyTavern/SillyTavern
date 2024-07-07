@@ -489,13 +489,13 @@ async function downloadTabbyModel() {
             return;
         }
 
-        const repoId = downloadHtml.find('input[name="hf_repo_id"]').val().toString()
+        const repoId = downloadHtml.find('input[name="hf_repo_id"]').val().toString();
         if (!repoId) {
             toastr.error('A HuggingFace repo ID must be provided. Skipping Download.');
             return;
         }
 
-        if (repoId.split("/").length !== 2) {
+        if (repoId.split('/').length !== 2) {
             toastr.error('A HuggingFace repo ID must be formatted as Author/Name. Please try again.');
             return;
         }
@@ -505,18 +505,18 @@ async function downloadTabbyModel() {
             folder_name: downloadHtml.find('input[name="folder_name"]').val() || undefined,
             revision: downloadHtml.find('input[name="revision"]').val() || undefined,
             token: downloadHtml.find('input[name="hf_token"]').val() || undefined,
-        }
+        };
 
-        for (const suffix of ["include", "exclude"]) {
+        for (const suffix of ['include', 'exclude']) {
             const patterns = downloadHtml.find(`textarea[name="tabby_download_${suffix}"]`).val().toString();
             if (patterns) {
-                params[suffix] = patterns.split("\n");
+                params[suffix] = patterns.split('\n');
             }
         }
 
         // Params for the server side of ST
         params['api_server'] = serverUrl;
-        params['api_type'] = textgen_settings.type
+        params['api_type'] = textgen_settings.type;
 
         toastr.info('Downloading. Check the Tabby console for progress reports.');
 
@@ -527,7 +527,7 @@ async function downloadTabbyModel() {
         });
 
         if (response.status === 403) {
-            toastr.error("The provided key has invalid permissions. Please use an admin key for downloading.");
+            toastr.error('The provided key has invalid permissions. Please use an admin key for downloading.');
             return;
         } else if (!response.ok) {
             throw new Error(response.statusText);
@@ -536,7 +536,7 @@ async function downloadTabbyModel() {
         toastr.success('Download complete.');
     } catch (err) {
         console.error(err);
-        toastr.error('Failed to download HuggingFace model in TabbyAPI. Please try again.')
+        toastr.error('Failed to download HuggingFace model in TabbyAPI. Please try again.');
     }
 }
 
