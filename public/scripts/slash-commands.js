@@ -2639,15 +2639,16 @@ async function openChat(id) {
 async function continueChatCallback(args, prompt) {
     const shouldAwait = isTrueBoolean(args?.await);
 
-    const outerPromise = new Promise((resolve) => {
-        setTimeout(async () => {
-            try {
-                await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
-            } catch {
-                console.warn('Timeout waiting for generation unlock');
-                toastr.warning('Cannot run /continue command while the reply is being generated.');
-            }
+    const outerPromise = new Promise(async (resolve, reject) => {
+        try {
+            await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
+        } catch {
+            console.warn('Timeout waiting for generation unlock');
+            toastr.warning('Cannot run /continue command while the reply is being generated.');
+            return reject();
+        }
 
+        try {
             // Prevent infinite recursion
             $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
 
@@ -2655,7 +2656,10 @@ async function continueChatCallback(args, prompt) {
             await Generate('continue', options);
 
             resolve();
-        }, 1);
+        } catch (error) {
+            console.error('Error running /continue command:', error);
+            reject();
+        }
     });
 
     if (shouldAwait) {
