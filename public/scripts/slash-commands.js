@@ -329,6 +329,16 @@ export function initDefaultSlashCommands() {
         name: 'continue',
         callback: continueChatCallback,
         aliases: ['cont'],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'await',
+                'Whether to await for the continued generation before continuing',
+                [ARGUMENT_TYPE.BOOLEAN],
+                false,
+                false,
+                'false',
+            ),
+        ],
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'prompt', [ARGUMENT_TYPE.STRING], false,
@@ -337,6 +347,9 @@ export function initDefaultSlashCommands() {
         helpString: `
         <div>
             Continues the last message in the chat, with an optional additional prompt.
+        </div>
+        <div>
+            If <code>await=true</code> named argument is passed, the command will await for the continued generation before continuing.
         </div>
         <div>
             <strong>Example:</strong>
@@ -2623,19 +2636,31 @@ async function openChat(id) {
     await reloadCurrentChat();
 }
 
-function continueChatCallback(_, prompt) {
-    setTimeout(async () => {
-        try {
-            await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
-        } catch {
-            console.warn('Timeout waiting for generation unlock');
-            toastr.warning('Cannot run /continue command while the reply is being generated.');
-        }
+async function continueChatCallback(args, prompt) {
+    const shouldAwait = isTrueBoolean(args?.await);
 
-        // Prevent infinite recursion
-        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
-        $('#option_continue').trigger('click', { fromSlashCommand: true, additionalPrompt: prompt });
-    }, 1);
+    const outerPromise = new Promise((resolve) => {
+        setTimeout(async () => {
+            try {
+                await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
+            } catch {
+                console.warn('Timeout waiting for generation unlock');
+                toastr.warning('Cannot run /continue command while the reply is being generated.');
+            }
+
+            // Prevent infinite recursion
+            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
+
+            const options = prompt?.trim() ? { quiet_prompt: prompt.trim(), quietToLoud: true } : {};
+            await Generate('continue', options);
+
+            resolve();
+        }, 1);
+    });
+
+    if (shouldAwait) {
+        await outerPromise;
+    }
 
     return '';
 }
