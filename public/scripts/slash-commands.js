@@ -2015,6 +2015,9 @@ async function echoCallback(args, value) {
         args.severity = null;
     }
 
+    // Make sure that the value is a string
+    value = String(value);
+
     const title = args.title ? args.title : undefined;
     const severity = args.severity ? args.severity : 'info';
 
