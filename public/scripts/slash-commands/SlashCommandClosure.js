@@ -1,5 +1,5 @@
 import { substituteParams } from '../../script.js';
-import { delay, escapeRegex } from '../utils.js';
+import { delay, escapeRegex, uuidv4 } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandBreak } from './SlashCommandBreak.js';
@@ -27,6 +27,14 @@ export class SlashCommandClosure {
     /**@type {string}*/ rawText;
     /**@type {string}*/ fullText;
     /**@type {string}*/ parserContext;
+    /**@type {string}*/ #source = uuidv4();
+    get source() { return this.#source; }
+    set source(value) {
+        this.#source = value;
+        for (const executor of this.executorList) {
+            executor.source = value;
+        }
+    }
 
     /**@type {number}*/
     get commandCount() {
@@ -114,6 +122,7 @@ export class SlashCommandClosure {
         closure.rawText = this.rawText;
         closure.fullText = this.fullText;
         closure.parserContext = this.parserContext;
+        closure.source = this.source;
         closure.onProgress = this.onProgress;
         return closure;
     }

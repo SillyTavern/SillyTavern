@@ -58,6 +58,8 @@ export class QuickReply {
     /**@type {Popup}*/ editorPopup;
     /**@type {HTMLElement}*/ editorDom;
 
+    /**@type {HTMLTextAreaElement}*/ editorMessage;
+    /**@type {HTMLElement}*/ editorSyntax;
     /**@type {HTMLElement}*/ editorExecuteBtn;
     /**@type {HTMLElement}*/ editorExecuteBtnPause;
     /**@type {HTMLElement}*/ editorExecuteBtnStop;
@@ -500,6 +502,7 @@ export class QuickReply {
             message.style.setProperty('text-shadow', 'none', 'important');
             /**@type {HTMLElement}*/
             const messageSyntaxInner = dom.querySelector('#qr--modal-messageSyntaxInner');
+            this.editorSyntax = messageSyntaxInner;
             updateSyntax();
             updateWrap();
             updateTabSize();
@@ -720,7 +723,7 @@ export class QuickReply {
         }
     }
 
-    getEditorPosition(start, end) {
+    getEditorPosition(start, end, message = null) {
         const inputRect = this.editorMessage.getBoundingClientRect();
         const style = window.getComputedStyle(this.editorMessage);
         if (!this.clone) {
@@ -745,21 +748,22 @@ export class QuickReply {
         this.clone.style.top = `${inputRect.top}px`;
         this.clone.style.whiteSpace = style.whiteSpace;
         this.clone.style.tabSize = style.tabSize;
-        const text = this.editorMessage.value;
+        const text = message ?? this.editorMessage.value;
         const before = text.slice(0, start);
         this.clone.textContent = before;
         const locator = document.createElement('span');
         locator.textContent = text.slice(start, end);
         this.clone.append(locator);
         this.clone.append(text.slice(end));
-        this.clone.scrollTop = this.editorMessage.scrollTop;
-        this.clone.scrollLeft = this.editorMessage.scrollLeft;
+        this.clone.scrollTop = this.editorSyntax.scrollTop;
+        this.clone.scrollLeft = this.editorSyntax.scrollLeft;
         const locatorRect = locator.getBoundingClientRect();
+        const bodyRect = document.body.getBoundingClientRect();
         const location = {
-            left: locatorRect.left,
-            right: locatorRect.right,
-            top: locatorRect.top,
-            bottom: locatorRect.bottom,
+            left: locatorRect.left - bodyRect.left,
+            right: locatorRect.right - bodyRect.left,
+            top: locatorRect.top - bodyRect.top,
+            bottom: locatorRect.bottom - bodyRect.top,
         };
         // this.clone.remove();
         return location;
@@ -821,8 +825,10 @@ export class QuickReply {
                 //TODO populate debug code from closure.fullText and get locations, highlights, etc. from that
                 //TODO keep some kind of reference (human identifier) *where* the closure code comes from?
                 //TODO QR name, chat input, deserialized closure, ... ?
-                this.editorMessage.value = closure.fullText;
-                this.editorMessage.dispatchEvent(new Event('input', { bubbles:true }));
+                // this.editorMessage.value = closure.fullText;
+                // this.editorMessage.dispatchEvent(new Event('input', { bubbles:true }));
+                syntax.innerHTML = hljs.highlight(`${closure.fullText}${closure.fullText.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value;
+                const source = closure.source;
                 this.editorDebugState.innerHTML = '';
                 let ci = -1;
                 const varNames = [];
@@ -996,19 +1002,21 @@ export class QuickReply {
                         const title = document.createElement('div'); {
                             title.classList.add('qr--title');
                             title.textContent = isCurrent ? 'Current Scope' : 'Parent Scope';
-                            let hi;
-                            title.addEventListener('pointerenter', ()=>{
-                                const loc = this.getEditorPosition(Math.max(0, c.executorList[0].start - 1), c.executorList.slice(-1)[0].end);
-                                const layer = syntax.getBoundingClientRect();
-                                hi = document.createElement('div');
-                                hi.classList.add('qr--highlight-secondary');
-                                hi.style.left = `${loc.left - layer.left}px`;
-                                hi.style.width = `${loc.right - loc.left}px`;
-                                hi.style.top = `${loc.top - layer.top}px`;
-                                hi.style.height = `${loc.bottom - loc.top}px`;
-                                syntax.append(hi);
-                            });
-                            title.addEventListener('pointerleave', ()=>hi?.remove());
+                            if (c.source == source) {
+                                let hi;
+                                title.addEventListener('pointerenter', ()=>{
+                                    const loc = this.getEditorPosition(Math.max(0, c.executorList[0].start - 1), c.executorList.slice(-1)[0].end, c.fullText);
+                                    const layer = syntax.getBoundingClientRect();
+                                    hi = document.createElement('div');
+                                    hi.classList.add('qr--highlight-secondary');
+                                    hi.style.left = `${loc.left - layer.left}px`;
+                                    hi.style.width = `${loc.right - loc.left}px`;
+                                    hi.style.top = `${loc.top - layer.top}px`;
+                                    hi.style.height = `${loc.bottom - loc.top}px`;
+                                    syntax.append(hi);
+                                });
+                                title.addEventListener('pointerleave', ()=>hi?.remove());
+                            }
                             wrap.append(title);
                         }
                         for (const key of Object.keys(scope.variables)) {
@@ -1128,26 +1136,41 @@ export class QuickReply {
                             title.textContent = 'Call Stack';
                             wrap.append(title);
                         }
+                        let ei = -1;
                         for (const executor of this.debugController.cmdStack.toReversed()) {
+                            ei++;
+                            const c = this.debugController.stack.toReversed()[ei];
                             const item = document.createElement('div'); {
                                 item.classList.add('qr--item');
-                                item.textContent = `/${executor.name}`;
-                                if (executor.command.name == 'run') {
-                                    item.textContent += `${(executor.name == ':' ? '' : ' ')}${executor.unnamedArgumentList[0]?.value}`;
+                                if (executor.source == source) {
+                                    let hi;
+                                    item.addEventListener('pointerenter', ()=>{
+                                        const loc = this.getEditorPosition(Math.max(0, executor.start - 1), executor.end, c.fullText);
+                                        const layer = syntax.getBoundingClientRect();
+                                        hi = document.createElement('div');
+                                        hi.classList.add('qr--highlight-secondary');
+                                        hi.style.left = `${loc.left - layer.left}px`;
+                                        hi.style.width = `${loc.right - loc.left}px`;
+                                        hi.style.top = `${loc.top - layer.top}px`;
+                                        hi.style.height = `${loc.bottom - loc.top}px`;
+                                        syntax.append(hi);
+                                    });
+                                    item.addEventListener('pointerleave', ()=>hi?.remove());
                                 }
-                                let hi;
-                                item.addEventListener('pointerenter', ()=>{
-                                    const loc = this.getEditorPosition(Math.max(0, executor.start - 1), executor.end);
-                                    const layer = syntax.getBoundingClientRect();
-                                    hi = document.createElement('div');
-                                    hi.classList.add('qr--highlight-secondary');
-                                    hi.style.left = `${loc.left - layer.left}px`;
-                                    hi.style.width = `${loc.right - loc.left}px`;
-                                    hi.style.top = `${loc.top - layer.top}px`;
-                                    hi.style.height = `${loc.bottom - loc.top}px`;
-                                    syntax.append(hi);
-                                });
-                                item.addEventListener('pointerleave', ()=>hi?.remove());
+                                const cmd = document.createElement('div'); {
+                                    cmd.classList.add('qr--cmd');
+                                    cmd.textContent = `/${executor.name}`;
+                                    if (executor.command.name == 'run') {
+                                        cmd.textContent += `${(executor.name == ':' ? '' : ' ')}${executor.unnamedArgumentList[0]?.value}`;
+                                    }
+                                    item.append(cmd);
+                                }
+                                const src = document.createElement('div'); {
+                                    src.classList.add('qr--source');
+                                    const line = closure.fullText.slice(0, executor.start).split('\n').length;
+                                    src.textContent = `${executor.source}:${line}`;
+                                    item.append(src);
+                                }
                                 wrap.append(item);
                             }
                         }
@@ -1157,7 +1180,7 @@ export class QuickReply {
                 this.editorDebugState.append(buildVars(closure.scope, true));
                 this.editorDebugState.append(buildStack());
                 this.editorDebugState.classList.add('qr--active');
-                const loc = this.getEditorPosition(Math.max(0, executor.start - 1), executor.end);
+                const loc = this.getEditorPosition(Math.max(0, executor.start - 1), executor.end, closure.fullText);
                 const layer = syntax.getBoundingClientRect();
                 const hi = document.createElement('div');
                 hi.classList.add('qr--highlight');
@@ -1291,7 +1314,7 @@ export class QuickReply {
     }
 
 
-    async execute(args = {}, isEditor = false, isRun = false) {
+    async execute(args = {}, isEditor = false, isRun = false, options = {}) {
         if (this.message?.length > 0 && this.onExecute) {
             const scope = new SlashCommandScope();
             for (const key of Object.keys(args)) {
@@ -1303,11 +1326,12 @@ export class QuickReply {
                 this.abortController = new SlashCommandAbortController();
             }
             return await this.onExecute(this, {
-                message:this.message,
+                message: this.message,
                 isAutoExecute: args.isAutoExecute ?? false,
                 isEditor,
                 isRun,
                 scope,
+                executionOptions: options,
             });
         }
     }

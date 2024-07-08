@@ -176,7 +176,7 @@ const init = async () => {
     buttons.show();
     settings.onSave = ()=>buttons.refresh();
 
-    window['executeQuickReplyByName'] = async(name, args = {}) => {
+    window['executeQuickReplyByName'] = async(name, args = {}, options = {}) => {
         let qr = [...settings.config.setList, ...(settings.chatConfig?.setList ?? [])]
             .map(it=>it.set.qrList)
             .flat()
@@ -191,7 +191,7 @@ const init = async () => {
             }
         }
         if (qr && qr.onExecute) {
-            return await qr.execute(args, false, true);
+            return await qr.execute(args, false, true, options);
         } else {
             throw new Error(`No Quick Reply found for "${name}".`);
         }

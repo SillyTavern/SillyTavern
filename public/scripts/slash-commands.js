@@ -1824,7 +1824,12 @@ async function runCallback(args, name) {
 
     try {
         name = name.trim();
-        return await window['executeQuickReplyByName'](name, args);
+        /**@type {ExecuteSlashCommandsOptions} */
+        const options = {
+            abortController: args._abortController,
+            debugController: args._debugController,
+        };
+        return await window['executeQuickReplyByName'](name, args, options);
     } catch (error) {
         throw new Error(`Error running Quick Reply "${name}": ${error.message}`);
     }
@@ -3372,6 +3377,7 @@ const clearCommandProgressDebounced = debounce(clearCommandProgress);
  * @prop {SlashCommandAbortController} [abortController] (null) Controller used to abort or pause command execution
  * @prop {SlashCommandDebugController} [debugController] (null) Controller used to control debug execution
  * @prop {(done:number, total:number)=>void} [onProgress] (null) Callback to handle progress events
+ * @prop {string} [source] (null) String indicating where the code come from (e.g., QR name)
  */
 
 /**
@@ -3379,6 +3385,7 @@ const clearCommandProgressDebounced = debounce(clearCommandProgress);
  * @prop {SlashCommandScope} [scope] (null) The scope to be used when executing the commands.
  * @prop {{[id:PARSER_FLAG]:boolean}} [parserFlags] (null) Parser flags to apply
  * @prop {boolean} [clearChatInput] (false) Whether to clear the chat input textarea
+ * @prop {string} [source] (null) String indicating where the code come from (e.g., QR name)
  */
 
 /**
@@ -3394,6 +3401,7 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
         scope: null,
         parserFlags: null,
         clearChatInput: false,
+        source: null,
     }, options);
 
     isExecutingCommandsFromChatInput = true;
@@ -3423,6 +3431,7 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
             onProgress: (done, total) => ta.style.setProperty('--prog', `${done / total * 100}%`),
             parserFlags: options.parserFlags,
             scope: options.scope,
+            source: options.source,
         });
         if (commandsFromChatInputAbortController.signal.aborted) {
             document.querySelector('#form_sheld').classList.add('script_aborted');
@@ -3481,6 +3490,7 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
         abortController: null,
         debugController: null,
         onProgress: null,
+        source: null,
     }, options);
 
     let closure;
@@ -3489,6 +3499,7 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
         closure.scope.parent = options.scope;
         closure.onProgress = options.onProgress;
         closure.debugController = options.debugController;
+        closure.source = options.source;
     } catch (e) {
         if (options.handleParserErrors && e instanceof SlashCommandParserError) {
             /**@type {SlashCommandParserError}*/

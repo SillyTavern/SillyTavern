@@ -748,6 +748,8 @@
 				}
 
 				.qr--stack {
+                    display: grid;
+                    grid-template-columns: 1fr 0fr;
 					.qr--title {
 						grid-column: 1 / 3;
 						font-weight: bold;
@@ -757,10 +759,18 @@
 						margin-top: 1em;
 					}
 					.qr--item {
-						margin-left: 0.5em;
+                        display: contents;
 						&:nth-child(2n + 1) {
-							background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.25);
+                            .qr--name, .qr--source {
+                                background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.25);
+                            }
 						}
+                        .qr--name {
+                            margin-left: 0.5em;
+                        }
+                        .qr--source {
+                            opacity: 0.5;
+                        }
 					}
 				}
             }

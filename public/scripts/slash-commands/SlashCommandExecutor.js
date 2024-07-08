@@ -1,4 +1,5 @@
 // eslint-disable-next-line no-unused-vars
+import { uuidv4 } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';
 // eslint-disable-next-line no-unused-vars
 import { SlashCommandClosure } from './SlashCommandClosure.js';
@@ -16,6 +17,17 @@ export class SlashCommandExecutor {
     /**@type {Number}*/ startUnnamedArgs;
     /**@type {Number}*/ endUnnamedArgs;
     /**@type {String}*/ name = '';
+    /**@type {String}*/ #source = uuidv4();
+    get source() { return this.#source; }
+    set source(value) {
+        this.#source = value;
+        for (const arg of this.namedArgumentList.filter(it=>it.value instanceof SlashCommandClosure)) {
+            arg.value.source = value;
+        }
+        for (const arg of this.unnamedArgumentList.filter(it=>it.value instanceof SlashCommandClosure)) {
+            arg.value.source = value;
+        }
+    }
     /**@type {SlashCommand}*/ command;
     // @ts-ignore
     /**@type {SlashCommandNamedArgumentAssignment[]}*/ namedArgumentList = [];

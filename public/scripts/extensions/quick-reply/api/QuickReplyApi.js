@@ -73,13 +73,14 @@ export class QuickReplyApi {
      * @param {String} setName name of the existing quick reply set
      * @param {String} label label of the existing quick reply (text on the button)
      * @param {Object} [args] optional arguments
+     * @param {import('../../../slash-commands.js').ExecuteSlashCommandsOptions} [options] optional execution options
      */
-    async executeQuickReply(setName, label, args = {}) {
+    async executeQuickReply(setName, label, args = {}, options = {}) {
         const qr = this.getQrByLabel(setName, label);
         if (!qr) {
             throw new Error(`No quick reply with label "${label}" in set "${setName}" found.`);
         }
-        return await qr.execute(args);
+        return await qr.execute(args, false, false, options);
     }
 
 

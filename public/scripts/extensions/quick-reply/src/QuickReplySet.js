@@ -108,18 +108,9 @@ export class QuickReplySet {
     async debug(qr) {
         const parser = new SlashCommandParser();
         const closure = parser.parse(qr.message, true, [], qr.abortController, qr.debugController);
+        closure.source = `${this.name}.${qr.label}`;
         closure.onProgress = (done, total) => qr.updateEditorProgress(done, total);
         closure.scope.setMacro('arg::*', '');
-        // closure.abortController = qr.abortController;
-        // closure.debugController = qr.debugController;
-        // const stepper = closure.executeGenerator();
-        // let step;
-        // let isStepping = false;
-        // while (!step?.done) {
-        //     step = await stepper.next(isStepping);
-        //     isStepping = yield(step.value);
-        // }
-        // return step.value;
         return (await closure.execute())?.pipe;
     }
     /**
@@ -131,6 +122,7 @@ export class QuickReplySet {
      * @param {boolean} [options.isEditor] (false) whether the execution is triggered by the QR editor
      * @param {boolean} [options.isRun] (false) whether the execution is triggered by /run or /: (window.executeQuickReplyByName)
      * @param {SlashCommandScope} [options.scope] (null) scope to be used when running the command
+     * @param {import('../../../slash-commands.js').ExecuteSlashCommandsOptions} [options.executionOptions] ({}) further execution options
      * @returns
      */
     async executeWithOptions(qr, options = {}) {
@@ -140,7 +132,9 @@ export class QuickReplySet {
             isEditor:false,
             isRun:false,
             scope:null,
+            executionOptions:{},
         }, options);
+        const execOptions = options.executionOptions;
         /**@type {HTMLTextAreaElement}*/
         const ta = document.querySelector('#send_textarea');
         const finalMessage = options.message ?? qr.message;
@@ -158,21 +152,24 @@ export class QuickReplySet {
         if (input[0] == '/' && !this.disableSend) {
             let result;
             if (options.isAutoExecute || options.isRun) {
-                result = await executeSlashCommandsWithOptions(input, {
+                result = await executeSlashCommandsWithOptions(input, Object.assign(execOptions, {
                     handleParserErrors: true,
                     scope: options.scope,
-                });
+                    source: `${this.name}.${qr.label}`,
+                }));
             } else if (options.isEditor) {
-                result = await executeSlashCommandsWithOptions(input, {
+                result = await executeSlashCommandsWithOptions(input, Object.assign(execOptions, {
                     handleParserErrors: false,
                     scope: options.scope,
                     abortController: qr.abortController,
+                    source: `${this.name}.${qr.label}`,
                     onProgress: (done, total) => qr.updateEditorProgress(done, total),
-                });
+                }));
             } else {
-                result = await executeSlashCommandsOnChatInput(input, {
+                result = await executeSlashCommandsOnChatInput(input, Object.assign(execOptions, {
                     scope: options.scope,
-                });
+                    source: `${this.name}.${qr.label}`,
+                }));
             }
             return typeof result === 'object' ? result?.pipe : '';
         }

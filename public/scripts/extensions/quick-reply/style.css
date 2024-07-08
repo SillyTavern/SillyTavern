@@ -667,6 +667,10 @@
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--scope .qr--pipe .qr--val {
   opacity: 0.5;
 }
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack {
+  display: grid;
+  grid-template-columns: 1fr 0fr;
+}
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack .qr--title {
   grid-column: 1 / 3;
   font-weight: bold;
@@ -676,10 +680,17 @@
   margin-top: 1em;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack .qr--item {
+  display: contents;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack .qr--item:nth-child(2n + 1) .qr--name,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack .qr--item:nth-child(2n + 1) .qr--source {
+  background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.25);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack .qr--item .qr--name {
   margin-left: 0.5em;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack .qr--item:nth-child(2n + 1) {
-  background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.25);
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack .qr--item .qr--source {
+  opacity: 0.5;
 }
 @keyframes qr--progressPulse {
   0%,
