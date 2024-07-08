@@ -302,6 +302,32 @@ export function throttle(func, limit = 300) {
 }
 
 /**
+ * Creates a debounced throttle function that only invokes func at most once per every limit milliseconds.
+ * @param {function} func The function to throttle.
+ * @param {number} [limit=300] The limit in milliseconds.
+ * @returns {function} The throttled function.
+ */
+export function debouncedThrottle(func, limit = 300) {
+    let last, deferTimer;
+    let db = debounce(func);
+
+    return function() {
+        let now = +new Date, args = arguments;
+        if(!last || (last && now < last + limit)) {
+            clearTimeout(deferTimer);
+            db.apply(this, args);
+            deferTimer = setTimeout(function() {
+                last = now;
+                func.apply(this, args);
+            }, limit);
+        } else {
+            last = now;
+            func.apply(this, args);
+        }
+    };
+}
+
+/**
  * Checks if an element is in the viewport.
  * @param {Element} el The element to check.
  * @returns {boolean} True if the element is in the viewport, false otherwise.

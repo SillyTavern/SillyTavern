@@ -9,24 +9,21 @@ import {
     eventSource,
     event_types,
     DEFAULT_PRINT_TIMEOUT,
-    substituteParams,
     printCharacters,
 } from '../script.js';
 // eslint-disable-next-line no-unused-vars
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
-import { groupCandidatesFilter, groups, select_group_chats, selected_group } from './group-chats.js';
+import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
 import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents, removeFromArray, getFreeName, debounce } from './utils.js';
 import { power_user } from './power-user.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { isMobile } from './RossAscends-mods.js';
-import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
+import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 import { debounce_timeout } from './constants.js';
 import { INTERACTABLE_CONTROL_CLASS } from './keyboard.js';
-import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
-import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
 import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { renderTemplateAsync } from './templates.js';
 
@@ -53,6 +50,7 @@ export {
     removeTagFromMap,
 };
 
+/** @typedef {import('../scripts/popup.js').Popup} Popup */
 /** @typedef {import('../script.js').Character} Character */
 
 const CHARACTER_FILTER_SELECTOR = '#rm_characters_block .rm_tag_filter';
@@ -717,7 +715,7 @@ async function importTags(character, { forceShow = false } = {}) {
     // Gather the tags to import based on the selected setting
     const tagNamesToImport = await handleTagImport(character, { forceShow });
     if (!tagNamesToImport?.length) {
-        toastr.info('No tags to import', 'Importing Tags');
+        console.debug('No tags to import');
         return;
     }
 
@@ -815,7 +813,7 @@ async function showTagImportPopup(character, existingTags, newTags, folderTags) 
         wider: true, okButton: 'Import', cancelButton: true,
         customButtons: Object.values(importButtons),
         customInputs: [{ id: 'import_remember_option', label: 'Remember my choice', tooltip: 'Remember the chosen import option\nIf anything besides \'Cancel\' is selected, this dialog will not show up anymore.\nTo change this, go to the settings and modify "Tag Import Option".\n\nIf the "Import" option is chosen, the global setting will stay on "Ask".' }],
-        onClose: onCloseRemember
+        onClose: onCloseRemember,
     });
     if (!result) {
         return [];

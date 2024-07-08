@@ -1696,16 +1696,20 @@
                                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                         </div>
                                         <div class="inline-drawer-content">
+                                            <label class="checkbox_label flexWrap alignItemsCenter" for="continue_postfix_none">
+                                                <input type="radio" id="continue_postfix_none" name="continue_postfix" value="0">
+                                                <span data-i18n="None">None</span>
+                                            </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="continue_postfix_space">
-                                                <input type="radio" id="continue_postfix_space" name="continue_postfix" value="0">
+                                                <input type="radio" id="continue_postfix_space" name="continue_postfix" value="1">
                                                 <span data-i18n="Space">Space</span>
                                             </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="continue_postfix_newline">
-                                                <input type="radio" id="continue_postfix_newline" name="continue_postfix" value="1">
+                                                <input type="radio" id="continue_postfix_newline" name="continue_postfix" value="2">
                                                 <span data-i18n="Newline">Newline</span>
                                             </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="continue_postfix_double_newline">
-                                                <input type="radio" id="continue_postfix_double_newline" name="continue_postfix" value="2">
+                                                <input type="radio" id="continue_postfix_double_newline" name="continue_postfix" value="3">
                                                 <span data-i18n="Double Newline">Double Newline</span>
                                             </label>
                                             <!-- Hidden input for loading radio buttons from presets. Don't remove! -->
@@ -2348,6 +2352,16 @@
                                     <small data-i18n="Example: 127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
                                     <input id="tabby_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="tabby">
                                 </div>
+                                <div class="flex1">
+                                    <h4>
+                                        <span data-i18n="Tabby Model">Tabby Model</span>
+                                    </h4>
+                                    </h4>
+                                    <div id="tabby_download_model" class="menu_button menu_button_icon">
+                                        <i class="fa-solid fa-download"></i>
+                                        <span data-i18n="Download">Download</span>
+                                    </div>
+                                </div>
                             </div>
                             <div data-tg-type="koboldcpp">
                                 <div class="flex-container flexFlowColumn">
@@ -2450,17 +2464,6 @@
                                     <span data-i18n="Alternative server URL (leave empty to use the default value).">
                                         Alternative server URL (leave empty to use the default value).<br>
                                     </span>
-                                    <div id="ReverseProxyWarningMessage" class="reverse_proxy_warning">
-                                        <b data-i18n="Remove your real OAI API Key from the API panel BEFORE typing anything into this box">
-                                            Remove your real OAI API Key from the API panel BEFORE typing anything
-                                            into this box.
-                                        </b>
-                                        <hr>
-                                        <b data-i18n="We cannot provide support for problems encountered while using an unofficial OpenAI proxy">
-                                            We cannot provide support for problems encountered while using an
-                                            unofficial OpenAI proxy.
-                                        </b>
-                                    </div>
                                 </div>
                                 <div class="wide100p">
                                     <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="5000" />
@@ -2481,6 +2484,20 @@
                                     <div id="openai_proxy_password_show" title="Peek a password" data-i18n="[title]Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
                                 </div>
                             </div>
+                        </div>
+                        <div id="ReverseProxyWarningMessage" class="reverse_proxy_warning">
+                            <b>
+                                <div data-i18n="Using a proxy that you're not running yourself is a risk to your data privacy.">
+                                    Using a proxy that you're not running yourself is a risk to your data privacy.
+                                </div>
+                                <div data-i18n="ANY support requests will be REFUSED if you are using a proxy.">
+                                    ANY support requests will be REFUSED if you are using a proxy.
+                                </div>
+                                <hr>
+                                <i data-i18n="Do not proceed if you do not agree to this!">
+                                    Do not proceed if you do not agree to this!
+                                </i>
+                            </b>
                         </div>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4><span data-i18n="OpenAI API key">OpenAI API key</span></h4>
@@ -2837,6 +2854,7 @@
                                 <option value="llama3-70b-8192">llama3-70b-8192</option>
                                 <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
                                 <option value="gemma-7b-it">gemma-7b-it</option>
+                                <option value="gemma2-9b-it">gemma2-9b-it</option>
                             </select>
                         </div>
                         <div id="perplexity_form" data-source="perplexity">

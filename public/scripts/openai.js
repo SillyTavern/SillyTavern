@@ -191,6 +191,7 @@ const character_names_behavior = {
 };
 
 const continue_postfix_types = {
+    NONE: '',
     SPACE: ' ',
     NEWLINE: '\n',
     DOUBLE_NEWLINE: '\n\n',
@@ -3138,6 +3139,9 @@ function setNamesBehaviorControls() {
 
 function setContinuePostfixControls() {
     switch (oai_settings.continue_postfix) {
+        case continue_postfix_types.NONE:
+            $('#continue_postfix_none').prop('checked', true);
+            break;
         case continue_postfix_types.SPACE:
             $('#continue_postfix_space').prop('checked', true);
             break;
@@ -4112,7 +4116,7 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
-        else if (['llama3-8b-8192', 'llama3-70b-8192', 'gemma-7b-it'].includes(oai_settings.groq_model)) {
+        else if (['llama3-8b-8192', 'llama3-70b-8192', 'gemma-7b-it', 'gemma2-9b-it'].includes(oai_settings.groq_model)) {
             $('#openai_max_context').attr('max', max_8k);
         }
         else if (['mixtral-8x7b-32768'].includes(oai_settings.groq_model)) {
@@ -5074,6 +5078,12 @@ $(document).ready(async function () {
 
     $('#continue_postifx').on('input', function () {
         oai_settings.continue_postfix = String($(this).val());
+        setContinuePostfixControls();
+        saveSettingsDebounced();
+    });
+
+    $('#continue_postfix_none').on('input', function () {
+        oai_settings.continue_postfix = continue_postfix_types.NONE;
         setContinuePostfixControls();
         saveSettingsDebounced();
     });

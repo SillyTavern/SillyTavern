@@ -332,6 +332,16 @@ export function initDefaultSlashCommands() {
         name: 'continue',
         callback: continueChatCallback,
         aliases: ['cont'],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'await',
+                'Whether to await for the continued generation before proceeding',
+                [ARGUMENT_TYPE.BOOLEAN],
+                false,
+                false,
+                'false',
+            ),
+        ],
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'prompt', [ARGUMENT_TYPE.STRING], false,
@@ -342,15 +352,18 @@ export function initDefaultSlashCommands() {
             Continues the last message in the chat, with an optional additional prompt.
         </div>
         <div>
+            If <code>await=true</code> named argument is passed, the command will await for the continued generation before proceeding.
+        </div>
+        <div>
             <strong>Example:</strong>
             <ul>
                 <li>
                     <pre><code>/continue</code></pre>
-                    Continues the chat with no additional prompt.
+                    Continues the chat with no additional prompt and immediately proceeds to the next command.
                 </li>
                 <li>
-                    <pre><code>/continue Let's explore this further...</code></pre>
-                    Continues the chat with the provided prompt.
+                    <pre><code>/continue await=true Let's explore this further...</code></pre>
+                    Continues the chat with the provided prompt and waits for the generation to finish.
                 </li>
             </ul>
         </div>
@@ -2635,19 +2648,35 @@ async function openChat(id) {
     await reloadCurrentChat();
 }
 
-function continueChatCallback(_, prompt) {
-    setTimeout(async () => {
+async function continueChatCallback(args, prompt) {
+    const shouldAwait = isTrueBoolean(args?.await);
+
+    const outerPromise = new Promise(async (resolve, reject) => {
         try {
             await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
         } catch {
             console.warn('Timeout waiting for generation unlock');
             toastr.warning('Cannot run /continue command while the reply is being generated.');
+            return reject();
         }
 
-        // Prevent infinite recursion
-        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
-        $('#option_continue').trigger('click', { fromSlashCommand: true, additionalPrompt: prompt });
-    }, 1);
+        try {
+            // Prevent infinite recursion
+            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
+
+            const options = prompt?.trim() ? { quiet_prompt: prompt.trim(), quietToLoud: true } : {};
+            await Generate('continue', options);
+
+            resolve();
+        } catch (error) {
+            console.error('Error running /continue command:', error);
+            reject();
+        }
+    });
+
+    if (shouldAwait) {
+        await outerPromise;
+    }
 
     return '';
 }
