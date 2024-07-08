@@ -2464,17 +2464,6 @@
                                     <span data-i18n="Alternative server URL (leave empty to use the default value).">
                                         Alternative server URL (leave empty to use the default value).<br>
                                     </span>
-                                    <div id="ReverseProxyWarningMessage" class="reverse_proxy_warning">
-                                        <b data-i18n="Remove your real OAI API Key from the API panel BEFORE typing anything into this box">
-                                            Remove your real OAI API Key from the API panel BEFORE typing anything
-                                            into this box.
-                                        </b>
-                                        <hr>
-                                        <b data-i18n="We cannot provide support for problems encountered while using an unofficial OpenAI proxy">
-                                            We cannot provide support for problems encountered while using an
-                                            unofficial OpenAI proxy.
-                                        </b>
-                                    </div>
                                 </div>
                                 <div class="wide100p">
                                     <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="5000" />
@@ -2495,6 +2484,20 @@
                                     <div id="openai_proxy_password_show" title="Peek a password" data-i18n="[title]Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
                                 </div>
                             </div>
+                        </div>
+                        <div id="ReverseProxyWarningMessage" class="reverse_proxy_warning">
+                            <b>
+                                <div data-i18n="Using a proxy that you're not running yourself is a risk to your data privacy.">
+                                    Using a proxy that you're not running yourself is a risk to your data privacy.
+                                </div>
+                                <div data-i18n="ANY support requests will be REFUSED if you are using a proxy.">
+                                    ANY support requests will be REFUSED if you are using a proxy.
+                                </div>
+                                <hr>
+                                <i data-i18n="Do not proceed if you do not agree to this!">
+                                    Do not proceed if you do not agree to this!
+                                </i>
+                            </b>
                         </div>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4><span data-i18n="OpenAI API key">OpenAI API key</span></h4>
