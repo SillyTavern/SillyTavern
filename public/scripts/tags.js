@@ -717,7 +717,7 @@ async function importTags(character, { forceShow = false } = {}) {
     // Gather the tags to import based on the selected setting
     const tagNamesToImport = await handleTagImport(character, { forceShow });
     if (!tagNamesToImport?.length) {
-        toastr.info('No tags to import', 'Importing Tags');
+        console.debug('No tags to import');
         return;
     }
 
