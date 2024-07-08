@@ -160,7 +160,7 @@ import {
 import { debounce_timeout } from './scripts/constants.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
-import { COMMENT_NAME_DEFAULT, executeSlashCommands, executeSlashCommandsOnChatInput, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, registerSlashCommand, stopScriptExecution } from './scripts/slash-commands.js';
+import { COMMENT_NAME_DEFAULT, executeSlashCommands, executeSlashCommandsOnChatInput, executeSlashCommandsWithOptions, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, registerSlashCommand, stopScriptExecution } from './scripts/slash-commands.js';
 import {
     tag_map,
     tags,
@@ -7863,22 +7863,23 @@ window['SillyTavern'].getContext = function () {
         saveReply,
         substituteParams,
         substituteParamsExtended,
+        SlashCommandParser,
+        executeSlashCommandsWithOptions,
+        /** @deprecated Use SlashCommandParser.addCommandObject() instead */
         registerSlashCommand: registerSlashCommand,
+        /** @deprecated Use executeSlashCommandWithOptions instead */
         executeSlashCommands: executeSlashCommands,
         timestampToMoment: timestampToMoment,
-        /**
-         * @deprecated Handlebars for extensions are no longer supported.
-         */
+        /** @deprecated Handlebars for extensions are no longer supported. */
         registerHelper: () => { },
         registerMacro: MacrosParser.registerMacro.bind(MacrosParser),
         unregisterMacro: MacrosParser.unregisterMacro.bind(MacrosParser),
         registedDebugFunction: registerDebugFunction,
-        /**
-         * @deprecated Use renderExtensionTemplateAsync instead.
-         */
+        /** @deprecated Use renderExtensionTemplateAsync instead. */
         renderExtensionTemplate: renderExtensionTemplate,
         renderExtensionTemplateAsync: renderExtensionTemplateAsync,
         registerDataBankScraper: ScraperManager.registerDataBankScraper,
+        /** @deprecated Use callGenericPopup or Popup instead. */
         callPopup: callPopup,
         callGenericPopup: callGenericPopup,
         showLoader: showLoader,
@@ -7900,10 +7901,9 @@ window['SillyTavern'].getContext = function () {
         tagMap: tag_map,
         menuType: menu_type,
         createCharacterData: create_save,
-        /**
-         * @deprecated Legacy snake-case naming, compatibility with old extensions
-         */
+        /** @deprecated Legacy snake-case naming, compatibility with old extensions */
         event_types: event_types,
+        Popup: Popup,
         POPUP_TYPE: POPUP_TYPE,
         POPUP_RESULT: POPUP_RESULT,
     };
