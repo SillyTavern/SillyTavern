@@ -332,7 +332,7 @@ export function initDefaultSlashCommands() {
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'await',
-                'Whether to await for the continued generation before continuing',
+                'Whether to await for the continued generation before proceeding',
                 [ARGUMENT_TYPE.BOOLEAN],
                 false,
                 false,
@@ -349,18 +349,18 @@ export function initDefaultSlashCommands() {
             Continues the last message in the chat, with an optional additional prompt.
         </div>
         <div>
-            If <code>await=true</code> named argument is passed, the command will await for the continued generation before continuing.
+            If <code>await=true</code> named argument is passed, the command will await for the continued generation before proceeding.
         </div>
         <div>
             <strong>Example:</strong>
             <ul>
                 <li>
                     <pre><code>/continue</code></pre>
-                    Continues the chat with no additional prompt.
+                    Continues the chat with no additional prompt and immediately proceeds to the next command.
                 </li>
                 <li>
-                    <pre><code>/continue Let's explore this further...</code></pre>
-                    Continues the chat with the provided prompt.
+                    <pre><code>/continue await=true Let's explore this further...</code></pre>
+                    Continues the chat with the provided prompt and waits for the generation to finish.
                 </li>
             </ul>
         </div>
