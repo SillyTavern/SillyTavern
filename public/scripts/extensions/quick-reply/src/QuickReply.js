@@ -828,6 +828,7 @@ export class QuickReply {
                 // this.editorMessage.value = closure.fullText;
                 // this.editorMessage.dispatchEvent(new Event('input', { bubbles:true }));
                 syntax.innerHTML = hljs.highlight(`${closure.fullText}${closure.fullText.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value;
+                this.editorDom.querySelector('label[for="qr--modal-message"]').textContent = closure.source;
                 const source = closure.source;
                 this.editorDebugState.innerHTML = '';
                 let ci = -1;
@@ -1226,6 +1227,7 @@ export class QuickReply {
         if (noSyntax) {
             this.editorDom.querySelector('#qr--modal-messageHolder').classList.add('qr--noSyntax');
         }
+        this.editorDom.querySelector('label[for="qr--modal-message"]').textContent = 'Message / Command: ';
         this.editorMessage.value = oText;
         this.editorMessage.dispatchEvent(new Event('input', { bubbles:true }));
         this.editorExecutePromise = null;
