@@ -433,8 +433,11 @@ export class SlashCommandClosure {
      */
     #lintPipe(command) {
         if (this.scope.pipe === undefined || this.scope.pipe === null) {
-            console.warn(`${command.name} returned undefined or null. Auto-fixing to empty string.`);
+            console.warn(`/${command.name} returned undefined or null. Auto-fixing to empty string.`);
             this.scope.pipe = '';
+        } else if (!(typeof this.scope.pipe == 'string' || this.scope.pipe instanceof SlashCommandClosure)) {
+            console.warn(`/${command.name} returned illegal type (${typeof this.scope.pipe} - ${this.scope.pipe.constructor?.name ?? ''}). Auto-fixing to stringified JSON.`);
+            this.scope.pipe = JSON.stringify(this.scope.pipe) ?? '';
         }
     }
 }
