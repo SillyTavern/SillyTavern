@@ -81,6 +81,13 @@
                 filter: brightness(1.2);
             }
 
+            .qr--hidden {
+                display: none;
+            }
+            .qr--button-icon {
+                margin: 0 0.5em;
+            }
+
             >.qr--button-expander {
                 display: none;
             }
@@ -242,6 +249,14 @@
                     padding: 0.75em;
                 }
 
+                .qr--set-itemLabelContainer {
+                    display: flex;
+                    align-items: center;
+                    .qr--set-itemIcon:not(.fa-solid) {
+                        display: none;
+                    }
+                }
+
                 .qr--set-itemLabel,
                 .qr--action {
                     margin: 0;
@@ -387,13 +402,24 @@
 						flex: 1 1 1px;
 						display: flex;
 						flex-direction: column;
-						> .qr--labelText {
+                        &.qr--fit {
+                            flex: 0 0 auto;
+                            justify-content: center;
+                        }
+                        .qr--inputGroup {
+                            display: flex;
+                            gap: 0.5em;
+                            input {
+                                flex: 1 1 auto;
+                            }
+                        }
+						.qr--labelText {
 							flex: 1 1 auto;
 						}
-						> .qr--labelHint {
+						.qr--labelHint {
 							flex: 1 1 auto;
 						}
-						> input {
+						input {
 							flex: 0 0 auto;
 						}
 					}

@@ -9,7 +9,7 @@ import { SlashCommandExecutor } from '../../../slash-commands/SlashCommandExecut
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommandParserError } from '../../../slash-commands/SlashCommandParserError.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
-import { debounce, getSortableDelay } from '../../../utils.js';
+import { debounce, getSortableDelay, showFontAwesomePicker } from '../../../utils.js';
 import { log, warn } from '../index.js';
 import { QuickReplyContextLink } from './QuickReplyContextLink.js';
 import { QuickReplySet } from './QuickReplySet.js';
@@ -27,31 +27,35 @@ export class QuickReply {
 
 
 
-    /**@type {Number}*/ id;
-    /**@type {String}*/ label = '';
-    /**@type {String}*/ title = '';
-    /**@type {String}*/ message = '';
+    /**@type {number}*/ id;
+    /**@type {string}*/ icon;
+    /**@type {string}*/ label = '';
+    /**@type {boolean}*/ showLabel = false;
+    /**@type {string}*/ title = '';
+    /**@type {string}*/ message = '';
 
     /**@type {QuickReplyContextLink[]}*/ contextList;
 
-    /**@type {Boolean}*/ preventAutoExecute = true;
-    /**@type {Boolean}*/ isHidden = false;
-    /**@type {Boolean}*/ executeOnStartup = false;
-    /**@type {Boolean}*/ executeOnUser = false;
-    /**@type {Boolean}*/ executeOnAi = false;
-    /**@type {Boolean}*/ executeOnChatChange = false;
-    /**@type {Boolean}*/ executeOnGroupMemberDraft = false;
-    /**@type {String}*/ automationId = '';
+    /**@type {boolean}*/ preventAutoExecute = true;
+    /**@type {boolean}*/ isHidden = false;
+    /**@type {boolean}*/ executeOnStartup = false;
+    /**@type {boolean}*/ executeOnUser = false;
+    /**@type {boolean}*/ executeOnAi = false;
+    /**@type {boolean}*/ executeOnChatChange = false;
+    /**@type {boolean}*/ executeOnGroupMemberDraft = false;
+    /**@type {string}*/ automationId = '';
 
-    /**@type {Function}*/ onExecute;
+    /**@type {function}*/ onExecute;
     /**@type {(qr:QuickReply)=>AsyncGenerator<SlashCommandClosureResult|{closure:SlashCommandClosure, executor:SlashCommandExecutor|SlashCommandClosureResult}, SlashCommandClosureResult, boolean>}*/ onDebug;
-    /**@type {Function}*/ onDelete;
-    /**@type {Function}*/ onUpdate;
+    /**@type {function}*/ onDelete;
+    /**@type {function}*/ onUpdate;
 
 
     /**@type {HTMLElement}*/ dom;
+    /**@type {HTMLElement}*/ domIcon;
     /**@type {HTMLElement}*/ domLabel;
     /**@type {HTMLElement}*/ settingsDom;
+    /**@type {HTMLElement}*/ settingsDomIcon;
     /**@type {HTMLInputElement}*/ settingsDomLabel;
     /**@type {HTMLTextAreaElement}*/ settingsDomMessage;
 
@@ -89,6 +93,14 @@ export class QuickReply {
     updateRender() {
         if (!this.dom) return;
         this.dom.title = this.title || this.message;
+        if (this.icon) {
+            this.domIcon.classList.remove('qr--hidden');
+            if (this.showLabel) this.domLabel.classList.remove('qr--hidden');
+            else this.domLabel.classList.add('qr--hidden');
+        } else {
+            this.domIcon.classList.add('qr--hidden');
+            this.domLabel.classList.remove('qr--hidden');
+        }
         this.domLabel.textContent = this.label;
         this.dom.classList[this.hasContext ? 'add' : 'remove']('qr--hasCtx');
     }
@@ -119,9 +131,18 @@ export class QuickReply {
                     }
                     this.execute();
                 });
+                const icon = document.createElement('div'); {
+                    this.domIcon = icon;
+                    icon.classList.add('qr--button-icon');
+                    icon.classList.add('fa-solid');
+                    if (!this.icon) icon.classList.add('qr--hidden');
+                    else icon.classList.add(this.icon);
+                    root.append(icon);
+                }
                 const lbl = document.createElement('div'); {
                     this.domLabel = lbl;
                     lbl.classList.add('qr--button-label');
+                    if (this.icon && !this.showLabel) lbl.classList.add('qr--hidden');
                     lbl.textContent = this.label;
                     root.append(lbl);
                 }
@@ -160,6 +181,21 @@ export class QuickReply {
                 }
                 const lblContainer = document.createElement('div'); {
                     lblContainer.classList.add('qr--set-itemLabelContainer');
+                    const icon = document.createElement('div'); {
+                        this.settingsDomIcon = icon;
+                        icon.title = 'Click to change icon';
+                        icon.classList.add('qr--set-itemIcon');
+                        icon.classList.add('menu_button');
+                        if (this.icon) {
+                            icon.classList.add('fa-solid');
+                            icon.classList.add(this.icon);
+                        }
+                        icon.addEventListener('click', async()=>{
+                            let value = await showFontAwesomePicker();
+                            this.updateIcon(value);
+                        });
+                        lblContainer.append(icon);
+                    }
                     const lbl = document.createElement('input'); {
                         this.settingsDomLabel = lbl;
                         lbl.classList.add('qr--set-itemLabel');
@@ -227,6 +263,35 @@ export class QuickReply {
             const popupResult = this.editorPopup.show();
 
             // basics
+            /**@type {HTMLElement}*/
+            const icon = dom.querySelector('#qr--modal-icon');
+            if (this.icon) {
+                icon.classList.add('fa-solid');
+                icon.classList.add(this.icon);
+            }
+            else {
+                icon.textContent = '…';
+            }
+            icon.addEventListener('click', async()=>{
+                let value = await showFontAwesomePicker();
+                if (value === null) return;
+                if (this.icon) icon.classList.remove(this.icon);
+                if (value == '') {
+                    icon.classList.remove('fa-solid');
+                    icon.textContent = '…';
+                } else {
+                    icon.textContent = '';
+                    icon.classList.add('fa-solid');
+                    icon.classList.add(value);
+                }
+                this.updateIcon(value);
+            });
+            /**@type {HTMLInputElement}*/
+            const showLabel = dom.querySelector('#qr--modal-showLabel');
+            showLabel.checked = this.showLabel;
+            showLabel.addEventListener('click', ()=>{
+                this.updateShowLabel(showLabel.checked);
+            });
             /**@type {HTMLInputElement}*/
             const label = dom.querySelector('#qr--modal-label');
             label.value = this.label;
@@ -523,7 +588,7 @@ export class QuickReply {
                     }
                 });
             };
-            const addCtxItem = (/**@type {QuickReplyContextLink}*/link, /**@type {Number}*/idx) => {
+            const addCtxItem = (/**@type {QuickReplyContextLink}*/link, /**@type {number}*/idx) => {
                 /**@type {HTMLElement} */
                 // @ts-ignore
                 const itemDom = tpl.content.querySelector('.qr--ctxItem').cloneNode(true); {
@@ -1312,6 +1377,46 @@ export class QuickReply {
     /**
      * @param {string} value
      */
+    updateIcon(value) {
+        if (this.onUpdate) {
+            if (value === null) return;
+            if (this.settingsDomIcon) {
+                if (this.icon != value) {
+                    if (value == '') {
+                        if (this.icon) {
+                            this.settingsDomIcon.classList.remove(this.icon);
+                        }
+                        this.settingsDomIcon.classList.remove('fa-solid');
+                    } else {
+                        if (this.icon) {
+                            this.settingsDomIcon.classList.remove(this.icon);
+                        } else {
+                            this.settingsDomIcon.classList.add('fa-solid');
+                        }
+                        this.settingsDomIcon.classList.add(value);
+                    }
+                }
+            }
+            this.icon = value;
+            this.updateRender();
+            this.onUpdate(this);
+        }
+    }
+
+    /**
+     * @param {boolean} value
+     */
+    updateShowLabel(value) {
+        if (this.onUpdate) {
+            this.showLabel = value;
+            this.updateRender();
+            this.onUpdate(this);
+        }
+    }
+
+    /**
+     * @param {string} value
+     */
     updateLabel(value) {
         if (this.onUpdate) {
             if (this.settingsDomLabel && this.settingsDomLabel.value != value) {
@@ -1387,6 +1492,8 @@ export class QuickReply {
     toJSON() {
         return {
             id: this.id,
+            icon: this.icon,
+            showLabel: this.showLabel,
             label: this.label,
             title: this.title,
             message: this.message,

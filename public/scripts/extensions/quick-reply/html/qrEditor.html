@@ -2,9 +2,19 @@
 	<div id="qr--main">
 		<h3 data-i18n="Labels and Message">Labels and Message</h3>
 		<div class="qr--labels">
+			<label class="qr--fit">
+				<span class="qr--labelText" data-i18n="Label">Icon</span>
+				<div class="menu_button" id="qr--modal-icon" title="Click to change icon"></div>
+			</label>
 			<label>
 				<span class="qr--labelText" data-i18n="Label">Label</span>
-				<input type="text" class="text_pole" id="qr--modal-label">
+				<div class="qr--inputGroup">
+					<label class="checkbox_label" title="Show label even if an icon is assigned">
+						<input type="checkbox" id="qr--modal-showLabel">
+						Show
+					</label>
+					<input type="text" class="text_pole" id="qr--modal-label">
+				</div>
 			</label>
 			<label>
 				<span class="qr--labelText" data-i18n="Title">Title</span>

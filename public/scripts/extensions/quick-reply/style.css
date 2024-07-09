@@ -72,6 +72,14 @@
   opacity: 1;
   filter: brightness(1.2);
 }
+#qr--bar > .qr--buttons .qr--button .qr--hidden,
+#qr--popout > .qr--body > .qr--buttons .qr--button .qr--hidden {
+  display: none;
+}
+#qr--bar > .qr--buttons .qr--button .qr--button-icon,
+#qr--popout > .qr--body > .qr--buttons .qr--button .qr--button-icon {
+  margin: 0 0.5em;
+}
 #qr--bar > .qr--buttons .qr--button > .qr--button-expander,
 #qr--popout > .qr--body > .qr--buttons .qr--button > .qr--button-expander {
   display: none;
@@ -195,6 +203,13 @@
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > .drag-handle {
   padding: 0.75em;
 }
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemLabelContainer {
+  display: flex;
+  align-items: center;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemLabelContainer .qr--set-itemIcon:not(.fa-solid) {
+  display: none;
+}
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemLabel,
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--action {
   margin: 0;
@@ -314,13 +329,24 @@
   display: flex;
   flex-direction: column;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelText {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label.qr--fit {
+  flex: 0 0 auto;
+  justify-content: center;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--inputGroup {
+  display: flex;
+  gap: 0.5em;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--inputGroup input {
   flex: 1 1 auto;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelHint {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--labelText {
   flex: 1 1 auto;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label > input {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--labelHint {
+  flex: 1 1 auto;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label input {
   flex: 0 0 auto;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer {
