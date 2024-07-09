@@ -40,7 +40,7 @@ router.post('/recognize', jsonParser, async (req, res) => {
         const pipe = await module.default.getPipeline(TASK, model);
         const wav = getWaveFile(audio);
         const start = performance.now();
-        const result = await pipe(wav, { language: lang || null });
+        const result = await pipe(wav, { language: lang || null, task: 'transcribe' });
         const end = performance.now();
         console.log(`Execution duration: ${(end - start) / 1000} seconds`);
         console.log('Transcribed audio:', result.text);
