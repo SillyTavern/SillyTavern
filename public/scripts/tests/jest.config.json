@@ -1,7 +1,0 @@
-{
-    "verbose": true,
-    "transform": {},
-    "extensionsToTreatAsEsm": [],
-    "testEnvironment": "jsdom",
-    "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"]
-}
