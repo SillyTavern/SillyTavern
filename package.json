@@ -78,8 +78,7 @@
         "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js",
         "lint:fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix",
         "plugins:update": "node plugins update",
-        "plugins:install": "node plugins install",
-        "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=public/scripts/tests/jest.config.json"
+        "plugins:install": "node plugins install"
     },
     "bin": {
         "sillytavern": "./server.js"
