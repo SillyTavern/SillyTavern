@@ -908,13 +908,13 @@ async function firstLoadInit() {
     await getClientVersion();
     await readSecretState();
     initLocales();
+    initDefaultSlashCommands();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     await getSettings();
     initKeyboard();
     initDynamicStyles();
     initTags();
-    initDefaultSlashCommands();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
