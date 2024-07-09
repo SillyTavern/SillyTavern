@@ -59,6 +59,7 @@ export class QuickReply {
     /**@type {HTMLElement}*/ editorDom;
 
     /**@type {HTMLTextAreaElement}*/ editorMessage;
+    /**@type {HTMLTextAreaElement}*/ editorMessageLabel;
     /**@type {HTMLElement}*/ editorSyntax;
     /**@type {HTMLElement}*/ editorExecuteBtn;
     /**@type {HTMLElement}*/ editorExecuteBtnPause;
@@ -316,6 +317,7 @@ export class QuickReply {
                 localStorage.setItem('qr--syntax', JSON.stringify(syntax.checked));
                 updateSyntaxEnabled();
             });
+            this.editorMessageLabel = dom.querySelector('label[for="qr--modal-message"]');
             /**@type {HTMLTextAreaElement}*/
             const message = dom.querySelector('#qr--modal-message');
             this.editorMessage = message;
@@ -770,6 +772,7 @@ export class QuickReply {
     }
     async executeFromEditor() {
         if (this.isExecuting) return;
+        const uuidCheck = /^[0-9a-z]{8}(-[0-9a-z]{4}){3}-[0-9a-z]{12}$/;
         const oText = this.message;
         this.isExecuting = true;
         this.editorDom.classList.add('qr--isExecuting');
@@ -828,7 +831,27 @@ export class QuickReply {
                 // this.editorMessage.value = closure.fullText;
                 // this.editorMessage.dispatchEvent(new Event('input', { bubbles:true }));
                 syntax.innerHTML = hljs.highlight(`${closure.fullText}${closure.fullText.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value;
-                this.editorDom.querySelector('label[for="qr--modal-message"]').textContent = closure.source;
+                this.editorMessageLabel.innerHTML = '';
+                if (uuidCheck.test(closure.source)) {
+                    const p0 = document.createElement('span'); {
+                        p0.textContent = 'anonymous: ';
+                        this.editorMessageLabel.append(p0);
+                    }
+                    const p1 = document.createElement('strong'); {
+                        p1.textContent = executor.source.slice(0,5);
+                        this.editorMessageLabel.append(p1);
+                    }
+                    const p2 = document.createElement('span'); {
+                        p2.textContent = executor.source.slice(5, -5);
+                        this.editorMessageLabel.append(p2);
+                    }
+                    const p3 = document.createElement('strong'); {
+                        p3.textContent = executor.source.slice(-5);
+                        this.editorMessageLabel.append(p3);
+                    }
+                } else {
+                    this.editorMessageLabel.textContent = executor.source;
+                }
                 const source = closure.source;
                 this.editorDebugState.innerHTML = '';
                 let ci = -1;
@@ -1169,7 +1192,26 @@ export class QuickReply {
                                 const src = document.createElement('div'); {
                                     src.classList.add('qr--source');
                                     const line = closure.fullText.slice(0, executor.start).split('\n').length;
-                                    src.textContent = `${executor.source}:${line}`;
+                                    if (uuidCheck.test(executor.source)) {
+                                        const p1 = document.createElement('span'); {
+                                            p1.classList.add('qr--fixed');
+                                            p1.textContent = executor.source.slice(0,5);
+                                            src.append(p1);
+                                        }
+                                        const p2 = document.createElement('span'); {
+                                            p2.classList.add('qr--truncated');
+                                            p2.textContent = '…';
+                                            src.append(p2);
+                                        }
+                                        const p3 = document.createElement('span'); {
+                                            p3.classList.add('qr--fixed');
+                                            p3.textContent = `${executor.source.slice(-5)}:${line}`;
+                                            src.append(p3);
+                                        }
+                                        src.title = `anonymous: ${executor.source}`;
+                                    } else {
+                                        src.textContent = `${executor.source}:${line}`;
+                                    }
                                     item.append(src);
                                 }
                                 wrap.append(item);
@@ -1227,7 +1269,8 @@ export class QuickReply {
         if (noSyntax) {
             this.editorDom.querySelector('#qr--modal-messageHolder').classList.add('qr--noSyntax');
         }
-        this.editorDom.querySelector('label[for="qr--modal-message"]').textContent = 'Message / Command: ';
+        this.editorMessageLabel.innerHTML = '';
+        this.editorMessageLabel.textContent = 'Message / Command: ';
         this.editorMessage.value = oText;
         this.editorMessage.dispatchEvent(new Event('input', { bubbles:true }));
         this.editorExecutePromise = null;
