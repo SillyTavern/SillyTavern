@@ -78,7 +78,8 @@
         "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js",
         "lint:fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix",
         "plugins:update": "node plugins update",
-        "plugins:install": "node plugins install"
+        "plugins:install": "node plugins install",
+        "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=public/scripts/tests/jest.config.json"
     },
     "bin": {
         "sillytavern": "./server.js"
@@ -91,6 +92,8 @@
     "devDependencies": {
         "@types/jquery": "^3.5.29",
         "eslint": "^8.55.0",
+        "jest": "^29.7.0",
+        "jest-environment-jsdom": "^29.7.0",
         "jquery": "^3.6.4"
     }
 }
