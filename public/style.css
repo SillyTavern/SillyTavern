@@ -5322,3 +5322,23 @@ body:not(.movingUI) .drawer-content.maximized {
 .regex-highlight {
     color: #FAF8F6;
 }
+
+.faPicker {
+	display: flex;
+	gap: 1em;
+	flex-wrap: wrap;
+	justify-content: space-between;
+
+	.menu_button {
+		aspect-ratio: 1 / 1;
+		font-size: 2em;
+		height: 1lh;
+		line-height: 1.2;
+		padding: 0.25em;
+		width: unset;
+		box-sizing: content-box;
+		&.stcdx--hidden {
+			display: none;
+		}
+	}
+}

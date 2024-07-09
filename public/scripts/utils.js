@@ -3,7 +3,7 @@ import { getRequestHeaders } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
 import { collapseNewlines } from './power-user.js';
 import { debounce_timeout } from './constants.js';
-import { Popup } from './popup.js';
+import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 
 /**
  * Pagination status string template.
@@ -1881,4 +1881,69 @@ export function getFreeName(name, list, numberFormatter = (n) => ` #${n}`) {
         counter++;
     }
     return `${name}${numberFormatter(counter)}`;
+}
+
+export async function showFontAwesomePicker() {
+    const fetchFa = async(name)=>{
+        const style = document.createElement('style');
+        style.innerHTML = await (await fetch(`/css/${name}`)).text();
+        document.head.append(style);
+        const sheet = style.sheet;
+        style.remove();
+        return [...sheet.cssRules].filter(it=>it.style?.content).map(it=>it.selectorText.split('::').shift().slice(1));
+    };
+    const faList = [...new Set((await Promise.all([
+        fetchFa('fontawesome.min.css'),
+    ])).flat())];
+    const fas = {};
+    const dom = document.createElement('div'); {
+        const search = document.createElement('div'); {
+            const qry = document.createElement('input'); {
+                qry.classList.add('text_pole');
+                qry.classList.add('faQuery');
+                qry.type = 'search';
+                qry.placeholder = 'Filter icons';
+                qry.autofocus = true;
+                const qryDebounced = debounce(()=>{
+                    const result = faList.filter(it=>it.includes(qry.value));
+                    for (const fa of faList) {
+                        if (!result.includes(fa)) {
+                            fas[fa].classList.add('hidden');
+                        } else {
+                            fas[fa].classList.remove('hidden');
+                        }
+                    }
+                });
+                qry.addEventListener('input', qryDebounced);
+                search.append(qry);
+            }
+            dom.append(search);
+        }
+        const grid = document.createElement('div'); {
+            grid.classList.add('faPicker');
+            for (const fa of faList) {
+                const opt = document.createElement('div'); {
+                    fas[fa] = opt;
+                    opt.classList.add('menu_button');
+                    opt.classList.add('fa-solid');
+                    opt.classList.add(fa);
+                    opt.title = fa.slice(3);
+                    opt.dataset.result = POPUP_RESULT.AFFIRMATIVE.toString();
+                    opt.addEventListener('click', ()=>{
+                        value = fa;
+                        picker.completeAffirmative();
+                    });
+                    grid.append(opt);
+                }
+            }
+            dom.append(grid);
+        }
+    }
+    let value;
+    const picker = new Popup(dom, POPUP_TYPE.CONFIRM, null, { allowVerticalScrolling:true });
+    await picker.show();
+    if (picker.result == POPUP_RESULT.AFFIRMATIVE) {
+        return value;
+    }
+    return null;
 }
