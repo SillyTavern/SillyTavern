@@ -691,6 +691,7 @@
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack .qr--item .qr--source {
   opacity: 0.5;
+  text-align: right;
 }
 @keyframes qr--progressPulse {
   0%,
