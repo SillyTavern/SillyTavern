@@ -33,6 +33,8 @@ export class ContextMenu {
      */
     build(qr, chainedMessage = null, hierarchy = [], labelHierarchy = []) {
         const tree = {
+            icon: qr.icon,
+            showLabel: qr.showLabel,
             label: qr.label,
             message: (chainedMessage && qr.message ? `${chainedMessage} | ` : '') + qr.message,
             children: [],
@@ -45,6 +47,8 @@ export class ContextMenu {
                 cl.set.qrList.forEach(subQr => {
                     const subTree = this.build(subQr, cl.isChained ? tree.message : null, nextHierarchy, nextLabelHierarchy);
                     tree.children.push(new MenuItem(
+                        subTree.icon,
+                        subTree.showLabel,
                         subTree.label,
                         subTree.message,
                         (evt) => {
