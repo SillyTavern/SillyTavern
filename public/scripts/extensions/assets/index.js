@@ -420,7 +420,7 @@ jQuery(async () => {
 
     const connectButton = windowHtml.find('#assets-connect-button');
     connectButton.on('click', async function () {
-        const url = String(assetsJsonUrl.val());
+        const url = DOMPurify.sanitize(String(assetsJsonUrl.val()));
         const rememberKey = `Assets_SkipConfirm_${getStringHash(url)}`;
         const skipConfirm = localStorage.getItem(rememberKey) === 'true';
 
