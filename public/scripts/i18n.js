@@ -4,10 +4,10 @@ import { updateSecretDisplay } from './secrets.js';
 const storageKey = 'language';
 const overrideLanguage = localStorage.getItem(storageKey);
 const localeFile = String(overrideLanguage || navigator.language || navigator.userLanguage || 'en').toLowerCase();
-const langs = await fetch('/locales/lang.json').then(response => response.json());
+var langs;
 // Don't change to let/const! It will break module loading.
 // eslint-disable-next-line prefer-const
-var localeData = await getLocaleData(localeFile);
+var localeData;
 
 /**
  * An observer that will check if any new i18n elements are added to the document
@@ -214,7 +214,9 @@ function addLanguagesToDropdown() {
     }
 }
 
-export function initLocales() {
+export async function initLocales() {
+    langs = await fetch('/locales/lang.json').then(response => response.json());
+    localeData = await getLocaleData(localeFile);
     applyLocale();
     addLanguagesToDropdown();
     updateSecretDisplay();
