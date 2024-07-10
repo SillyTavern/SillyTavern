@@ -1872,6 +1872,7 @@ body[data-stscript-style] .hljs.language-stscript {
             >code {
                 display: block;
                 padding: 1px;
+                tab-size: 4;
             }
         }
     }

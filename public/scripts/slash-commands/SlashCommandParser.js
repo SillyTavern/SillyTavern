@@ -861,6 +861,17 @@ export class SlashCommandParser {
                 } else if (typeof cmd.unnamedArgumentList[0]?.value == 'string') {
                     this.scope.variableNames.push(cmd.unnamedArgumentList[0].value);
                 }
+            } else if (cmd.name == 'import') {
+                const value = /**@type {string[]}*/(cmd.unnamedArgumentList.map(it=>it.value));
+                for (let i = 0; i < value.length; i++) {
+                    const srcName = value[i];
+                    let dstName = srcName;
+                    if (i + 2 < value.length && value[i + 1] == 'as') {
+                        dstName = value[i + 2];
+                        i += 2;
+                    }
+                    this.scope.variableNames.push(dstName);
+                }
             }
         }
         if (this.testCommandEnd()) {

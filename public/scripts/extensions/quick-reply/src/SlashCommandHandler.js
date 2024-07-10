@@ -1,8 +1,11 @@
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
+import { SlashCommandClosure } from '../../../slash-commands/SlashCommandClosure.js';
 import { enumIcons } from '../../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandDebugController } from '../../../slash-commands/SlashCommandDebugController.js';
 import { SlashCommandEnumValue, enumTypes } from '../../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
+import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
 import { isTrueBoolean } from '../../../utils.js';
 // eslint-disable-next-line no-unused-vars
 import { QuickReplyApi } from '../api/QuickReplyApi.js';
@@ -551,6 +554,106 @@ export class SlashCommandHandler {
                 <div>
                     <strong>Example:</strong>
                     <pre><code>/qr-arg x foo |\n/echo {{arg::x}}</code></pre>
+                </div>
+            `,
+        }));
+
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'import',
+            /**
+             *
+             * @param {{_scope:SlashCommandScope, _debugController:SlashCommandDebugController, from:string}} args
+             * @param {string} value
+             */
+            callback: (args, value) => {
+                if (!args.from) throw new Error('/import requires from= to be set.');
+                if (!value) throw new Error('/import requires the unnamed argument to be set.');
+                let qr = [...this.api.listGlobalSets(), ...this.api.listChatSets()]
+                    .map(it=>this.api.getSetByName(it)?.qrList ?? [])
+                    .flat()
+                    .find(it=>it.label == args.from)
+                ;
+                if (!qr) {
+                    let [setName, ...qrNameParts] = args.from.split('.');
+                    let qrName = qrNameParts.join('.');
+                    let qrs = QuickReplySet.get(setName);
+                    if (qrs) {
+                        qr = qrs.qrList.find(it=>it.label == qrName);
+                    }
+                }
+                if (qr) {
+                    const parser = new SlashCommandParser();
+                    const closure = parser.parse(qr.message, true, [], null, args._debugController);
+                    if (args._debugController) {
+                        closure.source = args.from;
+                    }
+                    const testCandidates = (executor)=>{
+                        return (
+                            executor.namedArgumentList.find(arg=>arg.name == 'key')
+                            && executor.unnamedArgumentList.length > 0
+                            && executor.unnamedArgumentList[0].value instanceof SlashCommandClosure
+                        ) || (
+                            !executor.namedArgumentList.find(arg=>arg.name == 'key')
+                            && executor.unnamedArgumentList.length > 1
+                            && executor.unnamedArgumentList[1].value instanceof SlashCommandClosure
+                        );
+                    };
+                    const candidates = closure.executorList
+                        .filter(executor=>['let', 'var'].includes(executor.command.name))
+                        .filter(testCandidates)
+                        .map(executor=>({
+                            key: executor.namedArgumentList.find(arg=>arg.name == 'key')?.value ?? executor.unnamedArgumentList[0].value,
+                            value: executor.unnamedArgumentList[executor.namedArgumentList.find(arg=>arg.name == 'key') ? 0 : 1].value,
+                        }))
+                    ;
+                    for (let i = 0; i < value.length; i++) {
+                        const srcName = value[i];
+                        let dstName = srcName;
+                        if (i + 2 < value.length && value[i + 1] == 'as') {
+                            dstName = value[i + 2];
+                            i += 2;
+                        }
+                        const pick = candidates.find(it=>it.key == srcName);
+                        if (!pick) throw new Error(`No scoped closure named "${srcName}" found in "${args.from}"`);
+                        if (args._scope.existsVariableInScope(dstName)) {
+                            args._scope.setVariable(dstName, pick.value);
+                        } else {
+                            args._scope.letVariable(dstName, pick.value);
+                        }
+                    }
+                } else {
+                    throw new Error(`No Quick Reply found for "${name}".`);
+                }
+                return '';
+            },
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({ name: 'from',
+                    description: 'Quick Reply to import from (QRSet.QRLabel)',
+                    typeList: ARGUMENT_TYPE.STRING,
+                    isRequired: true,
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({ description: 'what to import (x or x as y)',
+                    acceptsMultiple: true,
+                    typeList: ARGUMENT_TYPE.STRING,
+                    isRequired: true,
+                }),
+            ],
+            splitUnnamedArgument: true,
+            helpString: `
+                <div>
+                    Import one or more closures from another Quick Reply.
+                </div>
+                <div>
+                    Only imports closures that are directly assigned a scoped variable via <code>/let</code> or <code>/var</code>.
+                </div>
+                <div>
+                    <strong>Examples:</strong>
+                    <ul>
+                        <li><pre><code>/import from=LibraryQrSet.FooBar foo |\n/:foo</code></pre></li>
+                        <li><pre><code>/import from=LibraryQrSet.FooBar\n\tfoo\n\tbar\n|\n/:foo |\n/:bar</code></pre></li>
+                        <li><pre><code>/import from=LibraryQrSet.FooBar\n\tfoo as x\n\tbar as y\n|\n/:x |\n/:y</code></pre></li>
+                    </ul>
                 </div>
             `,
         }));
