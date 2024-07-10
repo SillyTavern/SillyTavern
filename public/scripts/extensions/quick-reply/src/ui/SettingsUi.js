@@ -117,6 +117,25 @@ export class SettingsUi {
         this.dom.querySelector('#qr--set-add').addEventListener('click', async()=>{
             this.currentQrSet.addQuickReply();
         });
+        this.dom.querySelector('#qr--set-paste').addEventListener('click', async()=>{
+            const text = await navigator.clipboard.readText();
+            this.currentQrSet.addQuickReply(JSON.parse(text));
+        });
+        this.dom.querySelector('#qr--set-importQr').addEventListener('click', async()=>{
+            const inp = document.createElement('input'); {
+                inp.type = 'file';
+                inp.accept = '.json';
+                inp.addEventListener('change', async()=>{
+                    if (inp.files.length > 0) {
+                        for (const file of inp.files) {
+                            const text = await file.text();
+                            this.currentQrSet.addQuickReply(JSON.parse(text));
+                        }
+                    }
+                });
+                inp.click();
+            }
+        });
         this.qrList = this.dom.querySelector('#qr--set-qrList');
         this.currentSet = this.dom.querySelector('#qr--set');
         this.currentSet.addEventListener('change', ()=>this.onQrSetChange());

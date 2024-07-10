@@ -1,3 +1,18 @@
+@keyframes qr--success {
+    0%, 100% {
+        color: var(--SmartThemeBodyColor);
+    }
+    25%, 75% {
+        color: rgb(81, 163, 81);
+    }
+}
+&.qr--success {
+    animation-name: qr--success;
+    animation-duration: 3s;
+    animation-timing-function: linear;
+    animation-delay: 0s;
+    animation-iteration-count: 1;
+}
 #qr--bar {
     outline: none;
     margin: 0;
@@ -218,14 +233,41 @@
         .qr--set-qrListContents> {
             padding: 0 0.5em;
 
-            >.qr--set-item {
+            >.qr--set-item .qr--set-itemAdder {
+                display: flex;
+                align-items: center;
+                opacity: 0;
+                transition: 100ms;
+                margin: -3px 0 -12px 0;
+                position: relative;
+                .qr--actions {
+                    display: flex;
+                    gap: 0.25em;
+                    flex: 0 0 auto;
+                    .qr--action {
+                        margin: 0;
+                    }
+                }
+                &:before, &:after {
+                    content: "";
+                    display: block;
+                    flex: 1 1 auto;
+                    border: 1px solid;
+                    margin: 0 1em;
+                    height: 0;
+                }
+                &:hover {
+                    opacity: 1;
+                }
+            }
+            >.qr--set-item .qr--content {
                 display: flex;
                 flex-direction: row;
                 gap: 0.5em;
                 align-items: baseline;
                 padding: 0.25em 0;
 
-                > :nth-child(1) {
+                > :nth-child(2) {
                     flex: 0 0 auto;
                 }
 
@@ -242,7 +284,11 @@
                 }
 
                 > :nth-child(5) {
-                    flex: 0 0 auto;
+                    flex: 0 1 auto;
+                    display: flex;
+                    gap: 0.25em;
+                    justify-content: flex-end;
+                    flex-wrap: wrap;
                 }
 
                 >.drag-handle {
@@ -266,6 +312,8 @@
                     font-size: smaller;
                 }
             }
+
+
         }
     }
 
@@ -826,4 +874,55 @@
 
 .popup.qr--hide::backdrop {
     opacity: 0 !important;
+}
+
+
+
+.popup:has(.qr--transferModal) {
+	.popup-button-ok {
+		&:after {
+			content: 'Transfer';
+			height: 0;
+			overflow: hidden;
+			font-weight: bold;
+		}
+		display: flex;
+		align-items: center;
+		flex-direction: column;
+		white-space: pre;
+		font-weight: normal;
+		box-shadow: 0 0 0;
+		transition: 200ms;
+	}
+	.qr--copy {
+		&:after {
+			content: 'Copy';
+			height: 0;
+			overflow: hidden;
+			font-weight: bold;
+		}
+		display: flex;
+		align-items: center;
+		flex-direction: column;
+		white-space: pre;
+		font-weight: normal;
+		box-shadow: 0 0 0;
+		transition: 200ms;
+	}
+	&:has(.qr--transferSelect:focus) {
+		.popup-button-ok {
+			font-weight: bold;
+			box-shadow: 0 0 10px;
+		}
+		&.qr--isCopy {
+			.popup-button-ok {
+				font-weight: normal;
+				box-shadow: 0 0 0;
+			}
+			.qr--copy {
+				font-weight: bold;
+				box-shadow: 0 0 10px;
+			}
+		}
+	}
 }

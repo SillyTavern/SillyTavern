@@ -9,7 +9,7 @@ import { SlashCommandExecutor } from '../../../slash-commands/SlashCommandExecut
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommandParserError } from '../../../slash-commands/SlashCommandParserError.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
-import { debounce, getSortableDelay, showFontAwesomePicker } from '../../../utils.js';
+import { debounce, delay, getSortableDelay, showFontAwesomePicker } from '../../../utils.js';
 import { log, warn } from '../index.js';
 import { QuickReplyContextLink } from './QuickReplyContextLink.js';
 import { QuickReplySet } from './QuickReplySet.js';
@@ -49,6 +49,8 @@ export class QuickReply {
     /**@type {(qr:QuickReply)=>AsyncGenerator<SlashCommandClosureResult|{closure:SlashCommandClosure, executor:SlashCommandExecutor|SlashCommandClosureResult}, SlashCommandClosureResult, boolean>}*/ onDebug;
     /**@type {function}*/ onDelete;
     /**@type {function}*/ onUpdate;
+    /**@type {function}*/ onInsertBefore;
+    /**@type {function}*/ onTransfer;
 
 
     /**@type {HTMLElement}*/ dom;
@@ -173,38 +175,100 @@ export class QuickReply {
                 item.classList.add('qr--set-item');
                 item.setAttribute('data-order', String(idx));
                 item.setAttribute('data-id', String(this.id));
-                const drag = document.createElement('div'); {
-                    drag.classList.add('drag-handle');
-                    drag.classList.add('ui-sortable-handle');
-                    drag.textContent = '☰';
-                    item.append(drag);
-                }
-                const lblContainer = document.createElement('div'); {
-                    lblContainer.classList.add('qr--set-itemLabelContainer');
-                    const icon = document.createElement('div'); {
-                        this.settingsDomIcon = icon;
-                        icon.title = 'Click to change icon';
-                        icon.classList.add('qr--set-itemIcon');
-                        icon.classList.add('menu_button');
-                        if (this.icon) {
-                            icon.classList.add('fa-solid');
-                            icon.classList.add(this.icon);
+                const adder = document.createElement('div'); {
+                    adder.classList.add('qr--set-itemAdder');
+                    const actions = document.createElement('div'); {
+                        actions.classList.add('qr--actions');
+                        const addNew = document.createElement('div'); {
+                            addNew.classList.add('qr--action');
+                            addNew.classList.add('qr--add');
+                            addNew.classList.add('menu_button');
+                            addNew.classList.add('menu_button_icon');
+                            addNew.classList.add('fa-solid');
+                            addNew.classList.add('fa-plus');
+                            addNew.title = 'Add quick reply';
+                            addNew.addEventListener('click', ()=>this.onInsertBefore());
+                            actions.append(addNew);
                         }
-                        icon.addEventListener('click', async()=>{
-                            let value = await showFontAwesomePicker();
-                            this.updateIcon(value);
-                        });
-                        lblContainer.append(icon);
+                        const paste = document.createElement('div'); {
+                            paste.classList.add('qr--action');
+                            paste.classList.add('qr--paste');
+                            paste.classList.add('menu_button');
+                            paste.classList.add('menu_button_icon');
+                            paste.classList.add('fa-solid');
+                            paste.classList.add('fa-paste');
+                            paste.title = 'Add quick reply from clipboard';
+                            paste.addEventListener('click', async()=>{
+                                const text = await navigator.clipboard.readText();
+                                this.onInsertBefore(text);
+                            });
+                            actions.append(paste);
+                        }
+                        const importFile = document.createElement('div'); {
+                            importFile.classList.add('qr--action');
+                            importFile.classList.add('qr--importFile');
+                            importFile.classList.add('menu_button');
+                            importFile.classList.add('menu_button_icon');
+                            importFile.classList.add('fa-solid');
+                            importFile.classList.add('fa-file-import');
+                            importFile.title = 'Add quick reply from JSON file';
+                            importFile.addEventListener('click', async()=>{
+                                const inp = document.createElement('input'); {
+                                    inp.type = 'file';
+                                    inp.accept = '.json';
+                                    inp.addEventListener('change', async()=>{
+                                        if (inp.files.length > 0) {
+                                            for (const file of inp.files) {
+                                                const text = await file.text();
+                                                this.onInsertBefore(text);
+                                            }
+                                        }
+                                    });
+                                    inp.click();
+                                }
+                            });
+                            actions.append(importFile);
+                        }
+                        adder.append(actions);
                     }
-                    const lbl = document.createElement('input'); {
-                        this.settingsDomLabel = lbl;
-                        lbl.classList.add('qr--set-itemLabel');
-                        lbl.classList.add('text_pole');
-                        lbl.value = this.label;
-                        lbl.addEventListener('input', ()=>this.updateLabel(lbl.value));
-                        lblContainer.append(lbl);
+                    item.append(adder);
+                }
+                const itemContent = document.createElement('div'); {
+                    itemContent.classList.add('qr--content');
+                    const drag = document.createElement('div'); {
+                        drag.classList.add('drag-handle');
+                        drag.classList.add('ui-sortable-handle');
+                        drag.textContent = '☰';
+                        itemContent.append(drag);
                     }
-                    item.append(lblContainer);
+                    const lblContainer = document.createElement('div'); {
+                        lblContainer.classList.add('qr--set-itemLabelContainer');
+                        const icon = document.createElement('div'); {
+                            this.settingsDomIcon = icon;
+                            icon.title = 'Click to change icon';
+                            icon.classList.add('qr--set-itemIcon');
+                            icon.classList.add('menu_button');
+                            if (this.icon) {
+                                icon.classList.add('fa-solid');
+                                icon.classList.add(this.icon);
+                            }
+                            icon.addEventListener('click', async()=>{
+                                let value = await showFontAwesomePicker();
+                                this.updateIcon(value);
+                            });
+                            lblContainer.append(icon);
+                        }
+                        const lbl = document.createElement('input'); {
+                            this.settingsDomLabel = lbl;
+                            lbl.classList.add('qr--set-itemLabel');
+                            lbl.classList.add('text_pole');
+                            lbl.value = this.label;
+                            lbl.addEventListener('input', ()=>this.updateLabel(lbl.value));
+                            lblContainer.append(lbl);
+                        }
+                        itemContent.append(lblContainer);
+                    }
+                    item.append(itemContent);
                 }
                 const optContainer = document.createElement('div'); {
                     optContainer.classList.add('qr--set-optionsContainer');
@@ -217,7 +281,7 @@ export class QuickReply {
                         opt.addEventListener('click', ()=>this.showEditor());
                         optContainer.append(opt);
                     }
-                    item.append(optContainer);
+                    itemContent.append(optContainer);
                 }
                 const mes = document.createElement('textarea'); {
                     this.settingsDomMessage = mes;
@@ -226,10 +290,66 @@ export class QuickReply {
                     mes.value = this.message;
                     //HACK need to use jQuery to catch the triggered event from the expanded editor
                     $(mes).on('input', ()=>this.updateMessage(mes.value));
-                    item.append(mes);
+                    itemContent.append(mes);
                 }
                 const actions = document.createElement('div'); {
                     actions.classList.add('qr--actions');
+                    const move = document.createElement('div'); {
+                        move.classList.add('qr--action');
+                        move.classList.add('menu_button');
+                        move.classList.add('menu_button_icon');
+                        move.classList.add('fa-solid');
+                        move.classList.add('fa-truck-arrow-right');
+                        move.title = 'Move quick reply to other set';
+                        move.addEventListener('click', ()=>this.onTransfer(this));
+                        actions.append(move);
+                    }
+                    const copy = document.createElement('div'); {
+                        copy.classList.add('qr--action');
+                        copy.classList.add('menu_button');
+                        copy.classList.add('menu_button_icon');
+                        copy.classList.add('fa-solid');
+                        copy.classList.add('fa-copy');
+                        copy.title = 'Copy quick reply to clipboard';
+                        copy.addEventListener('click', async()=>{
+                            await navigator.clipboard.writeText(JSON.stringify(this));
+                            copy.classList.add('qr--success');
+                            await delay(3010);
+                            copy.classList.remove('qr--success');
+                        });
+                        actions.append(copy);
+                    }
+                    const cut = document.createElement('div'); {
+                        cut.classList.add('qr--action');
+                        cut.classList.add('menu_button');
+                        cut.classList.add('menu_button_icon');
+                        cut.classList.add('fa-solid');
+                        cut.classList.add('fa-cut');
+                        cut.title = 'Cut quick reply to clipboard (copy and remove)';
+                        cut.addEventListener('click', async()=>{
+                            await navigator.clipboard.writeText(JSON.stringify(this));
+                            this.delete();
+                        });
+                        actions.append(cut);
+                    }
+                    const exp = document.createElement('div'); {
+                        exp.classList.add('qr--action');
+                        exp.classList.add('menu_button');
+                        exp.classList.add('menu_button_icon');
+                        exp.classList.add('fa-solid');
+                        exp.classList.add('fa-file-export');
+                        exp.title = 'Export quick reply as file';
+                        exp.addEventListener('click', ()=>{
+                            const blob = new Blob([JSON.stringify(this)], { type:'text' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a'); {
+                                a.href = url;
+                                a.download = `${this.label}.qr.json`;
+                                a.click();
+                            }
+                        });
+                        actions.append(exp);
+                    }
                     const del = document.createElement('div'); {
                         del.classList.add('qr--action');
                         del.classList.add('menu_button');
@@ -241,7 +361,7 @@ export class QuickReply {
                         del.addEventListener('click', ()=>this.delete());
                         actions.append(del);
                     }
-                    item.append(actions);
+                    itemContent.append(actions);
                 }
             }
         }
@@ -1469,6 +1589,7 @@ export class QuickReply {
             const scope = new SlashCommandScope();
             for (const key of Object.keys(args)) {
                 if (key[0] == '_') continue;
+                if (key == 'isAutoExecute') continue;
                 scope.setMacro(`arg::${key}`, args[key]);
             }
             scope.setMacro('arg::*', '');

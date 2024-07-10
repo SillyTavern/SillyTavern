@@ -1,8 +1,9 @@
 import { getRequestHeaders, substituteParams } from '../../../../script.js';
+import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
 import { executeSlashCommands, executeSlashCommandsOnChatInput, executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
-import { debounceAsync, warn } from '../index.js';
+import { debounceAsync, log, warn } from '../index.js';
 import { QuickReply } from './QuickReply.js';
 
 export class QuickReplySet {
@@ -94,6 +95,11 @@ export class QuickReplySet {
         }
         return this.settingsDom;
     }
+    /**
+     *
+     * @param {QuickReply} qr
+     * @param {number} idx
+     */
     renderSettingsItem(qr, idx) {
         this.settingsDom.append(qr.renderSettings(idx));
     }
@@ -198,10 +204,11 @@ export class QuickReplySet {
 
 
 
-    addQuickReply() {
+    addQuickReply(data = {}) {
         const id = Math.max(this.idIndex, this.qrList.reduce((max,qr)=>Math.max(max,qr.id),0)) + 1;
+        data.id =
         this.idIndex = id + 1;
-        const qr = QuickReply.from({ id });
+        const qr = QuickReply.from(data);
         this.qrList.push(qr);
         this.hookQuickReply(qr);
         if (this.settingsDom) {
@@ -223,6 +230,98 @@ export class QuickReplySet {
         qr.onExecute = (_, options)=>this.executeWithOptions(qr, options);
         qr.onDelete = ()=>this.removeQuickReply(qr);
         qr.onUpdate = ()=>this.save();
+        qr.onInsertBefore = (qrJson)=>{
+            const data = JSON.parse(qrJson ?? '{}');
+            delete data.id;
+            log('onInsertBefore', data);
+            const newQr = this.addQuickReply(data);
+            this.qrList.pop();
+            this.qrList.splice(this.qrList.indexOf(qr), 0, newQr);
+            if (qr.settingsDom) {
+                qr.settingsDom.insertAdjacentElement('beforebegin', newQr.settingsDom);
+            }
+            this.save();
+        };
+        qr.onTransfer = async()=>{
+            /**@type {HTMLSelectElement} */
+            let sel;
+            let isCopy = false;
+            const dom = document.createElement('div'); {
+                dom.classList.add('qr--transferModal');
+                const title = document.createElement('h3'); {
+                    title.textContent = 'Transfer Quick Reply';
+                    dom.append(title);
+                }
+                const subTitle = document.createElement('h4'); {
+                    const entryName = qr.label;
+                    const bookName = this.name;
+                    subTitle.textContent = `${bookName}: ${entryName}`;
+                    dom.append(subTitle);
+                }
+                sel = document.createElement('select'); {
+                    sel.classList.add('qr--transferSelect');
+                    sel.setAttribute('autofocus', '1');
+                    const noOpt = document.createElement('option'); {
+                        noOpt.value = '';
+                        noOpt.textContent = '-- Select QR Set --';
+                        sel.append(noOpt);
+                    }
+                    for (const qrs of QuickReplySet.list) {
+                        const opt = document.createElement('option'); {
+                            opt.value = qrs.name;
+                            opt.textContent = qrs.name;
+                            sel.append(opt);
+                        }
+                    }
+                    sel.addEventListener('keyup', (evt)=>{
+                        if (evt.key == 'Shift') {
+                            (dlg.dom ?? dlg.dlg).classList.remove('qr--isCopy');
+                            return;
+                        }
+                    });
+                    sel.addEventListener('keydown', (evt)=>{
+                        if (evt.key == 'Shift') {
+                            (dlg.dom ?? dlg.dlg).classList.add('qr--isCopy');
+                            return;
+                        }
+                        if (!evt.ctrlKey && !evt.altKey && evt.key == 'Enter') {
+                            evt.preventDefault();
+                            if (evt.shiftKey) isCopy = true;
+                            dlg.completeAffirmative();
+                        }
+                    });
+                    dom.append(sel);
+                }
+                const hintP = document.createElement('p'); {
+                    const hint = document.createElement('small'); {
+                        hint.textContent = 'Type or arrows to select QR Set. Enter to transfer. Shift+Enter to copy.';
+                        hintP.append(hint);
+                    }
+                    dom.append(hintP);
+                }
+            }
+            const dlg = new Popup(dom, POPUP_TYPE.CONFIRM, null, { okButton:'Transfer', cancelButton:'Cancel' });
+            const copyBtn = document.createElement('div'); {
+                copyBtn.classList.add('qr--copy');
+                copyBtn.classList.add('menu_button');
+                copyBtn.textContent = 'Copy';
+                copyBtn.addEventListener('click', ()=>{
+                    isCopy = true;
+                    dlg.completeAffirmative();
+                });
+                (dlg.ok ?? dlg.okButton).insertAdjacentElement('afterend', copyBtn);
+            }
+            const prom = dlg.show();
+            sel.focus();
+            await prom;
+            if (dlg.result == POPUP_RESULT.AFFIRMATIVE) {
+                const qrs = QuickReplySet.list.find(it=>it.name == sel.value);
+                qrs.addQuickReply(qr.toJSON());
+                if (!isCopy) {
+                    qr.delete();
+                }
+            }
+        };
     }
 
     removeQuickReply(qr) {
