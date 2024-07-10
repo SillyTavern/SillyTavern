@@ -3353,7 +3353,7 @@ async function addSDGenButtons() {
 
     $(document).on('click touchend', function (e) {
         const target = $(e.target);
-        if (target.is(dropdown)) return;
+        if (target.is(dropdown) || target.closest(dropdown).length) return;
         if (target.is(button) && !dropdown.is(':visible') && $('#send_but').is(':visible')) {
             e.preventDefault();
 
@@ -3365,6 +3365,7 @@ async function addSDGenButtons() {
     });
 
     $('#sd_dropdown [id]').on('click', function () {
+        dropdown.fadeOut(animation_duration);
         const id = $(this).attr('id');
         const idParamMap = {
             'sd_you': 'you',
