@@ -3,7 +3,7 @@ TODO:
 */
 //const DEBUG_TONY_SAMA_FORK_MODE = true
 
-import { getRequestHeaders, callPopup, processDroppedFiles, eventSource, event_types } from '../../../script.js';
+import { getRequestHeaders, processDroppedFiles, eventSource, event_types } from '../../../script.js';
 import { deleteExtension, extensionNames, getContext, installExtension, renderExtensionTemplateAsync } from '../../extensions.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from '../../popup.js';
 import { executeSlashCommands } from '../../slash-commands.js';
@@ -222,7 +222,7 @@ function downloadAssetsList(url) {
                 // Info hint if the user maybe... likely accidently was trying to install an extension and we wanna help guide them? uwu :3
                 const installButton = $('#third_party_extension_button');
                 flashHighlight(installButton, 10_000);
-                toastr.info('If you are trying to install an extension, click the flashing button to the right of this.', 'Trying to install a custom extension?', { timeOut: 10_000 });
+                toastr.info('Click the flashing button at the top right corner of the menu.', 'Trying to install a custom extension?', { timeOut: 10_000 });
 
                 // Error logged after, to appear on top
                 console.error(error);
@@ -415,7 +415,7 @@ jQuery(async () => {
     installHintButton.on('click', async function () {
         const installButton = $('#third_party_extension_button');
         flashHighlight(installButton, 5000);
-        toastr.info('Click the flashing button to the right of this to install extensions.', 'How to install extensions?');
+        toastr.info('Click the flashing button to install extensions.', 'How to install extensions?');
     });
 
     const connectButton = windowHtml.find('#assets-connect-button');
