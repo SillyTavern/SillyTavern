@@ -219,6 +219,12 @@ function downloadAssetsList(url) {
                 $('#assets_menu').show();
             })
             .catch((error) => {
+                // Info hint if the user maybe... likely accidently was trying to install an extension and we wanna help guide them? uwu :3
+                const installButton = $('#third_party_extension_button');
+                flashHighlight(installButton, 10_000);
+                toastr.info('If you are trying to install an extension, click the flashing button to the right of this.', 'Trying to install a custom extension?', { timeOut: 10_000 });
+
+                // Error logged after, to appear on top
                 console.error(error);
                 toastr.error('Problem with assets URL', DEBUG_PREFIX + 'Cannot get assets list');
                 $('#assets-connect-button').addClass('fa-plug-circle-exclamation');
