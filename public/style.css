@@ -208,8 +208,8 @@ table.responsiveTable {
 }
 
 .animated {
-    -webkit-animation-duration: 3s !important;
-    animation-duration: 3s !important;
+    -webkit-animation-duration: var(--animation-duration, 3s) !important;
+    animation-duration: var(--animation-duration, 3s) !important;
     -webkit-animation-fill-mode: both !important;
     animation-fill-mode: both !important;
     box-shadow: inset 0 0 5px var(--SmartThemeQuoteColor);
