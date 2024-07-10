@@ -5,7 +5,7 @@ TODO:
 
 import { getRequestHeaders, callPopup, processDroppedFiles, eventSource, event_types } from '../../../script.js';
 import { deleteExtension, extensionNames, getContext, installExtension, renderExtensionTemplateAsync } from '../../extensions.js';
-import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
+import { POPUP_TYPE, Popup, callGenericPopup } from '../../popup.js';
 import { executeSlashCommands } from '../../slash-commands.js';
 import { flashHighlight, getStringHash, isValidUrl } from '../../utils.js';
 export { MODULE_NAME };
@@ -424,16 +424,18 @@ jQuery(async () => {
         const rememberKey = `Assets_SkipConfirm_${getStringHash(url)}`;
         const skipConfirm = localStorage.getItem(rememberKey) === 'true';
 
-        const template = await renderExtensionTemplateAsync(MODULE_NAME, 'confirm', { url });
-        const confirmation = skipConfirm || await callPopup(template, 'confirm');
+        const confirmation = skipConfirm || await Popup.show.confirm('Loading Asset List', `<span>Are you sure you want to connect to the following url?</span><var>${url}</var>`, {
+            customInputs: [{ id: 'assets-remember', label: 'Don\'t ask again for this URL' }],
+            onClose: popup => {
+                if (popup.result) {
+                    const rememberValue = popup.inputResults.get('assets-remember');
+                    localStorage.setItem(rememberKey, String(rememberValue));
+                }
+            },
+        });
 
         if (confirmation) {
             try {
-                if (!skipConfirm) {
-                    const rememberValue = Boolean($('#assets-remember').prop('checked'));
-                    localStorage.setItem(rememberKey, String(rememberValue));
-                }
-
                 console.debug(DEBUG_PREFIX, 'Confimation, loading assets...');
                 downloadAssetsList(url);
                 connectButton.removeClass('fa-plug-circle-exclamation');
