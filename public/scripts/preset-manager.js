@@ -369,7 +369,7 @@ class PresetManager {
         if (Object.keys(preset_names).length) {
             const nextPresetName = Object.keys(preset_names)[0];
             const newValue = preset_names[nextPresetName];
-            $(this.select).find(`option[value="${newValue}"]`).attr('selected', true);
+            $(this.select).find(`option[value="${newValue}"]`).attr('selected', 'true');
             $(this.select).trigger('change');
         }
 
