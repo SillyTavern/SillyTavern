@@ -2472,6 +2472,7 @@ async function triggerGenerationCallback(args, value) {
         } catch {
             console.warn('Timeout waiting for generation unlock');
             toastr.warning('Cannot run /trigger command while the reply is being generated.');
+            outerResolve(Promise.resolve(''));
             return '';
         }
 
