@@ -60,7 +60,12 @@ export class QuickReplyConfig {
         /**@type {HTMLElement}*/
         this.setListDom = root.querySelector('.qr--setList');
         root.querySelector('.qr--setListAdd').addEventListener('click', ()=>{
-            this.addSet(QuickReplySet.list[0]);
+            const newSet = QuickReplySet.list.find(qr=>!this.setList.find(qrl=>qrl.set == qr));
+            if (newSet) {
+                this.addSet(newSet);
+            } else {
+                toastr.warning('All existing QR Sets have already been added.');
+            }
         });
         this.updateSetListDom();
     }
