@@ -12,6 +12,10 @@
     flex-direction: column;
 }
 
+.assets-install-hint-link {
+    cursor: help;
+}
+
 .assets-connect-div {
     display: flex;
     flex-direction: row;

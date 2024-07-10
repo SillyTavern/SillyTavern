@@ -7,7 +7,7 @@ import { getRequestHeaders, callPopup, processDroppedFiles, eventSource, event_t
 import { deleteExtension, extensionNames, getContext, installExtension, renderExtensionTemplateAsync } from '../../extensions.js';
 import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { executeSlashCommands } from '../../slash-commands.js';
-import { getStringHash, isValidUrl } from '../../utils.js';
+import { flashHighlight, getStringHash, isValidUrl } from '../../utils.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'assets';
@@ -403,6 +403,13 @@ jQuery(async () => {
     const charactersButton = windowHtml.find('#assets-characters-button');
     charactersButton.on('click', async function () {
         openCharacterBrowser(false);
+    });
+
+    const installHintButton = windowHtml.find('.assets-install-hint-link');
+    installHintButton.on('click', async function () {
+        const installButton = $('#third_party_extension_button');
+        flashHighlight(installButton, 5000);
+        toastr.info('Click the flashing button to the right of this to install extensions.', 'How to install extensions?');
     });
 
     const connectButton = windowHtml.find('#assets-connect-button');
