@@ -1912,21 +1912,31 @@ export function registerVariableCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'value',
-                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY],
                 isRequired: true,
-                enumProvider: commonEnumProviders.variables('all'),
                 forceEnum: false,
             }),
         ],
         helpString: `
             <div>
-                Gets the length of a value and passes the result down the pipe. Can use variable names.
+                Gets the length of a value and passes the result down the pipe.
+                <ul>
+                    <li>
+                        For strings, returns the number of characters.
+                    </li>
+                    <li>
+                        For lists and dictionaries, returns the number of elements.
+                    </li>
+                    <li>
+                        For numbers, returns the number of digits (including the sign and decimal point).
+                    </li>
+                </ul>
             </div>
             <div>
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code class="language-stscript">/len i</code></pre>
+                        <pre><code class="language-stscript">/len Lorem ipsum | /echo</code></pre>
                     </li>
                 </ul>
             </div>

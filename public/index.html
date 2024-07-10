@@ -2485,19 +2485,21 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="ReverseProxyWarningMessage" class="reverse_proxy_warning">
-                            <b>
-                                <div data-i18n="Using a proxy that you're not running yourself is a risk to your data privacy.">
-                                    Using a proxy that you're not running yourself is a risk to your data privacy.
-                                </div>
-                                <div data-i18n="ANY support requests will be REFUSED if you are using a proxy.">
-                                    ANY support requests will be REFUSED if you are using a proxy.
-                                </div>
-                                <hr>
-                                <i data-i18n="Do not proceed if you do not agree to this!">
-                                    Do not proceed if you do not agree to this!
-                                </i>
-                            </b>
+                        <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite">
+                            <div class="reverse_proxy_warning">
+                                <b>
+                                    <div data-i18n="Using a proxy that you're not running yourself is a risk to your data privacy.">
+                                        Using a proxy that you're not running yourself is a risk to your data privacy.
+                                    </div>
+                                    <div data-i18n="ANY support requests will be REFUSED if you are using a proxy.">
+                                        ANY support requests will be REFUSED if you are using a proxy.
+                                    </div>
+                                    <hr>
+                                    <i data-i18n="Do not proceed if you do not agree to this!">
+                                        Do not proceed if you do not agree to this!
+                                    </i>
+                                </b>
+                            </div>
                         </div>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4><span data-i18n="OpenAI API key">OpenAI API key</span></h4>
