@@ -3571,6 +3571,7 @@ function parseDecorators(content){
 
                 if(isKnownDecorator(splited[i])){
                     decorators.push(splited[i].startsWith('@@@') ? splited[i].substring(1) : splited[i])
+                    fallbacked = false
                 }
                 else{
                     fallbacked = true
