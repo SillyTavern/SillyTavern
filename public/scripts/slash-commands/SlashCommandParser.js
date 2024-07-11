@@ -913,24 +913,59 @@ export class SlashCommandParser {
         return this.testCommandEnd();
     }
     parseUnnamedArgument(split, splitCount = null) {
+        const wasSplit = split;
         /**@type {SlashCommandClosure|String}*/
         let value = this.jumpedEscapeSequence ? this.take() : ''; // take the first, already tested, char if it is an escaped one
         let isList = split;
         let listValues = [];
+        let listQuoted = []; // keep track of which listValues were quoted
         /**@type {SlashCommandUnnamedArgumentAssignment}*/
         let assignment = new SlashCommandUnnamedArgumentAssignment();
         assignment.start = this.index;
+        if (!split && this.testQuotedValue()) {
+            // if the next bit is a quoted value, take the whole value and gather contents as a list
+            assignment.value = this.parseQuotedValue();
+            assignment.end = this.index;
+            isList = true;
+            listValues.push(assignment);
+            listQuoted.push(true);
+            assignment = new SlashCommandUnnamedArgumentAssignment();
+            assignment.start = this.index;
+        }
         while (!this.testUnnamedArgumentEnd()) {
-            if (split && splitCount && listValues.length >= splitCount) split = false;
+            if (split && splitCount && listValues.length >= splitCount) {
+                // the split count has just been reached: stop splitting, the rest is one singular value
+                split = false;
+                if (this.testQuotedValue()) {
+                    // if the next bit is a quoted value, take the whole value
+                    assignment.value = this.parseQuotedValue();
+                    assignment.end = this.index;
+                    listValues.push(assignment);
+                    listQuoted.push(true);
+                    assignment = new SlashCommandUnnamedArgumentAssignment();
+                    assignment.start = this.index;
+                }
+            }
             if (this.testClosure()) {
                 isList = true;
                 if (value.length > 0) {
                     this.indexMacros(this.index - value.length, value);
                     assignment.value = value;
                     listValues.push(assignment);
+                    listQuoted.push(false);
                     assignment = new SlashCommandUnnamedArgumentAssignment();
                     assignment.start = this.index;
-                    value = '';
+                    if (!split && this.testQuotedValue()) {
+                        // if where currently not splitting and the next bit is a quoted value, take the whole value
+                        assignment.value = this.parseQuotedValue();
+                        assignment.end = this.index;
+                        listValues.push(assignment);
+                        listQuoted.push(true);
+                        assignment = new SlashCommandUnnamedArgumentAssignment();
+                        assignment.start = this.index;
+                    } else {
+                        value = '';
+                    }
                 }
                 assignment.start = this.index;
                 assignment.value = this.parseClosure();
@@ -945,18 +980,21 @@ export class SlashCommandParser {
                     assignment.value = this.parseQuotedValue();
                     assignment.end = this.index;
                     listValues.push(assignment);
+                    listQuoted.push(true);
                     assignment = new SlashCommandUnnamedArgumentAssignment();
                 } else if (this.testListValue()) {
                     assignment.start = this.index;
                     assignment.value = this.parseListValue();
                     assignment.end = this.index;
                     listValues.push(assignment);
+                    listQuoted.push(false);
                     assignment = new SlashCommandUnnamedArgumentAssignment();
                 } else if (this.testValue()) {
                     assignment.start = this.index;
                     assignment.value = this.parseValue();
                     assignment.end = this.index;
                     listValues.push(assignment);
+                    listQuoted.push(false);
                     assignment = new SlashCommandUnnamedArgumentAssignment();
                 } else {
                     throw new SlashCommandParserError(`Unexpected end of unnamed argument at index ${this.userIndex}.`);
@@ -970,21 +1008,47 @@ export class SlashCommandParser {
         if (isList && value.length > 0) {
             assignment.value = value;
             listValues.push(assignment);
+            listQuoted.push(false);
         }
         if (isList) {
             const firstVal = listValues[0];
             if (typeof firstVal.value == 'string') {
-                firstVal.value = firstVal.value.trimStart();
+                if (!listQuoted[0]) {
+                    // only trim the first part if it wasn't quoted
+                    firstVal.value = firstVal.value.trimStart();
+                }
                 if (firstVal.value.length == 0) {
                     listValues.shift();
+                    listQuoted.shift();
                 }
             }
             const lastVal = listValues.slice(-1)[0];
             if (typeof lastVal.value == 'string') {
-                lastVal.value = lastVal.value.trimEnd();
+                if (!listQuoted.slice(-1)[0]) {
+                    // only trim the last part if it wasn't quoted
+                    lastVal.value = lastVal.value.trimEnd();
+                }
                 if (lastVal.value.length == 0) {
                     listValues.pop();
+                    listQuoted.pop();
                 }
+            }
+            if (wasSplit && splitCount && splitCount + 1 < listValues.length) {
+                // if split with a split count and there are more values than expected
+                // -> should be result of quoting + additional (non-whitespace) text
+                // -> join the parts into one and restore quotes
+                const joined = new SlashCommandUnnamedArgumentAssignment();
+                joined.start = listValues[splitCount].start;
+                joined.end = listValues.slice(-1)[0].end;
+                joined.value = '';
+                for (let i = splitCount; i < listValues.length; i++) {
+                    if (listQuoted[i]) joined.value += `"${listValues[i].value}"`;
+                    else joined.value += listValues[i].value;
+                }
+                listValues = [
+                    ...listValues.slice(0, splitCount),
+                    joined,
+                ];
             }
             return listValues;
         }
