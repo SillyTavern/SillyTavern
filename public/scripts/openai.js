@@ -204,6 +204,15 @@ const custom_prompt_post_processing_types = {
     CLAUDE: 'claude',
 };
 
+const sensitiveFields = [
+    'reverse_proxy',
+    'proxy_password',
+    'custom_url',
+    'custom_include_body',
+    'custom_exclude_body',
+    'custom_include_headers',
+];
+
 function getPrefixMap() {
     return selected_group ? {
         assistant: '',
@@ -3515,6 +3524,27 @@ async function onPresetImportFileChange(e) {
         return;
     }
 
+    const fields = sensitiveFields.filter(field => presetBody[field]).map(field => `<b>${field}</b>`);
+    const shouldConfirm = fields.length > 0;
+
+    if (shouldConfirm) {
+        const textHeader = 'The imported preset contains proxy and/or custom endpoint settings.';
+        const textMessage = fields.join('<br>');
+        const cancelButton = { text: 'Cancel import', result: POPUP_RESULT.CANCELLED, appendAtEnd: true, action: () => popup.complete(POPUP_RESULT.CANCELLED) };
+        const popupOptions = { customButtons: [cancelButton], okButton: 'Remove them', cancelButton: 'Import as-is' };
+        const popup = new Popup(PopupUtils.BuildTextWithHeader(textHeader, textMessage), POPUP_TYPE.CONFIRM, '', popupOptions);
+        const popupResult = await popup.show();
+
+        if (popupResult === POPUP_RESULT.CANCELLED) {
+            console.log('Import cancelled by user');
+            return;
+        }
+
+        if (popupResult === POPUP_RESULT.AFFIRMATIVE) {
+            sensitiveFields.forEach(field => delete presetBody[field]);
+        }
+    }
+
     if (name in openai_setting_names) {
         const confirm = await callPopup('Preset name already exists. Overwrite?', 'confirm');
 
@@ -3560,19 +3590,11 @@ async function onExportPresetClick() {
     }
 
     const preset = structuredClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
-    const sensitiveFields = [
-        'reverse_proxy',
-        'proxy_password',
-        'custom_url',
-        'custom_include_body',
-        'custom_exclude_body',
-        'custom_include_headers',
-    ];
 
     const fieldValues = sensitiveFields.filter(field => preset[field]).map(field => `<b>${field}</b>: <code>${preset[field]}</code>`);
     const shouldConfirm = fieldValues.length > 0;
     const textHeader = 'Your preset contains proxy and/or custom endpoint settings.';
-    const textMessage = `<div>Do you want to remove these fields before exporting?</div>${DOMPurify.sanitize(fieldValues.join('<br>'))}`;
+    const textMessage = `<div>Do you want to remove these fields before exporting?</div><br>${DOMPurify.sanitize(fieldValues.join('<br>'))}`;
     const cancelButton = { text: 'Cancel', result: POPUP_RESULT.CANCELLED, appendAtEnd: true, action: () => popup.complete(POPUP_RESULT.CANCELLED) };
     const popupOptions = { customButtons: [cancelButton] };
     const popup = new Popup(PopupUtils.BuildTextWithHeader(textHeader, textMessage), POPUP_TYPE.CONFIRM, '', popupOptions);
