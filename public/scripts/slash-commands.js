@@ -952,14 +952,36 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'fuzzy',
         callback: fuzzyCallback,
-        returns: 'first matching item',
+        returns: 'matching item',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'list', 'list of items to match against', [ARGUMENT_TYPE.LIST], true,
-            ),
-            new SlashCommandNamedArgument(
-                'threshold', 'fuzzy match threshold (0.0 to 1.0)', [ARGUMENT_TYPE.NUMBER], false, false, '0.4',
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'list',
+                description: 'list of items to match against',
+                acceptsMultiple: false,
+                isRequired: true,
+                typeList: [ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.VARIABLE_NAME],
+                enumProvider: commonEnumProviders.variables('all'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'threshold',
+                description: 'fuzzy match threshold (0.0 to 1.0)',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                isRequired: false,
+                defaultValue: '0.4',
+                acceptsMultiple: false,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'mode',
+                description: 'fuzzy match mode',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                defaultValue: 'first',
+                acceptsMultiple: false,
+                enumProvider: () => [
+                    new SlashCommandEnumValue('first', 'first match below the threshold', enumTypes.enum, enumIcons.default),
+                    new SlashCommandEnumValue('best', 'best match below the threshold', enumTypes.enum, enumIcons.default),
+                ],
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -975,6 +997,13 @@ export function initDefaultSlashCommands() {
             The optional <code>threshold</code> (default is 0.4) allows control over the match strictness.
             A low value (min 0.0) means the match is very strict.
             At 1.0 (max) the match is very loose and will match anything.
+        </div>
+        <div>
+            The optional <code>mode</code> argument allows to control the behavior when multiple items match the text.
+            <ul>
+                <li><code>first</code> (default) returns the first match below the threshold.</li>
+                <li><code>best</code> returns the best match below the threshold.</li>
+            </ul>
         </div>
         <div>
             The returned value passes to the next command through the pipe.
@@ -1865,7 +1894,7 @@ async function inputCallback(args, prompt) {
  * @param {FuzzyCommandArgs} args - arguments containing "list" (JSON array) and optionaly "threshold" (float between 0.0 and 1.0)
  * @param {string} searchInValue - the string where items of list are searched
  * @returns {string} - the matched item from the list
- * @typedef {{list: string, threshold: string}} FuzzyCommandArgs - arguments for /fuzzy command
+ * @typedef {{list: string, threshold: string, mode:string}} FuzzyCommandArgs - arguments for /fuzzy command
  * @example /fuzzy list=["down","left","up","right"] "he looks up" | /echo // should return "up"
  * @link https://www.fusejs.io/
  */
@@ -1895,7 +1924,7 @@ function fuzzyCallback(args, searchInValue) {
         };
         // threshold determines how strict is the match, low threshold value is very strict, at 1 (nearly?) everything matches
         if ('threshold' in args) {
-            params.threshold = parseFloat(resolveVariable(args.threshold));
+            params.threshold = parseFloat(args.threshold);
             if (isNaN(params.threshold)) {
                 console.warn('WARN: \'threshold\' argument must be a float between 0.0 and 1.0 for /fuzzy command');
                 return '';
@@ -1908,16 +1937,42 @@ function fuzzyCallback(args, searchInValue) {
             }
         }
 
-        const fuse = new Fuse([searchInValue], params);
-        // each item in the "list" is searched within "search_item", if any matches it returns the matched "item"
-        for (const searchItem of list) {
-            const result = fuse.search(searchItem);
-            if (result.length > 0) {
-                console.info('fuzzyCallback Matched: ' + searchItem);
-                return searchItem;
+        function getFirstMatch() {
+            const fuse = new Fuse([searchInValue], params);
+            // each item in the "list" is searched within "search_item", if any matches it returns the matched "item"
+            for (const searchItem of list) {
+                const result = fuse.search(searchItem);
+                console.debug('/fuzzy: result', result);
+                if (result.length > 0) {
+                    console.info('/fuzzy: first matched', searchItem);
+                    return searchItem;
+                }
             }
+
+            console.info('/fuzzy: no match');
+            return '';
         }
-        return '';
+
+        function getBestMatch() {
+            const fuse = new Fuse(list, params);
+            const result = fuse.search(searchInValue);
+            console.debug('/fuzzy: result', result);
+            if (result.length > 0) {
+                console.info('/fuzzy: best matched', result[0].item);
+                return result[0].item;
+            }
+
+            console.info('/fuzzy: no match');
+            return '';
+        }
+
+        switch (String(args.mode).trim().toLowerCase()) {
+            case 'best':
+                return getBestMatch();
+            case 'first':
+            default:
+                return getFirstMatch();
+        }
     } catch {
         console.warn('WARN: Invalid list argument provided for /fuzzy command');
         return '';
