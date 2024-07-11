@@ -548,7 +548,7 @@ function setOpenAIMessages(chat) {
         switch (oai_settings.names_behavior) {
             case character_names_behavior.NONE:
                 if (selected_group || (chat[j].force_avatar && chat[j].name !== name1 && chat[j].extra?.type !== system_message_types.NARRATOR)) {
-                    // content = `${chat[j].name}: ${content}`;
+                    content = `${chat[j].name}: ${content}`;
                 }
                 break;
             case character_names_behavior.CONTENT:
