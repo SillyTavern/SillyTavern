@@ -40,8 +40,8 @@ export const enumTypes = {
     getBasedOnIndex(index) {
         const keys = Object.keys(this);
         return this[keys[(index ?? 0) % keys.length]];
-    }
-}
+    },
+};
 
 export class SlashCommandEnumValue {
     /**@type {string}*/ value;
@@ -50,6 +50,7 @@ export class SlashCommandEnumValue {
     /**@type {string}*/ typeIcon = '◊';
     /**@type {(input:string)=>boolean}*/ matchProvider;
     /**@type {(input:string)=>string}*/ valueProvider;
+    /**@type {boolean}*/ makeSelectable = false;
 
     /**
      * A constructor for creating a SlashCommandEnumValue instance.
@@ -59,13 +60,14 @@ export class SlashCommandEnumValue {
      * @param {EnumType?} type - type of the enum (defining its color)
      * @param {string?} typeIcon - The icon to display (Can be pulled from `enumIcons` for common ones)
      */
-    constructor(value, description = null, type = 'enum', typeIcon = '◊', matchProvider = null, valueProvider = null) {
+    constructor(value, description = null, type = 'enum', typeIcon = '◊', matchProvider = null, valueProvider = null, makeSelectable = false) {
         this.value = value;
         this.description = description;
         this.type = type ?? 'enum';
         this.typeIcon = typeIcon;
         this.matchProvider = matchProvider;
         this.valueProvider = valueProvider;
+        this.makeSelectable = makeSelectable;
     }
 
     toString() {
