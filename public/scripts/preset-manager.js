@@ -166,7 +166,7 @@ class PresetManager {
     async savePresetAs() {
         const inputValue = this.getSelectedPresetName();
         const popupText = !this.isNonGenericApi() ? '<h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>' : '';
-        const name = Popup.show.input('Preset name:', popupText, inputValue);
+        const name = await Popup.show.input('Preset name:', popupText, inputValue);
         if (!name) {
             console.log('Preset name not provided');
             return;
