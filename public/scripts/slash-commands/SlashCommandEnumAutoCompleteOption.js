@@ -13,7 +13,7 @@ export class SlashCommandEnumAutoCompleteOption extends AutoCompleteOption {
      * @param {SlashCommandEnumValue} enumValue
      */
     constructor(cmd, enumValue) {
-        super(enumValue.value, enumValue.typeIcon, enumValue.type, enumValue.matchProvider, enumValue.valueProvider);
+        super(enumValue.value, enumValue.typeIcon, enumValue.type, enumValue.matchProvider, enumValue.valueProvider, enumValue.makeSelectable);
         this.cmd = cmd;
         this.enumValue = enumValue;
     }
