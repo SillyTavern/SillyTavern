@@ -101,6 +101,7 @@ import {
     proxies,
     loadProxyPresets,
     selected_proxy,
+    initOpenai,
 } from './scripts/openai.js';
 
 import {
@@ -915,6 +916,7 @@ async function firstLoadInit() {
     initKeyboard();
     initDynamicStyles();
     initTags();
+    initOpenai();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
