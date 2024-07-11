@@ -594,7 +594,7 @@ export async function initPresetManager() {
             return;
         }
 
-        const confirm = await Popup.show.input('Delete the preset?', 'This action is irreversible and your current settings will be overwritten.');
+        const confirm = await Popup.show.confirm('Delete the preset?', 'This action is irreversible and your current settings will be overwritten.');
         if (!confirm) {
             return;
         }
