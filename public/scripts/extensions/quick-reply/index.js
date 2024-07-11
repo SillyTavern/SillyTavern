@@ -239,7 +239,7 @@ eventSource.on(event_types.CHAT_CHANGED, (...args)=>executeIfReadyElseQueue(onCh
 const onUserMessage = async () => {
     await autoExec.handleUser();
 };
-eventSource.on(event_types.USER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onUserMessage, args));
+eventSource.makeFirst(event_types.USER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onUserMessage, args));
 
 const onAiMessage = async (messageId) => {
     if (['...'].includes(chat[messageId]?.mes)) {
@@ -249,7 +249,7 @@ const onAiMessage = async (messageId) => {
 
     await autoExec.handleAi();
 };
-eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onAiMessage, args));
+eventSource.makeFirst(event_types.CHARACTER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onAiMessage, args));
 
 const onGroupMemberDraft = async () => {
     await autoExec.handleGroupMemberDraft();
