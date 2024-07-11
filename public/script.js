@@ -9237,7 +9237,7 @@ jQuery(async function () {
         e.style.height = `${e.scrollHeight + 4}px`;
         is_use_scroll_holder = true;
     }
-    const autoFitEditTextAreaDebounced = debouncedThrottle(autoFitEditTextArea, debounce_timeout.standard);
+    const autoFitEditTextAreaDebounced = debouncedThrottle(autoFitEditTextArea, debounce_timeout.short);
     document.addEventListener('input', e => {
         if (e.target instanceof HTMLTextAreaElement && e.target.classList.contains('edit_textarea')) {
             const immediately = e.target.scrollHeight > e.target.offsetHeight || e.target.value === '';
