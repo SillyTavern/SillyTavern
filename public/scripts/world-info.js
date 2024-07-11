@@ -3647,7 +3647,10 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         for (let entry of sortedEntries) {
 
             //oarse decorators
-            const [decorators] = parseDecorators(entry.content);
+            const [decorators, content] = parseDecorators(entry.content);
+            entry.decorators = decorators;
+            entry.content = content;
+
             if(decorators.includes('@@activate')){
                 //activate in any case
                 activatedNow.add(entry);
@@ -3820,7 +3823,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             } else { console.debug(`uid:${entry.uid} passed probability check, inserting to prompt`); }
 
             // Substitute macros inline, for both this checking and also future processing
-            entry.content = substituteParams(parseDecorators(entry.content)[1]);
+            entry.content = substituteParams(entry.content);
             newContent += `${entry.content}\n`;
 
             if ((textToScanTokens + (await getTokenCountAsync(newContent))) >= budget) {
