@@ -560,7 +560,7 @@ export class Popup {
     };
 }
 
-class PopupUtils {
+export class PopupUtils {
     /**
      * Builds popup content with header and text below
      *

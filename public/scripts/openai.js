@@ -73,7 +73,7 @@ import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 import { renderTemplateAsync } from './templates.js';
 import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
-import { Popup } from './popup.js';
+import { Popup, POPUP_RESULT, POPUP_TYPE, PopupUtils } from './popup.js';
 
 export {
     openai_messages_count,
@@ -3560,9 +3560,32 @@ async function onExportPresetClick() {
     }
 
     const preset = structuredClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
+    const sensitiveFields = [
+        'reverse_proxy',
+        'proxy_password',
+        'custom_url',
+        'custom_include_body',
+        'custom_exclude_body',
+        'custom_include_headers',
+    ];
 
-    delete preset.reverse_proxy;
-    delete preset.proxy_password;
+    const fieldValues = sensitiveFields.filter(field => preset[field]).map(field => `<b>${field}</b>: <code>${preset[field]}</code>`);
+    const shouldConfirm = fieldValues.length > 0;
+    const textHeader = 'Your preset contains proxy and/or custom endpoint settings.';
+    const textMessage = `<div>Do you want to remove these fields before exporting?</div>${DOMPurify.sanitize(fieldValues.join('<br>'))}`;
+    const cancelButton = { text: 'Cancel', result: POPUP_RESULT.CANCELLED, appendAtEnd: true, action: () => popup.complete(POPUP_RESULT.CANCELLED) };
+    const popupOptions = { customButtons: [cancelButton] };
+    const popup = new Popup(PopupUtils.BuildTextWithHeader(textHeader, textMessage), POPUP_TYPE.CONFIRM, '', popupOptions);
+    const popupResult = shouldConfirm && await popup.show();
+
+    if (popupResult === POPUP_RESULT.CANCELLED) {
+        console.log('Export cancelled by user');
+        return;
+    }
+
+    if (!shouldConfirm || popupResult === POPUP_RESULT.AFFIRMATIVE) {
+        sensitiveFields.forEach(field => delete preset[field]);
+    }
 
     const presetJsonString = JSON.stringify(preset, null, 4);
     const presetFileName = `${oai_settings.preset_settings_openai}.json`;
