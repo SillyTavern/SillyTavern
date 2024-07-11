@@ -108,6 +108,7 @@ const METADATA_KEY = 'world_info';
 const DEFAULT_DEPTH = 4;
 const DEFAULT_WEIGHT = 100;
 const MAX_SCAN_DEPTH = 1000;
+const KNOWN_DECORATORS = ['@@activate', '@@dont_activate']
 
 // Typedef area
 /**
@@ -3531,6 +3532,61 @@ export async function getSortedEntries() {
     }
 }
 
+
+/**
+ * Parse decorators from worldinfo content
+ * @param {string} content The content to parse
+ * @returns {[string[],string]} The decorators found in the content and the content without decorators
+*/
+function parseDecorators(content){
+    /**
+     * Check if the decorator is known
+     * @param {string} data string to check
+     * @returns {boolean} true if the decorator is known
+    */
+    const isKnownDecorator = (data) => {
+        if(data.startsWith('@@@')){
+            data = data.substring(1)
+        }
+
+        for(let i = 0; i<KNOWN_DECORATORS.length;i++){
+            if(data.startsWith(KNOWN_DECORATORS[i])){
+                return true
+            }
+        }
+        return false
+    }
+
+    if(content.startsWith('@@')){
+        let newContent = content;
+        const splited = content.split('\n');
+        let decorators = []
+        let fallbacked = false;
+
+        for (let i = 0; i < splited.length; i++) {
+            if(splited[i].startsWith('@@')){
+                if(splited[i].startsWith('@@@') && !fallbacked){
+                    continue
+                }
+
+                if(isKnownDecorator(splited[i])){
+                    decorators.push(splited[i].startsWith('@@@') ? splited[i].substring(1) : splited[i])
+                }
+                else{
+                    fallbacked = true
+                }
+            } else {
+                newContent = splited.slice(i).join('\n');
+                break;
+            }
+        }
+        return [decorators, newContent]
+    }
+
+    return [[], content]
+
+}
+
 /**
  * Performs a scan on the chat and returns the world info activated.
  * @param {string[]} chat The chat messages to scan, in reverse order.
@@ -3588,6 +3644,20 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
         let activatedNow = new Set();
 
         for (let entry of sortedEntries) {
+
+            //oarse decorators
+            const [decorators] = parseDecorators(entry.content);
+            if(decorators.includes('@@activate')){
+                //activate in any case
+                activatedNow.add(entry);
+                continue;
+            }
+
+            if(decorators.includes('@@dont_activate')){
+                //deactivate in any case if @@activate is not present
+                continue;
+            }
+
             // Check if this entry applies to the character or if it's excluded
             if (entry.characterFilter && entry.characterFilter?.names?.length > 0) {
                 const nameIncluded = entry.characterFilter.names.includes(getCharaFilename());
@@ -3655,6 +3725,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 activatedNow.add(entry);
                 continue;
             }
+
 
             if (Array.isArray(entry.key) && entry.key.length) { //check for keywords existing
                 // If selectiveLogic isn't found, assume it's AND, only do this once per entry
@@ -3748,7 +3819,7 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             } else { console.debug(`uid:${entry.uid} passed probability check, inserting to prompt`); }
 
             // Substitute macros inline, for both this checking and also future processing
-            entry.content = substituteParams(entry.content);
+            entry.content = substituteParams(parseDecorators(entry.content)[1]);
             newContent += `${entry.content}\n`;
 
             if ((textToScanTokens + (await getTokenCountAsync(newContent))) >= budget) {
