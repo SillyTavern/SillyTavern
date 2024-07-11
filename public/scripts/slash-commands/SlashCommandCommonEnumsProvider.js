@@ -3,6 +3,7 @@ import { extension_settings } from "../extensions.js";
 import { getGroupMembers, groups, selected_group } from "../group-chats.js";
 import { power_user } from "../power-user.js";
 import { searchCharByName, getTagsList, tags } from "../tags.js";
+import { world_names } from '../world-info.js';
 import { SlashCommandClosure } from "./SlashCommandClosure.js";
 import { SlashCommandEnumValue, enumTypes } from "./SlashCommandEnumValue.js";
 import { SlashCommandExecutor } from "./SlashCommandExecutor.js";
@@ -213,7 +214,7 @@ export const commonEnumProviders = {
      *
      * @returns {SlashCommandEnumValue[]}
      */
-    worlds: () => $('#world_info').children().toArray().map(x => new SlashCommandEnumValue(x.textContent, null, enumTypes.name, enumIcons.world)),
+    worlds: () => world_names.map(worldName => new SlashCommandEnumValue(worldName, null, enumTypes.name, enumIcons.world)),
 
     /**
      * All existing injects for the current chat
