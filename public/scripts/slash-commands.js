@@ -977,7 +977,7 @@ export function initDefaultSlashCommands() {
                 isRequired: false,
                 defaultValue: 'first',
                 acceptsMultiple: false,
-                enumProvider: () => [
+                enumList: [
                     new SlashCommandEnumValue('first', 'first match below the threshold', enumTypes.enum, enumIcons.default),
                     new SlashCommandEnumValue('best', 'best match below the threshold', enumTypes.enum, enumIcons.default),
                 ],
