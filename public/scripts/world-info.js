@@ -1214,7 +1214,7 @@ function registerWorldInfoSlashCommands() {
                 enumTypes.enum, enumIcons.getDataTypeIcon(value.type))),
 
         /** All existing UIDs based on the file argument as world name */
-        wiUids: (/** @type {import('./slash-commands/SlashCommandExecutor.js'.SlashCommandExecutor)} */ executor) => {
+        wiUids: (/** @type {import('./slash-commands/SlashCommandExecutor.js').SlashCommandExecutor} */ executor) => {
             const file = executor.namedArgumentList.find(it => it.name == 'file')?.value;
             if (file instanceof SlashCommandClosure) throw new Error('Argument \'file\' does not support closures');
             // Try find world from cache
