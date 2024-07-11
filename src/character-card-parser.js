@@ -33,9 +33,6 @@ const write = (image, data) => {
         const v3Data = JSON.parse(data);
         v3Data.spec = 'chara_card_v3'
         v3Data.spec_version = '3.0'
-        if(v3Data.data && !v3Data.data.group_only_greetings){
-            v3Data.data.group_only_greetings = []
-        }
 
         const base64EncodedData = Buffer.from(JSON.stringify(v3Data), 'utf8').toString('base64');
         chunks.splice(-1, 0, PNGtext.encode('ccv3', base64EncodedData));
