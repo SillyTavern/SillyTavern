@@ -53,6 +53,7 @@ import {
     getFileText,
     getImageSizeFromDataURL,
     getSortableDelay,
+    getStringHash,
     isDataURL,
     parseJsonFile,
     resetScrollHeight,
@@ -72,6 +73,7 @@ import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 import { renderTemplateAsync } from './templates.js';
 import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
+import { Popup } from './popup.js';
 
 export {
     openai_messages_count,
@@ -388,7 +390,7 @@ let openai_settings;
 
 let promptManager = null;
 
-function validateReverseProxy() {
+async function validateReverseProxy() {
     if (!oai_settings.reverse_proxy) {
         return;
     }
@@ -401,6 +403,24 @@ function validateReverseProxy() {
         setOnlineStatus('no_connection');
         resultCheckStatus();
         throw err;
+    }
+    const rememberKey = `Proxy_SkipConfirm_${getStringHash(oai_settings.reverse_proxy)}`;
+    const skipConfirm = localStorage.getItem(rememberKey) === 'true';
+
+    const confirmation = skipConfirm || await Popup.show.confirm('Connecting To Proxy', `<span>Are you sure you want to connect to the following proxy URL?</span><var>${oai_settings.reverse_proxy}</var>`, {
+        customInputs: [{ id: 'proxy-remember', label: 'Don\'t ask again for this proxy URL' }],
+        onClose: popup => {
+            if (popup.result) {
+                const rememberValue = popup.inputResults.get('proxy-remember');
+                localStorage.setItem(rememberKey, String(rememberValue));
+            }
+        },
+    });
+    if (!confirmation) {
+        toastr.error('Update or remove your reverse proxy settings.');
+        setOnlineStatus('no_connection');
+        resultCheckStatus();
+        throw new Error('Proxy connection denied.');
     }
 }
 
@@ -528,7 +548,7 @@ function setOpenAIMessages(chat) {
         switch (oai_settings.names_behavior) {
             case character_names_behavior.NONE:
                 if (selected_group || (chat[j].force_avatar && chat[j].name !== name1 && chat[j].extra?.type !== system_message_types.NARRATOR)) {
-                    content = `${chat[j].name}: ${content}`;
+                    // content = `${chat[j].name}: ${content}`;
                 }
                 break;
             case character_names_behavior.CONTENT:
@@ -1787,7 +1807,7 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     // Proxy is only supported for Claude, OpenAI, Mistral, and Google MakerSuite
     if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE].includes(oai_settings.chat_completion_source)) {
-        validateReverseProxy();
+        await validateReverseProxy();
         generate_data['reverse_proxy'] = oai_settings.reverse_proxy;
         generate_data['proxy_password'] = oai_settings.proxy_password;
     }
@@ -3200,7 +3220,7 @@ async function getStatusOpen() {
     };
 
     if (oai_settings.reverse_proxy && (oai_settings.chat_completion_source === chat_completion_sources.OPENAI || oai_settings.chat_completion_source === chat_completion_sources.CLAUDE)) {
-        validateReverseProxy();
+        await validateReverseProxy();
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.CUSTOM) {
