@@ -50,6 +50,13 @@ export class SlashCommandHandler {
                 return new SlashCommandEnumValue(qr.label, message, enumTypes.enum, enumIcons.qr);
             }) ?? [],
 
+            /** All QRs inside a set, utilizing the "set" named argument, returns the QR's ID */
+            qrIds: (executor) => QuickReplySet.get(String(executor.namedArgumentList.find(x => x.name == 'set')?.value))?.qrList.map(qr => {
+                const icons = getExecutionIcons(qr);
+                const message = `${qr.automationId ? `[${qr.automationId}]` : ''}${icons ? `[auto: ${icons}]` : ''} ${qr.title || qr.message}`.trim();
+                return new SlashCommandEnumValue(qr.label, message, enumTypes.enum, enumIcons.qr, null, ()=>qr.id.toString(), true);
+            }) ?? [],
+
             /** All QRs as a set.name string, to be able to execute, for example via the /run command */
             qrExecutables: () => {
                 const globalSetList = this.api.settings.config.setList;
@@ -237,8 +244,8 @@ export class SlashCommandHandler {
                 name: 'label',
                 description: 'text on the button, e.g., label=MyButton',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-                enumProvider: localEnumProviders.qrLabels,
+                isRequired: false,
+                enumProvider: localEnumProviders.qrEntries,
             }),
             new SlashCommandNamedArgument('hidden', 'whether the button should be hidden, e.g., hidden=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
             new SlashCommandNamedArgument('startup', 'auto execute on app startup, e.g., startup=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
@@ -250,6 +257,13 @@ export class SlashCommandHandler {
         ];
         const qrUpdateArgs = [
             new SlashCommandNamedArgument('newlabel', 'new text for the button', [ARGUMENT_TYPE.STRING], false),
+            SlashCommandNamedArgument.fromProps({
+                name: 'id',
+                description: 'numeric ID of the QR, e.g., id=42',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                isRequired: false,
+                enumProvider: localEnumProviders.qrIds,
+            }),
         ];
 
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-create',
@@ -275,13 +289,61 @@ export class SlashCommandHandler {
                 </div>
             `,
         }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-get',
+            callback: (args, _) => {
+                return this.getQuickReply(args);
+            },
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'set',
+                    description: 'name of the QR set, e.g., set=PresetName1',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumProvider: localEnumProviders.qrSets,
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'label',
+                    description: 'text on the button, e.g., label=MyButton',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: false,
+                    enumProvider: localEnumProviders.qrEntries,
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'id',
+                    description: 'numeric ID of the QR, e.g., id=42',
+                    typeList: [ARGUMENT_TYPE.NUMBER],
+                    isRequired: false,
+                    enumProvider: localEnumProviders.qrIds,
+                }),
+            ],
+            returns: 'a dictionary with all the QR\'s properties',
+            helpString: `
+                <div>Get a Quick Reply's properties.</div>
+                <div>
+                    <strong>Examples:</strong>
+                    <ul>
+                        <li>
+                            <pre><code>/qr-get set=MyPreset label=MyButton | /echo</code></pre>
+                            <pre><code>/qr-get set=MyPreset id=42 | /echo</code></pre>
+                        </li>
+                    </ul>
+                </div>
+            `,
+        }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-update',
             callback: (args, message) => {
                 this.updateQuickReply(args, message);
                 return '';
             },
             returns: 'updated quick reply',
-            namedArgumentList: [...qrUpdateArgs, ...qrArgs],
+            namedArgumentList: [...qrUpdateArgs, ...qrArgs.map(it=>{
+                if (it.name == 'label') {
+                    const clone = SlashCommandNamedArgument.fromProps(it);
+                    clone.isRequired = false;
+                    return clone;
+                }
+                return it;
+            })],
             unnamedArgumentList: [
                 new SlashCommandArgument('command', [ARGUMENT_TYPE.STRING]),
             ],
@@ -318,6 +380,12 @@ export class SlashCommandHandler {
                     typeList: [ARGUMENT_TYPE.STRING],
                     enumProvider: localEnumProviders.qrEntries,
                 }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'id',
+                    description: 'numeric ID of the QR, e.g., id=42',
+                    typeList: [ARGUMENT_TYPE.NUMBER],
+                    enumProvider: localEnumProviders.qrIds,
+                }),
             ],
             helpString: 'Deletes a Quick Reply from the specified set. If no label is provided, the entire set is deleted.',
         }));
@@ -339,6 +407,12 @@ export class SlashCommandHandler {
                     description: 'Quick Reply label',
                     typeList: [ARGUMENT_TYPE.STRING],
                     enumProvider: localEnumProviders.qrEntries,
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'id',
+                    description: 'numeric ID of the QR, e.g., id=42',
+                    typeList: [ARGUMENT_TYPE.NUMBER],
+                    enumProvider: localEnumProviders.qrIds,
                 }),
                 new SlashCommandNamedArgument(
                     'chain', 'boolean', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
@@ -385,6 +459,12 @@ export class SlashCommandHandler {
                     typeList: [ARGUMENT_TYPE.STRING],
                     enumProvider: localEnumProviders.qrEntries,
                 }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'id',
+                    description: 'numeric ID of the QR, e.g., id=42',
+                    typeList: [ARGUMENT_TYPE.NUMBER],
+                    enumProvider: localEnumProviders.qrIds,
+                }),
             ],
             unnamedArgumentList: [
                 SlashCommandArgument.fromProps({
@@ -420,6 +500,12 @@ export class SlashCommandHandler {
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
                     enumProvider: localEnumProviders.qrSets,
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'id',
+                    description: 'numeric ID of the QR, e.g., id=42',
+                    typeList: [ARGUMENT_TYPE.NUMBER],
+                    enumProvider: localEnumProviders.qrIds,
                 }),
             ],
             unnamedArgumentList: [
@@ -753,6 +839,13 @@ export class SlashCommandHandler {
                     automationId: args.automationId ?? '',
                 },
             );
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
+    }
+    getQuickReply(args) {
+        try {
+            return JSON.stringify(this.api.getQrByLabel(args.set, args.id !== undefined ? Number(args.id) : args.label));
         } catch (ex) {
             toastr.error(ex.message);
         }
