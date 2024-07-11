@@ -3651,17 +3651,6 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
             entry.decorators = decorators;
             entry.content = content;
 
-            if(decorators.includes('@@activate')){
-                //activate in any case
-                activatedNow.add(entry);
-                continue;
-            }
-
-            if(decorators.includes('@@dont_activate')){
-                //deactivate in any case if @@activate is not present
-                continue;
-            }
-
             // Check if this entry applies to the character or if it's excluded
             if (entry.characterFilter && entry.characterFilter?.names?.length > 0) {
                 const nameIncluded = entry.characterFilter.names.includes(getCharaFilename());
@@ -3725,6 +3714,17 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 continue;
             }
 
+            if(decorators.includes('@@activate')){
+                //activate in any case
+                activatedNow.add(entry);
+                continue;
+            }
+
+            if(decorators.includes('@@dont_activate')){
+                //deactivate in any case if @@activate is not present
+                continue;
+            }
+            
             if (entry.constant || buffer.isExternallyActivated(entry) || isSticky) {
                 activatedNow.add(entry);
                 continue;
