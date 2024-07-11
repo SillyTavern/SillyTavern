@@ -849,7 +849,7 @@ export class SlashCommandParser {
             this.discardWhitespace();
         }
         this.discardWhitespace();
-        cmd.startUnnamedArgs = this.index - /\s(\s*)$/s.exec(this.behind)?.[1]?.length ?? 0;
+        cmd.startUnnamedArgs = this.index - (/\s(\s*)$/s.exec(this.behind)?.[1]?.length ?? 0);
         cmd.endUnnamedArgs = this.index;
         if (this.testUnnamedArgument()) {
             cmd.unnamedArgumentList = this.parseUnnamedArgument(cmd.command?.unnamedArgumentList?.length && cmd?.command?.splitUnnamedArgument, cmd?.command?.splitUnnamedArgumentCount);
