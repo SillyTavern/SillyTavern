@@ -557,6 +557,7 @@
   background-color: var(--SmartThemeBodyColor);
   mask-size: contain;
   mask-position: center;
+  mask-repeat: no-repeat;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-resume:after {
   mask-image: url('/img/step-resume.svg');
