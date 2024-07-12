@@ -101,6 +101,7 @@ import {
     proxies,
     loadProxyPresets,
     selected_proxy,
+    initOpenai,
 } from './scripts/openai.js';
 
 import {
@@ -155,7 +156,6 @@ import {
     ensureImageFormatSupported,
     flashHighlight,
     isTrueBoolean,
-    debouncedThrottle,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -915,6 +915,7 @@ async function firstLoadInit() {
     initKeyboard();
     initDynamicStyles();
     initTags();
+    initOpenai();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
@@ -9233,11 +9234,12 @@ jQuery(async function () {
      */
     function autoFitEditTextArea(e) {
         scroll_holder = chatElement[0].scrollTop;
-        e.style.height = '0';
-        e.style.height = `${e.scrollHeight + 4}px`;
+        e.style.height = '0px';
+        const newHeight = e.scrollHeight + 4;
+        e.style.height = `${newHeight}px`;
         is_use_scroll_holder = true;
     }
-    const autoFitEditTextAreaDebounced = debouncedThrottle(autoFitEditTextArea, debounce_timeout.standard);
+    const autoFitEditTextAreaDebounced = debounce(autoFitEditTextArea, debounce_timeout.short);
     document.addEventListener('input', e => {
         if (e.target instanceof HTMLTextAreaElement && e.target.classList.contains('edit_textarea')) {
             const immediately = e.target.scrollHeight > e.target.offsetHeight || e.target.value === '';

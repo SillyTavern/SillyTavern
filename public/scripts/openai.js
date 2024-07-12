@@ -4744,22 +4744,23 @@ function runProxyCallback(_, value) {
     return foundName;
 }
 
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-    name: 'proxy',
-    callback: runProxyCallback,
-    returns: 'current proxy',
-    namedArgumentList: [],
-    unnamedArgumentList: [
-        SlashCommandArgument.fromProps({
-            description: 'name',
-            typeList: [ARGUMENT_TYPE.STRING],
-            isRequired: true,
-            enumProvider: () => proxies.map(preset => new SlashCommandEnumValue(preset.name, preset.url)),
-        }),
-    ],
-    helpString: 'Sets a proxy preset by name.',
-}));
-
+export function initOpenai() {
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'proxy',
+        callback: runProxyCallback,
+        returns: 'current proxy',
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: () => proxies.map(preset => new SlashCommandEnumValue(preset.name, preset.url)),
+            }),
+        ],
+        helpString: 'Sets a proxy preset by name.',
+    }));
+}
 
 $(document).ready(async function () {
     $('#test_api_button').on('click', testApiConnection);

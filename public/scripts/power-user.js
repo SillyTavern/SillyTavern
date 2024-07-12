@@ -2734,45 +2734,26 @@ async function doDelMode(_, text) {
         return '';
     }
 
-    //first enter delmode
-    $('#option_delete_mes').trigger('click', { fromSlashCommand: true });
-
-    //parse valid args
-    if (text) {
-        await delay(300); //same as above, need event signal for 'entered del mode'
-        console.debug('parsing msgs to del');
-        let numMesToDel = Number(text);
-        let lastMesID = Number($('#chat .mes').last().attr('mesid'));
-        let oldestMesIDToDel = lastMesID - numMesToDel + 1;
-
-        if (oldestMesIDToDel < 0) {
-            toastr.warning(`Cannot delete more than ${chat.length} messages.`);
-            return '';
-        }
-
-        let oldestMesToDel = $('#chat').find(`.mes[mesid=${oldestMesIDToDel}]`);
-
-        if (!oldestMesIDToDel && lastMesID > 0) {
-            oldestMesToDel = await loadUntilMesId(oldestMesIDToDel);
-
-            if (!oldestMesToDel || !oldestMesToDel.length) {
-                return '';
-            }
-        }
-
-        let oldestDelMesCheckbox = $(oldestMesToDel).find('.del_checkbox');
-        let newLastMesID = oldestMesIDToDel - 1;
-        console.debug(`DelMesReport -- numMesToDel:  ${numMesToDel}, lastMesID: ${lastMesID}, oldestMesIDToDel:${oldestMesIDToDel}, newLastMesID: ${newLastMesID}`);
-        oldestDelMesCheckbox.trigger('click');
-        let trueNumberOfDeletedMessage = lastMesID - oldestMesIDToDel + 1;
-
-        //await delay(1)
-        $('#dialogue_del_mes_ok').trigger('click');
-        toastr.success(`Deleted ${trueNumberOfDeletedMessage} messages.`);
+    // Just enter the delete mode.
+    if (!text) {
+        $('#option_delete_mes').trigger('click', { fromSlashCommand: true });
         return '';
     }
 
-    return '';
+    const count = Number(text);
+
+    // Nothing to delete.
+    if (count < 1) {
+        return '';
+    }
+
+    if (count > chat.length) {
+        toastr.warning(`Cannot delete more than ${chat.length} messages.`);
+        return '';
+    }
+
+    const range = `${chat.length - count}-${chat.length - 1}`;
+    return doMesCut(_, range);
 }
 
 function doResetPanels() {

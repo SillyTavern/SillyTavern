@@ -696,18 +696,18 @@ const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
 function autoFitSendTextArea() {
     const originalScrollBottom = chatBlock.scrollHeight - (chatBlock.scrollTop + chatBlock.offsetHeight);
     if (Math.ceil(sendTextArea.scrollHeight + 3) >= Math.floor(sendTextArea.offsetHeight)) {
-        // Needs to be pulled dynamically because it is affected by font size changes
-        const sendTextAreaMinHeight = window.getComputedStyle(sendTextArea).getPropertyValue('min-height');
+        const sendTextAreaMinHeight = '0px';
         sendTextArea.style.height = sendTextAreaMinHeight;
     }
-    sendTextArea.style.height = sendTextArea.scrollHeight + 3 + 'px';
+    const newHeight = sendTextArea.scrollHeight + 3;
+    sendTextArea.style.height = `${newHeight}px`;
 
     if (!isFirefox) {
         const newScrollTop = Math.round(chatBlock.scrollHeight - (chatBlock.offsetHeight + originalScrollBottom));
         chatBlock.scrollTop = newScrollTop;
     }
 }
-export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea);
+export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea, debounce_timeout.short);
 
 // ---------------------------------------------------
 
@@ -882,7 +882,8 @@ export function initRossMods() {
     });
 
     $(sendTextArea).on('input', () => {
-        if (sendTextArea.scrollHeight > sendTextArea.offsetHeight || sendTextArea.value === '') {
+        const scrollbarShown = sendTextArea.clientWidth < sendTextArea.offsetWidth && sendTextArea.offsetHeight >= window.innerHeight / 2;
+        if ((sendTextArea.scrollHeight > sendTextArea.offsetHeight && !scrollbarShown) || sendTextArea.value === '') {
             autoFitSendTextArea();
         } else {
             autoFitSendTextAreaDebounced();

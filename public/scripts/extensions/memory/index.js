@@ -914,7 +914,7 @@ jQuery(async function () {
 
     await addExtensionControls();
     loadSettings();
-    eventSource.on(event_types.MESSAGE_RECEIVED, onChatEvent);
+    eventSource.makeLast(event_types.CHARACTER_MESSAGE_RENDERED, onChatEvent);
     eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);
     eventSource.on(event_types.MESSAGE_EDITED, onChatEvent);
     eventSource.on(event_types.MESSAGE_SWIPED, onChatEvent);

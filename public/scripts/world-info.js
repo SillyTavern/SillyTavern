@@ -14,7 +14,6 @@ import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
-import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from './popup.js';
 
@@ -1215,7 +1214,7 @@ function registerWorldInfoSlashCommands() {
                 enumTypes.enum, enumIcons.getDataTypeIcon(value.type))),
 
         /** All existing UIDs based on the file argument as world name */
-        wiUids: (/** @type {SlashCommandExecutor} */ executor) => {
+        wiUids: (/** @type {import('./slash-commands/SlashCommandExecutor.js').SlashCommandExecutor} */ executor) => {
             const file = executor.namedArgumentList.find(it => it.name == 'file')?.value;
             if (file instanceof SlashCommandClosure) throw new Error('Argument \'file\' does not support closures');
             // Try find world from cache
@@ -3161,7 +3160,8 @@ function duplicateWorldInfoEntry(data, uid) {
     }
 
     // Exclude uid and gather the rest of the properties
-    const { uid: _, ...originalData } = data.entries[uid];
+    const originalData = Object.assign({}, data.entries[uid]);
+    delete originalData.uid;
 
     // Create new entry and copy over data
     const entry = createWorldInfoEntry(data.name, data);
@@ -4326,8 +4326,9 @@ function onWorldInfoChange(args, text) {
             $('#world_info').val(null).trigger('change');
         }
     } else { //if it's a pointer selection
-        let tempWorldInfo = [];
-        let selectedWorlds = $('#world_info').val().map((e) => Number(e)).filter((e) => !isNaN(e));
+        const tempWorldInfo = [];
+        const val = $('#world_info').val();
+        const selectedWorlds = (Array.isArray(val) ? val : [val]).map((e) => Number(e)).filter((e) => !isNaN(e));
         if (selectedWorlds.length > 0) {
             selectedWorlds.forEach((worldIndex) => {
                 const existingWorldName = world_names[worldIndex];
