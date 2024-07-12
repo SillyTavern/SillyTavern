@@ -881,13 +881,14 @@ export function initRossMods() {
         saveSettingsDebounced();
     });
 
-    $(sendTextArea).on('input', () => {
-        const scrollbarShown = sendTextArea.clientWidth < sendTextArea.offsetWidth && sendTextArea.offsetHeight >= window.innerHeight / 2;
-        if ((sendTextArea.scrollHeight > sendTextArea.offsetHeight && !scrollbarShown) || sendTextArea.value === '') {
-            autoFitSendTextArea();
-        } else {
-            autoFitSendTextAreaDebounced();
-        }
+    sendTextArea.addEventListener('input', () => {
+        const hasContent = sendTextArea.value !== '';
+        const fitsCurrentSize = sendTextArea.scrollHeight <= sendTextArea.offsetHeight;
+        const isScrollbarShown = sendTextArea.clientWidth < sendTextArea.offsetWidth;
+        const isHalfScreenHeight = sendTextArea.offsetHeight >= window.innerHeight / 2;
+        const needsDebounce = hasContent && (fitsCurrentSize || (isScrollbarShown && isHalfScreenHeight));
+        if (needsDebounce) autoFitSendTextAreaDebounced();
+        else autoFitSendTextArea();
         saveUserInputDebounced();
     });
 
