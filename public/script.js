@@ -9236,9 +9236,9 @@ jQuery(async function () {
     function autoFitEditTextArea(e) {
         const computedStyle = window.getComputedStyle(e);
         const maxHeight = parseInt(computedStyle.maxHeight, 10);
-        const newHeight = e.scrollHeight + 4;
         scroll_holder = chatElement[0].scrollTop;
         e.style.height = computedStyle.minHeight;
+        const newHeight = e.scrollHeight + 4;
         e.style.height = (newHeight < maxHeight) ? `${newHeight}px` : `${maxHeight}px`;
         is_use_scroll_holder = true;
     }
