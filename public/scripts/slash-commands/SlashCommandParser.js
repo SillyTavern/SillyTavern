@@ -243,6 +243,14 @@ export class SlashCommandParser {
             end: /\||$|:}/,
             contains: [],
         };
+        const KEYWORD = {
+            scope: 'command',
+            begin: /\/(import)/,
+            beginScope: 'keyword',
+            end: /\||$|(?=:})/,
+            excludeEnd: true,
+            contains: [],
+        };
         const LET = {
             begin: [
                 /\/(let|var)\s+/,
@@ -312,6 +320,14 @@ export class SlashCommandParser {
             MACRO,
             CLOSURE,
         );
+        KEYWORD.contains.push(
+            hljs.BACKSLASH_ESCAPE,
+            NAMED_ARG,
+            NUMBER,
+            MACRO,
+            CLOSURE,
+            hljs.QUOTE_STRING_MODE,
+        );
         LET.contains.push(
             hljs.BACKSLASH_ESCAPE,
             NAMED_ARG,
@@ -348,6 +364,7 @@ export class SlashCommandParser {
             hljs.BACKSLASH_ESCAPE,
             COMMENT,
             ABORT,
+            KEYWORD,
             NAMED_ARG,
             NUMBER,
             MACRO,
@@ -366,6 +383,7 @@ export class SlashCommandParser {
                 hljs.BACKSLASH_ESCAPE,
                 COMMENT,
                 ABORT,
+                KEYWORD,
                 RUN,
                 LET,
                 GETVAR,

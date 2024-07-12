@@ -1392,6 +1392,7 @@ body[data-stscript-style="dark"] {
     --ac-style-color-punctuationL2: rgba(98 160 251 / 1);
     --ac-style-color-currentParenthesis: rgba(195 118 210 / 1);
     --ac-style-color-comment: rgba(122 151 90 / 1);
+    --ac-style-color-keyword: rgba(182 137 190 / 1);
 }
 
 body[data-stscript-style="light"] {
@@ -1413,6 +1414,7 @@ body[data-stscript-style="light"] {
     --ac-style-color-variable: rgba(16 24 125 / 1);
     --ac-style-color-currentParenthesis: rgba(195 118 210 / 1);
     --ac-style-color-comment: rgba(70 126 26 / 1);
+    --ac-style-color-keyword: rgba(182 137 190 / 1);
 }
 
 body[data-stscript-style="theme"] {
@@ -1433,6 +1435,7 @@ body[data-stscript-style="theme"] {
     --ac-style-color-variable: rgba(131 193 252 / 1);
     --ac-style-color-currentParenthesis: rgba(195 118 210 / 1);
     --ac-style-color-comment: rgba(122 151 90 / 1);
+    --ac-style-color-keyword: rgba(182 137 190 / 1);
 }
 
 body {
@@ -1463,6 +1466,7 @@ body {
     --ac-color-punctuationL2: var(--ac-style-color-punctuationL2, rgba(98 160 251 / 1));
     --ac-color-currentParenthesis: var(--ac-style-color-currentParenthesis, rgba(195 118 210 / 1));
     --ac-color-comment: var(--ac-style-color-comment, rgba(122 151 90 / 1));
+    --ac-color-keyword: var(--ac-style-color-keyword, rgba(182 137 190 / 1));
 
     font-size: calc(var(--ac-font-scale) * 1em);
 
@@ -1573,6 +1577,10 @@ body[data-stscript-style] .hljs.language-stscript {
 
     .hljs-abort {
         color: var(--ac-style-color-abort, #e38e23);
+    }
+
+    .hljs-keyword {
+        color: var(--ac-style-color-keyword);
     }
 
     .hljs-closure {
