@@ -31,7 +31,7 @@ import {
     SECRET_KEYS,
     secret_state,
 } from './secrets.js';
-import { debounce, debouncedThrottle, getStringHash, isValidUrl } from './utils.js';
+import { debounce, getStringHash, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
@@ -707,7 +707,7 @@ function autoFitSendTextArea() {
         chatBlock.scrollTop = newScrollTop;
     }
 }
-export const autoFitSendTextAreaDebounced = debouncedThrottle(autoFitSendTextArea, debounce_timeout.short);
+export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea, debounce_timeout.short);
 
 // ---------------------------------------------------
 
