@@ -694,16 +694,13 @@ const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
  * this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
  */
 function autoFitSendTextArea() {
-    // Needs to be pulled dynamically because it is affected by font size changes
-    const computedStyle = window.getComputedStyle(sendTextArea);
     const originalScrollBottom = chatBlock.scrollHeight - (chatBlock.scrollTop + chatBlock.offsetHeight);
     if (Math.ceil(sendTextArea.scrollHeight + 3) >= Math.floor(sendTextArea.offsetHeight)) {
-        const sendTextAreaMinHeight = computedStyle.minHeight;
+        const sendTextAreaMinHeight = '0px';
         sendTextArea.style.height = sendTextAreaMinHeight;
     }
-    const maxHeight = parseInt(computedStyle.maxHeight, 10);
     const newHeight = sendTextArea.scrollHeight + 3;
-    sendTextArea.style.height = (newHeight < maxHeight) ? `${newHeight}px` : `${maxHeight}px`;
+    sendTextArea.style.height = `${newHeight}px`;
 
     if (!isFirefox) {
         const newScrollTop = Math.round(chatBlock.scrollHeight - (chatBlock.offsetHeight + originalScrollBottom));
