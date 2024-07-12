@@ -9242,7 +9242,8 @@ jQuery(async function () {
     const autoFitEditTextAreaDebounced = debounce(autoFitEditTextArea, debounce_timeout.short);
     document.addEventListener('input', e => {
         if (e.target instanceof HTMLTextAreaElement && e.target.classList.contains('edit_textarea')) {
-            const immediately = e.target.scrollHeight > e.target.offsetHeight || e.target.value === '';
+            const scrollbarShown = e.target.clientWidth < e.target.offsetWidth && e.target.offsetHeight >= window.innerHeight * 0.75;
+            const immediately = (e.target.scrollHeight > e.target.offsetHeight && !scrollbarShown) || e.target.value === '';
             immediately ? autoFitEditTextArea(e.target) : autoFitEditTextAreaDebounced(e.target);
         }
     });

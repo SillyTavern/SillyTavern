@@ -3910,6 +3910,8 @@ input[type="range"]::-webkit-slider-thumb {
     outline: none;
     background-color: var(--black50a);
     line-height: calc(var(--mainFontSize) + .25rem);
+    max-height: 75vh;
+    max-height: 75dvh;
 }
 
 #anchor_order {
