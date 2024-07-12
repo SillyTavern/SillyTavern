@@ -333,6 +333,9 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
     if (power_user.instruct.macro) {
         prefix = substituteParams(prefix, name1, name2);
         prefix = prefix.replace(/{{name}}/gi, name || 'System');
+
+        suffix = substituteParams(suffix, name1, name2);
+        suffix = suffix.replace(/{{name}}/gi, name || 'System');
     }
 
     if (!suffix && power_user.instruct.wrap) {
@@ -398,6 +401,8 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
 
         inputPrefix = inputPrefix.replace(/{{name}}/gi, name1);
         outputPrefix = outputPrefix.replace(/{{name}}/gi, name2);
+        inputSuffix = inputSuffix.replace(/{{name}}/gi, name1);
+        outputSuffix = outputSuffix.replace(/{{name}}/gi, name2);
 
         if (!inputSuffix && power_user.instruct.wrap) {
             inputSuffix = '\n';
