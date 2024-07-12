@@ -73,7 +73,7 @@ import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 import { renderTemplateAsync } from './templates.js';
 import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
-import { Popup, POPUP_RESULT, POPUP_TYPE, PopupUtils } from './popup.js';
+import { Popup, POPUP_RESULT } from './popup.js';
 
 export {
     openai_messages_count,
@@ -3525,10 +3525,9 @@ async function onPresetImportFileChange(e) {
     if (shouldConfirm) {
         const textHeader = 'The imported preset contains proxy and/or custom endpoint settings.';
         const textMessage = fields.join('<br>');
-        const cancelButton = { text: 'Cancel import', result: POPUP_RESULT.CANCELLED, appendAtEnd: true, action: () => popup.complete(POPUP_RESULT.CANCELLED) };
+        const cancelButton = { text: 'Cancel import', result: POPUP_RESULT.CANCELLED, appendAtEnd: true };
         const popupOptions = { customButtons: [cancelButton], okButton: 'Remove them', cancelButton: 'Import as-is' };
-        const popup = new Popup(PopupUtils.BuildTextWithHeader(textHeader, textMessage), POPUP_TYPE.CONFIRM, '', popupOptions);
-        const popupResult = await popup.show();
+        const popupResult = await Popup.show.confirm(textHeader, textMessage, popupOptions);
 
         if (popupResult === POPUP_RESULT.CANCELLED) {
             console.log('Import cancelled by user');
@@ -3590,10 +3589,9 @@ async function onExportPresetClick() {
     const shouldConfirm = fieldValues.length > 0;
     const textHeader = 'Your preset contains proxy and/or custom endpoint settings.';
     const textMessage = `<div>Do you want to remove these fields before exporting?</div><br>${DOMPurify.sanitize(fieldValues.join('<br>'))}`;
-    const cancelButton = { text: 'Cancel', result: POPUP_RESULT.CANCELLED, appendAtEnd: true, action: () => popup.complete(POPUP_RESULT.CANCELLED) };
+    const cancelButton = { text: 'Cancel', result: POPUP_RESULT.CANCELLED, appendAtEnd: true };
     const popupOptions = { customButtons: [cancelButton] };
-    const popup = new Popup(PopupUtils.BuildTextWithHeader(textHeader, textMessage), POPUP_TYPE.CONFIRM, '', popupOptions);
-    const popupResult = shouldConfirm && await popup.show();
+    const popupResult = await Popup.show.confirm(textHeader, textMessage, popupOptions);
 
     if (popupResult === POPUP_RESULT.CANCELLED) {
         console.log('Export cancelled by user');
