@@ -527,14 +527,14 @@ export class QuickReply {
                         message.value = `${message.value.substring(0, lineStart)}${message.value.substring(lineStart, end).replace(/\n/g, '\n\t')}${message.value.substring(end)}`;
                         message.selectionStart = start + 1;
                         message.selectionEnd = end + count;
-                        updateSyntax();
+                        message.dispatchEvent(new Event('input', { bubbles:true }));
                     } else if (!(ac.isReplaceable && ac.isActive)) {
                         evt.stopImmediatePropagation();
                         evt.stopPropagation();
                         message.value = `${message.value.substring(0, start)}\t${message.value.substring(end)}`;
                         message.selectionStart = start + 1;
                         message.selectionEnd = end + 1;
-                        updateSyntax();
+                        message.dispatchEvent(new Event('input', { bubbles:true }));
                     }
                 } else if (evt.key == 'Tab' && evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
                     evt.preventDefault();
@@ -547,7 +547,7 @@ export class QuickReply {
                     message.value = `${message.value.substring(0, lineStart)}${message.value.substring(lineStart, end).replace(/\n\t/g, '\n')}${message.value.substring(end)}`;
                     message.selectionStart = start - 1;
                     message.selectionEnd = end - count;
-                    updateSyntax();
+                    message.dispatchEvent(new Event('input', { bubbles:true }));
                 } else if (evt.key == 'Enter' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey && !(ac.isReplaceable && ac.isActive)) {
                     evt.stopImmediatePropagation();
                     evt.stopPropagation();
@@ -559,7 +559,7 @@ export class QuickReply {
                     message.value = `${message.value.slice(0, start)}\n${indent}${message.value.slice(end)}`;
                     message.selectionStart = start + 1 + indent.length;
                     message.selectionEnd  = message.selectionStart;
-                    updateSyntax();
+                    message.dispatchEvent(new Event('input', { bubbles:true }));
                 } else if (evt.key == 'Enter' && evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
                     evt.stopImmediatePropagation();
                     evt.stopPropagation();
