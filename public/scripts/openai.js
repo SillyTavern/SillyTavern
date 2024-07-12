@@ -416,21 +416,16 @@ async function validateReverseProxy() {
     const rememberKey = `Proxy_SkipConfirm_${getStringHash(oai_settings.reverse_proxy)}`;
     const skipConfirm = localStorage.getItem(rememberKey) === 'true';
 
-    const confirmation = skipConfirm || await Popup.show.confirm('Connecting To Proxy', `<span>Are you sure you want to connect to the following proxy URL?</span><var>${oai_settings.reverse_proxy}</var>`, {
-        customInputs: [{ id: 'proxy-remember', label: 'Don\'t ask again for this proxy URL' }],
-        onClose: popup => {
-            if (popup.result) {
-                const rememberValue = popup.inputResults.get('proxy-remember');
-                localStorage.setItem(rememberKey, String(rememberValue));
-            }
-        },
-    });
+    const confirmation = skipConfirm || await Popup.show.confirm('Connecting To Proxy', `<span>Are you sure you want to connect to the following proxy URL?</span><var>${DOMPurify.sanitize(oai_settings.reverse_proxy)}</var>`);
+
     if (!confirmation) {
         toastr.error('Update or remove your reverse proxy settings.');
         setOnlineStatus('no_connection');
         resultCheckStatus();
         throw new Error('Proxy connection denied.');
     }
+
+    localStorage.setItem(rememberKey, String(true));
 }
 
 /**
