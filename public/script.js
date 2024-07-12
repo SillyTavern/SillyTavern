@@ -9126,10 +9126,6 @@ jQuery(async function () {
         $('#groupCurrentMemberListToggle .inline-drawer-icon').trigger('click');
     }, 200);
 
-    $('#chat').on('wheel touchstart', () => {
-        scrollLock = true;
-    });
-
     $(document).on('click', '.api_loading', cancelStatusCheck);
 
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
@@ -9247,12 +9243,19 @@ jQuery(async function () {
             immediately ? autoFitEditTextArea(e.target) : autoFitEditTextAreaDebounced(e.target);
         }
     });
-    document.getElementById('chat').addEventListener('scroll', function () {
+    const chatElement = document.getElementById('chat');
+    chatElement.addEventListener('wheel', function () {
+        scrollLock = true;
+    }, { passive: true });
+    chatElement.addEventListener('touchstart', function () {
+        scrollLock = true;
+    }, { passive: true });
+    chatElement.addEventListener('scroll', function () {
         if (is_use_scroll_holder) {
             this.scrollTop = scroll_holder;
             is_use_scroll_holder = false;
         }
-    });
+    }, { passive: true });
 
     $(document).on('click', '.mes', function () {
         //when a 'delete message' parent div is clicked
