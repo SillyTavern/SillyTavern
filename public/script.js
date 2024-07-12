@@ -9234,12 +9234,10 @@ jQuery(async function () {
      * @param {HTMLTextAreaElement} e Textarea element to auto-fit
      */
     function autoFitEditTextArea(e) {
-        const computedStyle = window.getComputedStyle(e);
-        const maxHeight = parseInt(computedStyle.maxHeight, 10);
         scroll_holder = chatElement[0].scrollTop;
-        e.style.height = computedStyle.minHeight;
+        e.style.height = '0px';
         const newHeight = e.scrollHeight + 4;
-        e.style.height = (newHeight < maxHeight) ? `${newHeight}px` : `${maxHeight}px`;
+        e.style.height = `${newHeight}px`;
         is_use_scroll_holder = true;
     }
     const autoFitEditTextAreaDebounced = debouncedThrottle(autoFitEditTextArea, debounce_timeout.short);
