@@ -631,15 +631,36 @@
 				.qr--modal-debugButton {
 					aspect-ratio: 1.25 / 1;
 					width: 2.25em;
-					&.qr--glyph-combo {
-						display: grid;
-						grid-template-columns: 1fr;
-						grid-template-rows: 1fr 1fr;
-						.qr--glyph {
-							grid-column: 1;
-							line-height: 0.8;
-						}
-					}
+                    position: relative;
+                    &:after {
+                        content: '';
+                        position: absolute;
+                        inset: 3px;
+                        background-color: var(--SmartThemeBodyColor);
+                        mask-size: contain;
+                        mask-position: center;
+                    }
+                    &#qr--modal-resume:after {
+                        mask-image: url('/img/step-resume.svg');
+                    }
+                    &#qr--modal-step:after {
+                        mask-image: url('/img/step-over.svg');
+                    }
+                    &#qr--modal-stepInto:after {
+                        mask-image: url('/img/step-into.svg');
+                    }
+                    &#qr--modal-stepOut:after {
+                        mask-image: url('/img/step-out.svg');
+                    }
+					// &.qr--glyph-combo {
+					// 	display: grid;
+					// 	grid-template-columns: 1fr;
+					// 	grid-template-rows: 1fr 1fr;
+					// 	.qr--glyph {
+					// 		grid-column: 1;
+					// 		line-height: 0.8;
+					// 	}
+					// }
 				}
 			}
 

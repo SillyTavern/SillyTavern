@@ -548,15 +548,27 @@
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton {
   aspect-ratio: 1.25 / 1;
   width: 2.25em;
+  position: relative;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton.qr--glyph-combo {
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr 1fr;
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton:after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background-color: var(--SmartThemeBodyColor);
+  mask-size: contain;
+  mask-position: center;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton.qr--glyph-combo .qr--glyph {
-  grid-column: 1;
-  line-height: 0.8;
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-resume:after {
+  mask-image: url('/img/step-resume.svg');
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-step:after {
+  mask-image: url('/img/step-over.svg');
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-stepInto:after {
+  mask-image: url('/img/step-into.svg');
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-stepOut:after {
+  mask-image: url('/img/step-out.svg');
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeProgress {
   --prog: 0;
