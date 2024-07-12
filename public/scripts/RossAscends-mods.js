@@ -31,7 +31,7 @@ import {
     SECRET_KEYS,
     secret_state,
 } from './secrets.js';
-import { debounce, getStringHash, isValidUrl } from './utils.js';
+import { debounce, debouncedThrottle, getStringHash, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
@@ -694,20 +694,23 @@ const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
  * this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
  */
 function autoFitSendTextArea() {
+    // Needs to be pulled dynamically because it is affected by font size changes
+    const computedStyle = window.getComputedStyle(sendTextArea);
     const originalScrollBottom = chatBlock.scrollHeight - (chatBlock.scrollTop + chatBlock.offsetHeight);
     if (Math.ceil(sendTextArea.scrollHeight + 3) >= Math.floor(sendTextArea.offsetHeight)) {
-        // Needs to be pulled dynamically because it is affected by font size changes
-        const sendTextAreaMinHeight = window.getComputedStyle(sendTextArea).getPropertyValue('min-height');
+        const sendTextAreaMinHeight = computedStyle.minHeight;
         sendTextArea.style.height = sendTextAreaMinHeight;
     }
-    sendTextArea.style.height = sendTextArea.scrollHeight + 3 + 'px';
+    const maxHeight = parseInt(computedStyle.maxHeight, 10);
+    const newHeight = sendTextArea.scrollHeight + 3;
+    sendTextArea.style.height = (newHeight < maxHeight) ? `${newHeight}px` : `${maxHeight}px`;
 
     if (!isFirefox) {
         const newScrollTop = Math.round(chatBlock.scrollHeight - (chatBlock.offsetHeight + originalScrollBottom));
         chatBlock.scrollTop = newScrollTop;
     }
 }
-export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea);
+export const autoFitSendTextAreaDebounced = debouncedThrottle(autoFitSendTextArea, debounce_timeout.short);
 
 // ---------------------------------------------------
 
