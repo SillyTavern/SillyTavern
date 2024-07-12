@@ -1819,7 +1819,7 @@ async function runCallback(args, name) {
     }
 
     if (name instanceof SlashCommandClosure) {
-        return await name.execute();
+        return (await name.execute())?.pipe;
     }
 
     /**@type {SlashCommandScope} */
