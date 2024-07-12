@@ -882,7 +882,8 @@ export function initRossMods() {
     });
 
     $(sendTextArea).on('input', () => {
-        if (sendTextArea.scrollHeight > sendTextArea.offsetHeight || sendTextArea.value === '') {
+        const scrollbarShown = sendTextArea.clientWidth < sendTextArea.offsetWidth && sendTextArea.offsetHeight >= window.innerHeight / 2;
+        if ((sendTextArea.scrollHeight > sendTextArea.offsetHeight && !scrollbarShown) || sendTextArea.value === '') {
             autoFitSendTextArea();
         } else {
             autoFitSendTextAreaDebounced();
