@@ -67,6 +67,7 @@ router.post('/libre', jsonParser, async (request, response) => {
 
 router.post('/google', jsonParser, async (request, response) => {
     try {
+        const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
         let text = request.body.text;
         const lang = request.body.lang;
 
@@ -77,19 +78,14 @@ router.post('/google', jsonParser, async (request, response) => {
         console.log('Input text:', text);
         console.log('----------');
 
-        let originalText = text;
-
         // Применяем форматирование только если язык перевода - русский
         if (lang === 'ru') {
-            // Заменяем кавычки и звездочки на специальные маркеры перед переводом
             const openQuote = '__OPEN_QUOTE__ ';
             const closeQuote = ' __CLOSE_QUOTE__';
             const openStar = '__OPEN_STAR__ ';
             const closeStar = ' __CLOSE_STAR__';
-            // Очень редкий случай, вызванный правилами русской граматики
             const very_rare_execption = '__OPEN_STAR__, ';
 
-            // Используем счетчики для чередования между открывающими и закрывающими маркерами
             let quoteCounter = 0;
             let starCounter = 0;
 
@@ -103,24 +99,15 @@ router.post('/google', jsonParser, async (request, response) => {
         const url = generateRequestUrl(text, { to: lang });
 
         https.get(url, (resp) => {
-            let data = [];
+            let data = '';
 
             resp.on('data', (chunk) => {
-                data.push(chunk);
+                data += chunk;
             });
 
             resp.on('end', () => {
                 try {
-                    let result;
-                    if (lang === 'ru') {
-                        // Декодирование и нормализация только для русского языка
-                        const decodedData = iconv.decode(Buffer.concat(data), 'utf-8');
-                        result = normaliseResponse(JSON.parse(decodedData));
-                    } else {
-                        // Для других языков используем данные как есть
-                        result = JSON.parse(Buffer.concat(data).toString());
-                    }
-
+                    const result = normaliseResponse(JSON.parse(data));
                     console.log('Pre-Translated text:', result.text);
                     console.log('----------');
 
