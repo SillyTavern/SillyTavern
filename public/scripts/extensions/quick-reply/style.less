@@ -82,6 +82,12 @@
 
         >.qr--buttons {
             display: contents;
+            background-color: transparent;
+            &:before, &:after {
+                content: '';
+                width: 5px;
+                background-color: var(--qr--color);
+            }
         }
 
         .qr--button {

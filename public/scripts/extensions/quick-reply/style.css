@@ -77,6 +77,15 @@
 #qr--bar > .qr--buttons > .qr--buttons,
 #qr--popout > .qr--body > .qr--buttons > .qr--buttons {
   display: contents;
+  background-color: transparent;
+}
+#qr--bar > .qr--buttons > .qr--buttons:before,
+#qr--popout > .qr--body > .qr--buttons > .qr--buttons:before,
+#qr--bar > .qr--buttons > .qr--buttons:after,
+#qr--popout > .qr--body > .qr--buttons > .qr--buttons:after {
+  content: '';
+  width: 5px;
+  background-color: var(--qr--color);
 }
 #qr--bar > .qr--buttons .qr--button,
 #qr--popout > .qr--body > .qr--buttons .qr--button {
