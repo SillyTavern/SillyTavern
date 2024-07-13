@@ -9243,14 +9243,14 @@ jQuery(async function () {
             immediately ? autoFitEditTextArea(e.target) : autoFitEditTextAreaDebounced(e.target);
         }
     });
-    const chatElement = document.getElementById('chat');
-    chatElement.addEventListener('wheel', function () {
+    const chatElementScroll = document.getElementById('chat');
+    chatElementScroll.addEventListener('wheel', function () {
         scrollLock = true;
     }, { passive: true });
-    chatElement.addEventListener('touchstart', function () {
+    chatElementScroll.addEventListener('touchstart', function () {
         scrollLock = true;
     }, { passive: true });
-    chatElement.addEventListener('scroll', function () {
+    chatElementScroll.addEventListener('scroll', function () {
         if (is_use_scroll_holder) {
             this.scrollTop = scroll_holder;
             is_use_scroll_holder = false;
@@ -9806,7 +9806,7 @@ jQuery(async function () {
     });
 
     //confirms message deletion with the "ok" button
-    $('#dialogue_del_mes_ok').click(async function () {
+    $('#dialogue_del_mes_ok').on('click', async function () {
         $('#dialogue_del_mes').css('display', 'none');
         $('#send_form').css('display', css_send_form_display);
         $('.del_checkbox').each(function () {
@@ -9822,7 +9822,7 @@ jQuery(async function () {
             chat.length = this_del_mes;
             await saveChatConditional();
             chatElement.scrollTop(chatElement[0].scrollHeight);
-            eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
+            await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
             $('#chat .mes').removeClass('last_mes');
             $('#chat .mes').last().addClass('last_mes');
         } else {
