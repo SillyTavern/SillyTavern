@@ -18,7 +18,7 @@ export class QuickReplySet {
     }
 
     /**
-     * @param {String} name - name of the QuickReplySet
+     * @param {string} name - name of the QuickReplySet
      */
     static get(name) {
         return this.list.find(it=>it.name == name);
@@ -27,17 +27,17 @@ export class QuickReplySet {
 
 
 
-    /**@type {String}*/ name;
-    /**@type {Boolean}*/ disableSend = false;
-    /**@type {Boolean}*/ placeBeforeInput = false;
-    /**@type {Boolean}*/ injectInput = false;
+    /**@type {string}*/ name;
+    /**@type {boolean}*/ disableSend = false;
+    /**@type {boolean}*/ placeBeforeInput = false;
+    /**@type {boolean}*/ injectInput = false;
     /**@type {QuickReply[]}*/ qrList = [];
 
-    /**@type {Number}*/ idIndex = 0;
+    /**@type {number}*/ idIndex = 0;
 
-    /**@type {Boolean}*/ isDeleted = false;
+    /**@type {boolean}*/ isDeleted = false;
 
-    /**@type {Function}*/ save;
+    /**@type {function}*/ save;
 
     /**@type {HTMLElement}*/ dom;
     /**@type {HTMLElement}*/ settingsDom;
@@ -190,7 +190,7 @@ export class QuickReplySet {
     }
     /**
      * @param {QuickReply} qr
-     * @param {String} [message] - optional altered message to be used
+     * @param {string} [message] - optional altered message to be used
      * @param {SlashCommandScope} [scope] - optional scope to be used when running the command
      */
     async execute(qr, message = null, isAutoExecute = false, scope = null) {
