@@ -9126,10 +9126,6 @@ jQuery(async function () {
         $('#groupCurrentMemberListToggle .inline-drawer-icon').trigger('click');
     }, 200);
 
-    $('#chat').on('wheel touchstart', () => {
-        scrollLock = true;
-    });
-
     $(document).on('click', '.api_loading', cancelStatusCheck);
 
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
@@ -9242,16 +9238,24 @@ jQuery(async function () {
     const autoFitEditTextAreaDebounced = debounce(autoFitEditTextArea, debounce_timeout.short);
     document.addEventListener('input', e => {
         if (e.target instanceof HTMLTextAreaElement && e.target.classList.contains('edit_textarea')) {
-            const immediately = e.target.scrollHeight > e.target.offsetHeight || e.target.value === '';
+            const scrollbarShown = e.target.clientWidth < e.target.offsetWidth && e.target.offsetHeight >= window.innerHeight * 0.75;
+            const immediately = (e.target.scrollHeight > e.target.offsetHeight && !scrollbarShown) || e.target.value === '';
             immediately ? autoFitEditTextArea(e.target) : autoFitEditTextAreaDebounced(e.target);
         }
     });
-    document.getElementById('chat').addEventListener('scroll', function () {
+    const chatElementScroll = document.getElementById('chat');
+    chatElementScroll.addEventListener('wheel', function () {
+        scrollLock = true;
+    }, { passive: true });
+    chatElementScroll.addEventListener('touchstart', function () {
+        scrollLock = true;
+    }, { passive: true });
+    chatElementScroll.addEventListener('scroll', function () {
         if (is_use_scroll_holder) {
             this.scrollTop = scroll_holder;
             is_use_scroll_holder = false;
         }
-    });
+    }, { passive: true });
 
     $(document).on('click', '.mes', function () {
         //when a 'delete message' parent div is clicked
@@ -9802,7 +9806,7 @@ jQuery(async function () {
     });
 
     //confirms message deletion with the "ok" button
-    $('#dialogue_del_mes_ok').click(async function () {
+    $('#dialogue_del_mes_ok').on('click', async function () {
         $('#dialogue_del_mes').css('display', 'none');
         $('#send_form').css('display', css_send_form_display);
         $('.del_checkbox').each(function () {
@@ -9818,7 +9822,7 @@ jQuery(async function () {
             chat.length = this_del_mes;
             await saveChatConditional();
             chatElement.scrollTop(chatElement[0].scrollHeight);
-            eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
+            await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
             $('#chat .mes').removeClass('last_mes');
             $('#chat .mes').last().addClass('last_mes');
         } else {
