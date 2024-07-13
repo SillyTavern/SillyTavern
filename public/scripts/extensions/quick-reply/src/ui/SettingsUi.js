@@ -23,6 +23,8 @@ export class SettingsUi {
     /**@type {HTMLInputElement}*/ disableSend;
     /**@type {HTMLInputElement}*/ placeBeforeInput;
     /**@type {HTMLInputElement}*/ injectInput;
+    /**@type {HTMLInputElement}*/ color;
+    /**@type {HTMLInputElement}*/ onlyBorderColor;
     /**@type {HTMLSelectElement}*/ currentSet;
 
 
@@ -164,6 +166,20 @@ export class SettingsUi {
             qrs.injectInput = this.injectInput.checked;
             qrs.save();
         });
+        this.color = this.dom.querySelector('#qr--color');
+        this.color.addEventListener('change', (evt)=>{
+            const qrs = this.currentQrSet;
+            qrs.color = evt.detail.rgb;
+            qrs.save();
+            this.currentQrSet.updateColor();
+        });
+        this.onlyBorderColor = this.dom.querySelector('#qr--onlyBorderColor');
+        this.onlyBorderColor.addEventListener('click', ()=>{
+            const qrs = this.currentQrSet;
+            qrs.onlyBorderColor = this.onlyBorderColor.checked;
+            qrs.save();
+            this.currentQrSet.updateColor();
+        });
         this.onQrSetChange();
     }
     onQrSetChange() {
@@ -171,6 +187,8 @@ export class SettingsUi {
         this.disableSend.checked = this.currentQrSet.disableSend;
         this.placeBeforeInput.checked = this.currentQrSet.placeBeforeInput;
         this.injectInput.checked = this.currentQrSet.injectInput;
+        this.color.color = this.currentQrSet.color;
+        this.onlyBorderColor.checked = this.currentQrSet.onlyBorderColor;
         this.qrList.innerHTML = '';
         const qrsDom = this.currentQrSet.renderSettings();
         this.qrList.append(qrsDom);

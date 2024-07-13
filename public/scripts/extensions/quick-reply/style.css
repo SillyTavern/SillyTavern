@@ -58,6 +58,8 @@
 }
 #qr--bar > .qr--buttons,
 #qr--popout > .qr--body > .qr--buttons {
+  --qr--color: transparent;
+  background-color: var(--qr--color);
   margin: 0;
   padding: 0;
   display: flex;
@@ -65,6 +67,12 @@
   flex-wrap: wrap;
   gap: 5px;
   width: 100%;
+}
+#qr--bar > .qr--buttons.qr--borderColor,
+#qr--popout > .qr--body > .qr--buttons.qr--borderColor {
+  background-color: transparent;
+  border-left: 5px solid var(--qr--color);
+  border-right: 5px solid var(--qr--color);
 }
 #qr--bar > .qr--buttons > .qr--buttons,
 #qr--popout > .qr--body > .qr--buttons > .qr--buttons {

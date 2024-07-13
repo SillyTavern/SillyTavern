@@ -65,6 +65,13 @@
 #qr--bar,
 #qr--popout>.qr--body {
     >.qr--buttons {
+        --qr--color: transparent;
+        background-color: var(--qr--color);
+        &.qr--borderColor {
+            background-color: transparent;
+            border-left: 5px solid var(--qr--color);
+            border-right: 5px solid var(--qr--color);
+        }
         margin: 0;
         padding: 0;
         display: flex;

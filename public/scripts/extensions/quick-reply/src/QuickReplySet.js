@@ -31,6 +31,8 @@ export class QuickReplySet {
     /**@type {boolean}*/ disableSend = false;
     /**@type {boolean}*/ placeBeforeInput = false;
     /**@type {boolean}*/ injectInput = false;
+    /**@type {string}*/ color = 'transparent';
+    /**@type {boolean}*/ onlyBorderColor = false;
     /**@type {QuickReply[]}*/ qrList = [];
 
     /**@type {number}*/ idIndex = 0;
@@ -66,6 +68,7 @@ export class QuickReplySet {
             const root = document.createElement('div'); {
                 this.dom = root;
                 root.classList.add('qr--buttons');
+                this.updateColor();
                 this.qrList.filter(qr=>!qr.isHidden).forEach(qr=>{
                     root.append(qr.render());
                 });
@@ -79,6 +82,19 @@ export class QuickReplySet {
         this.qrList.filter(qr=>!qr.isHidden).forEach(qr=>{
             this.dom.append(qr.render());
         });
+    }
+    updateColor() {
+        if (this.color) {
+            this.dom.style.setProperty('--qr--color', this.color);
+            if (this.onlyBorderColor) {
+                this.dom.classList.add('qr--borderColor');
+            } else {
+                this.dom.classList.remove('qr--borderColor');
+            }
+        } else {
+            this.dom.style.setProperty('--qr--color', 'transparent');
+            this.dom.classList.remove('qr--borderColor');
+        }
     }
 
 
@@ -337,6 +353,8 @@ export class QuickReplySet {
             disableSend: this.disableSend,
             placeBeforeInput: this.placeBeforeInput,
             injectInput: this.injectInput,
+            color: this.color,
+            onlyBorderColor: this.onlyBorderColor,
             qrList: this.qrList,
             idIndex: this.idIndex,
         };
