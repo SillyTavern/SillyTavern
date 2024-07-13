@@ -2178,6 +2178,11 @@ function getQuietPrompt(mode, trigger) {
     return stringFormat(extension_settings.sd.prompts[mode], trigger);
 }
 
+/**
+ * Sanitizes generated prompt for image generation.
+ * @param {string} str String to process
+ * @returns {string} Processed reply
+ */
 function processReply(str) {
     if (!str) {
         return '';
@@ -2187,6 +2192,7 @@ function processReply(str) {
     str = str.replaceAll('“', '');
     str = str.replaceAll('.', ',');
     str = str.replaceAll('\n', ', ');
+    str = str.normalize('NFD');
     str = str.replace(/[^a-zA-Z0-9,:_(){}<>[\]\-']+/g, ' ');
     str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
     str = str.trim();
