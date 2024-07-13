@@ -957,6 +957,7 @@ export class QuickReply {
     }
     async executeFromEditor() {
         if (this.isExecuting) return;
+        this.editorPopup.onClosing = ()=>false;
         const uuidCheck = /^[0-9a-z]{8}(-[0-9a-z]{4}){3}-[0-9a-z]{12}$/;
         const oText = this.message;
         this.isExecuting = true;
@@ -1463,6 +1464,7 @@ export class QuickReply {
         this.editorPopup.dlg.classList.remove('qr--hide');
         this.editorDom.classList.remove('qr--isExecuting');
         this.isExecuting = false;
+        this.editorPopup.onClosing = null;
     }
 
     updateEditorProgress(done, total) {
