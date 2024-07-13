@@ -77,24 +77,28 @@ router.post('/google', jsonParser, async (request, response) => {
         console.log('Input text:', text);
         console.log('----------');
 
-        // Заменяем кавычки и звездочки на специальные маркеры перед переводом с пробелами
-        const openQuote = '__OPEN_QUOTE__ ';
-        const closeQuote = ' __CLOSE_QUOTE__';
-        const openStar = '__OPEN_STAR__ ';
-        const closeStar = ' __CLOSE_STAR__';
+        let originalText = text;
 
-        // Очень редкий случай, вызванный правилами русской граматики
-        const very_rare_execption = '__OPEN_STAR__, ';
+        // Применяем форматирование только если язык перевода - русский
+        if (lang === 'ru') {
+            // Заменяем кавычки и звездочки на специальные маркеры перед переводом
+            const openQuote = '__OPEN_QUOTE__ ';
+            const closeQuote = ' __CLOSE_QUOTE__';
+            const openStar = '__OPEN_STAR__ ';
+            const closeStar = ' __CLOSE_STAR__';
+            // Очень редкий случай, вызванный правилами русской граматики
+            const very_rare_execption = '__OPEN_STAR__, ';
 
-        // Используем счетчики для чередования между открывающими и закрывающими маркерами
-        let quoteCounter = 0;
-        let starCounter = 0;
+            // Используем счетчики для чередования между открывающими и закрывающими маркерами
+            let quoteCounter = 0;
+            let starCounter = 0;
 
-        text = text.replace(/"/g, () => (quoteCounter++ % 2 === 0 ? openQuote : closeQuote));
-        text = text.replace(/\*/g, () => (starCounter++ % 2 === 0 ? openStar : closeStar));
+            text = text.replace(/"/g, () => (quoteCounter++ % 2 === 0 ? openQuote : closeQuote));
+            text = text.replace(/\*/g, () => (starCounter++ % 2 === 0 ? openStar : closeStar));
 
-        console.log('Pre-Input text:', text);
-        console.log('----------');
+            console.log('Pre-Input text:', text);
+            console.log('----------');
+        }
 
         const url = generateRequestUrl(text, { to: lang });
 
@@ -107,20 +111,30 @@ router.post('/google', jsonParser, async (request, response) => {
 
             resp.on('end', () => {
                 try {
-                    // Декодируем весь ответ после получения всех частей
-                    const decodedData = iconv.decode(Buffer.concat(data), 'utf-8');
-                    const result = normaliseResponse(JSON.parse(decodedData));
+                    let result;
+                    if (lang === 'ru') {
+                        // Декодирование и нормализация только для русского языка
+                        const decodedData = iconv.decode(Buffer.concat(data), 'utf-8');
+                        result = normaliseResponse(JSON.parse(decodedData));
+                    } else {
+                        // Для других языков используем данные как есть
+                        result = JSON.parse(Buffer.concat(data).toString());
+                    }
 
                     console.log('Pre-Translated text:', result.text);
                     console.log('----------');
-                    // Восстанавливаем кавычки и звездочки после перевода
-                    let fixedText = result.text
-                        .replace(new RegExp(openQuote, 'g'), '"')
-                        .replace(new RegExp(closeQuote, 'g'), '"')
-                        .replace(new RegExp(openStar, 'g'), '*')
-                        .replace(new RegExp(closeStar, 'g'), '*')
-                        .replace(new RegExp(very_rare_execption, 'g'), '*');
 
+                    let fixedText = result.text;
+
+                    // Восстанавливаем форматирование только если язык перевода - русский
+                    if (lang === 'ru') {
+                        fixedText = result.text
+                            .replace(new RegExp('__OPEN_QUOTE__ ', 'g'), '"')
+                            .replace(new RegExp(' __CLOSE_QUOTE__', 'g'), '"')
+                            .replace(new RegExp('__OPEN_STAR__ ', 'g'), '*')
+                            .replace(new RegExp(' __CLOSE_STAR__', 'g'), '*')
+                            .replace(new RegExp('__OPEN_STAR__, ', 'g'), '*');
+                    }
 
                     console.log('Translated text:', fixedText);
 
