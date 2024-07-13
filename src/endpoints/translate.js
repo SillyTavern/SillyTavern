@@ -64,7 +64,7 @@ router.post('/libre', jsonParser, async (request, response) => {
 router.post('/google', jsonParser, async (request, response) => {
     try {
         const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
-        const text = request.body.text;
+        let text = request.body.text;
         const lang = request.body.lang;
 
         if (!text || !lang) {
@@ -72,6 +72,20 @@ router.post('/google', jsonParser, async (request, response) => {
         }
 
         console.log('Input text: ' + text);
+
+        // Заменяем кавычки на специальные маркеры перед переводом
+        const openQuote = '__OPEN_QUOTE__';
+        const closeQuote = '__CLOSE_QUOTE__';
+        text = text.replace(/"/g, (match, offset) => {
+            return offset % 2 === 0 ? openQuote : closeQuote;
+        });
+
+        // Заменяем звездочки на специальные маркеры
+        const openStar = '__OPEN_STAR__';
+        const closeStar = '__CLOSE_STAR__';
+        text = text.replace(/\*/g, (match, offset) => {
+            return offset % 2 === 0 ? openStar : closeStar;
+        });
 
         const url = generateRequestUrl(text, { to: lang });
 
@@ -87,8 +101,12 @@ router.post('/google', jsonParser, async (request, response) => {
                     const result = normaliseResponse(JSON.parse(data));
                     console.log('Translated text: ' + result.text);
 
-                    // Заменяем кавычки «» на ""
-                    const fixedText = result.text.replace(/«/g, '"').replace(/»/g, '"');
+                    // Восстанавливаем кавычки и звездочки после перевода
+                    let fixedText = result.text
+                        .replace(new RegExp(openQuote, 'g'), '"')
+                        .replace(new RegExp(closeQuote, 'g'), '"')
+                        .replace(new RegExp(openStar, 'g'), '*')
+                        .replace(new RegExp(closeStar, 'g'), '*');
 
                     return response.send(fixedText);
                 } catch (error) {
