@@ -86,7 +86,11 @@ router.post('/google', jsonParser, async (request, response) => {
                 try {
                     const result = normaliseResponse(JSON.parse(data));
                     console.log('Translated text: ' + result.text);
-                    return response.send(result.text);
+
+                    // Заменяем кавычки «» на ""
+                    const fixedText = result.text.replace(/«/g, '"').replace(/»/g, '"');
+
+                    return response.send(fixedText);
                 } catch (error) {
                     console.log('Translation error', error);
                     return response.sendStatus(500);
