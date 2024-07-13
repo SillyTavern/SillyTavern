@@ -61,9 +61,16 @@ router.post('/libre', jsonParser, async (request, response) => {
     }
 });
 
+
+
+
+const iconv = require('iconv-lite');
+const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
+const bodyParser = require('body-parser');
+
+
 router.post('/google', jsonParser, async (request, response) => {
     try {
-        const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
         let text = request.body.text;
         const lang = request.body.lang;
 
@@ -71,43 +78,57 @@ router.post('/google', jsonParser, async (request, response) => {
             return response.sendStatus(400);
         }
 
-        console.log('Input text: ' + text);
+        console.log('Input text:', text);
+        console.log('----------');
 
-        // Заменяем кавычки на специальные маркеры перед переводом
-        const openQuote = '__OPEN_QUOTE__';
-        const closeQuote = '__CLOSE_QUOTE__';
-        text = text.replace(/"/g, (match, offset) => {
-            return offset % 2 === 0 ? openQuote : closeQuote;
-        });
+        // Заменяем кавычки и звездочки на специальные маркеры перед переводом с пробелами
+        const openQuote = '__OPEN_QUOTE__ ';
+        const closeQuote = ' __CLOSE_QUOTE__';
+        const openStar = '__OPEN_STAR__ ';
+        const closeStar = ' __CLOSE_STAR__';
 
-        // Заменяем звездочки на специальные маркеры
-        const openStar = '__OPEN_STAR__';
-        const closeStar = '__CLOSE_STAR__';
-        text = text.replace(/\*/g, (match, offset) => {
-            return offset % 2 === 0 ? openStar : closeStar;
-        });
+        // Очень редкий случай, вызванный правилами русской граматики
+        const very_rare_execption = '__OPEN_STAR__, ';
+
+        // Используем счетчики для чередования между открывающими и закрывающими маркерами
+        let quoteCounter = 0;
+        let starCounter = 0;
+
+        text = text.replace(/"/g, () => (quoteCounter++ % 2 === 0 ? openQuote : closeQuote));
+        text = text.replace(/\*/g, () => (starCounter++ % 2 === 0 ? openStar : closeStar));
+
+        console.log('Pre-Input text:', text);
+        console.log('----------');
 
         const url = generateRequestUrl(text, { to: lang });
 
         https.get(url, (resp) => {
-            let data = '';
+            let data = [];
 
             resp.on('data', (chunk) => {
-                data += chunk;
+                data.push(chunk);
             });
 
             resp.on('end', () => {
                 try {
-                    const result = normaliseResponse(JSON.parse(data));
-                    console.log('Translated text: ' + result.text);
+                    // Декодируем весь ответ после получения всех частей
+                    const decodedData = iconv.decode(Buffer.concat(data), 'utf-8');
+                    const result = normaliseResponse(JSON.parse(decodedData));
 
+                    console.log('Pre-Translated text:', result.text);
+                    console.log('----------');
                     // Восстанавливаем кавычки и звездочки после перевода
                     let fixedText = result.text
                         .replace(new RegExp(openQuote, 'g'), '"')
                         .replace(new RegExp(closeQuote, 'g'), '"')
                         .replace(new RegExp(openStar, 'g'), '*')
-                        .replace(new RegExp(closeStar, 'g'), '*');
+                        .replace(new RegExp(closeStar, 'g'), '*')
+                        .replace(new RegExp(very_rare_execption, 'g'), '*');
 
+
+                    console.log('Translated text:', fixedText);
+
+                    response.setHeader('Content-Type', 'text/plain; charset=utf-8');
                     return response.send(fixedText);
                 } catch (error) {
                     console.log('Translation error', error);
@@ -115,7 +136,7 @@ router.post('/google', jsonParser, async (request, response) => {
                 }
             });
         }).on('error', (err) => {
-            console.log('Translation error: ' + err.message);
+            console.log('Translation error:', err.message);
             return response.sendStatus(500);
         });
     } catch (error) {
@@ -123,6 +144,9 @@ router.post('/google', jsonParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
+
+
+
 
 router.post('/yandex', jsonParser, async (request, response) => {
     const chunks = request.body.chunks;
