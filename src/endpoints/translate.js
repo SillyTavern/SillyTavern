@@ -4,6 +4,9 @@ const express = require('express');
 const { readSecret, SECRET_KEYS } = require('./secrets');
 const { getConfigValue, uuidv4 } = require('../util');
 const { jsonParser } = require('../express-common');
+const iconv = require('iconv-lite');
+const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
+const bodyParser = require('body-parser');
 
 const DEEPLX_URL_DEFAULT = 'http://127.0.0.1:1188/translate';
 const ONERING_URL_DEFAULT = 'http://127.0.0.1:4990/translate';
@@ -60,13 +63,6 @@ router.post('/libre', jsonParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
-
-
-
-
-const iconv = require('iconv-lite');
-const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
-const bodyParser = require('body-parser');
 
 
 router.post('/google', jsonParser, async (request, response) => {
