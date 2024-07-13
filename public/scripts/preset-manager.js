@@ -301,6 +301,9 @@ class PresetManager {
 
         const filteredKeys = [
             'preset',
+            'streaming',
+            'truncation_length',
+            'n',
             'streaming_url',
             'stopping_strings',
             'can_use_tokenization',
