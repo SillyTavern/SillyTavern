@@ -84,6 +84,7 @@ export class QuickReplySet {
         });
     }
     updateColor() {
+        if (!this.dom) return;
         if (this.color && this.color != 'transparent') {
             this.dom.style.setProperty('--qr--color', this.color);
             this.dom.classList.add('qr--color');
