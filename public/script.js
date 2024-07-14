@@ -7184,20 +7184,23 @@ function updateFavButtonState(state) {
     $('#favorite_button').toggleClass('fav_off', !fav_ch_checked);
 }
 
-export function setScenarioOverride() {
+export async function setScenarioOverride() {
     if (!selected_group && !this_chid) {
         console.warn('setScenarioOverride() -- no selected group or character');
         return;
     }
 
-    const template = $('#scenario_override_template .scenario_override').clone();
     const metadataValue = chat_metadata['scenario'] || '';
     const isGroup = !!selected_group;
-    template.find('[data-group="true"]').toggle(isGroup);
-    template.find('[data-character="true"]').toggle(!isGroup);
-    template.find('.chat_scenario').val(metadataValue).on('input', onScenarioOverrideInput);
-    template.find('.remove_scenario_override').on('click', onScenarioOverrideRemoveClick);
-    callPopup(template, 'text');
+
+    const $template = $(await renderTemplateAsync('scenarioOverride'));
+    $template.find('[data-group="true"]').toggle(isGroup);
+    $template.find('[data-character="true"]').toggle(!isGroup);
+    // TODO: Why does this save on every character input? Save on popup close
+    $template.find('.chat_scenario').val(metadataValue).on('input', onScenarioOverrideInput);
+    $template.find('.remove_scenario_override').on('click', onScenarioOverrideRemoveClick);
+
+    await callGenericPopup($template, POPUP_TYPE.TEXT, '');
 }
 
 function onScenarioOverrideInput() {
@@ -10653,7 +10656,7 @@ jQuery(async function () {
                 openCharacterWorldPopup();
                 break;
             case 'set_chat_scenario':
-                setScenarioOverride();
+                await setScenarioOverride();
                 break;
             case 'renameCharButton':
                 renameCharacter();
@@ -10674,7 +10677,7 @@ jQuery(async function () {
                 const source = getCharacterSource(this_chid);
                 if (source && isValidUrl(source)) {
                     const url = new URL(source);
-                    const confirm = await callPopup(`Open ${url.hostname} in a new tab?`, 'confirm');
+                    const confirm = await Popup.show.confirm('Open Source', `<span>Do you want to open the link to ${url.hostname} in a new tab?</span><var>${url}</var>`);
                     if (confirm) {
                         window.open(source, '_blank');
                     }
@@ -10683,7 +10686,7 @@ jQuery(async function () {
                 }
             } break;
             case 'replace_update': {
-                const confirm = await callPopup('<p><b>Choose a new character card to replace this character with.</b></p><p>All chats, assets and group memberships will be preserved, but local changes to the character data will be lost.</p><p>Proceed?</p>', 'confirm', '');
+                const confirm = await Popup.show.confirm('Replace Character', '<p>Choose a new character card to replace this character with.</p>All chats, assets and group memberships will be preserved, but local changes to the character data will be lost.<br />Proceed?');
                 if (confirm) {
                     async function uploadReplacementCard(e) {
                         const file = e.target.files[0];
