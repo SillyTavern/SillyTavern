@@ -334,10 +334,21 @@ export class Popup {
             evt.preventDefault();
             evt.stopPropagation();
             await this.complete(POPUP_RESULT.CANCELLED);
-            window.removeEventListener('cancel', cancelListenerBound);
         };
-        const cancelListenerBound = cancelListener.bind(this);
-        this.dlg.addEventListener('cancel', cancelListenerBound);
+        this.dlg.addEventListener('cancel', cancelListener.bind(this));
+
+        // Don't ask me why this is needed. I don't get it. But we have to keep it.
+        // We make sure that the modal on it's own doesn't hide. Dunno why, if onClosing is triggered multiple times through the cancel event, and stopped
+        // It seems to just call 'close' on the dialog even if the 'cancel' event was prevented.
+        // Here, we just say that close should not happen if the dalog has no result.
+        const closeListener = async (evt) => {
+            if (this.result === undefined) {
+                evt.preventDefault();
+                evt.stopPropagation();
+                this.dlg.showModal();
+            }
+        };
+        this.dlg.addEventListener('close', closeListener.bind(this));
 
         const keyListener = async (evt) => {
             switch (evt.key) {
@@ -366,16 +377,16 @@ export class Popup {
                     evt.preventDefault();
                     evt.stopPropagation();
                     const result = Number(document.activeElement.getAttribute('data-result') ?? this.defaultResult);
+
+                    // Call complete on the popup. Make sure that we handle `onClosing` cancels correctly and don't remove the listener then.
                     await this.complete(result);
-                    window.removeEventListener('keydown', keyListenerBound);
 
                     break;
                 }
             }
 
         };
-        const keyListenerBound = keyListener.bind(this);
-        this.dlg.addEventListener('keydown', keyListenerBound);
+        this.dlg.addEventListener('keydown', keyListener.bind(this));
     }
 
     /**
@@ -445,9 +456,11 @@ export class Popup {
      * - popup with `POPUP_TYPE.INPUT` will return the input value - or `false` on negative and `null` on cancelled
      * - All other will return the result value as provided as `POPUP_RESULT` or a custom number value
      *
+     * <b>IMPORTANT:</b> If the popup closing was cancelled via the `onClosing` handler, the return value will be `Promise<undefined>`.
+     *
      * @param {POPUP_RESULT|number} result - The result of the popup (either an existing `POPUP_RESULT` or a custom result value)
      *
-     * @returns {Promise<string|number|boolean?>} A promise that resolves with the value of the popup when it is completed.
+     * @returns {Promise<string|number|boolean|undefined?>} A promise that resolves with the value of the popup when it is completed. <b>Returns `undefined` if the closing action was cancelled.</b>
      */
     async complete(result) {
         // In all cases besides INPUT the popup value should be the result
@@ -481,7 +494,13 @@ export class Popup {
 
         if (this.onClosing) {
             const shouldClose = this.onClosing(this);
-            if (!shouldClose) return;
+            if (!shouldClose) {
+                // Set values back if we cancel out of closing the popup
+                this.value = undefined;
+                this.result = undefined;
+                this.inputResults = undefined;
+                return undefined;
+            }
         }
 
         Popup.util.lastResult = { value, result, inputResults: this.inputResults };
