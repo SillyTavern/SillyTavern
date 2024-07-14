@@ -124,6 +124,7 @@ const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
  * @property {number} [sticky] The sticky value of the entry
  * @property {number} [cooldown] The cooldown of the entry
  * @property {number} [delay] The delay of the entry
+ * @property {string[]} [decorators] Array of decorators for the entry
  */
 
 /**
