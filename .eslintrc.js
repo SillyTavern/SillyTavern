@@ -45,6 +45,7 @@ module.exports = {
                 Readability: 'readonly',
                 isProbablyReaderable: 'readonly',
                 ePub: 'readonly',
+                diff_match_patch: 'readonly',
             },
         },
     ],

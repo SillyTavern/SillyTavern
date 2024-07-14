@@ -302,6 +302,32 @@ export function throttle(func, limit = 300) {
 }
 
 /**
+ * Creates a debounced throttle function that only invokes func at most once per every limit milliseconds.
+ * @param {function} func The function to throttle.
+ * @param {number} [limit=300] The limit in milliseconds.
+ * @returns {function} The throttled function.
+ */
+export function debouncedThrottle(func, limit = 300) {
+    let last, deferTimer;
+    let db = debounce(func);
+
+    return function() {
+        let now = +new Date, args = arguments;
+        if(!last || (last && now < last + limit)) {
+            clearTimeout(deferTimer);
+            db.apply(this, args);
+            deferTimer = setTimeout(function() {
+                last = now;
+                func.apply(this, args);
+            }, limit);
+        } else {
+            last = now;
+            func.apply(this, args);
+        }
+    };
+}
+
+/**
  * Checks if an element is in the viewport.
  * @param {Element} el The element to check.
  * @returns {boolean} True if the element is in the viewport, false otherwise.
@@ -1545,12 +1571,28 @@ export function setValueByPath(obj, path, value) {
 /**
  * Flashes the given HTML element via CSS flash animation for a defined period
  * @param {JQuery<HTMLElement>} element - The element to flash
- * @param {number} timespan - A numer in milliseconds how the flash should last
+ * @param {number} timespan - A number in milliseconds how the flash should last (default is 2000ms.  Multiples of 1000ms work best, as they end with the flash animation being at 100% opacity)
  */
 export function flashHighlight(element, timespan = 2000) {
+    const flashDuration = 2000; // Duration of a single flash cycle in milliseconds
+
     element.addClass('flash animated');
-    setTimeout(() => element.removeClass('flash animated'), timespan);
+    element.css('--animation-duration', `${flashDuration}ms`);
+
+    // Repeat the flash animation
+    const intervalId = setInterval(() => {
+        element.removeClass('flash animated');
+        void element[0].offsetWidth; // Trigger reflow to restart animation
+        element.addClass('flash animated');
+    }, flashDuration);
+
+    setTimeout(() => {
+        clearInterval(intervalId);
+        element.removeClass('flash animated');
+        element.css('--animation-duration', '');
+    }, timespan);
 }
+
 
 /**
  * Checks if the given control has an animation applied to it

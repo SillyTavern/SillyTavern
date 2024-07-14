@@ -1,7 +1,9 @@
 import { isMobile } from './RossAscends-mods.js';
-import { amount_gen, callPopup, eventSource, event_types, getRequestHeaders, max_context, setGenerationParamsFromPreset } from '../script.js';
+import { amount_gen, callPopup, eventSource, event_types, getRequestHeaders, max_context, online_status, setGenerationParamsFromPreset } from '../script.js';
 import { textgenerationwebui_settings as textgen_settings, textgen_types } from './textgen-settings.js';
 import { tokenizers } from './tokenizers.js';
+import { renderTemplateAsync } from './templates.js';
+import { POPUP_TYPE, callGenericPopup } from './popup.js';
 
 let mancerModels = [];
 let togetherModels = [];
@@ -470,6 +472,74 @@ async function downloadOllamaModel() {
     }
 }
 
+async function downloadTabbyModel() {
+    try {
+        const serverUrl = textgen_settings.server_urls[textgen_types.TABBY];
+
+        if (online_status === 'no_connection' || !serverUrl) {
+            toastr.info('Please connect to a TabbyAPI server first.');
+            return;
+        }
+
+        const downloadHtml = $(await renderTemplateAsync('tabbyDownloader'));
+        const popupResult = await callGenericPopup(downloadHtml, POPUP_TYPE.CONFIRM, '', { okButton: 'Download', cancelButton: 'Cancel' });
+
+        // User cancelled the download
+        if (!popupResult) {
+            return;
+        }
+
+        const repoId = downloadHtml.find('input[name="hf_repo_id"]').val().toString();
+        if (!repoId) {
+            toastr.error('A HuggingFace repo ID must be provided. Skipping Download.');
+            return;
+        }
+
+        if (repoId.split('/').length !== 2) {
+            toastr.error('A HuggingFace repo ID must be formatted as Author/Name. Please try again.');
+            return;
+        }
+
+        const params = {
+            repo_id: repoId,
+            folder_name: downloadHtml.find('input[name="folder_name"]').val() || undefined,
+            revision: downloadHtml.find('input[name="revision"]').val() || undefined,
+            token: downloadHtml.find('input[name="hf_token"]').val() || undefined,
+        };
+
+        for (const suffix of ['include', 'exclude']) {
+            const patterns = downloadHtml.find(`textarea[name="tabby_download_${suffix}"]`).val().toString();
+            if (patterns) {
+                params[suffix] = patterns.split('\n');
+            }
+        }
+
+        // Params for the server side of ST
+        params['api_server'] = serverUrl;
+        params['api_type'] = textgen_settings.type;
+
+        toastr.info('Downloading. Check the Tabby console for progress reports.');
+
+        const response = await fetch('/api/backends/text-completions/tabby/download', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(params),
+        });
+
+        if (response.status === 403) {
+            toastr.error('The provided key has invalid permissions. Please use an admin key for downloading.');
+            return;
+        } else if (!response.ok) {
+            throw new Error(response.statusText);
+        }
+
+        toastr.success('Download complete.');
+    } catch (err) {
+        console.error(err);
+        toastr.error('Failed to download HuggingFace model in TabbyAPI. Please try again.');
+    }
+}
+
 function calculateOpenRouterCost() {
     if (textgen_settings.type !== textgen_types.OPENROUTER) {
         return;
@@ -538,6 +608,7 @@ jQuery(function () {
     $('#vllm_model').on('change', onVllmModelSelect);
     $('#aphrodite_model').on('change', onAphroditeModelSelect);
     $('#featherless_model').on('change', onFeatherlessModelSelect);
+    $('#tabby_download_model').on('click', downloadTabbyModel);
 
     const providersSelect = $('.openrouter_providers');
     for (const provider of OPENROUTER_PROVIDERS) {

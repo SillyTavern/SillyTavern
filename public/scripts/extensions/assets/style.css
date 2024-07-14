@@ -7,10 +7,18 @@
     margin-left: 5px;
 }
 
+.assets-url-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.assets-install-hint-link {
+    cursor: help;
+}
+
 .assets-connect-div {
     display: flex;
     flex-direction: row;
-    padding: 5px;
 }
 
 .assets-list-git {

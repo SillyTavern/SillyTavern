@@ -53,6 +53,7 @@ import {
     getFileText,
     getImageSizeFromDataURL,
     getSortableDelay,
+    getStringHash,
     isDataURL,
     parseJsonFile,
     resetScrollHeight,
@@ -72,6 +73,7 @@ import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 import { renderTemplateAsync } from './templates.js';
 import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
+import { Popup, POPUP_RESULT } from './popup.js';
 
 export {
     openai_messages_count,
@@ -191,6 +193,7 @@ const character_names_behavior = {
 };
 
 const continue_postfix_types = {
+    NONE: '',
     SPACE: ' ',
     NEWLINE: '\n',
     DOUBLE_NEWLINE: '\n\n',
@@ -200,6 +203,15 @@ const custom_prompt_post_processing_types = {
     NONE: '',
     CLAUDE: 'claude',
 };
+
+const sensitiveFields = [
+    'reverse_proxy',
+    'proxy_password',
+    'custom_url',
+    'custom_include_body',
+    'custom_exclude_body',
+    'custom_include_headers',
+];
 
 function getPrefixMap() {
     return selected_group ? {
@@ -387,7 +399,7 @@ let openai_settings;
 
 let promptManager = null;
 
-function validateReverseProxy() {
+async function validateReverseProxy() {
     if (!oai_settings.reverse_proxy) {
         return;
     }
@@ -401,6 +413,19 @@ function validateReverseProxy() {
         resultCheckStatus();
         throw err;
     }
+    const rememberKey = `Proxy_SkipConfirm_${getStringHash(oai_settings.reverse_proxy)}`;
+    const skipConfirm = localStorage.getItem(rememberKey) === 'true';
+
+    const confirmation = skipConfirm || await Popup.show.confirm('Connecting To Proxy', `<span>Are you sure you want to connect to the following proxy URL?</span><var>${DOMPurify.sanitize(oai_settings.reverse_proxy)}</var>`);
+
+    if (!confirmation) {
+        toastr.error('Update or remove your reverse proxy settings.');
+        setOnlineStatus('no_connection');
+        resultCheckStatus();
+        throw new Error('Proxy connection denied.');
+    }
+
+    localStorage.setItem(rememberKey, String(true));
 }
 
 /**
@@ -1786,7 +1811,7 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     // Proxy is only supported for Claude, OpenAI, Mistral, and Google MakerSuite
     if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE].includes(oai_settings.chat_completion_source)) {
-        validateReverseProxy();
+        await validateReverseProxy();
         generate_data['reverse_proxy'] = oai_settings.reverse_proxy;
         generate_data['proxy_password'] = oai_settings.proxy_password;
     }
@@ -3138,6 +3163,9 @@ function setNamesBehaviorControls() {
 
 function setContinuePostfixControls() {
     switch (oai_settings.continue_postfix) {
+        case continue_postfix_types.NONE:
+            $('#continue_postfix_none').prop('checked', true);
+            break;
         case continue_postfix_types.SPACE:
             $('#continue_postfix_space').prop('checked', true);
             break;
@@ -3196,7 +3224,7 @@ async function getStatusOpen() {
     };
 
     if (oai_settings.reverse_proxy && (oai_settings.chat_completion_source === chat_completion_sources.OPENAI || oai_settings.chat_completion_source === chat_completion_sources.CLAUDE)) {
-        validateReverseProxy();
+        await validateReverseProxy();
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.CUSTOM) {
@@ -3491,6 +3519,26 @@ async function onPresetImportFileChange(e) {
         return;
     }
 
+    const fields = sensitiveFields.filter(field => presetBody[field]).map(field => `<b>${field}</b>`);
+    const shouldConfirm = fields.length > 0;
+
+    if (shouldConfirm) {
+        const textHeader = 'The imported preset contains proxy and/or custom endpoint settings.';
+        const textMessage = fields.join('<br>');
+        const cancelButton = { text: 'Cancel import', result: POPUP_RESULT.CANCELLED, appendAtEnd: true };
+        const popupOptions = { customButtons: [cancelButton], okButton: 'Remove them', cancelButton: 'Import as-is' };
+        const popupResult = await Popup.show.confirm(textHeader, textMessage, popupOptions);
+
+        if (popupResult === POPUP_RESULT.CANCELLED) {
+            console.log('Import cancelled by user');
+            return;
+        }
+
+        if (popupResult === POPUP_RESULT.AFFIRMATIVE) {
+            sensitiveFields.forEach(field => delete presetBody[field]);
+        }
+    }
+
     if (name in openai_setting_names) {
         const confirm = await callPopup('Preset name already exists. Overwrite?', 'confirm');
 
@@ -3537,8 +3585,22 @@ async function onExportPresetClick() {
 
     const preset = structuredClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
 
-    delete preset.reverse_proxy;
-    delete preset.proxy_password;
+    const fieldValues = sensitiveFields.filter(field => preset[field]).map(field => `<b>${field}</b>: <code>${preset[field]}</code>`);
+    const shouldConfirm = fieldValues.length > 0;
+    const textHeader = 'Your preset contains proxy and/or custom endpoint settings.';
+    const textMessage = `<div>Do you want to remove these fields before exporting?</div><br>${DOMPurify.sanitize(fieldValues.join('<br>'))}`;
+    const cancelButton = { text: 'Cancel', result: POPUP_RESULT.CANCELLED, appendAtEnd: true };
+    const popupOptions = { customButtons: [cancelButton] };
+    const popupResult = await Popup.show.confirm(textHeader, textMessage, popupOptions);
+
+    if (popupResult === POPUP_RESULT.CANCELLED) {
+        console.log('Export cancelled by user');
+        return;
+    }
+
+    if (!shouldConfirm || popupResult === POPUP_RESULT.AFFIRMATIVE) {
+        sensitiveFields.forEach(field => delete preset[field]);
+    }
 
     const presetJsonString = JSON.stringify(preset, null, 4);
     const presetFileName = `${oai_settings.preset_settings_openai}.json`;
@@ -3921,7 +3983,7 @@ async function onModelChange() {
         oai_settings.groq_model = value;
     }
 
-    if ($(this).is('#model_01ai_select')) {
+    if (value && $(this).is('#model_01ai_select')) {
         console.log('01.AI model changed to', value);
         oai_settings.zerooneai_model = value;
     }
@@ -4112,7 +4174,7 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
-        else if (['llama3-8b-8192', 'llama3-70b-8192', 'gemma-7b-it'].includes(oai_settings.groq_model)) {
+        else if (['llama3-8b-8192', 'llama3-70b-8192', 'gemma-7b-it', 'gemma2-9b-it'].includes(oai_settings.groq_model)) {
             $('#openai_max_context').attr('max', max_8k);
         }
         else if (['mixtral-8x7b-32768'].includes(oai_settings.groq_model)) {
@@ -4675,22 +4737,23 @@ function runProxyCallback(_, value) {
     return foundName;
 }
 
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-    name: 'proxy',
-    callback: runProxyCallback,
-    returns: 'current proxy',
-    namedArgumentList: [],
-    unnamedArgumentList: [
-        SlashCommandArgument.fromProps({
-            description: 'name',
-            typeList: [ARGUMENT_TYPE.STRING],
-            isRequired: true,
-            enumProvider: () => proxies.map(preset => new SlashCommandEnumValue(preset.name, preset.url)),
-        }),
-    ],
-    helpString: 'Sets a proxy preset by name.',
-}));
-
+export function initOpenai() {
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'proxy',
+        callback: runProxyCallback,
+        returns: 'current proxy',
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: () => proxies.map(preset => new SlashCommandEnumValue(preset.name, preset.url)),
+            }),
+        ],
+        helpString: 'Sets a proxy preset by name.',
+    }));
+}
 
 $(document).ready(async function () {
     $('#test_api_button').on('click', testApiConnection);
@@ -5074,6 +5137,12 @@ $(document).ready(async function () {
 
     $('#continue_postifx').on('input', function () {
         oai_settings.continue_postfix = String($(this).val());
+        setContinuePostfixControls();
+        saveSettingsDebounced();
+    });
+
+    $('#continue_postfix_none').on('input', function () {
+        oai_settings.continue_postfix = continue_postfix_types.NONE;
         setContinuePostfixControls();
         saveSettingsDebounced();
     });

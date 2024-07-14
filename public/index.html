@@ -1292,7 +1292,7 @@
                                         </div>
                                     </div>
                                     <!-- Enable for llama.cpp when the PR is merged: https://github.com/ggerganov/llama.cpp/pull/6839 -->
-                                    <div data-newbie-hidden data-tg-type="ooba" id="dryBlock" class="wide100p">
+                                    <div data-newbie-hidden data-tg-type="ooba, koboldcpp" id="dryBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" title="DRY penalizes tokens that would extend the end of the input into a sequence that has previously occurred in the input. Set multiplier to 0 to disable." data-i18n="[title]DRY_Repetition_Penalty_desc">
                                             <label data-i18n="DRY Repetition Penalty">DRY Repetition Penalty</label>
                                             <a href="https://github.com/oobabooga/text-generation-webui/pull/5677" target="_blank">
@@ -1315,7 +1315,7 @@
                                                 <input class="neo-range-slider" type="range" id="dry_allowed_length_textgenerationwebui" min="1" max="20" step="1" />
                                                 <input class="neo-range-input" type="number" min="1" max="20" step="1" data-for="dry_allowed_length_textgenerationwebui" id="dry_allowed_length_counter_textgenerationwebui">
                                             </div>
-                                            <div class="alignItemsCenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-tg-type="llamacpp">
+                                            <div class="alignItemsCenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-tg-type="llamacpp, koboldcpp">
                                                 <small data-i18n="Penalty Range">Penalty Range</small>
                                                 <input class="neo-range-slider" type="range" id="dry_penalty_last_n_textgenerationwebui" min="0" max="8192" step="1" />
                                                 <input class="neo-range-input" type="number" min="0" max="8192" step="1" data-for="dry_penalty_last_n_textgenerationwebui" id="dry_penalty_last_n_counter_textgenerationwebui">
@@ -1696,16 +1696,20 @@
                                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                         </div>
                                         <div class="inline-drawer-content">
+                                            <label class="checkbox_label flexWrap alignItemsCenter" for="continue_postfix_none">
+                                                <input type="radio" id="continue_postfix_none" name="continue_postfix" value="0">
+                                                <span data-i18n="None">None</span>
+                                            </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="continue_postfix_space">
-                                                <input type="radio" id="continue_postfix_space" name="continue_postfix" value="0">
+                                                <input type="radio" id="continue_postfix_space" name="continue_postfix" value="1">
                                                 <span data-i18n="Space">Space</span>
                                             </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="continue_postfix_newline">
-                                                <input type="radio" id="continue_postfix_newline" name="continue_postfix" value="1">
+                                                <input type="radio" id="continue_postfix_newline" name="continue_postfix" value="2">
                                                 <span data-i18n="Newline">Newline</span>
                                             </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="continue_postfix_double_newline">
-                                                <input type="radio" id="continue_postfix_double_newline" name="continue_postfix" value="2">
+                                                <input type="radio" id="continue_postfix_double_newline" name="continue_postfix" value="3">
                                                 <span data-i18n="Double Newline">Double Newline</span>
                                             </label>
                                             <!-- Hidden input for loading radio buttons from presets. Don't remove! -->
@@ -2348,6 +2352,16 @@
                                     <small data-i18n="Example: 127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
                                     <input id="tabby_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="tabby">
                                 </div>
+                                <div class="flex1">
+                                    <h4>
+                                        <span data-i18n="Tabby Model">Tabby Model</span>
+                                    </h4>
+                                    </h4>
+                                    <div id="tabby_download_model" class="menu_button menu_button_icon">
+                                        <i class="fa-solid fa-download"></i>
+                                        <span data-i18n="Download">Download</span>
+                                    </div>
+                                </div>
                             </div>
                             <div data-tg-type="koboldcpp">
                                 <div class="flex-container flexFlowColumn">
@@ -2450,17 +2464,6 @@
                                     <span data-i18n="Alternative server URL (leave empty to use the default value).">
                                         Alternative server URL (leave empty to use the default value).<br>
                                     </span>
-                                    <div id="ReverseProxyWarningMessage" class="reverse_proxy_warning">
-                                        <b data-i18n="Remove your real OAI API Key from the API panel BEFORE typing anything into this box">
-                                            Remove your real OAI API Key from the API panel BEFORE typing anything
-                                            into this box.
-                                        </b>
-                                        <hr>
-                                        <b data-i18n="We cannot provide support for problems encountered while using an unofficial OpenAI proxy">
-                                            We cannot provide support for problems encountered while using an
-                                            unofficial OpenAI proxy.
-                                        </b>
-                                    </div>
                                 </div>
                                 <div class="wide100p">
                                     <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="5000" />
@@ -2480,6 +2483,22 @@
                                     <input id="openai_proxy_password" type="password" class="text_pole flex1" placeholder="" maxlength="5000" form="openai_form" autocomplete="off" />
                                     <div id="openai_proxy_password_show" title="Peek a password" data-i18n="[title]Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
                                 </div>
+                            </div>
+                        </div>
+                        <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite">
+                            <div class="reverse_proxy_warning">
+                                <b>
+                                    <div data-i18n="Using a proxy that you're not running yourself is a risk to your data privacy.">
+                                        Using a proxy that you're not running yourself is a risk to your data privacy.
+                                    </div>
+                                    <div data-i18n="ANY support requests will be REFUSED if you are using a proxy.">
+                                        ANY support requests will be REFUSED if you are using a proxy.
+                                    </div>
+                                    <hr>
+                                    <i data-i18n="Do not proceed if you do not agree to this!">
+                                        Do not proceed if you do not agree to this!
+                                    </i>
+                                </b>
                             </div>
                         </div>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
@@ -2837,6 +2856,7 @@
                                 <option value="llama3-70b-8192">llama3-70b-8192</option>
                                 <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
                                 <option value="gemma-7b-it">gemma-7b-it</option>
+                                <option value="gemma2-9b-it">gemma2-9b-it</option>
                             </select>
                         </div>
                         <div id="perplexity_form" data-source="perplexity">
@@ -5103,23 +5123,6 @@
         </div>
     </div>
     <!-- templates for JS to reuse when needed -->
-    <div id="scenario_override_template" class="template_element">
-        <div class="scenario_override range-block flexFlowColumn flex-container">
-            <div class="range-block-title title_restorable">
-                <h3><span data-i18n="Chat Scenario Override" class="margin0">Chat Scenario Override</span></h3>
-                <div title="Remove" data-i18n="[title]Remove" class="menu_button fa-solid fa-trash-can remove_scenario_override"></div>
-            </div>
-            <div class="range-block-counter justifyLeft flex-container flexFlowColumn">
-                <strong>Unique to this chat.</strong>
-                <span data-group="true">All group members will use the following scenario text instead of what is specified in their character cards.</span>
-                <span data-character="true">The following scenario text will be used instead of the value set in the character card.</span>
-                Checkpoints inherit the scenario override from their parent, and can be changed individually after that.
-            </div>
-            <div class="range-block-range wide100p">
-                <textarea class="wide100p chat_scenario" class="text_pole" rows="15" data-i18n="[placeholder]Type here..." placeholder="Type here..."></textarea>
-            </div>
-        </div>
-    </div>
     <div id="chat_world_template" class="template_element">
         <div class="chat_world range-block flexFlowColumn flex-container">
             <div class="range-block-title">
@@ -6422,6 +6425,7 @@
         </div>
     </div>
     <!-- Script includes -->
+    <script src="lib/diff_match_patch.js"></script>
     <script src="lib/object-hasown.js"></script>
     <script src="lib/jquery-3.5.1.min.js"></script>
     <script src="lib/jquery-ui.min.js"></script>

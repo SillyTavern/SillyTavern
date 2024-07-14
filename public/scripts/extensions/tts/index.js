@@ -348,13 +348,18 @@ function onAudioControlClicked() {
 }
 
 function addAudioControl() {
-
     $('#tts_wand_container').append(`
         <div id="ttsExtensionMenuItem" class="list-group-item flex-container flexGap5">
             <div id="tts_media_control" class="extensionsMenuExtensionButton "/></div>
             TTS Playback
         </div>`);
+    $('#tts_wand_container').append(`
+        <div id="ttsExtensionNarrateAll" class="list-group-item flex-container flexGap5">
+            <div class="extensionsMenuExtensionButton fa-solid fa-radio"></div>
+            Narrate All Chat
+        </div>`);
     $('#ttsExtensionMenuItem').attr('title', 'TTS play/pause').on('click', onAudioControlClicked);
+    $('#ttsExtensionNarrateAll').attr('title', 'Narrate all messages in the current chat. Includes user messages, excludes hidden comments.').on('click', playFullConversation);
     updateUiAudioPlayState();
 }
 
@@ -512,12 +517,23 @@ async function processTtsQueue() {
     }
 }
 
-// Secret function for now
 async function playFullConversation() {
+    resetTtsPlayback();
+
+    if (!extension_settings.tts.enabled) {
+        return toastr.warning('TTS is disabled. Please enable it in the extension settings.');
+    }
+
     const context = getContext();
-    const chat = context.chat;
+    const chat = context.chat.filter(x => !x.is_system && x.mes !== '...' && x.mes !== '');
+
+    if (chat.length === 0) {
+        return toastr.info('No messages to narrate.');
+    }
+
     ttsJobQueue = chat;
 }
+
 window['playFullConversation'] = playFullConversation;
 
 //#############################//

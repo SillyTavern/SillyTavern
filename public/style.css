@@ -138,6 +138,7 @@ body {
     /*fallback for JS load*/
     height: 100vh;
     height: 100svh;
+    height: 100dvh;
     /*defaults as 100%, then reassigned via JS as pixels, will work on PC and Android*/
     /*height: calc(var(--doc-height) - 1px);*/
     background-color: var(--greyCAIbg);
@@ -207,8 +208,8 @@ table.responsiveTable {
 }
 
 .animated {
-    -webkit-animation-duration: 3s !important;
-    animation-duration: 3s !important;
+    -webkit-animation-duration: var(--animation-duration, 3s) !important;
+    animation-duration: var(--animation-duration, 3s) !important;
     -webkit-animation-fill-mode: both !important;
     animation-fill-mode: both !important;
     box-shadow: inset 0 0 5px var(--SmartThemeQuoteColor);
@@ -3909,6 +3910,8 @@ input[type="range"]::-webkit-slider-thumb {
     outline: none;
     background-color: var(--black50a);
     line-height: calc(var(--mainFontSize) + .25rem);
+    max-height: 75vh;
+    max-height: 75dvh;
 }
 
 #anchor_order {

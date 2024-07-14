@@ -1,0 +1,9 @@
+{
+    "verbose": true,
+    "transform": {},
+    "extensionsToTreatAsEsm": [],
+    "preset": "jest-puppeteer",
+    "setupFilesAfterEnv": [
+        "<rootDir>/jest.setup.js"
+    ]
+}

@@ -1064,19 +1064,19 @@ function applyChatDisplay() {
 
     switch (power_user.chat_display) {
         case 0: {
-            console.log('applying default chat');
+            console.debug('applying default chat');
             $('body').removeClass('bubblechat');
             $('body').removeClass('documentstyle');
             break;
         }
         case 1: {
-            console.log('applying bubblechat');
+            console.debug('applying bubblechat');
             $('body').addClass('bubblechat');
             $('body').removeClass('documentstyle');
             break;
         }
         case 2: {
-            console.log('applying document style');
+            console.debug('applying document style');
             $('body').removeClass('bubblechat');
             $('body').addClass('documentstyle');
             break;
@@ -2734,45 +2734,26 @@ async function doDelMode(_, text) {
         return '';
     }
 
-    //first enter delmode
-    $('#option_delete_mes').trigger('click', { fromSlashCommand: true });
-
-    //parse valid args
-    if (text) {
-        await delay(300); //same as above, need event signal for 'entered del mode'
-        console.debug('parsing msgs to del');
-        let numMesToDel = Number(text);
-        let lastMesID = Number($('#chat .mes').last().attr('mesid'));
-        let oldestMesIDToDel = lastMesID - numMesToDel + 1;
-
-        if (oldestMesIDToDel < 0) {
-            toastr.warning(`Cannot delete more than ${chat.length} messages.`);
-            return '';
-        }
-
-        let oldestMesToDel = $('#chat').find(`.mes[mesid=${oldestMesIDToDel}]`);
-
-        if (!oldestMesIDToDel && lastMesID > 0) {
-            oldestMesToDel = await loadUntilMesId(oldestMesIDToDel);
-
-            if (!oldestMesToDel || !oldestMesToDel.length) {
-                return '';
-            }
-        }
-
-        let oldestDelMesCheckbox = $(oldestMesToDel).find('.del_checkbox');
-        let newLastMesID = oldestMesIDToDel - 1;
-        console.debug(`DelMesReport -- numMesToDel:  ${numMesToDel}, lastMesID: ${lastMesID}, oldestMesIDToDel:${oldestMesIDToDel}, newLastMesID: ${newLastMesID}`);
-        oldestDelMesCheckbox.trigger('click');
-        let trueNumberOfDeletedMessage = lastMesID - oldestMesIDToDel + 1;
-
-        //await delay(1)
-        $('#dialogue_del_mes_ok').trigger('click');
-        toastr.success(`Deleted ${trueNumberOfDeletedMessage} messages.`);
+    // Just enter the delete mode.
+    if (!text) {
+        $('#option_delete_mes').trigger('click', { fromSlashCommand: true });
         return '';
     }
 
-    return '';
+    const count = Number(text);
+
+    // Nothing to delete.
+    if (count < 1) {
+        return '';
+    }
+
+    if (count > chat.length) {
+        toastr.warning(`Cannot delete more than ${chat.length} messages.`);
+        return '';
+    }
+
+    const range = `${chat.length - count}-${chat.length - 1}`;
+    return doMesCut(_, range);
 }
 
 function doResetPanels() {
@@ -3130,6 +3111,7 @@ $(document).ready(() => {
         const winHeight = window.innerHeight;
         const originalWidth = winWidth * zoomLevel;
         const originalHeight = winHeight * zoomLevel;
+        console.log(`Window resize: ${coreTruthWinWidth}x${coreTruthWinHeight} -> ${window.innerWidth}x${window.innerHeight}`);
         console.debug(`Zoom: ${zoomLevel}, X:${winWidth}, Y:${winHeight}, original: ${originalWidth}x${originalHeight} `);
         return zoomLevel;
     });
@@ -3138,7 +3120,6 @@ $(document).ready(() => {
     var coreTruthWinHeight = window.innerHeight;
 
     $(window).on('resize', async () => {
-        console.log(`Window resize: ${coreTruthWinWidth}x${coreTruthWinHeight} -> ${window.innerWidth}x${window.innerHeight}`);
         adjustAutocompleteDebounced();
         setHotswapsDebounced();
 
@@ -3191,7 +3172,7 @@ $(document).ready(() => {
                 }
             }
         } else {
-            console.log('aborting MUI reset', Object.keys(power_user.movingUIState).length);
+            console.debug('aborting MUI reset', Object.keys(power_user.movingUIState).length);
         }
         saveSettingsDebounced();
         coreTruthWinWidth = window.innerWidth;

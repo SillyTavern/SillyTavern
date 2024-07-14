@@ -194,7 +194,7 @@ export class Popup {
             const buttonElement = document.createElement('div');
             buttonElement.classList.add('menu_button', 'popup-button-custom', 'result-control');
             buttonElement.classList.add(...(button.classes ?? []));
-            buttonElement.dataset.result = String(button.result ?? undefined);
+            buttonElement.dataset.result = String(button.result); // This is expected to also write 'null' or 'staging', to indicate cancel and no action respectively
             buttonElement.textContent = button.text;
             buttonElement.dataset.i18n = buttonElement.textContent;
             buttonElement.tabIndex = 0;
@@ -317,9 +317,14 @@ export class Popup {
         // Bind event listeners for all result controls to their defined event type
         this.dlg.querySelectorAll('[data-result]').forEach(resultControl => {
             if (!(resultControl instanceof HTMLElement)) return;
-            const result = Number(resultControl.dataset.result);
-            if (String(undefined) === String(resultControl.dataset.result)) return;
-            if (isNaN(result)) throw new Error('Invalid result control. Result must be a number. ' + resultControl.dataset.result);
+            // If no value was set, we exit out and don't bind an action
+            if (String(resultControl.dataset.result) === String(undefined)) return;
+
+            // Make sure that both `POPUP_RESULT` numbers and also `null` as 'cancelled' are supported
+            const result = String(resultControl.dataset.result) === String(null) ? null
+                : Number(resultControl.dataset.result);
+
+            if (result !== null && isNaN(result)) throw new Error('Invalid result control. Result must be a number. ' + resultControl.dataset.result);
             const type = resultControl.dataset.resultEvent || 'click';
             resultControl.addEventListener(type, async () => await this.complete(result));
         });
