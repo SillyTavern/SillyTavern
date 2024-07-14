@@ -173,6 +173,13 @@ export class SettingsUi {
             qrs.save();
             this.currentQrSet.updateColor();
         });
+        this.dom.querySelector('#qr--colorClear').addEventListener('click', (evt)=>{
+            const qrs = this.currentQrSet;
+            this.color.color = 'transparent';
+            qrs.color = 'transparent';
+            qrs.save();
+            this.currentQrSet.updateColor();
+        });
         this.onlyBorderColor = this.dom.querySelector('#qr--onlyBorderColor');
         this.onlyBorderColor.addEventListener('click', ()=>{
             const qrs = this.currentQrSet;

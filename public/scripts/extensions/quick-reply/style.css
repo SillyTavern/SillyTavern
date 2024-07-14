@@ -59,7 +59,6 @@
 #qr--bar > .qr--buttons,
 #qr--popout > .qr--body > .qr--buttons {
   --qr--color: transparent;
-  background-color: var(--qr--color);
   margin: 0;
   padding: 0;
   display: flex;
@@ -68,21 +67,40 @@
   gap: 5px;
   width: 100%;
 }
+#qr--bar > .qr--buttons.qr--color,
+#qr--popout > .qr--body > .qr--buttons.qr--color {
+  background-color: var(--qr--color);
+}
 #qr--bar > .qr--buttons.qr--borderColor,
 #qr--popout > .qr--body > .qr--buttons.qr--borderColor {
   background-color: transparent;
   border-left: 5px solid var(--qr--color);
   border-right: 5px solid var(--qr--color);
 }
+#qr--bar > .qr--buttons:has(.qr--buttons.qr--color),
+#qr--popout > .qr--body > .qr--buttons:has(.qr--buttons.qr--color) {
+  margin: 5px;
+}
 #qr--bar > .qr--buttons > .qr--buttons,
 #qr--popout > .qr--body > .qr--buttons > .qr--buttons {
   display: contents;
-  background-color: transparent;
 }
-#qr--bar > .qr--buttons > .qr--buttons:before,
-#qr--popout > .qr--body > .qr--buttons > .qr--buttons:before,
-#qr--bar > .qr--buttons > .qr--buttons:after,
-#qr--popout > .qr--body > .qr--buttons > .qr--buttons:after {
+#qr--bar > .qr--buttons > .qr--buttons.qr--color .qr--button:before,
+#qr--popout > .qr--body > .qr--buttons > .qr--buttons.qr--color .qr--button:before {
+  content: '';
+  background-color: var(--qr--color);
+  position: absolute;
+  inset: -5px;
+  z-index: -1;
+}
+#qr--bar > .qr--buttons > .qr--buttons.qr--color.qr--borderColor .qr--button:before,
+#qr--popout > .qr--body > .qr--buttons > .qr--buttons.qr--color.qr--borderColor .qr--button:before {
+  display: none;
+}
+#qr--bar > .qr--buttons > .qr--buttons.qr--color.qr--borderColor:before,
+#qr--popout > .qr--body > .qr--buttons > .qr--buttons.qr--color.qr--borderColor:before,
+#qr--bar > .qr--buttons > .qr--buttons.qr--color.qr--borderColor:after,
+#qr--popout > .qr--body > .qr--buttons > .qr--buttons.qr--color.qr--borderColor:after {
   content: '';
   width: 5px;
   background-color: var(--qr--color);
@@ -100,11 +118,11 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+  position: relative;
 }
 #qr--bar > .qr--buttons .qr--button:hover,
 #qr--popout > .qr--body > .qr--buttons .qr--button:hover {
-  opacity: 1;
-  filter: brightness(1.2);
+  background-color: #4d4d4d;
 }
 #qr--bar > .qr--buttons .qr--button .qr--hidden,
 #qr--popout > .qr--body > .qr--buttons .qr--button .qr--hidden {

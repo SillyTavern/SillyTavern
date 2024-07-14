@@ -84,8 +84,9 @@ export class QuickReplySet {
         });
     }
     updateColor() {
-        if (this.color) {
+        if (this.color && this.color != 'transparent') {
             this.dom.style.setProperty('--qr--color', this.color);
+            this.dom.classList.add('qr--color');
             if (this.onlyBorderColor) {
                 this.dom.classList.add('qr--borderColor');
             } else {
@@ -93,6 +94,7 @@ export class QuickReplySet {
             }
         } else {
             this.dom.style.setProperty('--qr--color', 'transparent');
+            this.dom.classList.remove('qr--color');
             this.dom.classList.remove('qr--borderColor');
         }
     }

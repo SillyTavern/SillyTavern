@@ -66,11 +66,16 @@
 #qr--popout>.qr--body {
     >.qr--buttons {
         --qr--color: transparent;
-        background-color: var(--qr--color);
+        &.qr--color {
+            background-color: var(--qr--color);
+        }
         &.qr--borderColor {
             background-color: transparent;
             border-left: 5px solid var(--qr--color);
             border-right: 5px solid var(--qr--color);
+        }
+        &:has(.qr--buttons.qr--color) {
+            margin: 5px;
         }
         margin: 0;
         padding: 0;
@@ -82,11 +87,24 @@
 
         >.qr--buttons {
             display: contents;
-            background-color: transparent;
-            &:before, &:after {
-                content: '';
-                width: 5px;
-                background-color: var(--qr--color);
+            &.qr--color {
+                .qr--button:before {
+                    content: '';
+                    background-color: var(--qr--color);
+                    position: absolute;
+                    inset: -5px;
+                    z-index: -1;
+                }
+                &.qr--borderColor {
+                    .qr--button:before {
+                        display: none;
+                    }
+                    &:before, &:after {
+                        content: '';
+                        width: 5px;
+                        background-color: var(--qr--color);
+                    }
+                }
             }
         }
 
@@ -103,10 +121,10 @@
             align-items: center;
             justify-content: center;
             text-align: center;
+            position: relative;
 
             &:hover {
-                opacity: 1;
-                filter: brightness(1.2);
+                background-color: rgb(30% 30% 30%);
             }
 
             .qr--hidden {
