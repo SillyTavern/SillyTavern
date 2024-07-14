@@ -101,6 +101,7 @@ import {
     proxies,
     loadProxyPresets,
     selected_proxy,
+    initOpenai,
 } from './scripts/openai.js';
 
 import {
@@ -155,7 +156,6 @@ import {
     ensureImageFormatSupported,
     flashHighlight,
     isTrueBoolean,
-    debouncedThrottle,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -915,6 +915,7 @@ async function firstLoadInit() {
     initKeyboard();
     initDynamicStyles();
     initTags();
+    initOpenai();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
@@ -7183,20 +7184,23 @@ function updateFavButtonState(state) {
     $('#favorite_button').toggleClass('fav_off', !fav_ch_checked);
 }
 
-export function setScenarioOverride() {
+export async function setScenarioOverride() {
     if (!selected_group && !this_chid) {
         console.warn('setScenarioOverride() -- no selected group or character');
         return;
     }
 
-    const template = $('#scenario_override_template .scenario_override').clone();
     const metadataValue = chat_metadata['scenario'] || '';
     const isGroup = !!selected_group;
-    template.find('[data-group="true"]').toggle(isGroup);
-    template.find('[data-character="true"]').toggle(!isGroup);
-    template.find('.chat_scenario').val(metadataValue).on('input', onScenarioOverrideInput);
-    template.find('.remove_scenario_override').on('click', onScenarioOverrideRemoveClick);
-    callPopup(template, 'text');
+
+    const $template = $(await renderTemplateAsync('scenarioOverride'));
+    $template.find('[data-group="true"]').toggle(isGroup);
+    $template.find('[data-character="true"]').toggle(!isGroup);
+    // TODO: Why does this save on every character input? Save on popup close
+    $template.find('.chat_scenario').val(metadataValue).on('input', onScenarioOverrideInput);
+    $template.find('.remove_scenario_override').on('click', onScenarioOverrideRemoveClick);
+
+    await callGenericPopup($template, POPUP_TYPE.TEXT, '');
 }
 
 function onScenarioOverrideInput() {
@@ -9125,10 +9129,6 @@ jQuery(async function () {
         $('#groupCurrentMemberListToggle .inline-drawer-icon').trigger('click');
     }, 200);
 
-    $('#chat').on('wheel touchstart', () => {
-        scrollLock = true;
-    });
-
     $(document).on('click', '.api_loading', cancelStatusCheck);
 
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
@@ -9233,23 +9233,32 @@ jQuery(async function () {
      */
     function autoFitEditTextArea(e) {
         scroll_holder = chatElement[0].scrollTop;
-        e.style.height = '0';
-        e.style.height = `${e.scrollHeight + 4}px`;
+        e.style.height = '0px';
+        const newHeight = e.scrollHeight + 4;
+        e.style.height = `${newHeight}px`;
         is_use_scroll_holder = true;
     }
-    const autoFitEditTextAreaDebounced = debouncedThrottle(autoFitEditTextArea, debounce_timeout.standard);
+    const autoFitEditTextAreaDebounced = debounce(autoFitEditTextArea, debounce_timeout.short);
     document.addEventListener('input', e => {
         if (e.target instanceof HTMLTextAreaElement && e.target.classList.contains('edit_textarea')) {
-            const immediately = e.target.scrollHeight > e.target.offsetHeight || e.target.value === '';
+            const scrollbarShown = e.target.clientWidth < e.target.offsetWidth && e.target.offsetHeight >= window.innerHeight * 0.75;
+            const immediately = (e.target.scrollHeight > e.target.offsetHeight && !scrollbarShown) || e.target.value === '';
             immediately ? autoFitEditTextArea(e.target) : autoFitEditTextAreaDebounced(e.target);
         }
     });
-    document.getElementById('chat').addEventListener('scroll', function () {
+    const chatElementScroll = document.getElementById('chat');
+    chatElementScroll.addEventListener('wheel', function () {
+        scrollLock = true;
+    }, { passive: true });
+    chatElementScroll.addEventListener('touchstart', function () {
+        scrollLock = true;
+    }, { passive: true });
+    chatElementScroll.addEventListener('scroll', function () {
         if (is_use_scroll_holder) {
             this.scrollTop = scroll_holder;
             is_use_scroll_holder = false;
         }
-    });
+    }, { passive: true });
 
     $(document).on('click', '.mes', function () {
         //when a 'delete message' parent div is clicked
@@ -9800,7 +9809,7 @@ jQuery(async function () {
     });
 
     //confirms message deletion with the "ok" button
-    $('#dialogue_del_mes_ok').click(async function () {
+    $('#dialogue_del_mes_ok').on('click', async function () {
         $('#dialogue_del_mes').css('display', 'none');
         $('#send_form').css('display', css_send_form_display);
         $('.del_checkbox').each(function () {
@@ -9816,7 +9825,7 @@ jQuery(async function () {
             chat.length = this_del_mes;
             await saveChatConditional();
             chatElement.scrollTop(chatElement[0].scrollHeight);
-            eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
+            await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
             $('#chat .mes').removeClass('last_mes');
             $('#chat .mes').last().addClass('last_mes');
         } else {
@@ -10647,7 +10656,7 @@ jQuery(async function () {
                 openCharacterWorldPopup();
                 break;
             case 'set_chat_scenario':
-                setScenarioOverride();
+                await setScenarioOverride();
                 break;
             case 'renameCharButton':
                 renameCharacter();
@@ -10668,7 +10677,7 @@ jQuery(async function () {
                 const source = getCharacterSource(this_chid);
                 if (source && isValidUrl(source)) {
                     const url = new URL(source);
-                    const confirm = await callPopup(`Open ${url.hostname} in a new tab?`, 'confirm');
+                    const confirm = await Popup.show.confirm('Open Source', `<span>Do you want to open the link to ${url.hostname} in a new tab?</span><var>${url}</var>`);
                     if (confirm) {
                         window.open(source, '_blank');
                     }
@@ -10677,7 +10686,7 @@ jQuery(async function () {
                 }
             } break;
             case 'replace_update': {
-                const confirm = await callPopup('<p><b>Choose a new character card to replace this character with.</b></p><p>All chats, assets and group memberships will be preserved, but local changes to the character data will be lost.</p><p>Proceed?</p>', 'confirm', '');
+                const confirm = await Popup.show.confirm('Replace Character', '<p>Choose a new character card to replace this character with.</p>All chats, assets and group memberships will be preserved, but local changes to the character data will be lost.<br />Proceed?');
                 if (confirm) {
                     async function uploadReplacementCard(e) {
                         const file = e.target.files[0];

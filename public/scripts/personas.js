@@ -395,19 +395,16 @@ export async function convertCharacterToPersona(characterId = null) {
     const overwriteName = `${name} (Persona).png`;
 
     if (overwriteName in power_user.personas) {
-        const confirmation = await callPopup('This character exists as a persona already. Are you sure want to overwrite it?', 'confirm', '', { okButton: 'Yes' });
-
-        if (confirmation === false) {
+        const confirm = await Popup.show.confirm('Overwrite Existing Persona', 'This character exists as a persona already. Do you want to overwrite it?');
+        if (!confirm) {
             console.log('User cancelled the overwrite of the persona');
             return;
         }
     }
 
     if (description.includes('{{char}}') || description.includes('{{user}}')) {
-        await delay(500);
-        const confirmation = await callPopup('This character has a description that uses {{char}} or {{user}} macros. Do you want to swap them in the persona description?', 'confirm', '', { okButton: 'Yes' });
-
-        if (confirmation) {
+        const confirm = await Popup.show.confirm('Persona Description Macros', 'This character has a description that uses <code>{{char}}</code> or <code>{{user}}</code> macros. Do you want to swap them in the persona description?');
+        if (confirm) {
             description = description.replace(/{{char}}/gi, '{{personaChar}}').replace(/{{user}}/gi, '{{personaUser}}');
             description = description.replace(/{{personaUser}}/gi, '{{char}}').replace(/{{personaChar}}/gi, '{{user}}');
         }
