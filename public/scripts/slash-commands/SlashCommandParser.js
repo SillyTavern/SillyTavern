@@ -231,6 +231,12 @@ export class SlashCommandParser {
             }
         }
 
+        const BLOCK_COMMENT = {
+            scope: 'comment',
+            begin: /\/\*/,
+            end: /\*\|/,
+            contains: [],
+        };
         const COMMENT = {
             scope: 'comment',
             begin: /\/[/#]/,
@@ -312,6 +318,9 @@ export class SlashCommandParser {
             begin: /{{/,
             end: /}}/,
         };
+        BLOCK_COMMENT.contains.push(
+            BLOCK_COMMENT,
+        );
         RUN.contains.push(
             hljs.BACKSLASH_ESCAPE,
             NAMED_ARG,
@@ -362,6 +371,7 @@ export class SlashCommandParser {
         );
         CLOSURE.contains.push(
             hljs.BACKSLASH_ESCAPE,
+            BLOCK_COMMENT,
             COMMENT,
             ABORT,
             KEYWORD,
@@ -381,6 +391,7 @@ export class SlashCommandParser {
             keywords: ['|'],
             contains: [
                 hljs.BACKSLASH_ESCAPE,
+                BLOCK_COMMENT,
                 COMMENT,
                 ABORT,
                 KEYWORD,
@@ -678,7 +689,9 @@ export class SlashCommandParser {
             this.discardWhitespace();
         }
         while (!this.testClosureEnd()) {
-            if (this.testComment()) {
+            if (this.testBlockComment()) {
+                this.parseBlockComment();
+            } else if (this.testComment()) {
                 this.parseComment();
             } else if (this.testParserFlag()) {
                 this.parseParserFlag();
@@ -758,6 +771,30 @@ export class SlashCommandParser {
         this.commandIndex.push(cmd);
         this.scopeIndex.push(this.scope.getCopy());
         return cmd;
+    }
+
+    testBlockComment() {
+        return this.testSymbol(/\/\*/);
+    }
+    testBlockCommentEnd() {
+        return this.testSymbol(/\*\|/);
+    }
+    parseBlockComment() {
+        const start = this.index + 1;
+        const cmd = new SlashCommandExecutor(start);
+        cmd.command = this.commands['*'];
+        this.commandIndex.push(cmd);
+        this.scopeIndex.push(this.scope.getCopy());
+        this.take(); // discard "/"
+        cmd.name = this.take(); //set "*" as name
+        while (!this.testBlockCommentEnd()) {
+            if (this.testBlockComment()) {
+                this.parseBlockComment();
+            }
+            this.take();
+        }
+        this.take(2); // take closing "*|"
+        cmd.end = this.index - 1;
     }
 
     testComment() {

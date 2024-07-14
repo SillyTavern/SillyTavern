@@ -489,8 +489,9 @@
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings {
   display: flex;
+  flex-wrap: wrap;
   flex-direction: row;
-  gap: 1em;
+  column-gap: 1em;
   color: var(--grey70);
   font-size: smaller;
   align-items: baseline;

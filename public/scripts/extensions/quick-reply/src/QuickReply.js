@@ -501,6 +501,7 @@ export class QuickReply {
                 localStorage.setItem('qr--syntax', JSON.stringify(syntax.checked));
                 updateSyntaxEnabled();
             });
+            navigator.keyboard.getLayoutMap().then(it=>dom.querySelector('#qr--modal-commentKey').textContent = it.get('Backslash'));
             this.editorMessageLabel = dom.querySelector('label[for="qr--modal-message"]');
             /**@type {HTMLTextAreaElement}*/
             const message = dom.querySelector('#qr--modal-message');
@@ -515,6 +516,7 @@ export class QuickReply {
             message.addEventListener('keydown', async(evt) => {
                 if (this.isExecuting) return;
                 if (evt.key == 'Tab' && !evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
+                    // increase indent
                     evt.preventDefault();
                     const start = message.selectionStart;
                     const end = message.selectionEnd;
@@ -536,6 +538,7 @@ export class QuickReply {
                         message.dispatchEvent(new Event('input', { bubbles:true }));
                     }
                 } else if (evt.key == 'Tab' && evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
+                    // decrease indent
                     evt.preventDefault();
                     evt.stopImmediatePropagation();
                     evt.stopPropagation();
@@ -548,6 +551,7 @@ export class QuickReply {
                     message.selectionEnd = end - count;
                     message.dispatchEvent(new Event('input', { bubbles:true }));
                 } else if (evt.key == 'Enter' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey && !(ac.isReplaceable && ac.isActive)) {
+                    // new line, keep indent
                     evt.stopImmediatePropagation();
                     evt.stopPropagation();
                     evt.preventDefault();
@@ -560,10 +564,11 @@ export class QuickReply {
                     message.selectionEnd  = message.selectionStart;
                     message.dispatchEvent(new Event('input', { bubbles:true }));
                 } else if (evt.key == 'Enter' && evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
-                    evt.stopImmediatePropagation();
-                    evt.stopPropagation();
-                    evt.preventDefault();
                     if (executeShortcut.checked) {
+                        // execute QR
+                        evt.stopImmediatePropagation();
+                        evt.stopPropagation();
+                        evt.preventDefault();
                         const selectionStart = message.selectionStart;
                         const selectionEnd = message.selectionEnd;
                         message.blur();
@@ -574,6 +579,45 @@ export class QuickReply {
                             message.selectionEnd = selectionEnd;
                         }
                     }
+                } else if (evt.key == 'F9' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
+                    // toggle breakpoint
+                    evt.stopImmediatePropagation();
+                    evt.stopPropagation();
+                    evt.preventDefault();
+                    preBreakPointStart = message.selectionStart;
+                    preBreakPointEnd = message.selectionEnd;
+                    toggleBreakpoint();
+                } else if (evt.code == 'Backslash' && evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
+                    // toggle comment
+                    evt.stopImmediatePropagation();
+                    evt.stopPropagation();
+                    evt.preventDefault();
+                    // check if we are inside a comment -> uncomment
+                    const parser = new SlashCommandParser();
+                    parser.parse(message.value, false);
+                    const start = message.selectionStart;
+                    const end = message.selectionEnd;
+                    const comment = parser.commandIndex.findLast(it=>it.name == '*' && (it.start <= start && it.end >= start || it.start <= end && it.end >= end));
+                    if (comment) {
+                        let content = message.value.slice(comment.start + 1, comment.end - 1);
+                        let len = content.length;
+                        content = content.replace(/^ /, '');
+                        const offsetStart = len - content.length;
+                        len = content.length;
+                        content = content.replace(/ $/, '');
+                        const offsetEnd = len - content.length;
+                        message.value = `${message.value.slice(0, comment.start - 1)}${content}${message.value.slice(comment.end + 1)}`;
+                        message.selectionStart = start - (start >= comment.start ? 2 + offsetStart : 0);
+                        message.selectionEnd = end - 2 - offsetStart - (end >= comment.end ? 2 + offsetEnd : 0);
+                    } else {
+                        const lineStart = message.value.lastIndexOf('\n', start - 1) + 1;
+                        const lineEnd = message.value.indexOf('\n', end);
+                        const lines = message.value.slice(lineStart, lineEnd).split('\n');
+                        message.value = `${message.value.slice(0, lineStart)}/* ${message.value.slice(lineStart, lineEnd)} *|${message.value.slice(lineEnd)}`;
+                        message.selectionStart = start + 3;
+                        message.selectionEnd = end + 3;
+                    }
+                    message.dispatchEvent(new Event('input', { bubbles:true }));
                 }
             });
             const ac = await setSlashCommandAutoComplete(message, true);
@@ -583,6 +627,11 @@ export class QuickReply {
             message.addEventListener('scroll', (evt)=>{
                 updateScrollDebounced();
             });
+            let preBreakPointStart;
+            let preBreakPointEnd;
+            /**
+             * @param {SlashCommandBreakPoint} bp
+             */
             const removeBreakpoint = (bp)=>{
                 // start at -1 because "/" is not included in start-end
                 let start = bp.start - 1;
@@ -623,21 +672,38 @@ export class QuickReply {
                 }
                 return { start:postStart, end:postEnd };
             };
-            let preBreakPointStart;
-            let preBreakPointEnd;
-            message.addEventListener('pointerdown', (evt)=>{
-                if (!evt.ctrlKey || !evt.altKey) return;
-                preBreakPointStart = message.selectionStart;
-                preBreakPointEnd = message.selectionEnd;
-            });
-            message.addEventListener('pointerup', async(evt)=>{
-                if (!evt.ctrlKey || !evt.altKey || message.selectionStart != message.selectionEnd) return;
+            /**
+             * @param {SlashCommandExecutor} cmd
+             */
+            const addBreakpoint = (cmd)=>{
+                // start at -1 because "/" is not included in start-end
+                let start = cmd.start - 1;
+                let indent = '';
+                // step left until forward slash "/"
+                while (message.value[start] != '/') start--;
+                // step left while whitespace (except newline) before start, collect the whitespace to help build indentation
+                while (/[^\S\n]/.test(message.value[start - 1])) {
+                    start--;
+                    indent += message.value[start];
+                }
+                // if newline before indent, include the newline
+                if (message.value[start - 1] == '\n') {
+                    start--;
+                    indent = `\n${indent}`;
+                }
+                const breakpointText = `${indent}/breakpoint |`;
+                const v = `${message.value.slice(0, start)}${breakpointText}${message.value.slice(start)}`;
+                message.value = v;
+                message.dispatchEvent(new Event('input', { bubbles:true }));
+                return breakpointText.length;
+            };
+            const toggleBreakpoint = ()=>{
                 const idx = message.selectionStart;
                 let postStart = preBreakPointStart;
                 let postEnd = preBreakPointEnd;
                 const parser = new SlashCommandParser();
                 parser.parse(message.value, false);
-                const cmdIdx = parser.commandIndex.findLastIndex(it=>it.start <= idx && it.end >= idx);
+                const cmdIdx = parser.commandIndex.findLastIndex(it=>it.start <= idx);
                 if (cmdIdx > -1) {
                     const cmd = parser.commandIndex[cmdIdx];
                     if (cmd instanceof SlashCommandBreakPoint) {
@@ -651,28 +717,22 @@ export class QuickReply {
                         postStart = start;
                         postEnd = end;
                     } else {
-                        // start at -1 because "/" is not included in start-end
-                        let start = cmd.start - 1;
-                        let indent = '';
-                        // step left until forward slash "/"
-                        while (message.value[start] != '/') start--;
-                        // step left while whitespace (except newline) before start, collect the whitespace to help build indentation
-                        while (/[^\S\n]/.test(message.value[start - 1])) {
-                            start--;
-                            indent += message.value[start];
-                        }
-                        // if newline before indent, include the newline
-                        if (message.value[start - 1] == '\n') {
-                            start--;
-                            indent = `\n${indent}`;
-                        }
-                        const v = `${message.value.slice(0, start)}${indent}/breakpoint |${message.value.slice(start)}`;
-                        message.value = v;
-                        message.dispatchEvent(new Event('input', { bubbles:true }));
+                        const len = addBreakpoint(cmd);
+                        postStart += len;
+                        postEnd += len;
                     }
                     message.selectionStart = postStart;
                     message.selectionEnd = postEnd;
                 }
+            };
+            message.addEventListener('pointerdown', (evt)=>{
+                if (!evt.ctrlKey || !evt.altKey) return;
+                preBreakPointStart = message.selectionStart;
+                preBreakPointEnd = message.selectionEnd;
+            });
+            message.addEventListener('pointerup', async(evt)=>{
+                if (!evt.ctrlKey || !evt.altKey || message.selectionStart != message.selectionEnd) return;
+                toggleBreakpoint();
             });
             /** @type {any} */
             const resizeListener = debounce((evt) => {
