@@ -89,7 +89,7 @@
     position: absolute;
     width: 100%;
     height: 100vh;
-    height: 100svh;
+    height: 100dvh;
     z-index: 9998;
     top: 0;
 }
