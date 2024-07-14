@@ -74,7 +74,6 @@ export class QuickReply {
     /**@type {HTMLElement}*/ editorExecuteErrors;
     /**@type {HTMLElement}*/ editorExecuteResult;
     /**@type {HTMLElement}*/ editorDebugState;
-    /**@type {HTMLInputElement}*/ editorExecuteHide;
     /**@type {Promise}*/ editorExecutePromise;
     /**@type {boolean}*/ isExecuting;
     /**@type {SlashCommandAbortController}*/ abortController;
@@ -829,9 +828,6 @@ export class QuickReply {
             /**@type {HTMLElement}*/
             const debugState = dom.querySelector('#qr--modal-debugState');
             this.editorDebugState = debugState;
-            /**@type {HTMLInputElement}*/
-            const executeHide = dom.querySelector('#qr--modal-executeHide');
-            this.editorExecuteHide = executeHide;
             /**@type {HTMLElement}*/
             const executeBtn = dom.querySelector('#qr--modal-execute');
             this.editorExecuteBtn = executeBtn;
@@ -985,9 +981,6 @@ export class QuickReply {
         this.editorExecuteProgress.classList.remove('qr--aborted');
         this.editorExecuteErrors.innerHTML = '';
         this.editorExecuteResult.innerHTML = '';
-        if (this.editorExecuteHide.checked) {
-            this.editorPopup.dlg.classList.add('qr--hide');
-        }
         const syntax = this.editorDom.querySelector('#qr--modal-messageSyntaxInner');
         const updateScroll = (evt) => {
             let left = syntax.scrollLeft;
@@ -1470,7 +1463,6 @@ export class QuickReply {
         this.editorMessage.dispatchEvent(new Event('input', { bubbles:true }));
         this.editorExecutePromise = null;
         this.editorExecuteBtn.classList.remove('qr--busy');
-        this.editorPopup.dlg.classList.remove('qr--hide');
         this.editorDom.classList.remove('qr--isExecuting');
         this.isExecuting = false;
         this.editorPopup.onClosing = null;
