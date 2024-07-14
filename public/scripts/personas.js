@@ -403,7 +403,6 @@ export async function convertCharacterToPersona(characterId = null) {
     }
 
     if (description.includes('{{char}}') || description.includes('{{user}}')) {
-        await delay(500);
         const confirm = await Popup.show.confirm('Persona Description Macros', 'This character has a description that uses <code>{{char}}</code> or <code>{{user}}</code> macros. Do you want to swap them in the persona description?');
         if (confirm) {
             description = description.replace(/{{char}}/gi, '{{personaChar}}').replace(/{{user}}/gi, '{{personaUser}}');
