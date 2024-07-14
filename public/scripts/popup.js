@@ -339,9 +339,9 @@ export class Popup {
         this.dlg.addEventListener('cancel', cancelListener.bind(this));
 
         // Don't ask me why this is needed. I don't get it. But we have to keep it.
-        // We make sure that the modal on it's own doesn't hide. Dunno why, if onClosing is triggered multiple times through the cancel event, and stopped
-        // It seems to just call 'close' on the dialog even if the 'cancel' event was prevented.
-        // Here, we just say that close should not happen if the dalog has no result.
+        // We make sure that the modal on its own doesn't hide. Dunno why, if onClosing is triggered multiple times through the cancel event, and stopped,
+        // it seems to just call 'close' on the dialog even if the 'cancel' event was prevented.
+        // So here we just say that close should not happen if it was prevented.
         const closeListener = async (evt) => {
             if (this.#isClosingPrevented) {
                 evt.preventDefault();
