@@ -879,6 +879,15 @@ export class QuickReply {
             stepOutBtn.addEventListener('click', ()=>{
                 this.debugController?.stepOut();
             });
+            /**@type {HTMLElement}*/
+            const minimizeBtn = dom.querySelector('#qr--modal-minimize');
+            minimizeBtn.addEventListener('click', ()=>{
+                this.editorDom.classList.add('qr--minimized');
+            });
+            const maximizeBtn = dom.querySelector('#qr--modal-maximize');
+            maximizeBtn.addEventListener('click', ()=>{
+                this.editorDom.classList.remove('qr--minimized');
+            });
             /**@type {boolean}*/
             let isResizing = false;
             let resizeStart;

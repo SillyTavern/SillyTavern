@@ -400,6 +400,56 @@
 .popup:has(#qr--modalEditor) {
     aspect-ratio: unset;
 
+    &:has(.qr--isExecuting.qr--minimized) {
+        min-width: unset;
+        min-height: unset;
+        height: auto !important;
+        width: min-content !important;
+        position: absolute;
+        right: 1em;
+        top: 1em;
+        left: unset;
+        bottom: unset;
+        margin: unset;
+        padding: 0;
+        &::backdrop {
+            backdrop-filter: unset;
+            background-color: transparent;
+        }
+        .popup-body {
+            flex: 0 0 auto;
+            height: min-content;
+            width: min-content;
+        }
+        .popup-content {
+            flex: 0 0 auto;
+            margin-top: 0;
+
+            > #qr--modalEditor {
+                max-height: 50vh;
+                > #qr--main,
+                > #qr--resizeHandle,
+                > #qr--qrOptions > h3,
+                > #qr--qrOptions > #qr--modal-executeButtons,
+                > #qr--qrOptions > #qr--modal-executeProgress
+                {
+                    display: none;
+                }
+                #qr--qrOptions {
+                    width: auto;
+                }
+                #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-maximize {
+                    display: flex;
+                }
+                #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-minimize {
+                    display: none;
+                }
+                #qr--modal-debugState {
+                    padding-top: 0;
+                }
+            }
+        }
+    }
 	&:has(.qr--isExecuting) {
 		.popup-controls {
 			display: none;
@@ -663,7 +713,7 @@
 					aspect-ratio: 1.25 / 1;
 					width: 2.25em;
                     position: relative;
-                    &:after {
+                    &:not(.fa-solid):after {
                         content: '';
                         position: absolute;
                         inset: 3px;
@@ -684,15 +734,9 @@
                     &#qr--modal-stepOut:after {
                         mask-image: url('/img/step-out.svg');
                     }
-					// &.qr--glyph-combo {
-					// 	display: grid;
-					// 	grid-template-columns: 1fr;
-					// 	grid-template-rows: 1fr 1fr;
-					// 	.qr--glyph {
-					// 		grid-column: 1;
-					// 		line-height: 0.8;
-					// 	}
-					// }
+                    &#qr--modal-maximize {
+                        display: none;
+                    }
 				}
 			}
 

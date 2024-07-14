@@ -337,6 +337,54 @@
 .popup:has(#qr--modalEditor) {
   aspect-ratio: unset;
 }
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) {
+  min-width: unset;
+  min-height: unset;
+  height: auto !important;
+  width: min-content !important;
+  position: absolute;
+  right: 1em;
+  top: 1em;
+  left: unset;
+  bottom: unset;
+  margin: unset;
+  padding: 0;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized)::backdrop {
+  backdrop-filter: unset;
+  background-color: transparent;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-body {
+  flex: 0 0 auto;
+  height: min-content;
+  width: min-content;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content {
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor {
+  max-height: 50vh;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor > #qr--main,
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor > #qr--resizeHandle,
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor > #qr--qrOptions > h3,
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor > #qr--qrOptions > #qr--modal-executeButtons,
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor > #qr--qrOptions > #qr--modal-executeProgress {
+  display: none;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor #qr--qrOptions {
+  width: auto;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-maximize {
+  display: flex;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-minimize {
+  display: none;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor #qr--modal-debugState {
+  padding-top: 0;
+}
 .popup:has(#qr--modalEditor):has(.qr--isExecuting) .popup-controls {
   display: none;
 }
@@ -585,7 +633,7 @@
   width: 2.25em;
   position: relative;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton:after {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton:not(.fa-solid):after {
   content: '';
   position: absolute;
   inset: 3px;
@@ -605,6 +653,9 @@
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-stepOut:after {
   mask-image: url('/img/step-out.svg');
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-maximize {
+  display: none;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeProgress {
   --prog: 0;
