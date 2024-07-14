@@ -23,9 +23,21 @@ const write = (image, data) => {
         }
     }
 
-    // Add new chunks before the IEND chunk
+    // Add new v2 chunk before the IEND chunk
     const base64EncodedData = Buffer.from(data, 'utf8').toString('base64');
     chunks.splice(-1, 0, PNGtext.encode('chara', base64EncodedData));
+
+    // Try adding v3 chunk before the IEND chunk
+    try {
+        //change v2 format to v3
+        const v3Data = JSON.parse(data);
+        v3Data.spec = 'chara_card_v3';
+        v3Data.spec_version = '3.0';
+
+        const base64EncodedData = Buffer.from(JSON.stringify(v3Data), 'utf8').toString('base64');
+        chunks.splice(-1, 0, PNGtext.encode('ccv3', base64EncodedData));
+    } catch (error) { }
+
     const newBuffer = Buffer.from(encode(chunks));
     return newBuffer;
 };

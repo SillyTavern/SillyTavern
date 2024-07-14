@@ -107,6 +107,7 @@ const METADATA_KEY = 'world_info';
 const DEFAULT_DEPTH = 4;
 const DEFAULT_WEIGHT = 100;
 const MAX_SCAN_DEPTH = 1000;
+const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
 
 // Typedef area
 /**
@@ -123,6 +124,7 @@ const MAX_SCAN_DEPTH = 1000;
  * @property {number} [sticky] The sticky value of the entry
  * @property {number} [cooldown] The cooldown of the entry
  * @property {number} [delay] The delay of the entry
+ * @property {string[]} [decorators] Array of decorators for the entry
  */
 
 /**
@@ -3534,6 +3536,12 @@ export async function getSortedEntries() {
         // Chat lore always goes first
         entries = [...chatLore.sort(sortFn), ...entries];
 
+        // Parse decorators
+        entries = entries.map((entry) => {
+            const [decorators, content] = parseDecorators(entry.content);
+            return { ...entry, decorators, content };
+        });
+
         console.debug(`[WI] Found ${entries.length} world lore entries. Sorted by strategy`, Object.entries(world_info_insertion_strategy).find((x) => x[1] === world_info_character_strategy));
 
         // Need to deep clone the entries to avoid modifying the cached data
@@ -3543,6 +3551,62 @@ export async function getSortedEntries() {
         console.error(e);
         return [];
     }
+}
+
+
+/**
+ * Parse decorators from worldinfo content
+ * @param {string} content The content to parse
+ * @returns {[string[],string]} The decorators found in the content and the content without decorators
+*/
+function parseDecorators(content) {
+    /**
+     * Check if the decorator is known
+     * @param {string} data string to check
+     * @returns {boolean} true if the decorator is known
+    */
+    const isKnownDecorator = (data) => {
+        if (data.startsWith('@@@')) {
+            data = data.substring(1);
+        }
+
+        for (let i = 0; i < KNOWN_DECORATORS.length; i++) {
+            if (data.startsWith(KNOWN_DECORATORS[i])) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    if (content.startsWith('@@')) {
+        let newContent = content;
+        const splited = content.split('\n');
+        let decorators = [];
+        let fallbacked = false;
+
+        for (let i = 0; i < splited.length; i++) {
+            if (splited[i].startsWith('@@')) {
+                if (splited[i].startsWith('@@@') && !fallbacked) {
+                    continue;
+                }
+
+                if (isKnownDecorator(splited[i])) {
+                    decorators.push(splited[i].startsWith('@@@') ? splited[i].substring(1) : splited[i]);
+                    fallbacked = false;
+                }
+                else {
+                    fallbacked = true;
+                }
+            } else {
+                newContent = splited.slice(i).join('\n');
+                break;
+            }
+        }
+        return [decorators, newContent];
+    }
+
+    return [[], content];
+
 }
 
 /**
@@ -3683,6 +3747,17 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
 
             if (scanState === scan_state.RECURSION && world_info_recursive && entry.excludeRecursion) {
                 log('suppressed by exclude recursion');
+                continue;
+            }
+
+            if (entry.decorators.includes('@@activate')) {
+                log('activated by @@activate decorator');
+                activatedNow.add(entry);
+                continue;
+            }
+
+            if (entry.decorators.includes('@@dont_activate')) {
+                log('suppressed by @@dont_activate decorator');
                 continue;
             }
 
