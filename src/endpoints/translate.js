@@ -78,17 +78,17 @@ router.post('/google', jsonParser, async (request, response) => {
         console.log('Input text:', text);
         //console.log('----------');
 
-        // Применяем форматирование только если язык перевода - русский
+        // Apply formatting only if the translation language is Russian
         if (lang === 'ru') {
-             // Заменяем кавычки и звездочки на специальные маркеры перед переводом с пробелами
+             // Replace quotation marks and asterisks with special markers before translating
             const openQuote = '__OPEN_QUOTE__ ';
             const closeQuote = ' __CLOSE_QUOTE__';
             const openStar = '__OPEN_STAR__ ';
             const closeStar = ' __CLOSE_STAR__';
-             // Очень редкий случай, вызванный правилами русской граматики
+             // A very rare case
             const very_rare_execption = '__OPEN_STAR__, ';
 
-            // Используем счетчики для чередования между открывающими и закрывающими маркерами
+            // Use counters to alternate between opening and closing markers
             let quoteCounter = 0;
             let starCounter = 0;
 
@@ -112,11 +112,11 @@ router.post('/google', jsonParser, async (request, response) => {
                 try {
                     let result;
                     if (lang === 'ru') {
-                        // Декодирование для русского языка
+                        // Decoding for Russian language
                         const decodedData = iconv.decode(Buffer.concat(data), 'utf-8');
                         result = normaliseResponse(JSON.parse(decodedData));
                     } else {
-                        // Для других языков используем данные как есть
+                        // For other languages, we use the data as is
                         result = normaliseResponse(JSON.parse(Buffer.concat(data).toString()));
                     }
 
@@ -125,7 +125,7 @@ router.post('/google', jsonParser, async (request, response) => {
 
                     let fixedText = result.text;
 
-                    // Восстанавливаем форматирование только если язык перевода - русский
+                    // Restore formatting only if the target language is Russian
                     if (lang === 'ru') {
                         fixedText = result.text
                             .replace(new RegExp('__OPEN_QUOTE__ ', 'g'), '"')
