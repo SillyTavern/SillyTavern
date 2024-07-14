@@ -409,7 +409,7 @@ function charaFormatData(data, directories) {
     //_.set(char, 'data.extensions.chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
 
     // V3 fields
-    _.set(char, 'data.group_only_greetings', data.group_only_greetings ?? [])
+    _.set(char, 'data.group_only_greetings', data.group_only_greetings ?? []);
 
     if (data.world) {
         try {

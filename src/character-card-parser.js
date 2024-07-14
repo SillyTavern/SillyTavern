@@ -31,12 +31,12 @@ const write = (image, data) => {
     try {
         //change v2 format to v3
         const v3Data = JSON.parse(data);
-        v3Data.spec = 'chara_card_v3'
-        v3Data.spec_version = '3.0'
+        v3Data.spec = 'chara_card_v3';
+        v3Data.spec_version = '3.0';
 
         const base64EncodedData = Buffer.from(JSON.stringify(v3Data), 'utf8').toString('base64');
         chunks.splice(-1, 0, PNGtext.encode('ccv3', base64EncodedData));
-    } catch (error) {}
+    } catch (error) { }
 
     const newBuffer = Buffer.from(encode(chunks));
     return newBuffer;

@@ -108,7 +108,7 @@ const METADATA_KEY = 'world_info';
 const DEFAULT_DEPTH = 4;
 const DEFAULT_WEIGHT = 100;
 const MAX_SCAN_DEPTH = 1000;
-const KNOWN_DECORATORS = ['@@activate', '@@dont_activate']
+const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
 
 // Typedef area
 /**
@@ -3538,53 +3538,53 @@ export async function getSortedEntries() {
  * @param {string} content The content to parse
  * @returns {[string[],string]} The decorators found in the content and the content without decorators
 */
-function parseDecorators(content){
+function parseDecorators(content) {
     /**
      * Check if the decorator is known
      * @param {string} data string to check
      * @returns {boolean} true if the decorator is known
     */
     const isKnownDecorator = (data) => {
-        if(data.startsWith('@@@')){
-            data = data.substring(1)
+        if (data.startsWith('@@@')) {
+            data = data.substring(1);
         }
 
-        for(let i = 0; i<KNOWN_DECORATORS.length;i++){
-            if(data.startsWith(KNOWN_DECORATORS[i])){
-                return true
+        for (let i = 0; i < KNOWN_DECORATORS.length; i++) {
+            if (data.startsWith(KNOWN_DECORATORS[i])) {
+                return true;
             }
         }
-        return false
-    }
+        return false;
+    };
 
-    if(content.startsWith('@@')){
+    if (content.startsWith('@@')) {
         let newContent = content;
         const splited = content.split('\n');
-        let decorators = []
+        let decorators = [];
         let fallbacked = false;
 
         for (let i = 0; i < splited.length; i++) {
-            if(splited[i].startsWith('@@')){
-                if(splited[i].startsWith('@@@') && !fallbacked){
-                    continue
+            if (splited[i].startsWith('@@')) {
+                if (splited[i].startsWith('@@@') && !fallbacked) {
+                    continue;
                 }
 
-                if(isKnownDecorator(splited[i])){
-                    decorators.push(splited[i].startsWith('@@@') ? splited[i].substring(1) : splited[i])
-                    fallbacked = false
+                if (isKnownDecorator(splited[i])) {
+                    decorators.push(splited[i].startsWith('@@@') ? splited[i].substring(1) : splited[i]);
+                    fallbacked = false;
                 }
-                else{
-                    fallbacked = true
+                else {
+                    fallbacked = true;
                 }
             } else {
                 newContent = splited.slice(i).join('\n');
                 break;
             }
         }
-        return [decorators, newContent]
+        return [decorators, newContent];
     }
 
-    return [[], content]
+    return [[], content];
 
 }
 
@@ -3714,17 +3714,17 @@ async function checkWorldInfo(chat, maxContext, isDryRun) {
                 continue;
             }
 
-            if(decorators.includes('@@activate')){
+            if (decorators.includes('@@activate')) {
                 //activate in any case
                 activatedNow.add(entry);
                 continue;
             }
 
-            if(decorators.includes('@@dont_activate')){
+            if (decorators.includes('@@dont_activate')) {
                 //deactivate in any case if @@activate is not present
                 continue;
             }
-            
+
             if (entry.constant || buffer.isExternallyActivated(entry) || isSticky) {
                 activatedNow.add(entry);
                 continue;
