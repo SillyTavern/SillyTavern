@@ -135,6 +135,7 @@ export class Popup {
 
     /** @type {Promise<any>} */ #promise;
     /** @type {(result: any) => any} */ #resolver;
+    /** @type {boolean} */ #isClosingPrevented;
 
     /**
      * Constructs a new Popup object with the given text content, type, inputValue, and options
@@ -342,7 +343,7 @@ export class Popup {
         // It seems to just call 'close' on the dialog even if the 'cancel' event was prevented.
         // Here, we just say that close should not happen if the dalog has no result.
         const closeListener = async (evt) => {
-            if (this.result === undefined) {
+            if (this.#isClosingPrevented) {
                 evt.preventDefault();
                 evt.stopPropagation();
                 this.dlg.showModal();
@@ -495,6 +496,7 @@ export class Popup {
         if (this.onClosing) {
             const shouldClose = this.onClosing(this);
             if (!shouldClose) {
+                this.#isClosingPrevented = true;
                 // Set values back if we cancel out of closing the popup
                 this.value = undefined;
                 this.result = undefined;
@@ -502,6 +504,7 @@ export class Popup {
                 return undefined;
             }
         }
+        this.#isClosingPrevented = false;
 
         Popup.util.lastResult = { value, result, inputResults: this.inputResults };
         this.#hide();
