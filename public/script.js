@@ -242,6 +242,8 @@ import { INTERACTABLE_CONTROL_CLASS, initKeyboard } from './scripts/keyboard.js'
 import { initDynamicStyles } from './scripts/dynamic-styles.js';
 import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/SlashCommandEnumValue.js';
 import { enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
+import { MacroLexer } from './scripts/macros/MacroLexer.js';
+import { MacroEngine } from './scripts/macros/MacroEngine.js';
 
 //exporting functions and vars for mods
 export {
@@ -7910,6 +7912,11 @@ window['SillyTavern'].getContext = function () {
         Popup: Popup,
         POPUP_TYPE: POPUP_TYPE,
         POPUP_RESULT: POPUP_RESULT,
+        macros: {
+            MacroLexer,
+            MacrosParser,
+            MacroEngine,
+        },
     };
 };
 
