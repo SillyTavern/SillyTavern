@@ -1956,7 +1956,7 @@ export async function showFontAwesomePicker() {
         }
     }
     let value;
-    const picker = new Popup(dom, POPUP_TYPE.CONFIRM, null, { allowVerticalScrolling:true });
+    const picker = new Popup(dom, POPUP_TYPE.TEXT, null, { allowVerticalScrolling:true, okButton: 'Cancel' });
     await picker.show();
     if (picker.result == POPUP_RESULT.AFFIRMATIVE) {
         return value;
