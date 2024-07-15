@@ -1955,8 +1955,8 @@ export async function showFontAwesomePicker() {
             dom.append(grid);
         }
     }
-    let value;
-    const picker = new Popup(dom, POPUP_TYPE.TEXT, null, { allowVerticalScrolling:true, okButton: 'Cancel' });
+    let value = '';
+    const picker = new Popup(dom, POPUP_TYPE.CONFIRM, null, { allowVerticalScrolling:true, okButton: 'No Icon', cancelButton: 'Cancel' });
     await picker.show();
     if (picker.result == POPUP_RESULT.AFFIRMATIVE) {
         return value;

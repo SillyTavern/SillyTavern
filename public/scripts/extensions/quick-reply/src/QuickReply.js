@@ -1569,6 +1569,7 @@ export class QuickReply {
                         if (this.icon) {
                             this.settingsDomIcon.classList.remove(this.icon);
                         }
+                        this.settingsDomIcon.textContent = '…';
                         this.settingsDomIcon.classList.remove('fa-solid');
                     } else {
                         if (this.icon) {
