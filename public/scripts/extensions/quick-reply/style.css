@@ -467,6 +467,7 @@
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--inputGroup {
   display: flex;
+  align-items: baseline;
   gap: 0.5em;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--inputGroup input {
