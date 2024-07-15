@@ -166,9 +166,15 @@ export class SettingsUi {
             qrs.injectInput = this.injectInput.checked;
             qrs.save();
         });
+        let initialColorChange = true;
         this.color = this.dom.querySelector('#qr--color');
         this.color.addEventListener('change', (evt)=>{
             const qrs = this.currentQrSet;
+            if (initialColorChange) {
+                initialColorChange = false;
+                this.color.color = qrs.color;
+                return;
+            }
             qrs.color = evt.detail.rgb;
             qrs.save();
             this.currentQrSet.updateColor();
@@ -194,7 +200,7 @@ export class SettingsUi {
         this.disableSend.checked = this.currentQrSet.disableSend;
         this.placeBeforeInput.checked = this.currentQrSet.placeBeforeInput;
         this.injectInput.checked = this.currentQrSet.injectInput;
-        this.color.color = this.currentQrSet.color;
+        // this.color.color = this.currentQrSet.color ?? 'transparent';
         this.onlyBorderColor.checked = this.currentQrSet.onlyBorderColor;
         this.qrList.innerHTML = '';
         const qrsDom = this.currentQrSet.renderSettings();
