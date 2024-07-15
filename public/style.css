@@ -5348,8 +5348,8 @@ body:not(.movingUI) .drawer-content.maximized {
 		padding: 0.25em;
 		width: unset;
 		box-sizing: content-box;
-		&.stcdx--hidden {
-			display: none;
-		}
+        &.hidden {
+            display: none;
+        }
 	}
 }
