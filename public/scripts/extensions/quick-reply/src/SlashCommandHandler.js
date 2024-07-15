@@ -854,7 +854,7 @@ export class SlashCommandHandler {
         try {
             this.api.updateQuickReply(
                 args.set ?? '',
-                args.label ?? '',
+                args.id !== undefined ? Number(args.id) : (args.label ?? ''),
                 {
                     newLabel: args.newlabel,
                     message: (message ?? '').trim().length > 0 ? message : undefined,
@@ -874,7 +874,7 @@ export class SlashCommandHandler {
     }
     deleteQuickReply(args, label) {
         try {
-            this.api.deleteQuickReply(args.set, args.label ?? label);
+            this.api.deleteQuickReply(args.set, args.id !== undefined ? Number(args.id) : (args.label ?? label));
         } catch (ex) {
             toastr.error(ex.message);
         }
