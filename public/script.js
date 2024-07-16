@@ -2264,6 +2264,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     if (type === 'swipe') {
         const swipeMessage = chatElement.find(`[mesid="${chat.length - 1}"]`);
+        swipeMessage.attr('swipeid', params.swipeId);
         swipeMessage.find('.mes_text').html(messageText).attr('title', title);
         swipeMessage.find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
         appendMediaToMessage(mes, swipeMessage);
