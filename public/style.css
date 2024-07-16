@@ -1583,6 +1583,13 @@ body[data-stscript-style] .hljs.language-stscript {
         color: var(--ac-style-color-keyword);
     }
 
+    .hljs-pipe {
+        color: var(--ac-style-color-punctuation);
+    }
+    .hljs-pipebreak {
+        color: var(--ac-style-color-type);
+    }
+
     .hljs-closure {
         >.hljs-punctuation {
             color: var(--ac-style-color-punctuation);

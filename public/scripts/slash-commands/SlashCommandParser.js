@@ -249,12 +249,13 @@ export class SlashCommandParser {
             end: /\||$|:}/,
             contains: [],
         };
-        const KEYWORD = {
+        const IMPORT = {
             scope: 'command',
             begin: /\/(import)/,
             beginScope: 'keyword',
             end: /\||$|(?=:})/,
-            excludeEnd: true,
+            excludeEnd: false,
+            returnEnd: true,
             contains: [],
         };
         const LET = {
@@ -265,20 +266,24 @@ export class SlashCommandParser {
                 1: 'variable',
             },
             end: /\||$|:}/,
+            excludeEnd: false,
+            returnEnd: true,
             contains: [],
         };
         const SETVAR = {
             begin: /\/(setvar|setglobalvar)\s+/,
             beginScope: 'variable',
             end: /\||$|:}/,
-            excludeEnd: true,
+            excludeEnd: false,
+            returnEnd: true,
             contains: [],
         };
         const GETVAR = {
             begin: /\/(getvar|getglobalvar)\s+/,
             beginScope: 'variable',
             end: /\||$|:}/,
-            excludeEnd: true,
+            excludeEnd: false,
+            returnEnd: true,
             contains: [],
         };
         const RUN = {
@@ -297,7 +302,8 @@ export class SlashCommandParser {
             begin: /\/\S+/,
             beginScope: 'title.function',
             end: /\||$|(?=:})/,
-            excludeEnd: true,
+            excludeEnd: false,
+            returnEnd: true,
             contains: [], // defined later
         };
         const CLOSURE = {
@@ -318,6 +324,16 @@ export class SlashCommandParser {
             begin: /{{/,
             end: /}}/,
         };
+        const PIPEBREAK = {
+            beginScope: 'pipebreak',
+            begin: /\|\|/,
+            end: '',
+        };
+        const PIPE = {
+            beginScope: 'pipe',
+            begin: /\|/,
+            end: '',
+        };
         BLOCK_COMMENT.contains.push(
             BLOCK_COMMENT,
         );
@@ -329,7 +345,7 @@ export class SlashCommandParser {
             MACRO,
             CLOSURE,
         );
-        KEYWORD.contains.push(
+        IMPORT.contains.push(
             hljs.BACKSLASH_ESCAPE,
             NAMED_ARG,
             NUMBER,
@@ -374,7 +390,7 @@ export class SlashCommandParser {
             BLOCK_COMMENT,
             COMMENT,
             ABORT,
-            KEYWORD,
+            IMPORT,
             NAMED_ARG,
             NUMBER,
             MACRO,
@@ -385,22 +401,26 @@ export class SlashCommandParser {
             COMMAND,
             'self',
             hljs.QUOTE_STRING_MODE,
+            PIPEBREAK,
+            PIPE,
         );
         hljs.registerLanguage('stscript', ()=>({
             case_insensitive: false,
-            keywords: ['|'],
+            keywords: [],
             contains: [
                 hljs.BACKSLASH_ESCAPE,
                 BLOCK_COMMENT,
                 COMMENT,
                 ABORT,
-                KEYWORD,
+                IMPORT,
                 RUN,
                 LET,
                 GETVAR,
                 SETVAR,
                 COMMAND,
                 CLOSURE,
+                PIPEBREAK,
+                PIPE,
             ],
         }));
     }
