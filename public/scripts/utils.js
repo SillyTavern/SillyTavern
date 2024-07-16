@@ -1899,18 +1899,26 @@ export function getFreeName(name, list, numberFormatter = (n) => ` #${n}`) {
     return `${name}${numberFormatter(counter)}`;
 }
 
-export async function showFontAwesomePicker() {
-    const fetchFa = async(name)=>{
-        const style = document.createElement('style');
-        style.innerHTML = await (await fetch(`/css/${name}`)).text();
-        document.head.append(style);
-        const sheet = style.sheet;
-        style.remove();
-        return [...sheet.cssRules].filter(it=>it.style?.content).map(it=>it.selectorText.split('::').shift().slice(1));
-    };
-    const faList = [...new Set((await Promise.all([
-        fetchFa('fontawesome.min.css'),
+export async function fetchFaFile(name) {
+    const style = document.createElement('style');
+    style.innerHTML = await (await fetch(`/css/${name}`)).text();
+    document.head.append(style);
+    const sheet = style.sheet;
+    style.remove();
+    return [...sheet.cssRules].filter(it=>it.style?.content).map(it=>it.selectorText.split('::').shift().slice(1));
+}
+export async function fetchFa() {
+    return [...new Set((await Promise.all([
+        fetchFaFile('fontawesome.min.css'),
     ])).flat())];
+}
+/**
+ * Opens a popup with all the available Font Awesome icons and returns the selected icon's name.
+ * @prop {string[]} customList A custom list of Font Awesome icons to use instead of all available icons.
+ * @returns {Promise<string>} The icon name (fa-pencil) or null if cancelled.
+ */
+export async function showFontAwesomePicker(customList = null) {
+    const faList = customList ?? await fetchFa();
     const fas = {};
     const dom = document.createElement('div'); {
         const search = document.createElement('div'); {
