@@ -984,6 +984,24 @@ export class QuickReply {
                 this.abortController?.abort('Stop button clicked');
             });
 
+            /**@type {HTMLTextAreaElement} */
+            const inputOg = document.querySelector('#send_textarea');
+            const inputMirror = dom.querySelector('#qr--modal-send_textarea');
+            inputMirror.value = inputOg.value;
+            const inputOgMo = new MutationObserver(muts=>{
+                if (muts.find(it=>[...it.removedNodes].includes(inputMirror) || [...it.removedNodes].find(n=>n.contains(inputMirror)))) {
+                    inputOg.removeEventListener('input', inputOgListener);
+                }
+            });
+            inputOgMo.observe(document.body, { childList:true });
+            const inputOgListener = ()=>{
+                inputMirror.value = inputOg.value;
+            };
+            inputOg.addEventListener('input', inputOgListener);
+            inputMirror.addEventListener('input', ()=>{
+                inputOg.value = inputMirror.value;
+            });
+
             /**@type {HTMLElement}*/
             const resumeBtn = dom.querySelector('#qr--modal-resume');
             resumeBtn.addEventListener('click', ()=>{
