@@ -51,7 +51,7 @@ import { autoSelectPersona, retriggerFirstMessageOnEmptyChat, setPersonaLockStat
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync } from './tokenizers.js';
-import { debounce, delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
+import { debounce, delay, isFalseBoolean, isTrueBoolean, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { background_settings } from './backgrounds.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
@@ -1474,6 +1474,21 @@ export function initDefaultSlashCommands() {
             }),
         ],
         helpString: 'Sets the specified prompt manager entry/entries on or off.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'pick-icon',
+        callback: async()=>((await showFontAwesomePicker()) ?? false).toString(),
+        returns: 'The chosen icon name or false if cancelled.',
+        helpString: `
+                <div>Opens a popup with all the available Font Awesome icons and returns the selected icon's name.</div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code>/pick-icon |\n/if left={{pipe}} rule=eq right=false\n\telse={: /echo chosen icon: "{{pipe}}" :}\n\t{: /echo cancelled icon selection :}\n|</code></pre>
+                        </li>
+                    </ul>
+                </div>
+            `,
     }));
 
     registerVariableCommands();
