@@ -168,7 +168,9 @@ export class SettingsUi {
         });
         let initialColorChange = true;
         this.color = this.dom.querySelector('#qr--color');
+        this.color.color = this.currentQrSet?.color ?? 'transparent';
         this.color.addEventListener('change', (evt)=>{
+            if (!this.dom.closest('body')) return;
             const qrs = this.currentQrSet;
             if (initialColorChange) {
                 initialColorChange = false;
@@ -182,7 +184,6 @@ export class SettingsUi {
         this.dom.querySelector('#qr--colorClear').addEventListener('click', (evt)=>{
             const qrs = this.currentQrSet;
             this.color.color = 'transparent';
-            qrs.color = 'transparent';
             qrs.save();
             this.currentQrSet.updateColor();
         });
@@ -200,7 +201,7 @@ export class SettingsUi {
         this.disableSend.checked = this.currentQrSet.disableSend;
         this.placeBeforeInput.checked = this.currentQrSet.placeBeforeInput;
         this.injectInput.checked = this.currentQrSet.injectInput;
-        // this.color.color = this.currentQrSet.color ?? 'transparent';
+        this.color.color = this.currentQrSet.color ?? 'transparent';
         this.onlyBorderColor.checked = this.currentQrSet.onlyBorderColor;
         this.qrList.innerHTML = '';
         const qrsDom = this.currentQrSet.renderSettings();
