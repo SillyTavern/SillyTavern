@@ -24,6 +24,14 @@ export class QuickReplyApi {
 
 
     /**
+     * @param {QuickReply} qr
+     * @returns {QuickReplySet}
+     */
+    getSetByQr(qr) {
+        return QuickReplySet.list.find(it=>it.qrList.includes(qr));
+    }
+
+    /**
      * Finds and returns an existing Quick Reply Set by its name.
      *
      * @param {string} name name of the quick reply set
