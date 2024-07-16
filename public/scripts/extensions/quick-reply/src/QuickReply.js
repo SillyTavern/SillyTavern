@@ -10,7 +10,7 @@ import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.j
 import { SlashCommandParserError } from '../../../slash-commands/SlashCommandParserError.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
 import { debounce, delay, getSortableDelay, showFontAwesomePicker } from '../../../utils.js';
-import { log, warn } from '../index.js';
+import { log, quickReplyApi, warn } from '../index.js';
 import { QuickReplyContextLink } from './QuickReplyContextLink.js';
 import { QuickReplySet } from './QuickReplySet.js';
 import { ContextMenu } from './ui/ctx/ContextMenu.js';
@@ -416,6 +416,75 @@ export class QuickReply {
             label.value = this.label;
             label.addEventListener('input', ()=>{
                 this.updateLabel(label.value);
+            });
+            let switcherList;
+            dom.querySelector('#qr--modal-switcher').addEventListener('click', (evt)=>{
+                if (switcherList) {
+                    switcherList.remove();
+                    switcherList = null;
+                    return;
+                }
+                const list = document.createElement('ul'); {
+                    switcherList = list;
+                    list.classList.add('qr--modal-switcherList');
+                    const makeList = (qrs)=>{
+                        const setItem = document.createElement('li'); {
+                            setItem.classList.add('qr--modal-switcherItem');
+                            setItem.addEventListener('click', ()=>{
+                                list.innerHTML = '';
+                                for (const qrs of quickReplyApi.listSets()) {
+                                    const item = document.createElement('li'); {
+                                        item.classList.add('qr--modal-switcherItem');
+                                        item.addEventListener('click', ()=>{
+                                            list.innerHTML = '';
+                                            makeList(quickReplyApi.getSetByName(qrs));
+                                        });
+                                        const lbl = document.createElement('div'); {
+                                            lbl.classList.add('qr--label');
+                                            lbl.textContent = qrs;
+                                            item.append(lbl);
+                                        }
+                                        list.append(item);
+                                    }
+                                }
+                            });
+                            const lbl = document.createElement('div'); {
+                                lbl.classList.add('qr--label');
+                                lbl.textContent = 'Switch QR Sets...';
+                                setItem.append(lbl);
+                            }
+                            list.append(setItem);
+                        }
+                        for (const qr of qrs.qrList.toSorted((a,b)=>a.label.toLowerCase().localeCompare(b.label.toLowerCase()))) {
+                            const item = document.createElement('li'); {
+                                item.classList.add('qr--modal-switcherItem');
+                                if (qr == this) item.classList.add('qr--current');
+                                else item.addEventListener('click', ()=>{
+                                    this.editorPopup.completeAffirmative();
+                                    qr.showEditor();
+                                });
+                                const lbl = document.createElement('div'); {
+                                    lbl.classList.add('qr--label');
+                                    lbl.textContent = qr.label;
+                                    item.append(lbl);
+                                }
+                                const id = document.createElement('div'); {
+                                    id.classList.add('qr--id');
+                                    id.textContent = qr.id.toString();
+                                    item.append(id);
+                                }
+                                const mes = document.createElement('div'); {
+                                    mes.classList.add('qr--message');
+                                    mes.textContent = qr.message;
+                                    item.append(mes);
+                                }
+                                list.append(item);
+                            }
+                        }
+                    };
+                    makeList(quickReplyApi.getSetByQr(this));
+                }
+                label.parentElement.append(list);
             });
             /**@type {HTMLInputElement}*/
             const title = dom.querySelector('#qr--modal-title');

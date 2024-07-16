@@ -456,31 +456,105 @@
   flex-direction: row;
   gap: 0.5em;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label {
   flex: 1 1 1px;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label.qr--fit {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label.qr--fit,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label.qr--fit {
   flex: 0 0 auto;
   justify-content: center;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--inputGroup {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--inputGroup,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--inputGroup {
   display: flex;
   align-items: baseline;
   gap: 0.5em;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--inputGroup input {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--inputGroup input,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--inputGroup input {
   flex: 1 1 auto;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--labelText {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--labelText,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--labelText {
   flex: 1 1 auto;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--labelHint {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--labelHint,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--labelHint {
   flex: 1 1 auto;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label input {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label input,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label input {
   flex: 0 0 auto;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList {
+  background-color: var(--stcdx--bgColor);
+  border: 1px solid var(--SmartThemeBorderColor);
+  backdrop-filter: blur(var(--SmartThemeBlurStrength));
+  border-radius: 10px;
+  font-size: smaller;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  overflow: auto;
+  margin: 0;
+  padding: 0.5em;
+  max-height: 50vh;
+  list-style: none;
+  z-index: 40000;
+  max-width: 100%;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--modal-switcherItem,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--modal-switcherItem {
+  display: flex;
+  gap: 1em;
+  text-align: left;
+  opacity: 0.75;
+  transition: 200ms;
+  cursor: pointer;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--modal-switcherItem:hover,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--modal-switcherItem:hover {
+  opacity: 1;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--modal-switcherItem.qr--current,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--modal-switcherItem.qr--current {
+  opacity: 1;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--modal-switcherItem.qr--current .qr--label,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--modal-switcherItem.qr--current .qr--label,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--modal-switcherItem.qr--current .qr--id,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--modal-switcherItem.qr--current .qr--id {
+  font-weight: bold;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--label,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--label {
+  white-space: nowrap;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--id,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--id {
+  opacity: 0.5;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--id:before,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--id:before {
+  content: "[";
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--id:after,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--id:after {
+  content: "]";
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--message,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--message {
+  height: 1lh;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.5;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer {
   flex: 1 1 auto;

@@ -527,10 +527,11 @@
 					display: flex;
 					flex-direction: row;
 					gap: 0.5em;
-					> label {
+					> label, > .label {
 						flex: 1 1 1px;
 						display: flex;
 						flex-direction: column;
+                        position: relative;
                         &.qr--fit {
                             flex: 0 0 auto;
                             justify-content: center;
@@ -552,6 +553,56 @@
 						input {
 							flex: 0 0 auto;
 						}
+                        .qr--modal-switcherList {
+                            background-color: var(--stcdx--bgColor);
+                            border: 1px solid var(--SmartThemeBorderColor);
+                            backdrop-filter: blur(var(--SmartThemeBlurStrength));
+                            border-radius: 10px;
+                            font-size: smaller;
+                            position: absolute;
+                            top: 100%;
+                            left: 0;
+                            right: 0;
+                            overflow: auto;
+                            margin: 0;
+                            padding: 0.5em;
+                            max-height: 50vh;
+                            list-style: none;
+                            z-index: 40000;
+                            max-width: 100%;
+                            .qr--modal-switcherItem {
+                                display: flex;
+                                gap: 1em;
+                                text-align: left;
+                                opacity: 0.75;
+                                transition: 200ms;
+                                cursor: pointer;
+                                &:hover {
+                                    opacity: 1;
+                                }
+                                &.qr--current {
+                                    opacity: 1;
+                                    .qr--label, .qr--id {
+                                        font-weight: bold;
+                                    }
+                                }
+                            }
+                            .qr--label {
+                                white-space: nowrap;;
+                            }
+                            .qr--id {
+                                opacity: 0.5;
+                                &:before { content: "["; }
+                                &:after { content: "]"; }
+                            }
+                            .qr--message {
+                                height: 1lh;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                                white-space: nowrap;
+                                opacity: 0.5;
+                            }
+                        }
 					}
 				}
 				> .qr--modal-messageContainer {
