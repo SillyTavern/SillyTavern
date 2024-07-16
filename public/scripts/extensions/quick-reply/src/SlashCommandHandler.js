@@ -247,6 +247,18 @@ export class SlashCommandHandler {
                 isRequired: false,
                 enumProvider: localEnumProviders.qrEntries,
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'icon',
+                description: 'icon to show on the button, e.g., icon=fa-pencil',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'showlabel',
+                description: 'whether to show the label even when an icon is assigned, e.g., icon=fa-pencil showlabel=true',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                isRequired: false,
+            }),
             new SlashCommandNamedArgument('hidden', 'whether the button should be hidden, e.g., hidden=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
             new SlashCommandNamedArgument('startup', 'auto execute on app startup, e.g., startup=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
             new SlashCommandNamedArgument('user', 'auto execute on user message, e.g., user=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
@@ -828,6 +840,8 @@ export class SlashCommandHandler {
                 args.set ?? '',
                 args.label ?? '',
                 {
+                    icon: args.icon,
+                    showLabel: args.showlabel === undefined ? undefined : isTrueBoolean(args.showlabel),
                     message: message ?? '',
                     title: args.title,
                     isHidden: isTrueBoolean(args.hidden),
@@ -856,6 +870,8 @@ export class SlashCommandHandler {
                 args.set ?? '',
                 args.id !== undefined ? Number(args.id) : (args.label ?? ''),
                 {
+                    icon: args.icon,
+                    showLabel: args.showlabel === undefined ? undefined : isTrueBoolean(args.showlabel),
                     newLabel: args.newlabel,
                     message: (message ?? '').trim().length > 0 ? message : undefined,
                     title: args.title,

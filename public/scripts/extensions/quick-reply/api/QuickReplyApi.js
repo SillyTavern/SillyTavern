@@ -186,6 +186,8 @@ export class QuickReplyApi {
      * @param {string} setName name of the quick reply set to insert the new quick reply into
      * @param {string} label label for the new quick reply (text on the button)
      * @param {object} [props]
+     * @param {string} [props.icon] the icon to show on the QR button
+     * @param {boolean} [props.showLabel] whether to show the label even when an icon is assigned
      * @param {string} [props.message] the message to be sent or slash command to be executed by the new quick reply
      * @param {string} [props.title] the title / tooltip to be shown on the quick reply button
      * @param {boolean} [props.isHidden] whether to hide or show the button
@@ -198,6 +200,8 @@ export class QuickReplyApi {
      * @returns {QuickReply} the new quick reply
      */
     createQuickReply(setName, label, {
+        icon,
+        showLabel,
         message,
         title,
         isHidden,
@@ -214,6 +218,8 @@ export class QuickReplyApi {
         }
         const qr = set.addQuickReply();
         qr.label = label ?? '';
+        qr.icon = icon ??  '';
+        qr.showLabel = showLabel ?? false;
         qr.message = message ?? '';
         qr.title = title ?? '';
         qr.isHidden = isHidden ?? false;
@@ -233,6 +239,8 @@ export class QuickReplyApi {
      * @param {string} setName name of the existing quick reply set
      * @param {string|number} label label of the existing quick reply (text on the button) or its numeric ID
      * @param {object} [props]
+     * @param {string} [props.icon] the icon to show on the QR button
+     * @param {boolean} [props.showLabel] whether to show the label even when an icon is assigned
      * @param {string} [props.newLabel] new label for quick reply (text on the button)
      * @param {string} [props.message] the message to be sent or slash command to be executed by the quick reply
      * @param {string} [props.title] the title / tooltip to be shown on the quick reply button
@@ -246,6 +254,8 @@ export class QuickReplyApi {
      * @returns {QuickReply} the altered quick reply
      */
     updateQuickReply(setName, label, {
+        icon,
+        showLabel,
         newLabel,
         message,
         title,
@@ -261,6 +271,8 @@ export class QuickReplyApi {
         if (!qr) {
             throw new Error(`No quick reply with label "${label}" in set "${setName}" found.`);
         }
+        qr.updateIcon(icon ?? qr.icon);
+        qr.updateShowLabel(showLabel ?? qr.showLabel);
         qr.updateLabel(newLabel ?? qr.label);
         qr.updateMessage(message ?? qr.message);
         qr.updateTitle(title ?? qr.title);
