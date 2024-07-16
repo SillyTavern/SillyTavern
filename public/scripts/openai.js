@@ -1082,6 +1082,11 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
         }
     }
 
+    // Other relative extension prompts
+    for (const prompt of prompts.collection.filter(p => p.extension && p.position)) {
+        chatCompletion.insert(Message.fromPrompt(prompt), 'main', prompt.position);
+    }
+
     // Add in-chat injections
     messages = populationInjectionPrompts(userAbsolutePrompts, messages);
 
@@ -1185,6 +1190,35 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
     // Persona Description
     if (power_user.persona_description && power_user.persona_description_position === persona_description_positions.IN_PROMPT) {
         systemPrompts.push({ role: 'system', content: power_user.persona_description, identifier: 'personaDescription' });
+    }
+
+    const knownExtensionPrompts = [
+        '1_memory',
+        '2_floating_prompt',
+        '3_vectors',
+        '4_vectors_data_bank',
+        'chromadb',
+        'PERSONA_DESCRIPTION',
+        'QUIET_PROMPT',
+        'DEPTH_PROMPT',
+    ];
+
+    // Anything that is not a known extension prompt
+    for (const key in extensionPrompts) {
+        if (Object.hasOwn(extensionPrompts, key)) {
+            const prompt = extensionPrompts[key];
+            if (knownExtensionPrompts.includes(key)) continue;
+            if (!extensionPrompts[key].value) continue;
+            if (![extension_prompt_types.BEFORE_PROMPT, extension_prompt_types.IN_PROMPT].includes(prompt.position)) continue;
+
+            systemPrompts.push({
+                identifier: key.replace(/\W/g, '_'),
+                position: getPromptPosition(prompt.position),
+                role: getPromptRole(prompt.role),
+                content: prompt.value,
+                extension: true,
+            });
+        }
     }
 
     // This is the prompt order defined by the user
