@@ -827,7 +827,7 @@ export class QuickReply {
             const tpl = dom.querySelector('#qr--ctxItem');
             const linkList = dom.querySelector('#qr--ctxEditor');
             const fillQrSetSelect = (/**@type {HTMLSelectElement}*/select, /**@type {QuickReplyContextLink}*/ link) => {
-                [{ name: 'Select a QR set' }, ...QuickReplySet.list].forEach(qrs => {
+                [{ name: 'Select a QR set' }, ...QuickReplySet.list.toSorted((a,b)=>a.name.toLowerCase().localeCompare(b.name.toLowerCase()))].forEach(qrs => {
                     const opt = document.createElement('option'); {
                         opt.value = qrs.name;
                         opt.textContent = qrs.name;
