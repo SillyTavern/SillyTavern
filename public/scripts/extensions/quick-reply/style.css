@@ -255,8 +255,7 @@
   margin: 0 1em;
   height: 0;
 }
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemAdder:hover,
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemAdder:focus-within {
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemAdder:hover {
   opacity: 1;
 }
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content {
@@ -291,9 +290,13 @@
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content .qr--set-itemLabelContainer {
   display: flex;
   align-items: center;
+  gap: 0.5em;
 }
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content .qr--set-itemLabelContainer .qr--set-itemIcon:not(.fa-solid) {
   display: none;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content .qr--set-itemLabelContainer .qr--set-itemLabel {
+  min-width: 24px;
 }
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content .qr--set-itemLabel,
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content .qr--action {
