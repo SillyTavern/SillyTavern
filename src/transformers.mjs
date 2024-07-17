@@ -1,13 +1,12 @@
 import { pipeline, env, RawImage, Pipeline } from 'sillytavern-transformers';
 import { getConfigValue } from './util.js';
 import path from 'path';
-import _ from 'lodash';
 
 configureTransformers();
 
 function configureTransformers() {
     // Limit the number of threads to 1 to avoid issues on Android
-    env.backends.onnx.wasm.numThreads = 1;
+    env.backends.onnx.wasm.numThreads = process.platform === 'android' ? 1 : 0;
     // Use WASM from a local folder to avoid CDN connections
     env.backends.onnx.wasm.wasmPaths = path.join(process.cwd(), 'dist') + path.sep;
 }
@@ -114,4 +113,4 @@ async function getPipeline(task, forceModel = '') {
 export default {
     getPipeline,
     getRawImage,
-}
+};

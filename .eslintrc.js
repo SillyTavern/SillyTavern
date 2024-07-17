@@ -18,6 +18,15 @@ module.exports = {
             },
         },
         {
+            files: ['src/**/*.mjs'],
+            parserOptions: {
+                sourceType: 'module',
+            },
+            env: {
+                node: true,
+            },
+        },
+        {
             // Browser-side files
             files: ['public/**/*.js'],
             env: {
