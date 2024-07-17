@@ -1,4 +1,4 @@
-import { createToken, Lexer } from '../../lib/chevrotain.min.mjs';
+import { createToken, Lexer } from '../../lib/chevrotain.js';
 
 /** @enum {string} */
 const MODES = {
