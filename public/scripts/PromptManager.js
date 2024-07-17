@@ -72,7 +72,7 @@ const registerPromptManagerMigration = () => {
  * Represents a prompt.
  */
 class Prompt {
-    identifier; role; content; name; system_prompt; position; injection_position; injection_depth; forbid_overrides;
+    identifier; role; content; name; system_prompt; position; injection_position; injection_depth; forbid_overrides; extension;
 
     /**
      * Create a new Prompt instance.
@@ -87,8 +87,9 @@ class Prompt {
      * @param {number} param0.injection_position - The insert position of the prompt.
      * @param {number} param0.injection_depth - The depth of the prompt in the chat.
      * @param {boolean} param0.forbid_overrides - Indicates if the prompt should not be overridden.
+     * @param {boolean} param0.extension - Prompt is added by an extension.
      */
-    constructor({ identifier, role, content, name, system_prompt, position, injection_depth, injection_position, forbid_overrides } = {}) {
+    constructor({ identifier, role, content, name, system_prompt, position, injection_depth, injection_position, forbid_overrides, extension } = {}) {
         this.identifier = identifier;
         this.role = role;
         this.content = content;
@@ -98,6 +99,7 @@ class Prompt {
         this.injection_depth = injection_depth;
         this.injection_position = injection_position;
         this.forbid_overrides = forbid_overrides;
+        this.extension = extension ?? false;
     }
 }
 

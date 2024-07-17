@@ -1,7 +1,6 @@
 import { pipeline, env, RawImage, Pipeline } from 'sillytavern-transformers';
 import { getConfigValue } from './util.js';
 import path from 'path';
-import _ from 'lodash';
 
 configureTransformers();
 
@@ -114,4 +113,4 @@ async function getPipeline(task, forceModel = '') {
 export default {
     getPipeline,
     getRawImage,
-}
+};

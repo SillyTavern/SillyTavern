@@ -16,7 +16,10 @@ const STATS_FILE = 'stats.json';
  * @type {Map<string, Object>} The stats object for each user.
  */
 const STATS = new Map();
-let lastSaveTimestamp = 0;
+/**
+ * @type {Map<string, number>} The timestamps for each user.
+ */
+const TIMESTAMPS = new Map();
 
 /**
  * Convert a timestamp to an integer timestamp.
@@ -119,7 +122,6 @@ function timestampToMoment(timestamp) {
  * @returns {Promise<Object>} The aggregated stats object.
  */
 async function collectAndCreateStats(chatsPath, charactersPath) {
-    console.log('Collecting and creating stats...');
     const files = await readdir(charactersPath);
 
     const pngFiles = files.filter((file) => file.endsWith('.png'));
@@ -145,10 +147,10 @@ async function collectAndCreateStats(chatsPath, charactersPath) {
  * @param {string} charactersPath Path to the directory containing the character files.
  */
 async function recreateStats(handle, chatsPath, charactersPath) {
+    console.log('Collecting and creating stats for user:', handle);
     const stats = await collectAndCreateStats(chatsPath, charactersPath);
     STATS.set(handle, stats);
     await saveStatsToFile();
-    console.debug('Stats (re)created and saved to file.');
 }
 
 /**
@@ -167,7 +169,7 @@ async function init() {
             } catch (err) {
                 // If the file doesn't exist or is invalid, initialize stats
                 if (err.code === 'ENOENT' || err instanceof SyntaxError) {
-                    recreateStats(handle, directories.chats, directories.characters);
+                    await recreateStats(handle, directories.chats, directories.characters);
                 } else {
                     throw err; // Rethrow the error if it's something we didn't expect
                 }
@@ -185,13 +187,17 @@ async function init() {
 async function saveStatsToFile() {
     const userHandles = await getAllUserHandles();
     for (const handle of userHandles) {
-        const charStats = STATS.get(handle) || {};
+        if (!STATS.has(handle)) {
+            continue;
+        }
+        const charStats = STATS.get(handle);
+        const lastSaveTimestamp = TIMESTAMPS.get(handle) || 0;
         if (charStats.timestamp > lastSaveTimestamp) {
             try {
                 const directories = getUserDirectories(handle);
                 const statsFilePath = path.join(directories.root, STATS_FILE);
                 await writeFileAtomic(statsFilePath, JSON.stringify(charStats));
-                lastSaveTimestamp = Date.now();
+                TIMESTAMPS.set(handle, Date.now());
             } catch (error) {
                 console.log('Failed to save stats to file.', error);
             }
