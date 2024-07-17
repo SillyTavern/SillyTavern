@@ -3331,6 +3331,11 @@ grammarly-extension {
     text-align: center;
 }
 
+.menu_button.fa-fw {
+    /* Font Awesome icons that are a menu button and should be fixed width need a slight fix. 1.25em is their default, but we need to account for button spacing. */
+    min-width: calc(1.25em + 12px);
+}
+
 .avatar_div .menu_button,
 .form_create_bottom_buttons_block .menu_button {
     padding: 5px;
