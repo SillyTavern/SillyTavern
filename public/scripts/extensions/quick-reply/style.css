@@ -255,7 +255,8 @@
   margin: 0 1em;
   height: 0;
 }
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemAdder:hover {
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemAdder:hover,
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemAdder:focus-within {
   opacity: 1;
 }
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content {
