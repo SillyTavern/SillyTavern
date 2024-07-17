@@ -1938,7 +1938,7 @@ export async function showFontAwesomePicker(customList = null) {
                         }
                     }
                 });
-                qry.addEventListener('input', qryDebounced);
+                qry.addEventListener('input', () => qryDebounced());
                 search.append(qry);
             }
             dom.append(search);
@@ -1953,10 +1953,7 @@ export async function showFontAwesomePicker(customList = null) {
                     opt.classList.add(fa);
                     opt.title = fa.slice(3);
                     opt.dataset.result = POPUP_RESULT.AFFIRMATIVE.toString();
-                    opt.addEventListener('click', ()=>{
-                        value = fa;
-                        picker.completeAffirmative();
-                    });
+                    opt.addEventListener('click', () => value = fa);
                     grid.append(opt);
                 }
             }
@@ -1964,7 +1961,7 @@ export async function showFontAwesomePicker(customList = null) {
         }
     }
     let value = '';
-    const picker = new Popup(dom, POPUP_TYPE.CONFIRM, null, { allowVerticalScrolling:true, okButton: 'No Icon', cancelButton: 'Cancel' });
+    const picker = new Popup(dom, POPUP_TYPE.TEXT, null, { allowVerticalScrolling: true, okButton: 'No Icon', cancelButton: 'Cancel' });
     await picker.show();
     if (picker.result == POPUP_RESULT.AFFIRMATIVE) {
         return value;

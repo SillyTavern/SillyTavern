@@ -5346,6 +5346,11 @@ body:not(.movingUI) .drawer-content.maximized {
     color: #FAF8F6;
 }
 
+.popup.vertical_scrolling_dialogue_popup:has(.faPicker) {
+    /* Fix height for fa picker popup, otherwise search is making it resize weirdly */
+    height: 70%;
+}
+
 .faPicker {
 	display: flex;
 	gap: 1em;
@@ -5364,4 +5369,10 @@ body:not(.movingUI) .drawer-content.maximized {
             display: none;
         }
 	}
+}
+
+.faPicker:not(:has(:not(.hidden)))::after {
+    content: 'No icons found';
+    color: var(--SmartThemeBodyColor);
+    opacity: 0.7;
 }
