@@ -247,6 +247,7 @@ export class QuickReply {
                             icon.title = 'Click to change icon';
                             icon.classList.add('qr--set-itemIcon');
                             icon.classList.add('menu_button');
+                            icon.classList.add('fa-fw');
                             if (this.icon) {
                                 icon.classList.add('fa-solid');
                                 icon.classList.add(this.icon);
@@ -274,6 +275,7 @@ export class QuickReply {
                     const opt = document.createElement('div'); {
                         opt.classList.add('qr--action');
                         opt.classList.add('menu_button');
+                        opt.classList.add('fa-fw');
                         opt.classList.add('fa-solid');
                         opt.textContent = '⁝';
                         opt.title = 'Additional options:\n - large editor\n - context menu\n - auto-execution\n - tooltip';
@@ -296,7 +298,7 @@ export class QuickReply {
                     const move = document.createElement('div'); {
                         move.classList.add('qr--action');
                         move.classList.add('menu_button');
-                        move.classList.add('menu_button_icon');
+                        move.classList.add('fa-fw');
                         move.classList.add('fa-solid');
                         move.classList.add('fa-truck-arrow-right');
                         move.title = 'Move quick reply to other set';
@@ -306,7 +308,7 @@ export class QuickReply {
                     const copy = document.createElement('div'); {
                         copy.classList.add('qr--action');
                         copy.classList.add('menu_button');
-                        copy.classList.add('menu_button_icon');
+                        copy.classList.add('fa-fw');
                         copy.classList.add('fa-solid');
                         copy.classList.add('fa-copy');
                         copy.title = 'Copy quick reply to clipboard';
@@ -321,7 +323,7 @@ export class QuickReply {
                     const cut = document.createElement('div'); {
                         cut.classList.add('qr--action');
                         cut.classList.add('menu_button');
-                        cut.classList.add('menu_button_icon');
+                        cut.classList.add('fa-fw');
                         cut.classList.add('fa-solid');
                         cut.classList.add('fa-cut');
                         cut.title = 'Cut quick reply to clipboard (copy and remove)';
@@ -334,7 +336,7 @@ export class QuickReply {
                     const exp = document.createElement('div'); {
                         exp.classList.add('qr--action');
                         exp.classList.add('menu_button');
-                        exp.classList.add('menu_button_icon');
+                        exp.classList.add('fa-fw');
                         exp.classList.add('fa-solid');
                         exp.classList.add('fa-file-export');
                         exp.title = 'Export quick reply as file';
@@ -352,7 +354,7 @@ export class QuickReply {
                     const del = document.createElement('div'); {
                         del.classList.add('qr--action');
                         del.classList.add('menu_button');
-                        del.classList.add('menu_button_icon');
+                        del.classList.add('fa-fw');
                         del.classList.add('fa-solid');
                         del.classList.add('fa-trash-can');
                         del.classList.add('redWarningBG');
