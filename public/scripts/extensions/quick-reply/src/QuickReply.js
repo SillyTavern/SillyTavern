@@ -466,6 +466,29 @@ export class QuickReply {
                             }
                             list.append(setItem);
                         }
+                        const addItem = document.createElement('li'); {
+                            addItem.classList.add('qr--modal-switcherItem');
+                            addItem.addEventListener('click', ()=>{
+                                const qr = quickReplyApi.getSetByQr(this).addQuickReply();
+                                this.editorPopup.completeAffirmative();
+                                qr.showEditor();
+                            });
+                            const lbl = document.createElement('div'); {
+                                lbl.classList.add('qr--label');
+                                const icon = document.createElement('i'); {
+                                    icon.classList.add('fa-solid');
+                                    icon.classList.add('fa-plus');
+                                    icon.classList.add('menu_button');
+                                    lbl.append(icon);
+                                }
+                                const text = document.createElement('span'); {
+                                    text.textContent = 'Add QR';
+                                    lbl.append(text);
+                                }
+                                addItem.append(lbl);
+                            }
+                            list.append(addItem);
+                        }
                         for (const qr of qrs.qrList.toSorted((a,b)=>a.label.toLowerCase().localeCompare(b.label.toLowerCase()))) {
                             const item = document.createElement('li'); {
                                 item.classList.add('qr--modal-switcherItem');
