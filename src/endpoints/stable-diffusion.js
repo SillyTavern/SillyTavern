@@ -323,6 +323,17 @@ router.post('/generate', jsonParser, async (request, response) => {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/txt2img';
 
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            if (!response.writableEnded) {
+                const url = new URL(request.body.url);
+                url.pathname = '/sdapi/v1/interrupt';
+                fetch(url, { method: 'POST', headers: { 'Authorization': getBasicAuthHeader(request.body.auth) } });
+            }
+            controller.abort();
+        });
+
         const result = await fetch(url, {
             method: 'POST',
             body: JSON.stringify(request.body),
@@ -331,6 +342,8 @@ router.post('/generate', jsonParser, async (request, response) => {
                 'Authorization': getBasicAuthHeader(request.body.auth),
             },
             timeout: 0,
+            // @ts-ignore
+            signal: controller.signal,
         });
 
         if (!result.ok) {
