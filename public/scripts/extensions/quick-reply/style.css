@@ -435,6 +435,17 @@
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--modal-debugButtons {
   display: flex;
 }
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize) {
+  cursor: not-allowed;
+  opacity: 0.5;
+  pointer-events: none;
+  transition: 200ms;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting.qr--isPaused #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize) {
+  cursor: pointer;
+  opacity: 1;
+  pointer-events: all;
+}
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--resizeHandle {
   width: 6px;
   background-color: var(--SmartThemeBorderColor);

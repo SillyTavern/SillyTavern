@@ -1204,12 +1204,7 @@ export class QuickReply {
             this.abortController = new SlashCommandAbortController();
             this.debugController = new SlashCommandDebugController();
             this.debugController.onBreakPoint = async(closure, executor)=>{
-                //TODO move debug code into its own element, separate from the QR
-                //TODO populate debug code from closure.fullText and get locations, highlights, etc. from that
-                //TODO keep some kind of reference (human identifier) *where* the closure code comes from?
-                //TODO QR name, chat input, deserialized closure, ... ?
-                // this.editorMessage.value = closure.fullText;
-                // this.editorMessage.dispatchEvent(new Event('input', { bubbles:true }));
+                this.editorDom.classList.add('qr--isPaused');
                 syntax.innerHTML = hljs.highlight(`${closure.fullText}${closure.fullText.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value;
                 this.editorMessageLabel.innerHTML = '';
                 if (uuidCheck.test(closure.source)) {
@@ -1619,6 +1614,7 @@ export class QuickReply {
                 hi.remove();
                 this.editorDebugState.textContent = '';
                 this.editorDebugState.classList.remove('qr--active');
+                this.editorDom.classList.remove('qr--isPaused');
                 return isStepping;
             };
             const result = await this.onDebug(this);
