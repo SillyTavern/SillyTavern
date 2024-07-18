@@ -4633,8 +4633,10 @@ export function isImageInliningSupported() {
         'gemini-1.5-pro-latest',
         'gemini-pro-vision',
         'claude-3',
+        'claude-3-5',
         'gpt-4-turbo',
         'gpt-4o',
+        'gpt-4o-mini',
     ];
 
     switch (oai_settings.chat_completion_source) {
