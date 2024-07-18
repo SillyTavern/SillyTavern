@@ -1921,7 +1921,9 @@ export async function showFontAwesomePicker(customList = null) {
     const faList = customList ?? await fetchFa();
     const fas = {};
     const dom = document.createElement('div'); {
+        dom.classList.add('faPicker-container');
         const search = document.createElement('div'); {
+            search.classList.add('faQuery-container');
             const qry = document.createElement('input'); {
                 qry.classList.add('text_pole');
                 qry.classList.add('faQuery');

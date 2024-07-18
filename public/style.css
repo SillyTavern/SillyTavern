@@ -5346,16 +5346,31 @@ body:not(.movingUI) .drawer-content.maximized {
     color: #FAF8F6;
 }
 
-.popup.vertical_scrolling_dialogue_popup:has(.faPicker) {
+.popup:has(.faPicker) {
     /* Fix height for fa picker popup, otherwise search is making it resize weirdly */
     height: 70%;
+    .popup-content {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+.faPicker-container {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;;
+}
+
+.faQuery-container {
+    flex: 0 0 auto;
 }
 
 .faPicker {
-	display: flex;
+    flex: 1 1 auto;
+    overflow: auto;
 	gap: 1em;
-	flex-wrap: wrap;
-	justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(3.5em, 1fr));
 
 	.menu_button {
 		aspect-ratio: 1 / 1;
