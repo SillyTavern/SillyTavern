@@ -452,7 +452,16 @@ export class QuickReply {
                             });
                             const lbl = document.createElement('div'); {
                                 lbl.classList.add('qr--label');
-                                lbl.textContent = 'Switch QR Sets...';
+                                const icon = document.createElement('i'); {
+                                    icon.classList.add('fa-solid');
+                                    icon.classList.add('fa-arrow-alt-circle-right');
+                                    icon.classList.add('menu_button');
+                                    lbl.append(icon);
+                                }
+                                const text = document.createElement('span'); {
+                                    text.textContent = 'Switch QR Sets...';
+                                    lbl.append(text);
+                                }
                                 setItem.append(lbl);
                             }
                             list.append(setItem);
