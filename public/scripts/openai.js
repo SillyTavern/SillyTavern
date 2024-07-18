@@ -125,6 +125,7 @@ const max_32k = 32767;
 const max_64k = 65535;
 const max_128k = 128 * 1000;
 const max_200k = 200 * 1000;
+const max_256k = 256 * 1000;
 const max_1mil = 1000 * 1000;
 const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
@@ -3992,7 +3993,7 @@ async function onModelChange() {
     if ($(this).is('#model_mistralai_select')) {
         // Upgrade old mistral models to new naming scheme
         // would have done this in loadOpenAISettings, but it wasn't updating on preset change?
-        if (value === 'mistral-medium' || value === 'mistral-small' || value === 'mistral-tiny') {
+        if (value === 'mistral-medium' || value === 'mistral-small') {
             value = value + '-latest';
         } else if (value === '') {
             value = default_settings.mistralai_model;
@@ -4139,6 +4140,10 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source === chat_completion_sources.MISTRALAI) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
+        } else if (oai_settings.mistralai_model.includes('codestral-mamba')) {
+            $('#openai_max_context').attr('max', max_256k);
+        } else if (oai_settings.mistralai_model.includes('mistral-nemo')) {
+            $('#openai_max_context').attr('max', max_128k);
         } else if (oai_settings.mistralai_model.includes('mixtral-8x22b')) {
             $('#openai_max_context').attr('max', max_64k);
         } else {
