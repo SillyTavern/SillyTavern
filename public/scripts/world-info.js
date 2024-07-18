@@ -2875,12 +2875,12 @@ function getWorldEntry(name, data, entry) {
     });
 
     const entryState = function () {
-        if (entry.constant === true) {
+        if (entry.disable === true) {
+            return 'disabled';
+        } else if (entry.constant === true) {
             return 'constant';
         } else if (entry.vectorized === true) {
             return 'vectorized';
-        } else if (entry.disable === true) {
-            return 'disabled';
         } else {
             return 'normal';
         }
