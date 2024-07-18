@@ -53,7 +53,7 @@ export class SlashCommand {
 
 
     /**@type {string}*/ name;
-    /**@type {(namedArguments:{_pipe:string|SlashCommandClosure, _scope:SlashCommandScope, _abortController:SlashCommandAbortController, [id:string]:string|SlashCommandClosure}, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|Promise<string|SlashCommandClosure>}*/ callback;
+    /**@type {(namedArguments:{_scope:SlashCommandScope, _abortController:SlashCommandAbortController, [id:string]:string|SlashCommandClosure}, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|Promise<string|SlashCommandClosure>}*/ callback;
     /**@type {string}*/ helpString;
     /**@type {boolean}*/ splitUnnamedArgument = false;
     /**@type {Number}*/ splitUnnamedArgumentCount;
