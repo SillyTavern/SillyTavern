@@ -1,4 +1,4 @@
-import { POPUP_TYPE, Popup } from '../../../popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup } from '../../../popup.js';
 import { setSlashCommandAutoComplete } from '../../../slash-commands.js';
 import { SlashCommandAbortController } from '../../../slash-commands/SlashCommandAbortController.js';
 import { SlashCommandBreakPoint } from '../../../slash-commands/SlashCommandBreakPoint.js';
@@ -358,8 +358,19 @@ export class QuickReply {
                         del.classList.add('fa-solid');
                         del.classList.add('fa-trash-can');
                         del.classList.add('redWarningBG');
-                        del.title = 'Remove quick reply';
-                        del.addEventListener('click', ()=>this.delete());
+                        del.title = 'Remove Quick Reply\n---\nShit+Click to skip confirmation';
+                        del.addEventListener('click', async(evt)=>{
+                            if (!evt.shiftKey) {
+                                const result = await Popup.show.confirm(
+                                    'Remove Quick Reply',
+                                    'Are you sure you want to remove this Quick Reply?',
+                                );
+                                if (result != POPUP_RESULT.AFFIRMATIVE) {
+                                    return;
+                                }
+                            }
+                            this.delete();
+                        });
                         actions.append(del);
                     }
                     itemContent.append(actions);
