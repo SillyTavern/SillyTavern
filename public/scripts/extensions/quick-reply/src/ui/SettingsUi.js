@@ -121,7 +121,7 @@ export class SettingsUi {
         });
         this.dom.querySelector('#qr--set-paste').addEventListener('click', async()=>{
             const text = await navigator.clipboard.readText();
-            this.currentQrSet.addQuickReply(JSON.parse(text));
+            this.currentQrSet.addQuickReplyFromText(text);
         });
         this.dom.querySelector('#qr--set-importQr').addEventListener('click', async()=>{
             const inp = document.createElement('input'); {

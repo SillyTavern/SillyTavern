@@ -239,6 +239,28 @@ export class QuickReplySet {
         this.save();
         return qr;
     }
+    addQuickReplyFromText(qrJson) {
+        let data;
+        try {
+            data = JSON.parse(qrJson ?? '{}');
+            delete data.id;
+        } catch {
+            // not JSON data
+        }
+        if (data) {
+            // JSON data
+            if (data.label === undefined || data.message === undefined) {
+                // not a QR
+                toastr.error('Not a QR.');
+                return;
+            }
+        } else {
+            // no JSON, use plaintext as QR message
+            data = { message: qrJson };
+        }
+        const newQr = this.addQuickReply(data);
+        return newQr;
+    }
 
     /**
      *
@@ -250,11 +272,8 @@ export class QuickReplySet {
         qr.onDelete = ()=>this.removeQuickReply(qr);
         qr.onUpdate = ()=>this.save();
         qr.onInsertBefore = (qrJson)=>{
-            const data = JSON.parse(qrJson ?? '{}');
-            delete data.id;
-            log('onInsertBefore', data);
-            const newQr = this.addQuickReply(data);
-            this.qrList.pop();
+            this.addQuickReplyFromText(qrJson);
+            const newQr = this.qrList.pop();
             this.qrList.splice(this.qrList.indexOf(qr), 0, newQr);
             if (qr.settingsDom) {
                 qr.settingsDom.insertAdjacentElement('beforebegin', newQr.settingsDom);
