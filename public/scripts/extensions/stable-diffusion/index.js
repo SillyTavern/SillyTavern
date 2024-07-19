@@ -2294,14 +2294,13 @@ async function generatePicture(initiator, args, trigger, message, callback) {
     let imagePath = '';
 
     const stopListener = () => abortController.abort('Aborted by user');
-    const mesStop = document.getElementById('mes_stop');
 
     try {
         const combineNegatives = (prefix) => { negativePromptPrefix = combinePrefixes(negativePromptPrefix, prefix); };
         const prompt = await getPrompt(generationType, message, trigger, quietPrompt, combineNegatives);
         console.log('Processed image prompt:', prompt);
 
-        mesStop?.addEventListener('click', stopListener);
+        eventSource.once(event_types.GENERATION_STOPPED, stopListener);
         context.deactivateSendButtons();
         hideSwipeButtons();
 
@@ -2316,7 +2315,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
     }
     finally {
         restoreOriginalDimensions(dimensions);
-        mesStop?.removeEventListener('click', stopListener);
+        eventSource.removeListener(event_types.GENERATION_STOPPED, stopListener);
         context.activateSendButtons();
         showSwipeButtons();
     }
