@@ -1660,14 +1660,7 @@ function loadPowerUserSettings(settings, data) {
     $('#stscript_matching').val(power_user.stscript.matching ?? 'fuzzy');
     $('#stscript_autocomplete_style').val(power_user.stscript.autocomplete.style ?? 'theme');
     document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete.style);
-    $('#stscript_autocomplete_select').val(power_user.stscript.select ?? (AUTOCOMPLETE_SELECT_KEY.TAB + AUTOCOMPLETE_SELECT_KEY.ENTER));
-    $('#stscript_parser_flag_strict_escaping').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.STRICT_ESCAPING] ?? false);
-    $('#stscript_parser_flag_replace_getvar').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.REPLACE_GETVAR] ?? false);
-    $('#stscript_autocomplete_font_scale').val(power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale);
-    $('#stscript_matching').val(power_user.stscript.matching ?? 'fuzzy');
-    $('#stscript_autocomplete_style').val(power_user.stscript.autocomplete.style ?? 'theme');
-    document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete.style);
-    $('#stscript_autocomplete_select').val(power_user.stscript.select ?? (AUTOCOMPLETE_SELECT_KEY.TAB + AUTOCOMPLETE_SELECT_KEY.ENTER));
+    $('#stscript_autocomplete_select').val(power_user.stscript.autocomplete.select ?? (AUTOCOMPLETE_SELECT_KEY.TAB + AUTOCOMPLETE_SELECT_KEY.ENTER));
     $('#stscript_parser_flag_strict_escaping').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.STRICT_ESCAPING] ?? false);
     $('#stscript_parser_flag_replace_getvar').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.REPLACE_GETVAR] ?? false);
     $('#stscript_autocomplete_font_scale').val(power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale);
