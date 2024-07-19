@@ -45,7 +45,7 @@ import { FILTER_TYPES } from './filters.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
-import { AUTOCOMPLETE_WIDTH } from './autocomplete/AutoComplete.js';
+import { AUTOCOMPLETE_SELECT_KEY, AUTOCOMPLETE_WIDTH } from './autocomplete/AutoComplete.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { POPUP_TYPE, callGenericPopup } from './popup.js';
@@ -276,6 +276,7 @@ let power_user = {
                 left: AUTOCOMPLETE_WIDTH.CHAT,
                 right: AUTOCOMPLETE_WIDTH.CHAT,
             },
+            select: AUTOCOMPLETE_SELECT_KEY.TAB + AUTOCOMPLETE_SELECT_KEY.ENTER,
         },
         parser: {
             /**@type {Object.<PARSER_FLAG,boolean>} */
@@ -1492,6 +1493,9 @@ function loadPowerUserSettings(settings, data) {
             if (power_user.stscript.autocomplete.style === undefined) {
                 power_user.stscript.autocomplete.style = power_user.stscript.autocomplete_style || defaultStscript.autocomplete.style;
             }
+            if (power_user.stscript.autocomplete.select === undefined) {
+                power_user.stscript.autocomplete.select = defaultStscript.autocomplete.select;
+            }
         }
         if (power_user.stscript.parser === undefined) {
             power_user.stscript.parser = defaultStscript.parser;
@@ -1656,6 +1660,14 @@ function loadPowerUserSettings(settings, data) {
     $('#stscript_matching').val(power_user.stscript.matching ?? 'fuzzy');
     $('#stscript_autocomplete_style').val(power_user.stscript.autocomplete.style ?? 'theme');
     document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete.style);
+    $('#stscript_autocomplete_select').val(power_user.stscript.select ?? (AUTOCOMPLETE_SELECT_KEY.TAB + AUTOCOMPLETE_SELECT_KEY.ENTER));
+    $('#stscript_parser_flag_strict_escaping').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.STRICT_ESCAPING] ?? false);
+    $('#stscript_parser_flag_replace_getvar').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.REPLACE_GETVAR] ?? false);
+    $('#stscript_autocomplete_font_scale').val(power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale);
+    $('#stscript_matching').val(power_user.stscript.matching ?? 'fuzzy');
+    $('#stscript_autocomplete_style').val(power_user.stscript.autocomplete.style ?? 'theme');
+    document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete.style);
+    $('#stscript_autocomplete_select').val(power_user.stscript.select ?? (AUTOCOMPLETE_SELECT_KEY.TAB + AUTOCOMPLETE_SELECT_KEY.ENTER));
     $('#stscript_parser_flag_strict_escaping').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.STRICT_ESCAPING] ?? false);
     $('#stscript_parser_flag_replace_getvar').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.REPLACE_GETVAR] ?? false);
     $('#stscript_autocomplete_font_scale').val(power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale);
@@ -3835,6 +3847,12 @@ $(document).ready(() => {
         const value = $(this).find(':selected').val();
         power_user.stscript.autocomplete.style = String(value);
         document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete.style);
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_autocomplete_select').on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.stscript.autocomplete.select = parseInt(String(value));
         saveSettingsDebounced();
     });
 

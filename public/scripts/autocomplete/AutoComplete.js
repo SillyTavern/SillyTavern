@@ -16,6 +16,13 @@ export const AUTOCOMPLETE_WIDTH = {
     'FULL': 2,
 };
 
+/**@readonly*/
+/**@enum {Number}*/
+export const AUTOCOMPLETE_SELECT_KEY = {
+    'TAB': 1, // 2^0
+    'ENTER': 2, // 2^1
+};
+
 export class AutoComplete {
     /**@type {HTMLTextAreaElement|HTMLInputElement}*/ textarea;
     /**@type {boolean}*/ isFloating = false;
@@ -724,6 +731,7 @@ export class AutoComplete {
                 }
                 case 'Enter': {
                     // pick the selected item to autocomplete
+                    if ((power_user.stscript.autocomplete.select & AUTOCOMPLETE_SELECT_KEY.ENTER) != AUTOCOMPLETE_SELECT_KEY.ENTER) break;
                     if (evt.ctrlKey || evt.altKey || evt.shiftKey || this.selectedItem.value == '') break;
                     if (this.selectedItem.name == this.name) break;
                     if (!this.selectedItem.isSelectable) break;
@@ -734,6 +742,7 @@ export class AutoComplete {
                 }
                 case 'Tab': {
                     // pick the selected item to autocomplete
+                    if ((power_user.stscript.autocomplete.select & AUTOCOMPLETE_SELECT_KEY.TAB) != AUTOCOMPLETE_SELECT_KEY.TAB) break;
                     if (evt.ctrlKey || evt.altKey || evt.shiftKey || this.selectedItem.value == '') break;
                     evt.preventDefault();
                     evt.stopImmediatePropagation();
