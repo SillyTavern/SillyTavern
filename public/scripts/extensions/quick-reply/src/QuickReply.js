@@ -584,29 +584,6 @@ export class QuickReply {
                 });
             };
             const updateScrollDebounced = updateScroll;
-            const updateSyntax = ()=>{
-                if (messageSyntaxInner && syntax.checked) {
-                    morphdom(
-                        messageSyntaxInner,
-                        `<div>${hljs.highlight(`${message.value}${message.value.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value}</div>`,
-                        { childrenOnly: true },
-                    );
-                }
-            };
-            let lastSyntaxUpdate = 0;
-            const fpsTime = 1000 / 30;
-            let lastMessageValue = null;
-            const upsyn = ()=>{
-                const now = Date.now();
-                if (now - lastSyntaxUpdate < fpsTime) return requestAnimationFrame(upsyn);
-                if (!messageSyntaxInner.closest('body')) return;
-                if (lastMessageValue == message.value) return requestAnimationFrame(upsyn);
-                lastSyntaxUpdate = now;
-                lastMessageValue = message.value;
-                updateSyntax();
-                requestAnimationFrame(upsyn);
-            };
-            requestAnimationFrame(()=>upsyn());
             const updateSyntaxEnabled = ()=>{
                 if (syntax.checked) {
                     dom.querySelector('#qr--modal-messageHolder').classList.remove('qr--noSyntax');
@@ -639,7 +616,11 @@ export class QuickReply {
                 localStorage.setItem('qr--syntax', JSON.stringify(syntax.checked));
                 updateSyntaxEnabled();
             });
-            navigator.keyboard.getLayoutMap().then(it=>dom.querySelector('#qr--modal-commentKey').textContent = it.get('Backslash'));
+            if (navigator.keyboard) {
+                navigator.keyboard.getLayoutMap().then(it=>dom.querySelector('#qr--modal-commentKey').textContent = it.get('Backslash'));
+            } else {
+                dom.querySelector('#qr--modal-commentKey').closest('small').remove();
+            }
             this.editorMessageLabel = dom.querySelector('label[for="qr--modal-message"]');
             /**@type {HTMLTextAreaElement}*/
             const message = dom.querySelector('#qr--modal-message');
@@ -874,7 +855,6 @@ export class QuickReply {
             });
             /** @type {any} */
             const resizeListener = debounce((evt) => {
-                updateSyntax();
                 updateScrollDebounced(evt);
                 if (document.activeElement == message) {
                     message.blur();
@@ -883,11 +863,35 @@ export class QuickReply {
             });
             window.addEventListener('resize', resizeListener);
             updateSyntaxEnabled();
+            const updateSyntax = ()=>{
+                if (messageSyntaxInner && syntax.checked) {
+                    morphdom(
+                        messageSyntaxInner,
+                        `<div>${hljs.highlight(`${message.value}${message.value.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value}</div>`,
+                        { childrenOnly: true },
+                    );
+                }
+            };
+            let lastSyntaxUpdate = 0;
+            const fpsTime = 1000 / 30;
+            let lastMessageValue = null;
+            const upsyn = ()=>{
+                const now = Date.now();
+                // fps limit
+                if (now - lastSyntaxUpdate < fpsTime) return requestAnimationFrame(upsyn);
+                // elements don't exist (yet?)
+                if (!messageSyntaxInner || !message)  return requestAnimationFrame(upsyn);
+                // elements no longer part of the document
+                if (!messageSyntaxInner.closest('body')) return;
+                // value hasn't changed
+                if (lastMessageValue == message.value) return requestAnimationFrame(upsyn);
+                lastSyntaxUpdate = now;
+                lastMessageValue = message.value;
+                updateSyntax();
+                requestAnimationFrame(upsyn);
+            };
+            requestAnimationFrame(()=>upsyn());
             message.style.setProperty('text-shadow', 'none', 'important');
-            /**@type {HTMLElement}*/
-            const messageSyntaxInner = dom.querySelector('#qr--modal-messageSyntaxInner');
-            this.editorSyntax = messageSyntaxInner;
-            updateSyntax();
             updateWrap();
             updateTabSize();
 
