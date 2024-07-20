@@ -97,7 +97,7 @@ export class SlashCommandScope {
                 return v ?? '';
             } else {
                 const value = this.variables[key];
-                return (value === '' || isNaN(Number(value))) ? (value || '') : Number(value);
+                return (value?.trim?.() === '' || isNaN(Number(value))) ? (value || '') : Number(value);
             }
         }
         if (this.parent) {

@@ -41,7 +41,7 @@ function getLocalVariable(name, args = {}) {
         }
     }
 
-    return (localVariable === '' || isNaN(Number(localVariable))) ? (localVariable || '') : Number(localVariable);
+    return (localVariable?.trim?.() === '' || isNaN(Number(localVariable))) ? (localVariable || '') : Number(localVariable);
 }
 
 function setLocalVariable(name, value, args = {}) {
@@ -94,7 +94,7 @@ function getGlobalVariable(name, args = {}) {
         }
     }
 
-    return (globalVariable === '' || isNaN(Number(globalVariable))) ? (globalVariable || '') : Number(globalVariable);
+    return (globalVariable?.trim?.() === '' || isNaN(Number(globalVariable))) ? (globalVariable || '') : Number(globalVariable);
 }
 
 function setGlobalVariable(name, value, args = {}) {
