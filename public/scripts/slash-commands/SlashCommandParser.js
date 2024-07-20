@@ -797,7 +797,12 @@ export class SlashCommandParser {
         return this.testSymbol(/\/\*/);
     }
     testBlockCommentEnd() {
-        return this.testSymbol(/\*\|/);
+        if (!this.verifyCommandNames) {
+            if (this.index >= this.text.length) return true;
+        } else {
+            if (this.ahead.length < 1) throw new SlashCommandParserError(`Unclosed block comment at position ${this.userIndex}`, this.text, this.index);
+        }
+        return this.testSymbol('*|');
     }
     parseBlockComment() {
         const start = this.index + 1;
