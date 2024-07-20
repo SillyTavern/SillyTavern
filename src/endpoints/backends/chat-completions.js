@@ -879,7 +879,7 @@ router.post('/generate', jsonParser, function (request, response) {
 
         if (Array.isArray(request.body.provider) && request.body.provider.length > 0) {
             bodyParams['provider'] = {
-                allow_fallbacks: true,
+                allow_fallbacks: request.body.allow_fallbacks ?? true,
                 order: request.body.provider ?? [],
             };
         }
