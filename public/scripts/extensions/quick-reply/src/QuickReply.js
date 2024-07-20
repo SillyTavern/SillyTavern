@@ -626,7 +626,7 @@ export class QuickReply {
             const message = dom.querySelector('#qr--modal-message');
             this.editorMessage = message;
             message.value = this.message;
-            const updateMessageDebounced = debounce((value)=>this.updateMessage(value));
+            const updateMessageDebounced = debounce((value)=>this.updateMessage(value), 10);
             message.addEventListener('input', () => {
                 updateMessageDebounced(message.value);
                 updateScrollDebounced();
