@@ -798,24 +798,29 @@ function randValuesCallback(from, to, args) {
  * @returns The variable's value
  */
 function letCallback(args, value) {
-    if (Array.isArray(value)) {
-        args._scope.letVariable(value[0], typeof value[1] == 'string' ? value.slice(1).join(' ') : value[1]);
-        return value[1];
-    }
+    if (!Array.isArray(value)) value = [value];
     if (args.key !== undefined) {
         const key = args.key;
-        const val = value;
+        if (typeof key != 'string') throw new Error('Key must be a string');
+        if (args._hasUnnamedArgument) {
+            const val = value.join(' ');
+            args._scope.letVariable(key, val);
+            return val;
+        } else {
+            args._scope.letVariable(key);
+            return '';
+        }
+    }
+    const key = value.shift();
+    if (typeof key != 'string') throw new Error('Key must be a string');
+    if (value.length > 0) {
+        const val = value.join(' ');
         args._scope.letVariable(key, val);
         return val;
+    } else {
+        args._scope.letVariable(key);
+        return '';
     }
-    if (value instanceof SlashCommandClosure) throw new Error('/let unnamed argument does not support closures if no key is provided');
-    if (value.includes(' ')) {
-        const key = value.split(' ')[0];
-        const val = value.split(' ').slice(1).join(' ');
-        args._scope.letVariable(key, val);
-        return val;
-    }
-    args._scope.letVariable(value);
 }
 
 /**
@@ -828,6 +833,7 @@ function varCallback(args, value) {
     if (!Array.isArray(value)) value = [value];
     if (args.key !== undefined) {
         const key = args.key;
+        if (typeof key != 'string') throw new Error('Key must be a string');
         if (args._hasUnnamedArgument) {
             const val = value.join(' ');
             args._scope.setVariable(key, val, args.index);
@@ -837,6 +843,7 @@ function varCallback(args, value) {
         }
     }
     const key = value.shift();
+    if (typeof key != 'string') throw new Error('Key must be a string');
     if (value.length > 0) {
         const val = value.join(' ');
         args._scope.setVariable(key, val, args.index);
