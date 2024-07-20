@@ -1097,7 +1097,7 @@ export class SlashCommandParser {
         }
         if (isList) {
             const firstVal = listValues[0];
-            if (typeof firstVal.value == 'string') {
+            if (typeof firstVal?.value == 'string') {
                 if (!listQuoted[0]) {
                     // only trim the first part if it wasn't quoted
                     firstVal.value = firstVal.value.trimStart();
@@ -1108,7 +1108,7 @@ export class SlashCommandParser {
                 }
             }
             const lastVal = listValues.slice(-1)[0];
-            if (typeof lastVal.value == 'string') {
+            if (typeof lastVal?.value == 'string') {
                 if (!listQuoted.slice(-1)[0]) {
                     // only trim the last part if it wasn't quoted
                     lastVal.value = lastVal.value.trimEnd();
