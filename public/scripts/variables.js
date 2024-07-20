@@ -803,7 +803,7 @@ function letCallback(args, value) {
         const key = args.key;
         if (typeof key != 'string') throw new Error('Key must be a string');
         if (args._hasUnnamedArgument) {
-            const val = value.join(' ');
+            const val = typeof value[0] == 'string' ? value.join(' ') : value[0];
             args._scope.letVariable(key, val);
             return val;
         } else {
@@ -814,7 +814,7 @@ function letCallback(args, value) {
     const key = value.shift();
     if (typeof key != 'string') throw new Error('Key must be a string');
     if (value.length > 0) {
-        const val = value.join(' ');
+        const val = typeof value[0] == 'string' ? value.join(' ') : value[0];
         args._scope.letVariable(key, val);
         return val;
     } else {
@@ -835,7 +835,7 @@ function varCallback(args, value) {
         const key = args.key;
         if (typeof key != 'string') throw new Error('Key must be a string');
         if (args._hasUnnamedArgument) {
-            const val = value.join(' ');
+            const val = typeof value[0] == 'string' ? value.join(' ') : value[0];
             args._scope.setVariable(key, val, args.index);
             return val;
         } else {
@@ -845,7 +845,7 @@ function varCallback(args, value) {
     const key = value.shift();
     if (typeof key != 'string') throw new Error('Key must be a string');
     if (value.length > 0) {
-        const val = value.join(' ');
+        const val = typeof value[0] == 'string' ? value.join(' ') : value[0];
         args._scope.setVariable(key, val, args.index);
         return val;
     } else {
