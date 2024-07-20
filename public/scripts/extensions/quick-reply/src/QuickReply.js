@@ -11,6 +11,7 @@ import { SlashCommandParserError } from '../../../slash-commands/SlashCommandPar
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
 import { debounce, delay, getSortableDelay, showFontAwesomePicker } from '../../../utils.js';
 import { log, quickReplyApi, warn } from '../index.js';
+import morphdom from '../lib/morphdom-esm.js';
 import { QuickReplyContextLink } from './QuickReplyContextLink.js';
 import { QuickReplySet } from './QuickReplySet.js';
 import { ContextMenu } from './ui/ctx/ContextMenu.js';
@@ -537,6 +538,9 @@ export class QuickReply {
             title.addEventListener('input', () => {
                 this.updateTitle(title.value);
             });
+            /**@type {HTMLElement}*/
+            const messageSyntaxInner = dom.querySelector('#qr--modal-messageSyntaxInner');
+            this.editorSyntax = messageSyntaxInner;
             /**@type {HTMLInputElement}*/
             const wrap = dom.querySelector('#qr--modal-wrap');
             wrap.checked = JSON.parse(localStorage.getItem('qr--wrap') ?? 'false');
@@ -581,10 +585,30 @@ export class QuickReply {
             };
             const updateScrollDebounced = updateScroll;
             const updateSyntax = ()=>{
-                messageSyntaxInner.innerHTML = hljs.highlight(`${message.value}${message.value.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value;
+                if (messageSyntaxInner && syntax.checked) {
+                    morphdom(
+                        messageSyntaxInner,
+                        `<div>${hljs.highlight(`${message.value}${message.value.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value}</div>`,
+                        { childrenOnly: true },
+                    );
+                }
             };
+            let lastSyntaxUpdate = 0;
+            const fpsTime = 1000 / 30;
+            let lastMessageValue = null;
+            const upsyn = ()=>{
+                const now = Date.now();
+                if (now - lastSyntaxUpdate < fpsTime) return requestAnimationFrame(upsyn);
+                if (!messageSyntaxInner.closest('body')) return;
+                if (lastMessageValue == message.value) return requestAnimationFrame(upsyn);
+                lastSyntaxUpdate = now;
+                lastMessageValue = message.value;
+                updateSyntax();
+                requestAnimationFrame(upsyn);
+            };
+            requestAnimationFrame(()=>upsyn());
             const updateSyntaxEnabled = ()=>{
-                if (JSON.parse(localStorage.getItem('qr--syntax'))) {
+                if (syntax.checked) {
                     dom.querySelector('#qr--modal-messageHolder').classList.remove('qr--noSyntax');
                 } else {
                     dom.querySelector('#qr--modal-messageHolder').classList.add('qr--noSyntax');
@@ -621,11 +645,11 @@ export class QuickReply {
             const message = dom.querySelector('#qr--modal-message');
             this.editorMessage = message;
             message.value = this.message;
+            const updateMessageDebounced = debounce((value)=>this.updateMessage(value));
             message.addEventListener('input', () => {
-                updateSyntax();
-                this.updateMessage(message.value);
+                updateMessageDebounced(message.value);
                 updateScrollDebounced();
-            });
+            }, { passive:true });
             //TODO move tab support for textarea into its own helper(?) and use for both this and .editor_maximize
             message.addEventListener('keydown', async(evt) => {
                 if (this.isExecuting) return;
