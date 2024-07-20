@@ -794,7 +794,7 @@ export class SlashCommandParser {
     }
 
     testBlockComment() {
-        return this.testSymbol(/\/\*/);
+        return this.testSymbol('/*');
     }
     testBlockCommentEnd() {
         if (!this.verifyCommandNames) {
@@ -826,7 +826,12 @@ export class SlashCommandParser {
         return this.testSymbol(/\/[/#]/);
     }
     testCommentEnd() {
-        return this.testCommandEnd();
+        if (!this.verifyCommandNames) {
+            if (this.index >= this.text.length) return true;
+        } else {
+            if (this.endOfText) throw new SlashCommandParserError(`Unclosed comment at position ${this.userIndex}`, this.text, this.index);
+        }
+        return this.testSymbol('|');
     }
     parseComment() {
         const start = this.index + 1;
