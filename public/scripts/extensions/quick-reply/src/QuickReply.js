@@ -631,7 +631,21 @@ export class QuickReply {
                 updateMessageDebounced(message.value);
                 updateScrollDebounced();
             }, { passive:true });
-            //TODO move tab support for textarea into its own helper(?) and use for both this and .editor_maximize
+            const getLineStart = ()=>{
+                const start = message.selectionStart;
+                const end = message.selectionEnd;
+                let lineStart;
+                if (start == 0 || message.value[start - 1] == '\n') {
+                    // cursor is already at beginning of line
+                    // -> keep start
+                    lineStart = start;
+                } else {
+                    // cursor is at end of line or somewhere in the line
+                    // -> find last newline before cursor and start after that
+                    lineStart = message.value.lastIndexOf('\n', start - 1) + 1;
+                }
+                return lineStart;
+            };
             message.addEventListener('keydown', async(evt) => {
                 if (this.isExecuting) return;
                 if (evt.key == 'Tab' && !evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
@@ -642,18 +656,19 @@ export class QuickReply {
                     if (end - start > 0 && message.value.substring(start, end).includes('\n')) {
                         evt.stopImmediatePropagation();
                         evt.stopPropagation();
-                        const lineStart = message.value.lastIndexOf('\n', start - 1);
-                        const count = message.value.substring(lineStart, end).split('\n').length - 1;
-                        message.value = `${message.value.substring(0, lineStart)}${message.value.substring(lineStart, end).replace(/\n/g, '\n\t')}${message.value.substring(end)}`;
+                        const lineStart = getLineStart();
+                        message.selectionStart = lineStart;
+                        const affectedLines = message.value.substring(lineStart, end).split('\n');
+                        // document.execCommand is deprecated (and potentially buggy in some browsers) but the only way to retain undo-history
+                        document.execCommand('insertText', false, `\t${affectedLines.join('\n\t')}`);
                         message.selectionStart = start + 1;
-                        message.selectionEnd = end + count;
+                        message.selectionEnd = end + affectedLines.length;
                         message.dispatchEvent(new Event('input', { bubbles:true }));
                     } else if (!(ac.isReplaceable && ac.isActive)) {
                         evt.stopImmediatePropagation();
                         evt.stopPropagation();
-                        message.value = `${message.value.substring(0, start)}\t${message.value.substring(end)}`;
-                        message.selectionStart = start + 1;
-                        message.selectionEnd = end + 1;
+                        // document.execCommand is deprecated (and potentially buggy in some browsers) but the only way to retain undo-history
+                        document.execCommand('insertText', false, '\t');
                         message.dispatchEvent(new Event('input', { bubbles:true }));
                     }
                 } else if (evt.key == 'Tab' && evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
@@ -663,25 +678,30 @@ export class QuickReply {
                     evt.stopPropagation();
                     const start = message.selectionStart;
                     const end = message.selectionEnd;
-                    const lineStart = message.value.lastIndexOf('\n', start - 1);
-                    const count = message.value.substring(lineStart, end).split('\n\t').length - 1;
-                    message.value = `${message.value.substring(0, lineStart)}${message.value.substring(lineStart, end).replace(/\n\t/g, '\n')}${message.value.substring(end)}`;
+                    const lineStart = getLineStart();
+                    message.selectionStart = lineStart;
+                    const affectedLines = message.value.substring(lineStart, end).split('\n');
+                    // document.execCommand is deprecated (and potentially buggy in some browsers) but the only way to retain undo-history
+                    document.execCommand('insertText', false, `${affectedLines.map(it=>it.replace(/^\t/, '')).join('\n')}`);
                     message.selectionStart = start - 1;
-                    message.selectionEnd = end - count;
+                    message.selectionEnd = end - affectedLines.length;
                     message.dispatchEvent(new Event('input', { bubbles:true }));
                 } else if (evt.key == 'Enter' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey && !(ac.isReplaceable && ac.isActive)) {
                     // new line, keep indent
-                    evt.stopImmediatePropagation();
-                    evt.stopPropagation();
-                    evt.preventDefault();
                     const start = message.selectionStart;
                     const end = message.selectionEnd;
-                    const lineStart = message.value.lastIndexOf('\n', start - 1);
-                    const indent = /^(\s*)/.exec(message.value.slice(lineStart).replace(/^\n*/, ''))[1] ?? '';
-                    message.value = `${message.value.slice(0, start)}\n${indent}${message.value.slice(end)}`;
-                    message.selectionStart = start + 1 + indent.length;
-                    message.selectionEnd  = message.selectionStart;
-                    message.dispatchEvent(new Event('input', { bubbles:true }));
+                    let lineStart = getLineStart();
+                    const indent = /^([^\S\n]*)/.exec(message.value.slice(lineStart))[1] ?? '';
+                    if (indent.length) {
+                        evt.stopImmediatePropagation();
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                        // document.execCommand is deprecated (and potentially buggy in some browsers) but the only way to retain undo-history
+                        document.execCommand('insertText', false, `\n${indent}`);
+                        message.selectionStart = start + 1 + indent.length;
+                        message.selectionEnd  = message.selectionStart;
+                        message.dispatchEvent(new Event('input', { bubbles:true }));
+                    }
                 } else if (evt.key == 'Enter' && evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
                     if (executeShortcut.checked) {
                         // execute QR
@@ -707,7 +727,8 @@ export class QuickReply {
                     preBreakPointEnd = message.selectionEnd;
                     toggleBreakpoint();
                 } else if (evt.code == 'Backslash' && evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
-                    // toggle comment
+                    // toggle block comment
+                    // (evt.code will use the same physical key on the keyboard across different keyboard layouts)
                     evt.stopImmediatePropagation();
                     evt.stopPropagation();
                     evt.preventDefault();
@@ -718,6 +739,7 @@ export class QuickReply {
                     const end = message.selectionEnd;
                     const comment = parser.commandIndex.findLast(it=>it.name == '*' && (it.start <= start && it.end >= start || it.start <= end && it.end >= end));
                     if (comment) {
+                        // uncomment
                         let content = message.value.slice(comment.start + 1, comment.end - 1);
                         let len = content.length;
                         content = content.replace(/^ /, '');
@@ -725,14 +747,20 @@ export class QuickReply {
                         len = content.length;
                         content = content.replace(/ $/, '');
                         const offsetEnd = len - content.length;
-                        message.value = `${message.value.slice(0, comment.start - 1)}${content}${message.value.slice(comment.end + 1)}`;
+                        message.selectionStart = comment.start - 1;
+                        message.selectionEnd = comment.end + 1;
+                        // document.execCommand is deprecated (and potentially buggy in some browsers) but the only way to retain undo-history
+                        document.execCommand('insertText', false, content);
                         message.selectionStart = start - (start >= comment.start ? 2 + offsetStart : 0);
                         message.selectionEnd = end - 2 - offsetStart - (end >= comment.end ? 2 + offsetEnd : 0);
                     } else {
-                        const lineStart = message.value.lastIndexOf('\n', start - 1) + 1;
+                        // comment
+                        const lineStart = getLineStart();
                         const lineEnd = message.value.indexOf('\n', end);
-                        const lines = message.value.slice(lineStart, lineEnd).split('\n');
-                        message.value = `${message.value.slice(0, lineStart)}/* ${message.value.slice(lineStart, lineEnd)} *|${message.value.slice(lineEnd)}`;
+                        message.selectionStart = lineStart;
+                        message.selectionEnd = lineEnd;
+                        // document.execCommand is deprecated (and potentially buggy in some browsers) but the only way to retain undo-history
+                        document.execCommand('insertText', false, `/* ${message.value.slice(lineStart, lineEnd)} *|`);
                         message.selectionStart = start + 3;
                         message.selectionEnd = end + 3;
                     }
@@ -765,28 +793,30 @@ export class QuickReply {
                 while (/\s/.test(message.value[end])) end++;
                 // if pipe after whitepace, include pipe for removal
                 if (message.value[end] == '|') end++;
-                const v = `${message.value.slice(0, start)}${message.value.slice(end)}`;
-                message.value = v;
+                message.selectionStart = start;
+                message.selectionEnd = end;
+                // document.execCommand is deprecated (and potentially buggy in some browsers) but the only way to retain undo-history
+                document.execCommand('insertText', false, '');
                 message.dispatchEvent(new Event('input', { bubbles:true }));
                 let postStart = preBreakPointStart;
                 let postEnd = preBreakPointEnd;
                 // set caret back to where it was
                 if (preBreakPointStart <= start) {
-                    // do nothing
+                    // selection start was before breakpoint: do nothing
                 } else if (preBreakPointStart > start && preBreakPointEnd < end) {
                     // selection start was inside breakpoint: move to index before breakpoint
                     postStart = start;
                 } else if (preBreakPointStart >= end) {
-                    // selection was behind breakpoint: move back by length of removed string
+                    // selection start was behind breakpoint: move back by length of removed string
                     postStart = preBreakPointStart - (end - start);
                 }
                 if (preBreakPointEnd <= start) {
                     // do nothing
                 } else if (preBreakPointEnd > start && preBreakPointEnd < end) {
-                    // selection start was inside breakpoint: move to index before breakpoint
+                    // selection end was inside breakpoint: move to index before breakpoint
                     postEnd = start;
                 } else if (preBreakPointEnd >= end) {
-                    // selection was behind breakpoint: move back by length of removed string
+                    // selection end was behind breakpoint: move back by length of removed string
                     postEnd = preBreakPointEnd - (end - start);
                 }
                 return { start:postStart, end:postEnd };
@@ -811,8 +841,10 @@ export class QuickReply {
                     indent = `\n${indent}`;
                 }
                 const breakpointText = `${indent}/breakpoint |`;
-                const v = `${message.value.slice(0, start)}${breakpointText}${message.value.slice(start)}`;
-                message.value = v;
+                message.selectionStart = start;
+                message.selectionEnd = start;
+                // document.execCommand is deprecated (and potentially buggy in some browsers) but the only way to retain undo-history
+                document.execCommand('insertText', false, breakpointText);
                 message.dispatchEvent(new Event('input', { bubbles:true }));
                 return breakpointText.length;
             };
