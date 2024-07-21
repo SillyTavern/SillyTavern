@@ -1937,10 +1937,10 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
 
         let content = '<span>Apply your custom sorting to the "Order" field. The Order values will go down from the chosen number.</span>';
         if (moreThan100) {
-            content += `<div class="m-t-1"><i class="fa-solid fa-triangle-exclamation" style="color: #FFD43B;"></i> More than 100 entries in this world. You have to choose a number higher than that to work.<br />(Usual default: 100)<br />Minimum: ${entryCount}</div>`;
+            content += `<div class="m-t-1"><i class="fa-solid fa-triangle-exclamation" style="color: #FFD43B;"></i> More than 100 entries in this world. If you don't choose a number higher than that, the lower entries will default to 0.<br />(Usual default: 100)<br />Minimum: ${entryCount}</div>`;
         }
 
-        const result = await Popup.show.input('Apply Custom Sorting', content, moreThan100 ? '' : '100', { okButton: 'Apply', cancelButton: 'Cancel' });
+        const result = await Popup.show.input('Apply Custom Sorting', content, '100', { okButton: 'Apply', cancelButton: 'Cancel' });
         if (!result) return;
 
         const start = Number(result);
@@ -1949,13 +1949,12 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
             return;
         }
         if (start < entryCount) {
-            toastr.warning('The number must be higher than the total entry count: ' + entryCount, 'Apply Custom Sorting');
-            return;
+            toastr.warning('A number lower than the entry count has been chosen. All entries below that will default to 0.', 'Apply Custom Sorting');
         }
 
         let counter = 0;
         for (const entry of Object.values(data.entries)) {
-            const newOrder = start - (entry.displayIndex ?? 0);
+            const newOrder = Math.max(start - (entry.displayIndex ?? 0), 0);
             if (entry.order === newOrder) continue;
 
             entry.order = newOrder;
