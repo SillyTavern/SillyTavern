@@ -553,13 +553,13 @@
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
-                                            <div class="justifyLeft" data-i18n="NSFW">NSFW</div>
+                                            <div class="justifyLeft" data-i18n="Auxiliary">Auxiliary</div>
                                             <div class="wide100p">
                                                 <textarea id="nsfw_prompt_quick_edit_textarea" class="text_pole textarea_compact autoSetHeight" rows="6" placeholder="&mdash;" data-pm-prompt="nsfw"></textarea>
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
-                                            <div class="justifyLeft" data-i18n="Jailbreak">Jailbreak</div>
+                                            <div class="justifyLeft" data-i18n="Post-History Instructions">Post-History Instructions</div>
                                             <div class="wide100p">
                                                 <textarea id="jailbreak_prompt_quick_edit_textarea" class="text_pole textarea_compact autoSetHeight" rows="6" placeholder="&mdash;" data-pm-prompt="jailbreak"></textarea>
                                             </div>
@@ -3057,9 +3057,9 @@
                                     <input id="context_use_stop_strings" type="checkbox" />
                                     <small data-i18n="Use as Stop Strings">Use as Stop Strings</small>
                                 </label>
-                                <label class="checkbox_label" title="Includes Jailbreak at the end of the prompt, if defined in the character card AND ''Prefer Char. Jailbreak'' is enabled.&#10;THIS IS NOT RECOMMENDED FOR TEXT COMPLETION MODELS, CAN LEAD TO BAD OUTPUT." data-i18n="[title]context_allow_jailbreak">
+                                <label class="checkbox_label" title="Includes Post-History Instructions at the end of the prompt, if defined in the character card AND ''Prefer Char. Instructions'' is enabled.&#10;THIS IS NOT RECOMMENDED FOR TEXT COMPLETION MODELS, CAN LEAD TO BAD OUTPUT." data-i18n="[title]context_allow_post_history_instructions">
                                     <input id="context_allow_jailbreak" type="checkbox" />
-                                    <small data-i18n="Allow Jailbreak">Allow Jailbreak</small>
+                                    <small data-i18n="Allow Post-History Instructions">Allow Post-History Instructions</small>
                                 </label>
                             </div>
 
@@ -3952,9 +3952,9 @@
                                 <input id="prefer_character_prompt" type="checkbox" />
                                 <small data-i18n="Prefer Character Card Prompt">Prefer Char. Prompt</small>
                             </label>
-                            <label data-newbie-hidden for="prefer_character_jailbreak" title="If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." data-i18n="[title]If checked and the character card contains a jailbreak override (Post History Instruction), use that instead" class="checkbox_label">
+                            <label data-newbie-hidden for="prefer_character_jailbreak" title="If checked and the character card contains a Post-History Instructions override, use that instead." data-i18n="[title]If checked and the character card contains a Post-History Instructions override, use that instead" class="checkbox_label">
                                 <input id="prefer_character_jailbreak" type="checkbox" />
-                                <small data-i18n="Prefer Character Card Jailbreak">Prefer Char. Jailbreak</small>
+                                <small data-i18n="Prefer Character Card Instructions">Prefer Char. Instructions</small>
                             </label>
                             <label data-newbie-hidden class="checkbox_label" for="never_resize_avatars" title="Avoid cropping and resizing imported character images. When off, crop/resize to 512x768." data-i18n="[title]Avoid cropping and resizing imported character images. When off, crop/resize to 512x768">
                                 <input id="never_resize_avatars" type="checkbox" />
@@ -4939,8 +4939,8 @@
                     </div>
                 </div>
                 <div>
-                    <h4 data-i18n="Jailbreak">Jailbreak</h4>
-                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Jailbreak Prompt used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Jailbreak Prompt used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="50000"></textarea>
+                    <h4 data-i18n="Post-History Instructions">Post-History Instructions</h4>
+                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Post-History Instructions used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Post-History Instructions used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="50000"></textarea>
                     <div class="extension_token_counter">
                         <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="post_history_instructions_textarea">counting...</span>
                     </div>
