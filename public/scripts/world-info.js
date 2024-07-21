@@ -1931,6 +1931,47 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
         }
     });
 
+    $('#world_apply_custom_sorting').off('click').on('click', async () => {
+        const entryCount = Object.keys(data.entries).length;
+        const moreThan100 = entryCount > 100;
+
+        let content = '<span>Apply your custom sorting to the "Order" field. The Order values will go down from the chosen number.</span>';
+        if (moreThan100) {
+            content += `<div class="m-t-1"><i class="fa-solid fa-triangle-exclamation" style="color: #FFD43B;"></i> More than 100 entries in this world. You have to choose a number higher than that to work.<br />(Usual default: 100)<br />Minimum: ${entryCount}</div>`;
+        }
+
+        const result = await Popup.show.input('Apply Custom Sorting', content, moreThan100 ? '' : '100', { okButton: 'Apply', cancelButton: 'Cancel' });
+        if (!result) return;
+
+        const start = Number(result);
+        if (isNaN(start) || start < 0) {
+            toastr.error('Invalid number: ' + result, 'Apply Custom Sorting');
+            return;
+        }
+        if (start < entryCount) {
+            toastr.warning('The number must be higher than the total entry count: ' + entryCount, 'Apply Custom Sorting');
+            return;
+        }
+
+        let counter = 0;
+        for (const entry of Object.values(data.entries)) {
+            const newOrder = start - (entry.displayIndex ?? 0);
+            if (entry.order === newOrder) continue;
+
+            entry.order = newOrder;
+            setOriginalDataValue(data, entry.order, 'order', entry.order);
+            counter++;
+        }
+
+        if (counter > 0) {
+            toastr.info(`Updated ${counter} Order values`, 'Apply Custom Sorting');
+            await saveWorldInfo(name, data, true);
+            updateEditor(navigation_option.previous);
+        } else {
+            toastr.info('All values up to date', 'Apply Custom Sorting');
+        }
+    });
+
     $('#world_popup_export').off('click').on('click', () => {
         if (name && data) {
             const jsonValue = JSON.stringify(data);
