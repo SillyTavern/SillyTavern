@@ -95,6 +95,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'persona',
         callback: setNameCallback,
+        aliases: ['name'],
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'mode', 'The mode for persona selection. ("lookup" = search for existing persona, "temp" = create a temporary name, set a temporary name, "all" = allow both in the same command)',
@@ -110,7 +111,6 @@ export function initDefaultSlashCommands() {
             }),
         ],
         helpString: 'Selects the given persona with its name and avatar (by name or avatar url). If no matching persona exists, applies a temporary name.',
-        aliases: ['name'],
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sync',
