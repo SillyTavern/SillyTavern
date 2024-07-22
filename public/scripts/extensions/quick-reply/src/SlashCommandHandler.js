@@ -555,8 +555,8 @@ export class SlashCommandHandler {
             new SlashCommandNamedArgument('inject', 'inject user input automatically (if disabled use {{input}})', [ARGUMENT_TYPE.BOOLEAN], false),
         ];
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-create',
-            callback: (args, name) => {
-                this.createSet(name, args);
+            callback: async (args, name) => {
+                await this.createSet(name, args);
                 return '';
             },
             aliases: ['qr-presetadd'],
@@ -586,8 +586,8 @@ export class SlashCommandHandler {
         }));
 
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-update',
-            callback: (args, name) => {
-                this.updateSet(name, args);
+            callback: async (args, name) => {
+                await this.updateSet(name, args);
                 return '';
             },
             aliases: ['qr-presetupdate'],
@@ -611,8 +611,8 @@ export class SlashCommandHandler {
             `,
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-delete',
-            callback: (_, name) => {
-                this.deleteSet(name);
+            callback: async (_, name) => {
+                await this.deleteSet(name);
                 return '';
             },
             aliases: ['qr-presetdelete'],
@@ -932,9 +932,9 @@ export class SlashCommandHandler {
     }
 
 
-    createSet(name, args) {
+    async createSet(name, args) {
         try {
-            this.api.createSet(
+            await this.api.createSet(
                 args.name ?? name ?? '',
                 {
                     disableSend: isTrueBoolean(args.nosend),
@@ -946,9 +946,9 @@ export class SlashCommandHandler {
             toastr.error(ex.message);
         }
     }
-    updateSet(name, args) {
+    async updateSet(name, args) {
         try {
-            this.api.updateSet(
+            await this.api.updateSet(
                 args.name ?? name ?? '',
                 {
                     disableSend: args.nosend !== undefined ? isTrueBoolean(args.nosend) : undefined,
@@ -960,9 +960,9 @@ export class SlashCommandHandler {
             toastr.error(ex.message);
         }
     }
-    deleteSet(name) {
+    async deleteSet(name) {
         try {
-            this.api.deleteSet(name ?? '');
+            await this.api.deleteSet(name ?? '');
         } catch (ex) {
             toastr.error(ex.message);
         }
