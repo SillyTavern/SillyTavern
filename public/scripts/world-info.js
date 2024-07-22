@@ -1875,7 +1875,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
                     Trigger %
                 </small>
             </div>`;
-            const mappedEntryBlocksPromises = page.map(async entry => await getWorldEntry(name, data, entry)).filter(x => x);
+            const mappedEntryBlocksPromises = page.map(entry => getWorldEntry(name, data, entry)).filter(x => x);
             const blocks = await Promise.all(mappedEntryBlocksPromises);
             const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
             if (!isCustomOrder) {
@@ -3284,7 +3284,7 @@ async function saveWorldInfo(name, data, immediately = false) {
     }
 
     // Update cache immediately, so any future call can pull from this
-    worldInfoCache.set(name, structuredClone(data));
+    worldInfoCache.set(name, data);
 
     if (immediately) {
         return await _save(name, data);
