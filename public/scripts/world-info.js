@@ -2899,7 +2899,7 @@ async function getWorldEntry(name, data, entry) {
         .prop('selected', true)
         .trigger('input');
 
-    await saveWorldInfo(name, data);
+    saveWorldInfo(name, data);
 
     // exclude recursion
     const excludeRecursionInput = template.find('input[name="exclude_recursion"]');
