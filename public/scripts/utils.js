@@ -271,6 +271,13 @@ export function getStringHash(str, seed = 0) {
 }
 
 /**
+ * Map of debounced functions to their timers.
+ * Weak map is used to avoid memory leaks.
+ * @type {WeakMap<function, any>}
+ */
+const debounceMap = new WeakMap();
+
+/**
  * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed since the last time the debounced function was invoked.
  * @param {function} func The function to debounce.
  * @param {debounce_timeout|number} [timeout=debounce_timeout.default] The timeout based on the common enum values, or in milliseconds.
@@ -278,10 +285,26 @@ export function getStringHash(str, seed = 0) {
  */
 export function debounce(func, timeout = debounce_timeout.standard) {
     let timer;
-    return (...args) => {
+    let fn = (...args) => {
         clearTimeout(timer);
         timer = setTimeout(() => { func.apply(this, args); }, timeout);
+        debounceMap.set(func, timer);
+        debounceMap.set(fn, timer);
     };
+
+    return fn;
+}
+
+/**
+ * Cancels a scheduled debounced function.
+ * Does nothing if the function is not debounced or not scheduled.
+ * @param {function} func The function to cancel. Either the original or the debounced function.
+ */
+export function cancelDebounce(func) {
+    if (debounceMap.has(func)) {
+        clearTimeout(debounceMap.get(func));
+        debounceMap.delete(func);
+    }
 }
 
 /**
