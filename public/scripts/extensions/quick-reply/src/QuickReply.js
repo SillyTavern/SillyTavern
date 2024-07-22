@@ -908,6 +908,7 @@ export class QuickReply {
             let lastSyntaxUpdate = 0;
             const fpsTime = 1000 / 30;
             let lastMessageValue = null;
+            let wasSyntax = null;
             const updateSyntaxLoop = ()=>{
                 const now = Date.now();
                 // fps limit
@@ -917,7 +918,8 @@ export class QuickReply {
                 // elements no longer part of the document
                 if (!messageSyntaxInner.closest('body')) return;
                 // value hasn't changed
-                if (lastMessageValue == message.value) return requestAnimationFrame(upsyn);
+                if (wasSyntax == syntax.checked && lastMessageValue == message.value) return requestAnimationFrame(updateSyntaxLoop);
+                wasSyntax = syntax.checked;
                 lastSyntaxUpdate = now;
                 lastMessageValue = message.value;
                 updateSyntax();
