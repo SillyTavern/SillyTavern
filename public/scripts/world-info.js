@@ -1848,7 +1848,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
         nextText: '>',
         formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
-        callback: function (/** @type {object[]} */ page) {
+        callback: async function (/** @type {object[]} */ page) {
             // We save costly performance by removing all events before emptying. Because we know there are no relevant event handlers reacting on removing elements
             // This prevents jQuery from actually going through all registered events on the controls for each entry when removing it
             worldEntriesList.find('*').off();
@@ -1875,7 +1875,8 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
                     Trigger %
                 </small>
             </div>`;
-            const blocks = page.map(entry => getWorldEntry(name, data, entry)).filter(x => x);
+            const mappedEntryBlocksPromises = page.map(async entry => await getWorldEntry(name, data, entry)).filter(x => x);
+            const blocks = await Promise.all(mappedEntryBlocksPromises);
             const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
             if (!isCustomOrder) {
                 blocks.forEach(block => {
@@ -2215,7 +2216,7 @@ function parseRegexFromString(input) {
     }
 }
 
-function getWorldEntry(name, data, entry) {
+async function getWorldEntry(name, data, entry) {
     if (!data.entries[entry.uid]) {
         return;
     }
@@ -2266,7 +2267,7 @@ function getWorldEntry(name, data, entry) {
                 templateResult: item => templateStyling(item, { searchStyle: true }),
                 templateSelection: item => templateStyling(item),
             });
-            input.on('change', function (_, { skipReset, noSave } = {}) {
+            input.on('change', async function (_, { skipReset, noSave } = {}) {
                 const uid = $(this).data('uid');
                 /** @type {string[]} */
                 const keys = ($(this).select2('data')).map(x => x.text);
@@ -2275,7 +2276,7 @@ function getWorldEntry(name, data, entry) {
                 if (!noSave) {
                     data.entries[uid][entryPropName] = keys;
                     setOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
-                    saveWorldInfo(name, data);
+                    await saveWorldInfo(name, data);
                 }
             });
             input.on('select2:select', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data]));
@@ -2306,14 +2307,14 @@ function getWorldEntry(name, data, entry) {
             template.find(`select[name="${entryPropName}"]`).hide();
             input.show();
 
-            input.on('input', function (_, { skipReset, noSave } = {}) {
+            input.on('input', async function (_, { skipReset, noSave } = {}) {
                 const uid = $(this).data('uid');
                 const value = String($(this).val());
                 !skipReset && resetScrollHeight(this);
                 if (!noSave) {
                     data.entries[uid][entryPropName] = splitKeywordsAndRegexes(value);
                     setOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
-                    saveWorldInfo(name, data);
+                    await saveWorldInfo(name, data);
                 }
             });
             input.val(entry[entryPropName].join(', ')).trigger('input', { skipReset: true });
@@ -2352,12 +2353,12 @@ function getWorldEntry(name, data, entry) {
         event.stopPropagation();
     });
 
-    selectiveLogicDropdown.on('input', function () {
+    selectiveLogicDropdown.on('input', async function () {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
         data.entries[uid].selectiveLogic = !isNaN(value) ? value : world_info_logic.AND_ANY;
         setOriginalDataValue(data, uid, 'selectiveLogic', data.entries[uid].selectiveLogic);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
 
     template
@@ -2372,7 +2373,7 @@ function getWorldEntry(name, data, entry) {
     // exclude characters checkbox
     const characterExclusionInput = template.find('input[name="character_exclusion"]');
     characterExclusionInput.data('uid', entry.uid);
-    characterExclusionInput.on('input', function () {
+    characterExclusionInput.on('input', async function () {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
         characterFilterLabel.text(value ? 'Exclude Character(s)' : 'Filter to Character(s)');
@@ -2406,7 +2407,7 @@ function getWorldEntry(name, data, entry) {
         }
 
         setOriginalDataValue(data, uid, 'character_filter', data.entries[uid].characterFilter);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     characterExclusionInput.prop('checked', entry.characterFilter?.isExclude ?? false).trigger('input');
 
@@ -2468,24 +2469,24 @@ function getWorldEntry(name, data, entry) {
             );
         }
         setOriginalDataValue(data, uid, 'character_filter', data.entries[uid].characterFilter);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
 
     // comment
     const commentInput = template.find('textarea[name="comment"]');
     const commentToggle = template.find('input[name="addMemo"]');
     commentInput.data('uid', entry.uid);
-    commentInput.on('input', function (_, { skipReset } = {}) {
+    commentInput.on('input', async function (_, { skipReset } = {}) {
         const uid = $(this).data('uid');
         const value = $(this).val();
         !skipReset && resetScrollHeight(this);
         data.entries[uid].comment = value;
 
         setOriginalDataValue(data, uid, 'comment', data.entries[uid].comment);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     commentToggle.data('uid', entry.uid);
-    commentToggle.on('input', function () {
+    commentToggle.on('input', async function () {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
         //console.log(value)
@@ -2493,7 +2494,7 @@ function getWorldEntry(name, data, entry) {
             .closest('.world_entry')
             .find('.commentContainer');
         data.entries[uid].addMemo = value;
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
         value ? commentContainer.show() : commentContainer.hide();
     });
 
@@ -2511,13 +2512,13 @@ function getWorldEntry(name, data, entry) {
 
     const contentInput = template.find('textarea[name="content"]');
     contentInput.data('uid', entry.uid);
-    contentInput.on('input', function (_, { skipCount } = {}) {
+    contentInput.on('input', async function (_, { skipCount } = {}) {
         const uid = $(this).data('uid');
         const value = $(this).val();
         data.entries[uid].content = value;
 
         setOriginalDataValue(data, uid, 'content', data.entries[uid].content);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
 
         if (skipCount) {
             return;
@@ -2541,13 +2542,13 @@ function getWorldEntry(name, data, entry) {
     // selective
     const selectiveInput = template.find('input[name="selective"]');
     selectiveInput.data('uid', entry.uid);
-    selectiveInput.on('input', function () {
+    selectiveInput.on('input', async function () {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
         data.entries[uid].selective = value;
 
         setOriginalDataValue(data, uid, 'selective', data.entries[uid].selective);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
 
         const keysecondary = $(this)
             .closest('.world_entry')
@@ -2576,12 +2577,12 @@ function getWorldEntry(name, data, entry) {
     /*
     const constantInput = template.find('input[name="constant"]');
     constantInput.data("uid", entry.uid);
-    constantInput.on("input", function () {
+    constantInput.on("input", async function () {
         const uid = $(this).data("uid");
         const value = $(this).prop("checked");
         data.entries[uid].constant = value;
         setOriginalDataValue(data, uid, "constant", data.entries[uid].constant);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     constantInput.prop("checked", entry.constant).trigger("input");
     */
@@ -2589,14 +2590,14 @@ function getWorldEntry(name, data, entry) {
     // order
     const orderInput = template.find('input[name="order"]');
     orderInput.data('uid', entry.uid);
-    orderInput.on('input', function () {
+    orderInput.on('input', async function () {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
 
         data.entries[uid].order = !isNaN(value) ? value : 0;
         updatePosOrdDisplay(uid);
         setOriginalDataValue(data, uid, 'insertion_order', data.entries[uid].order);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     orderInput.val(entry.order).trigger('input');
     orderInput.css('width', 'calc(3em + 15px)');
@@ -2604,13 +2605,13 @@ function getWorldEntry(name, data, entry) {
     // group
     const groupInput = template.find('input[name="group"]');
     groupInput.data('uid', entry.uid);
-    groupInput.on('input', function () {
+    groupInput.on('input', async function () {
         const uid = $(this).data('uid');
         const value = String($(this).val()).trim();
 
         data.entries[uid].group = value;
         setOriginalDataValue(data, uid, 'extensions.group', data.entries[uid].group);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     groupInput.val(entry.group ?? '').trigger('input');
     setTimeout(() => createEntryInputAutocomplete(groupInput, getInclusionGroupCallback(data), { allowMultiple: true }), 1);
@@ -2618,19 +2619,19 @@ function getWorldEntry(name, data, entry) {
     // inclusion priority
     const groupOverrideInput = template.find('input[name="groupOverride"]');
     groupOverrideInput.data('uid', entry.uid);
-    groupOverrideInput.on('input', function () {
+    groupOverrideInput.on('input', async function () {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
         data.entries[uid].groupOverride = value;
         setOriginalDataValue(data, uid, 'extensions.group_override', data.entries[uid].groupOverride);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     groupOverrideInput.prop('checked', entry.groupOverride).trigger('input');
 
     // group weight
     const groupWeightInput = template.find('input[name="groupWeight"]');
     groupWeightInput.data('uid', entry.uid);
-    groupWeightInput.on('input', function () {
+    groupWeightInput.on('input', async function () {
         const uid = $(this).data('uid');
         let value = Number($(this).val());
         const min = Number($(this).attr('min'));
@@ -2647,46 +2648,46 @@ function getWorldEntry(name, data, entry) {
 
         data.entries[uid].groupWeight = !isNaN(value) ? Math.abs(value) : 1;
         setOriginalDataValue(data, uid, 'extensions.group_weight', data.entries[uid].groupWeight);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     groupWeightInput.val(entry.groupWeight ?? DEFAULT_WEIGHT).trigger('input');
 
     // sticky
     const sticky = template.find('input[name="sticky"]');
     sticky.data('uid', entry.uid);
-    sticky.on('input', function () {
+    sticky.on('input', async function () {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
         data.entries[uid].sticky = !isNaN(value) ? value : null;
 
         setOriginalDataValue(data, uid, 'extensions.sticky', data.entries[uid].sticky);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     sticky.val(entry.sticky > 0 ? entry.sticky : '').trigger('input');
 
     // cooldown
     const cooldown = template.find('input[name="cooldown"]');
     cooldown.data('uid', entry.uid);
-    cooldown.on('input', function () {
+    cooldown.on('input', async function () {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
         data.entries[uid].cooldown = !isNaN(value) ? value : null;
 
         setOriginalDataValue(data, uid, 'extensions.cooldown', data.entries[uid].cooldown);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     cooldown.val(entry.cooldown > 0 ? entry.cooldown : '').trigger('input');
 
     // delay
     const delay = template.find('input[name="delay"]');
     delay.data('uid', entry.uid);
-    delay.on('input', function () {
+    delay.on('input', async function () {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
         data.entries[uid].delay = !isNaN(value) ? value : null;
 
         setOriginalDataValue(data, uid, 'extensions.delay', data.entries[uid].delay);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     delay.val(entry.delay > 0 ? entry.delay : '').trigger('input');
 
@@ -2699,14 +2700,14 @@ function getWorldEntry(name, data, entry) {
     const depthInput = template.find('input[name="depth"]');
     depthInput.data('uid', entry.uid);
 
-    depthInput.on('input', function () {
+    depthInput.on('input', async function () {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
 
         data.entries[uid].depth = !isNaN(value) ? value : 0;
         updatePosOrdDisplay(uid);
         setOriginalDataValue(data, uid, 'extensions.depth', data.entries[uid].depth);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     depthInput.val(entry.depth ?? DEFAULT_DEPTH).trigger('input');
     depthInput.css('width', 'calc(3em + 15px)');
@@ -2718,7 +2719,7 @@ function getWorldEntry(name, data, entry) {
 
     const probabilityInput = template.find('input[name="probability"]');
     probabilityInput.data('uid', entry.uid);
-    probabilityInput.on('input', function () {
+    probabilityInput.on('input', async function () {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
 
@@ -2734,7 +2735,7 @@ function getWorldEntry(name, data, entry) {
         }
 
         setOriginalDataValue(data, uid, 'extensions.probability', data.entries[uid].probability);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     probabilityInput.val(entry.probability).trigger('input');
     probabilityInput.css('width', 'calc(3em + 15px)');
@@ -2746,14 +2747,14 @@ function getWorldEntry(name, data, entry) {
 
     const probabilityToggle = template.find('input[name="useProbability"]');
     probabilityToggle.data('uid', entry.uid);
-    probabilityToggle.on('input', function () {
+    probabilityToggle.on('input', async function () {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
         data.entries[uid].useProbability = value;
         const probabilityContainer = $(this)
             .closest('.world_entry')
             .find('.probabilityContainer');
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
         value ? probabilityContainer.show() : probabilityContainer.hide();
 
         if (value && data.entries[uid].probability === null) {
@@ -2782,7 +2783,7 @@ function getWorldEntry(name, data, entry) {
         // Prevent closing the drawer on clicking the input
         event.stopPropagation();
     });
-    positionInput.on('input', function () {
+    positionInput.on('input', async function () {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
         data.entries[uid].position = !isNaN(value) ? value : 0;
@@ -2804,7 +2805,7 @@ function getWorldEntry(name, data, entry) {
         // Write the original value as extensions field
         setOriginalDataValue(data, uid, 'extensions.position', data.entries[uid].position);
         setOriginalDataValue(data, uid, 'extensions.role', data.entries[uid].role);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
 
     const roleValue = entry.position === world_info_position.atDepth ? String(entry.role ?? extension_prompt_roles.SYSTEM) : '';
@@ -2820,12 +2821,12 @@ function getWorldEntry(name, data, entry) {
     /*
     const disableInput = template.find('input[name="disable"]');
     disableInput.data("uid", entry.uid);
-    disableInput.on("input", function () {
+    disableInput.on("input", async function () {
         const uid = $(this).data("uid");
         const value = $(this).prop("checked");
         data.entries[uid].disable = value;
         setOriginalDataValue(data, uid, "enabled", !data.entries[uid].disable);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     disableInput.prop("checked", entry.disable).trigger("input");
     */
@@ -2837,7 +2838,7 @@ function getWorldEntry(name, data, entry) {
         // Prevent closing the drawer on clicking the input
         event.stopPropagation();
     });
-    entryStateSelector.on('input', function () {
+    entryStateSelector.on('input', async function () {
         const uid = entry.uid;
         const value = $(this).val();
         switch (value) {
@@ -2878,7 +2879,7 @@ function getWorldEntry(name, data, entry) {
                 template.addClass('disabledWIEntry');
                 break;
         }
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
 
     });
 
@@ -2898,52 +2899,52 @@ function getWorldEntry(name, data, entry) {
         .prop('selected', true)
         .trigger('input');
 
-    saveWorldInfo(name, data);
+    await saveWorldInfo(name, data);
 
     // exclude recursion
     const excludeRecursionInput = template.find('input[name="exclude_recursion"]');
     excludeRecursionInput.data('uid', entry.uid);
-    excludeRecursionInput.on('input', function () {
+    excludeRecursionInput.on('input', async function () {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
         data.entries[uid].excludeRecursion = value;
         setOriginalDataValue(data, uid, 'extensions.exclude_recursion', data.entries[uid].excludeRecursion);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     excludeRecursionInput.prop('checked', entry.excludeRecursion).trigger('input');
 
     // prevent recursion
     const preventRecursionInput = template.find('input[name="prevent_recursion"]');
     preventRecursionInput.data('uid', entry.uid);
-    preventRecursionInput.on('input', function () {
+    preventRecursionInput.on('input', async function () {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
         data.entries[uid].preventRecursion = value;
         setOriginalDataValue(data, uid, 'extensions.prevent_recursion', data.entries[uid].preventRecursion);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     preventRecursionInput.prop('checked', entry.preventRecursion).trigger('input');
 
     // delay until recursion
     const delayUntilRecursionInput = template.find('input[name="delay_until_recursion"]');
     delayUntilRecursionInput.data('uid', entry.uid);
-    delayUntilRecursionInput.on('input', function () {
+    delayUntilRecursionInput.on('input', async function () {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
         data.entries[uid].delayUntilRecursion = value;
         setOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     delayUntilRecursionInput.prop('checked', entry.delayUntilRecursion).trigger('input');
 
     // duplicate button
     const duplicateButton = template.find('.duplicate_entry_button');
     duplicateButton.data('uid', entry.uid);
-    duplicateButton.on('click', function () {
+    duplicateButton.on('click', async function () {
         const uid = $(this).data('uid');
         const entry = duplicateWorldInfoEntry(data, uid);
         if (entry) {
-            saveWorldInfo(name, data);
+            await saveWorldInfo(name, data);
             updateEditor(entry.uid);
         }
     });
@@ -2951,18 +2952,18 @@ function getWorldEntry(name, data, entry) {
     // delete button
     const deleteButton = template.find('.delete_entry_button');
     deleteButton.data('uid', entry.uid);
-    deleteButton.on('click', function () {
+    deleteButton.on('click', async function () {
         const uid = $(this).data('uid');
         deleteWorldInfoEntry(data, uid);
         deleteOriginalDataValue(data, uid);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
         updateEditor(navigation_option.previous);
     });
 
     // scan depth
     const scanDepthInput = template.find('input[name="scanDepth"]');
     scanDepthInput.data('uid', entry.uid);
-    scanDepthInput.on('input', function () {
+    scanDepthInput.on('input', async function () {
         const uid = $(this).data('uid');
         const isEmpty = $(this).val() === '';
         const value = Number($(this).val());
@@ -2982,59 +2983,59 @@ function getWorldEntry(name, data, entry) {
 
         data.entries[uid].scanDepth = !isEmpty && !isNaN(value) && value >= 0 && value <= MAX_SCAN_DEPTH ? Math.floor(value) : null;
         setOriginalDataValue(data, uid, 'extensions.scan_depth', data.entries[uid].scanDepth);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     scanDepthInput.val(entry.scanDepth ?? null).trigger('input');
 
     // case sensitive select
     const caseSensitiveSelect = template.find('select[name="caseSensitive"]');
     caseSensitiveSelect.data('uid', entry.uid);
-    caseSensitiveSelect.on('input', function () {
+    caseSensitiveSelect.on('input', async function () {
         const uid = $(this).data('uid');
         const value = $(this).val();
 
         data.entries[uid].caseSensitive = value === 'null' ? null : value === 'true';
         setOriginalDataValue(data, uid, 'extensions.case_sensitive', data.entries[uid].caseSensitive);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     caseSensitiveSelect.val((entry.caseSensitive === null || entry.caseSensitive === undefined) ? 'null' : entry.caseSensitive ? 'true' : 'false').trigger('input');
 
     // match whole words select
     const matchWholeWordsSelect = template.find('select[name="matchWholeWords"]');
     matchWholeWordsSelect.data('uid', entry.uid);
-    matchWholeWordsSelect.on('input', function () {
+    matchWholeWordsSelect.on('input', async function () {
         const uid = $(this).data('uid');
         const value = $(this).val();
 
         data.entries[uid].matchWholeWords = value === 'null' ? null : value === 'true';
         setOriginalDataValue(data, uid, 'extensions.match_whole_words', data.entries[uid].matchWholeWords);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     matchWholeWordsSelect.val((entry.matchWholeWords === null || entry.matchWholeWords === undefined) ? 'null' : entry.matchWholeWords ? 'true' : 'false').trigger('input');
 
     // use group scoring select
     const useGroupScoringSelect = template.find('select[name="useGroupScoring"]');
     useGroupScoringSelect.data('uid', entry.uid);
-    useGroupScoringSelect.on('input', function () {
+    useGroupScoringSelect.on('input', async function () {
         const uid = $(this).data('uid');
         const value = $(this).val();
 
         data.entries[uid].useGroupScoring = value === 'null' ? null : value === 'true';
         setOriginalDataValue(data, uid, 'extensions.use_group_scoring', data.entries[uid].useGroupScoring);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     useGroupScoringSelect.val((entry.useGroupScoring === null || entry.useGroupScoring === undefined) ? 'null' : entry.useGroupScoring ? 'true' : 'false').trigger('input');
 
     // automation id
     const automationIdInput = template.find('input[name="automationId"]');
     automationIdInput.data('uid', entry.uid);
-    automationIdInput.on('input', function () {
+    automationIdInput.on('input', async function () {
         const uid = $(this).data('uid');
         const value = $(this).val();
 
         data.entries[uid].automationId = value;
         setOriginalDataValue(data, uid, 'extensions.automation_id', data.entries[uid].automationId);
-        saveWorldInfo(name, data);
+        await saveWorldInfo(name, data);
     });
     automationIdInput.val(entry.automationId ?? '').trigger('input');
     setTimeout(() => createEntryInputAutocomplete(automationIdInput, getAutomationIdCallback(data)), 1);
