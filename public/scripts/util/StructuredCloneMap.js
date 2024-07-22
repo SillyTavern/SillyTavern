@@ -6,6 +6,18 @@
  */
 export class StructuredCloneMap extends Map {
     /**
+     * Constructs a new StructuredCloneMap.
+     * @param {object} options - Options for the map
+     * @param {boolean} options.cloneOnGet - Whether to clone the value when getting it from the map
+     * @param {boolean} options.cloneOnSet - Whether to clone the value when setting it in the map
+     */
+    constructor({ cloneOnGet, cloneOnSet } = { cloneOnGet: true, cloneOnSet: true }) {
+        super();
+        this.cloneOnGet = cloneOnGet;
+        this.cloneOnSet = cloneOnSet;
+    }
+
+    /**
      * Adds a new element with a specified key and value to the Map. If an element with the same key already exists, the element will be updated.
      *
      * The set value will always be a deep clone of the provided value to provide consistent data storage.
@@ -15,6 +27,10 @@ export class StructuredCloneMap extends Map {
      * @returns {this} The updated map
      */
     set(key, value) {
+        if (!this.cloneOnSet) {
+            return super.set(key, value);
+        }
+
         const clonedValue = structuredClone(value);
         super.set(key, clonedValue);
         return this;
@@ -30,6 +46,10 @@ export class StructuredCloneMap extends Map {
      * @returns {V | undefined} Returns the element associated with the specified key. If no element is associated with the specified key, undefined is returned.
      */
     get(key) {
+        if (!this.cloneOnGet) {
+            return super.get(key);
+        }
+
         const value = super.get(key);
         return structuredClone(value);
     }
