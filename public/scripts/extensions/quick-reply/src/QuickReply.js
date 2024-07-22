@@ -907,12 +907,12 @@ export class QuickReply {
             let lastSyntaxUpdate = 0;
             const fpsTime = 1000 / 30;
             let lastMessageValue = null;
-            const upsyn = ()=>{
+            const updateSyntaxLoop = ()=>{
                 const now = Date.now();
                 // fps limit
-                if (now - lastSyntaxUpdate < fpsTime) return requestAnimationFrame(upsyn);
+                if (now - lastSyntaxUpdate < fpsTime) return requestAnimationFrame(updateSyntaxLoop);
                 // elements don't exist (yet?)
-                if (!messageSyntaxInner || !message)  return requestAnimationFrame(upsyn);
+                if (!messageSyntaxInner || !message)  return requestAnimationFrame(updateSyntaxLoop);
                 // elements no longer part of the document
                 if (!messageSyntaxInner.closest('body')) return;
                 // value hasn't changed
@@ -920,9 +920,9 @@ export class QuickReply {
                 lastSyntaxUpdate = now;
                 lastMessageValue = message.value;
                 updateSyntax();
-                requestAnimationFrame(upsyn);
+                requestAnimationFrame(updateSyntaxLoop);
             };
-            requestAnimationFrame(()=>upsyn());
+            requestAnimationFrame(()=>updateSyntaxLoop());
             message.style.setProperty('text-shadow', 'none', 'important');
             updateWrap();
             updateTabSize();
