@@ -408,8 +408,12 @@ export class QuickReplySet {
         if (response.ok) {
             this.unrender();
             const idx = QuickReplySet.list.indexOf(this);
-            QuickReplySet.list.splice(idx, 1);
-            this.isDeleted = true;
+            if (idx > -1) {
+                QuickReplySet.list.splice(idx, 1);
+                this.isDeleted = true;
+            } else {
+                warn(`Deleted Quick Reply Set was not found in the list of sets: ${this.name}`);
+            }
         } else {
             warn(`Failed to delete Quick Reply Set: ${this.name}`);
         }
