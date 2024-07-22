@@ -9254,6 +9254,11 @@ jQuery(async function () {
     });
     const chatElementScroll = document.getElementById('chat');
     const chatScrollHandler = function () {
+        if (power_user.waifuMode) {
+            scrollLock = true;
+            return;
+        }
+
         const scrollIsAtBottom = Math.abs(chatElementScroll.scrollHeight - chatElementScroll.clientHeight - chatElementScroll.scrollTop) < 1;
 
         // Cancel autoscroll if the user scrolls up
