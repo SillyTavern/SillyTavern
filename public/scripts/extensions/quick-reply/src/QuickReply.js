@@ -902,6 +902,7 @@ export class QuickReply {
                         `<div>${hljs.highlight(`${message.value}${message.value.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value}</div>`,
                         { childrenOnly: true },
                     );
+                    updateScrollDebounced();
                 }
             };
             let lastSyntaxUpdate = 0;
