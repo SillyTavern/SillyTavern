@@ -881,11 +881,13 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'listvar',
         callback: listVariablesCallback,
+        aliases: ['listchatvar'],
         helpString: 'List registered chat variables.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'setvar',
         callback: (args, value) => String(setLocalVariable(args.key || args.name, value, args)),
+        aliases: ['setchatvar'],
         returns: 'the set variable value',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
@@ -922,6 +924,7 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'getvar',
         callback: (args, value) => String(getLocalVariable(value, args)),
+        aliases: ['getchatvar'],
         returns: 'the variable value',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
@@ -965,6 +968,7 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'addvar',
         callback: (args, value) => String(addLocalVariable(args.key || args.name, value)),
+        aliases: ['addchatvar'],
         returns: 'the new variable value',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
@@ -1109,6 +1113,7 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'incvar',
         callback: (_, value) => String(incrementLocalVariable(value)),
+        aliases: ['incchatvar'],
         returns: 'the new variable value',
         unnamedArgumentList: [
             SlashCommandNamedArgument.fromProps({
@@ -1137,6 +1142,7 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'decvar',
         callback: (_, value) => String(decrementLocalVariable(value)),
+        aliases: ['decchatvar'],
         returns: 'the new variable value',
         unnamedArgumentList: [
             SlashCommandNamedArgument.fromProps({
@@ -1424,6 +1430,7 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'flushvar',
         callback: async (_, value) => deleteLocalVariable(value instanceof SlashCommandClosure ? (await value.execute())?.pipe : String(value)),
+        aliases: ['flushchatvar'],
         unnamedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'key',
@@ -1915,6 +1922,7 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'len',
         callback: (_, value) => String(lenValuesCallback(value)),
+        aliases: ['length'],
         returns: 'length of the provided value',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({

@@ -2797,6 +2797,10 @@ class StreamingProcessor {
     constructor(type, force_name2, timeStarted, messageAlreadyGenerated) {
         this.result = '';
         this.messageId = -1;
+        this.messageDom = null;
+        this.messageTextDom = null;
+        this.messageTimerDom = null;
+        this.sendTextarea = document.querySelector('#send_textarea');
         this.type = type;
         this.force_name2 = force_name2;
         this.isStopped = false;
@@ -2833,11 +2837,15 @@ class StreamingProcessor {
         let messageId = -1;
 
         if (this.type == 'impersonate') {
-            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
+            this.sendTextarea.value = '';
+            this.sendTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         }
         else {
             await saveReply(this.type, text, true);
             messageId = chat.length - 1;
+            this.messageDom = document.querySelector(`#chat .mes[mesid="${messageId}"]`);
+            this.messageTextDom = this.messageDom.querySelector('.mes_text');
+            this.messageTimerDom = this.messageDom.querySelector('.mes_timer');
             this.showMessageButtons(messageId);
         }
 
@@ -2869,7 +2877,8 @@ class StreamingProcessor {
         }
 
         if (isImpersonate) {
-            $('#send_textarea').val(processedText)[0].dispatchEvent(new Event('input', { bubbles: true }));
+            this.sendTextarea.value = processedText;
+            this.sendTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         }
         else {
             let currentTime = new Date();
@@ -2902,9 +2911,9 @@ class StreamingProcessor {
                 chat[messageId].is_user,
                 messageId,
             );
-            const mesText = $(`#chat .mes[mesid="${messageId}"] .mes_text`);
-            mesText.html(formattedText);
-            $(`#chat .mes[mesid="${messageId}"] .mes_timer`).text(timePassed.timerValue).attr('title', timePassed.timerTitle);
+            this.messageTextDom.innerHTML = formattedText;
+            this.messageTimerDom.textContent = timePassed.timerValue;
+            this.messageTimerDom.title = timePassed.timerTitle;
             this.setFirstSwipe(messageId);
         }
 

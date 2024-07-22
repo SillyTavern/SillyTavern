@@ -168,14 +168,14 @@ if (enableCorsProxy) {
 
         try {
             const headers = JSON.parse(JSON.stringify(req.headers));
-            delete headers['x-csrf-token'];
-            delete headers['host'];
-            delete headers['referer'];
-            delete headers['origin'];
-            delete headers['cookie'];
-            delete headers['sec-fetch-mode'];
-            delete headers['sec-fetch-site'];
-            delete headers['sec-fetch-dest'];
+            const headersToRemove = [
+                'x-csrf-token', 'host', 'referer', 'origin', 'cookie',
+                'x-forwarded-for', 'x-forwarded-protocol', 'x-forwarded-proto',
+                'x-forwarded-host', 'x-real-ip', 'sec-fetch-mode',
+                'sec-fetch-site', 'sec-fetch-dest',
+            ];
+
+            headersToRemove.forEach(header => delete headers[header]);
 
             const bodyMethods = ['POST', 'PUT', 'PATCH'];
 
