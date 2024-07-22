@@ -285,16 +285,20 @@ const debounceMap = new WeakMap();
  */
 export function debounce(func, timeout = debounce_timeout.standard) {
     let timer;
-    return (...args) => {
+    let fn = (...args) => {
         clearTimeout(timer);
         timer = setTimeout(() => { func.apply(this, args); }, timeout);
         debounceMap.set(func, timer);
+        debounceMap.set(fn, timer);
     };
+
+    return fn;
 }
 
 /**
- * Cancels a scheduled debounced function. Does nothing if the function is not debounced or not scheduled.
- * @param {function} func The function to cancel.
+ * Cancels a scheduled debounced function.
+ * Does nothing if the function is not debounced or not scheduled.
+ * @param {function} func The function to cancel. Either the original or the debounced function.
  */
 export function cancelDebounce(func) {
     if (debounceMap.has(func)) {
