@@ -16,6 +16,7 @@ import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandE
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from './popup.js';
+import { StructuredCloneMap } from './util/StructuredCloneMap.js';
 
 export {
     world_info,
@@ -746,7 +747,8 @@ export const wi_anchor_position = {
     after: 1,
 };
 
-const worldInfoCache = new Map();
+/** @type {StructuredCloneMap<string,object>} */
+const worldInfoCache = new StructuredCloneMap();
 
 /**
  * Gets the world info based on chat messages.
@@ -3280,7 +3282,8 @@ async function saveWorldInfo(name, data, immediately) {
         return;
     }
 
-    worldInfoCache.delete(name);
+    // Update cache immediately, so any future call can pull from this
+    worldInfoCache.set(name, structuredClone(data));
 
     if (immediately) {
         return await _save(name, data);
