@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, getSanitizedFilename, checkOverwriteExistingData, getStringHash, parseStringArray } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, getSanitizedFilename, checkOverwriteExistingData, getStringHash, parseStringArray, cancelDebounce } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { isMobile } from './RossAscends-mods.js';
@@ -748,7 +748,7 @@ export const wi_anchor_position = {
 };
 
 /** @type {StructuredCloneMap<string,object>} */
-const worldInfoCache = new StructuredCloneMap();
+const worldInfoCache = new StructuredCloneMap({ cloneOnGet: true, cloneOnSet: false });
 
 /**
  * Gets the world info based on chat messages.
@@ -2898,8 +2898,6 @@ function getWorldEntry(name, data, entry) {
         .prop('selected', true)
         .trigger('input');
 
-    saveWorldInfo(name, data);
-
     // exclude recursion
     const excludeRecursionInput = template.find('input[name="exclude_recursion"]');
     excludeRecursionInput.data('uid', entry.uid);
@@ -3269,6 +3267,9 @@ function createWorldInfoEntry(_name, data) {
 }
 
 async function _save(name, data) {
+    // Prevent double saving if both immediate and debounced save are called
+    cancelDebounce(saveWorldDebounced);
+
     await fetch('/api/worldinfo/edit', {
         method: 'POST',
         headers: getRequestHeaders(),
