@@ -8961,14 +8961,6 @@ API Settings: ${JSON.stringify(getSettingsContents[getSettingsContents.main_api 
 }
 
 jQuery(async function () {
-
-    if (isMobile()) {
-        console.debug('hiding movingUI and sheldWidth toggles for mobile');
-        $('#sheldWidthToggleBlock').hide();
-        $('#movingUIModeCheckBlock').hide();
-
-    }
-
     async function doForceSave() {
         await saveSettings();
         await saveChatConditional();
