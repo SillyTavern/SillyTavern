@@ -1057,7 +1057,7 @@ function registerWorldInfoSlashCommands() {
             entry.content = content;
         }
 
-        await saveWorldInfo(file, data, true);
+        await saveWorldInfo(file, data);
         reloadEditor(file);
 
         return String(entry.uid);
@@ -1108,7 +1108,7 @@ function registerWorldInfoSlashCommands() {
             setOriginalDataValue(data, uid, originalDataKeyMap[field], entry[field]);
         }
 
-        await saveWorldInfo(file, data, true);
+        await saveWorldInfo(file, data);
         reloadEditor(file);
         return '';
     }
@@ -1934,7 +1934,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
 
         if (counter > 0) {
             toastr.info(`Backfilled ${counter} titles`);
-            await saveWorldInfo(name, data, true);
+            await saveWorldInfo(name, data);
             updateEditor(navigation_option.previous);
         }
     });
@@ -1994,7 +1994,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
 
             console.table(Object.keys(data.entries).map(uid => data.entries[uid]).map(x => ({ uid: x.uid, key: x.key.join(','), displayIndex: x.displayIndex })));
 
-            await saveWorldInfo(name, data, true);
+            await saveWorldInfo(name, data);
         },
     });
     //$("#world_popup_entries_list").disableSelection();
@@ -3277,7 +3277,7 @@ async function _save(name, data) {
     eventSource.emit(event_types.WORLDINFO_UPDATED, name, data);
 }
 
-async function saveWorldInfo(name, data, immediately) {
+async function saveWorldInfo(name, data, immediately = false) {
     if (!name || !data) {
         return;
     }
