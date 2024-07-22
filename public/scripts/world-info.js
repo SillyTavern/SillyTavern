@@ -1875,8 +1875,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
                     Trigger %
                 </small>
             </div>`;
-            const mappedEntryBlocksPromises = page.map(entry => getWorldEntry(name, data, entry)).filter(x => x);
-            const blocks = await Promise.all(mappedEntryBlocksPromises);
+            const blocks = page.map(entry => getWorldEntry(name, data, entry)).filter(x => x);
             const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
             if (!isCustomOrder) {
                 blocks.forEach(block => {
@@ -2216,7 +2215,7 @@ function parseRegexFromString(input) {
     }
 }
 
-async function getWorldEntry(name, data, entry) {
+function getWorldEntry(name, data, entry) {
     if (!data.entries[entry.uid]) {
         return;
     }
