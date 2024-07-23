@@ -1834,6 +1834,7 @@ async function runCallback(args, name) {
     }
 
     if (name instanceof SlashCommandClosure) {
+        name.breakController = new SlashCommandBreakController();
         return (await name.execute())?.pipe;
     }
 
