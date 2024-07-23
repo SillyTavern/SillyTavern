@@ -4220,6 +4220,12 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
+        else if (oai_settings.groq_model.includes('llama-3.1')) {
+            $('#openai_max_context').attr('max', max_128k);
+        }
+        else if (oai_settings.groq_model.includes('llama3-groq')) {
+            $('#openai_max_context').attr('max', max_8k);
+        }
         else if (['llama3-8b-8192', 'llama3-70b-8192', 'gemma-7b-it', 'gemma2-9b-it'].includes(oai_settings.groq_model)) {
             $('#openai_max_context').attr('max', max_8k);
         }
