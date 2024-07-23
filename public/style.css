@@ -1567,20 +1567,18 @@ body[data-stscript-style] .hljs.language-stscript {
         color: var(--ac-style-color-punctuation);
     }
 
-    .hljs-keyword {
-        color: var(--ac-style-color-variableLanguage);
-    }
-
     .hljs-comment {
         color: var(--ac-style-color-comment);
     }
 
     .hljs-abort {
         color: var(--ac-style-color-abort, #e38e23);
+        font-weight: bold;
     }
 
     .hljs-keyword {
         color: var(--ac-style-color-keyword);
+        font-weight: bold;
     }
 
     .hljs-pipe {

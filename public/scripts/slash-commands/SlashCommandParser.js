@@ -244,14 +244,25 @@ export class SlashCommandParser {
             contains: [],
         };
         const ABORT = {
-            scope: 'abort',
             begin: /\/(abort|breakpoint)/,
-            end: /\||$|:}/,
+            beginScope: 'abort',
+            end: /\||$|(?=:})/,
+            excludeEnd: false,
+            returnEnd: true,
             contains: [],
         };
         const IMPORT = {
             scope: 'command',
             begin: /\/(import)/,
+            beginScope: 'keyword',
+            end: /\||$|(?=:})/,
+            excludeEnd: false,
+            returnEnd: true,
+            contains: [],
+        };
+        const BREAK = {
+            scope: 'command',
+            begin: /\/(break)/,
             beginScope: 'keyword',
             end: /\||$|(?=:})/,
             excludeEnd: false,
@@ -290,6 +301,7 @@ export class SlashCommandParser {
             match: [
                 /\/:/,
                 getQuotedRunRegex(),
+                /\||$|(?=:})/,
             ],
             className: {
                 1: 'variable.language',
@@ -353,6 +365,14 @@ export class SlashCommandParser {
             CLOSURE,
             hljs.QUOTE_STRING_MODE,
         );
+        BREAK.contains.push(
+            hljs.BACKSLASH_ESCAPE,
+            NAMED_ARG,
+            NUMBER,
+            MACRO,
+            CLOSURE,
+            hljs.QUOTE_STRING_MODE,
+        );
         LET.contains.push(
             hljs.BACKSLASH_ESCAPE,
             NAMED_ARG,
@@ -377,6 +397,14 @@ export class SlashCommandParser {
             MACRO,
             CLOSURE,
         );
+        ABORT.contains.push(
+            hljs.BACKSLASH_ESCAPE,
+            NAMED_ARG,
+            NUMBER,
+            MACRO,
+            CLOSURE,
+            hljs.QUOTE_STRING_MODE,
+        );
         COMMAND.contains.push(
             hljs.BACKSLASH_ESCAPE,
             NAMED_ARG,
@@ -391,6 +419,7 @@ export class SlashCommandParser {
             COMMENT,
             ABORT,
             IMPORT,
+            BREAK,
             NAMED_ARG,
             NUMBER,
             MACRO,
@@ -413,6 +442,7 @@ export class SlashCommandParser {
                 COMMENT,
                 ABORT,
                 IMPORT,
+                BREAK,
                 RUN,
                 LET,
                 GETVAR,
