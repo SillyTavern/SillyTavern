@@ -681,11 +681,21 @@ export class QuickReply {
                     const lineStart = getLineStart();
                     message.selectionStart = lineStart;
                     const affectedLines = message.value.substring(lineStart, end).split('\n');
+                    const newText = affectedLines.map(it=>it.replace(/^\t/, '')).join('\n');
+                    const delta = affectedLines.join('\n').length - newText.length;
                     // document.execCommand is deprecated (and potentially buggy in some browsers) but the only way to retain undo-history
-                    document.execCommand('insertText', false, `${affectedLines.map(it=>it.replace(/^\t/, '')).join('\n')}`);
-                    message.selectionStart = start - 1;
-                    message.selectionEnd = end - affectedLines.length;
-                    message.dispatchEvent(new Event('input', { bubbles:true }));
+                    if (delta > 0) {
+                        if (newText == '') {
+                            document.execCommand('delete', false);
+                        } else {
+                            document.execCommand('insertText', false, newText);
+                        }
+                        message.selectionStart = start - (affectedLines[0].startsWith('\t') ? 1 : 0);
+                        message.selectionEnd = end - delta;
+                        message.dispatchEvent(new Event('input', { bubbles:true }));
+                    } else {
+                        message.selectionStart = start;
+                    }
                 } else if (evt.key == 'Enter' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey && !(ac.isReplaceable && ac.isActive)) {
                     // new line, keep indent
                     const start = message.selectionStart;
