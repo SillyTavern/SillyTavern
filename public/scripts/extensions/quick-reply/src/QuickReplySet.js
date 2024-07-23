@@ -241,22 +241,26 @@ export class QuickReplySet {
     }
     addQuickReplyFromText(qrJson) {
         let data;
-        try {
-            data = JSON.parse(qrJson ?? '{}');
-            delete data.id;
-        } catch {
-            // not JSON data
-        }
-        if (data) {
-            // JSON data
-            if (data.label === undefined || data.message === undefined) {
-                // not a QR
-                toastr.error('Not a QR.');
-                return;
+        if (qrJson) {
+            try {
+                data = JSON.parse(qrJson ?? '{}');
+                delete data.id;
+            } catch {
+                // not JSON data
+            }
+            if (data) {
+                // JSON data
+                if (data.label === undefined || data.message === undefined) {
+                    // not a QR
+                    toastr.error('Not a QR.');
+                    return;
+                }
+            } else {
+                // no JSON, use plaintext as QR message
+                data = { message: qrJson };
             }
         } else {
-            // no JSON, use plaintext as QR message
-            data = { message: qrJson };
+            data = {};
         }
         const newQr = this.addQuickReply(data);
         return newQr;
