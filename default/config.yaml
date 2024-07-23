@@ -3,23 +3,23 @@
 dataRoot: ./data
 # -- SERVER CONFIGURATION --
 # Listen for incoming connections
-listen: false
+listen: true
 # Server port
 port: 8000
 # -- SECURITY CONFIGURATION --
 # Toggle whitelist mode
-whitelistMode: true
+whitelistMode: false
 # Whitelist will also verify IP in X-Forwarded-For / X-Real-IP headers
-enableForwardedWhitelist: true
+enableForwardedWhitelist: false
 # Whitelist of allowed IP addresses
 whitelist:
   - 127.0.0.1
 # Toggle basic authentication for endpoints
-basicAuthMode: false
+basicAuthMode: true
 # Basic authentication credentials
 basicAuthUser:
-  username: "user"
-  password: "password"
+  username: username
+  password: password
 # Enables CORS proxy middleware
 enableCorsProxy: false
 # Enable multi-user mode
@@ -95,8 +95,3 @@ deepl:
   formality: default
 # -- SERVER PLUGIN CONFIGURATION --
 enableServerPlugins: false
-# User session timeout *in seconds* (defaults to 24 hours).
-## Set to a positive number to expire session after a certain time of inactivity
-## Set to 0 to expire session when the browser is closed
-## Set to a negative number to disable session expiration
-sessionTimeout: 86400
