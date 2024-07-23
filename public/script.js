@@ -9261,12 +9261,12 @@ jQuery(async function () {
 
         const scrollIsAtBottom = Math.abs(chatElementScroll.scrollHeight - chatElementScroll.clientHeight - chatElementScroll.scrollTop) < 1;
 
-        // Cancel autoscroll if the user scrolls up
+        // Resume autoscroll if the user scrolls to the bottom
         if (scrollLock && scrollIsAtBottom) {
             scrollLock = false;
         }
 
-        // Resume autoscroll if the user scrolls to the bottom
+        // Cancel autoscroll if the user scrolls up
         if (!scrollLock && !scrollIsAtBottom) {
             scrollLock = true;
         }
