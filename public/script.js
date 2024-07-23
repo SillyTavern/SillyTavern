@@ -9253,12 +9253,26 @@ jQuery(async function () {
         }
     });
     const chatElementScroll = document.getElementById('chat');
-    chatElementScroll.addEventListener('wheel', function () {
-        scrollLock = true;
-    }, { passive: true });
-    chatElementScroll.addEventListener('touchstart', function () {
-        scrollLock = true;
-    }, { passive: true });
+    const chatScrollHandler = function () {
+        if (power_user.waifuMode) {
+            scrollLock = true;
+            return;
+        }
+
+        const scrollIsAtBottom = Math.abs(chatElementScroll.scrollHeight - chatElementScroll.clientHeight - chatElementScroll.scrollTop) < 1;
+
+        // Resume autoscroll if the user scrolls to the bottom
+        if (scrollLock && scrollIsAtBottom) {
+            scrollLock = false;
+        }
+
+        // Cancel autoscroll if the user scrolls up
+        if (!scrollLock && !scrollIsAtBottom) {
+            scrollLock = true;
+        }
+    };
+    chatElementScroll.addEventListener('wheel', chatScrollHandler, { passive: true });
+    chatElementScroll.addEventListener('touchmove', chatScrollHandler, { passive: true });
     chatElementScroll.addEventListener('scroll', function () {
         if (is_use_scroll_holder) {
             this.scrollTop = scroll_holder;
