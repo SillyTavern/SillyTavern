@@ -722,15 +722,21 @@ export function timestampToMoment(timestamp) {
     return moment;
 }
 
+/**
+ * Parses a timestamp and returns a moment object representing the parsed date and time.
+ * @param {string|number} timestamp - The timestamp to parse. It can be a string or a number.
+ * @returns {moment.Moment} - A moment object representing the parsed date and time. If the timestamp is invalid, an invalid moment object is returned.
+ */
 function parseTimestamp(timestamp) {
     if (!timestamp) return moment.invalid();
 
     // Unix time (legacy TAI / tags)
     if (typeof timestamp === 'number' || /^\d+$/.test(timestamp)) {
-        if (isNaN(timestamp))      return moment.invalid();
-        if (!isFinite(timestamp))  return moment.invalid();
-        if (timestamp < 0)         return moment.invalid();
-        return moment(Number(timestamp));
+        const number = Number(timestamp);
+        if (isNaN(number)) return moment.invalid();
+        if (!isFinite(number)) return moment.invalid();
+        if (number < 0) return moment.invalid();
+        return moment(number);
     }
 
     let dtFmt = [];
