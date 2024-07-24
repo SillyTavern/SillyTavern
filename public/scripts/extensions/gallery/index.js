@@ -13,6 +13,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { DragAndDropHandler } from '../../dragdrop.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { translate } from '../../i18n.js';
 
 const extensionName = 'gallery';
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
@@ -228,7 +229,7 @@ $(document).ready(function () {
     $('#char-management-dropdown').append(
         $('<option>', {
             id: 'show_char_gallery',
-            text: 'Show Gallery',
+            text: translate('Show Gallery'),
         }),
     );
 });
@@ -406,7 +407,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'show-gallery
         showCharGallery();
         return '';
     },
-    helpString: 'Shows the gallery.',
+    helpString: translate('Shows the gallery.'),
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'list-gallery',
     aliases: ['lg'],
@@ -426,7 +427,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'list-gallery
             enumProvider: commonEnumProviders.characters('group'),
         }),
     ],
-    helpString: 'List images in the gallery of the current char / group or a specified char / group.',
+    helpString: translate('List images in the gallery of the current char / group or a specified char / group.'),
 }));
 
 async function listGalleryCommand(args) {

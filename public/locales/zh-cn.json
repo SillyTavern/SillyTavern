@@ -1283,6 +1283,8 @@
     "expression_label_pattern": "[表达式标签].[图像格式]",
     "Sprite set:": "表情集：",
     "Show Gallery": "展示图库",
+    "Shows the gallery.": "显示画廊。",
+    "List images in the gallery of the current char / group or a specified char / group.": "列出图库中当前角色/组或指定角色/组的图像。",
     "ext_sum_title": "总结",
     "ext_sum_with": "总结如下：",
     "ext_sum_main_api": "主要 API",
