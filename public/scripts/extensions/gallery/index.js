@@ -407,7 +407,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'show-gallery
         showCharGallery();
         return '';
     },
-    helpString: translate('Shows the gallery.'),
+    helpString: 'Shows the gallery.',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'list-gallery',
     aliases: ['lg'],
@@ -427,7 +427,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'list-gallery
             enumProvider: commonEnumProviders.characters('group'),
         }),
     ],
-    helpString: translate('List images in the gallery of the current char / group or a specified char / group.'),
+    helpString: 'List images in the gallery of the current char / group or a specified char / group.',
 }));
 
 async function listGalleryCommand(args) {
