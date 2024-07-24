@@ -4698,6 +4698,7 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
         await eventSource.emit(event_types.MESSAGE_SENT, chat_id);
         addOneMessage(message);
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, chat_id);
+        await saveChatConditional();
     }
 }
 
