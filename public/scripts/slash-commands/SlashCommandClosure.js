@@ -132,6 +132,8 @@ export class SlashCommandClosure {
      * @returns {Promise<SlashCommandClosureResult>}
      */
     async execute() {
+        // execute a copy of the closure to no taint it and its scope with the effects of its execution
+        // as this would affect the closure being called a second time (e.g., loop, multiple /run calls)
         const closure = this.getCopy();
         const gen = closure.executeDirect();
         let step;
@@ -140,17 +142,6 @@ export class SlashCommandClosure {
             if (!(step.value instanceof SlashCommandClosureResult) && this.debugController) {
                 this.debugController.isStepping = await this.debugController.awaitBreakPoint(step.value.closure, step.value.executor);
             }
-        }
-        return step.value;
-    }
-
-    async * executeGenerator() {
-        const closure = this.getCopy();
-        const gen = closure.executeDirect();
-        let step;
-        while (!step?.done) {
-            step = await gen.next(this.debugController?.testStepping(this));
-            this.debugController.isStepping = yield step.value;
         }
         return step.value;
     }
@@ -218,11 +209,15 @@ export class SlashCommandClosure {
             if (step.value instanceof SlashCommandBreakPoint) {
                 console.log('encountered SlashCommandBreakPoint');
                 if (this.debugController) {
-                    // "execute" breakpoint
+                    // resolve args
                     step = await stepper.next();
+                    // "execute" breakpoint
                     step = await stepper.next();
                     // get next executor
                     step = await stepper.next();
+                    // breakpoint has to yield before arguments are resolved if one of the
+                    // arguments is an immediate closure, otherwise you cannot step into the
+                    // immediate closure
                     const hasImmediateClosureInNamedArgs = /**@type {SlashCommandExecutor}*/(step.value)?.namedArgumentList?.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
                     const hasImmediateClosureInUnnamedArgs = /**@type {SlashCommandExecutor}*/(step.value)?.unnamedArgumentList?.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
                     if (hasImmediateClosureInNamedArgs || hasImmediateClosureInUnnamedArgs) {
@@ -234,6 +229,8 @@ export class SlashCommandClosure {
                 }
             } else if (!step.done && this.debugController?.testStepping(this)) {
                 this.debugController.isSteppingInto = false;
+                // if stepping, have to yield before arguments are resolved if one of the arguments
+                // is an immediate closure, otherwise you cannot step into the immediate closure
                 const hasImmediateClosureInNamedArgs = /**@type {SlashCommandExecutor}*/(step.value)?.namedArgumentList?.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
                 const hasImmediateClosureInUnnamedArgs = /**@type {SlashCommandExecutor}*/(step.value)?.unnamedArgumentList?.find(it=>it.value instanceof SlashCommandClosure && it.value.executeNow);
                 if (hasImmediateClosureInNamedArgs || hasImmediateClosureInUnnamedArgs) {
@@ -266,6 +263,13 @@ export class SlashCommandClosure {
         this.debugController?.up();
         return result;
     }
+    /**
+     * Generator that steps through the executor list.
+     * Every executor is split into three steps:
+     *  - before arguments are resolved
+     *  - after arguments are resolved
+     *  - after execution
+     */
     async * executeStep() {
         let done = 0;
         let isFirst = true;
@@ -274,6 +278,9 @@ export class SlashCommandClosure {
             this.debugController?.setExecutor(executor);
             this.debugController.namedArguments = undefined;
             this.debugController.unnamedArguments = undefined;
+            // yield before doing anything with this executor, the debugger might want to do
+            // something with it (e.g., breakpoint, immediate closures that need resolving
+            // or stepping into)
             yield executor;
             /**@type {import('./SlashCommand.js').NamedArguments} */
             // @ts-ignore
@@ -285,17 +292,20 @@ export class SlashCommandClosure {
                 _hasUnnamedArgument: executor.unnamedArgumentList.length > 0,
             };
             if (executor instanceof SlashCommandBreakPoint) {
-                // no execution for breakpoints, just raise counter
+                // nothing to do for breakpoints, just raise counter and yield for "before exec"
                 done++;
                 yield executor;
                 isFirst = false;
             } else if (executor instanceof SlashCommandBreak) {
+                // /break need to resolve the unnamed arg and put it into pipe, then yield
+                // for "before exec"
                 const value = await this.substituteUnnamedArgument(executor, isFirst, args);
                 done += this.executorList.length - this.executorList.indexOf(executor);
                 this.scope.pipe = value ?? this.scope.pipe;
                 yield executor;
                 isFirst = false;
             } else {
+                // regular commands do all the argument resolving logic...
                 await this.substituteNamedArguments(executor, args);
                 let value = await this.substituteUnnamedArgument(executor, isFirst, args);
 
@@ -307,7 +317,9 @@ export class SlashCommandClosure {
                     this.debugController.namedArguments = args;
                     this.debugController.unnamedArguments = value ?? '';
                 }
+                // then yield for "before exec"
                 yield executor;
+                // followed by command execution
                 executor.onProgress = (subDone, subTotal)=>this.onProgress?.(done + subDone, this.commandCount);
                 const isStepping = this.debugController?.testStepping(this);
                 if (this.debugController) {
@@ -331,6 +343,7 @@ export class SlashCommandClosure {
                     return abortResult;
                 }
             }
+            // finally, yield for "after exec"
             yield executor;
             isFirst = false;
         }
