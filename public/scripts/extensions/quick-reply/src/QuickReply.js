@@ -1483,7 +1483,7 @@ export class QuickReply {
                                     hi.classList.add('qr--highlight-secondary');
                                     hi.style.left = `${loc.left - layer.left}px`;
                                     hi.style.width = `${loc.right - loc.left}px`;
-                                    hi.style.top = `${loc.top - layer.top}px`;
+                                    hi.style.top = `${loc.top - layer.top + syntax.scrollTop}px`;
                                     hi.style.height = `${loc.bottom - loc.top}px`;
                                     syntax.append(hi);
                                 });
@@ -1623,7 +1623,7 @@ export class QuickReply {
                                         hi.classList.add('qr--highlight-secondary');
                                         hi.style.left = `${loc.left - layer.left}px`;
                                         hi.style.width = `${loc.right - loc.left}px`;
-                                        hi.style.top = `${loc.top - layer.top}px`;
+                                        hi.style.top = `${loc.top - layer.top + syntax.scrollTop}px`;
                                         hi.style.height = `${loc.bottom - loc.top}px`;
                                         syntax.append(hi);
                                     });
@@ -1680,7 +1680,7 @@ export class QuickReply {
                 }
                 hi.style.left = `${loc.left - layer.left}px`;
                 hi.style.width = `${loc.right - loc.left}px`;
-                hi.style.top = `${loc.top - layer.top}px`;
+                hi.style.top = `${loc.top - layer.top + syntax.scrollTop}px`;
                 hi.style.height = `${loc.bottom - loc.top}px`;
                 syntax.append(hi);
                 const isStepping = await this.debugController.awaitContinue();
