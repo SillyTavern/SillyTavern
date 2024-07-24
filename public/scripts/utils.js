@@ -756,7 +756,7 @@ function parseTimestamp(timestamp) {
 
     let iso8601;
     for (const x of dtFmt) {
-        let rgxMatch = timestamp.match(x.pattern)
+        let rgxMatch = timestamp.match(x.pattern);
         if (!rgxMatch) continue;
         iso8601 = x.callback(...rgxMatch);
         break;
