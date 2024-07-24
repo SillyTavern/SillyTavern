@@ -272,6 +272,8 @@ export class SlashCommandClosure {
         for (const executor of this.executorList) {
             this.onProgress?.(done, this.commandCount);
             this.debugController?.setExecutor(executor);
+            this.debugController.namedArguments = undefined;
+            this.debugController.unnamedArguments = undefined;
             yield executor;
             /**@type {import('./SlashCommand.js').NamedArguments} */
             // @ts-ignore
