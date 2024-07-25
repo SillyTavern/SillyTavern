@@ -13,6 +13,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { DragAndDropHandler } from '../../dragdrop.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { translate } from '../../i18n.js';
 
 const extensionName = 'gallery';
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
@@ -228,7 +229,7 @@ $(document).ready(function () {
     $('#char-management-dropdown').append(
         $('<option>', {
             id: 'show_char_gallery',
-            text: 'Show Gallery',
+            text: translate('Show Gallery'),
         }),
     );
 });

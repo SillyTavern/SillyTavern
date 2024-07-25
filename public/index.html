@@ -1660,16 +1660,24 @@
                                         </div>
                                         <div class="inline-drawer-content">
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_none">
-                                                <input type="radio" id="character_names_none" name="character_names" value="0">
+                                                <input type="radio" id="character_names_none" name="character_names" value="-1">
                                                 <span data-i18n="None">None</span>
-                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Except for groups and past personas. Otherwise, make sure you provide names in the prompt." data-i18n="[title]character_names_none"></i>
-                                                <small class="flexBasis100p" data-i18n="Don't add character names.">
-                                                    Don't add character names.
+                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Never add character name prefixes. May behave poorly in groups, choose with caution." data-i18n="[title]character_names_none"></i>
+                                                <small class="flexBasis100p" data-i18n="Never add character names.">
+                                                    Never add character names.
+                                                </small>
+                                            </label>
+                                            <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_default">
+                                                <input type="radio" id="character_names_default" name="character_names" value="0">
+                                                <span data-i18n="Default">Default</span>
+                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Add prefixes for groups and past personas. Otherwise, make sure you provide names in the prompt." data-i18n="[title]character_names_default"></i>
+                                                <small class="flexBasis100p" data-i18n="Don't add character names unless necessary.">
+                                                    Don't add character names unless necessary.
                                                 </small>
                                             </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_completion">
                                                 <input type="radio" id="character_names_completion" name="character_names" value="1">
-                                                <span data-i18n="Completion">Completion Object</span>
+                                                <span data-i18n="Completion Object">Completion Object</span>
                                                 <i class="right_menu_button fa-solid fa-circle-exclamation" title="Restrictions apply: only Latin alphanumerics and underscores. Doesn't work for all sources, notably: Claude, MistralAI, Google." data-i18n="[title]character_names_completion"></i>
                                                 <small class="flexBasis100p" data-i18n="Add character names to completion objects.">
                                                     Add character names to completion objects.
@@ -1816,9 +1824,9 @@
                                     <div data-newbie-hidden class="range-block" data-source="claude">
                                         <div class="wide100p">
                                             <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
-                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact autoSetHeight" name="assistant_prefill" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                             <span id="claude_assistant_impersonation_text" data-i18n="Assistant Impersonation Prefill">Assistant Impersonation Prefill</span>
-                                            <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact" name="assistant_impersonation autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact autoSetHeight" name="assistant_impersonation" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
                                         <label for="claude_use_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="claude_use_sysprompt" type="checkbox" />
@@ -2845,6 +2853,7 @@
                                         <option value="mistral-small-2402">mistral-small-2402</option>
                                         <option value="mistral-medium-2312">mistral-medium-2312</option>
                                         <option value="mistral-large-2402">mistral-large-2402</option>
+                                        <option value="mistral-large-2407">mistral-large-2407</option>
                                         <option value="codestral-2405">codestral-2405</option>
                                         <option value="codestral-mamba-2407">codestral-mamba-2407</option>
                                     </optgroup>
@@ -4285,7 +4294,7 @@
                                             <span class="fa-solid fa-circle-question note-link-span"></span>
                                         </a>
                                     </label>
-                                    <label class="checkbox_label" title="Prevents {{getvar::}} {{getglobalvar::}} macros from having literal macro-like values auto-evaluated.&NewLine;e.g. &quot;{{newline}}&quot; remains as literal string &quot;{{newline}}&quot;&NewLine;&NewLine;(This is done by internally replacing {{getvar::}} {{getglobalvar::}} macros with scoped variables.)" data-i18n="[title]Prevents {{getvar::}} {{getglobalvar::}} macros from having literal macro-like values auto-evaluated.&NewLine;e.g. &quot;{{newline}}&quot; remains as literal string &quot;{{newline}}&quot;&NewLine;&NewLine;(This is done by internally replacing {{getvar::}} {{getglobalvar::}} macros with scoped variables.)">
+                                    <label class="checkbox_label" title="Prevents {{getvar::}} {{getglobalvar::}} macros from having literal macro-like values auto-evaluated.&NewLine;e.g. &quot;{{newline}}&quot; remains as literal string &quot;{{newline}}&quot;&NewLine;&NewLine;(This is done by internally replacing {{getvar::}} {{getglobalvar::}} macros with scoped variables.)" data-i18n="[title]stscript_parser_flag_replace_getvar_label">
                                         <input id="stscript_parser_flag_replace_getvar" type="checkbox" />
                                         <span data-i18n="REPLACE_GETVAR"><small>REPLACE_GETVAR</small></span>
                                         <a href="https://docs.sillytavern.app/usage/st-script/#replace-variable-macros" target="_blank" class="notes-link">

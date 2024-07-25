@@ -216,7 +216,7 @@
     "Character Names Behavior": "Karakternamen Gedrag",
     "Helps the model to associate messages with characters.": "Helpt het model berichten aan karakters te koppelen.",
     "None": "Geen",
-    "character_names_none": "Behalve voor groepen en vroegere persona's. Zorg er anders voor dat u namen opgeeft in de prompt.",
+    "character_names_default": "Behalve voor groepen en vroegere persona's. Zorg er anders voor dat u namen opgeeft in de prompt.",
     "Don't add character names.": "Voeg geen namen van personages toe.",
     "Completion": "Voltooiingsobject",
     "character_names_completion": "Er zijn beperkingen van toepassing: alleen Latijnse alfanumerieke tekens en onderstrepingstekens. Werkt niet voor alle bronnen, met name: Claude, MistralAI, Google.",
