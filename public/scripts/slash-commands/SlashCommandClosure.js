@@ -275,9 +275,11 @@ export class SlashCommandClosure {
         let isFirst = true;
         for (const executor of this.executorList) {
             this.onProgress?.(done, this.commandCount);
-            this.debugController?.setExecutor(executor);
-            this.debugController.namedArguments = undefined;
-            this.debugController.unnamedArguments = undefined;
+            if (this.debugController) {
+                this.debugController.setExecutor(executor);
+                this.debugController.namedArguments = undefined;
+                this.debugController.unnamedArguments = undefined;
+            }
             // yield before doing anything with this executor, the debugger might want to do
             // something with it (e.g., breakpoint, immediate closures that need resolving
             // or stepping into)
