@@ -463,7 +463,7 @@ export class AutoComplete {
             }
             this.dom.append(frag);
             this.updatePosition();
-            getTopmostModalLayer().append(this.domWrap);
+            this.getLayer().append(this.domWrap);
         } else {
             this.domWrap.remove();
         }
@@ -478,8 +478,15 @@ export class AutoComplete {
         if (!this.isShowingDetails && this.isReplaceable) return this.detailsWrap.remove();
         this.detailsDom.innerHTML = '';
         this.detailsDom.append(this.selectedItem?.renderDetails() ?? 'NO ITEM');
-        getTopmostModalLayer().append(this.detailsWrap);
+        this.getLayer().append(this.detailsWrap);
         this.updateDetailsPositionDebounced();
+    }
+
+    /**
+     * @returns {HTMLElement} closest ancestor dialog or body
+     */
+    getLayer() {
+        return this.textarea.closest('dialog, body');
     }
 
 
@@ -494,7 +501,7 @@ export class AutoComplete {
             const rect = {};
             rect[AUTOCOMPLETE_WIDTH.INPUT] = this.textarea.getBoundingClientRect();
             rect[AUTOCOMPLETE_WIDTH.CHAT] = document.querySelector('#sheld').getBoundingClientRect();
-            rect[AUTOCOMPLETE_WIDTH.FULL] = getTopmostModalLayer().getBoundingClientRect();
+            rect[AUTOCOMPLETE_WIDTH.FULL] = this.getLayer().getBoundingClientRect();
             this.domWrap.style.setProperty('--bottom', `${window.innerHeight - rect[AUTOCOMPLETE_WIDTH.INPUT].top}px`);
             this.dom.style.setProperty('--bottom', `${window.innerHeight - rect[AUTOCOMPLETE_WIDTH.INPUT].top}px`);
             this.domWrap.style.bottom = `${window.innerHeight - rect[AUTOCOMPLETE_WIDTH.INPUT].top}px`;
@@ -521,7 +528,7 @@ export class AutoComplete {
                 const rect = {};
                 rect[AUTOCOMPLETE_WIDTH.INPUT] = this.textarea.getBoundingClientRect();
                 rect[AUTOCOMPLETE_WIDTH.CHAT] = document.querySelector('#sheld').getBoundingClientRect();
-                rect[AUTOCOMPLETE_WIDTH.FULL] = getTopmostModalLayer().getBoundingClientRect();
+                rect[AUTOCOMPLETE_WIDTH.FULL] = this.getLayer().getBoundingClientRect();
                 if (this.isReplaceable) {
                     this.detailsWrap.classList.remove('full');
                     const selRect = this.selectedItem.dom.children[0].getBoundingClientRect();
@@ -547,7 +554,7 @@ export class AutoComplete {
     updateFloatingPosition() {
         const location = this.getCursorPosition();
         const rect = this.textarea.getBoundingClientRect();
-        const layerRect = this.textarea.closest('dialog, body').getBoundingClientRect();
+        const layerRect = this.getLayer().getBoundingClientRect();
         // cursor is out of view -> hide
         if (location.bottom < rect.top || location.top > rect.bottom || location.left < rect.left || location.left > rect.right) {
             return this.hide();
@@ -570,7 +577,7 @@ export class AutoComplete {
     updateFloatingDetailsPosition(location = null) {
         if (!location) location = this.getCursorPosition();
         const rect = this.textarea.getBoundingClientRect();
-        const layerRect = this.textarea.closest('dialog, body').getBoundingClientRect();
+        const layerRect = this.getLayer().getBoundingClientRect();
         if (location.bottom < rect.top || location.top > rect.bottom || location.left < rect.left || location.left > rect.right) {
             return this.hide();
         }
