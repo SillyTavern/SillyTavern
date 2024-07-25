@@ -722,43 +722,54 @@ export function timestampToMoment(timestamp) {
     return moment;
 }
 
+/**
+ * Parses a timestamp and returns a moment object representing the parsed date and time.
+ * @param {string|number} timestamp - The timestamp to parse. It can be a string or a number.
+ * @returns {moment.Moment} - A moment object representing the parsed date and time. If the timestamp is invalid, an invalid moment object is returned.
+ */
 function parseTimestamp(timestamp) {
-    if (!timestamp) {
-        return moment.invalid();
-    }
+    if (!timestamp) return moment.invalid();
 
     // Unix time (legacy TAI / tags)
     if (typeof timestamp === 'number' || /^\d+$/.test(timestamp)) {
-        if (isNaN(timestamp) || !isFinite(timestamp) || timestamp < 0) {
-            return moment.invalid();
-        }
-        return moment(Number(timestamp));
+        const number = Number(timestamp);
+        if (isNaN(number)) return moment.invalid();
+        if (!isFinite(number)) return moment.invalid();
+        if (number < 0) return moment.invalid();
+        return moment(number);
     }
 
-    // ST "humanized" format pattern
-    const pattern1 = /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/;
-    const replacement1 = (match, year, month, day, hour, minute, second, millisecond) => {
-        return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}.${millisecond.padStart(3, '0')}Z`;
-    };
-    const isoTimestamp1 = timestamp.replace(pattern1, replacement1);
-    if (moment(isoTimestamp1).isValid()) {
-        return moment(isoTimestamp1);
-    }
+    let dtFmt = [];
 
-    // New format pattern: "June 19, 2023 4:13pm"
-    const pattern2 = /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i;
-    const replacement2 = (match, month, day, year, hour, minute, meridiem) => {
+    // meridiem-based format
+    const convertFromMeridiemBased = (_, month, day, year, hour, minute, meridiem) => {
         const monthNum = moment().month(month).format('MM');
         const hour24 = meridiem.toLowerCase() === 'pm' ? (parseInt(hour, 10) % 12) + 12 : parseInt(hour, 10) % 12;
         return `${year}-${monthNum}-${day.padStart(2, '0')}T${hour24.toString().padStart(2, '0')}:${minute.padStart(2, '0')}:00`;
     };
-    const isoTimestamp2 = timestamp.replace(pattern2, replacement2);
-    if (moment(isoTimestamp2).isValid()) {
-        return moment(isoTimestamp2);
+    // June 19, 2023 2:20pm
+    dtFmt.push({ callback: convertFromMeridiemBased, pattern: /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i });
+
+    // ST "humanized" format patterns
+    const convertFromHumanized = (_, year, month, day, hour, min, sec, ms) => {
+        ms = typeof ms !== 'undefined' ? `.${ms.padStart(3, '0')}` : '';
+        return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${min.padStart(2, '0')}:${sec.padStart(2, '0')}${ms}Z`;
+    };
+    // 2024-7-12@01h31m37s
+    dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2})@(\d{1,2})h(\d{1,2})m(\d{1,2})s/ });
+    // 2024-6-5 @14h 56m 50s 682ms
+    dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/ });
+
+    let iso8601;
+    for (const x of dtFmt) {
+        let rgxMatch = timestamp.match(x.pattern);
+        if (!rgxMatch) continue;
+        iso8601 = x.callback(...rgxMatch);
+        break;
     }
 
-    // If none of the patterns match, return an invalid moment object
-    return moment.invalid();
+    // If one of the patterns matched, return a valid moment object, otherwise return an invalid moment object
+    return iso8601 ? moment(iso8601) : moment.invalid();
 }
 
 /**
