@@ -1001,6 +1001,42 @@ export function retriggerFirstMessageOnEmptyChat() {
     }
 }
 
+/**
+ * Duplicates a persona.
+ * @param {string} avatarId
+ * @returns {Promise<void>}
+ */
+async function duplicatePersona(avatarId) {
+    const personaName = power_user.personas[avatarId];
+
+    if (!personaName) {
+        toastr.warning('Current avatar is not a persona');
+        return;
+    }
+
+    const confirm = await Popup.show.confirm('Are you sure you want to duplicate this persona?', personaName);
+
+    if (!confirm) {
+        console.debug('User cancelled duplicating persona');
+        return;
+    }
+
+    const newAvatarId = `${Date.now()}-${personaName.replace(/[^a-zA-Z0-9]/g, '')}.png`;
+    const descriptor = power_user.persona_descriptions[avatarId];
+
+    power_user.personas[newAvatarId] = personaName;
+    power_user.persona_descriptions[newAvatarId] = {
+        description: descriptor?.description || '',
+        position: descriptor?.position || persona_description_positions.IN_PROMPT,
+        depth: descriptor?.depth || DEFAULT_DEPTH,
+        role: descriptor?.role || DEFAULT_ROLE,
+    };
+
+    await uploadUserAvatar(getUserAvatar(avatarId), newAvatarId);
+    await getUserAvatars(true, newAvatarId);
+    saveSettingsDebounced();
+}
+
 export function initPersonas() {
     $(document).on('click', '.bind_user_name', bindUserNameToPersona);
     $(document).on('click', '.set_default_persona', setDefaultPersona);
@@ -1057,6 +1093,18 @@ export function initPersonas() {
     $(document).on('click', '#user_avatar_block .avatar_upload', function () {
         $('#avatar_upload_overwrite').val('');
         $('#avatar_upload_file').trigger('click');
+    });
+
+    $(document).on('click', '#user_avatar_block .duplicate_persona', function (e) {
+        e.stopPropagation();
+        const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
+
+        if (!avatarId) {
+            console.log('no imgfile');
+            return;
+        }
+
+        duplicatePersona(avatarId);
     });
 
     $(document).on('click', '#user_avatar_block .set_persona_image', function (e) {
