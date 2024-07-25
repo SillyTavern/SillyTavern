@@ -2818,7 +2818,7 @@ class StreamingProcessor {
     }
 
     #checkDomElements(messageId) {
-        if (this.messageDom === null) {
+        if (this.messageDom === null || this.messageTextDom === null) {
             this.messageDom = document.querySelector(`#chat .mes[mesid="${messageId}"]`);
             this.messageTextDom = this.messageDom?.querySelector('.mes_text');
             this.messageTimerDom = this.messageDom?.querySelector('.mes_timer');
@@ -2890,6 +2890,7 @@ class StreamingProcessor {
             this.sendTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         }
         else {
+            this.#checkDomElements(messageId);
             const currentTime = new Date();
             // Don't waste time calculating token count for streaming
             const currentTokenCount = isFinal && power_user.message_token_count_enabled ? getTokenCount(processedText, 0) : 0;
@@ -2921,7 +2922,6 @@ class StreamingProcessor {
                 chat[messageId].is_user,
                 messageId,
             );
-            this.#checkDomElements(messageId);
             if (this.messageTextDom instanceof HTMLElement) {
                 this.messageTextDom.innerHTML = formattedText;
             }
@@ -3215,6 +3215,23 @@ function restoreResponseLength(api, responseLength) {
 }
 
 /**
+ * Removes last message from the chat DOM.
+ * @returns {Promise<void>} Resolves when the message is removed.
+ */
+function removeLastMessage() {
+    return new Promise((resolve) => {
+        const lastMes = $('#chat').children('.mes').last();
+        if (lastMes.length === 0) {
+            return resolve();
+        }
+        lastMes.hide(animation_duration, function () {
+            $(this).remove();
+            resolve();
+        });
+    });
+}
+
+/**
  * Runs a generation using the current chat context.
  * @param {string} type Generation type
  * @param {GenerateOptions} options Generation options
@@ -3346,9 +3363,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
         else if (type !== 'quiet' && type !== 'swipe' && !isImpersonate && !dryRun && chat.length) {
             chat.length = chat.length - 1;
-            $('#chat').children().last().hide(250, function () {
-                $(this).remove();
-            });
+            await removeLastMessage();
             await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
         }
     }
