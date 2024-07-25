@@ -2800,6 +2800,8 @@ class StreamingProcessor {
         this.messageDom = null;
         this.messageTextDom = null;
         this.messageTimerDom = null;
+        this.messageTokenCounterDom = null;
+        /** @type {HTMLTextAreaElement} */
         this.sendTextarea = document.querySelector('#send_textarea');
         this.type = type;
         this.force_name2 = force_name2;
@@ -2813,6 +2815,15 @@ class StreamingProcessor {
         this.swipes = [];
         /** @type {import('./scripts/logprobs.js').TokenLogprobs[]} */
         this.messageLogprobs = [];
+    }
+
+    #checkDomElements(messageId) {
+        if (this.messageDom === null) {
+            this.messageDom = document.querySelector(`#chat .mes[mesid="${messageId}"]`);
+            this.messageTextDom = this.messageDom?.querySelector('.mes_text');
+            this.messageTimerDom = this.messageDom?.querySelector('.mes_timer');
+            this.messageTokenCounterDom = this.messageDom?.querySelector('.tokenCounterDisplay');
+        }
     }
 
     showMessageButtons(messageId) {
@@ -2843,9 +2854,7 @@ class StreamingProcessor {
         else {
             await saveReply(this.type, text, true);
             messageId = chat.length - 1;
-            this.messageDom = document.querySelector(`#chat .mes[mesid="${messageId}"]`);
-            this.messageTextDom = this.messageDom.querySelector('.mes_text');
-            this.messageTimerDom = this.messageDom.querySelector('.mes_timer');
+            this.#checkDomElements(messageId);
             this.showMessageButtons(messageId);
         }
 
@@ -2881,9 +2890,9 @@ class StreamingProcessor {
             this.sendTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         }
         else {
-            let currentTime = new Date();
+            const currentTime = new Date();
             // Don't waste time calculating token count for streaming
-            let currentTokenCount = isFinal && power_user.message_token_count_enabled ? getTokenCount(processedText, 0) : 0;
+            const currentTokenCount = isFinal && power_user.message_token_count_enabled ? getTokenCount(processedText, 0) : 0;
             const timePassed = formatGenerationTimer(this.timeStarted, currentTime, currentTokenCount);
             chat[messageId]['mes'] = processedText;
             chat[messageId]['gen_started'] = this.timeStarted;
@@ -2895,8 +2904,9 @@ class StreamingProcessor {
                 }
 
                 chat[messageId]['extra']['token_count'] = currentTokenCount;
-                const tokenCounter = $(`#chat .mes[mesid="${messageId}"] .tokenCounterDisplay`);
-                tokenCounter.text(`${currentTokenCount}t`);
+                if (this.messageTokenCounterDom instanceof HTMLElement) {
+                    this.messageTokenCounterDom.textContent = `${currentTokenCount}t`;
+                }
             }
 
             if ((this.type == 'swipe' || this.type === 'continue') && Array.isArray(chat[messageId]['swipes'])) {
@@ -2904,16 +2914,21 @@ class StreamingProcessor {
                 chat[messageId]['swipe_info'][chat[messageId]['swipe_id']] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])) };
             }
 
-            let formattedText = messageFormatting(
+            const formattedText = messageFormatting(
                 processedText,
                 chat[messageId].name,
                 chat[messageId].is_system,
                 chat[messageId].is_user,
                 messageId,
             );
-            this.messageTextDom.innerHTML = formattedText;
-            this.messageTimerDom.textContent = timePassed.timerValue;
-            this.messageTimerDom.title = timePassed.timerTitle;
+            this.#checkDomElements(messageId);
+            if (this.messageTextDom instanceof HTMLElement) {
+                this.messageTextDom.innerHTML = formattedText;
+            }
+            if (this.messageTimerDom instanceof HTMLElement) {
+                this.messageTimerDom.textContent = timePassed.timerValue;
+                this.messageTimerDom.title = timePassed.timerTitle;
+            }
             this.setFirstSwipe(messageId);
         }
 
