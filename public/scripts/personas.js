@@ -1,5 +1,4 @@
 import {
-    callPopup,
     characters,
     chat,
     chat_metadata,
@@ -22,7 +21,7 @@ import { PAGINATION_TEMPLATE, debounce, delay, download, ensureImageFormatSuppor
 import { debounce_timeout } from './constants.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { selected_group } from './group-chats.js';
-import { POPUP_TYPE, Popup } from './popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup } from './popup.js';
 
 let savePersonasPage = 0;
 const GRID_STORAGE_KEY = 'Personas_GridView';
@@ -332,15 +331,14 @@ async function changeUserAvatar(e) {
  * @returns {Promise} Promise that resolves when the persona is set
  */
 export async function createPersona(avatarId) {
-    const personaName = await callPopup('<h3>Enter a name for this persona:</h3>Cancel if you\'re just uploading an avatar.', 'input', '');
+    const personaName = await Popup.show.input('Enter a name for this persona:', 'Cancel if you\'re just uploading an avatar.', '');
 
     if (!personaName) {
         console.debug('User cancelled creating a persona');
         return;
     }
 
-    await delay(500);
-    const personaDescription = await callPopup('<h3>Enter a description for this persona:</h3>You can always add or change it later.', 'input', '', { rows: 4 });
+    const personaDescription = await Popup.show.input('Enter a description for this persona:', 'You can always add or change it later.', '', { rows: 4 });
 
     initPersona(avatarId, personaName, personaDescription);
     if (power_user.persona_show_notifications) {
@@ -349,7 +347,7 @@ export async function createPersona(avatarId) {
 }
 
 async function createDummyPersona() {
-    const personaName = await callPopup('<h3>Enter a name for this persona:</h3>', 'input', '');
+    const personaName = await Popup.show.input('Enter a name for this persona:', null);
 
     if (!personaName) {
         console.debug('User cancelled creating dummy persona');
@@ -508,15 +506,20 @@ async function bindUserNameToPersona(e) {
         return;
     }
 
+    let personaUnbind = false;
     const existingPersona = power_user.personas[avatarId];
-    const personaName = await callPopup('<h3>Enter a name for this persona:</h3>(If empty name is provided, this will unbind the name from this avatar)', 'input', existingPersona || '');
+    const personaName = await Popup.show.input(
+        'Enter a name for this persona:',
+        '(If empty name is provided, this will unbind the name from this avatar)',
+        existingPersona || '',
+        { onClose: (p) => { personaUnbind = p.value === '' && p.result === POPUP_RESULT.AFFIRMATIVE; } });
 
     // If the user clicked cancel, don't do anything
-    if (personaName === false) {
+    if (personaName === null && !personaUnbind) {
         return;
     }
 
-    if (personaName.length > 0) {
+    if (personaName && personaName.length > 0) {
         // If the user clicked ok and entered a name, bind the name to the persona
         console.log(`Binding persona ${avatarId} to name ${personaName}`);
         power_user.personas[avatarId] = personaName;
@@ -672,7 +675,7 @@ async function deleteUserAvatar(e) {
         return;
     }
 
-    const confirm = await callPopup('<h3>Are you sure you want to delete this avatar?</h3>All information associated with its linked persona will be lost.', 'confirm');
+    const confirm = await Popup.show.confirm('Are you sure you want to delete this avatar?', 'All information associated with its linked persona will be lost.');
 
     if (!confirm) {
         console.debug('User cancelled deleting avatar');
@@ -806,7 +809,7 @@ async function setDefaultPersona(e) {
     const personaName = power_user.personas[avatarId];
 
     if (avatarId === currentDefault) {
-        const confirm = await callPopup('Are you sure you want to remove the default persona?', 'confirm');
+        const confirm = await Popup.show.confirm('Are you sure you want to remove the default persona?', personaName);
 
         if (!confirm) {
             console.debug('User cancelled removing default persona');
@@ -819,8 +822,7 @@ async function setDefaultPersona(e) {
         }
         delete power_user.default_persona;
     } else {
-        const confirm = await callPopup(`<h3>Are you sure you want to set "${personaName}" as the default persona?</h3>
-        This name and avatar will be used for all new chats, as well as existing chats where the user persona is not locked.`, 'confirm');
+        const confirm = await Popup.show.confirm(`Are you sure you want to set "${personaName}" as the default persona?`, 'This name and avatar will be used for all new chats, as well as existing chats where the user persona is not locked.');
 
         if (!confirm) {
             console.debug('User cancelled setting default persona');
@@ -978,7 +980,7 @@ async function onPersonasRestoreInput(e) {
 }
 
 async function syncUserNameToPersona() {
-    const confirmation = await callPopup(`<h3>Are you sure?</h3>All user-sent messages in this chat will be attributed to ${name1}.`, 'confirm');
+    const confirmation = await Popup.show.confirm('Are you sure?', `All user-sent messages in this chat will be attributed to ${name1}.`);
 
     if (!confirmation) {
         return;
