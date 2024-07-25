@@ -217,7 +217,7 @@
     "Character Names Behavior": "角色名称行为",
     "Helps the model to associate messages with characters.": "有助于模型将消息与角色关联起来。",
     "None": "无",
-    "character_names_none": "群聊和过去的角色除外。否则，请确保在提示词中提供了姓名。",
+    "character_names_default": "群聊和过去的角色除外。否则，请确保在提示词中提供了姓名。",
     "Don't add character names.": "不添加角色名称。",
     "Completion": "补全对象",
     "character_names_completion": "适用限制：仅限拉丁字母数字和下划线。不适用于所有补全源，尤其是：Claude、MistralAI、Google。",

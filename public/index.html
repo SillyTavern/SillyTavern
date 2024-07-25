@@ -1660,16 +1660,24 @@
                                         </div>
                                         <div class="inline-drawer-content">
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_none">
-                                                <input type="radio" id="character_names_none" name="character_names" value="0">
+                                                <input type="radio" id="character_names_none" name="character_names" value="-1">
                                                 <span data-i18n="None">None</span>
-                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Except for groups and past personas. Otherwise, make sure you provide names in the prompt." data-i18n="[title]character_names_none"></i>
-                                                <small class="flexBasis100p" data-i18n="Don't add character names.">
-                                                    Don't add character names.
+                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Never add character name prefixes. May behave poorly in groups, choose with caution." data-i18n="[title]character_names_none"></i>
+                                                <small class="flexBasis100p" data-i18n="Never add character names.">
+                                                    Never add character names.
+                                                </small>
+                                            </label>
+                                            <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_default">
+                                                <input type="radio" id="character_names_default" name="character_names" value="0">
+                                                <span data-i18n="Default">Default</span>
+                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Add prefixes for groups and past personas. Otherwise, make sure you provide names in the prompt." data-i18n="[title]character_names_default"></i>
+                                                <small class="flexBasis100p" data-i18n="Don't add character names unless necessary.">
+                                                    Don't add character names unless necessary.
                                                 </small>
                                             </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_completion">
                                                 <input type="radio" id="character_names_completion" name="character_names" value="1">
-                                                <span data-i18n="Completion">Completion Object</span>
+                                                <span data-i18n="Completion Object">Completion Object</span>
                                                 <i class="right_menu_button fa-solid fa-circle-exclamation" title="Restrictions apply: only Latin alphanumerics and underscores. Doesn't work for all sources, notably: Claude, MistralAI, Google." data-i18n="[title]character_names_completion"></i>
                                                 <small class="flexBasis100p" data-i18n="Add character names to completion objects.">
                                                     Add character names to completion objects.

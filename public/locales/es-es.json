@@ -216,7 +216,7 @@
     "Character Names Behavior": "Comportamiento de los nombres de personajes",
     "Helps the model to associate messages with characters.": "Ayuda al modelo a asociar mensajes con personajes.",
     "None": "Ninguno",
-    "character_names_none": "Excepto grupos y personas pasadas. De lo contrario, asegúrese de proporcionar nombres en el mensaje.",
+    "character_names_default": "Excepto grupos y personas pasadas. De lo contrario, asegúrese de proporcionar nombres en el mensaje.",
     "Don't add character names.": "No agregues nombres de personajes.",
     "Completion": "Objeto de finalización",
     "character_names_completion": "Aplican restricciones: solo caracteres alfanuméricos latinos y guiones bajos. No funciona para todas las fuentes, en particular: Claude, MistralAI, Google.",

@@ -188,7 +188,8 @@ export const chat_completion_sources = {
 };
 
 const character_names_behavior = {
-    NONE: 0,
+    NONE: -1,
+    DEFAULT: 0,
     COMPLETION: 1,
     CONTENT: 2,
 };
@@ -300,7 +301,7 @@ const default_settings = {
     bypass_status_check: false,
     continue_prefill: false,
     function_calling: false,
-    names_behavior: character_names_behavior.NONE,
+    names_behavior: character_names_behavior.DEFAULT,
     continue_postfix: continue_postfix_types.SPACE,
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
     seed: -1,
@@ -380,7 +381,7 @@ const oai_settings = {
     bypass_status_check: false,
     continue_prefill: false,
     function_calling: false,
-    names_behavior: character_names_behavior.NONE,
+    names_behavior: character_names_behavior.DEFAULT,
     continue_postfix: continue_postfix_types.SPACE,
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
     seed: -1,
@@ -554,6 +555,8 @@ function setOpenAIMessages(chat) {
         // for groups or sendas command - prepend a character's name
         switch (oai_settings.names_behavior) {
             case character_names_behavior.NONE:
+                break;
+            case character_names_behavior.DEFAULT:
                 if (selected_group || (chat[j].force_avatar && chat[j].name !== name1 && chat[j].extra?.type !== system_message_types.NARRATOR)) {
                     content = `${chat[j].name}: ${content}`;
                 }
@@ -563,8 +566,9 @@ function setOpenAIMessages(chat) {
                     content = `${chat[j].name}: ${content}`;
                 }
                 break;
+            case character_names_behavior.COMPLETION:
+                break;
             default:
-                // No action for character_names_behavior.COMPLETION
                 break;
         }
 
@@ -3189,6 +3193,9 @@ function setNamesBehaviorControls() {
         case character_names_behavior.NONE:
             $('#character_names_none').prop('checked', true);
             break;
+        case character_names_behavior.DEFAULT:
+            $('#character_names_default').prop('checked', true);
+            break;
         case character_names_behavior.COMPLETION:
             $('#character_names_completion').prop('checked', true);
             break;
@@ -5180,6 +5187,12 @@ $(document).ready(async function () {
 
     $('#character_names_none').on('input', function () {
         oai_settings.names_behavior = character_names_behavior.NONE;
+        setNamesBehaviorControls();
+        saveSettingsDebounced();
+    });
+
+    $('#character_names_default').on('input', function () {
+        oai_settings.names_behavior = character_names_behavior.DEFAULT;
         setNamesBehaviorControls();
         saveSettingsDebounced();
     });

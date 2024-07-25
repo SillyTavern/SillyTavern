@@ -216,7 +216,7 @@
     "Character Names Behavior": "Tên nhân vật Hành vi",
     "Helps the model to associate messages with characters.": "Giúp mô hình liên kết tin nhắn với các ký tự.",
     "None": "Không",
-    "character_names_none": "Ngoại trừ các nhóm và cá tính trong quá khứ. Nếu không, hãy đảm bảo bạn cung cấp tên trong lời nhắc.",
+    "character_names_default": "Ngoại trừ các nhóm và cá tính trong quá khứ. Nếu không, hãy đảm bảo bạn cung cấp tên trong lời nhắc.",
     "Don't add character names.": "Không thêm tên nhân vật.",
     "Completion": "Đối tượng hoàn thành",
     "character_names_completion": "Áp dụng hạn chế: chỉ chữ và số Latinh và dấu gạch dưới. Không hoạt động với tất cả các nguồn, đặc biệt là: Claude, MistralAI, Google.",

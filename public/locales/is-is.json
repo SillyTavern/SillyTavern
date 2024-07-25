@@ -216,7 +216,7 @@
     "Character Names Behavior": "Hegðun persónunafna",
     "Helps the model to associate messages with characters.": "Hjálpar líkaninu að tengja skilaboð við stafi.",
     "None": "Enginn",
-    "character_names_none": "Nema hópar og fyrri persónur. Annars, vertu viss um að gefa upp nöfn í hvetjunni.",
+    "character_names_default": "Nema hópar og fyrri persónur. Annars, vertu viss um að gefa upp nöfn í hvetjunni.",
     "Don't add character names.": "Ekki bæta við persónunöfnum.",
     "Completion": "Lokunarhlutur",
     "character_names_completion": "Takmarkanir gilda: aðeins latneskar tölustafir og undirstrik. Virkar ekki fyrir allar heimildir, sérstaklega: Claude, MistralAI, Google.",
