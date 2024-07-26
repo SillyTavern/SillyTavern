@@ -110,7 +110,9 @@ function renderAlternativeTokensView() {
 
     // scroll past long prior context
     if (prefix) {
-        view.find('.logprobs_output_token').first()[0].scrollIntoView();
+        const element = view.find('.logprobs_output_token').first();
+        const scrollOffset = element.offset().top - element.parent().offset().top;
+        element.parent().scrollTop(scrollOffset);
     }
 }
 

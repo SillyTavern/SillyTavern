@@ -316,7 +316,14 @@ export class SlashCommandHandler {
                     enumProvider: localEnumProviders.qrEntries,
                 }),
             ],
-            helpString: 'Deletes a Quick Reply from the specified set. If no label is provided, the entire set is deleted.',
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'label',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    enumProvider: localEnumProviders.qrEntries,
+                }),
+            ],
+            helpString: 'Deletes a Quick Reply from the specified set. (Label must be provided via named or unnamed argument)',
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-contextadd',
             callback: (args, name) => {

@@ -7,6 +7,10 @@
         width: unset;
     }
 
+    #sheldWidthToggleBlock {
+        display: none;
+    }
+
     .bg_button {
         font-size: 15px;
     }

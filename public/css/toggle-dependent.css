@@ -28,6 +28,10 @@ body.hideChatAvatars .mesAvatarWrapper .avatar {
     display: none !important;
 }
 
+body.hideChatAvatars .last_mes {
+    padding-bottom: 40px !important;
+}
+
 body.square-avatars .avatar,
 body.square-avatars .avatar img {
     border-radius: var(--avatar-base-border-radius) !important;

@@ -97,9 +97,9 @@ class SystemTtsProvider {
 
         return `<p>Uses the voices provided by your operating system</p>
         <label for="system_tts_rate">Rate: <span id="system_tts_rate_output"></span></label>
-        <input id="system_tts_rate" type="range" value="${this.defaultSettings.rate}" min="0.5" max="2" step="0.1" />
+        <input id="system_tts_rate" type="range" value="${this.defaultSettings.rate}" min="0.1" max="2" step="0.01" />
         <label for="system_tts_pitch">Pitch: <span id="system_tts_pitch_output"></span></label>
-        <input id="system_tts_pitch" type="range" value="${this.defaultSettings.pitch}" min="0" max="2" step="0.1" />`;
+        <input id="system_tts_pitch" type="range" value="${this.defaultSettings.pitch}" min="0" max="2" step="0.01" />`;
     }
 
     onSettingsChange() {
@@ -147,7 +147,7 @@ class SystemTtsProvider {
 
         // Trigger updates
         $('#system_tts_rate').on('input', () => { this.onSettingsChange(); });
-        $('#system_tts_rate').on('input', () => { this.onSettingsChange(); });
+        $('#system_tts_pitch').on('input', () => { this.onSettingsChange(); });
 
         $('#system_tts_pitch_output').text(this.settings.pitch);
         $('#system_tts_rate_output').text(this.settings.rate);
@@ -198,8 +198,8 @@ class SystemTtsProvider {
         const text = getPreviewString(voice.lang);
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.voice = voice;
-        utterance.rate = 1;
-        utterance.pitch = 1;
+        utterance.rate = this.settings.rate || 1;
+        utterance.pitch = this.settings.pitch || 1;
         speechSynthesis.speak(utterance);
     }
 

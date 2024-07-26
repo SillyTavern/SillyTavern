@@ -553,13 +553,13 @@
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
-                                            <div class="justifyLeft" data-i18n="NSFW">NSFW</div>
+                                            <div class="justifyLeft" data-i18n="Auxiliary">Auxiliary</div>
                                             <div class="wide100p">
                                                 <textarea id="nsfw_prompt_quick_edit_textarea" class="text_pole textarea_compact autoSetHeight" rows="6" placeholder="&mdash;" data-pm-prompt="nsfw"></textarea>
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
-                                            <div class="justifyLeft" data-i18n="Jailbreak">Jailbreak</div>
+                                            <div class="justifyLeft" data-i18n="Post-History Instructions">Post-History Instructions</div>
                                             <div class="wide100p">
                                                 <textarea id="jailbreak_prompt_quick_edit_textarea" class="text_pole textarea_compact autoSetHeight" rows="6" placeholder="&mdash;" data-pm-prompt="jailbreak"></textarea>
                                             </div>
@@ -1660,16 +1660,24 @@
                                         </div>
                                         <div class="inline-drawer-content">
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_none">
-                                                <input type="radio" id="character_names_none" name="character_names" value="0">
+                                                <input type="radio" id="character_names_none" name="character_names" value="-1">
                                                 <span data-i18n="None">None</span>
-                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Except for groups and past personas. Otherwise, make sure you provide names in the prompt." data-i18n="[title]character_names_none"></i>
-                                                <small class="flexBasis100p" data-i18n="Don't add character names.">
-                                                    Don't add character names.
+                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Never add character name prefixes. May behave poorly in groups, choose with caution." data-i18n="[title]character_names_none"></i>
+                                                <small class="flexBasis100p" data-i18n="Never add character names.">
+                                                    Never add character names.
+                                                </small>
+                                            </label>
+                                            <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_default">
+                                                <input type="radio" id="character_names_default" name="character_names" value="0">
+                                                <span data-i18n="Default">Default</span>
+                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Add prefixes for groups and past personas. Otherwise, make sure you provide names in the prompt." data-i18n="[title]character_names_default"></i>
+                                                <small class="flexBasis100p" data-i18n="Don't add character names unless necessary.">
+                                                    Don't add character names unless necessary.
                                                 </small>
                                             </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_completion">
                                                 <input type="radio" id="character_names_completion" name="character_names" value="1">
-                                                <span data-i18n="Completion">Completion Object</span>
+                                                <span data-i18n="Completion Object">Completion Object</span>
                                                 <i class="right_menu_button fa-solid fa-circle-exclamation" title="Restrictions apply: only Latin alphanumerics and underscores. Doesn't work for all sources, notably: Claude, MistralAI, Google." data-i18n="[title]character_names_completion"></i>
                                                 <small class="flexBasis100p" data-i18n="Add character names to completion objects.">
                                                     Add character names to completion objects.
@@ -1816,9 +1824,9 @@
                                     <div data-newbie-hidden class="range-block" data-source="claude">
                                         <div class="wide100p">
                                             <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
-                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact autoSetHeight" name="assistant_prefill" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                             <span id="claude_assistant_impersonation_text" data-i18n="Assistant Impersonation Prefill">Assistant Impersonation Prefill</span>
-                                            <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact" name="assistant_impersonation autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact autoSetHeight" name="assistant_impersonation" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
                                         <label for="claude_use_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="claude_use_sysprompt" type="checkbox" />
@@ -2091,6 +2099,10 @@
                                     <h4 data-i18n="Model Providers">Model Providers</h4>
                                     <select id="openrouter_providers_text" class="openrouter_providers" multiple>
                                     </select>
+                                    <label class="checkbox_label" for="openrouter_allow_fallbacks_textgenerationwebui" title="Automatically chooses an alternative provider if chosen providers can't serve your request.">
+                                        <input id="openrouter_allow_fallbacks_textgenerationwebui" type="checkbox" />
+                                        <span data-i18n="Allow fallback providers">Allow fallback providers</span>
+                                    </label>
                                 </div>
                             </div>
                             <div data-tg-type="infermaticai" class="flex-container flexFlowColumn">
@@ -2560,6 +2572,10 @@
                                         <option value="gpt-4o">gpt-4o</option>
                                         <option value="gpt-4o-2024-05-13">gpt-4o-2024-05-13</option>
                                     </optgroup>
+                                    <optgroup label="gpt-4o-mini">
+                                        <option value="gpt-4o-mini">gpt-4o-mini</option>
+                                        <option value="gpt-4o-mini-2024-07-18">gpt-4o-mini-2024-07-18</option>
+                                    </optgroup>
                                     <optgroup label="GPT-4 Turbo">
                                         <option value="gpt-4-turbo">gpt-4-turbo</option>
                                         <option value="gpt-4-turbo-2024-04-09">gpt-4-turbo-2024-04-09</option>
@@ -2664,11 +2680,10 @@
                                     <option data-i18n="-- Connect to the API --">-- Connect to the API --</option>
                                 </select>
                             </div>
-                            <div>
-                                <h4 data-i18n="Model Providers">Model Providers</h4>
-                                <select id="openrouter_providers_chat" class="openrouter_providers" multiple>
-                                </select>
-                            </div>
+                            <label for="openrouter_use_fallback" class="checkbox_label marginTopBot5" data-i18n="[title]Allow fallback routes Description" title="Automatically chooses an alternative model if the chosen model can't serve your request.">
+                                <input id="openrouter_use_fallback" type="checkbox" />
+                                <span data-i18n="Allow fallback models">Allow fallback models</span>
+                            </label>
                             <div class="marginTopBot5">
                                 <div class="inline-drawer wide100p">
                                     <div class="inline-drawer-toggle inline-drawer-header">
@@ -2699,16 +2714,14 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="marginTopBot5">
-                                <label for="openrouter_use_fallback" class="checkbox_label">
-                                    <input id="openrouter_use_fallback" type="checkbox" />
-                                    <span data-i18n="Allow fallback routes">Allow fallback routes</span>
+                            <div>
+                                <h4 data-i18n="Model Providers">Model Providers</h4>
+                                <select id="openrouter_providers_chat" class="openrouter_providers" multiple>
+                                </select>
+                                <label class="checkbox_label marginTopBot5" for="openrouter_allow_fallbacks" title="Automatically chooses an alternative provider if chosen providers can't serve your request.">
+                                    <input id="openrouter_allow_fallbacks" type="checkbox" />
+                                    <span data-i18n="Allow fallback providers">Allow fallback providers</span>
                                 </label>
-                                <div class="toggle-description justifyLeft wide100p">
-                                    <span data-i18n="Allow fallback routes Description">
-                                        Automatically chooses an alternative model if the chosen model can't serve your request.
-                                    </span>
-                                </div>
                             </div>
                             <div class="marginTopBot5">
                                 <label for="openrouter_force_instruct" class="checkbox_label">
@@ -2821,22 +2834,28 @@
                                 <h4 data-i18n="MistralAI Model">MistralAI Model</h4>
                                 <select id="model_mistralai_select">
                                     <optgroup label="Latest">
+                                        <option value="open-mistral-nemo">open-mistral-nemo</option>
                                         <option value="open-mistral-7b">open-mistral-7b</option>
                                         <option value="open-mixtral-8x7b">open-mixtral-8x7b</option>
                                         <option value="open-mixtral-8x22b">open-mixtral-8x22b</option>
+                                        <option value="open-codestral-mamba">open-codestral-mamba</option>
                                         <option value="mistral-small-latest">mistral-small-latest</option>
                                         <option value="mistral-medium-latest">mistral-medium-latest</option>
                                         <option value="mistral-large-latest">mistral-large-latest</option>
                                         <option value="codestral-latest">codestral-latest</option>
+                                        <option value="codestral-mamba-latest">codestral-mamba-latest</option>
                                     </optgroup>
                                     <optgroup label="Sub-versions">
+                                        <option value="open-mistral-nemo-2407">open-mistral-nemo-2407</option>
                                         <option value="open-mixtral-8x22b-2404">open-mixtral-8x22b-2404</option>
                                         <option value="mistral-tiny-2312">mistral-tiny-2312</option>
                                         <option value="mistral-small-2312">mistral-small-2312</option>
                                         <option value="mistral-small-2402">mistral-small-2402</option>
                                         <option value="mistral-medium-2312">mistral-medium-2312</option>
                                         <option value="mistral-large-2402">mistral-large-2402</option>
+                                        <option value="mistral-large-2407">mistral-large-2407</option>
                                         <option value="codestral-2405">codestral-2405</option>
+                                        <option value="codestral-mamba-2407">codestral-mamba-2407</option>
                                     </optgroup>
                                 </select>
                             </div>
@@ -2852,6 +2871,11 @@
                             </div>
                             <h4 data-i18n="Groq Model">Groq Model</h4>
                             <select id="model_groq_select">
+                                <option value="llama-3.1-405b-reasoning">llama-3.1-405b-reasoning</option>
+                                <option value="llama-3.1-70b-versatile">llama-3.1-70b-versatile</option>
+                                <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                                <option value="llama3-groq-70b-8192-tool-use-preview">llama3-groq-70b-8192-tool-use-preview</option>
+                                <option value="llama3-groq-8b-8192-tool-use-preview">llama3-groq-8b-8192-tool-use-preview</option>
                                 <option value="llama3-8b-8192">llama3-8b-8192</option>
                                 <option value="llama3-70b-8192">llama3-70b-8192</option>
                                 <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
@@ -3047,9 +3071,9 @@
                                     <input id="context_use_stop_strings" type="checkbox" />
                                     <small data-i18n="Use as Stop Strings">Use as Stop Strings</small>
                                 </label>
-                                <label class="checkbox_label" title="Includes Jailbreak at the end of the prompt, if defined in the character card AND ''Prefer Char. Jailbreak'' is enabled.&#10;THIS IS NOT RECOMMENDED FOR TEXT COMPLETION MODELS, CAN LEAD TO BAD OUTPUT." data-i18n="[title]context_allow_jailbreak">
+                                <label class="checkbox_label" title="Includes Post-History Instructions at the end of the prompt, if defined in the character card AND ''Prefer Char. Instructions'' is enabled.&#10;THIS IS NOT RECOMMENDED FOR TEXT COMPLETION MODELS, CAN LEAD TO BAD OUTPUT." data-i18n="[title]context_allow_post_history_instructions">
                                     <input id="context_allow_jailbreak" type="checkbox" />
-                                    <small data-i18n="Allow Jailbreak">Allow Jailbreak</small>
+                                    <small data-i18n="Allow Post-History Instructions">Allow Post-History Instructions</small>
                                 </label>
                             </div>
 
@@ -3620,7 +3644,8 @@
                             <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand" title="Open all Entries" data-i18n="[title]Open all Entries"></div>
                             <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress" title="Close all Entries" data-i18n="[title]Close all Entries"></div>
                             <div id="world_popup_new" class="menu_button fa-solid fa-plus" title="New Entry" data-i18n="[title]New Entry"></div>
-                            <div id="world_backfill_memos" class="menu_button fa-solid fa-notes-medical" title="Fill empty Memo/Titles with Keywords" data-i18n="[title]Fill empty Memo/Titles with Keywords"></div>
+                            <div id="world_backfill_memos" class="menu_button fa-solid fa-notes-medical" title="Fill empty Memo/Titles with Keywords" data-i18n="[title]Fill empty Memo/Titles with Keywords"></div><div id="world_apply_custom_sorting" class="menu_button fa-solid fa-solid fa-arrow-down-9-1"
+                                title="Apply custom sorting as Order" data-i18n="[title]Apply custom sorting as Order"></div>
                             <div id="world_import_button" class="menu_button fa-solid fa-file-import" title="Import World Info" data-i18n="[title]Import World Info"></div>
                             <div id="world_popup_export" class="menu_button fa-solid fa-file-export" title="Export World Info" data-i18n="[title]Export World Info"></div>
                             <div id="world_duplicate" class="menu_button fa-solid fa-paste" title="Duplicate World Info" data-i18n="[title]Duplicate World Info"></div>
@@ -3942,9 +3967,9 @@
                                 <input id="prefer_character_prompt" type="checkbox" />
                                 <small data-i18n="Prefer Character Card Prompt">Prefer Char. Prompt</small>
                             </label>
-                            <label data-newbie-hidden for="prefer_character_jailbreak" title="If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." data-i18n="[title]If checked and the character card contains a jailbreak override (Post History Instruction), use that instead" class="checkbox_label">
+                            <label data-newbie-hidden for="prefer_character_jailbreak" title="If checked and the character card contains a Post-History Instructions override, use that instead." data-i18n="[title]If checked and the character card contains a Post-History Instructions override, use that instead" class="checkbox_label">
                                 <input id="prefer_character_jailbreak" type="checkbox" />
-                                <small data-i18n="Prefer Character Card Jailbreak">Prefer Char. Jailbreak</small>
+                                <small data-i18n="Prefer Character Card Instructions">Prefer Char. Instructions</small>
                             </label>
                             <label data-newbie-hidden class="checkbox_label" for="never_resize_avatars" title="Avoid cropping and resizing imported character images. When off, crop/resize to 512x768." data-i18n="[title]Avoid cropping and resizing imported character images. When off, crop/resize to 512x768">
                                 <input id="never_resize_avatars" type="checkbox" />
@@ -4259,7 +4284,7 @@
                                             <span class="fa-solid fa-circle-question note-link-span"></span>
                                         </a>
                                     </label>
-                                    <label class="checkbox_label" title="Replace all {{getvar::}} and {{getglobalvar::}} macros with scoped variables to avoid double macro substitution." data-i18n="[title]Replace all {{getvar::}} and {{getglobalvar::}} macros with scoped variables to avoid double macro substitution.">
+                                    <label class="checkbox_label" title="Prevents {{getvar::}} {{getglobalvar::}} macros from having literal macro-like values auto-evaluated.&NewLine;e.g. &quot;{{newline}}&quot; remains as literal string &quot;{{newline}}&quot;&NewLine;&NewLine;(This is done by internally replacing {{getvar::}} {{getglobalvar::}} macros with scoped variables.)" data-i18n="[title]stscript_parser_flag_replace_getvar_label">
                                         <input id="stscript_parser_flag_replace_getvar" type="checkbox" />
                                         <span data-i18n="REPLACE_GETVAR"><small>REPLACE_GETVAR</small></span>
                                         <a href="https://docs.sillytavern.app/usage/st-script/#replace-variable-macros" target="_blank" class="notes-link">
@@ -4929,8 +4954,8 @@
                     </div>
                 </div>
                 <div>
-                    <h4 data-i18n="Jailbreak">Jailbreak</h4>
-                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Jailbreak Prompt used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Jailbreak Prompt used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="50000"></textarea>
+                    <h4 data-i18n="Post-History Instructions">Post-History Instructions</h4>
+                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Post-History Instructions used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Post-History Instructions used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="50000"></textarea>
                     <div class="extension_token_counter">
                         <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="post_history_instructions_textarea">counting...</span>
                     </div>

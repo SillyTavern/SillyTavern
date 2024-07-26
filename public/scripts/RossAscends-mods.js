@@ -157,18 +157,15 @@ export function shouldSendOnEnter() {
 //Does not break old characters/chats, as the code just uses whatever timestamp exists in the chat.
 //New chats made with characters will use this new formatting.
 export function humanizedDateTime() {
-    let baseDate = new Date(Date.now());
-    let humanYear = baseDate.getFullYear();
-    let humanMonth = baseDate.getMonth() + 1;
-    let humanDate = baseDate.getDate();
-    let humanHour = (baseDate.getHours() < 10 ? '0' : '') + baseDate.getHours();
-    let humanMinute =
-        (baseDate.getMinutes() < 10 ? '0' : '') + baseDate.getMinutes();
-    let humanSecond =
-        (baseDate.getSeconds() < 10 ? '0' : '') + baseDate.getSeconds();
-    let HumanizedDateTime =
-        humanYear + '-' + humanMonth + '-' + humanDate + '@' + humanHour + 'h' + humanMinute + 'm' + humanSecond + 's';
-    return HumanizedDateTime;
+    const now = new Date(Date.now());
+    const dt = {
+        year: now.getFullYear(),  month: now.getMonth() + 1,  day: now.getDate(),
+        hour: now.getHours(),     minute: now.getMinutes(),   second: now.getSeconds(),
+    };
+    for (const key in dt) {
+        dt[key] = dt[key].toString().padStart(2, '0');
+    }
+    return `${dt.year}-${dt.month}-${dt.day}@${dt.hour}h${dt.minute}m${dt.second}s`;
 }
 
 //this is a common format version to display a timestamp on each chat message

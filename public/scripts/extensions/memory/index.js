@@ -23,8 +23,7 @@ import { debounce_timeout } from '../../constants.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
-import { resolveVariable } from '../../variables.js';
-import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { MacrosParser } from '../../macros.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
@@ -937,4 +936,6 @@ jQuery(async function () {
         helpString: 'Summarizes the given text. If no text is provided, the current chat will be summarized. Can specify the source and the prompt to use.',
         returns: ARGUMENT_TYPE.STRING,
     }));
+
+    MacrosParser.registerMacro('summary', () => getLatestMemoryFromChat(getContext().chat));
 });
