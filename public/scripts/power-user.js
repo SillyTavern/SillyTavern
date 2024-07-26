@@ -2175,7 +2175,7 @@ function validateStoryString(storyString, params) {
     validateMissingField('personality');
     validateMissingField('persona');
     validateMissingField('scenario');
-    validateMissingField('system');
+    // validateMissingField('system');
     validateMissingField('wiBefore', 'loreBefore');
     validateMissingField('wiAfter', 'loreAfter');
 
