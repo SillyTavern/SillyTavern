@@ -16,8 +16,8 @@ dialog {
     display: flex;
     flex-direction: column;
 
-    max-height: calc(100svh - 2em);
-    max-width: calc(100svw - 2em);
+    max-height: calc(100dvh - 2em);
+    max-width: calc(100dvw - 2em);
     min-height: fit-content;
 
     /* Overflow visible so elements (like toasts) can appear outside of the dialog. '.popup-body' is hiding overflow for the real content. */
@@ -103,7 +103,7 @@ body.no-blur .popup[open]::backdrop {
 
 .popup #toast-container {
     /* Fix toastr in dialogs by actually placing it at the top of the screen via transform */
-    height: 100svh;
+    height: 100dvh;
     top: calc(50% + var(--topBarBlockSize));
     left: 50%;
     transform: translate(-50%, -50%);
@@ -115,7 +115,7 @@ body.no-blur .popup[open]::backdrop {
 .popup-crop-wrap {
     margin: 10px auto;
     max-height: 75vh;
-    max-height: 75svh;
+    max-height: 75dvh;
     max-width: 100%;
 }
 

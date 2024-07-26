@@ -1,7 +1,7 @@
 #logprobsViewer {
     overflow-y: auto;
-    max-width: 90svw;
-    max-height: 90svh;
+    max-width: 90dvw;
+    max-height: 90dvh;
     min-width: 100px;
     min-height: 50px;
     border-radius: 10px;
@@ -16,7 +16,7 @@
     top: 0;
     margin: 0;
     right: unset;
-    width: calc(((100svw - var(--sheldWidth)) / 2) - 1px);
+    width: calc(((100dvw - var(--sheldWidth)) / 2) - 1px);
 }
 
 .logprobs_panel_header {

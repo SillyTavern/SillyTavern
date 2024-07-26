@@ -364,7 +364,7 @@ body.waifuMode #top-bar {
 
 body.waifuMode #sheld {
     height: 40vh;
-    height: 40svh;
+    height: 40dvh;
     top: calc(100% - 40vh);
     bottom: 0;
 }
