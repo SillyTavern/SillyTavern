@@ -3031,6 +3031,10 @@ grammarly-extension {
     opacity: 1;
 }
 
+.avatar-container .avatar-buttons .menu_button {
+    padding: 3px;
+}
+
 /* Ross should be able to handle this later */
 /*.big-avatars .avatar-buttons{
     justify-content: center;
