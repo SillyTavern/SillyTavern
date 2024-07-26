@@ -73,8 +73,8 @@ const showPopupHelper = {
     /**
      * Asynchronously displays an input popup with the given header and text, and returns the user's input.
      *
-     * @param {string} header - The header text for the popup.
-     * @param {string} text - The main text for the popup.
+     * @param {string?} header - The header text for the popup.
+     * @param {string?} text - The main text for the popup.
      * @param {string} [defaultValue=''] - The default value for the input field.
      * @param {PopupOptions} [popupOptions={}] - Options for the popup.
      * @return {Promise<string?>} A Promise that resolves with the user's input.
@@ -591,15 +591,15 @@ class PopupUtils {
     /**
      * Builds popup content with header and text below
      *
-     * @param {string} header - The header to be added to the text
-     * @param {string} text - The main text content
+     * @param {string?} header - The header to be added to the text
+     * @param {string?} text - The main text content
      */
     static BuildTextWithHeader(header, text) {
         if (!header) {
             return text;
         }
         return `<h3>${header}</h3>
-            ${text}`;
+            ${text ?? ''}`; // Convert no text to empty string
     }
 }
 
