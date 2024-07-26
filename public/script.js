@@ -6053,9 +6053,10 @@ async function getChatResult() {
         const message = getFirstMessage();
         if (message.mes) {
             chat.push(message);
-            await saveChatConditional();
             freshChat = true;
         }
+        // Make sure the chat appears on the server
+        await saveChatConditional();
     }
     await loadItemizedPrompts(getCurrentChatId());
     await printMessages();
@@ -9837,8 +9838,8 @@ jQuery(async function () {
         hideMenu();
     });
 
-    $('#newChatFromManageScreenButton').on('click', function () {
-        doNewChat({ deleteCurrentChat: false });
+    $('#newChatFromManageScreenButton').on('click', async function () {
+        await doNewChat({ deleteCurrentChat: false });
         $('#select_chat_cross').trigger('click');
     });
 
