@@ -646,7 +646,12 @@ async function lockPersona() {
             );
         }
         power_user.personas[user_avatar] = name1;
-        power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.IN_PROMPT };
+        power_user.persona_descriptions[user_avatar] = {
+            description: '',
+            position: persona_description_positions.IN_PROMPT,
+            depth: DEFAULT_DEPTH,
+            role: DEFAULT_ROLE,
+        };
     }
 
     chat_metadata['persona'] = user_avatar;
@@ -1012,7 +1017,7 @@ async function duplicatePersona(avatarId) {
     const personaName = power_user.personas[avatarId];
 
     if (!personaName) {
-        toastr.warning('Current avatar is not a persona');
+        toastr.warning('Chosen avatar is not a persona');
         return;
     }
 
@@ -1028,10 +1033,10 @@ async function duplicatePersona(avatarId) {
 
     power_user.personas[newAvatarId] = personaName;
     power_user.persona_descriptions[newAvatarId] = {
-        description: descriptor?.description || '',
-        position: descriptor?.position || persona_description_positions.IN_PROMPT,
-        depth: descriptor?.depth || DEFAULT_DEPTH,
-        role: descriptor?.role || DEFAULT_ROLE,
+        description: descriptor?.description ?? '',
+        position: descriptor?.position ?? persona_description_positions.IN_PROMPT,
+        depth: descriptor?.depth ?? DEFAULT_DEPTH,
+        role: descriptor?.role ?? DEFAULT_ROLE,
     };
 
     await uploadUserAvatar(getUserAvatar(avatarId), newAvatarId);
