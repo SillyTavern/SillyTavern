@@ -3499,16 +3499,16 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
 
     /**@type {SlashCommandClosureResult} */
     let result = null;
-    let currentProgress = '';
+    let currentProgress = 0;
     try {
         commandsFromChatInputAbortController = new SlashCommandAbortController();
         result = await executeSlashCommandsWithOptions(text, {
             abortController: commandsFromChatInputAbortController,
             onProgress: (done, total) => {
-                const newProgress = `${done / total * 100}%`;
-                if (newProgress !== currentProgress) {
+                const newProgress = done / total;
+                if (newProgress > currentProgress) {
                     currentProgress = newProgress;
-                    ta.style.setProperty('--prog', newProgress);
+                    ta.style.setProperty('--prog', `${newProgress * 100}%`);
                 }
             },
             parserFlags: options.parserFlags,
