@@ -93,5 +93,15 @@ openai:
 deepl:
   # Available options: default, more, less, prefer_more, prefer_less
   formality: default
+# -- MISTRAL API CONFIGURATION --
+mistral:
+  # Enables prefilling of the reply with the last assistant message in the prompt
+  # CAUTION: The prefix is echoed into the completion. You may want to use regex to trim it out.
+  enablePrefix: false
 # -- SERVER PLUGIN CONFIGURATION --
 enableServerPlugins: false
+# User session timeout *in seconds* (defaults to 24 hours).
+## Set to a positive number to expire session after a certain time of inactivity
+## Set to 0 to expire session when the browser is closed
+## Set to a negative number to disable session expiration
+sessionTimeout: 86400

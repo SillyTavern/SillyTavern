@@ -33,6 +33,7 @@ import {
     setCharacterName,
     setExtensionPrompt,
     setUserName,
+    stopGeneration,
     substituteParams,
     system_avatar,
     system_message_types,
@@ -94,6 +95,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'persona',
         callback: setNameCallback,
+        aliases: ['name'],
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'mode', 'The mode for persona selection. ("lookup" = search for existing persona, "temp" = create a temporary name, set a temporary name, "all" = allow both in the same command)',
@@ -109,7 +111,6 @@ export function initDefaultSlashCommands() {
             }),
         ],
         helpString: 'Selects the given persona with its name and avatar (by name or avatar url). If no matching persona exists, applies a temporary name.',
-        aliases: ['name'],
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sync',
@@ -328,6 +329,16 @@ export function initDefaultSlashCommands() {
         name: 'continue',
         callback: continueChatCallback,
         aliases: ['cont'],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'await',
+                'Whether to await for the continued generation before proceeding',
+                [ARGUMENT_TYPE.BOOLEAN],
+                false,
+                false,
+                'false',
+            ),
+        ],
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'prompt', [ARGUMENT_TYPE.STRING], false,
@@ -338,15 +349,18 @@ export function initDefaultSlashCommands() {
             Continues the last message in the chat, with an optional additional prompt.
         </div>
         <div>
+            If <code>await=true</code> named argument is passed, the command will await for the continued generation before proceeding.
+        </div>
+        <div>
             <strong>Example:</strong>
             <ul>
                 <li>
                     <pre><code>/continue</code></pre>
-                    Continues the chat with no additional prompt.
+                    Continues the chat with no additional prompt and immediately proceeds to the next command.
                 </li>
                 <li>
-                    <pre><code>/continue Let's explore this further...</code></pre>
-                    Continues the chat with the provided prompt.
+                    <pre><code>/continue await=true Let's explore this further...</code></pre>
+                    Continues the chat with the provided prompt and waits for the generation to finish.
                 </li>
             </ul>
         </div>
@@ -899,6 +913,24 @@ export function initDefaultSlashCommands() {
         helpString: 'Adds a swipe to the last chat message.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'stop',
+        callback: () => {
+            const stopped = stopGeneration();
+            return String(stopped);
+        },
+        returns: 'true/false, whether the generation was running and got stopped',
+        helpString: `
+            <div>
+                Stops the generation and any streaming if it is currently running.
+            </div>
+            <div>
+                Note: This command cannot be executed from the chat input, as sending any message or script from there is blocked during generation.
+                But it can be executed via automations or QR scripts/buttons.
+            </div>
+        `,
+        aliases: ['generate-stop'],
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'abort',
         callback: abortCallback,
         namedArgumentList: [
@@ -920,14 +952,36 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'fuzzy',
         callback: fuzzyCallback,
-        returns: 'first matching item',
+        returns: 'matching item',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'list', 'list of items to match against', [ARGUMENT_TYPE.LIST], true,
-            ),
-            new SlashCommandNamedArgument(
-                'threshold', 'fuzzy match threshold (0.0 to 1.0)', [ARGUMENT_TYPE.NUMBER], false, false, '0.4',
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'list',
+                description: 'list of items to match against',
+                acceptsMultiple: false,
+                isRequired: true,
+                typeList: [ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.VARIABLE_NAME],
+                enumProvider: commonEnumProviders.variables('all'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'threshold',
+                description: 'fuzzy match threshold (0.0 to 1.0)',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                isRequired: false,
+                defaultValue: '0.4',
+                acceptsMultiple: false,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'mode',
+                description: 'fuzzy match mode',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                defaultValue: 'first',
+                acceptsMultiple: false,
+                enumList: [
+                    new SlashCommandEnumValue('first', 'first match below the threshold', enumTypes.enum, enumIcons.default),
+                    new SlashCommandEnumValue('best', 'best match below the threshold', enumTypes.enum, enumIcons.default),
+                ],
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -943,6 +997,13 @@ export function initDefaultSlashCommands() {
             The optional <code>threshold</code> (default is 0.4) allows control over the match strictness.
             A low value (min 0.0) means the match is very strict.
             At 1.0 (max) the match is very loose and will match anything.
+        </div>
+        <div>
+            The optional <code>mode</code> argument allows to control the behavior when multiple items match the text.
+            <ul>
+                <li><code>first</code> (default) returns the first match below the threshold.</li>
+                <li><code>best</code> returns the best match below the threshold.</li>
+            </ul>
         </div>
         <div>
             The returned value passes to the next command through the pipe.
@@ -1833,7 +1894,7 @@ async function inputCallback(args, prompt) {
  * @param {FuzzyCommandArgs} args - arguments containing "list" (JSON array) and optionaly "threshold" (float between 0.0 and 1.0)
  * @param {string} searchInValue - the string where items of list are searched
  * @returns {string} - the matched item from the list
- * @typedef {{list: string, threshold: string}} FuzzyCommandArgs - arguments for /fuzzy command
+ * @typedef {{list: string, threshold: string, mode:string}} FuzzyCommandArgs - arguments for /fuzzy command
  * @example /fuzzy list=["down","left","up","right"] "he looks up" | /echo // should return "up"
  * @link https://www.fusejs.io/
  */
@@ -1863,7 +1924,7 @@ function fuzzyCallback(args, searchInValue) {
         };
         // threshold determines how strict is the match, low threshold value is very strict, at 1 (nearly?) everything matches
         if ('threshold' in args) {
-            params.threshold = parseFloat(resolveVariable(args.threshold));
+            params.threshold = parseFloat(args.threshold);
             if (isNaN(params.threshold)) {
                 console.warn('WARN: \'threshold\' argument must be a float between 0.0 and 1.0 for /fuzzy command');
                 return '';
@@ -1876,16 +1937,42 @@ function fuzzyCallback(args, searchInValue) {
             }
         }
 
-        const fuse = new Fuse([searchInValue], params);
-        // each item in the "list" is searched within "search_item", if any matches it returns the matched "item"
-        for (const searchItem of list) {
-            const result = fuse.search(searchItem);
-            if (result.length > 0) {
-                console.info('fuzzyCallback Matched: ' + searchItem);
-                return searchItem;
+        function getFirstMatch() {
+            const fuse = new Fuse([searchInValue], params);
+            // each item in the "list" is searched within "search_item", if any matches it returns the matched "item"
+            for (const searchItem of list) {
+                const result = fuse.search(searchItem);
+                console.debug('/fuzzy: result', result);
+                if (result.length > 0) {
+                    console.info('/fuzzy: first matched', searchItem);
+                    return searchItem;
+                }
             }
+
+            console.info('/fuzzy: no match');
+            return '';
         }
-        return '';
+
+        function getBestMatch() {
+            const fuse = new Fuse(list, params);
+            const result = fuse.search(searchInValue);
+            console.debug('/fuzzy: result', result);
+            if (result.length > 0) {
+                console.info('/fuzzy: best matched', result[0].item);
+                return result[0].item;
+            }
+
+            console.info('/fuzzy: no match');
+            return '';
+        }
+
+        switch (String(args.mode).trim().toLowerCase()) {
+            case 'best':
+                return getBestMatch();
+            case 'first':
+            default:
+                return getFirstMatch();
+        }
     } catch {
         console.warn('WARN: Invalid list argument provided for /fuzzy command');
         return '';
@@ -1982,6 +2069,9 @@ async function echoCallback(args, value) {
         toastr.warning(`Invalid severity provided for /echo command: ${args.severity}`);
         args.severity = null;
     }
+
+    // Make sure that the value is a string
+    value = String(value);
 
     const title = args.title ? args.title : undefined;
     const severity = args.severity ? args.severity : 'info';
@@ -2437,6 +2527,7 @@ async function triggerGenerationCallback(args, value) {
         } catch {
             console.warn('Timeout waiting for generation unlock');
             toastr.warning('Cannot run /trigger command while the reply is being generated.');
+            outerResolve(Promise.resolve(''));
             return '';
         }
 
@@ -2604,19 +2695,35 @@ async function openChat(id) {
     await reloadCurrentChat();
 }
 
-function continueChatCallback(_, prompt) {
-    setTimeout(async () => {
+async function continueChatCallback(args, prompt) {
+    const shouldAwait = isTrueBoolean(args?.await);
+
+    const outerPromise = new Promise(async (resolve, reject) => {
         try {
             await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
         } catch {
             console.warn('Timeout waiting for generation unlock');
             toastr.warning('Cannot run /continue command while the reply is being generated.');
+            return reject();
         }
 
-        // Prevent infinite recursion
-        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
-        $('#option_continue').trigger('click', { fromSlashCommand: true, additionalPrompt: prompt });
-    }, 1);
+        try {
+            // Prevent infinite recursion
+            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
+
+            const options = prompt?.trim() ? { quiet_prompt: prompt.trim(), quietToLoud: true } : {};
+            await Generate('continue', options);
+
+            resolve();
+        } catch (error) {
+            console.error('Error running /continue command:', error);
+            reject();
+        }
+    });
+
+    if (shouldAwait) {
+        await outerPromise;
+    }
 
     return '';
 }

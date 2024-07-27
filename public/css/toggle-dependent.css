@@ -14,6 +14,10 @@ body.tts .mes_narrate {
     display: inline-block;
 }
 
+body:not(.tts) #ttsExtensionNarrateAll {
+    display: none;
+}
+
 body.no-hotswap .hotswap,
 body.no-timer .mes_timer,
 body.no-timestamps .timestamp,
@@ -22,6 +26,10 @@ body.no-mesIDDisplay .mesIDDisplay,
 body.no-modelIcons .icon-svg,
 body.hideChatAvatars .mesAvatarWrapper .avatar {
     display: none !important;
+}
+
+body.hideChatAvatars .last_mes {
+    padding-bottom: 40px !important;
 }
 
 body.square-avatars .avatar,
@@ -356,7 +364,7 @@ body.waifuMode #top-bar {
 
 body.waifuMode #sheld {
     height: 40vh;
-    height: 40svh;
+    height: 40dvh;
     top: calc(100% - 40vh);
     bottom: 0;
 }

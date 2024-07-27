@@ -1,0 +1,61 @@
+<div id="tabby_downloader_popup">
+    <div>
+        <h3><strong data-i18n="">Download Model</strong>
+            <a href="https://github.com/theroyallab/async-hf-downloader" class="notes-link" target="_blank">
+                <span class="note-link-span">?</span>
+            </a>
+        </h3>
+
+        <small class="flex-container extensions_info justifyCenter">
+            Download a HuggingFace model with TabbyAPI
+        </small>
+        <small class="flex-container extensions_info justifyCenter">
+            (Requires an admin key)
+        </small>
+        <hr />
+
+        <!-- Model parameter textboxes -->
+        Repo ID
+        <div class="flex-container">
+            <input name="hf_repo_id" class="text_pole" type="text" placeholder="Ex. turboderp/Llama-3-8B-exl2" />
+        </div>
+        <div class="range-block-title justifyCenter">
+            <span data-i18n="Downloader Options">Downloader Options</span>
+            <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]Extra parameters for downloading/HuggingFace API" title="Extra parameters for downloading/HuggingFace API.&#13;If unsure, leave these blank."></div>
+        </div>
+        <div class="flex-container">
+            <div class="flex1">
+                <label for="revision">
+                    <small data-i18n="Revision">Revision</small>
+                </label>
+                <input name="revision" class="text_pole" type="text" placeholder="Ex. 6.0bpw" />
+            </div>
+            <div class="flex1">
+                <label for="folder_name">
+                    <small data-i18n="Folder Name">Output Folder Name</small>
+                </label>
+                <input name="folder_name" class="text_pole" type="text" />
+            </div>
+            <div class="flex1">
+                <label for="hf_token">
+                    <small data-i18n="HF Token">HF Token</small>
+                </label>
+                <input name="hf_token" class="text_pole" type="text" placeholder="For gated models" />
+            </div>
+        </div>
+        <div class="range-block-title justifyCenter">
+            <span data-i18n="Include Patterns">Include Patterns</span>
+            <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Glob patterns of files to include in the download." title="Glob patterns of files to include in the download.&#13;Separate each pattern by a newline."></div>
+        </div>
+        <div class="flex-container">
+            <textarea class="text_pole textarea_compact" name="tabby_download_include" placeholder="Ex. *.txt"></textarea>
+        </div>
+        <div class="range-block-title justifyCenter">
+            <span data-i18n="Exclude Patterns">Exclude Patterns</span>
+            <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Glob patterns of files to exclude in the download." title="Glob patterns of files to exclude in the download.&#13;Separate each pattern by a newline."></div>
+        </div>
+        <div class="flex-container">
+            <textarea class="text_pole textarea_compact" name="tabby_download_exclude" placeholder="Ex. *.txt"></textarea>
+        </div>
+    </div>
+</div>

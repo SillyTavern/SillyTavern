@@ -437,7 +437,7 @@ export function evaluateMacros(content, env) {
     content = replaceInstructMacros(content, env);
     content = replaceVariableMacros(content);
     content = content.replace(/{{newline}}/gi, '\n');
-    content = content.replace(/\n*{{trim}}\n*/gi, '');
+    content = content.replace(/(?:\r?\n)*{{trim}}(?:\r?\n)*/gi, '');
     content = content.replace(/{{noop}}/gi, '');
     content = content.replace(/{{input}}/gi, () => String($('#send_textarea').val()));
 
@@ -464,6 +464,7 @@ export function evaluateMacros(content, env) {
     content = content.replace(/{{firstIncludedMessageId}}/gi, () => String(getFirstIncludedMessageId() ?? ''));
     content = content.replace(/{{lastSwipeId}}/gi, () => String(getLastSwipeId() ?? ''));
     content = content.replace(/{{currentSwipeId}}/gi, () => String(getCurrentSwipeId() ?? ''));
+    content = content.replace(/{{reverse\:(.+?)}}/gi, (_, str) => Array.from(str).reverse().join(''));
 
     content = content.replace(/\{\{\/\/([\s\S]*?)\}\}/gm, '');
 

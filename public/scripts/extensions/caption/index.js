@@ -333,8 +333,9 @@ async function getCaptionForFile(file, prompt, quiet) {
         return caption;
     }
     catch (error) {
-        toastr.error('Failed to caption image.');
-        console.log(error);
+        const errorMessage = error.message || 'Unknown error';
+        toastr.error(errorMessage, "Failed to caption image.");
+        console.error(error);
         return '';
     }
     finally {

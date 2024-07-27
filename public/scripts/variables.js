@@ -859,11 +859,13 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'listvar',
         callback: listVariablesCallback,
+        aliases: ['listchatvar'],
         helpString: 'List registered chat variables.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'setvar',
         callback: (args, value) => String(setLocalVariable(args.key || args.name, value, args)),
+        aliases: ['setchatvar'],
         returns: 'the set variable value',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
@@ -900,6 +902,7 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'getvar',
         callback: (args, value) => String(getLocalVariable(value, args)),
+        aliases: ['getchatvar'],
         returns: 'the variable value',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
@@ -943,6 +946,7 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'addvar',
         callback: (args, value) => String(addLocalVariable(args.key || args.name, value)),
+        aliases: ['addchatvar'],
         returns: 'the new variable value',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
@@ -1087,6 +1091,7 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'incvar',
         callback: (_, value) => String(incrementLocalVariable(value)),
+        aliases: ['incchatvar'],
         returns: 'the new variable value',
         unnamedArgumentList: [
             SlashCommandNamedArgument.fromProps({
@@ -1115,6 +1120,7 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'decvar',
         callback: (_, value) => String(decrementLocalVariable(value)),
+        aliases: ['decchatvar'],
         returns: 'the new variable value',
         unnamedArgumentList: [
             SlashCommandNamedArgument.fromProps({
@@ -1401,6 +1407,7 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'flushvar',
         callback: async (_, value) => deleteLocalVariable(value instanceof SlashCommandClosure ? (await value.execute())?.pipe : String(value)),
+        aliases: ['flushchatvar'],
         unnamedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'key',
@@ -1870,25 +1877,36 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'len',
         callback: (_, value) => String(lenValuesCallback(value)),
+        aliases: ['length'],
         returns: 'length of the provided value',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'value',
-                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY],
                 isRequired: true,
-                enumProvider: commonEnumProviders.variables('all'),
                 forceEnum: false,
             }),
         ],
         helpString: `
             <div>
-                Gets the length of a value and passes the result down the pipe. Can use variable names.
+                Gets the length of a value and passes the result down the pipe.
+                <ul>
+                    <li>
+                        For strings, returns the number of characters.
+                    </li>
+                    <li>
+                        For lists and dictionaries, returns the number of elements.
+                    </li>
+                    <li>
+                        For numbers, returns the number of digits (including the sign and decimal point).
+                    </li>
+                </ul>
             </div>
             <div>
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code class="language-stscript">/len i</code></pre>
+                        <pre><code class="language-stscript">/len Lorem ipsum | /echo</code></pre>
                     </li>
                 </ul>
             </div>

@@ -483,7 +483,7 @@ async function sendMistralAIRequest(request, response) {
     }
 
     try {
-        const messages = convertMistralMessages(request.body.messages, request.body.model, request.body.char_name, request.body.user_name);
+        const messages = convertMistralMessages(request.body.messages, request.body.char_name, request.body.user_name);
         const controller = new AbortController();
         request.socket.removeAllListeners('close');
         request.socket.on('close', function () {
@@ -879,7 +879,7 @@ router.post('/generate', jsonParser, function (request, response) {
 
         if (Array.isArray(request.body.provider) && request.body.provider.length > 0) {
             bodyParams['provider'] = {
-                allow_fallbacks: true,
+                allow_fallbacks: request.body.allow_fallbacks ?? true,
                 order: request.body.provider ?? [],
             };
         }

@@ -168,14 +168,14 @@ if (enableCorsProxy) {
 
         try {
             const headers = JSON.parse(JSON.stringify(req.headers));
-            delete headers['x-csrf-token'];
-            delete headers['host'];
-            delete headers['referer'];
-            delete headers['origin'];
-            delete headers['cookie'];
-            delete headers['sec-fetch-mode'];
-            delete headers['sec-fetch-site'];
-            delete headers['sec-fetch-dest'];
+            const headersToRemove = [
+                'x-csrf-token', 'host', 'referer', 'origin', 'cookie',
+                'x-forwarded-for', 'x-forwarded-protocol', 'x-forwarded-proto',
+                'x-forwarded-host', 'x-real-ip', 'sec-fetch-mode',
+                'sec-fetch-site', 'sec-fetch-dest',
+            ];
+
+            headersToRemove.forEach(header => delete headers[header]);
 
             const bodyMethods = ['POST', 'PUT', 'PATCH'];
 
@@ -200,11 +200,30 @@ if (enableCorsProxy) {
     });
 }
 
+function getSessionCookieAge() {
+    // Defaults to 24 hours in seconds if not set
+    const configValue = getConfigValue('sessionTimeout', 24 * 60 * 60);
+
+    // Convert to milliseconds
+    if (configValue > 0) {
+        return configValue * 1000;
+    }
+
+    // "No expiration" is just 400 days as per RFC 6265
+    if (configValue < 0) {
+        return 400 * 24 * 60 * 60 * 1000;
+    }
+
+    // 0 means session cookie is deleted when the browser session ends
+    // (depends on the implementation of the browser)
+    return undefined;
+}
+
 app.use(cookieSession({
     name: userModule.getCookieSessionName(),
     sameSite: 'strict',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    maxAge: getSessionCookieAge(),
     secret: userModule.getCookieSecret(),
 }));
 
@@ -609,10 +628,6 @@ const postSetupTasks = async function () {
             console.warn(color.yellow('Basic Authentication is enabled, but username or password is not set or empty!'));
         }
     }
-
-    if (listen && !basicAuthMode && enableAccounts) {
-        await userModule.checkAccountsProtection();
-    }
 };
 
 /**
@@ -631,16 +646,6 @@ async function loadPlugins() {
     }
 }
 
-if (listen && !enableWhitelist && !basicAuthMode) {
-    if (getConfigValue('securityOverride', false)) {
-        console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
-    }
-    else {
-        console.error(color.red('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.'));
-        process.exit(1);
-    }
-}
-
 /**
  * Set the title of the terminal window
  * @param {string} title Desired title for the window
@@ -654,10 +659,53 @@ function setWindowTitle(title) {
     }
 }
 
+/**
+ * Prints an error message and exits the process if necessary
+ * @param {string} message The error message to print
+ * @returns {void}
+ */
+function logSecurityAlert(message) {
+    if (basicAuthMode || enableWhitelist) return; // safe!
+    console.error(color.red(message));
+    if (getConfigValue('securityOverride', false)) {
+        console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
+        return;
+    }
+    process.exit(1);
+}
+
+async function verifySecuritySettings() {
+    // Skip all security checks as listen is set to false
+    if (!listen) {
+        return;
+    }
+
+    if (!enableAccounts) {
+        logSecurityAlert('Your SillyTavern is currently insecurely open to the public. Enable whitelisting, basic authentication or user accounts.');
+    }
+
+    const users = await userModule.getAllEnabledUsers();
+    const unprotectedUsers = users.filter(x => !x.password);
+    const unprotectedAdminUsers = unprotectedUsers.filter(x => x.admin);
+
+    if (unprotectedUsers.length > 0) {
+        console.warn(color.blue('A friendly reminder that the following users are not password protected:'));
+        unprotectedUsers.map(x => `${color.yellow(x.handle)} ${color.red(x.admin ? '(admin)' : '')}`).forEach(x => console.warn(x));
+        console.log();
+        console.warn(`Consider setting a password in the admin panel or by using the ${color.blue('recover.js')} script.`);
+        console.log();
+
+        if (unprotectedAdminUsers.length > 0) {
+            logSecurityAlert('If you are not using basic authentication or whitelisting, you should set a password for all admin users.');
+        }
+    }
+}
+
 // User storage module needs to be initialized before starting the server
 userModule.initUserStorage(dataRoot)
     .then(userModule.ensurePublicDirectoriesExist)
     .then(userModule.migrateUserData)
+    .then(verifySecuritySettings)
     .then(preSetupTasks)
     .finally(() => {
         if (cliArguments.ssl) {

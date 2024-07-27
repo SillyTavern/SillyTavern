@@ -14,6 +14,7 @@ import { SettingsUi } from './src/ui/SettingsUi.js';
 
 
 const _VERBOSE = true;
+export const debug = (...msg) => _VERBOSE ? console.debug('[QR2]', ...msg) : null;
 export const log = (...msg) => _VERBOSE ? console.log('[QR2]', ...msg) : null;
 export const warn = (...msg) => _VERBOSE ? console.warn('[QR2]', ...msg) : null;
 /**
@@ -206,18 +207,18 @@ const init = async () => {
     window['quickReplyApi'] = quickReplyApi;
 };
 const finalizeInit = async () => {
-    log('executing startup');
+    debug('executing startup');
     await autoExec.handleStartup();
-    log('/executing startup');
+    debug('/executing startup');
 
-    log(`executing queue (${executeQueue.length} items)`);
+    debug(`executing queue (${executeQueue.length} items)`);
     while (executeQueue.length > 0) {
         const func = executeQueue.shift();
         await func();
     }
-    log('/executing queue');
+    debug('/executing queue');
     isReady = true;
-    log('READY');
+    debug('READY');
 };
 await init();
 
@@ -238,7 +239,7 @@ eventSource.on(event_types.CHAT_CHANGED, (...args)=>executeIfReadyElseQueue(onCh
 const onUserMessage = async () => {
     await autoExec.handleUser();
 };
-eventSource.on(event_types.USER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onUserMessage, args));
+eventSource.makeFirst(event_types.USER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onUserMessage, args));
 
 const onAiMessage = async (messageId) => {
     if (['...'].includes(chat[messageId]?.mes)) {
@@ -248,7 +249,7 @@ const onAiMessage = async (messageId) => {
 
     await autoExec.handleAi();
 };
-eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onAiMessage, args));
+eventSource.makeFirst(event_types.CHARACTER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onAiMessage, args));
 
 const onGroupMemberDraft = async () => {
     await autoExec.handleGroupMemberDraft();

@@ -18,6 +18,15 @@ module.exports = {
             },
         },
         {
+            files: ['src/**/*.mjs'],
+            parserOptions: {
+                sourceType: 'module',
+            },
+            env: {
+                node: true,
+            },
+        },
+        {
             // Browser-side files
             files: ['public/**/*.js'],
             env: {
@@ -45,6 +54,7 @@ module.exports = {
                 Readability: 'readonly',
                 isProbablyReaderable: 'readonly',
                 ePub: 'readonly',
+                diff_match_patch: 'readonly',
             },
         },
     ],

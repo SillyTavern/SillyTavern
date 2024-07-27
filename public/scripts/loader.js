@@ -1,7 +1,5 @@
 import { POPUP_RESULT, POPUP_TYPE, Popup } from './popup.js';
 
-const ELEMENT_ID = 'loader';
-
 /** @type {Popup} */
 let loaderPopup;
 
@@ -31,7 +29,7 @@ export async function hideLoader() {
     return new Promise((resolve) => {
         // Spinner blurs/fades out
         $('#load-spinner').on('transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd', function () {
-            $(`#${ELEMENT_ID}`).remove();
+            $('#loader').remove();
             // Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
             // If it's present, we remove it once and then it's gone.
             yoinkPreloader();

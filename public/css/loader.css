@@ -7,12 +7,12 @@
     z-index: 999999;
     width: 100vw;
     height: 100vh;
-    width: 100svw;
-    height: 100svh;
+    width: 100dvw;
+    height: 100dvh;
     background-color: var(--SmartThemeBlurTintColor);
+    color: var(--SmartThemeBodyColor);
     /*for some reason the full screen blur does not work on iOS*/
     backdrop-filter: blur(30px);
-    color: var(--SmartThemeBodyColor);
     opacity: 1;
 }
 

@@ -1,5 +1,4 @@
 import {
-    callPopup,
     characters,
     chat,
     chat_metadata,
@@ -22,7 +21,7 @@ import { PAGINATION_TEMPLATE, debounce, delay, download, ensureImageFormatSuppor
 import { debounce_timeout } from './constants.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { selected_group } from './group-chats.js';
-import { POPUP_TYPE, Popup } from './popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup } from './popup.js';
 
 let savePersonasPage = 0;
 const GRID_STORAGE_KEY = 'Personas_GridView';
@@ -332,15 +331,14 @@ async function changeUserAvatar(e) {
  * @returns {Promise} Promise that resolves when the persona is set
  */
 export async function createPersona(avatarId) {
-    const personaName = await callPopup('<h3>Enter a name for this persona:</h3>Cancel if you\'re just uploading an avatar.', 'input', '');
+    const personaName = await Popup.show.input('Enter a name for this persona:', 'Cancel if you\'re just uploading an avatar.', '');
 
     if (!personaName) {
         console.debug('User cancelled creating a persona');
         return;
     }
 
-    await delay(500);
-    const personaDescription = await callPopup('<h3>Enter a description for this persona:</h3>You can always add or change it later.', 'input', '', { rows: 4 });
+    const personaDescription = await Popup.show.input('Enter a description for this persona:', 'You can always add or change it later.', '', { rows: 4 });
 
     initPersona(avatarId, personaName, personaDescription);
     if (power_user.persona_show_notifications) {
@@ -349,7 +347,7 @@ export async function createPersona(avatarId) {
 }
 
 async function createDummyPersona() {
-    const personaName = await callPopup('<h3>Enter a name for this persona:</h3>', 'input', '');
+    const personaName = await Popup.show.input('Enter a name for this persona:', null);
 
     if (!personaName) {
         console.debug('User cancelled creating dummy persona');
@@ -395,19 +393,16 @@ export async function convertCharacterToPersona(characterId = null) {
     const overwriteName = `${name} (Persona).png`;
 
     if (overwriteName in power_user.personas) {
-        const confirmation = await callPopup('This character exists as a persona already. Are you sure want to overwrite it?', 'confirm', '', { okButton: 'Yes' });
-
-        if (confirmation === false) {
+        const confirm = await Popup.show.confirm('Overwrite Existing Persona', 'This character exists as a persona already. Do you want to overwrite it?');
+        if (!confirm) {
             console.log('User cancelled the overwrite of the persona');
             return;
         }
     }
 
     if (description.includes('{{char}}') || description.includes('{{user}}')) {
-        await delay(500);
-        const confirmation = await callPopup('This character has a description that uses {{char}} or {{user}} macros. Do you want to swap them in the persona description?', 'confirm', '', { okButton: 'Yes' });
-
-        if (confirmation) {
+        const confirm = await Popup.show.confirm('Persona Description Macros', 'This character has a description that uses <code>{{char}}</code> or <code>{{user}}</code> macros. Do you want to swap them in the persona description?');
+        if (confirm) {
             description = description.replace(/{{char}}/gi, '{{personaChar}}').replace(/{{user}}/gi, '{{personaUser}}');
             description = description.replace(/{{personaUser}}/gi, '{{char}}').replace(/{{personaChar}}/gi, '{{user}}');
         }
@@ -511,15 +506,20 @@ async function bindUserNameToPersona(e) {
         return;
     }
 
+    let personaUnbind = false;
     const existingPersona = power_user.personas[avatarId];
-    const personaName = await callPopup('<h3>Enter a name for this persona:</h3>(If empty name is provided, this will unbind the name from this avatar)', 'input', existingPersona || '');
+    const personaName = await Popup.show.input(
+        'Enter a name for this persona:',
+        '(If empty name is provided, this will unbind the name from this avatar)',
+        existingPersona || '',
+        { onClose: (p) => { personaUnbind = p.value === '' && p.result === POPUP_RESULT.AFFIRMATIVE; } });
 
     // If the user clicked cancel, don't do anything
-    if (personaName === false) {
+    if (personaName === null && !personaUnbind) {
         return;
     }
 
-    if (personaName.length > 0) {
+    if (personaName && personaName.length > 0) {
         // If the user clicked ok and entered a name, bind the name to the persona
         console.log(`Binding persona ${avatarId} to name ${personaName}`);
         power_user.personas[avatarId] = personaName;
@@ -646,7 +646,12 @@ async function lockPersona() {
             );
         }
         power_user.personas[user_avatar] = name1;
-        power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.IN_PROMPT };
+        power_user.persona_descriptions[user_avatar] = {
+            description: '',
+            position: persona_description_positions.IN_PROMPT,
+            depth: DEFAULT_DEPTH,
+            role: DEFAULT_ROLE,
+        };
     }
 
     chat_metadata['persona'] = user_avatar;
@@ -675,7 +680,7 @@ async function deleteUserAvatar(e) {
         return;
     }
 
-    const confirm = await callPopup('<h3>Are you sure you want to delete this avatar?</h3>All information associated with its linked persona will be lost.', 'confirm');
+    const confirm = await Popup.show.confirm('Are you sure you want to delete this avatar?', 'All information associated with its linked persona will be lost.');
 
     if (!confirm) {
         console.debug('User cancelled deleting avatar');
@@ -809,7 +814,7 @@ async function setDefaultPersona(e) {
     const personaName = power_user.personas[avatarId];
 
     if (avatarId === currentDefault) {
-        const confirm = await callPopup('Are you sure you want to remove the default persona?', 'confirm');
+        const confirm = await Popup.show.confirm('Are you sure you want to remove the default persona?', personaName);
 
         if (!confirm) {
             console.debug('User cancelled removing default persona');
@@ -822,8 +827,7 @@ async function setDefaultPersona(e) {
         }
         delete power_user.default_persona;
     } else {
-        const confirm = await callPopup(`<h3>Are you sure you want to set "${personaName}" as the default persona?</h3>
-        This name and avatar will be used for all new chats, as well as existing chats where the user persona is not locked.`, 'confirm');
+        const confirm = await Popup.show.confirm(`Are you sure you want to set "${personaName}" as the default persona?`, 'This name and avatar will be used for all new chats, as well as existing chats where the user persona is not locked.');
 
         if (!confirm) {
             console.debug('User cancelled setting default persona');
@@ -981,7 +985,7 @@ async function onPersonasRestoreInput(e) {
 }
 
 async function syncUserNameToPersona() {
-    const confirmation = await callPopup(`<h3>Are you sure?</h3>All user-sent messages in this chat will be attributed to ${name1}.`, 'confirm');
+    const confirmation = await Popup.show.confirm('Are you sure?', `All user-sent messages in this chat will be attributed to ${name1}.`);
 
     if (!confirmation) {
         return;
@@ -1002,6 +1006,42 @@ export function retriggerFirstMessageOnEmptyChat() {
     if (this_chid >= 0 && !selected_group && chat.length === 1) {
         $('#firstmessage_textarea').trigger('input');
     }
+}
+
+/**
+ * Duplicates a persona.
+ * @param {string} avatarId
+ * @returns {Promise<void>}
+ */
+async function duplicatePersona(avatarId) {
+    const personaName = power_user.personas[avatarId];
+
+    if (!personaName) {
+        toastr.warning('Chosen avatar is not a persona');
+        return;
+    }
+
+    const confirm = await Popup.show.confirm('Are you sure you want to duplicate this persona?', personaName);
+
+    if (!confirm) {
+        console.debug('User cancelled duplicating persona');
+        return;
+    }
+
+    const newAvatarId = `${Date.now()}-${personaName.replace(/[^a-zA-Z0-9]/g, '')}.png`;
+    const descriptor = power_user.persona_descriptions[avatarId];
+
+    power_user.personas[newAvatarId] = personaName;
+    power_user.persona_descriptions[newAvatarId] = {
+        description: descriptor?.description ?? '',
+        position: descriptor?.position ?? persona_description_positions.IN_PROMPT,
+        depth: descriptor?.depth ?? DEFAULT_DEPTH,
+        role: descriptor?.role ?? DEFAULT_ROLE,
+    };
+
+    await uploadUserAvatar(getUserAvatar(avatarId), newAvatarId);
+    await getUserAvatars(true, newAvatarId);
+    saveSettingsDebounced();
 }
 
 export function initPersonas() {
@@ -1060,6 +1100,18 @@ export function initPersonas() {
     $(document).on('click', '#user_avatar_block .avatar_upload', function () {
         $('#avatar_upload_overwrite').val('');
         $('#avatar_upload_file').trigger('click');
+    });
+
+    $(document).on('click', '#user_avatar_block .duplicate_persona', function (e) {
+        e.stopPropagation();
+        const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
+
+        if (!avatarId) {
+            console.log('no imgfile');
+            return;
+        }
+
+        duplicatePersona(avatarId);
     });
 
     $(document).on('click', '#user_avatar_block .set_persona_image', function (e) {

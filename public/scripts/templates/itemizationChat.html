@@ -1,7 +1,8 @@
 <h3 class="flex-container justifyCenter alignitemscenter">
     Prompt Itemization
-    <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
-    <div id="copyPromptToClipboard" class="fa-solid fa-copy menu_button"></div>
+    <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button" title="Show Raw Prompt" data-i18n="[title]Show Raw Prompt"></div>
+    <div id="copyPromptToClipboard" class="fa-solid fa-copy menu_button" title="Copy Prompt" data-i18n="[title]Copy Prompt"></div>
+    <div id="diffPrevPrompt" class="fa-solid fa-code-compare menu_button" title="Show Prompt Differences" data-i18n="[title]Show Prompt Differences"></div>
 </h3>
 Tokenizer: {{selectedTokenizer}}<br>
 API Used: {{this_main_api}}<br>
@@ -39,11 +40,11 @@ API Used: {{this_main_api}}<br>
                     <div class="tokenItemizingSubclass">{{oaiMainTokens}}</div>
                 </div>
                 <div class="flex-container ">
-                    <div class=" flex1 tokenItemizingSubclass">-- Jailbreak: </div>
+                    <div class=" flex1 tokenItemizingSubclass">-- Post-History: </div>
                     <div class="tokenItemizingSubclass">{{oaiJailbreakTokens}}</div>
                 </div>
                 <div class="flex-container ">
-                    <div class=" flex1 tokenItemizingSubclass">-- NSFW: </div>
+                    <div class=" flex1 tokenItemizingSubclass">-- Auxiliary: </div>
                     <div class="tokenItemizingSubclass">{{oaiNsfwTokens}}</div>
                 </div>
                 <div class="flex-container ">
@@ -105,6 +106,14 @@ API Used: {{this_main_api}}<br>
                 <div class="flex-container ">
                     <div class=" flex1 tokenItemizingSubclass">-- Smart Context:</div>
                     <div class="tokenItemizingSubclass"> {{smartContextStringTokens}}</div>
+                </div>
+                <div class="flex-container ">
+                    <div class=" flex1 tokenItemizingSubclass">-- Vector Storage (Chats):</div>
+                    <div class="tokenItemizingSubclass"> {{chatVectorsStringTokens}}</div>
+                </div>
+                <div class="flex-container ">
+                    <div class=" flex1 tokenItemizingSubclass">-- Vector Storage (Data Bank):</div>
+                    <div class="tokenItemizingSubclass"> {{dataBankVectorsStringTokens}}</div>
                 </div>
             </div>
             <div class="wide100p flex-container">

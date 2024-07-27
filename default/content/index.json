@@ -20,6 +20,10 @@
         "type": "theme"
     },
     {
+        "filename": "themes/Azure.json",
+        "type": "theme"
+    },
+    {
         "filename": "backgrounds/__transparent.png",
         "type": "background"
     },
@@ -674,5 +678,13 @@
     {
         "filename": "presets/context/ChatML-Names.json",
         "type": "context"
+    },
+    {
+        "filename": "presets/context/Gemma 2.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/instruct/Gemma 2.json",
+        "type": "instruct"
     }
 ]

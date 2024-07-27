@@ -157,18 +157,15 @@ export function shouldSendOnEnter() {
 //Does not break old characters/chats, as the code just uses whatever timestamp exists in the chat.
 //New chats made with characters will use this new formatting.
 export function humanizedDateTime() {
-    let baseDate = new Date(Date.now());
-    let humanYear = baseDate.getFullYear();
-    let humanMonth = baseDate.getMonth() + 1;
-    let humanDate = baseDate.getDate();
-    let humanHour = (baseDate.getHours() < 10 ? '0' : '') + baseDate.getHours();
-    let humanMinute =
-        (baseDate.getMinutes() < 10 ? '0' : '') + baseDate.getMinutes();
-    let humanSecond =
-        (baseDate.getSeconds() < 10 ? '0' : '') + baseDate.getSeconds();
-    let HumanizedDateTime =
-        humanYear + '-' + humanMonth + '-' + humanDate + '@' + humanHour + 'h' + humanMinute + 'm' + humanSecond + 's';
-    return HumanizedDateTime;
+    const now = new Date(Date.now());
+    const dt = {
+        year: now.getFullYear(),  month: now.getMonth() + 1,  day: now.getDate(),
+        hour: now.getHours(),     minute: now.getMinutes(),   second: now.getSeconds(),
+    };
+    for (const key in dt) {
+        dt[key] = dt[key].toString().padStart(2, '0');
+    }
+    return `${dt.year}-${dt.month}-${dt.day}@${dt.hour}h${dt.minute}m${dt.second}s`;
 }
 
 //this is a common format version to display a timestamp on each chat message
@@ -696,18 +693,18 @@ const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
 function autoFitSendTextArea() {
     const originalScrollBottom = chatBlock.scrollHeight - (chatBlock.scrollTop + chatBlock.offsetHeight);
     if (Math.ceil(sendTextArea.scrollHeight + 3) >= Math.floor(sendTextArea.offsetHeight)) {
-        // Needs to be pulled dynamically because it is affected by font size changes
-        const sendTextAreaMinHeight = window.getComputedStyle(sendTextArea).getPropertyValue('min-height');
+        const sendTextAreaMinHeight = '0px';
         sendTextArea.style.height = sendTextAreaMinHeight;
     }
-    sendTextArea.style.height = sendTextArea.scrollHeight + 3 + 'px';
+    const newHeight = sendTextArea.scrollHeight + 3;
+    sendTextArea.style.height = `${newHeight}px`;
 
     if (!isFirefox) {
         const newScrollTop = Math.round(chatBlock.scrollHeight - (chatBlock.offsetHeight + originalScrollBottom));
         chatBlock.scrollTop = newScrollTop;
     }
 }
-export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea);
+export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea, debounce_timeout.short);
 
 // ---------------------------------------------------
 
@@ -881,12 +878,14 @@ export function initRossMods() {
         saveSettingsDebounced();
     });
 
-    $(sendTextArea).on('input', () => {
-        if (sendTextArea.scrollHeight > sendTextArea.offsetHeight || sendTextArea.value === '') {
-            autoFitSendTextArea();
-        } else {
-            autoFitSendTextAreaDebounced();
-        }
+    sendTextArea.addEventListener('input', () => {
+        const hasContent = sendTextArea.value !== '';
+        const fitsCurrentSize = sendTextArea.scrollHeight <= sendTextArea.offsetHeight;
+        const isScrollbarShown = sendTextArea.clientWidth < sendTextArea.offsetWidth;
+        const isHalfScreenHeight = sendTextArea.offsetHeight >= window.innerHeight / 2;
+        const needsDebounce = hasContent && (fitsCurrentSize || (isScrollbarShown && isHalfScreenHeight));
+        if (needsDebounce) autoFitSendTextAreaDebounced();
+        else autoFitSendTextArea();
         saveUserInputDebounced();
     });
 

@@ -19,8 +19,12 @@ router.post('/libre', jsonParser, async (request, response) => {
         return response.sendStatus(400);
     }
 
-    if (request.body.lang === 'zh-CN' || request.body.lang === 'zh-TW') {
+    if (request.body.lang === 'zh-CN') {
         request.body.lang = 'zh';
+    }
+
+    if (request.body.lang === 'zh-TW') {
+        request.body.lang = 'zt';
     }
 
     const text = request.body.text;

@@ -5,10 +5,30 @@
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <label for="assets-json-url-field" data-i18n="Assets URL">Assets URL</label>
-            <div class="assets-connect-div">
-                <input id="assets-json-url-field" class="text_pole widthUnset flex1">
-                <i id="assets-connect-button" class="menu_button fa-solid fa-plug-circle-exclamation fa-xl redOverlayGlow"></i>
+            <small>
+                <span data-i18n="Load a custom asset list or select">
+                    Load a custom asset list or select
+                </span>
+                <a class="assets-install-hint-link" data-i18n="Install extension">Install&nbsp;Extension</a>
+                <span data-i18n="to install 3rd party extensions.">
+                    to install 3rd party extensions.
+                </span>
+            </small>
+            <div class="assets-url-block m-b-1 m-t-1">
+                <label for="assets-json-url-field" data-i18n="Assets URL">Assets URL</label>
+                <small data-i18n="[title]load_asset_list_desc" title="Load a list of extensions & assets based on an asset list file.
+
+The default Asset URL in this field points to the list of offical first party extensions and assets.
+If you have a custom asset list, you can insert it here.
+
+To install a single 3rd party extension, use the &quot;Install Extensions&quot; button on the top right.">
+                    <span data-i18n="Load an asset list">Load an asset list</span>
+                    <div class="fa-solid fa-circle-info opacity50p"></div>
+                </small>
+                <div class="assets-connect-div">
+                    <input id="assets-json-url-field" class="text_pole widthUnset flex1">
+                    <i id="assets-connect-button" class="menu_button fa-solid fa-plug-circle-exclamation fa-xl redOverlayGlow" title="Load Asset List" data-i18n="[title]Load Asset List"></i>
+                </div>
             </div>
             <div id="assets_filters" class="flex-container">
                 <select id="assets_type_select" class="text_pole flex1">

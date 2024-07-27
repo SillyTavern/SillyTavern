@@ -16,6 +16,8 @@ declare var ai;
 
 // Jquery plugins
 interface JQuery {
+    nanogallery2(options?: any): JQuery;
+    nanogallery2(method: string, options?: any): JQuery;
     pagination(method: 'getCurrentPageNum'): number;
     pagination(method: string, options?: any): JQuery;
     pagination(options?: any): JQuery;

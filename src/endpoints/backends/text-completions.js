@@ -309,7 +309,7 @@ router.post('/generate', jsonParser, async function (request, response) {
         if (request.body.api_type === TEXTGEN_TYPES.OPENROUTER) {
             if (Array.isArray(request.body.provider) && request.body.provider.length > 0) {
                 request.body.provider = {
-                    allow_fallbacks: true,
+                    allow_fallbacks: request.body.allow_fallbacks ?? true,
                     order: request.body.provider,
                 };
             } else {
@@ -588,7 +588,53 @@ llamacpp.post('/slots', jsonParser, async function (request, response) {
     }
 });
 
+const tabby = express.Router();
+
+tabby.post('/download', jsonParser, async function (request, response) {
+    try {
+        const baseUrl = String(request.body.api_server).replace(/\/$/, '');
+
+        const args = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(request.body),
+            timeout: 0,
+        };
+
+        setAdditionalHeaders(request, args, baseUrl);
+
+        // Check key permissions
+        const permissionResponse = await fetch(`${baseUrl}/v1/auth/permission`, {
+            headers: args.headers,
+        });
+
+        if (permissionResponse.ok) {
+            const permissionJson = await permissionResponse.json();
+
+            if (permissionJson['permission'] !== 'admin') {
+                return response.status(403).send({ error: true });
+            }
+        } else {
+            console.log('API Permission error:', permissionResponse.status, permissionResponse.statusText);
+            return response.status(permissionResponse.status).send({ error: true });
+        }
+
+        const fetchResponse = await fetch(`${baseUrl}/v1/download`, args);
+
+        if (!fetchResponse.ok) {
+            console.log('Download error:', fetchResponse.status, fetchResponse.statusText);
+            return response.status(fetchResponse.status).send({ error: true });
+        }
+
+        return response.send({ ok: true });
+    } catch (error) {
+        console.error(error);
+        return response.status(500);
+    }
+});
+
 router.use('/ollama', ollama);
 router.use('/llamacpp', llamacpp);
+router.use('/tabby', tabby);
 
 module.exports = { router };

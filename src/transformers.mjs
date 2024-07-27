@@ -1,7 +1,6 @@
 import { pipeline, env, RawImage, Pipeline } from 'sillytavern-transformers';
 import { getConfigValue } from './util.js';
 import path from 'path';
-import _ from 'lodash';
 
 configureTransformers();
 
@@ -94,7 +93,11 @@ function getModelForTask(task) {
  */
 async function getPipeline(task, forceModel = '') {
     if (tasks[task].pipeline) {
-        return tasks[task].pipeline;
+        if (forceModel === '' || tasks[task].currentModel === forceModel) {
+            return tasks[task].pipeline;
+        }
+        console.log('Disposing transformers.js pipeline for for task', task, 'with model', tasks[task].currentModel);
+        await tasks[task].pipeline.dispose();
     }
 
     const cache_dir = path.join(process.cwd(), 'cache');
@@ -103,10 +106,11 @@ async function getPipeline(task, forceModel = '') {
     console.log('Initializing transformers.js pipeline for task', task, 'with model', model);
     const instance = await pipeline(task, model, { cache_dir, quantized: tasks[task].quantized ?? true, local_files_only: localOnly });
     tasks[task].pipeline = instance;
+    tasks[task].currentModel = model;
     return instance;
 }
 
 export default {
     getPipeline,
     getRawImage,
-}
+};

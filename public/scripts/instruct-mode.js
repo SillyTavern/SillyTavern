@@ -34,6 +34,8 @@ const controls = [
     { id: 'instruct_names_force_groups', property: 'names_force_groups', isCheckbox: true },
     { id: 'instruct_first_output_sequence', property: 'first_output_sequence', isCheckbox: false },
     { id: 'instruct_last_output_sequence', property: 'last_output_sequence', isCheckbox: false },
+    { id: 'instruct_first_input_sequence', property: 'first_input_sequence', isCheckbox: false },
+    { id: 'instruct_last_input_sequence', property: 'last_input_sequence', isCheckbox: false },
     { id: 'instruct_activation_regex', property: 'activation_regex', isCheckbox: false },
     { id: 'instruct_bind_to_context', property: 'bind_to_context', isCheckbox: true },
     { id: 'instruct_skip_examples', property: 'skip_examples', isCheckbox: true },
@@ -58,6 +60,8 @@ function migrateInstructModeSettings(settings) {
         system_suffix: '',
         user_alignment_message: '',
         last_system_sequence: '',
+        first_input_sequence: '',
+        last_input_sequence: '',
         names_force_groups: true,
         skip_examples: false,
         system_same_as_user: false,
@@ -253,7 +257,15 @@ export function getInstructStoppingSequences() {
         const system_sequence = power_user.instruct.system_sequence?.replace(/{{name}}/gi, 'System') || '';
         const last_system_sequence = power_user.instruct.last_system_sequence?.replace(/{{name}}/gi, 'System') || '';
 
-        const combined_sequence = `${stop_sequence}\n${input_sequence}\n${output_sequence}\n${first_output_sequence}\n${last_output_sequence}\n${system_sequence}\n${last_system_sequence}`;
+        const combined_sequence = [
+            stop_sequence,
+            input_sequence,
+            output_sequence,
+            first_output_sequence,
+            last_output_sequence,
+            system_sequence,
+            last_system_sequence,
+        ].join('\n');
 
         combined_sequence.split('\n').filter((line, index, self) => self.indexOf(line) === index).forEach(addInstructSequence);
     }
@@ -301,6 +313,14 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
         }
 
         if (isUser) {
+            if (forceOutputSequence === force_output_sequence.FIRST) {
+                return power_user.instruct.first_input_sequence || power_user.instruct.input_sequence;
+            }
+
+            if (forceOutputSequence === force_output_sequence.LAST) {
+                return power_user.instruct.last_input_sequence || power_user.instruct.input_sequence;
+            }
+
             return power_user.instruct.input_sequence;
         }
 
@@ -333,6 +353,9 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
     if (power_user.instruct.macro) {
         prefix = substituteParams(prefix, name1, name2);
         prefix = prefix.replace(/{{name}}/gi, name || 'System');
+
+        suffix = substituteParams(suffix, name1, name2);
+        suffix = suffix.replace(/{{name}}/gi, name || 'System');
     }
 
     if (!suffix && power_user.instruct.wrap) {
@@ -398,6 +421,8 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
 
         inputPrefix = inputPrefix.replace(/{{name}}/gi, name1);
         outputPrefix = outputPrefix.replace(/{{name}}/gi, name2);
+        inputSuffix = inputSuffix.replace(/{{name}}/gi, name1);
+        outputSuffix = outputSuffix.replace(/{{name}}/gi, name2);
 
         if (!inputSuffix && power_user.instruct.wrap) {
             inputSuffix = '\n';
@@ -547,6 +572,8 @@ export function replaceInstructMacros(input, env) {
         'instructStop': power_user.instruct.stop_sequence,
         'instructUserFiller': power_user.instruct.user_alignment_message,
         'instructSystemInstructionPrefix': power_user.instruct.last_system_sequence,
+        'instructFirstInput|instructFirstUserPrefix': power_user.instruct.first_input_sequence || power_user.instruct.input_sequence,
+        'instructLastInput|instructLastUserPrefix': power_user.instruct.last_input_sequence || power_user.instruct.input_sequence,
     };
 
     for (const [placeholder, value] of Object.entries(instructMacros)) {

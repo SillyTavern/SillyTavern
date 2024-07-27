@@ -43,6 +43,10 @@
         transform: scaleY(1);
     }
 
+    66% {
+        transform: scaleY(1);
+    }
+
     100% {
         opacity: 0;
         transform: scaleY(0);
@@ -51,16 +55,11 @@
 
 /* Flashing for highlighting animation */
 @keyframes flash {
-
-    20%,
-    60%,
-    100% {
+    0%, 50%, 100% {
         opacity: 1;
     }
 
-    0%,
-    40%,
-    80% {
+    25%, 75% {
         opacity: 0.2;
     }
 }

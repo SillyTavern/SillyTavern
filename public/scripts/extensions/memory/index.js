@@ -23,8 +23,7 @@ import { debounce_timeout } from '../../constants.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
-import { resolveVariable } from '../../variables.js';
-import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { MacrosParser } from '../../macros.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
@@ -804,7 +803,11 @@ function setMemoryContext(value, saveToMessage, index = null) {
     const context = getContext();
     context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_settings.memory.position, extension_settings.memory.depth, false, extension_settings.memory.role);
     $('#memory_contents').val(value);
-    console.log('Summary set to: ' + value, 'Position: ' + extension_settings.memory.position, 'Depth: ' + extension_settings.memory.depth, 'Role: ' + extension_settings.memory.role);
+
+    const summaryLog = value
+        ? `Summary set to: ${value}. Position: ${extension_settings.memory.position}. Depth: ${extension_settings.memory.depth}. Role: ${extension_settings.memory.role}`
+        : 'Summary has no content';
+    console.debug(summaryLog);
 
     if (saveToMessage && context.chat.length) {
         const idx = index ?? context.chat.length - 2;
@@ -910,7 +913,7 @@ jQuery(async function () {
 
     await addExtensionControls();
     loadSettings();
-    eventSource.on(event_types.MESSAGE_RECEIVED, onChatEvent);
+    eventSource.makeLast(event_types.CHARACTER_MESSAGE_RENDERED, onChatEvent);
     eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);
     eventSource.on(event_types.MESSAGE_EDITED, onChatEvent);
     eventSource.on(event_types.MESSAGE_SWIPED, onChatEvent);
@@ -933,4 +936,6 @@ jQuery(async function () {
         helpString: 'Summarizes the given text. If no text is provided, the current chat will be summarized. Can specify the source and the prompt to use.',
         returns: ARGUMENT_TYPE.STRING,
     }));
+
+    MacrosParser.registerMacro('summary', () => getLatestMemoryFromChat(getContext().chat));
 });
