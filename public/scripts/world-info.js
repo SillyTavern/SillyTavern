@@ -1939,39 +1939,43 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
         }
     });
 
-    $('#world_apply_custom_sorting').off('click').on('click', async () => {
+    $('#world_apply_current_sorting').off('click').on('click', async () => {
         const entryCount = Object.keys(data.entries).length;
         const moreThan100 = entryCount > 100;
 
-        let content = '<span>Apply your custom sorting to the "Order" field. The Order values will go down from the chosen number.</span>';
+        let content = '<span>Apply your current sorting to the "Order" field. The Order values will go down from the chosen number.</span>';
         if (moreThan100) {
             content += `<div class="m-t-1"><i class="fa-solid fa-triangle-exclamation" style="color: #FFD43B;"></i> More than 100 entries in this world. If you don't choose a number higher than that, the lower entries will default to 0.<br />(Usual default: 100)<br />Minimum: ${entryCount}</div>`;
         }
 
-        const result = await Popup.show.input('Apply Custom Sorting', content, '100', { okButton: 'Apply', cancelButton: 'Cancel' });
+        const result = await Popup.show.input('Apply Current Sorting', content, '100', { okButton: 'Apply', cancelButton: 'Cancel' });
         if (!result) return;
 
         const start = Number(result);
         if (isNaN(start) || start < 0) {
-            toastr.error('Invalid number: ' + result, 'Apply Custom Sorting');
+            toastr.error('Invalid number: ' + result, 'Apply Current Sorting');
             return;
         }
         if (start < entryCount) {
-            toastr.warning('A number lower than the entry count has been chosen. All entries below that will default to 0.', 'Apply Custom Sorting');
+            toastr.warning('A number lower than the entry count has been chosen. All entries below that will default to 0.', 'Apply Current Sorting');
         }
 
-        let counter = 0;
-        for (const entry of Object.values(data.entries)) {
-            const newOrder = Math.max(start - (entry.displayIndex ?? 0), 0);
+        // We need to sort the entries here, as the data source isn't sorted
+        const entries = Object.values(data.entries);
+        sortEntries(entries);
+
+        let updated = 0, current = start;
+        for (const entry of entries) {
+            const newOrder = Math.max(current--, 0);
             if (entry.order === newOrder) continue;
 
             entry.order = newOrder;
             setOriginalDataValue(data, entry.order, 'order', entry.order);
-            counter++;
+            updated++;
         }
 
-        if (counter > 0) {
-            toastr.info(`Updated ${counter} Order values`, 'Apply Custom Sorting');
+        if (updated > 0) {
+            toastr.info(`Updated ${updated} Order values`, 'Apply Custom Sorting');
             await saveWorldInfo(name, data, true);
             updateEditor(navigation_option.previous);
         } else {
