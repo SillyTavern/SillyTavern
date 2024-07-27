@@ -922,11 +922,13 @@ export class SlashCommandParser {
         else assignment.value = this.parseValue();
         cmd.unnamedArgumentList = [assignment];
         this.discardWhitespace();
+        cmd.startNamedArgs = this.index;
         while (this.testNamedArgument()) {
             const arg = this.parseNamedArgument();
             cmd.namedArgumentList.push(arg);
             this.discardWhitespace();
         }
+        cmd.endNamedArgs = this.index;
         this.discardWhitespace();
         // /run shorthand does not take unnamed arguments (the command name practically *is* the unnamed argument)
         if (this.testRunShorthandEnd()) {
