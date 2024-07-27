@@ -109,7 +109,16 @@
                         <textarea id="memory_template" class="text_pole textarea_compact" rows="2" data-i18n="[placeholder]ext_sum_memory_template_placeholder" placeholder="&lcub;&lcub;summary&rcub;&rcub; will resolve to the current summary contents."></textarea>
                     </div>
                     <label for="memory_position" data-i18n="ext_sum_injection_position">Injection Position</label>
+                    <label class="checkbox_label" for="memory_include_wi_scan" data-i18n="[title]ext_sum_include_wi_scan_desc" title="Include the latest summary in the WI scan.">
+                        <input id="memory_include_wi_scan" type="checkbox" />
+                        <span data-i18n="ext_sum_include_wi_scan">Include in World Info Scanning</span>
+                    </label>
                     <div class="radio_group">
+                        <label>
+                            <input type="radio" name="memory_position" value="-1" />
+                            <span data-i18n="None (not injected)">None (not injected)</span>
+                            <i class="fa-solid fa-info-circle" title="The summary will not be injected into the prompt. You can still access it via the &lcub;&lcub;summary&rcub;&rcub; macro." data-i18n="[title]ext_sum_injection_position_none"></i>
+                        </label>
                         <label>
                             <input type="radio" name="memory_position" value="2" />
                             <span data-i18n="Before Main Prompt / Story String">Before Main Prompt / Story String</span>

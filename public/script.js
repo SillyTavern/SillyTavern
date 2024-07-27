@@ -570,6 +570,7 @@ export const system_message_types = {
  * @enum {number} Extension prompt types
  */
 export const extension_prompt_types = {
+    NONE: -1,
     IN_PROMPT: 0,
     IN_CHAT: 1,
     BEFORE_PROMPT: 2,

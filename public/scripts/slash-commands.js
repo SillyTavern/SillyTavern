@@ -1356,7 +1356,7 @@ export function initDefaultSlashCommands() {
                 enumProvider: commonEnumProviders.injects,
             }),
             new SlashCommandNamedArgument(
-                'position', 'injection position', [ARGUMENT_TYPE.STRING], false, false, 'after', ['before', 'after', 'chat'],
+                'position', 'injection position', [ARGUMENT_TYPE.STRING], false, false, 'after', ['before', 'after', 'chat', 'none'],
             ),
             new SlashCommandNamedArgument(
                 'depth', 'injection depth', [ARGUMENT_TYPE.NUMBER], false, false, '4',
@@ -1384,7 +1384,7 @@ export function initDefaultSlashCommands() {
                 'text', [ARGUMENT_TYPE.STRING], false,
             ),
         ],
-        helpString: 'Injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false).',
+        helpString: 'Injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat", hidden with "none" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false). Hidden injects in "none" position are not inserted into the prompt but can be used for triggering WI entries.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'listinjects',
@@ -1486,6 +1486,7 @@ function injectCallback(args, value) {
         'before': extension_prompt_types.BEFORE_PROMPT,
         'after': extension_prompt_types.IN_PROMPT,
         'chat': extension_prompt_types.IN_CHAT,
+        'none': extension_prompt_types.NONE,
     };
     const roles = {
         'system': extension_prompt_roles.SYSTEM,
