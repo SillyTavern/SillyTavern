@@ -65,6 +65,7 @@ export class SlashCommandClosure {
         const macroList = scope.macroList.toSorted((a,b)=>{
             if (a.key.includes('*') && !b.key.includes('*')) return 1;
             if (!a.key.includes('*') && b.key.includes('*')) return -1;
+            if (a.key.includes('*') && b.key.includes('*')) return b.key.indexOf('*') - a.key.indexOf('*');
             return 0;
         });
         const macros = macroList.map(it=>escapeMacro(it)).join('|');
