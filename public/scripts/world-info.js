@@ -1647,32 +1647,38 @@ function sortEntries(data) {
 
     if (!data.length) return data;
 
+    /** @type {(a: any, b: any) => number} */
+    let primarySort;
+
+    // Secondary and tertiary it will always be sorted by Order descending, and last UID ascending
+    // This is the most sensible approach for sorts where the primary sort has a lot of equal values
+    const secondarySort = (a, b) => b.order - a.order;
+    const tertiarySort = (a, b) => a.uid - b.uid;
+
     // If we have a search term for WI, we are sorting by weighting scores
     if (sortRule === 'search') {
-        data.sort((a, b) => {
+        primarySort = (a, b) => {
             const aScore = worldInfoFilter.getScore(FILTER_TYPES.WORLD_INFO_SEARCH, a.uid);
             const bScore = worldInfoFilter.getScore(FILTER_TYPES.WORLD_INFO_SEARCH, b.uid);
-            return (aScore - bScore);
-        });
+            return aScore - bScore;
+        };
     }
     else if (sortRule === 'custom') {
-        // First by display index, then by order, then by uid
-        data.sort((a, b) => {
+        // First by display index
+        primarySort = (a, b) => {
             const aValue = a.displayIndex;
             const bValue = b.displayIndex;
-
-            return (aValue - bValue || b.order - a.order || a.uid - b.uid);
-        });
+            return aValue - bValue;
+        };
     } else if (sortRule === 'priority') {
-        // First constant, then normal, then disabled. Then sort by order
-        data.sort((a, b) => {
+        // First constant, then normal, then disabled.
+        primarySort = (a, b) => {
             const aValue = a.constant ? 0 : a.disable ? 2 : 1;
             const bValue = b.constant ? 0 : b.disable ? 2 : 1;
-
-            return (aValue - bValue || b.order - a.order);
-        });
+            return aValue - bValue;
+        };
     } else {
-        const primarySort = (a, b) => {
+        primarySort = (a, b) => {
             const aValue = a[sortField];
             const bValue = b[sortField];
 
@@ -1690,25 +1696,11 @@ function sortEntries(data) {
             // Sort numbers
             return orderSign * (Number(aValue) - Number(bValue));
         };
-        const secondarySort = (a, b) => a.order - b.order;
-        const tertiarySort = (a, b) => a.uid - b.uid;
-
-        data.sort((a, b) => {
-            const primary = primarySort(a, b);
-
-            if (primary !== 0) {
-                return primary;
-            }
-
-            const secondary = secondarySort(a, b);
-
-            if (secondary !== 0) {
-                return secondary;
-            }
-
-            return tertiarySort(a, b);
-        });
     }
+
+    data.sort((a, b) => {
+        return primarySort(a, b) || secondarySort(a, b) || tertiarySort(a, b);
+    });
 
     return data;
 }
