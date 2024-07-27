@@ -637,7 +637,7 @@ export class SlashCommandHandler {
 
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-arg',
             callback: ({ _scope }, [key, value]) => {
-                _scope.setMacro(`arg::${key}`, value, false);
+                _scope.setMacro(`arg::${key}`, value, key.includes('*'));
                 return '';
             },
             unnamedArgumentList: [
