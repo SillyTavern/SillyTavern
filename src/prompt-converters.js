@@ -1,4 +1,5 @@
 require('./polyfill.js');
+const { getConfigValue } = require('./util.js');
 
 /**
  * Convert a prompt from the ChatML objects to the format used by Claude.
@@ -364,64 +365,49 @@ function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '
 /**
  * Convert a prompt from the ChatML objects to the format used by MistralAI.
  * @param {object[]} messages Array of messages
- * @param {string} model Model name
  * @param {string} charName Character name
  * @param {string} userName User name
  */
-function convertMistralMessages(messages, model, charName = '', userName = '') {
+function convertMistralMessages(messages, charName = '', userName = '') {
     if (!Array.isArray(messages)) {
         return [];
     }
 
-    //large seems to be throwing a 500 error if we don't make the first message a user role, most likely a bug since the other models won't do this
-    if (model.includes('large')) {
-        messages[0].role = 'user';
-    }
-
-    //must send a user role as last message
+    // Make the last assistant message a prefill
+    const prefixEnabled = getConfigValue('mistral.enablePrefix', false);
     const lastMsg = messages[messages.length - 1];
-    if (messages.length > 0 && lastMsg && (lastMsg.role === 'system' || lastMsg.role === 'assistant')) {
-        if (lastMsg.role === 'assistant' && lastMsg.name) {
-            lastMsg.content = lastMsg.name + ': ' + lastMsg.content;
-        } else if (lastMsg.role === 'system') {
-            lastMsg.content = '[INST] ' + lastMsg.content + ' [/INST]';
-        }
-        lastMsg.role = 'user';
+    if (prefixEnabled && messages.length > 0 && lastMsg?.role === 'assistant') {
+        lastMsg.prefix = true;
     }
 
-    //system prompts can be stacked at the start, but any futher sys prompts after the first user/assistant message will break the model
-    let encounteredNonSystemMessage = false;
+    // Doesn't support completion names, so prepend if not already done by the frontend (e.g. for group chats).
     messages.forEach(msg => {
         if (msg.role === 'system' && msg.name === 'example_assistant') {
-            if (charName) {
+            if (charName && !msg.content.startsWith(`${charName}: `)) {
                 msg.content = `${charName}: ${msg.content}`;
             }
             delete msg.name;
         }
 
         if (msg.role === 'system' && msg.name === 'example_user') {
-            if (userName) {
+            if (userName && !msg.content.startsWith(`${userName}: `)) {
                 msg.content = `${userName}: ${msg.content}`;
             }
             delete msg.name;
         }
 
-        if (msg.name) {
+        if (msg.name && msg.role !== 'system' && !msg.content.startsWith(`${msg.name}: `)) {
             msg.content = `${msg.name}: ${msg.content}`;
             delete msg.name;
         }
-
-        if ((msg.role === 'user' || msg.role === 'assistant') && !encounteredNonSystemMessage) {
-            encounteredNonSystemMessage = true;
-        }
-
-        if (encounteredNonSystemMessage && msg.role === 'system') {
-            msg.role = 'user';
-            //unsure if the instruct version is what they've deployed on their endpoints and if this will make a difference or not.
-            //it should be better than just sending the message as a user role without context though
-            msg.content = '[INST] ' + msg.content + ' [/INST]';
-        }
     });
+
+    // If system role message immediately follows an assistant message, change its role to user
+    for (let i = 0; i < messages.length - 1; i++) {
+        if (messages[i].role === 'assistant' && messages[i + 1].role === 'system') {
+            messages[i + 1].role = 'user';
+        }
+    }
 
     return messages;
 }

@@ -216,7 +216,7 @@
     "Character Names Behavior": "キャラクター名の動作",
     "Helps the model to associate messages with characters.": "モデルがメッセージをキャラクターに関連付けるのに役立ちます。",
     "None": "なし",
-    "character_names_none": "グループと過去のペルソナを除きます。それ以外の場合は、プロンプトに名前を必ず入力してください。",
+    "character_names_default": "グループと過去のペルソナを除きます。それ以外の場合は、プロンプトに名前を必ず入力してください。",
     "Don't add character names.": "キャラクター名を追加しないでください。",
     "Completion": "完了オブジェクト",
     "character_names_completion": "制限事項: ラテン英数字とアンダースコアのみ。すべてのソースで機能するわけではありません。特に、Claude、MistralAI、Google では機能しません。",

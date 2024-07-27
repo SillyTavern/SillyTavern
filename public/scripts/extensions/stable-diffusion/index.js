@@ -2289,24 +2289,33 @@ async function generatePicture(initiator, args, trigger, message, callback) {
     }
 
     const dimensions = setTypeSpecificDimensions(generationType);
+    const abortController = new AbortController();
     let negativePromptPrefix = args?.negative || '';
     let imagePath = '';
+
+    const stopListener = () => abortController.abort('Aborted by user');
 
     try {
         const combineNegatives = (prefix) => { negativePromptPrefix = combinePrefixes(negativePromptPrefix, prefix); };
         const prompt = await getPrompt(generationType, message, trigger, quietPrompt, combineNegatives);
         console.log('Processed image prompt:', prompt);
 
+        eventSource.once(event_types.GENERATION_STOPPED, stopListener);
         context.deactivateSendButtons();
         hideSwipeButtons();
 
-        imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback, initiator);
+        if (typeof args?._abortController?.addEventListener === 'function') {
+            args._abortController.addEventListener('abort', stopListener);
+        }
+
+        imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback, initiator, abortController.signal);
     } catch (err) {
         console.trace(err);
         throw new Error('SD prompt text generation failed.');
     }
     finally {
         restoreOriginalDimensions(dimensions);
+        eventSource.removeListener(event_types.GENERATION_STOPPED, stopListener);
         context.activateSendButtons();
         showSwipeButtons();
     }
@@ -2521,9 +2530,10 @@ async function generatePrompt(quietPrompt) {
  * @param {string} characterName Name of the character
  * @param {function} callback Callback function to be called after image generation
  * @param {string} initiator The initiator of the image generation
+ * @param {AbortSignal} signal Abort signal to cancel the request
  * @returns
  */
-async function sendGenerationRequest(generationType, prompt, additionalNegativePrefix, characterName, callback, initiator) {
+async function sendGenerationRequest(generationType, prompt, additionalNegativePrefix, characterName, callback, initiator, signal) {
     const noCharPrefix = [generationMode.FREE, generationMode.BACKGROUND, generationMode.USER, generationMode.USER_MULTIMODAL, generationMode.FREE_EXTENDED];
     const prefix = noCharPrefix.includes(generationType)
         ? extension_settings.sd.prompt_prefix
@@ -2541,37 +2551,37 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
     try {
         switch (extension_settings.sd.source) {
             case sources.extras:
-                result = await generateExtrasImage(prefixedPrompt, negativePrompt);
+                result = await generateExtrasImage(prefixedPrompt, negativePrompt, signal);
                 break;
             case sources.horde:
-                result = await generateHordeImage(prefixedPrompt, negativePrompt);
+                result = await generateHordeImage(prefixedPrompt, negativePrompt, signal);
                 break;
             case sources.vlad:
-                result = await generateAutoImage(prefixedPrompt, negativePrompt);
+                result = await generateAutoImage(prefixedPrompt, negativePrompt, signal);
                 break;
             case sources.drawthings:
-                result = await generateDrawthingsImage(prefixedPrompt, negativePrompt);
+                result = await generateDrawthingsImage(prefixedPrompt, negativePrompt, signal);
                 break;
             case sources.auto:
-                result = await generateAutoImage(prefixedPrompt, negativePrompt);
+                result = await generateAutoImage(prefixedPrompt, negativePrompt, signal);
                 break;
             case sources.novel:
-                result = await generateNovelImage(prefixedPrompt, negativePrompt);
+                result = await generateNovelImage(prefixedPrompt, negativePrompt, signal);
                 break;
             case sources.openai:
-                result = await generateOpenAiImage(prefixedPrompt);
+                result = await generateOpenAiImage(prefixedPrompt, signal);
                 break;
             case sources.comfy:
-                result = await generateComfyImage(prefixedPrompt, negativePrompt);
+                result = await generateComfyImage(prefixedPrompt, negativePrompt, signal);
                 break;
             case sources.togetherai:
-                result = await generateTogetherAIImage(prefixedPrompt, negativePrompt);
+                result = await generateTogetherAIImage(prefixedPrompt, negativePrompt, signal);
                 break;
             case sources.pollinations:
-                result = await generatePollinationsImage(prefixedPrompt, negativePrompt);
+                result = await generatePollinationsImage(prefixedPrompt, negativePrompt, signal);
                 break;
             case sources.stability:
-                result = await generateStabilityImage(prefixedPrompt, negativePrompt);
+                result = await generateStabilityImage(prefixedPrompt, negativePrompt, signal);
                 break;
         }
 
@@ -2600,12 +2610,14 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
  * Generates an image using the TogetherAI API.
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateTogetherAIImage(prompt, negativePrompt) {
+async function generateTogetherAIImage(prompt, negativePrompt, signal) {
     const result = await fetch('/api/sd/together/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
+        signal: signal,
         body: JSON.stringify({
             prompt: prompt,
             negative_prompt: negativePrompt,
@@ -2630,12 +2642,14 @@ async function generateTogetherAIImage(prompt, negativePrompt) {
  * Generates an image using the Pollinations API.
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generatePollinationsImage(prompt, negativePrompt) {
+async function generatePollinationsImage(prompt, negativePrompt, signal) {
     const result = await fetch('/api/sd/pollinations/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
+        signal: signal,
         body: JSON.stringify({
             prompt: prompt,
             negative_prompt: negativePrompt,
@@ -2662,9 +2676,10 @@ async function generatePollinationsImage(prompt, negativePrompt) {
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateExtrasImage(prompt, negativePrompt) {
+async function generateExtrasImage(prompt, negativePrompt, signal) {
     const url = new URL(getApiUrl());
     url.pathname = '/api/image';
     const result = await doExtrasFetch(url, {
@@ -2672,6 +2687,7 @@ async function generateExtrasImage(prompt, negativePrompt) {
         headers: {
             'Content-Type': 'application/json',
         },
+        signal: signal,
         body: JSON.stringify({
             prompt: prompt,
             sampler: extension_settings.sd.sampler,
@@ -2739,9 +2755,10 @@ function getClosestAspectRatio(width, height) {
  * Generates an image using Stability AI.
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateStabilityImage(prompt, negativePrompt) {
+async function generateStabilityImage(prompt, negativePrompt, signal) {
     const IMAGE_FORMAT = 'png';
     const PROMPT_LIMIT = 10000;
 
@@ -2749,6 +2766,7 @@ async function generateStabilityImage(prompt, negativePrompt) {
         const response = await fetch('/api/sd/stability/generate', {
             method: 'POST',
             headers: getRequestHeaders(),
+            signal: signal,
             body: JSON.stringify({
                 model: extension_settings.sd.model,
                 payload: {
@@ -2783,12 +2801,14 @@ async function generateStabilityImage(prompt, negativePrompt) {
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateHordeImage(prompt, negativePrompt) {
+async function generateHordeImage(prompt, negativePrompt, signal) {
     const result = await fetch('/api/horde/generate-image', {
         method: 'POST',
         headers: getRequestHeaders(),
+        signal: signal,
         body: JSON.stringify({
             prompt: prompt,
             sampler: extension_settings.sd.sampler,
@@ -2821,13 +2841,15 @@ async function generateHordeImage(prompt, negativePrompt) {
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateAutoImage(prompt, negativePrompt) {
+async function generateAutoImage(prompt, negativePrompt, signal) {
     const isValidVae = extension_settings.sd.vae && !['N/A', placeholderVae].includes(extension_settings.sd.vae);
     const result = await fetch('/api/sd/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
+        signal: signal,
         body: JSON.stringify({
             ...getSdRequestBody(),
             prompt: prompt,
@@ -2875,12 +2897,14 @@ async function generateAutoImage(prompt, negativePrompt) {
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateDrawthingsImage(prompt, negativePrompt) {
+async function generateDrawthingsImage(prompt, negativePrompt, signal) {
     const result = await fetch('/api/sd/drawthings/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
+        signal: signal,
         body: JSON.stringify({
             ...getSdRequestBody(),
             prompt: prompt,
@@ -2914,14 +2938,16 @@ async function generateDrawthingsImage(prompt, negativePrompt) {
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateNovelImage(prompt, negativePrompt) {
+async function generateNovelImage(prompt, negativePrompt, signal) {
     const { steps, width, height, sm, sm_dyn } = getNovelParams();
 
     const result = await fetch('/api/novelai/generate-image', {
         method: 'POST',
         headers: getRequestHeaders(),
+        signal: signal,
         body: JSON.stringify({
             prompt: prompt,
             model: extension_settings.sd.model,
@@ -3010,7 +3036,13 @@ function getNovelParams() {
     return { steps, width, height, sm, sm_dyn };
 }
 
-async function generateOpenAiImage(prompt) {
+/**
+ * Generates an image in OpenAI API using the provided prompt and configuration settings.
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateOpenAiImage(prompt, signal) {
     const dalle2PromptLimit = 1000;
     const dalle3PromptLimit = 4000;
 
@@ -3045,6 +3077,7 @@ async function generateOpenAiImage(prompt) {
     const result = await fetch('/api/openai/generate-image', {
         method: 'POST',
         headers: getRequestHeaders(),
+        signal: signal,
         body: JSON.stringify({
             prompt: prompt,
             model: extension_settings.sd.model,
@@ -3070,9 +3103,10 @@ async function generateOpenAiImage(prompt) {
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateComfyImage(prompt, negativePrompt) {
+async function generateComfyImage(prompt, negativePrompt, signal) {
     const placeholders = [
         'model',
         'vae',
@@ -3133,6 +3167,7 @@ async function generateComfyImage(prompt, negativePrompt) {
     const promptResult = await fetch('/api/sd/comfy/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
+        signal: signal,
         body: JSON.stringify({
             url: extension_settings.sd.comfy_url,
             prompt: `{
@@ -3245,7 +3280,7 @@ async function onComfyNewWorkflowClick() {
     if (!name) {
         return;
     }
-    if (!name.toLowerCase().endsWith('.json')) {
+    if (!String(name).toLowerCase().endsWith('.json')) {
         name += '.json';
     }
     extension_settings.sd.comfy_workflow = name;
@@ -3431,6 +3466,7 @@ async function moduleWorker() {
 }
 
 setInterval(moduleWorker, UPDATE_INTERVAL);
+let buttonAbortController = null;
 
 async function sdMessageButton(e) {
     function setBusyIcon(isBusy) {
@@ -3450,11 +3486,13 @@ async function sdMessageButton(e) {
     const hasSavedNegative = message?.extra?.negative;
 
     if ($icon.hasClass(busyClass)) {
+        buttonAbortController?.abort('Aborted by user');
         console.log('Previous image is still being generated...');
         return;
     }
 
     let dimensions = null;
+    buttonAbortController = new AbortController();
 
     try {
         setBusyIcon(true);
@@ -3466,7 +3504,7 @@ async function sdMessageButton(e) {
             const generationType = message?.extra?.generationType ?? generationMode.FREE;
             console.log('Regenerating an image, using existing prompt:', prompt);
             dimensions = setTypeSpecificDimensions(generationType);
-            await sendGenerationRequest(generationType, prompt, negative, characterFileName, saveGeneratedImage, initiators.action);
+            await sendGenerationRequest(generationType, prompt, negative, characterFileName, saveGeneratedImage, initiators.action, buttonAbortController?.signal);
         }
         else {
             console.log('doing /sd raw last');

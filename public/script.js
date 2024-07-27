@@ -2266,6 +2266,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     if (type === 'swipe') {
         const swipeMessage = chatElement.find(`[mesid="${chat.length - 1}"]`);
+        swipeMessage.attr('swipeid', params.swipeId);
         swipeMessage.find('.mes_text').html(messageText).attr('title', title);
         swipeMessage.find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
         appendMediaToMessage(mes, swipeMessage);
@@ -2798,6 +2799,12 @@ class StreamingProcessor {
     constructor(type, force_name2, timeStarted, messageAlreadyGenerated) {
         this.result = '';
         this.messageId = -1;
+        this.messageDom = null;
+        this.messageTextDom = null;
+        this.messageTimerDom = null;
+        this.messageTokenCounterDom = null;
+        /** @type {HTMLTextAreaElement} */
+        this.sendTextarea = document.querySelector('#send_textarea');
         this.type = type;
         this.force_name2 = force_name2;
         this.isStopped = false;
@@ -2810,6 +2817,15 @@ class StreamingProcessor {
         this.swipes = [];
         /** @type {import('./scripts/logprobs.js').TokenLogprobs[]} */
         this.messageLogprobs = [];
+    }
+
+    #checkDomElements(messageId) {
+        if (this.messageDom === null || this.messageTextDom === null) {
+            this.messageDom = document.querySelector(`#chat .mes[mesid="${messageId}"]`);
+            this.messageTextDom = this.messageDom?.querySelector('.mes_text');
+            this.messageTimerDom = this.messageDom?.querySelector('.mes_timer');
+            this.messageTokenCounterDom = this.messageDom?.querySelector('.tokenCounterDisplay');
+        }
     }
 
     showMessageButtons(messageId) {
@@ -2834,11 +2850,13 @@ class StreamingProcessor {
         let messageId = -1;
 
         if (this.type == 'impersonate') {
-            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
+            this.sendTextarea.value = '';
+            this.sendTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         }
         else {
             await saveReply(this.type, text, true);
             messageId = chat.length - 1;
+            this.#checkDomElements(messageId);
             this.showMessageButtons(messageId);
         }
 
@@ -2870,12 +2888,14 @@ class StreamingProcessor {
         }
 
         if (isImpersonate) {
-            $('#send_textarea').val(processedText)[0].dispatchEvent(new Event('input', { bubbles: true }));
+            this.sendTextarea.value = processedText;
+            this.sendTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         }
         else {
-            let currentTime = new Date();
+            this.#checkDomElements(messageId);
+            const currentTime = new Date();
             // Don't waste time calculating token count for streaming
-            let currentTokenCount = isFinal && power_user.message_token_count_enabled ? getTokenCount(processedText, 0) : 0;
+            const currentTokenCount = isFinal && power_user.message_token_count_enabled ? getTokenCount(processedText, 0) : 0;
             const timePassed = formatGenerationTimer(this.timeStarted, currentTime, currentTokenCount);
             chat[messageId]['mes'] = processedText;
             chat[messageId]['gen_started'] = this.timeStarted;
@@ -2887,8 +2907,9 @@ class StreamingProcessor {
                 }
 
                 chat[messageId]['extra']['token_count'] = currentTokenCount;
-                const tokenCounter = $(`#chat .mes[mesid="${messageId}"] .tokenCounterDisplay`);
-                tokenCounter.text(`${currentTokenCount}t`);
+                if (this.messageTokenCounterDom instanceof HTMLElement) {
+                    this.messageTokenCounterDom.textContent = `${currentTokenCount}t`;
+                }
             }
 
             if ((this.type == 'swipe' || this.type === 'continue') && Array.isArray(chat[messageId]['swipes'])) {
@@ -2896,16 +2917,20 @@ class StreamingProcessor {
                 chat[messageId]['swipe_info'][chat[messageId]['swipe_id']] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])) };
             }
 
-            let formattedText = messageFormatting(
+            const formattedText = messageFormatting(
                 processedText,
                 chat[messageId].name,
                 chat[messageId].is_system,
                 chat[messageId].is_user,
                 messageId,
             );
-            const mesText = $(`#chat .mes[mesid="${messageId}"] .mes_text`);
-            mesText.html(formattedText);
-            $(`#chat .mes[mesid="${messageId}"] .mes_timer`).text(timePassed.timerValue).attr('title', timePassed.timerTitle);
+            if (this.messageTextDom instanceof HTMLElement) {
+                this.messageTextDom.innerHTML = formattedText;
+            }
+            if (this.messageTimerDom instanceof HTMLElement) {
+                this.messageTimerDom.textContent = timePassed.timerValue;
+                this.messageTimerDom.title = timePassed.timerTitle;
+            }
             this.setFirstSwipe(messageId);
         }
 
@@ -3192,6 +3217,23 @@ function restoreResponseLength(api, responseLength) {
 }
 
 /**
+ * Removes last message from the chat DOM.
+ * @returns {Promise<void>} Resolves when the message is removed.
+ */
+function removeLastMessage() {
+    return new Promise((resolve) => {
+        const lastMes = $('#chat').children('.mes').last();
+        if (lastMes.length === 0) {
+            return resolve();
+        }
+        lastMes.hide(animation_duration, function () {
+            $(this).remove();
+            resolve();
+        });
+    });
+}
+
+/**
  * Runs a generation using the current chat context.
  * @param {string} type Generation type
  * @param {GenerateOptions} options Generation options
@@ -3323,9 +3365,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
         else if (type !== 'quiet' && type !== 'swipe' && !isImpersonate && !dryRun && chat.length) {
             chat.length = chat.length - 1;
-            $('#chat').children().last().hide(250, function () {
-                $(this).remove();
-            });
+            await removeLastMessage();
             await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
         }
     }
@@ -3573,6 +3613,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     let chat2 = [];
     let continue_mag = '';
     const userMessageIndices = [];
+    const lastUserMessageIndex = coreChat.findLastIndex(x => x.is_user);
 
     for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
         if (main_api == 'openai') {
@@ -3589,6 +3630,11 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         if (j === 0 && isInstruct) {
             // Reformat with the first output sequence (if any)
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.FIRST);
+        }
+
+        if (lastUserMessageIndex >= 0 && j === lastUserMessageIndex && isInstruct) {
+            // Reformat with the last input sequence (if any)
+            chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.LAST);
         }
 
         // Do not suffix the message for continuation
@@ -3616,7 +3662,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             mes: power_user.instruct.user_alignment_message,
             is_user: true,
         };
-        userAlignmentMessage = formatMessageHistoryItem(alignmentMessage, isInstruct, false);
+        userAlignmentMessage = formatMessageHistoryItem(alignmentMessage, isInstruct, force_output_sequence.FIRST);
     }
 
     // Call combined AN into Generate
@@ -4184,6 +4230,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             summarizeString: (extension_prompts['1_memory']?.value || ''),
             authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
             smartContextString: (extension_prompts['chromadb']?.value || ''),
+            chatVectorsString: (extension_prompts['3_vectors']?.value || ''),
+            dataBankVectorsString: (extension_prompts['4_vectors_data_bank']?.value || ''),
             worldInfoString: worldInfoString,
             storyString: storyString,
             beforeScenarioAnchor: beforeScenarioAnchor,
@@ -4688,6 +4736,7 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
         await eventSource.emit(event_types.MESSAGE_SENT, chat_id);
         addOneMessage(message);
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, chat_id);
+        await saveChatConditional();
     }
 }
 
@@ -4815,6 +4864,8 @@ export async function itemizedParams(itemizedPrompts, thisPromptSet) {
         thisPrompt_padding: itemizedPrompts[thisPromptSet].padding,
         this_main_api: itemizedPrompts[thisPromptSet].main_api,
         chatInjects: await getTokenCountAsync(itemizedPrompts[thisPromptSet].chatInjects),
+        chatVectorsStringTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].chatVectorsString),
+        dataBankVectorsStringTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].dataBankVectorsString),
     };
 
     if (params.chatInjects) {
@@ -6010,9 +6061,10 @@ async function getChatResult() {
         const message = getFirstMessage();
         if (message.mes) {
             chat.push(message);
-            await saveChatConditional();
             freshChat = true;
         }
+        // Make sure the chat appears on the server
+        await saveChatConditional();
     }
     await loadItemizedPrompts(getCurrentChatId());
     await printMessages();
@@ -6064,7 +6116,7 @@ export async function openCharacterChat(file_name) {
     chat_metadata = {};
     await getChat();
     $('#selected_chat_pole').val(file_name);
-    await createOrEditCharacter();
+    await createOrEditCharacter(new CustomEvent('newChat'));
 }
 
 ////////// OPTIMZED MAIN API CHANGE FUNCTION ////////////
@@ -6765,6 +6817,11 @@ export async function displayPastChats() {
         const filteredData = data.filter(chat => {
             const fileName = chat['file_name'];
             const chatContent = rawChats[fileName];
+
+            // Make sure empty chats are displayed when there is no search query
+            if (Array.isArray(chatContent) && !chatContent.length && !searchQuery) {
+                return true;
+            }
 
             // // Uncomment this to return to old behavior (classical full-substring search).
             // return chatContent && Object.values(chatContent).some(message => message?.mes?.toLowerCase()?.includes(searchQuery.toLowerCase()));
@@ -8954,14 +9011,6 @@ API Settings: ${JSON.stringify(getSettingsContents[getSettingsContents.main_api 
 }
 
 jQuery(async function () {
-
-    if (isMobile()) {
-        console.debug('hiding movingUI and sheldWidth toggles for mobile');
-        $('#sheldWidthToggleBlock').hide();
-        $('#movingUIModeCheckBlock').hide();
-
-    }
-
     async function doForceSave() {
         await saveSettings();
         await saveChatConditional();
@@ -9254,12 +9303,26 @@ jQuery(async function () {
         }
     });
     const chatElementScroll = document.getElementById('chat');
-    chatElementScroll.addEventListener('wheel', function () {
-        scrollLock = true;
-    }, { passive: true });
-    chatElementScroll.addEventListener('touchstart', function () {
-        scrollLock = true;
-    }, { passive: true });
+    const chatScrollHandler = function () {
+        if (power_user.waifuMode) {
+            scrollLock = true;
+            return;
+        }
+
+        const scrollIsAtBottom = Math.abs(chatElementScroll.scrollHeight - chatElementScroll.clientHeight - chatElementScroll.scrollTop) < 1;
+
+        // Resume autoscroll if the user scrolls to the bottom
+        if (scrollLock && scrollIsAtBottom) {
+            scrollLock = false;
+        }
+
+        // Cancel autoscroll if the user scrolls up
+        if (!scrollLock && !scrollIsAtBottom) {
+            scrollLock = true;
+        }
+    };
+    chatElementScroll.addEventListener('wheel', chatScrollHandler, { passive: true });
+    chatElementScroll.addEventListener('touchmove', chatScrollHandler, { passive: true });
     chatElementScroll.addEventListener('scroll', function () {
         if (is_use_scroll_holder) {
             this.scrollTop = scroll_holder;
@@ -9793,8 +9856,8 @@ jQuery(async function () {
         hideMenu();
     });
 
-    $('#newChatFromManageScreenButton').on('click', function () {
-        doNewChat({ deleteCurrentChat: false });
+    $('#newChatFromManageScreenButton').on('click', async function () {
+        await doNewChat({ deleteCurrentChat: false });
         $('#select_chat_cross').trigger('click');
     });
 
@@ -10766,7 +10829,7 @@ jQuery(async function () {
                         //newSlider.val(manualInput)
                         //handleSlideEvent.call(newSlider, null, { value: parseFloat(manualInput) }, 'manual');
                         valueBeforeManualInput = manualInput;
-                        $(masterElement).val($(this).val()).trigger('input');
+                        $(masterElement).val($(this).val()).trigger('input', { forced: true });
                     } else {
                         //if value not ok, warn and reset to last known valid value
                         toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`);
@@ -10792,7 +10855,7 @@ jQuery(async function () {
                 if (manualInput >= Number($(this).attr('min')) && manualInput <= Number($(this).attr('max'))) {
                     valueBeforeManualInput = manualInput;
                     //set the slider value to input value
-                    $(masterElement).val($(this).val()).trigger('input');
+                    $(masterElement).val($(this).val()).trigger('input', { forced: true });
                 } else {
                     //if value not ok, warn and reset to last known valid value
                     toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`);

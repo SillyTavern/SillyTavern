@@ -271,6 +271,13 @@ export function getStringHash(str, seed = 0) {
 }
 
 /**
+ * Map of debounced functions to their timers.
+ * Weak map is used to avoid memory leaks.
+ * @type {WeakMap<function, any>}
+ */
+const debounceMap = new WeakMap();
+
+/**
  * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed since the last time the debounced function was invoked.
  * @param {function} func The function to debounce.
  * @param {debounce_timeout|number} [timeout=debounce_timeout.default] The timeout based on the common enum values, or in milliseconds.
@@ -278,10 +285,26 @@ export function getStringHash(str, seed = 0) {
  */
 export function debounce(func, timeout = debounce_timeout.standard) {
     let timer;
-    return (...args) => {
+    let fn = (...args) => {
         clearTimeout(timer);
         timer = setTimeout(() => { func.apply(this, args); }, timeout);
+        debounceMap.set(func, timer);
+        debounceMap.set(fn, timer);
     };
+
+    return fn;
+}
+
+/**
+ * Cancels a scheduled debounced function.
+ * Does nothing if the function is not debounced or not scheduled.
+ * @param {function} func The function to cancel. Either the original or the debounced function.
+ */
+export function cancelDebounce(func) {
+    if (debounceMap.has(func)) {
+        clearTimeout(debounceMap.get(func));
+        debounceMap.delete(func);
+    }
 }
 
 /**
@@ -681,63 +704,6 @@ export function isOdd(number) {
     return number % 2 !== 0;
 }
 
-const dateCache = new Map();
-
-/**
- * Cached version of moment() to avoid re-parsing the same date strings.
- * Important: Moment objects are mutable, so use clone() before modifying them!
- * @param {string|number} timestamp String or number representing a date.
- * @returns {moment.Moment} Moment object
- */
-export function timestampToMoment(timestamp) {
-    if (dateCache.has(timestamp)) {
-        return dateCache.get(timestamp);
-    }
-
-    const moment = parseTimestamp(timestamp);
-    dateCache.set(timestamp, moment);
-    return moment;
-}
-
-function parseTimestamp(timestamp) {
-    if (!timestamp) {
-        return moment.invalid();
-    }
-
-    // Unix time (legacy TAI / tags)
-    if (typeof timestamp === 'number' || /^\d+$/.test(timestamp)) {
-        if (isNaN(timestamp) || !isFinite(timestamp) || timestamp < 0) {
-            return moment.invalid();
-        }
-        return moment(Number(timestamp));
-    }
-
-    // ST "humanized" format pattern
-    const pattern1 = /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/;
-    const replacement1 = (match, year, month, day, hour, minute, second, millisecond) => {
-        return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}.${millisecond.padStart(3, '0')}Z`;
-    };
-    const isoTimestamp1 = timestamp.replace(pattern1, replacement1);
-    if (moment(isoTimestamp1).isValid()) {
-        return moment(isoTimestamp1);
-    }
-
-    // New format pattern: "June 19, 2023 4:13pm"
-    const pattern2 = /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i;
-    const replacement2 = (match, month, day, year, hour, minute, meridiem) => {
-        const monthNum = moment().month(month).format('MM');
-        const hour24 = meridiem.toLowerCase() === 'pm' ? (parseInt(hour, 10) % 12) + 12 : parseInt(hour, 10) % 12;
-        return `${year}-${monthNum}-${day.padStart(2, '0')}T${hour24.toString().padStart(2, '0')}:${minute.padStart(2, '0')}:00`;
-    };
-    const isoTimestamp2 = timestamp.replace(pattern2, replacement2);
-    if (moment(isoTimestamp2).isValid()) {
-        return moment(isoTimestamp2);
-    }
-
-    // If none of the patterns match, return an invalid moment object
-    return moment.invalid();
-}
-
 /**
  * Compare two moment objects for sorting.
  * @param {moment.Moment} a The first moment object.
@@ -752,6 +718,71 @@ export function sortMoments(a, b) {
     } else {
         return 0;
     }
+}
+
+const dateCache = new Map();
+
+/**
+ * Cached version of moment() to avoid re-parsing the same date strings.
+ * Important: Moment objects are mutable, so use clone() before modifying them!
+ * @param {string|number} timestamp String or number representing a date.
+ * @returns {moment.Moment} Moment object
+ */
+export function timestampToMoment(timestamp) {
+    if (dateCache.has(timestamp)) {
+        return dateCache.get(timestamp);
+    }
+
+    const iso8601 = parseTimestamp(timestamp);
+    const objMoment = iso8601 ? moment(iso8601) : moment.invalid();
+
+    dateCache.set(timestamp, objMoment);
+    return objMoment;
+}
+
+/**
+ * Parses a timestamp and returns a moment object representing the parsed date and time.
+ * @param {string|number} timestamp - The timestamp to parse. It can be a string or a number.
+ * @returns {string} - If the timestamp is valid, returns an ISO 8601 string.
+ */
+function parseTimestamp(timestamp) {
+    if (!timestamp) return;
+
+    // Unix time (legacy TAI / tags)
+    if (typeof timestamp === 'number' || /^\d+$/.test(timestamp)) {
+        const unixTime = Number(timestamp);
+        const isValid = Number.isFinite(unixTime) && !Number.isNaN(unixTime) && unixTime >= 0;
+        if (!isValid) return;
+        return new Date(unixTime).toISOString();
+    }
+
+    let dtFmt = [];
+
+    // meridiem-based format
+    const convertFromMeridiemBased = (_, month, day, year, hour, minute, meridiem) => {
+        const monthNum = moment().month(month).format('MM');
+        const hour24 = meridiem.toLowerCase() === 'pm' ? (parseInt(hour, 10) % 12) + 12 : parseInt(hour, 10) % 12;
+        return `${year}-${monthNum}-${day.padStart(2, '0')}T${hour24.toString().padStart(2, '0')}:${minute.padStart(2, '0')}:00`;
+    };
+    // June 19, 2023 2:20pm
+    dtFmt.push({ callback: convertFromMeridiemBased, pattern: /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i });
+
+    // ST "humanized" format patterns
+    const convertFromHumanized = (_, year, month, day, hour, min, sec, ms) => {
+        ms = typeof ms !== 'undefined' ? `.${ms.padStart(3, '0')}` : '';
+        return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${min.padStart(2, '0')}:${sec.padStart(2, '0')}${ms}Z`;
+    };
+    // 2024-7-12@01h31m37s
+    dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2})@(\d{1,2})h(\d{1,2})m(\d{1,2})s/ });
+    // 2024-6-5 @14h 56m 50s 682ms
+    dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/ });
+
+    for (const x of dtFmt) {
+        let rgxMatch = timestamp.match(x.pattern);
+        if (!rgxMatch) continue;
+        return x.callback(...rgxMatch);
+    }
+    return;
 }
 
 /** Split string to parts no more than length in size.

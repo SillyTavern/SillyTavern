@@ -605,35 +605,41 @@ function getModuleInformation() {
 async function showExtensionsDetails() {
     let popupPromise;
     try {
-        showLoader();
-        let htmlDefault = '<h3>Built-in Extensions:</h3>';
-        let htmlExternal = '<h3>Installed Extensions:</h3>';
+        const htmlDefault = $('<h3>Built-in Extensions:</h3>');
+        const htmlExternal = $('<h3>Installed Extensions:</h3>').addClass('opacity50p');
+        const htmlLoading = $(`<h3 class="flex-container alignItemsCenter justifyCenter marginTop10 marginBot5">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span>Loading third-party extensions... Please wait...</span>
+        </h3>`);
 
-        const extensions = Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order);
+        /** @type {Promise<any>[]} */
         const promises = [];
+        const extensions = Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order);
 
         for (const extension of extensions) {
             promises.push(getExtensionData(extension));
         }
 
-        const settledPromises = await Promise.allSettled(promises);
-
-        settledPromises.forEach(promise => {
-            if (promise.status === 'fulfilled') {
-                const { isExternal, extensionHtml } = promise.value;
-                if (isExternal) {
-                    htmlExternal += extensionHtml;
-                } else {
-                    htmlDefault += extensionHtml;
-                }
-            }
+        promises.forEach(promise => {
+            promise.then(value => {
+                const { isExternal, extensionHtml } = value;
+                const container = isExternal ? htmlExternal : htmlDefault;
+                container.append(extensionHtml);
+            });
         });
 
-        const html = `
-            ${getModuleInformation()}
-            ${htmlDefault}
-            ${htmlExternal}
-        `;
+        Promise.allSettled(promises).then(() => {
+            htmlLoading.remove();
+            htmlExternal.removeClass('opacity50p');
+        });
+
+        const html = $('<div></div>')
+            .addClass('extensions_info')
+            .append(getModuleInformation())
+            .append(htmlDefault)
+            .append(htmlLoading)
+            .append(htmlExternal);
+
         /** @type {import('./popup.js').CustomPopupButton} */
         const updateAllButton = {
             text: 'Update all',
@@ -651,13 +657,11 @@ async function showExtensionsDetails() {
             await oldPopup.complete(POPUP_RESULT.CANCELLED);
         }
 
-        const popup = new Popup(`<div class="extensions_info">${html}</div>`, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, customButtons: [updateAllButton], allowVerticalScrolling: true });
+        const popup = new Popup(html, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, customButtons: [updateAllButton], allowVerticalScrolling: true });
         popupPromise = popup.show();
     } catch (error) {
         toastr.error('Error loading extensions. See browser console for details.');
         console.error(error);
-    } finally {
-        hideLoader();
     }
     if (popupPromise) {
         await popupPromise;

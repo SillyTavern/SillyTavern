@@ -216,7 +216,7 @@
     "Character Names Behavior": "Charakternamen Verhalten",
     "Helps the model to associate messages with characters.": "Hilft dem Modell, Nachrichten mit Zeichen zu verknüpfen.",
     "None": "Keins",
-    "character_names_none": "Außer für Gruppen und frühere Personas. Andernfalls stellen Sie sicher, dass Sie in der Eingabeaufforderung Namen angeben.",
+    "character_names_default": "Außer für Gruppen und frühere Personas. Andernfalls stellen Sie sicher, dass Sie in der Eingabeaufforderung Namen angeben.",
     "Don't add character names.": "Fügen Sie keine Charakternamen hinzu.",
     "Completion": "Vervollständigungsobjekt",
     "character_names_completion": "Es gelten Einschränkungen: nur lateinische alphanumerische Zeichen und Unterstriche. Funktioniert nicht für alle Quellen, insbesondere: Claude, MistralAI, Google.",

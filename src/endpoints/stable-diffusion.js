@@ -323,6 +323,17 @@ router.post('/generate', jsonParser, async (request, response) => {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/txt2img';
 
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            if (!response.writableEnded) {
+                const url = new URL(request.body.url);
+                url.pathname = '/sdapi/v1/interrupt';
+                fetch(url, { method: 'POST', headers: { 'Authorization': getBasicAuthHeader(request.body.auth) } });
+            }
+            controller.abort();
+        });
+
         const result = await fetch(url, {
             method: 'POST',
             body: JSON.stringify(request.body),
@@ -331,6 +342,8 @@ router.post('/generate', jsonParser, async (request, response) => {
                 'Authorization': getBasicAuthHeader(request.body.auth),
             },
             timeout: 0,
+            // @ts-ignore
+            signal: controller.signal,
         });
 
         if (!result.ok) {
@@ -556,6 +569,17 @@ comfy.post('/generate', jsonParser, async (request, response) => {
         const url = new URL(request.body.url);
         url.pathname = '/prompt';
 
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            if (!response.writableEnded && !item) {
+                const interruptUrl = new URL(request.body.url);
+                interruptUrl.pathname = '/interrupt';
+                fetch(interruptUrl, { method: 'POST', headers: { 'Authorization': getBasicAuthHeader(request.body.auth) } });
+            }
+            controller.abort();
+        });
+
         const promptResult = await fetch(url, {
             method: 'POST',
             body: request.body.prompt,
@@ -581,6 +605,9 @@ comfy.post('/generate', jsonParser, async (request, response) => {
             }
             await delay(100);
         }
+        if (item.status.status_str === 'error') {
+            throw new Error('ComfyUI generation did not succeed.');
+        }
         const imgInfo = Object.keys(item.outputs).map(it => item.outputs[it].images).flat()[0];
         const imgUrl = new URL(request.body.url);
         imgUrl.pathname = '/view';
@@ -592,6 +619,7 @@ comfy.post('/generate', jsonParser, async (request, response) => {
         const imgBuffer = await imgResponse.buffer();
         return response.send(imgBuffer.toString('base64'));
     } catch (error) {
+        console.log(error);
         return response.sendStatus(500);
     }
 });

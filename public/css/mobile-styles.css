@@ -1,8 +1,14 @@
 /*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
 @media screen and (max-width: 1000px) {
-    #send_form.compact #leftSendForm, #send_form.compact #rightSendForm {
+
+    #send_form.compact #leftSendForm,
+    #send_form.compact #rightSendForm {
         flex-wrap: nowrap;
         width: unset;
+    }
+
+    #sheldWidthToggleBlock {
+        display: none;
     }
 
     .bg_button {
@@ -30,9 +36,9 @@
         right: 0;
         width: fit-content;
         max-height: calc(60vh - 60px);
-        max-height: calc(60svh - 60px);
+        max-height: calc(60dvh - 60px);
         max-width: 90vw;
-        max-width: 90svw;
+        max-width: 90dvw;
         left: 50%;
         top: 50%;
         transform: translateX(-50%) translateY(-50%);
@@ -98,7 +104,7 @@
         min-width: unset;
         width: 100%;
         max-height: calc(100vh - 45px);
-        max-height: calc(100svh - 45px);
+        max-height: calc(100dvh - 45px);
         position: fixed;
         left: 0;
         top: 5px;
@@ -126,15 +132,15 @@
     #top-bar {
         position: fixed;
         width: 100vw;
-        width: 100svw;
+        width: 100dvw;
     }
 
     #bg1,
     #bg_custom {
         height: 100vh !important;
-        height: 100svh !important;
+        height: 100dvh !important;
         width: 100vw !important;
-        width: 100svw !important;
+        width: 100dvw !important;
         background-position: center;
 
     }
@@ -142,13 +148,7 @@
 
     #sheld,
     #character_popup,
-    .drawer-content
-
-    /* ,
-    #world_popup  */
-        {
-        /*max-height: calc(100vh - 36px);
-        max-height: calc(100svh - 36px);*/
+    .drawer-content {
         width: 100% !important;
         margin: 0 auto;
         max-width: 100%;
@@ -219,10 +219,10 @@
     #floatingPrompt,
     #cfgConfig,
     #logprobsViewer,
-    #movingDivs > div {
-        /* 100vh are fallback units for browsers that don't support svh */
+    #movingDivs>div {
+        /* 100vh are fallback units for browsers that don't support dvh */
         height: calc(100vh - 45px);
-        height: calc(100svh - 45px);
+        height: calc(100dvh - 45px);
         min-width: 100% !important;
         width: 100% !important;
         max-width: 100% !important;
@@ -245,7 +245,7 @@
     #floatingPrompt,
     #cfgConfig,
     #logprobsViewer,
-    #movingDivs > div {
+    #movingDivs>div {
         height: min-content;
     }
 
@@ -282,9 +282,9 @@
 
     body.waifuMode #sheld {
         height: 40vh;
-        height: 40svh;
+        height: 40dvh;
         top: 60vh;
-        top: 60svh;
+        top: 60dvh;
         bottom: 0 !important;
     }
 
@@ -321,16 +321,16 @@
     body.waifuMode .zoomed_avatar {
         width: fit-content;
         max-height: calc(60vh - 60px);
-        max-height: calc(60svh - 60px);
+        max-height: calc(60dvh - 60px);
         max-width: 90vw;
-        max-width: 90svw;
+        max-width: 90dvw;
     }
 
     .scrollableInner {
         overflow-y: auto;
         overflow-x: hidden;
         max-height: calc(100vh - 90px);
-        max-height: calc(100svh - 90px);
+        max-height: calc(100dvh - 90px);
     }
 
     .horde_multiple_hint {
@@ -366,9 +366,9 @@
 
     body:not(.waifuMode) .zoomed_avatar {
         max-height: calc(60vh - 60px);
-        max-height: calc(60svh - 60px);
+        max-height: calc(60dvh - 60px);
         max-width: 90vw;
-        max-width: 90svw;
+        max-width: 90dvw;
         left: 50%;
         top: 50%;
         transform: translateX(-50%) translateY(-50%);
@@ -449,9 +449,9 @@
         min-height: unset;
         max-height: unset;
         width: 100vw;
-        width: 100svw;
+        width: 100dvw;
         height: calc(100vh - 36px);
-        height: calc(100svh - 36px);
+        height: calc(100dvh - 36px);
         padding-right: max(env(safe-area-inset-right), 0px);
         padding-left: max(env(safe-area-inset-left), 0px);
         padding-bottom: 0;
@@ -481,10 +481,10 @@
         top: 0;
         margin: 0 auto;
         height: calc(100vh - 70px);
-        height: calc(100svh - 70px);
+        height: calc(100dvh - 70px);
         width: calc(100% - 5px);
         max-height: calc(100vh - 70px);
-        max-height: calc(100svh - 70px);
+        max-height: calc(100dvh - 70px);
         max-width: calc(100% - 5px);
 
     }
