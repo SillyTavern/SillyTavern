@@ -1,4 +1,5 @@
 require('./polyfill.js');
+const { getConfigValue } = require('./util.js');
 
 /**
  * Convert a prompt from the ChatML objects to the format used by Claude.
@@ -373,8 +374,9 @@ function convertMistralMessages(messages, charName = '', userName = '') {
     }
 
     // Make the last assistant message a prefill
+    const prefixEnabled = getConfigValue('mistral.enablePrefix', false);
     const lastMsg = messages[messages.length - 1];
-    if (messages.length > 0 && lastMsg && (lastMsg.role === 'assistant')) {
+    if (prefixEnabled && messages.length > 0 && lastMsg?.role === 'assistant') {
         lastMsg.prefix = true;
     }
 
