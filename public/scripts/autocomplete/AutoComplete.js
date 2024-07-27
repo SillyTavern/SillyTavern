@@ -77,7 +77,7 @@ export class AutoComplete {
 
 
     /**
-     * @param {HTMLTextAreaElement} textarea The textarea to receive autocomplete.
+     * @param {HTMLTextAreaElement|HTMLInputElement} textarea The textarea to receive autocomplete.
      * @param {() => boolean} checkIfActivate Function should return true only if under the current conditions, autocomplete should display (e.g., for slash commands: autoComplete.text[0] == '/')
      * @param {(text: string, index: number) => Promise<AutoCompleteNameResult>} getNameAt Function should return (unfiltered, matching against input is done in AutoComplete) information about name options at index in text.
      * @param {boolean} isFloating Whether autocomplete should float at the keyboard cursor.
