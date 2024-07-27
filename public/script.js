@@ -10817,7 +10817,7 @@ jQuery(async function () {
                         //newSlider.val(manualInput)
                         //handleSlideEvent.call(newSlider, null, { value: parseFloat(manualInput) }, 'manual');
                         valueBeforeManualInput = manualInput;
-                        $(masterElement).val($(this).val()).trigger('input');
+                        $(masterElement).val($(this).val()).trigger('input', { forced: true });
                     } else {
                         //if value not ok, warn and reset to last known valid value
                         toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`);
@@ -10843,7 +10843,7 @@ jQuery(async function () {
                 if (manualInput >= Number($(this).attr('min')) && manualInput <= Number($(this).attr('max'))) {
                     valueBeforeManualInput = manualInput;
                     //set the slider value to input value
-                    $(masterElement).val($(this).val()).trigger('input');
+                    $(masterElement).val($(this).val()).trigger('input', { forced: true });
                 } else {
                     //if value not ok, warn and reset to last known valid value
                     toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`);

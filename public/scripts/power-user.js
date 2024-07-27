@@ -3328,10 +3328,11 @@ $(document).ready(() => {
 
     });
 
-    $('#chat_width_slider').on('input', function (e) {
+    $('#chat_width_slider').on('input', function (e, data) {
+        const applyMode = data?.forced ? 'forced' : 'normal';
         power_user.chat_width = Number(e.target.value);
         localStorage.setItem(storage_keys.chat_width, power_user.chat_width);
-        applyChatWidth();
+        applyChatWidth(applyMode);
         setHotswapsDebounced();
     });
 
@@ -3357,11 +3358,12 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('input[name="font_scale"]').on('input', async function (e) {
+    $('input[name="font_scale"]').on('input', async function (e, data) {
+        const applyMode = data?.forced ? 'forced' : 'normal';
         power_user.font_scale = Number(e.target.value);
         $('#font_scale_counter').val(power_user.font_scale);
         localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
-        await applyFontScale();
+        await applyFontScale(applyMode);
         saveSettingsDebounced();
     });
 
