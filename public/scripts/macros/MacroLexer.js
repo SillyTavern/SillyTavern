@@ -17,27 +17,26 @@ const Tokens = {
     // General macro capture
     Macro: {
         Start: createToken({ name: 'MacroStart', pattern: /\{\{/ }),
+        // Separate macro identifier needed, that is similar to the global indentifier, but captures the actual macro "name"
+        // We need this, because this token is going to switch lexer mode, while the general identifier does not.
         Identifier: createToken({ name: 'MacroIdentifier', pattern: /[a-zA-Z_]\w*/ }),
         // CaptureBeforeEnd: createToken({ name: 'MacroCaptureBeforeEnd', pattern: /.*?(?=\}\})/, pop_mode: true/*, group: Lexer.SKIPPED */ }),
         End: createToken({ name: 'MacroEnd', pattern: /\}\}/ }),
     },
 
+    // Captures that only appear inside arguments
     Args: {
-
+        DoubleColon: createToken({ name: 'DoubleColon', pattern: /::/ }),
+        Colon: createToken({ name: 'Colon', pattern: /:/ }),
+        Equals: createToken({ name: 'Equals', pattern: /=/ }),
+        Quote: createToken({ name: 'Quote', pattern: /"/ }),
     },
 
     // All tokens that can be captured inside a macro
-    DoubleColon: createToken({ name: 'DoubleColon', pattern: /::/ }),
-    Colon: createToken({ name: 'Colon', pattern: /:/ }),
-    Equals: createToken({ name: 'Equals', pattern: /=/ }),
-    Quote: createToken({ name: 'Quote', pattern: /"/ }),
     Identifier: createToken({ name: 'Identifier', pattern: /[a-zA-Z_]\w*/ }),
-    WhiteSpace: createToken({
-        name: 'WhiteSpace',
-        pattern: /\s+/,
-        group: Lexer.SKIPPED,
-    }),
+    WhiteSpace: createToken({ name: 'WhiteSpace', pattern: /\s+/, group: Lexer.SKIPPED }),
 
+    // Capture unknown characters one by one, to still allow other tokens being matched once they are there
     Unknown: createToken({ name: 'Unknown', pattern: /[^{}]/ }),
 
     // TODO: Capture-all rest for now, that is not the macro end or opening of a new macro. Might be replaced later down the line.
@@ -69,10 +68,10 @@ const Def = {
             // Macro args allow nested macros
             enter(Tokens.Macro.Start, modes.macro_def),
 
-            using(Tokens.DoubleColon),
-            using(Tokens.Colon),
-            using(Tokens.Equals),
-            using(Tokens.Quote),
+            using(Tokens.Args.DoubleColon),
+            using(Tokens.Args.Colon),
+            using(Tokens.Args.Equals),
+            using(Tokens.Args.Quote),
             using(Tokens.Identifier),
 
             using(Tokens.WhiteSpace),
@@ -134,6 +133,7 @@ instance = MacroLexer.instance;
  * @returns {TokenType} The token again
  */
 function enter(token, mode) {
+    if (!token) throw new Error('Token must not be undefined');
     if (enterModesMap.has(token.name) && enterModesMap.get(token.name) !== mode) {
         throw new Error(`Token ${token.name} already is set to enter mode ${enterModesMap.get(token.name)}. The token definition are global, so they cannot be used to lead to different modes.`);
     }
@@ -155,6 +155,7 @@ function enter(token, mode) {
  * @returns {TokenType} The token again
  */
 function exits(token, mode) {
+    if (!token) throw new Error('Token must not be undefined');
     token.POP_MODE = !!mode; // Always set to true. We just use the mode here, so the linter thinks it was used. We just pass it in for clarity in the definition
     return token;
 }
@@ -169,6 +170,7 @@ function exits(token, mode) {
  * @returns {TokenType} The token again
  */
 function using(token) {
+    if (!token) throw new Error('Token must not be undefined');
     if (enterModesMap.has(token.name)) {
         throw new Error(`Token ${token.name} is already marked to enter a mode (${enterModesMap.get(token.name)}). The token definition are global, so they cannot be used to lead or stay differently.`);
     }
