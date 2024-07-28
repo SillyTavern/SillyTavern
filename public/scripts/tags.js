@@ -21,7 +21,7 @@ import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { isMobile } from './RossAscends-mods.js';
-import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { debounce_timeout } from './constants.js';
 import { INTERACTABLE_CONTROL_CLASS } from './keyboard.js';
 import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -1447,6 +1447,13 @@ async function onTagRestoreFileSelect(e) {
         return;
     }
 
+    // Prompt user if they want to overwrite existing tags
+    let overwrite = false;
+    if (tags.length > 0) {
+        const result = await Popup.show.confirm('Tag Restore', 'You have existing tags. If the backup contains any of those tags, to you want the backup to overwrite your current tags?', { okButton: 'Overwrite', cancelButton: 'Keep' })
+        overwrite = result === POPUP_RESULT.AFFIRMATIVE;
+    }
+
     const warnings = [];
 
     // Import tags
@@ -1457,8 +1464,12 @@ async function onTagRestoreFileSelect(e) {
         }
 
         if (tags.find(x => x.id === tag.id)) {
-            warnings.push(`Tag with id ${tag.id} already exists.`);
-            continue;
+            if (!overwrite) {
+                warnings.push(`Tag with id ${tag.id} already exists.`);
+                continue;
+            }
+            // On overwrite, we remove and re-add the tag
+            removeFromArray(tags, tag);
         }
 
         tags.push(tag);
@@ -1491,10 +1502,10 @@ async function onTagRestoreFileSelect(e) {
     }
 
     if (warnings.length) {
-        toastr.success('Tags restored with warnings. Check console for details.');
+        toastr.success('Tags restored with warnings. Check console for details.', 'Tag restore');
         console.warn(`TAG RESTORE REPORT\n====================\n${warnings.join('\n')}`);
     } else {
-        toastr.success('Tags restored successfully.');
+        toastr.success('Tags restored successfully.', 'Tag restore');
     }
 
     $('#tag_view_restore_input').val('');
