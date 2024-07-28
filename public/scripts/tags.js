@@ -1456,6 +1456,8 @@ async function onTagRestoreFileSelect(e) {
     }
 
     const warnings = [];
+    /** @type {Map<string, string>} Map import tag ids with existing ids on overwrite */
+    const idToActualTagIdMap = new Map();
 
     // Import tags
     for (const tag of data.tags) {
@@ -1473,12 +1475,18 @@ async function onTagRestoreFileSelect(e) {
         existingTag = getTag(tag.name);
         if (existingTag && !overwrite) {
             warnings.push(`Tag with name '${tag.name}' already exists.`);
+            // Remember the tag id, so we can still import the tag map entries for this
+            idToActualTagIdMap.set(tag.id, existingTag.id);
             continue;
         }
 
         if (existingTag) {
             // On overwrite, we remove and re-add the tag
             removeFromArray(tags, existingTag);
+            // And remember the ID if it was different, so we can update the tag map accordingly
+            if (existingTag.id !== tag.id) {
+                idToActualTagIdMap.set(existingTag.id, tag.id);
+            }
         }
 
         tags.push(tag);
@@ -1504,10 +1512,14 @@ async function onTagRestoreFileSelect(e) {
 
         // Get existing tag ids for this key or empty array.
         const existingTagIds = tag_map[key] || [];
-        // Merge existing and new tag ids. Remove duplicates.
-        tag_map[key] = existingTagIds.concat(tagIds).filter(onlyUnique);
+
+        // Merge existing and new tag ids. Replace the ones mapped to a new id. Remove duplicates.
+        const combinedTags = existingTagIds.concat(tagIds)
+            .map(tagId => (idToActualTagIdMap.has(tagId)) ? idToActualTagIdMap.get(tagId) : tagId)
+            .filter(onlyUnique);
+
         // Verify that all tags exist. Remove tags that don't exist.
-        tag_map[key] = tag_map[key].filter(x => tags.some(y => String(y.id) === String(x)));
+        tag_map[key] = combinedTags.filter(tagId => tags.some(y => String(y.id) === String(tagId)));
     }
 
     if (warnings.length) {
