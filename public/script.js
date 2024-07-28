@@ -2470,26 +2470,30 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
  * @returns {string[]} Array of stopping strings
  */
 export function getStoppingStrings(isImpersonate, isContinue) {
-    const charString = `\n${name2}:`;
-    const userString = `\n${name1}:`;
-    const result = isImpersonate ? [charString] : [userString];
+    const result = [];
 
-    result.push(userString);
+    if (power_user.context.names_as_stop_strings) {
+        const charString = `\n${name2}:`;
+        const userString = `\n${name1}:`;
+        result.push(isImpersonate ? charString : userString);
 
-    if (isContinue && Array.isArray(chat) && chat[chat.length - 1]?.is_user) {
-        result.push(charString);
-    }
+        result.push(userString);
 
-    // Add other group members as the stopping strings
-    if (selected_group) {
-        const group = groups.find(x => x.id === selected_group);
+        if (isContinue && Array.isArray(chat) && chat[chat.length - 1]?.is_user) {
+            result.push(charString);
+        }
 
-        if (group && Array.isArray(group.members)) {
-            const names = group.members
-                .map(x => characters.find(y => y.avatar == x))
-                .filter(x => x && x.name && x.name !== name2)
-                .map(x => `\n${x.name}:`);
-            result.push(...names);
+        // Add other group members as the stopping strings
+        if (selected_group) {
+            const group = groups.find(x => x.id === selected_group);
+
+            if (group && Array.isArray(group.members)) {
+                const names = group.members
+                    .map(x => characters.find(y => y.avatar == x))
+                    .filter(x => x && x.name && x.name !== name2)
+                    .map(x => `\n${x.name}:`);
+                result.push(...names);
+            }
         }
     }
 

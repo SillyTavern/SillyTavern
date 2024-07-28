@@ -242,6 +242,7 @@ let power_user = {
         example_separator: defaultExampleSeparator,
         use_stop_strings: true,
         allow_jailbreak: false,
+        names_as_stop_strings: true,
     },
 
     personas: {},
@@ -347,6 +348,7 @@ const contextControls = [
     { id: 'context_chat_start', property: 'chat_start', isCheckbox: false, isGlobalSetting: false },
     { id: 'context_use_stop_strings', property: 'use_stop_strings', isCheckbox: true, isGlobalSetting: false, defaultValue: false },
     { id: 'context_allow_jailbreak', property: 'allow_jailbreak', isCheckbox: true, isGlobalSetting: false, defaultValue: false },
+    { id: 'context_names_as_stop_strings', property: 'names_as_stop_strings', isCheckbox: true, isGlobalSetting: false, defaultValue: true },
 
     // Existing power user settings
     { id: 'always-force-name2-checkbox', property: 'always_force_name2', isCheckbox: true, isGlobalSetting: true, defaultValue: true },
