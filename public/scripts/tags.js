@@ -1558,7 +1558,7 @@ function appendViewTagToList(list, tag, everything) {
 
     const primaryColorPicker = $('<toolcool-color-picker></toolcool-color-picker>')
         .addClass('tag-color')
-        .attr({ id: colorPickerId, color: tag.color || 'rgba(0, 0, 0, 0.3)', 'data-default-color': 'rgba(0, 0, 0, 0.3)' });
+        .attr({ id: colorPickerId, color: tag.color || 'rgba(0, 0, 0, 0.5)', 'data-default-color': 'rgba(0, 0, 0, 0.5)' });
 
     const secondaryColorPicker = $('<toolcool-color-picker></toolcool-color-picker>')
         .addClass('tag-color2')
