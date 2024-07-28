@@ -209,20 +209,20 @@
     opacity: 1;
 }
 
-.tag_as_folder {
+.tag_as_folder.right_menu_button {
     filter: brightness(75%) saturate(0.6);
 }
 
-.tag_as_folder:hover,
-.tag_as_folder.flash {
-    filter: brightness(150%) saturate(0.6) !important;
+.tag_as_folder.right_menu_button:hover,
+.tag_as_folder.right_menu_button.flash {
+    filter: brightness(150%) saturate(0.6);
 }
 
-.tag_as_folder.no_folder {
+.tag_as_folder.right_menu_button.no_folder {
     filter: brightness(25%) saturate(0.25);
 }
 
-.tag_as_folder .tag_folder_indicator {
+.tag_as_folder.right_menu_button .tag_folder_indicator {
     position: absolute;
     top: calc(var(--mainFontSize) * -0.5);
     right: calc(var(--mainFontSize) * -0.5);
