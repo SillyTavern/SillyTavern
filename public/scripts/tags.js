@@ -1464,12 +1464,19 @@ async function onTagRestoreFileSelect(e) {
             continue;
         }
 
-        const existingTag = tags.find(x => x.id === tag.id);
+        // Check against both existing id (direct match) and tag with the same name, which is not allowed.
+        let existingTag = tags.find(x => x.id === tag.id);
+        if (existingTag && !overwrite) {
+            warnings.push(`Tag '${tag.name}' with id ${tag.id} already exists.`);
+            continue;
+        }
+        existingTag = getTag(tag.name);
+        if (existingTag && !overwrite) {
+            warnings.push(`Tag with name '${tag.name}' already exists.`);
+            continue;
+        }
+
         if (existingTag) {
-            if (!overwrite) {
-                warnings.push(`Tag with id ${tag.id} already exists.`);
-                continue;
-            }
             // On overwrite, we remove and re-add the tag
             removeFromArray(tags, existingTag);
         }
@@ -1491,7 +1498,7 @@ async function onTagRestoreFileSelect(e) {
         const groupExists = groups.some(x => String(x.id) === String(key));
 
         if (!characterExists && !groupExists) {
-            warnings.push(`Tag map key ${key} does not exist.`);
+            warnings.push(`Tag map key ${key} does not exist as character or group.`);
             continue;
         }
 
