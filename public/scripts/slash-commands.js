@@ -2847,7 +2847,6 @@ export async function sendMessageAs(args, text) {
 
     if (args.name) {
         name = args.name.trim();
-        mesText = text.trim();
 
         if (!name && !text) {
             toastr.warning('You must specify a name and text to send as');
@@ -2860,7 +2859,13 @@ export async function sendMessageAs(args, text) {
             localStorage.setItem(namelessWarningKey, 'true');
         }
         name = name2;
+        if (!text) {
+            toastr.warning('You must specify text to send as');
+            return '';
+        }
     }
+
+    mesText = text.trim();
 
     // Requires a regex check after the slash command is pushed to output
     mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND, { characterOverride: name });
