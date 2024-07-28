@@ -1436,13 +1436,13 @@ async function onTagRestoreFileSelect(e) {
     const data = await parseJsonFile(file);
 
     if (!data) {
-        toastr.warning('Empty file data', 'Tag restore');
+        toastr.warning('Empty file data', 'Tag Restore');
         console.log('Tag restore: File data empty.');
         return;
     }
 
     if (!data.tags || !data.tag_map || !Array.isArray(data.tags) || typeof data.tag_map !== 'object') {
-        toastr.warning('Invalid file format', 'Tag restore');
+        toastr.warning('Invalid file format', 'Tag Restore');
         console.log('Tag restore: Invalid file format.');
         return;
     }
@@ -1450,7 +1450,8 @@ async function onTagRestoreFileSelect(e) {
     // Prompt user if they want to overwrite existing tags
     let overwrite = false;
     if (tags.length > 0) {
-        const result = await Popup.show.confirm('Tag Restore', 'You have existing tags. If the backup contains any of those tags, to you want the backup to overwrite your current tags?', { okButton: 'Overwrite', cancelButton: 'Keep' })
+        const result = await Popup.show.confirm('Tag Restore', 'You have existing tags. If the backup contains any of those tags, to you want the backup to overwrite your current tags?',
+            { okButton: 'Overwrite', cancelButton: 'Keep' });
         overwrite = result === POPUP_RESULT.AFFIRMATIVE;
     }
 
@@ -1463,13 +1464,14 @@ async function onTagRestoreFileSelect(e) {
             continue;
         }
 
-        if (tags.find(x => x.id === tag.id)) {
+        const existingTag = tags.find(x => x.id === tag.id);
+        if (existingTag) {
             if (!overwrite) {
                 warnings.push(`Tag with id ${tag.id} already exists.`);
                 continue;
             }
             // On overwrite, we remove and re-add the tag
-            removeFromArray(tags, tag);
+            removeFromArray(tags, existingTag);
         }
 
         tags.push(tag);
@@ -1502,10 +1504,13 @@ async function onTagRestoreFileSelect(e) {
     }
 
     if (warnings.length) {
-        toastr.success('Tags restored with warnings. Check console for details.', 'Tag restore');
+        toastr.warning('Tags restored with warnings. Check console or click on this message for details.', 'Tag Restore', {
+            timeOut: toastr.options.timeOut * 2, // Display double the time
+            onclick: () => Popup.show.text('Tag Restore Warnings', `<samp class="justifyLeft">${warnings.join('<br />')}<samp>`, { allowVerticalScrolling: true }),
+        });
         console.warn(`TAG RESTORE REPORT\n====================\n${warnings.join('\n')}`);
     } else {
-        toastr.success('Tags restored successfully.', 'Tag restore');
+        toastr.success('Tags restored successfully.', 'Tag Restore');
     }
 
     $('#tag_view_restore_input').val('');
