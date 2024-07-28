@@ -338,6 +338,52 @@ describe("MacroLexer Tests", () => {
         expect(tokens).toEqual(expectedTokens);
     });
 
+    it("lexer allows unclosed macros, but tries to parse it as a macro", async () => {
+        const input = "{{unclosed_macro word and more. Done.";
+        const tokens = await runLexerGetTokens(input);
+
+        const expectedTokens = [
+            { type: 'MacroStart', text: '{{' },
+            { type: 'MacroIdentifier', text: 'unclosed_macro' },
+            { type: 'Identifier', text: 'word' },
+            { type: 'Identifier', text: 'and' },
+            { type: 'Identifier', text: 'more' },
+            { type: 'Unknown', text: '.' },
+            { type: 'Identifier', text: 'Done' },
+            { type: 'Unknown', text: '.' },
+        ];
+
+        expect(tokens).toEqual(expectedTokens);
+    });
+
+    it("lexer treats unopened macors as simple plaintext", async () => {
+        const input = "this is an unopened_macro}} and will be done";
+        const tokens = await runLexerGetTokens(input);
+
+        const expectedTokens = [
+            { type: 'Plaintext', text: 'this is an unopened_macro}} and will be done' },
+        ];
+
+        expect(tokens).toEqual(expectedTokens);
+    });
+
+    it("invalid chars in macro identifier are not parsed as valid macro identifier", async () => {
+        const input = "{{ma!@#%ro}}";
+        const tokens = await runLexerGetTokens(input);
+
+        const expectedTokens = [
+            { type: 'MacroStart', text: '{{' },
+            { type: 'MacroIdentifier', text: 'ma' },
+            { type: 'Unknown', text: '!' },
+            { type: 'Unknown', text: '@' },
+            { type: 'Unknown', text: '#' },
+            { type: 'Unknown', text: '%' },
+            { type: 'Identifier', text: 'ro' },
+            { type: 'MacroEnd', text: '}}' }
+        ];
+
+        expect(tokens).toEqual(expectedTokens);
+    });
 });
 
 /**
