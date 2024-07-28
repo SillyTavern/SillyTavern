@@ -4025,6 +4025,7 @@ $(document).ready(() => {
             ),
         ],
         helpString: 'Enter message deletion mode, and auto-deletes last N messages if numeric argument is provided.',
+        returns: 'The text of the deleted messages.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'cut',
