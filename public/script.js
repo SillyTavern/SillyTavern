@@ -8449,6 +8449,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_textgenerationwebui',
         type: textgen_types.OPENROUTER,
     },
+    'featherless': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.FEATHERLESS,
+    },
     'huggingface': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
