@@ -1367,27 +1367,8 @@ function makeTagListDraggable(tagContainer) {
             const id = $(tagElement).attr('id');
             const tag = tags.find(x => x.id === id);
 
-            // Fix the defined colors, because if there is no color set, they seem to get automatically set to black
-            // based on the color picker after drag&drop, even if there was no color chosen. We just set them back.
-            const color = $(tagElement).find('.tagColorPickerHolder .tag-color').attr('color');
-            const color2 = $(tagElement).find('.tagColorPicker2Holder .tag-color2').attr('color');
-            if (color === '' || color === undefined) {
-                tag.color = '';
-                fixColor('background-color', tag.color);
-            }
-            if (color2 === '' || color2 === undefined) {
-                tag.color2 = '';
-                fixColor('color', tag.color2);
-            }
-
             // Update the sort order
             tag.sort_order = i;
-
-            function fixColor(property, color) {
-                $(tagElement).find('.tag_view_name').css(property, color);
-                $(`.tag[id="${id}"]`).css(property, color);
-                $(`.bogus_folder_select[tagid="${id}"] .avatar`).css(property, color);
-            }
         });
 
         // If tags were dragged manually, we have to disable auto sorting
