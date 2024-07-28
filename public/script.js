@@ -8310,6 +8310,7 @@ const swipe_right = () => {
 };
 
 const CONNECT_API_MAP = {
+    // Default APIs not contined inside text gen / chat gen
     'kobold': {
         selected: 'kobold',
         button: '#api_button',
@@ -8321,152 +8322,48 @@ const CONNECT_API_MAP = {
         selected: 'novel',
         button: '#api_button_novel',
     },
-    'ooba': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.OOBA,
-    },
-    'tabby': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.TABBY,
-    },
-    'llamacpp': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.LLAMACPP,
-    },
-    'ollama': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.OLLAMA,
-    },
-    'mancer': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.MANCER,
-    },
-    'vllm': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.VLLM,
-    },
-    'aphrodite': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.APHRODITE,
-    },
-    'koboldcpp': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.KOBOLDCPP,
-    },
+    // KoboldCpp alias
     'kcpp': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
         type: textgen_types.KOBOLDCPP,
     },
-    'togetherai': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.TOGETHERAI,
-    },
-    'openai': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.OPENAI,
-    },
+    // OpenAI alias
     'oai': {
         selected: 'openai',
         button: '#api_button_openai',
         source: chat_completion_sources.OPENAI,
     },
-    'claude': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.CLAUDE,
-    },
-    'windowai': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.WINDOWAI,
-    },
+    // OpenRouter special naming, to differentiate between chat comp and text comp
     'openrouter': {
         selected: 'openai',
         button: '#api_button_openai',
         source: chat_completion_sources.OPENROUTER,
-    },
-    'scale': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.SCALE,
-    },
-    'ai21': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.AI21,
-    },
-    'makersuite': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.MAKERSUITE,
-    },
-    'mistralai': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.MISTRALAI,
-    },
-    'custom': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.CUSTOM,
-    },
-    'cohere': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.COHERE,
-    },
-    'perplexity': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.PERPLEXITY,
-    },
-    'groq': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.GROQ,
-    },
-    '01ai': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.ZEROONEAI,
-    },
-    'infermaticai': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.INFERMATICAI,
-    },
-    'dreamgen': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.DREAMGEN,
     },
     'openrouter-text': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
         type: textgen_types.OPENROUTER,
     },
-    'featherless': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.FEATHERLESS,
-    },
-    'huggingface': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.HUGGINGFACE,
-    },
 };
+
+// Fill connections map from textgen_types and chat_completion_sources
+for (const textGenType of Object.values(textgen_types)) {
+    if (CONNECT_API_MAP[textGenType]) continue;
+    CONNECT_API_MAP[textGenType] = {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textGenType,
+    };
+}
+for (const chatCompletionSource of Object.values(chat_completion_sources)) {
+    if (CONNECT_API_MAP[chatCompletionSource]) continue;
+    CONNECT_API_MAP[chatCompletionSource] = {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chatCompletionSource,
+    };
+}
 
 async function selectContextCallback(_, name) {
     if (!name) {
