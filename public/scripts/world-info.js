@@ -893,7 +893,7 @@ function registerWorldInfoSlashCommands() {
      * @param {boolean} [loadIfNotSelected=false] - Indicates whether to load the file even if it's not currently selected
      */
     function reloadEditor(file, loadIfNotSelected = false) {
-        const currentIndex = $('#world_editor_select').val();
+        const currentIndex = Number($('#world_editor_select').val());
         const selectedIndex = world_names.indexOf(file);
         if (selectedIndex !== -1 && (loadIfNotSelected || currentIndex === selectedIndex)) {
             $('#world_editor_select').val(selectedIndex).trigger('change');
@@ -1647,32 +1647,38 @@ function sortEntries(data) {
 
     if (!data.length) return data;
 
+    /** @type {(a: any, b: any) => number} */
+    let primarySort;
+
+    // Secondary and tertiary it will always be sorted by Order descending, and last UID ascending
+    // This is the most sensible approach for sorts where the primary sort has a lot of equal values
+    const secondarySort = (a, b) => b.order - a.order;
+    const tertiarySort = (a, b) => a.uid - b.uid;
+
     // If we have a search term for WI, we are sorting by weighting scores
     if (sortRule === 'search') {
-        data.sort((a, b) => {
+        primarySort = (a, b) => {
             const aScore = worldInfoFilter.getScore(FILTER_TYPES.WORLD_INFO_SEARCH, a.uid);
             const bScore = worldInfoFilter.getScore(FILTER_TYPES.WORLD_INFO_SEARCH, b.uid);
-            return (aScore - bScore);
-        });
+            return aScore - bScore;
+        };
     }
     else if (sortRule === 'custom') {
-        // First by display index, then by order, then by uid
-        data.sort((a, b) => {
+        // First by display index
+        primarySort = (a, b) => {
             const aValue = a.displayIndex;
             const bValue = b.displayIndex;
-
-            return (aValue - bValue || b.order - a.order || a.uid - b.uid);
-        });
+            return aValue - bValue;
+        };
     } else if (sortRule === 'priority') {
-        // First constant, then normal, then disabled. Then sort by order
-        data.sort((a, b) => {
+        // First constant, then normal, then disabled.
+        primarySort = (a, b) => {
             const aValue = a.constant ? 0 : a.disable ? 2 : 1;
             const bValue = b.constant ? 0 : b.disable ? 2 : 1;
-
-            return (aValue - bValue || b.order - a.order);
-        });
+            return aValue - bValue;
+        };
     } else {
-        const primarySort = (a, b) => {
+        primarySort = (a, b) => {
             const aValue = a[sortField];
             const bValue = b[sortField];
 
@@ -1690,25 +1696,11 @@ function sortEntries(data) {
             // Sort numbers
             return orderSign * (Number(aValue) - Number(bValue));
         };
-        const secondarySort = (a, b) => a.order - b.order;
-        const tertiarySort = (a, b) => a.uid - b.uid;
-
-        data.sort((a, b) => {
-            const primary = primarySort(a, b);
-
-            if (primary !== 0) {
-                return primary;
-            }
-
-            const secondary = secondarySort(a, b);
-
-            if (secondary !== 0) {
-                return secondary;
-            }
-
-            return tertiarySort(a, b);
-        });
     }
+
+    data.sort((a, b) => {
+        return primarySort(a, b) || secondarySort(a, b) || tertiarySort(a, b);
+    });
 
     return data;
 }
@@ -1939,39 +1931,43 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
         }
     });
 
-    $('#world_apply_custom_sorting').off('click').on('click', async () => {
+    $('#world_apply_current_sorting').off('click').on('click', async () => {
         const entryCount = Object.keys(data.entries).length;
         const moreThan100 = entryCount > 100;
 
-        let content = '<span>Apply your custom sorting to the "Order" field. The Order values will go down from the chosen number.</span>';
+        let content = '<span>Apply your current sorting to the "Order" field. The Order values will go down from the chosen number.</span>';
         if (moreThan100) {
             content += `<div class="m-t-1"><i class="fa-solid fa-triangle-exclamation" style="color: #FFD43B;"></i> More than 100 entries in this world. If you don't choose a number higher than that, the lower entries will default to 0.<br />(Usual default: 100)<br />Minimum: ${entryCount}</div>`;
         }
 
-        const result = await Popup.show.input('Apply Custom Sorting', content, '100', { okButton: 'Apply', cancelButton: 'Cancel' });
+        const result = await Popup.show.input('Apply Current Sorting', content, '100', { okButton: 'Apply', cancelButton: 'Cancel' });
         if (!result) return;
 
         const start = Number(result);
         if (isNaN(start) || start < 0) {
-            toastr.error('Invalid number: ' + result, 'Apply Custom Sorting');
+            toastr.error('Invalid number: ' + result, 'Apply Current Sorting');
             return;
         }
         if (start < entryCount) {
-            toastr.warning('A number lower than the entry count has been chosen. All entries below that will default to 0.', 'Apply Custom Sorting');
+            toastr.warning('A number lower than the entry count has been chosen. All entries below that will default to 0.', 'Apply Current Sorting');
         }
 
-        let counter = 0;
-        for (const entry of Object.values(data.entries)) {
-            const newOrder = Math.max(start - (entry.displayIndex ?? 0), 0);
+        // We need to sort the entries here, as the data source isn't sorted
+        const entries = Object.values(data.entries);
+        sortEntries(entries);
+
+        let updated = 0, current = start;
+        for (const entry of entries) {
+            const newOrder = Math.max(current--, 0);
             if (entry.order === newOrder) continue;
 
             entry.order = newOrder;
             setOriginalDataValue(data, entry.order, 'order', entry.order);
-            counter++;
+            updated++;
         }
 
-        if (counter > 0) {
-            toastr.info(`Updated ${counter} Order values`, 'Apply Custom Sorting');
+        if (updated > 0) {
+            toastr.info(`Updated ${updated} Order values`, 'Apply Custom Sorting');
             await saveWorldInfo(name, data, true);
             updateEditor(navigation_option.previous);
         } else {

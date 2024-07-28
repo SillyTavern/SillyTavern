@@ -137,7 +137,6 @@ body {
     width: 100%;
     /*fallback for JS load*/
     height: 100vh;
-    height: 100svh;
     height: 100dvh;
     /*defaults as 100%, then reassigned via JS as pixels, will work on PC and Android*/
     /*height: calc(var(--doc-height) - 1px);*/
@@ -451,7 +450,7 @@ code {
     border-radius: 5px;
     background-color: var(--black70a);
     padding: 0 3px;
-    /* max-width: calc(100svw - 95px); */
+    /* max-width: calc(100dvw - 95px); */
     line-height: var(--mainFontSize);
     color: var(--white70a);
 }
@@ -535,13 +534,13 @@ body.reduced-motion #bg_custom {
     flex-direction: column;
     /* -1px to give sheld some wiggle room to bounce off tobar when moving*/
     height: calc(100vh - var(--topBarBlockSize) - 1px);
-    height: calc(100svh - var(--topBarBlockSize) - 1px);
-    max-height: calc(100svh - var(--topBarBlockSize) - 1px);
+    height: calc(100dvh - var(--topBarBlockSize) - 1px);
+    max-height: calc(100dvh - var(--topBarBlockSize) - 1px);
     overflow-x: hidden;
     /* max-width: 50vw; */
     position: absolute;
     left: calc((100vw - var(--sheldWidth))/2);
-    left: calc((100svw - var(--sheldWidth))/2);
+    left: calc((100dvw - var(--sheldWidth))/2);
     top: var(--topBarBlockSize);
     margin: 0 auto;
     left: 0;
@@ -1160,12 +1159,12 @@ textarea {
     font-family: var(--mainFontFamily);
     padding: 5px 10px;
     max-height: 90vh;
-    max-height: 90svh;
+    max-height: 90dvh;
 }
 
 textarea.autoSetHeight {
     max-height: 50vh;
-    max-height: 50svh;
+    max-height: 50dvh;
 }
 
 input,
@@ -1179,7 +1178,7 @@ select {
     min-height: calc(var(--bottomFormBlockSize) + 2px);
     height: calc(var(--bottomFormBlockSize) + 2px);
     max-height: 50vh;
-    max-height: 50svh;
+    max-height: 50dvh;
     word-wrap: break-word;
     resize: vertical;
     display: block;
@@ -2159,14 +2158,14 @@ textarea::placeholder {
 @media screen and (max-width: 1000px) {
     #form_create textarea {
         flex-grow: 1;
-        min-height: 20svh;
+        min-height: 20dvh;
     }
 }
 
 @media screen and (min-width: 1001px) {
     #description_textarea {
         height: 29vh;
-        height: 29svh;
+        height: 29dvh;
     }
 
     #firstmessage_textarea {
@@ -2442,8 +2441,8 @@ input[type="file"] {
 #floatingPrompt,
 #cfgConfig {
     overflow-y: auto;
-    max-width: 90svw;
-    max-height: 90svh;
+    max-width: 90dvw;
+    max-height: 90dvh;
     min-width: 100px;
     min-height: 100px;
     border-radius: 10px;
@@ -2459,7 +2458,7 @@ input[type="file"] {
     top: 0;
     margin: 0;
     right: unset;
-    width: calc(((100svw - var(--sheldWidth)) / 2) - 1px);
+    width: calc(((100dvw - var(--sheldWidth)) / 2) - 1px);
 
 }
 
@@ -2816,7 +2815,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex-wrap: wrap;
     width: calc(var(--sheldWidth) - 10px);
     max-width: 100vw;
-    max-width: 100svw;
+    max-width: 100dvw;
     justify-content: space-evenly;
 }
 
@@ -3080,6 +3079,10 @@ grammarly-extension {
     opacity: 1;
 }
 
+.avatar-container .avatar-buttons .menu_button {
+    padding: 3px;
+}
+
 /* Ross should be able to handle this later */
 /*.big-avatars .avatar-buttons{
     justify-content: center;
@@ -3171,7 +3174,7 @@ grammarly-extension {
 #dialogue_popup {
     width: 500px;
     max-width: 90vw;
-    max-width: 90svw;
+    max-width: 90dvw;
     position: absolute;
     z-index: 9999;
     margin-left: auto;
@@ -3187,7 +3190,7 @@ grammarly-extension {
     background-color: var(--SmartThemeBlurTintColor);
     border-radius: 10px;
     max-height: 90vh;
-    max-height: 90svh;
+    max-height: 90dvh;
     display: flex;
     flex-direction: column;
     overflow-y: hidden;
@@ -3201,9 +3204,9 @@ grammarly-extension {
 
 .large_dialogue_popup {
     height: 90vh !important;
-    height: 90svh !important;
+    height: 90dvh !important;
     max-width: 90vw !important;
-    max-width: 90svw !important;
+    max-width: 90dvw !important;
 }
 
 .wide_dialogue_popup {
@@ -3360,7 +3363,7 @@ grammarly-extension {
     position: absolute;
     width: 100%;
     height: 100vh;
-    height: 100svh;
+    height: 100dvh;
     z-index: 9999;
     top: 0;
 }
@@ -3368,9 +3371,9 @@ grammarly-extension {
 #bgtest {
     display: none;
     width: 100vw;
-    width: 100svw;
+    width: 100dvw;
     height: 100vh;
-    height: 100svh;
+    height: 100dvh;
     position: absolute;
     z-index: -100;
     background-color: red;
@@ -4007,7 +4010,7 @@ input[type="range"]::-webkit-slider-thumb {
     position: absolute;
     width: 100%;
     height: 100vh;
-    height: 100svh;
+    height: 100dvh;
     z-index: 2058;
 }
 
@@ -4020,11 +4023,11 @@ input[type="range"]::-webkit-slider-thumb {
     min-width: 100px;
     max-width: var(--sheldWidth);
     height: calc(100vh - 84px);
-    height: calc(100svh - 84px);
+    height: calc(100dvh - 84px);
     min-height: calc(100vh - 84px);
-    min-height: calc(100svh - 84px);
+    min-height: calc(100dvh - 84px);
     max-height: calc(100vh - 84px);
-    max-height: calc(100svh - 84px);
+    max-height: calc(100dvh - 84px);
     position: absolute;
     z-index: 4001;
     margin-left: auto;
@@ -4103,7 +4106,7 @@ h5 {
     position: absolute;
     width: 100%;
     height: 100vh;
-    height: 100svh;
+    height: 100dvh;
     z-index: 4100;
     top: 0;
     background-color: var(--black70a);
@@ -4117,7 +4120,7 @@ h5 {
     max-width: var(--sheldWidth);
     height: min-content;
     max-height: calc(100vh - var(--topBarBlockSize));
-    max-height: calc(100svh - var(--topBarBlockSize));
+    max-height: calc(100dvh - var(--topBarBlockSize));
     min-height: 100px;
     position: absolute;
     z-index: 2066;
@@ -4437,14 +4440,14 @@ a {
     overflow-wrap: break-word;
     white-space: normal;
     max-width: calc(((100vw - 500px) / 2) - 10px);
-    max-width: calc(((100svw - 500px) / 2) - 10px);
+    max-width: calc(((100dvw - 500px) / 2) - 10px);
     position: absolute;
     z-index: 9999;
     max-height: 90vh;
-    max-height: 90svh;
+    max-height: 90dvh;
     /*unsure why, but this prevents scrollbars*/
     height: 49vh;
-    height: 49svh;
+    height: 49dvh;
 
     padding: 5px;
     overflow-y: auto;
@@ -4480,11 +4483,11 @@ a {
 
 #right-nav-panel {
     width: calc((100vw - var(--sheldWidth) - 2px) /2);
-    width: calc((100svw - var(--sheldWidth) - 2px) /2);
+    width: calc((100dvw - var(--sheldWidth) - 2px) /2);
     max-height: calc(100vh - var(--topBarBlockSize));
-    max-height: calc(100svh - var(--topBarBlockSize));
+    max-height: calc(100dvh - var(--topBarBlockSize));
     height: calc(100vh - var(--topBarBlockSize));
-    height: calc(100svh - var(--topBarBlockSize));
+    height: calc(100dvh - var(--topBarBlockSize));
     position: fixed;
     top: 0;
     margin: 0;
@@ -4537,7 +4540,7 @@ a {
     border-radius: 10px;
     max-width: 100%;
     max-height: 40vh;
-    max-height: 40svh;
+    max-height: 40dvh;
     image-rendering: -webkit-optimize-contrast;
 }
 
@@ -4629,18 +4632,18 @@ body:not(.caption) .mes_img_caption {
 
 .img_enlarged_container pre {
     max-height: 25vh;
-    max-height: 25svh;
+    max-height: 25dvh;
     flex-shrink: 0;
     overflow: auto;
 }
 
 .popup:has(.img_enlarged.zoomed).large_dialogue_popup {
     height: 100vh !important;
-    height: 100svh !important;
+    height: 100dvh !important;
     max-height: 100vh !important;
-    max-height: 100svh !important;
+    max-height: 100dvh !important;
     max-width: 100vw !important;
-    max-width: 100svw !important;
+    max-width: 100dvw !important;
     padding: 0;
 }
 
@@ -4827,7 +4830,7 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     width: var(--sheldWidth);
     overflow-y: auto;
     max-height: calc(100vh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize)));
-    max-height: calc(100svh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize)));
+    max-height: calc(100dvh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize)));
     display: none;
     position: absolute;
     top: var(--topBarBlockSize);
@@ -4862,11 +4865,11 @@ body:not(.movingUI) .drawer-content.maximized {
 
 .fillLeft {
     width: calc((100vw - var(--sheldWidth) - 2px) /2);
-    width: calc((100svw - var(--sheldWidth) - 2px) /2);
+    width: calc((100dvw - var(--sheldWidth) - 2px) /2);
     height: calc(100vh - var(--topBarBlockSize));
-    height: calc(100svh - var(--topBarBlockSize));
+    height: calc(100dvh - var(--topBarBlockSize));
     max-height: calc(100vh - var(--topBarBlockSize));
-    max-height: calc(100svh - var(--topBarBlockSize));
+    max-height: calc(100dvh - var(--topBarBlockSize));
     position: fixed;
     top: 0;
     margin: 0;
@@ -5116,7 +5119,7 @@ body:not(.movingUI) .drawer-content.maximized {
     width: 100%;
     /* margin-inline: 10px; */
     max-height: 90vh;
-    max-width: 90svh;
+    max-width: 90dvh;
 }
 
 .zoomed_avatar img {

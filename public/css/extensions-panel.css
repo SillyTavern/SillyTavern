@@ -7,7 +7,8 @@
     background-color: green;
 }
 
-.extensions_block input[type="checkbox"] {
+.extensions_block input[type="checkbox"],
+.extensions_block input[type="radio"] {
     margin-left: 10px;
     margin-right: 10px;
 }

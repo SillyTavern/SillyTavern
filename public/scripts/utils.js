@@ -704,6 +704,22 @@ export function isOdd(number) {
     return number % 2 !== 0;
 }
 
+/**
+ * Compare two moment objects for sorting.
+ * @param {moment.Moment} a The first moment object.
+ * @param {moment.Moment} b The second moment object.
+ * @returns {number} A negative number if a is before b, a positive number if a is after b, or 0 if they are equal.
+ */
+export function sortMoments(a, b) {
+    if (a.isBefore(b)) {
+        return 1;
+    } else if (a.isAfter(b)) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
 const dateCache = new Map();
 
 /**
@@ -717,26 +733,27 @@ export function timestampToMoment(timestamp) {
         return dateCache.get(timestamp);
     }
 
-    const moment = parseTimestamp(timestamp);
-    dateCache.set(timestamp, moment);
-    return moment;
+    const iso8601 = parseTimestamp(timestamp);
+    const objMoment = iso8601 ? moment(iso8601) : moment.invalid();
+
+    dateCache.set(timestamp, objMoment);
+    return objMoment;
 }
 
 /**
  * Parses a timestamp and returns a moment object representing the parsed date and time.
  * @param {string|number} timestamp - The timestamp to parse. It can be a string or a number.
- * @returns {moment.Moment} - A moment object representing the parsed date and time. If the timestamp is invalid, an invalid moment object is returned.
+ * @returns {string} - If the timestamp is valid, returns an ISO 8601 string.
  */
 function parseTimestamp(timestamp) {
-    if (!timestamp) return moment.invalid();
+    if (!timestamp) return;
 
     // Unix time (legacy TAI / tags)
     if (typeof timestamp === 'number' || /^\d+$/.test(timestamp)) {
-        const number = Number(timestamp);
-        if (isNaN(number)) return moment.invalid();
-        if (!isFinite(number)) return moment.invalid();
-        if (number < 0) return moment.invalid();
-        return moment(number);
+        const unixTime = Number(timestamp);
+        const isValid = Number.isFinite(unixTime) && !Number.isNaN(unixTime) && unixTime >= 0;
+        if (!isValid) return;
+        return new Date(unixTime).toISOString();
     }
 
     let dtFmt = [];
@@ -760,32 +777,12 @@ function parseTimestamp(timestamp) {
     // 2024-6-5 @14h 56m 50s 682ms
     dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/ });
 
-    let iso8601;
     for (const x of dtFmt) {
         let rgxMatch = timestamp.match(x.pattern);
         if (!rgxMatch) continue;
-        iso8601 = x.callback(...rgxMatch);
-        break;
+        return x.callback(...rgxMatch);
     }
-
-    // If one of the patterns matched, return a valid moment object, otherwise return an invalid moment object
-    return iso8601 ? moment(iso8601) : moment.invalid();
-}
-
-/**
- * Compare two moment objects for sorting.
- * @param {moment.Moment} a The first moment object.
- * @param {moment.Moment} b The second moment object.
- * @returns {number} A negative number if a is before b, a positive number if a is after b, or 0 if they are equal.
- */
-export function sortMoments(a, b) {
-    if (a.isBefore(b)) {
-        return 1;
-    } else if (a.isAfter(b)) {
-        return -1;
-    } else {
-        return 0;
-    }
+    return;
 }
 
 /** Split string to parts no more than length in size.

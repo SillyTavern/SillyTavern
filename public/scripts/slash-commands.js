@@ -142,9 +142,8 @@ export function initDefaultSlashCommands() {
         returns: 'the current background',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'filename',
+                description: 'background filename',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
                 enumProvider: () => [...document.querySelectorAll('.bg_example')]
                     .map(it => new SlashCommandEnumValue(it.getAttribute('bgfile')))
                     .filter(it => it.value?.length),
@@ -155,10 +154,16 @@ export function initDefaultSlashCommands() {
             Sets a background according to the provided filename. Partial names allowed.
         </div>
         <div>
+            If no background is provided, this will return the currently selected background.
+        </div>
+        <div>
             <strong>Example:</strong>
             <ul>
                 <li>
                     <pre><code>/bg beach.jpg</code></pre>
+                </li>
+                <li>
+                    <pre><code>/bg</code></pre>
                 </li>
             </ul>
         </div>
@@ -1359,7 +1364,7 @@ export function initDefaultSlashCommands() {
                 enumProvider: commonEnumProviders.injects,
             }),
             new SlashCommandNamedArgument(
-                'position', 'injection position', [ARGUMENT_TYPE.STRING], false, false, 'after', ['before', 'after', 'chat'],
+                'position', 'injection position', [ARGUMENT_TYPE.STRING], false, false, 'after', ['before', 'after', 'chat', 'none'],
             ),
             new SlashCommandNamedArgument(
                 'depth', 'injection depth', [ARGUMENT_TYPE.NUMBER], false, false, '4',
@@ -1387,7 +1392,7 @@ export function initDefaultSlashCommands() {
                 'text', [ARGUMENT_TYPE.STRING], false,
             ),
         ],
-        helpString: 'Injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false).',
+        helpString: 'Injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat", hidden with "none" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false). Hidden injects in "none" position are not inserted into the prompt but can be used for triggering WI entries.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'listinjects',
@@ -1504,6 +1509,7 @@ function injectCallback(args, value) {
         'before': extension_prompt_types.BEFORE_PROMPT,
         'after': extension_prompt_types.IN_PROMPT,
         'chat': extension_prompt_types.IN_CHAT,
+        'none': extension_prompt_types.NONE,
     };
     const roles = {
         'system': extension_prompt_roles.SYSTEM,
@@ -2879,7 +2885,6 @@ export async function sendMessageAs(args, text) {
 
     if (args.name) {
         name = args.name.trim();
-        mesText = text.trim();
 
         if (!name && !text) {
             toastr.warning('You must specify a name and text to send as');
@@ -2892,7 +2897,13 @@ export async function sendMessageAs(args, text) {
             localStorage.setItem(namelessWarningKey, 'true');
         }
         name = name2;
+        if (!text) {
+            toastr.warning('You must specify text to send as');
+            return '';
+        }
     }
+
+    mesText = text.trim();
 
     // Requires a regex check after the slash command is pushed to output
     mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND, { characterOverride: name });

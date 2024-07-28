@@ -14,6 +14,7 @@ import {
     substituteParamsExtended,
     generateRaw,
     getMaxContextSize,
+    setExtensionPrompt,
 } from '../../../script.js';
 import { is_group_generating, selected_group } from '../../group-chats.js';
 import { loadMovingUIState } from '../../power-user.js';
@@ -73,6 +74,7 @@ const defaultSettings = {
     template: defaultTemplate,
     position: extension_prompt_types.IN_PROMPT,
     role: extension_prompt_roles.SYSTEM,
+    scan: false,
     depth: 2,
     promptWords: 200,
     promptMinWords: 25,
@@ -122,6 +124,7 @@ function loadSettings() {
     $(`input[name="memory_prompt_builder"][value="${extension_settings.memory.prompt_builder}"]`).prop('checked', true).trigger('input');
     $('#memory_override_response_length').val(extension_settings.memory.overrideResponseLength).trigger('input');
     $('#memory_max_messages_per_request').val(extension_settings.memory.maxMessagesPerRequest).trigger('input');
+    $('#memory_include_wi_scan').prop('checked', extension_settings.memory.scan).trigger('input');
     switchSourceControls(extension_settings.memory.source);
 }
 
@@ -275,6 +278,13 @@ function onMemoryRoleInput() {
 function onMemoryPositionChange(e) {
     const value = e.target.value;
     extension_settings.memory.position = value;
+    reinsertMemory();
+    saveSettingsDebounced();
+}
+
+function onMemoryIncludeWIScanInput() {
+    const value = !!$(this).prop('checked');
+    extension_settings.memory.scan = value;
     reinsertMemory();
     saveSettingsDebounced();
 }
@@ -800,8 +810,7 @@ function reinsertMemory() {
  * @param {number|null} index Index of the chat message to save the summary to. If null, the pre-last message is used.
  */
 function setMemoryContext(value, saveToMessage, index = null) {
-    const context = getContext();
-    context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_settings.memory.position, extension_settings.memory.depth, false, extension_settings.memory.role);
+    setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_settings.memory.position, extension_settings.memory.depth, extension_settings.memory.scan, extension_settings.memory.role);
     $('#memory_contents').val(value);
 
     const summaryLog = value
@@ -809,6 +818,7 @@ function setMemoryContext(value, saveToMessage, index = null) {
         : 'Summary has no content';
     console.debug(summaryLog);
 
+    const context = getContext();
     if (saveToMessage && context.chat.length) {
         const idx = index ?? context.chat.length - 2;
         const mes = context.chat[idx < 0 ? 0 : idx];
@@ -894,6 +904,7 @@ function setupListeners() {
     $('#memory_prompt_words_auto').off('click').on('click', onPromptForceWordsAutoClick);
     $('#memory_override_response_length').off('click').on('input', onOverrideResponseLengthInput);
     $('#memory_max_messages_per_request').off('click').on('input', onMaxMessagesPerRequestInput);
+    $('#memory_include_wi_scan').off('input').on('input', onMemoryIncludeWIScanInput);
     $('#summarySettingsBlockToggle').off('click').on('click', function () {
         console.log('saw settings button click');
         $('#summarySettingsBlock').slideToggle(200, 'swing'); //toggleClass("hidden");

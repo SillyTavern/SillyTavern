@@ -1184,7 +1184,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
     if (settings.type === HUGGINGFACE) {
         params.top_p = Math.min(Math.max(Number(params.top_p), 0.0), 0.999);
         params.stop = Array.isArray(params.stop) ? params.stop.slice(0, 4) : [];
-        nonAphroditeParams.seed = settings.seed >= 0 ? settings.seed : undefined;
+        nonAphroditeParams.seed = settings.seed >= 0 ? settings.seed : Math.floor(Math.random() * Math.pow(2, 32));
     }
 
     if (settings.type === MANCER) {

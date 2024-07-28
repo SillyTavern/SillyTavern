@@ -7,5 +7,5 @@ body.safari .popup.large_dialogue_popup .popup-body {
 body.safari .popup .popup-body {
     height: fit-content;
     max-height: 90vh;
-    max-height: 90svh;
+    max-height: 90dvh;
 }
