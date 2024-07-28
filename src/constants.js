@@ -312,6 +312,9 @@ const TOGETHERAI_KEYS = [
     'top_p',
     'top_k',
     'repetition_penalty',
+    'min_p',
+    'presence_penalty',
+    'frequency_penalty',
     'stream',
     'stop',
 ];
