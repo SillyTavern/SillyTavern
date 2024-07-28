@@ -893,7 +893,7 @@ function registerWorldInfoSlashCommands() {
      * @param {boolean} [loadIfNotSelected=false] - Indicates whether to load the file even if it's not currently selected
      */
     function reloadEditor(file, loadIfNotSelected = false) {
-        const currentIndex = $('#world_editor_select').val();
+        const currentIndex = Number($('#world_editor_select').val());
         const selectedIndex = world_names.indexOf(file);
         if (selectedIndex !== -1 && (loadIfNotSelected || currentIndex === selectedIndex)) {
             $('#world_editor_select').val(selectedIndex).trigger('change');
