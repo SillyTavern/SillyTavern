@@ -59,9 +59,15 @@ export class SlashCommandClosure {
         let isList = false;
         let listValues = [];
         scope = scope ?? this.scope;
-        const escapeMacro = (it)=>escapeRegex(it.key.replace(/\*/g, '~~~WILDCARD~~~'))
-            .replaceAll('~~~WILDCARD~~~', '(?:(?:(?!(?:::|}})).)*)')
-        ;
+        const escapeMacro = (it, isAnchored = false)=>{
+            const regexText = escapeRegex(it.key.replace(/\*/g, '~~~WILDCARD~~~'))
+                .replaceAll('~~~WILDCARD~~~', '(?:(?:(?!(?:::|}})).)*)')
+            ;
+            if (isAnchored) {
+                return `^${regexText}$`;
+            }
+            return regexText;
+        };
         const macroList = scope.macroList.toSorted((a,b)=>{
             if (a.key.includes('*') && !b.key.includes('*')) return 1;
             if (!a.key.includes('*') && b.key.includes('*')) return -1;
@@ -76,7 +82,7 @@ export class SlashCommandClosure {
             const match = re.exec(remaining);
             const before = substituteParams(remaining.slice(0, match.index));
             const after = remaining.slice(match.index + match[0].length);
-            const replacer = match.groups.pipe ? scope.pipe : match.groups.var ? scope.getVariable(match.groups.var, match.groups.index) : macroList.find(it=>it.key == match.groups.macro || new RegExp(escapeMacro(it)).test(match.groups.macro))?.value;
+            const replacer = match.groups.pipe ? scope.pipe : match.groups.var ? scope.getVariable(match.groups.var, match.groups.index) : macroList.find(it=>it.key == match.groups.macro || new RegExp(escapeMacro(it, true)).test(match.groups.macro))?.value;
             if (replacer instanceof SlashCommandClosure) {
                 replacer.abortController = this.abortController;
                 replacer.breakController = this.breakController;
