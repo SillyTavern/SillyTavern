@@ -930,8 +930,15 @@ async function firstLoadInit() {
     initCfg();
     initLogprobs();
     doDailyExtensionUpdatesCheck();
-    hideLoader();
+    await hideLoader();
+    await fixViewport();
     await eventSource.emit(event_types.APP_READY);
+}
+
+async function fixViewport() {
+    document.body.style.position = 'absolute';
+    await delay(1);
+    document.body.style.position = '';
 }
 
 function cancelStatusCheck() {
