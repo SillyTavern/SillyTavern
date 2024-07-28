@@ -139,9 +139,8 @@ export function initDefaultSlashCommands() {
         returns: 'the current background',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'filename',
+                description: 'background filename',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
                 enumProvider: () => [...document.querySelectorAll('.bg_example')]
                     .map(it => new SlashCommandEnumValue(it.getAttribute('bgfile')))
                     .filter(it => it.value?.length),
@@ -152,10 +151,16 @@ export function initDefaultSlashCommands() {
             Sets a background according to the provided filename. Partial names allowed.
         </div>
         <div>
+            If no background is provided, this will return the currently selected background.
+        </div>
+        <div>
             <strong>Example:</strong>
             <ul>
                 <li>
                     <pre><code>/bg beach.jpg</code></pre>
+                </li>
+                <li>
+                    <pre><code>/bg</code></pre>
                 </li>
             </ul>
         </div>

@@ -2968,7 +2968,13 @@ function setAvgBG() {
     return '';
 }
 
-async function setThemeCallback(_, text) {
+async function setThemeCallback(_, themeName) {
+    if (!themeName) {
+        // allow reporting of the theme name if called without args
+        // for use in ST Scripts via pipe
+        return power_user.theme;
+    }
+
     // @ts-ignore
     const fuse = new Fuse(themes, {
         keys: [
@@ -2976,12 +2982,12 @@ async function setThemeCallback(_, text) {
         ],
     });
 
-    const results = fuse.search(text);
-    console.debug('Theme fuzzy search results for ' + text, results);
+    const results = fuse.search(themeName);
+    console.debug('Theme fuzzy search results for ' + themeName, results);
     const theme = results[0]?.item;
 
     if (!theme) {
-        toastr.warning(`Could not find theme with name: ${text}`);
+        toastr.warning(`Could not find theme with name: ${themeName}`);
         return;
     }
 
@@ -4056,13 +4062,30 @@ $(document).ready(() => {
         callback: setThemeCallback,
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'name',
+                description: 'theme name',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
                 enumProvider: () => themes.map(theme => new SlashCommandEnumValue(theme.name)),
             }),
         ],
-        helpString: 'sets a UI theme by name',
+        helpString: `
+        <div>
+            Sets a UI theme by name.
+        </div>
+        <div>
+            If no theme name is is provided, this will return the currently active theme.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/theme Cappuccino</code></pre>
+                </li>
+                <li>
+                    <pre><code>/theme</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'movingui',
