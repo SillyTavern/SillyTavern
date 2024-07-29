@@ -8500,7 +8500,7 @@ export async function processDroppedFiles(files, data = new Map()) {
 
     for (const file of files) {
         const extension = file.name.split('.').pop().toLowerCase();
-        if (allowedMimeTypes.includes(file.type) || allowedExtensions.includes(extension)) {
+        if (allowedMimeTypes.some(x => file.type.startsWith(x)) || allowedExtensions.includes(extension)) {
             const preservedName = data instanceof Map && data.get(file);
             await importCharacter(file, preservedName);
         } else {
