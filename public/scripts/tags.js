@@ -1536,7 +1536,9 @@ async function onTagRestoreFileSelect(e) {
     printCharactersDebounced();
     saveSettingsDebounced();
 
-    await onViewTagsListClick();
+    // Reprint the tag management popup, without having it to be opened again
+    const tagContainer = $('#tag_view_list .tag_view_list_tags');
+    printViewTagList(tagContainer);
 }
 
 function onBackupRestoreClick() {
