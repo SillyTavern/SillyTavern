@@ -1450,8 +1450,8 @@ async function onTagRestoreFileSelect(e) {
     // Prompt user if they want to overwrite existing tags
     let overwrite = false;
     if (tags.length > 0) {
-        const result = await Popup.show.confirm('Tag Restore', 'You have existing tags. If the backup contains any of those tags, to you want the backup to overwrite your current tags?',
-            { okButton: 'Overwrite', cancelButton: 'Keep' });
+        const result = await Popup.show.confirm('Tag Restore', 'You have existing tags. If the backup contains any of those tags, do you want the backup to overwrite their settings (Name, color, folder state, etc)?',
+            { okButton: 'Overwrite', cancelButton: 'Keep Existing' });
         overwrite = result === POPUP_RESULT.AFFIRMATIVE;
     }
 
