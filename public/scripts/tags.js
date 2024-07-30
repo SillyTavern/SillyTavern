@@ -21,7 +21,7 @@ import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { isMobile } from './RossAscends-mods.js';
-import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { debounce_timeout } from './constants.js';
 import { INTERACTABLE_CONTROL_CLASS } from './keyboard.js';
 import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -1436,18 +1436,28 @@ async function onTagRestoreFileSelect(e) {
     const data = await parseJsonFile(file);
 
     if (!data) {
-        toastr.warning('Empty file data', 'Tag restore');
+        toastr.warning('Empty file data', 'Tag Restore');
         console.log('Tag restore: File data empty.');
         return;
     }
 
     if (!data.tags || !data.tag_map || !Array.isArray(data.tags) || typeof data.tag_map !== 'object') {
-        toastr.warning('Invalid file format', 'Tag restore');
+        toastr.warning('Invalid file format', 'Tag Restore');
         console.log('Tag restore: Invalid file format.');
         return;
     }
 
+    // Prompt user if they want to overwrite existing tags
+    let overwrite = false;
+    if (tags.length > 0) {
+        const result = await Popup.show.confirm('Tag Restore', 'You have existing tags. If the backup contains any of those tags, do you want the backup to overwrite their settings (Name, color, folder state, etc)?',
+            { okButton: 'Overwrite', cancelButton: 'Keep Existing' });
+        overwrite = result === POPUP_RESULT.AFFIRMATIVE;
+    }
+
     const warnings = [];
+    /** @type {Map<string, string>} Map import tag ids with existing ids on overwrite */
+    const idToActualTagIdMap = new Map();
 
     // Import tags
     for (const tag of data.tags) {
@@ -1456,9 +1466,27 @@ async function onTagRestoreFileSelect(e) {
             continue;
         }
 
-        if (tags.find(x => x.id === tag.id)) {
-            warnings.push(`Tag with id ${tag.id} already exists.`);
+        // Check against both existing id (direct match) and tag with the same name, which is not allowed.
+        let existingTag = tags.find(x => x.id === tag.id);
+        if (existingTag && !overwrite) {
+            warnings.push(`Tag '${tag.name}' with id ${tag.id} already exists.`);
             continue;
+        }
+        existingTag = getTag(tag.name);
+        if (existingTag && !overwrite) {
+            warnings.push(`Tag with name '${tag.name}' already exists.`);
+            // Remember the tag id, so we can still import the tag map entries for this
+            idToActualTagIdMap.set(tag.id, existingTag.id);
+            continue;
+        }
+
+        if (existingTag) {
+            // On overwrite, we remove and re-add the tag
+            removeFromArray(tags, existingTag);
+            // And remember the ID if it was different, so we can update the tag map accordingly
+            if (existingTag.id !== tag.id) {
+                idToActualTagIdMap.set(existingTag.id, tag.id);
+            }
         }
 
         tags.push(tag);
@@ -1478,30 +1506,39 @@ async function onTagRestoreFileSelect(e) {
         const groupExists = groups.some(x => String(x.id) === String(key));
 
         if (!characterExists && !groupExists) {
-            warnings.push(`Tag map key ${key} does not exist.`);
+            warnings.push(`Tag map key ${key} does not exist as character or group.`);
             continue;
         }
 
         // Get existing tag ids for this key or empty array.
         const existingTagIds = tag_map[key] || [];
-        // Merge existing and new tag ids. Remove duplicates.
-        tag_map[key] = existingTagIds.concat(tagIds).filter(onlyUnique);
+
+        // Merge existing and new tag ids. Replace the ones mapped to a new id. Remove duplicates.
+        const combinedTags = existingTagIds.concat(tagIds)
+            .map(tagId => (idToActualTagIdMap.has(tagId)) ? idToActualTagIdMap.get(tagId) : tagId)
+            .filter(onlyUnique);
+
         // Verify that all tags exist. Remove tags that don't exist.
-        tag_map[key] = tag_map[key].filter(x => tags.some(y => String(y.id) === String(x)));
+        tag_map[key] = combinedTags.filter(tagId => tags.some(y => String(y.id) === String(tagId)));
     }
 
     if (warnings.length) {
-        toastr.success('Tags restored with warnings. Check console for details.');
+        toastr.warning('Tags restored with warnings. Check console or click on this message for details.', 'Tag Restore', {
+            timeOut: toastr.options.timeOut * 2, // Display double the time
+            onclick: () => Popup.show.text('Tag Restore Warnings', `<samp class="justifyLeft">${DOMPurify.sanitize(warnings.join('\n'))}<samp>`, { allowVerticalScrolling: true }),
+        });
         console.warn(`TAG RESTORE REPORT\n====================\n${warnings.join('\n')}`);
     } else {
-        toastr.success('Tags restored successfully.');
+        toastr.success('Tags restored successfully.', 'Tag Restore');
     }
 
     $('#tag_view_restore_input').val('');
     printCharactersDebounced();
     saveSettingsDebounced();
 
-    await onViewTagsListClick();
+    // Reprint the tag management popup, without having it to be opened again
+    const tagContainer = $('#tag_view_list .tag_view_list_tags');
+    printViewTagList(tagContainer);
 }
 
 function onBackupRestoreClick() {
