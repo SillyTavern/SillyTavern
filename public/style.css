@@ -470,6 +470,13 @@ kbd {
     line-height: 1;
 }
 
+samp {
+    display: block;
+    font-family: var(--monoFontFamily);
+    white-space: pre-wrap;
+    text-align: start;
+    justify-content: left;
+}
 
 hr {
     background-image: linear-gradient(90deg, var(--transparent), var(--SmartThemeBodyColor), var(--transparent));

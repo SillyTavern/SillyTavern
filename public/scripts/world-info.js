@@ -3584,7 +3584,7 @@ export async function getSortedEntries() {
 
         // Parse decorators
         entries = entries.map((entry) => {
-            const [decorators, content] = parseDecorators(entry.content);
+            const [decorators, content] = parseDecorators(entry.content || '');
             return { ...entry, decorators, content };
         });
 
