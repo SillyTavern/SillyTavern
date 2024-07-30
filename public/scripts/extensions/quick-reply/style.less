@@ -381,7 +381,7 @@
         >#qr--autoExec {
             .checkbox_label {
                 text-wrap: nowrap;
-    
+
                 .fa-fw {
                     margin-right: 2px;
                 }
@@ -519,6 +519,7 @@
                         opacity: 0.5;
                         pointer-events: none;
                         transition: 200ms;
+                        border-color: transparent;
                     }
 				}
                 &.qr--isPaused #qr--modal-debugButtons {
@@ -526,6 +527,25 @@
                         cursor: pointer;
                         opacity: 1;
                         pointer-events: all;
+                        &#qr--modal-resume {
+                            animation-name: qr--debugPulse;
+                            animation-duration: 1500ms;
+                            animation-timing-function: ease-in-out;
+                            animation-delay: 0s;
+                            animation-iteration-count: infinite;
+                        }
+                        &#qr--modal-resume {
+                            border-color: rgb(81, 163, 81);
+                        }
+                        &#qr--modal-step {
+                            border-color: var(--SmartThemeQuoteColor);
+                        }
+                        &#qr--modal-stepInto {
+                            border-color: var(--SmartThemeQuoteColor);
+                        }
+                        &#qr--modal-stepOut {
+                            border-color: var(--SmartThemeQuoteColor);
+                        }
                     }
                 }
 				#qr--resizeHandle {
@@ -799,14 +819,18 @@
 					aspect-ratio: 1.25 / 1;
 					width: 2.25em;
                     position: relative;
-                    &:not(.fa-solid):after {
-                        content: '';
-                        position: absolute;
-                        inset: 3px;
-                        background-color: var(--SmartThemeBodyColor);
-                        mask-size: contain;
-                        mask-position: center;
-                        mask-repeat: no-repeat;
+                    &:not(.fa-solid) {
+                        border-width: 1px;
+                        border-style: solid;
+                        &:after {
+                            content: '';
+                            position: absolute;
+                            inset: 3px;
+                            background-color: var(--SmartThemeBodyColor);
+                            mask-size: contain;
+                            mask-position: center;
+                            mask-repeat: no-repeat;
+                        }
                     }
                     &#qr--modal-resume:after {
                         mask-image: url('/img/step-resume.svg');
@@ -1051,6 +1075,17 @@
 
     50% {
         background-color: var(--progFlashColor);
+    }
+}
+
+@keyframes qr--debugPulse {
+    0%,
+    100% {
+        border-color: rgb(81, 163, 81);
+    }
+
+    50% {
+        border-color: rgb(146, 190, 252);
     }
 }
 
