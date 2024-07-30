@@ -927,6 +927,11 @@ export class QuickReply {
                 if (!messageSyntaxInner || !message)  return requestAnimationFrame(updateSyntaxLoop);
                 // elements no longer part of the document
                 if (!messageSyntaxInner.closest('body')) return;
+                // debugger is running
+                if (this.isExecuting) {
+                    lastMessageValue = null;
+                    return requestAnimationFrame(updateSyntaxLoop);
+                }
                 // value hasn't changed
                 if (wasSyntax == syntax.checked && lastMessageValue == message.value) return requestAnimationFrame(updateSyntaxLoop);
                 wasSyntax = syntax.checked;
