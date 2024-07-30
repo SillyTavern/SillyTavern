@@ -1761,11 +1761,8 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
         return;
     }
 
-    // Regardless of whether success is displayed or not. Make sure the delete/rename button is available.
+    // Regardless of whether success is displayed or not. Make sure the delete button is available.
     // Do not put this code behind.
-    $('#world_popup_name_button').off('click').on('click', async () => {
-        await renameWorldInfo(name, data);
-    });
     $('#world_popup_delete').off('click').on('click', async () => {
         const confirmation = await Popup.show.confirm(`Delete the World/Lorebook: "${name}"?`, 'This action is irreversible!');
         if (!confirmation) {
@@ -1911,6 +1908,10 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
     $('#world_popup_new').off('click').on('click', () => {
         const entry = createWorldInfoEntry(name, data);
         if (entry) updateEditor(entry.uid);
+    });
+
+    $('#world_popup_name_button').off('click').on('click', async () => {
+        await renameWorldInfo(name, data);
     });
 
     $('#world_backfill_memos').off('click').on('click', async () => {
