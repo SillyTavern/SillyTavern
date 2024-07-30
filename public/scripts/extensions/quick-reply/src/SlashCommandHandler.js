@@ -1,4 +1,5 @@
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
+import { SlashCommandAbortController } from '../../../slash-commands/SlashCommandAbortController.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandClosure } from '../../../slash-commands/SlashCommandClosure.js';
 import { enumIcons } from '../../../slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -666,7 +667,7 @@ export class SlashCommandHandler {
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'import',
             /**
              *
-             * @param {{_scope:SlashCommandScope, _debugController:SlashCommandDebugController, from:string}} args
+             * @param {{_scope:SlashCommandScope, _abortController:SlashCommandAbortController, _debugController:SlashCommandDebugController, from:string}} args
              * @param {string} value
              */
             callback: (args, value) => {
@@ -687,7 +688,7 @@ export class SlashCommandHandler {
                 }
                 if (qr) {
                     const parser = new SlashCommandParser();
-                    const closure = parser.parse(qr.message, true, [], null, args._debugController);
+                    const closure = parser.parse(qr.message, true, [], args._abortController, args._debugController);
                     if (args._debugController) {
                         closure.source = args.from;
                     }
