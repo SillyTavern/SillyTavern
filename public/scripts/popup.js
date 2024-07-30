@@ -511,14 +511,14 @@ export class Popup {
 
         return this.#promise;
     }
-    completeAffirmative() {
-        return this.complete(POPUP_RESULT.AFFIRMATIVE);
+    async completeAffirmative() {
+        return await this.complete(POPUP_RESULT.AFFIRMATIVE);
     }
-    completeNegative() {
-        return this.complete(POPUP_RESULT.NEGATIVE);
+    async completeNegative() {
+        return await this.complete(POPUP_RESULT.NEGATIVE);
     }
-    completeCancelled() {
-        return this.complete(POPUP_RESULT.CANCELLED);
+    async completeCancelled() {
+        return await this.complete(POPUP_RESULT.CANCELLED);
     }
 
     /**
