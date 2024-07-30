@@ -1,21 +1,34 @@
 import { SubMenu } from './SubMenu.js';
 
 export class MenuItem {
-    /**@type {String}*/ label;
-    /**@type {Object}*/ value;
-    /**@type {Function}*/ callback;
+    /**@type {string}*/ icon;
+    /**@type {boolean}*/ showLabel;
+    /**@type {string}*/ label;
+    /**@type {object}*/ value;
+    /**@type {function}*/ callback;
     /**@type {MenuItem[]}*/ childList = [];
     /**@type {SubMenu}*/ subMenu;
-    /**@type {Boolean}*/ isForceExpanded = false;
+    /**@type {boolean}*/ isForceExpanded = false;
 
     /**@type {HTMLElement}*/ root;
 
-    /**@type {Function}*/ onExpand;
+    /**@type {function}*/ onExpand;
 
 
 
 
-    constructor(/**@type {String}*/label, /**@type {Object}*/value, /**@type {function}*/callback, /**@type {MenuItem[]}*/children = []) {
+    /**
+     *
+     * @param {string} icon
+     * @param {boolean} showLabel
+     * @param {string} label
+     * @param {object} value
+     * @param {function} callback
+     * @param {MenuItem[]} children
+     */
+    constructor(icon, showLabel, label, value, callback, children = []) {
+        this.icon = icon;
+        this.showLabel = showLabel;
         this.label = label;
         this.value = value;
         this.callback = callback;
@@ -33,7 +46,21 @@ export class MenuItem {
                 if (this.callback) {
                     item.addEventListener('click', (evt) => this.callback(evt, this));
                 }
-                item.append(this.label);
+                const icon = document.createElement('div'); {
+                    this.domIcon = icon;
+                    icon.classList.add('qr--button-icon');
+                    icon.classList.add('fa-solid');
+                    if (!this.icon) icon.classList.add('qr--hidden');
+                    else icon.classList.add(this.icon);
+                    item.append(icon);
+                }
+                const lbl = document.createElement('div'); {
+                    this.domLabel = lbl;
+                    lbl.classList.add('qr--button-label');
+                    if (this.icon && !this.showLabel) lbl.classList.add('qr--hidden');
+                    lbl.textContent = this.label;
+                    item.append(lbl);
+                }
                 if (this.childList.length > 0) {
                     item.classList.add('ctx-has-children');
                     const sub = new SubMenu(this.childList);

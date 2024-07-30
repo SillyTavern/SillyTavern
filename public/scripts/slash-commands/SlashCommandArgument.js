@@ -2,6 +2,9 @@ import { SlashCommandClosure } from './SlashCommandClosure.js';
 import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
+import { SlashCommandScope } from './SlashCommandScope.js';
+
+
 
 /**@readonly*/
 /**@enum {string}*/
@@ -27,7 +30,7 @@ export class SlashCommandArgument {
      * @param {boolean} [props.acceptsMultiple=false] default: false - whether argument accepts multiple values
      * @param {string|SlashCommandClosure} [props.defaultValue=null] default value if no value is provided
      * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} [props.enumList=[]] list of accepted values
-     * @param {(executor:SlashCommandExecutor)=>SlashCommandEnumValue[]} [props.enumProvider=null] function that returns auto complete options
+     * @param {(executor:SlashCommandExecutor, scope:SlashCommandScope)=>SlashCommandEnumValue[]} [props.enumProvider=null] function that returns auto complete options
      * @param {boolean} [props.forceEnum=false] default: false - whether the input must match one of the enum values
      */
     static fromProps(props) {
@@ -49,7 +52,7 @@ export class SlashCommandArgument {
     /**@type {boolean}*/ acceptsMultiple = false;
     /**@type {string|SlashCommandClosure}*/ defaultValue;
     /**@type {SlashCommandEnumValue[]}*/ enumList = [];
-    /**@type {(executor:SlashCommandExecutor)=>SlashCommandEnumValue[]}*/ enumProvider = null;
+    /**@type {(executor:SlashCommandExecutor, scope:SlashCommandScope)=>SlashCommandEnumValue[]}*/ enumProvider = null;
     /**@type {boolean}*/ forceEnum = false;
 
     /**
@@ -57,7 +60,7 @@ export class SlashCommandArgument {
      * @param {ARGUMENT_TYPE|ARGUMENT_TYPE[]} types
      * @param {string|SlashCommandClosure} defaultValue
      * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} enums
-     * @param {(executor:SlashCommandExecutor)=>SlashCommandEnumValue[]} enumProvider function that returns auto complete options
+     * @param {(executor:SlashCommandExecutor, scope:SlashCommandScope)=>SlashCommandEnumValue[]} enumProvider function that returns auto complete options
      */
     constructor(description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = [], enumProvider = null, forceEnum = false) {
         this.description = description;
@@ -89,7 +92,7 @@ export class SlashCommandNamedArgument extends SlashCommandArgument {
      * @param {boolean} [props.acceptsMultiple=false] default: false - whether argument accepts multiple values
      * @param {string|SlashCommandClosure} [props.defaultValue=null] default value if no value is provided
      * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} [props.enumList=[]] list of accepted values
-     * @param {(executor:SlashCommandExecutor)=>SlashCommandEnumValue[]} [props.enumProvider=null] function that returns auto complete options
+     * @param {(executor:SlashCommandExecutor, scope:SlashCommandScope)=>SlashCommandEnumValue[]} [props.enumProvider=null] function that returns auto complete options
      * @param {boolean} [props.forceEnum=false] default: false - whether the input must match one of the enum values
      */
     static fromProps(props) {
@@ -119,7 +122,7 @@ export class SlashCommandNamedArgument extends SlashCommandArgument {
      * @param {string|SlashCommandClosure} [defaultValue=null]
      * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} [enums=[]]
      * @param {string[]} [aliases=[]]
-     * @param {(executor:SlashCommandExecutor)=>SlashCommandEnumValue[]} [enumProvider=null] function that returns auto complete options
+     * @param {(executor:SlashCommandExecutor, scope:SlashCommandScope)=>SlashCommandEnumValue[]} [enumProvider=null] function that returns auto complete options
      * @param {boolean} [forceEnum=false]
      */
     constructor(name, description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = [], aliases = [], enumProvider = null, forceEnum = false) {

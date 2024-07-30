@@ -23,6 +23,8 @@ export class SettingsUi {
     /**@type {HTMLInputElement}*/ disableSend;
     /**@type {HTMLInputElement}*/ placeBeforeInput;
     /**@type {HTMLInputElement}*/ injectInput;
+    /**@type {HTMLInputElement}*/ color;
+    /**@type {HTMLInputElement}*/ onlyBorderColor;
     /**@type {HTMLSelectElement}*/ currentSet;
 
 
@@ -117,10 +119,29 @@ export class SettingsUi {
         this.dom.querySelector('#qr--set-add').addEventListener('click', async()=>{
             this.currentQrSet.addQuickReply();
         });
+        this.dom.querySelector('#qr--set-paste').addEventListener('click', async()=>{
+            const text = await navigator.clipboard.readText();
+            this.currentQrSet.addQuickReplyFromText(text);
+        });
+        this.dom.querySelector('#qr--set-importQr').addEventListener('click', async()=>{
+            const inp = document.createElement('input'); {
+                inp.type = 'file';
+                inp.accept = '.json';
+                inp.addEventListener('change', async()=>{
+                    if (inp.files.length > 0) {
+                        for (const file of inp.files) {
+                            const text = await file.text();
+                            this.currentQrSet.addQuickReply(JSON.parse(text));
+                        }
+                    }
+                });
+                inp.click();
+            }
+        });
         this.qrList = this.dom.querySelector('#qr--set-qrList');
         this.currentSet = this.dom.querySelector('#qr--set');
         this.currentSet.addEventListener('change', ()=>this.onQrSetChange());
-        QuickReplySet.list.forEach(qrs=>{
+        QuickReplySet.list.toSorted((a,b)=>a.name.toLowerCase().localeCompare(b.name.toLowerCase())).forEach(qrs=>{
             const opt = document.createElement('option'); {
                 opt.value = qrs.name;
                 opt.textContent = qrs.name;
@@ -145,6 +166,34 @@ export class SettingsUi {
             qrs.injectInput = this.injectInput.checked;
             qrs.save();
         });
+        let initialColorChange = true;
+        this.color = this.dom.querySelector('#qr--color');
+        this.color.color = this.currentQrSet?.color ?? 'transparent';
+        this.color.addEventListener('change', (evt)=>{
+            if (!this.dom.closest('body')) return;
+            const qrs = this.currentQrSet;
+            if (initialColorChange) {
+                initialColorChange = false;
+                this.color.color = qrs.color;
+                return;
+            }
+            qrs.color = evt.detail.rgb;
+            qrs.save();
+            this.currentQrSet.updateColor();
+        });
+        this.dom.querySelector('#qr--colorClear').addEventListener('click', (evt)=>{
+            const qrs = this.currentQrSet;
+            this.color.color = 'transparent';
+            qrs.save();
+            this.currentQrSet.updateColor();
+        });
+        this.onlyBorderColor = this.dom.querySelector('#qr--onlyBorderColor');
+        this.onlyBorderColor.addEventListener('click', ()=>{
+            const qrs = this.currentQrSet;
+            qrs.onlyBorderColor = this.onlyBorderColor.checked;
+            qrs.save();
+            this.currentQrSet.updateColor();
+        });
         this.onQrSetChange();
     }
     onQrSetChange() {
@@ -152,6 +201,8 @@ export class SettingsUi {
         this.disableSend.checked = this.currentQrSet.disableSend;
         this.placeBeforeInput.checked = this.currentQrSet.placeBeforeInput;
         this.injectInput.checked = this.currentQrSet.injectInput;
+        this.color.color = this.currentQrSet.color ?? 'transparent';
+        this.onlyBorderColor.checked = this.currentQrSet.onlyBorderColor;
         this.qrList.innerHTML = '';
         const qrsDom = this.currentQrSet.renderSettings();
         this.qrList.append(qrsDom);
@@ -265,7 +316,7 @@ export class SettingsUi {
                 const qrs = new QuickReplySet();
                 qrs.name = name;
                 qrs.addQuickReply();
-                const idx = QuickReplySet.list.findIndex(it=>it.name.localeCompare(name) == 1);
+                const idx = QuickReplySet.list.findIndex(it=>it.name.toLowerCase().localeCompare(name.toLowerCase()) == 1);
                 if (idx > -1) {
                     QuickReplySet.list.splice(idx, 0, qrs);
                 } else {
@@ -321,7 +372,7 @@ export class SettingsUi {
                         this.prepareChatSetList();
                     }
                 } else {
-                    const idx = QuickReplySet.list.findIndex(it=>it.name.localeCompare(qrs.name) == 1);
+                    const idx = QuickReplySet.list.findIndex(it=>it.name.toLowerCase().localeCompare(qrs.name.toLowerCase()) == 1);
                     if (idx > -1) {
                         QuickReplySet.list.splice(idx, 0, qrs);
                     } else {

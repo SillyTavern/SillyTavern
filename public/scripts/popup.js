@@ -526,6 +526,15 @@ export class Popup {
 
         return this.#promise;
     }
+    async completeAffirmative() {
+        return await this.complete(POPUP_RESULT.AFFIRMATIVE);
+    }
+    async completeNegative() {
+        return await this.complete(POPUP_RESULT.NEGATIVE);
+    }
+    async completeCancelled() {
+        return await this.complete(POPUP_RESULT.CANCELLED);
+    }
 
     /**
      * Hides the popup, using the internal resolver to return the value to the original show promise
