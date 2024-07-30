@@ -82,7 +82,7 @@ export class QuickReply {
 
 
     get hasContext() {
-        return this.contextList && this.contextList.length > 0;
+        return this.contextList && this.contextList.filter(it => it.set).length > 0;
     }
 
 

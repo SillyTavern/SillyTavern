@@ -40,6 +40,7 @@ export class ContextMenu {
             children: [],
         };
         qr.contextList.forEach((cl) => {
+            if (!cl.set) return;
             if (!hierarchy.includes(cl.set)) {
                 const nextHierarchy = [...hierarchy, cl.set];
                 const nextLabelHierarchy = [...labelHierarchy, tree.label];
