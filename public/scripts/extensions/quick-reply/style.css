@@ -316,12 +316,19 @@
 #qr--qrOptions {
   display: flex;
   flex-direction: column;
+  padding-right: 1px;
 }
 #qr--qrOptions > #qr--ctxEditor .qr--ctxItem {
   display: flex;
   flex-direction: row;
   gap: 0.5em;
   align-items: baseline;
+}
+#qr--qrOptions > #qr--autoExec .checkbox_label {
+  text-wrap: nowrap;
+}
+#qr--qrOptions > #qr--autoExec .checkbox_label .fa-fw {
+  margin-right: 2px;
 }
 @media screen and (max-width: 750px) {
   body .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor {
