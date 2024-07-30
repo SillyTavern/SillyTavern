@@ -1525,7 +1525,7 @@ async function onTagRestoreFileSelect(e) {
     if (warnings.length) {
         toastr.warning('Tags restored with warnings. Check console or click on this message for details.', 'Tag Restore', {
             timeOut: toastr.options.timeOut * 2, // Display double the time
-            onclick: () => Popup.show.text('Tag Restore Warnings', `<samp class="justifyLeft">${warnings.join('<br />')}<samp>`, { allowVerticalScrolling: true }),
+            onclick: () => Popup.show.text('Tag Restore Warnings', `<samp class="justifyLeft">${DOMPurify.sanitize(warnings.join('\n'))}<samp>`, { allowVerticalScrolling: true }),
         });
         console.warn(`TAG RESTORE REPORT\n====================\n${warnings.join('\n')}`);
     } else {
