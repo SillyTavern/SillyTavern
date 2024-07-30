@@ -207,7 +207,7 @@
     "JSON Schema": "Lược đồ JSON",
     "Type in the desired JSON schema": "Nhập lược đồ JSON mong muốn",
     "Grammar String": "Chuỗi ngữ pháp",
-    "GNBF or ENBF, depends on the backend in use. If you're using this you should know which.": "GNBF hoặc ENBF, tùy thuộc vào backend đang sử dụng. Nếu bạn đang sử dụng cái này, bạn nên biết cái nào.",
+    "GBNF or EBNF, depends on the backend in use. If you're using this you should know which.": "GBNF hoặc EBNF, tùy thuộc vào backend đang sử dụng. Nếu bạn đang sử dụng cái này, bạn nên biết cái nào.",
     "Top P & Min P": "P & P tối thiểu hàng đầu",
     "Load default order": "Tải thứ tự mặc định",
     "llama.cpp only. Determines the order of samplers. If Mirostat mode is not 0, sampler order is ignored.": "chỉ llama.cpp. Xác định thứ tự lấy mẫu. Nếu chế độ Mirostat khác 0, thứ tự lấy mẫu sẽ bị bỏ qua.",
