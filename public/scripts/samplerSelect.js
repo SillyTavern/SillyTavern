@@ -158,12 +158,12 @@ async function showSamplerSelectPopup() {
         <div class="flex-container justifyCenter">
             <h3>Sampler Select</h3>
             <div class="flex-container alignItemsBaseline">
-            <div id="resetSelectedSamplers" class="menu_button menu_button_icon tag_view_create" title="Reset custom sampler selection">
+            <div id="resetSelectedSamplers" class="menu_button menu_button_icon" title="Reset custom sampler selection">
                 <i class="fa-solid fa-recycle"></i>
             </div>
         </div>
             <!--<div class="flex-container alignItemsBaseline">
-                <div class="menu_button menu_button_icon tag_view_create" title="Create a new sampler">
+                <div class="menu_button menu_button_icon" title="Create a new sampler">
                     <i class="fa-solid fa-plus"></i>
                     <span data-i18n="Create">Create</span>
                 </div>

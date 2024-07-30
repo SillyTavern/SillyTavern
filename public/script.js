@@ -227,7 +227,7 @@ import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay
 import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
-import { MacrosParser, evaluateMacros } from './scripts/macros.js';
+import { MacrosParser, evaluateMacros, getLastMessageId } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
@@ -439,6 +439,7 @@ export const event_types = {
     GROUP_CHAT_CREATED: 'group_chat_created',
     GENERATE_BEFORE_COMBINE_PROMPTS: 'generate_before_combine_prompts',
     GENERATE_AFTER_COMBINE_PROMPTS: 'generate_after_combine_prompts',
+    GENERATE_AFTER_DATA: 'generate_after_data',
     GROUP_MEMBER_DRAFTED: 'group_member_drafted',
     WORLD_INFO_ACTIVATED: 'world_info_activated',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
@@ -1720,16 +1721,24 @@ export async function replaceCurrentChat() {
 }
 
 export function showMoreMessages() {
-    let messageId = Number($('#chat').children('.mes').first().attr('mesid'));
+    const firstDisplayedMesId = $('#chat').children('.mes').first().attr('mesid');
+    let messageId = Number(firstDisplayedMesId);
     let count = power_user.chat_truncation || Number.MAX_SAFE_INTEGER;
+
+    // If there are no messages displayed, or the message somehow has no mesid, we default to one higher than last message id,
+    // so the first "new" message being shown will be the last available message
+    if (isNaN(messageId)) {
+        messageId = getLastMessageId() + 1;
+    }
 
     console.debug('Inserting messages before', messageId, 'count', count, 'chat length', chat.length);
     const prevHeight = $('#chat').prop('scrollHeight');
 
     while (messageId > 0 && count > 0) {
+        let newMessageId = messageId - 1;
+        addOneMessage(chat[newMessageId], { insertBefore: messageId >= chat.length ? null : messageId, scroll: false, forceId: newMessageId });
         count--;
         messageId--;
-        addOneMessage(chat[messageId], { insertBefore: messageId + 1, scroll: false, forceId: messageId });
     }
 
     if (messageId == 0) {
@@ -2470,26 +2479,30 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
  * @returns {string[]} Array of stopping strings
  */
 export function getStoppingStrings(isImpersonate, isContinue) {
-    const charString = `\n${name2}:`;
-    const userString = `\n${name1}:`;
-    const result = isImpersonate ? [charString] : [userString];
+    const result = [];
 
-    result.push(userString);
+    if (power_user.context.names_as_stop_strings) {
+        const charString = `\n${name2}:`;
+        const userString = `\n${name1}:`;
+        result.push(isImpersonate ? charString : userString);
 
-    if (isContinue && Array.isArray(chat) && chat[chat.length - 1]?.is_user) {
-        result.push(charString);
-    }
+        result.push(userString);
 
-    // Add other group members as the stopping strings
-    if (selected_group) {
-        const group = groups.find(x => x.id === selected_group);
+        if (isContinue && Array.isArray(chat) && chat[chat.length - 1]?.is_user) {
+            result.push(charString);
+        }
 
-        if (group && Array.isArray(group.members)) {
-            const names = group.members
-                .map(x => characters.find(y => y.avatar == x))
-                .filter(x => x && x.name && x.name !== name2)
-                .map(x => `\n${x.name}:`);
-            result.push(...names);
+        // Add other group members as the stopping strings
+        if (selected_group) {
+            const group = groups.find(x => x.id === selected_group);
+
+            if (group && Array.isArray(group.members)) {
+                const names = group.members
+                    .map(x => characters.find(y => y.avatar == x))
+                    .filter(x => x && x.name && x.name !== name2)
+                    .map(x => `\n${x.name}:`);
+                result.push(...names);
+            }
         }
     }
 
@@ -4211,6 +4224,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
     }
 
+    await eventSource.emit(event_types.GENERATE_AFTER_DATA, generate_data);
+
     if (dryRun) {
         generatedPromptCache = '';
         return Promise.resolve();
@@ -5074,7 +5089,7 @@ function setInContextMessages(lastmsg, type) {
  * @param {object} data Generation data
  * @returns {Promise<object>} Response data from the API
  */
-async function sendGenerationRequest(type, data) {
+export async function sendGenerationRequest(type, data) {
     if (main_api === 'openai') {
         return await sendOpenAIRequest(type, data.prompt, abortController.signal);
     }
@@ -5106,7 +5121,7 @@ async function sendGenerationRequest(type, data) {
  * @param {object} data Generation data
  * @returns {Promise<any>} Streaming generator
  */
-async function sendStreamingRequest(type, data) {
+export async function sendStreamingRequest(type, data) {
     if (abortController?.signal?.aborted) {
         throw new Error('Generation was aborted.');
     }
@@ -7917,6 +7932,8 @@ window['SillyTavern'].getContext = function () {
         eventTypes: event_types,
         addOneMessage: addOneMessage,
         generate: Generate,
+        sendStreamingRequest: sendStreamingRequest,
+        sendGenerationRequest: sendGenerationRequest,
         stopGeneration: stopGeneration,
         getTokenCount: getTokenCount,
         extensionPrompts: extension_prompts,
@@ -8310,6 +8327,7 @@ const swipe_right = () => {
 };
 
 const CONNECT_API_MAP = {
+    // Default APIs not contined inside text gen / chat gen
     'kobold': {
         selected: 'kobold',
         button: '#api_button',
@@ -8321,152 +8339,48 @@ const CONNECT_API_MAP = {
         selected: 'novel',
         button: '#api_button_novel',
     },
-    'ooba': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.OOBA,
-    },
-    'tabby': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.TABBY,
-    },
-    'llamacpp': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.LLAMACPP,
-    },
-    'ollama': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.OLLAMA,
-    },
-    'mancer': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.MANCER,
-    },
-    'vllm': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.VLLM,
-    },
-    'aphrodite': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.APHRODITE,
-    },
-    'koboldcpp': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.KOBOLDCPP,
-    },
+    // KoboldCpp alias
     'kcpp': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
         type: textgen_types.KOBOLDCPP,
     },
-    'togetherai': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.TOGETHERAI,
-    },
-    'openai': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.OPENAI,
-    },
+    // OpenAI alias
     'oai': {
         selected: 'openai',
         button: '#api_button_openai',
         source: chat_completion_sources.OPENAI,
     },
-    'claude': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.CLAUDE,
-    },
-    'windowai': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.WINDOWAI,
-    },
+    // OpenRouter special naming, to differentiate between chat comp and text comp
     'openrouter': {
         selected: 'openai',
         button: '#api_button_openai',
         source: chat_completion_sources.OPENROUTER,
-    },
-    'scale': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.SCALE,
-    },
-    'ai21': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.AI21,
-    },
-    'makersuite': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.MAKERSUITE,
-    },
-    'mistralai': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.MISTRALAI,
-    },
-    'custom': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.CUSTOM,
-    },
-    'cohere': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.COHERE,
-    },
-    'perplexity': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.PERPLEXITY,
-    },
-    'groq': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.GROQ,
-    },
-    '01ai': {
-        selected: 'openai',
-        button: '#api_button_openai',
-        source: chat_completion_sources.ZEROONEAI,
-    },
-    'infermaticai': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.INFERMATICAI,
-    },
-    'dreamgen': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.DREAMGEN,
     },
     'openrouter-text': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
         type: textgen_types.OPENROUTER,
     },
-    'featherless': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.FEATHERLESS,
-    },
-    'huggingface': {
-        selected: 'textgenerationwebui',
-        button: '#api_button_textgenerationwebui',
-        type: textgen_types.HUGGINGFACE,
-    },
 };
+
+// Fill connections map from textgen_types and chat_completion_sources
+for (const textGenType of Object.values(textgen_types)) {
+    if (CONNECT_API_MAP[textGenType]) continue;
+    CONNECT_API_MAP[textGenType] = {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textGenType,
+    };
+}
+for (const chatCompletionSource of Object.values(chat_completion_sources)) {
+    if (CONNECT_API_MAP[chatCompletionSource]) continue;
+    CONNECT_API_MAP[chatCompletionSource] = {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chatCompletionSource,
+    };
+}
 
 async function selectContextCallback(_, name) {
     if (!name) {
@@ -8599,7 +8513,7 @@ export async function processDroppedFiles(files, data = new Map()) {
 
     for (const file of files) {
         const extension = file.name.split('.').pop().toLowerCase();
-        if (allowedMimeTypes.includes(file.type) || allowedExtensions.includes(extension)) {
+        if (allowedMimeTypes.some(x => file.type.startsWith(x)) || allowedExtensions.includes(extension)) {
             const preservedName = data instanceof Map && data.get(file);
             await importCharacter(file, preservedName);
         } else {
