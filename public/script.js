@@ -227,7 +227,7 @@ import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay
 import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
-import { MacrosParser, evaluateMacros } from './scripts/macros.js';
+import { MacrosParser, evaluateMacros, getLastMessageId } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
@@ -1721,16 +1721,24 @@ export async function replaceCurrentChat() {
 }
 
 export function showMoreMessages() {
-    let messageId = Number($('#chat').children('.mes').first().attr('mesid'));
+    const firstDisplayedMesId = $('#chat').children('.mes').first().attr('mesid');
+    let messageId = Number(firstDisplayedMesId);
     let count = power_user.chat_truncation || Number.MAX_SAFE_INTEGER;
+
+    // If there are no messages displayed, or the message somehow has no mesid, we default to one higher than last message id,
+    // so the first "new" message being shown will be the last available message
+    if (isNaN(messageId)) {
+        messageId = getLastMessageId() + 1;
+    }
 
     console.debug('Inserting messages before', messageId, 'count', count, 'chat length', chat.length);
     const prevHeight = $('#chat').prop('scrollHeight');
 
     while (messageId > 0 && count > 0) {
+        let newMessageId = messageId - 1;
+        addOneMessage(chat[newMessageId], { insertBefore: messageId >= chat.length ? null : messageId, scroll: false, forceId: newMessageId });
         count--;
         messageId--;
-        addOneMessage(chat[messageId], { insertBefore: messageId + 1, scroll: false, forceId: messageId });
     }
 
     if (messageId == 0) {
