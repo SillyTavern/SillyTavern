@@ -1726,7 +1726,7 @@ export function showMoreMessages() {
 
     // If there are no messages displayed, or the message somehow has no mesid, we default to one higher than last message id,
     // so the first "new" message being shown will be the last available message
-    if (!messageId) {
+    if (isNaN(messageId)) {
         messageId = getLastMessageId() + 1;
     }
 
