@@ -447,11 +447,31 @@
   opacity: 0.5;
   pointer-events: none;
   transition: 200ms;
+  border-color: transparent;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting.qr--isPaused #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize) {
   cursor: pointer;
   opacity: 1;
   pointer-events: all;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting.qr--isPaused #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize)#qr--modal-resume {
+  animation-name: qr--debugPulse;
+  animation-duration: 1500ms;
+  animation-timing-function: ease-in-out;
+  animation-delay: 0s;
+  animation-iteration-count: infinite;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting.qr--isPaused #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize)#qr--modal-resume {
+  border-color: #51a351;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting.qr--isPaused #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize)#qr--modal-step {
+  border-color: var(--SmartThemeQuoteColor);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting.qr--isPaused #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize)#qr--modal-stepInto {
+  border-color: var(--SmartThemeQuoteColor);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting.qr--isPaused #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize)#qr--modal-stepOut {
+  border-color: var(--SmartThemeQuoteColor);
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--resizeHandle {
   width: 6px;
@@ -741,6 +761,10 @@
   width: 2.25em;
   position: relative;
 }
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton:not(.fa-solid) {
+  border-width: 1px;
+  border-style: solid;
+}
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton:not(.fa-solid):after {
   content: '';
   position: absolute;
@@ -765,6 +789,9 @@
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-maximize {
   display: none;
 }
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-send_textarea {
+  flex: 0 0 auto;
+}
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeProgress {
   --prog: 0;
   --progColor: #92befc;
@@ -772,6 +799,7 @@
   --progSuccessColor: #51a351;
   --progErrorColor: #bd362f;
   --progAbortedColor: #d78872;
+  flex: 0 0 auto;
   height: 0.5em;
   background-color: var(--black50a);
   position: relative;
@@ -983,6 +1011,15 @@
   }
   50% {
     background-color: var(--progFlashColor);
+  }
+}
+@keyframes qr--debugPulse {
+  0%,
+  100% {
+    border-color: #51a351;
+  }
+  50% {
+    border-color: #92befc;
   }
 }
 .popup.qr--hide {
