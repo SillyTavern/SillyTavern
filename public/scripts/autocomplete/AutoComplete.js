@@ -459,6 +459,9 @@ export class AutoComplete {
                 } else {
                     item.dom.classList.remove('selected');
                 }
+                if (!item.isSelectable) {
+                    item.dom.classList.add('not-selectable');
+                }
                 frag.append(item.dom);
             }
             this.dom.append(frag);

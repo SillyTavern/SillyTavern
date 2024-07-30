@@ -1376,6 +1376,8 @@ body[data-stscript-style="dark"] {
     --ac-style-color-matchedText: rgba(108 171 251 / 1);
     --ac-style-color-selectedBackground: rgba(32 57 92 / 1);
     --ac-style-color-selectedText: rgba(255 255 255 / 1);
+    --ac-style-color-notSelectableBackground: rgb(65, 78, 95);
+    --ac-style-color-notSelectableText: rgba(255 255 255 / 1);
     --ac-style-color-hoveredBackground: rgba(43 45 46 / 1);
     --ac-style-color-hoveredText: rgba(204 204 204 / 1);
     --ac-style-color-argName: rgba(171 209 239 / 1);
@@ -1402,6 +1404,8 @@ body[data-stscript-style="light"] {
     --ac-style-color-matchedText: rgba(61 104 188 / 1);
     --ac-style-color-selectedBackground: rgba(232 232 232 / 1);
     --ac-style-color-selectedText: rgba(0 0 0 / 1);
+    --ac-style-color-notSelectableBackground: rgba(232 232 232 / 1);
+    --ac-style-color-notSelectableText: rgb(83, 83, 83);
     --ac-style-color-hoveredBackground: rgba(242 242 242 / 1);
     --ac-style-color-hoveredText: rgba(59 59 59 / 1);
     --ac-style-color-argName: rgba(16 24 125 / 1);
@@ -1424,6 +1428,8 @@ body[data-stscript-style="theme"] {
     --ac-style-color-matchedText: var(--SmartThemeQuoteColor);
     --ac-style-color-selectedBackground: color-mix(in srgb, rgb(128 128 128) 75%, var(--SmartThemeChatTintColor));
     --ac-style-color-selectedText: var(--SmartThemeBodyColor);
+    --ac-style-color-notSelectableBackground: color-mix(in srgb, rgb(128 128 128) 50%, var(--SmartThemeChatTintColor));
+    --ac-style-color-notSelectableText: var(--SmartThemeBodyColor);
     --ac-style-color-hoveredBackground: color-mix(in srgb, rgb(128 128 128) 30%, var(--SmartThemeChatTintColor));
     --ac-style-color-hoveredText: var(--SmartThemeEmColor);
     --ac-style-color-argName: rgba(171 209 239 / 1);
@@ -1450,6 +1456,8 @@ body {
     --ac-color-matchedText: var(--ac-style-color-matchedText, rgba(108 171 251 / 1));
     --ac-color-selectedBackground: var(--ac-style-color-selectedBackground, rgba(32 57 92 / 1));
     --ac-color-selectedText: var(--ac-style-color-selectedText, rgba(255 255 255 / 1));
+    --ac-color-notSelectableBackground: var(--ac-style-color-notSelectableBackground, rgb(60, 73, 92));
+    --ac-color-notSelectableText: var(--ac-style-color-notSelectableText, rgba(255 255 255 / 1));
     --ac-color-hoveredBackground: var(--ac-style-color-hoveredBackground, rgba(43 45 46 / 1));
     --ac-color-hoveredText: var(--ac-style-color-hoveredText, rgba(204 204 204 / 1));
     --ac-color-argName: var(--ac-style-color-argName, rgba(171 209 239 / 1));
@@ -1675,6 +1683,10 @@ body[data-stscript-style] .hljs.language-stscript {
         &.selected>* {
             background-color: var(--ac-color-selectedBackground);
             color: var(--ac-color-selectedText);
+        }
+        &.selected.not-selectable>* {
+            background-color: var(--ac-color-notSelectableBackground);
+            color: var(--ac-color-notSelectableText);
         }
 
         >* {
