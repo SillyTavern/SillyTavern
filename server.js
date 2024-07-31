@@ -717,27 +717,39 @@ userModule.initUserStorage(dataRoot)
         let v6Failed = false
         let v4Failed = false
         if (cliArguments.ssl) {
-            https.createServer(
-                {
-                    cert: fs.readFileSync(cliArguments.certPath),
-                    key: fs.readFileSync(cliArguments.keyPath),
-                }, app)
-                .listen(
-                    Number(tavernUrlV6.port) || 443,
-                    tavernUrlV6.hostname,
-                    postSetupTasks,
-                );
+            // Handle IPv6 server
+            try {
+                https.createServer(
+                    {
+                        cert: fs.readFileSync(cliArguments.certPath),
+                        key: fs.readFileSync(cliArguments.keyPath),
+                    }, app)
+                    .listen(
+                        Number(tavernUrlV6.port) || 443,
+                        tavernUrlV6.hostname,
+                        postSetupTasks,
+                    );
+            } catch (error) {
+                console.error('failed to start with IPv6', error);
+                v6Failed = true;
+            }
 
-            https.createServer(
-                {
-                    cert: fs.readFileSync(cliArguments.certPath),
-                    key: fs.readFileSync(cliArguments.keyPath),
-                }, app)
-                .listen(
-                    Number(tavernUrl.port) || 443,
-                    tavernUrl.hostname,
-                    postSetupTasks,
-                );
+            // Handle IPv4 server
+            try {
+                https.createServer(
+                    {
+                        cert: fs.readFileSync(cliArguments.certPath),
+                        key: fs.readFileSync(cliArguments.keyPath),
+                    }, app)
+                    .listen(
+                        Number(tavernUrl.port) || 443,
+                        tavernUrl.hostname,
+                        postSetupTasks,
+                    );
+            } catch (error) {
+                console.error('failed to start with IPv4', error);
+                v4Failed = true;
+            }
         } else {
             // Handle IPv6 server
             try {
@@ -746,7 +758,7 @@ userModule.initUserStorage(dataRoot)
                     tavernUrlV6.hostname,
                 );
             } catch (error) {
-                console.error('Failed to start IPv6 HTTP server:', error);
+                console.error('failed to start with IPv6', error);
                 v6Failed = true;
             }
 
@@ -757,7 +769,7 @@ userModule.initUserStorage(dataRoot)
                     tavernUrl.hostname,
                 );
             } catch (error) {
-                console.error('Failed to start IPv4 HTTP server:', error);
+                console.error('failed to start with IPv4', error);
                 v4Failed = true;
             }
         }
