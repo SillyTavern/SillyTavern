@@ -4298,7 +4298,17 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source === chat_completion_sources.ZEROONEAI) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else {
+        }
+        else if (['yi-large'].includes(oai_settings.zerooneai_model)) {
+            $('#openai_max_context').attr('max', max_32k);
+        }
+        else if (['yi-vision'].includes(oai_settings.zerooneai_model)) {
+            $('#openai_max_context').attr('max', max_16k);
+        }
+        else if (['yi-large-turbo'].includes(oai_settings.zerooneai_model)) {
+            $('#openai_max_context').attr('max', max_4k);
+        }
+        else {
             $('#openai_max_context').attr('max', max_16k);
         }
 
@@ -4665,6 +4675,7 @@ export function isImageInliningSupported() {
         'gpt-4-turbo',
         'gpt-4o',
         'gpt-4o-mini',
+        'yi-vision',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -4678,6 +4689,8 @@ export function isImageInliningSupported() {
             return !oai_settings.openrouter_force_instruct;
         case chat_completion_sources.CUSTOM:
             return true;
+        case chat_completion_sources.ZEROONEAI:
+            return visionSupportedModels.some(model => oai_settings.zerooneai_model.includes(model));
         default:
             return false;
     }
