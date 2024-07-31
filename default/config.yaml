@@ -13,6 +13,7 @@ whitelistMode: true
 enableForwardedWhitelist: true
 # Whitelist of allowed IP addresses
 whitelist:
+  - ::1
   - 127.0.0.1
 # Toggle basic authentication for endpoints
 basicAuthMode: false

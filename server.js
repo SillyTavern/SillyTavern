@@ -54,8 +54,8 @@ if (process.versions && process.versions.node && process.versions.node.match(/20
     if (net.setDefaultAutoSelectFamily) net.setDefaultAutoSelectFamily(false);
 }
 
-// Set default DNS resolution order to IPv4 first
-dns.setDefaultResultOrder('ipv4first');
+// Set default DNS resolution order to IPv6 first
+dns.setDefaultResultOrder('ipv6first');
 
 const DEFAULT_PORT = 8000;
 const DEFAULT_AUTORUN = false;
@@ -546,6 +546,12 @@ app.use('/api/speech', require('./src/endpoints/speech').router);
 // Azure TTS
 app.use('/api/azure', require('./src/endpoints/azure').router);
 
+const tavernUrlV6 = new URL(
+    (cliArguments.ssl ? 'https://' : 'http://') +
+    (listen ? '[::]' : '[::1]') +
+    (':' + server_port),
+);
+
 const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
     (listen ? '0.0.0.0' : '127.0.0.1') +
@@ -554,7 +560,7 @@ const tavernUrl = new URL(
 
 const autorunUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
-    ('127.0.0.1') +
+    ('localhost') +
     (':' + server_port),
 );
 
@@ -720,6 +726,11 @@ userModule.initUserStorage(dataRoot)
                     postSetupTasks,
                 );
         } else {
+            http.createServer(app).listen(
+                Number(tavernUrlV6.port) || 80,
+                tavernUrlV6.hostname,
+                postSetupTasks,
+            );
             http.createServer(app).listen(
                 Number(tavernUrl.port) || 80,
                 tavernUrl.hostname,
