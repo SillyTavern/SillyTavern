@@ -503,7 +503,6 @@ app.use('/api/content', require('./src/endpoints/content-manager').router);
 
 // Settings load/store
 const settingsEndpoint = require('./src/endpoints/settings');
-const { exitProcess } = require('yargs');
 app.use('/api/settings', settingsEndpoint.router);
 
 // Stable Diffusion generation
