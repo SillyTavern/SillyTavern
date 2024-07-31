@@ -503,6 +503,7 @@ app.use('/api/content', require('./src/endpoints/content-manager').router);
 
 // Settings load/store
 const settingsEndpoint = require('./src/endpoints/settings');
+const { exitProcess } = require('yargs');
 app.use('/api/settings', settingsEndpoint.router);
 
 // Stable Diffusion generation
@@ -622,10 +623,10 @@ const postSetupTasks = async function () {
 
     setWindowTitle('SillyTavern WebServer');
 
-    console.log(color.green('SillyTavern is listening on: ' + tavernUrl));
+    console.log(color.green('SillyTavern is listening on ipv6: ' + tavernUrlV6 + " ipv4: " + tavernUrl));
 
     if (listen) {
-        console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
+        console.log('\n :: or 0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (::1 or 127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
     }
 
     if (basicAuthMode) {
@@ -714,7 +715,20 @@ userModule.initUserStorage(dataRoot)
     .then(verifySecuritySettings)
     .then(preSetupTasks)
     .finally(() => {
+        let v6Failed = false
+        let v4Failed = false
         if (cliArguments.ssl) {
+            https.createServer(
+                {
+                    cert: fs.readFileSync(cliArguments.certPath),
+                    key: fs.readFileSync(cliArguments.keyPath),
+                }, app)
+                .listen(
+                    Number(tavernUrlV6.port) || 443,
+                    tavernUrlV6.hostname,
+                    postSetupTasks,
+                );
+
             https.createServer(
                 {
                     cert: fs.readFileSync(cliArguments.certPath),
@@ -726,15 +740,31 @@ userModule.initUserStorage(dataRoot)
                     postSetupTasks,
                 );
         } else {
-            http.createServer(app).listen(
-                Number(tavernUrlV6.port) || 80,
-                tavernUrlV6.hostname,
-                postSetupTasks,
-            );
-            http.createServer(app).listen(
-                Number(tavernUrl.port) || 80,
-                tavernUrl.hostname,
-                postSetupTasks,
-            );
+            // Handle IPv6 server
+            try {
+                http.createServer(app).listen(
+                    Number(tavernUrlV6.port) || 80,
+                    tavernUrlV6.hostname,
+                );
+            } catch (error) {
+                console.error('Failed to start IPv6 HTTP server:', error);
+                v6Failed = true;
+            }
+
+            // Handle IPv4 server
+            try {
+                http.createServer(app).listen(
+                    Number(tavernUrl.port) || 80,
+                    tavernUrl.hostname,
+                );
+            } catch (error) {
+                console.error('Failed to start IPv4 HTTP server:', error);
+                v4Failed = true;
+            }
         }
+        if (v6Failed && v4Failed) {
+            console.error("both v6 and v4 failed");
+            process.exit(1)
+        }
+        postSetupTasks()
     });
