@@ -337,6 +337,7 @@ const OLLAMA_KEYS = [
     'mirostat',
     'mirostat_tau',
     'mirostat_eta',
+    'min_p',
 ];
 
 const AVATAR_WIDTH = 512;
