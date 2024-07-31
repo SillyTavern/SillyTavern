@@ -264,7 +264,7 @@ const default_settings = {
     ai21_model: 'j2-ultra',
     mistralai_model: 'mistral-medium-latest',
     cohere_model: 'command-r',
-    perplexity_model: 'llama-3-70b-instruct',
+    perplexity_model: 'llama-3.1-70b-instruct',
     groq_model: 'llama3-70b-8192',
     zerooneai_model: 'yi-large',
     custom_model: '',
@@ -344,7 +344,7 @@ const oai_settings = {
     ai21_model: 'j2-ultra',
     mistralai_model: 'mistral-medium-latest',
     cohere_model: 'command-r',
-    perplexity_model: 'llama-3-70b-instruct',
+    perplexity_model: 'llama-3.1-70b-instruct',
     groq_model: 'llama3-70b-8192',
     zerooneai_model: 'yi-large',
     custom_model: '',
@@ -4200,6 +4200,11 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source === chat_completion_sources.PERPLEXITY) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
+        }
+        else if (oai_settings.perplexity_model.includes('llama-3.1')) {
+            const isOnline = oai_settings.perplexity_model.includes('online');
+            const contextSize = isOnline ? 128 * 1024 - 4000 : 128 * 1024;
+            $('#openai_max_context').attr('max', contextSize);
         }
         else if (['llama-3-sonar-small-32k-chat', 'llama-3-sonar-large-32k-chat'].includes(oai_settings.perplexity_model)) {
             $('#openai_max_context').attr('max', max_32k);
