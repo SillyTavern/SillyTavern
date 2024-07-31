@@ -136,6 +136,10 @@ function throwIfInvalidModel(useReverseProxy) {
         throw new Error('Anthropic (Claude) API key is not set.');
     }
 
+    if (extension_settings.caption.multimodal_api === 'zerooneai' && !secret_state[SECRET_KEYS.ZEROONEAI]) {
+        throw new Error('01.AI API key is not set.');
+    }
+
     if (extension_settings.caption.multimodal_api === 'google' && !secret_state[SECRET_KEYS.MAKERSUITE] && !useReverseProxy) {
         throw new Error('MakerSuite API key is not set.');
     }
