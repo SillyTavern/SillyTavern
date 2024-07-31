@@ -90,7 +90,7 @@
     "main": "server.js",
     "devDependencies": {
         "@types/jquery": "^3.5.29",
-        "eslint": "^8.55.0",
+        "eslint": "^8.57.0",
         "jquery": "^3.6.4"
     }
 }

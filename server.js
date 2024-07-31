@@ -622,7 +622,7 @@ const postSetupTasks = async function () {
 
     setWindowTitle('SillyTavern WebServer');
 
-    console.log(color.green('SillyTavern is listening on ipv6: ' + tavernUrlV6 + " ipv4: " + tavernUrl));
+    console.log(color.green('SillyTavern is listening on ipv6: ' + tavernUrlV6 + ' ipv4: ' + tavernUrl));
 
     if (listen) {
         console.log('\n:: or 0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (::1 or 127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
@@ -714,8 +714,8 @@ userModule.initUserStorage(dataRoot)
     .then(verifySecuritySettings)
     .then(preSetupTasks)
     .finally(() => {
-        let v6Failed = false
-        let v4Failed = false
+        let v6Failed = false;
+        let v4Failed = false;
         if (cliArguments.ssl) {
             // Handle IPv6 server
             try {
@@ -774,8 +774,8 @@ userModule.initUserStorage(dataRoot)
             }
         }
         if (v6Failed && v4Failed) {
-            console.error("both v6 and v4 failed");
-            process.exit(1)
+            console.error('both v6 and v4 failed');
+            process.exit(1);
         }
-        postSetupTasks()
+        postSetupTasks();
     });
