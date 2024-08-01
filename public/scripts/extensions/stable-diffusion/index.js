@@ -37,6 +37,7 @@ const MODULE_NAME = 'sd';
 const UPDATE_INTERVAL = 1000;
 // This is a 1x1 transparent PNG
 const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+const CUSTOM_STOP_EVENT = 'sd_stop_generation';
 
 const sources = {
     extras: 'extras',
@@ -2290,6 +2291,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
 
     const dimensions = setTypeSpecificDimensions(generationType);
     const abortController = new AbortController();
+    const stopButton = document.getElementById('sd_stop_gen');
     let negativePromptPrefix = args?.negative || '';
     let imagePath = '';
 
@@ -2300,9 +2302,8 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         const prompt = await getPrompt(generationType, message, trigger, quietPrompt, combineNegatives);
         console.log('Processed image prompt:', prompt);
 
-        eventSource.once(event_types.GENERATION_STOPPED, stopListener);
-        context.deactivateSendButtons();
-        hideSwipeButtons();
+        $(stopButton).show();
+        eventSource.once(CUSTOM_STOP_EVENT, stopListener);
 
         if (typeof args?._abortController?.addEventListener === 'function') {
             args._abortController.addEventListener('abort', stopListener);
@@ -2314,10 +2315,9 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         throw new Error('SD prompt text generation failed.');
     }
     finally {
+        $(stopButton).hide();
         restoreOriginalDimensions(dimensions);
-        eventSource.removeListener(event_types.GENERATION_STOPPED, stopListener);
-        context.activateSendButtons();
-        showSwipeButtons();
+        eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
     }
 
     return imagePath;
@@ -3425,6 +3425,10 @@ async function addSDGenButtons() {
             generatePicture(initiators.wand, {}, param);
         }
     });
+
+    const stopGenButton = $('#sd_stop_gen');
+    stopGenButton.hide();
+    stopGenButton.on('click', () => eventSource.emit(CUSTOM_STOP_EVENT));
 }
 
 function isValidState() {
