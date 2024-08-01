@@ -1273,7 +1273,7 @@
                                         <input class="neo-range-slider" type="range" id="max_tokens_second_textgenerationwebui" name="volume" min="0" max="20" step="1" />
                                         <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="max_tokens_second_textgenerationwebui" id="max_tokens_second_counter_textgenerationwebui">
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="mancer, ooba, koboldcpp, aphrodite, tabby" name="smoothingBlock" class="wide100p">
+                                    <div data-newbie-hidden data-tg-type="mancer, ooba, koboldcpp, aphrodite, tabby" id="smoothingBlock" name="smoothingBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Smooth Sampling">Smooth Sampling</label>
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Smooth_Sampling_desc" title="Allows you to use quadratic/cubic transformations to adjust the distribution. Lower Smoothing Factor values will be more creative, usually between 0.2-0.3 is the sweetspot (assuming the curve = 1). Higher Smoothing Curve values will make the curve steeper, which will punish low probability choices more aggressively. 1.0 curve is equivalent to only using Smoothing Factor."></div>
@@ -1387,7 +1387,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="ooba, vllm" name="beamSearchBlock" class="wide100p">
+                                    <div data-newbie-hidden data-tg-type="ooba, vllm" id="beamSearchBlock" name="beamSearchBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label>
                                                 <span data-i18n="Beam search">Beam Search</span>
@@ -1413,7 +1413,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-tg-type="ooba" data-newbie-hidden name="contrastiveSearchBlock" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-tg-type="ooba" data-newbie-hidden id="contrastiveSearchBlock" name="contrastiveSearchBlock" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <h4 class="textAlignCenter" data-i18n="Contrastive search">Contrastive Search
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="Contrastive_search_txt" title="A sampler that encourages diversity while maintaining coherence, by exploiting the isotropicity of the representation space of most LLMs. For details, see the paper A Contrastive Framework for Neural Text Generation by Su et al. (2022)."></div>
                                         </h4>
@@ -1554,13 +1554,13 @@
                                         </h4>
                                         <textarea id="grammar_string_textgenerationwebui" rows="4" class="text_pole textarea_compact monospace" data-i18n="[placeholder]Type in the desired custom grammar" placeholder="Type in the desired custom grammar"></textarea>
                                     </div>
-                                    <div id="sampler_order_block" data-newbie-hidden data-tg-type="koboldcpp" class="range-block flexFlowColumn wide100p">
+                                    <div id="sampler_order_block_kcpp" data-newbie-hidden data-tg-type="koboldcpp" class="range-block flexFlowColumn wide100p">
                                         <hr class="wide100p">
                                         <div class="range-block-title">
                                             <span data-i18n="Samplers Order">Samplers Order</span>
                                         </div>
                                         <div class="toggle-description widthUnset" data-i18n="Samplers will be applied in a top-down order. Use with caution.">
-                                            Samplers will be applied in a top-down order.
+                                            kcpp only. Samplers will be applied in a top-down order.
                                             Use with caution.
                                         </div>
                                         <div id="koboldcpp_order" class="prompt_order">
@@ -1597,10 +1597,10 @@
                                             <span data-i18n="Load default order">Load default order</span>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="llamacpp" class="range-block flexFlowColumn wide100p">
+                                    <div id="sampler_order_block_lcpp" data-newbie-hidden data-tg-type="llamacpp" class="range-block flexFlowColumn wide100p">
                                         <hr class="wide100p">
                                         <h4 class="range-block-title justifyCenter">
-                                            <span data-i18n="Samplers Order">Samplers Order</span>
+                                            <span data-i18n="Sampler Order">Sampler Order</span>
                                             <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]llama.cpp only. Determines the order of samplers. If Mirostat mode is not 0, sampler order is ignored." title="llama.cpp only. Determines the order of samplers. If Mirostat mode is not 0, sampler order is ignored."></div>
                                         </h4>
                                         <div class="toggle-description widthUnset" data-i18n="llama.cpp only. Determines the order of samplers. If Mirostat mode is not 0, sampler order is ignored.">
@@ -1618,7 +1618,7 @@
                                             <span data-i18n="Load default order">Load default order</span>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="ooba" class="range-block flexFlowColumn wide100p">
+                                    <div id="sampler_priority_block_ooba" data-newbie-hidden data-tg-type="ooba" class="range-block flexFlowColumn wide100p">
                                         <hr class="wide100p">
                                         <h4 class="range-block-title justifyCenter">
                                             <span data-i18n="Sampler Priority">Sampler Priority</span>
@@ -1776,7 +1776,7 @@
                                             <span data-i18n="Send inline images">Send inline images</span>
                                             <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
                                                 <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it (e.g. GPT-4V, Claude 3 or Llava 13B).
-                                                Use the</span> <code><i class="fa-solid fa-paperclip"></i></code> <span data-i18n="image_inlining_hint_2">action on any message or the</span>
+                                                    Use the</span> <code><i class="fa-solid fa-paperclip"></i></code> <span data-i18n="image_inlining_hint_2">action on any message or the</span>
                                                 <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
                                             </div>
                                         </label>
