@@ -19,7 +19,8 @@ const Tokens = {
         Start: createToken({ name: 'MacroStart', pattern: /\{\{/ }),
         // Separate macro identifier needed, that is similar to the global indentifier, but captures the actual macro "name"
         // We need this, because this token is going to switch lexer mode, while the general identifier does not.
-        Identifier: createToken({ name: 'MacroIdentifier', pattern: /[a-zA-Z_]\w*/ }),
+        Identifier: createToken({ name: 'MacroIdentifier', pattern: /[a-zA-Z][\w-]*/ }),
+        Flags: createToken({ name: 'MacroFlag', pattern: /[!?#~/.$]/ }),
         // CaptureBeforeEnd: createToken({ name: 'MacroCaptureBeforeEnd', pattern: /.*?(?=\}\})/, pop_mode: true/*, group: Lexer.SKIPPED */ }),
         End: createToken({ name: 'MacroEnd', pattern: /\}\}/ }),
     },
@@ -33,7 +34,7 @@ const Tokens = {
     },
 
     // All tokens that can be captured inside a macro
-    Identifier: createToken({ name: 'Identifier', pattern: /[a-zA-Z_]\w*/ }),
+    Identifier: createToken({ name: 'Identifier', pattern: /[a-zA-Z][\w-]*/ }),
     WhiteSpace: createToken({ name: 'WhiteSpace', pattern: /\s+/, group: Lexer.SKIPPED }),
 
     // Capture unknown characters one by one, to still allow other tokens being matched once they are there
@@ -59,6 +60,11 @@ const Def = {
         ],
         [modes.macro_def]: [
             exits(Tokens.Macro.End, modes.macro_def),
+
+            using(Tokens.Macro.Flags),
+
+            // We allow whitspaces inbetween flags or in front of the modifier
+            using(Tokens.WhiteSpace),
 
             // Inside a macro, we will match the identifier
             // Enter 'macro_args' mode automatically at the end of the identifier, to match any optional arguments

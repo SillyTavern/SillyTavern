@@ -46,6 +46,20 @@ describe("MacroLexer", () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
+        // {{ some macro }}
+        if ("whitespaces between two valid identifiers will only capture the first as macro identifier", async () => {
+            const input = "{{ some macro }}";
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'some' },
+                { type: 'Identifier', text: 'macro' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
         // {{macro1}}{{macro2}}
         it("should handle multiple sequential macros", async () => {
             const input = "{{macro1}}{{macro2}}";
@@ -57,6 +71,45 @@ describe("MacroLexer", () => {
                 { type: 'MacroEnd', text: '}}' },
                 { type: 'MacroStart', text: '{{' },
                 { type: 'MacroIdentifier', text: 'macro2' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{my2cents}}
+        it("should allow numerics inside the macro identifier", async () => {
+            const input = "{{my2cents}}";
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'my2cents' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{SCREAM}}
+        it("should allow capslock macros", async () => {
+            const input = "{{SCREAM}}";
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'SCREAM' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{some-longer-macro}}
+        it("allow dashes in macro identifiers", async () => {
+            const input = "{{some-longer-macro}}";
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'some-longer-macro' },
                 { type: 'MacroEnd', text: '}}' },
             ];
 
@@ -79,7 +132,6 @@ describe("MacroLexer", () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
-
         // {{ma!@#%ro}}
         it("invalid chars in macro identifier are not parsed as valid macro identifier", async () => {
             const input = "{{ma!@#%ro}}";
@@ -193,6 +245,38 @@ describe("MacroLexer", () => {
                 { type: 'Identifier', text: 'My' },
                 { type: 'Identifier', text: 'variable' },
                 { type: 'Quote', text: '"' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{getvar KEY=big}}
+        it("should handle capslock argument name identifiers", async () => {
+            const input = '{{getvar KEY=big}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'getvar' },
+                { type: 'Identifier', text: 'KEY' },
+                { type: 'Equals', text: '=' },
+                { type: 'Identifier', text: 'big' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{dostuff longer-key=value}}
+        it("should handle argument name identifiers with dashes", async () => {
+            const input = '{{dostuff longer-key=value}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'dostuff' },
+                { type: 'Identifier', text: 'longer-key' },
+                { type: 'Equals', text: '=' },
+                { type: 'Identifier', text: 'value' },
                 { type: 'MacroEnd', text: '}}' },
             ];
 
@@ -350,6 +434,194 @@ describe("MacroLexer", () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
+        // TODO: test invalid argument name identifiers
+    });
+
+    describe("Macro Execution Modifiers", () => {
+        // {{!immediate}}
+        it("should support ! flag", async () => {
+            const input = '{{!immediate}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroFlag', text: '!' },
+                { type: 'MacroIdentifier', text: 'immediate' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{?lazy}}
+        it("should support ? flag", async () => {
+            const input = '{{?lazy}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroFlag', text: '?' },
+                { type: 'MacroIdentifier', text: 'lazy' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        })
+        // {{~reevaluate}}
+        it("should support ~ flag", async () => {
+            const input = '{{~reevaluate}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroFlag', text: '~' },
+                { type: 'MacroIdentifier', text: 'reevaluate' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{/if}}
+        it("should support / flag", async () => {
+            const input = '{{/if}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroFlag', text: '/' },
+                { type: 'MacroIdentifier', text: 'if' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{.variable}}
+        it("should support . flag", async () => {
+            const input = '{{.variable}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroFlag', text: '.' },
+                { type: 'MacroIdentifier', text: 'variable' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{$variable}}
+        it("should support alias $ flag", async () => {
+            const input = '{{$variable}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroFlag', text: '$' },
+                { type: 'MacroIdentifier', text: 'variable' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{#legacy}}
+        it("should support legacy # flag", async () => {
+            const input = '{{#legacy}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroFlag', text: '#' },
+                { type: 'MacroIdentifier', text: 'legacy' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{  !  identifier  }}
+        it("support whitespaces around flags", async () => {
+            const input = '{{  !  identifier  }}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroFlag', text: '!' },
+                { type: 'MacroIdentifier', text: 'identifier' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{ ?~lateragain }}
+        it("support multiple flags", async () => {
+            const input = '{{ ?~lateragain }}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroFlag', text: '?' },
+                { type: 'MacroFlag', text: '~' },
+                { type: 'MacroIdentifier', text: 'lateragain' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{ ! .importantvariable }}
+        it("support multiple flags with whitspace", async () => {
+            const input = '{{ !.importantvariable }}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroFlag', text: '!' },
+                { type: 'MacroFlag', text: '.' },
+                { type: 'MacroIdentifier', text: 'importantvariable' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{ @unknown }}
+        it("do not capture unknown special characters as flag", async () => {
+            const input = '{{ @unknown }}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'Unknown', text: '@' },
+                { type: 'Identifier', text: 'unknown' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{ a shaaark }}
+        it("do not capture single letter as flag, but as macro identifiers", async () => {
+            const input = '{{ a shaaark }}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'a' },
+                { type: 'Identifier', text: 'shaaark' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{ 2 cents }}
+        it("do not capture numbers as flag - they are also invalid macro identifiers", async () => {
+            const input = '{{ 2 cents }}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'Unknown', text: '2' },
+                { type: 'Identifier', text: 'cents' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
     });
 
     describe("Macro While Typing..", () => {
@@ -415,6 +687,17 @@ describe("MacroLexer", () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
+        // { { not a macro } }
+        it("treats opening/clasing with whitspaces between brackets as not macros", async () => {
+            const input = "{ { not a macro } }";
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'Plaintext', text: '{ { not a macro } }' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
     });
 });
 
@@ -443,6 +726,12 @@ async function runLexerGetTokens(input) {
  * @returns {TestableToken[]} The tokens
  */
 function getTestableTokens(result) {
+    // Make sure that lexer errors get correctly marked as errors during testing, even if the resulting tokens might work.
+    // The lexer should generally be able to parse all kinds of tokens.
+    if (result.errors.length > 0) {
+        throw new Error('Lexer errors found\n' + result.errors.map(x => x.message).join('\n'));
+    }
+
     return result.tokens
         // Filter out the mode popper. We don't care aobut that for testing
         .filter(token => token.tokenType.name !== 'EndMode')
