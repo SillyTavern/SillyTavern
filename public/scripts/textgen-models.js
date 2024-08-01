@@ -72,6 +72,7 @@ export async function loadTogetherAIModels(data) {
         return;
     }
 
+    data.sort((a, b) => a.name.localeCompare(b.name));
     togetherModels = data;
 
     if (!data.find(x => x.name === textgen_settings.togetherai_model)) {
@@ -99,6 +100,7 @@ export async function loadInfermaticAIModels(data) {
         return;
     }
 
+    data.sort((a, b) => a.id.localeCompare(b.id));
     infermaticAIModels = data;
 
     if (!data.find(x => x.id === textgen_settings.infermaticai_model)) {
@@ -151,6 +153,7 @@ export async function loadMancerModels(data) {
         return;
     }
 
+    data.sort((a, b) => a.name.localeCompare(b.name));
     mancerModels = data;
 
     if (!data.find(x => x.id === textgen_settings.mancer_model)) {
@@ -173,6 +176,7 @@ export async function loadOpenRouterModels(data) {
         return;
     }
 
+    data.sort((a, b) => a.name.localeCompare(b.name));
     openRouterModels = data;
 
     if (!data.find(x => x.id === textgen_settings.openrouter_model)) {
