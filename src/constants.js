@@ -348,6 +348,11 @@ const OPENROUTER_HEADERS = {
     'X-Title': 'SillyTavern',
 };
 
+const FEATHERLESS_HEADERS = {
+    'HTTP-Referer': 'https://sillytavern.app',
+    'X-Title': 'SillyTavern',
+};
+
 const OPENROUTER_KEYS = [
     'max_tokens',
     'temperature',
@@ -432,4 +437,5 @@ module.exports = {
     OPENROUTER_KEYS,
     VLLM_KEYS,
     FEATHERLESS_KEYS,
+    FEATHERLESS_HEADERS,
 };
