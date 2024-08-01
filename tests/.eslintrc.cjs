@@ -9,7 +9,7 @@ module.exports = {
     env: {
         es6: true,
         node: true,
-        "jest/globals": true,
+        'jest/globals': true,
     },
     parserOptions: {
         ecmaVersion: 'latest',
@@ -17,7 +17,16 @@ module.exports = {
     overrides: [
     ],
     ignorePatterns: [
+        '*.min.js',
+        'node_modules/**/*',
     ],
+    globals: {
+        browser: 'readonly',
+        page: 'readonly',
+        context: 'readonly',
+        puppeteerConfig: 'readonly',
+        jestPuppeteer: 'readonly',
+    },
     rules: {
         'no-unused-vars': ['error', { args: 'none' }],
         'no-control-regex': 'off',
@@ -33,5 +42,9 @@ module.exports = {
         'space-infix-ops': 'error',
         'no-unused-expressions': ['error', { allowShortCircuit: true, allowTernary: true }],
         'no-cond-assign': 'error',
+
+        // These rules should eventually be enabled.
+        'no-async-promise-executor': 'off',
+        'no-inner-declarations': 'off',
     },
 };

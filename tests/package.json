@@ -3,7 +3,9 @@
     "type": "module",
     "license": "AGPL-3.0",
     "scripts": {
-        "test": "jest"
+        "test": "jest",
+        "lint": "eslint \"**/*.js\" ./*.js",
+        "lint:fix": "eslint \"**/*.js\" ./*.js --fix"
     },
     "dependencies": {
         "@types/jest": "^29.5.12",
