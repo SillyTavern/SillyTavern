@@ -160,17 +160,17 @@ const uploadsPath = path.join(dataRoot, require('./src/constants').UPLOADS_DIREC
 const enableIPv6 = !cliArguments.disableIPv6 ?? getConfigValue('enableIPv6', DEFAULT_ENABLE_IPV6);
 const enableIPv4 = !cliArguments.disableIPv4 ?? getConfigValue('enableIPv4', DEFAULT_ENABLE_IPV4);
 
-const preferIPv6 = cliArguments.preferIPv6 ?? getConfigValue('enableIPv6', DEFAULT_PREFER_IPV6);
+const preferIPv6 = cliArguments.preferIPv6 ?? getConfigValue('preferIPv6', DEFAULT_PREFER_IPV6);
 
 
 if (preferIPv6) {
     // Set default DNS resolution order to IPv6 first
     dns.setDefaultResultOrder('ipv6first');
-    console.log("Preferring IPv6")
+    console.log("Preferring IPv6 for dns")
 } else {
     // Set default DNS resolution order to IPv4 first
     dns.setDefaultResultOrder('ipv4first');
-    console.log("Preferring IPv4")
+    console.log("Preferring IPv4 for dns")
 }
 
 
