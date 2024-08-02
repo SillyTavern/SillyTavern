@@ -5,9 +5,9 @@ dataRoot: ./data
 # Listen for incoming connections
 listen: false
 # Enables IPv6
-enableIPv6: true
+disableIPv6: false
 # Enables IPv4
-enableIPv4: true
+disableIPv4: false
 # Prefers IPv6 for dns
 preferIPv6: false
 # Server port

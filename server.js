@@ -67,8 +67,8 @@ const DEFAULT_ACCOUNTS = false;
 const DEFAULT_CSRF_DISABLED = false;
 const DEFAULT_BASIC_AUTH = false;
 
-const DEFAULT_ENABLE_IPV6 = true;
-const DEFAULT_ENABLE_IPV4 = true;
+const DEFAULT_DISABLE_IPV6 = false;
+const DEFAULT_DISABLE_IPV4 = false;
 
 const DEFAULT_PREFER_IPV6 = false;
 
@@ -113,11 +113,11 @@ const cliArguments = yargs(hideBin(process.argv))
     }).option('disableIPv6', {
         type: 'boolean',
         default: null,
-        describe: `Disables IPv6\nIf not provided falls back to yaml config 'enableIPv6'.\n[config default: ${!DEFAULT_ENABLE_IPV6}]`,
+        describe: `Disables IPv6\nIf not provided falls back to yaml config 'disableIPv6'.\n[config default: ${DEFAULT_DISABLE_IPV6}]`,
     }).option('disableIPv4', {
         type: 'boolean',
         default: null,
-        describe: `Disables IPv4\nIf not provided falls back to yaml config 'enableIPv4'.\n[config default: ${!DEFAULT_ENABLE_IPV4}]`,
+        describe: `Disables IPv4\nIf not provided falls back to yaml config 'disableIPv4'.\n[config default: ${DEFAULT_DISABLE_IPV4}]`,
     }).option('preferIPv6', {
         type: 'boolean',
         default: null,
@@ -157,8 +157,8 @@ const enableAccounts = getConfigValue('enableUserAccounts', DEFAULT_ACCOUNTS);
 const uploadsPath = path.join(dataRoot, require('./src/constants').UPLOADS_DIRECTORY);
 
 
-const enableIPv6 = !cliArguments.disableIPv6 ?? getConfigValue('enableIPv6', DEFAULT_ENABLE_IPV6);
-const enableIPv4 = !cliArguments.disableIPv4 ?? getConfigValue('enableIPv4', DEFAULT_ENABLE_IPV4);
+const disableIPv6 = cliArguments.disableIPv6 ?? getConfigValue('disableIPv6', DEFAULT_DISABLE_IPV6);
+const disableIPv4 = cliArguments.disableIPv4 ?? getConfigValue('disableIPv4', DEFAULT_DISABLE_IPV4);
 
 const preferIPv6 = cliArguments.preferIPv6 ?? getConfigValue('preferIPv6', DEFAULT_PREFER_IPV6);
 
@@ -175,7 +175,7 @@ if (preferIPv6) {
 
 
 
-if (!enableIPv6 && !enableIPv4) {
+if (disableIPv6 && disableIPv4) {
     console.error('error: you can\'t disable all internet you must enable at least ipv6 or ipv4')
     process.exit(1)
 }
@@ -666,7 +666,17 @@ const postSetupTasks = async function () {
 
     setWindowTitle('SillyTavern WebServer');
 
-    console.log(color.green('SillyTavern is listening on ipv6: ' + tavernUrlV6 + ' ipv4: ' + tavernUrl));
+    let log_listen = 'SillyTavern is listening on';
+
+    if (!disableIPv6) {
+        log_listen += ' IPv6: ' + tavernUrlV6
+    }
+
+    if (!disableIPv4) {
+        log_listen += ' IPv4: ' + tavernUrl
+    }
+
+    console.log(color.green(log_listen));
 
     if (listen) {
         console.log('\n:: or 0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (::1 or 127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
@@ -729,7 +739,7 @@ function startHTTPS() {
     let v4Failed = false;
 
     // Handle IPv6 server
-    if (enableIPv6) {
+    if (!disableIPv6) {
 
         try {
             https.createServer(
@@ -751,7 +761,7 @@ function startHTTPS() {
 
 
     // Handle IPv4 server
-    if (enableIPv4) {
+    if (!disableIPv4) {
 
         try {
             https.createServer(
@@ -781,7 +791,7 @@ function startHTTP() {
     let v4Failed = false;
     // Handle IPv6 server
 
-    if (enableIPv6) {
+    if (!disableIPv6) {
         try {
             http.createServer(app).listen(
                 Number(tavernUrlV6.port) || 80,
@@ -794,7 +804,7 @@ function startHTTP() {
     }
 
     // Handle IPv4 server
-    if (enableIPv4) {
+    if (!disableIPv4) {
         try {
             http.createServer(app).listen(
                 Number(tavernUrl.port) || 80,
