@@ -1648,9 +1648,9 @@ function getWIElement(name) {
  */
 export function sortWorldInfoEntries(data, { customSort = null } = {}) {
     const option = $('#world_info_sort_order').find(':selected');
-    const sortField = customSort.sortField ?? option.data('field');
-    const sortOrder = customSort.sortOrder ?? option.data('order');
-    const sortRule = customSort.sortRule ?? option.data('rule');
+    const sortField = customSort?.sortField ?? option.data('field');
+    const sortOrder = customSort?.sortOrder ?? option.data('order');
+    const sortRule = customSort?.sortRule ?? option.data('rule');
     const orderSign = sortOrder === 'asc' ? 1 : -1;
 
     if (!data.length) return data;
