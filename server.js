@@ -659,7 +659,7 @@ const preSetupTasks = async function () {
 /**
  * Tasks that need to be run after the server starts listening.
  */
-const postSetupTasks = async function () {
+const postSetupTasks = async function (v6Failed, v4Failed) {
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
@@ -668,11 +668,11 @@ const postSetupTasks = async function () {
 
     let log_listen = 'SillyTavern is listening on';
 
-    if (!disableIPv6) {
+    if (!disableIPv6 && !v6Failed) {
         log_listen += ' IPv6: ' + tavernUrlV6
     }
 
-    if (!disableIPv4) {
+    if (!disableIPv4 && !v4Failed) {
         log_listen += ' IPv4: ' + tavernUrl
     }
 
@@ -837,7 +837,7 @@ function startServer() {
         process.exit(1);
     }
 
-    postSetupTasks();
+    postSetupTasks(v6Failed, v4Failed);
 }
 
 
