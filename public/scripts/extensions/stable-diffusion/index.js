@@ -3396,7 +3396,7 @@ async function addSDGenButtons() {
     $(document).on('click touchend', function (e) {
         const target = $(e.target);
         if (target.is(dropdown) || target.closest(dropdown).length) return;
-        if (target.is(button) && !dropdown.is(':visible') && $('#send_but').is(':visible')) {
+        if ((target.is(button) || target.closest(button).length) && !dropdown.is(':visible') && $('#send_but').is(':visible')) {
             e.preventDefault();
 
             dropdown.fadeIn(animation_duration);
