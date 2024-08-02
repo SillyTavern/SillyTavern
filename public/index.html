@@ -4144,6 +4144,18 @@
                                         Quick "Continue" button
                                     </small>
                                 </label>
+                                <label class="checkbox_label" for="quick_regenerate" title="Show a button in the input area to ask the AI regenerate its last message." data-i18n="[title]Show a button in the input area to ask the AI regenerate its last message">
+                                    <input id="quick_regenerate" type="checkbox" />
+                                    <small data-i18n="Quick 'Regenerate' button">
+                                        Quick "Regenerate" button
+                                    </small>
+                                </label>
+                                <label class="checkbox_label" for="quick_impersonate" title="Show a button in the input area to ask the AI to impersonate your character for a single message." data-i18n="[title]Show a button in the input area to ask the AI to impersonate your character for a single message">
+                                    <input id="quick_impersonate" type="checkbox" />
+                                    <small data-i18n="Quick 'Impersonate' button">
+                                        Quick "Impersonate" button
+                                    </small>
+                                </label>
                                 <div class="checkbox-container flex-container">
                                     <label data-newbie-hidden class="checkbox_label" for="swipes-checkbox" title="Show arrow buttons on the last in-chat message to generate alternative AI responses. Both PC and mobile." data-i18n="[title]Show arrow buttons on the last in-chat message to generate alternative AI responses. Both PC and mobile">
                                         <input id="swipes-checkbox" type="checkbox" />
@@ -6342,6 +6354,8 @@
                         <div id="mes_stop" title="Abort request" class="mes_stop" data-i18n="[title]Abort request">
                             <i class="fa-solid fa-circle-stop"></i>
                         </div>
+                        <div id="mes_impersonate" class="fa-solid fa-user-secret interactable displayNone" title="Ask AI to write your message for you" data-i18n="[title]Ask AI to write your message for you" tabindex="0"></div>
+                        <div id="mes_regenerate" class="fa-solid fa-repeat interactable displayNone" title="Regenerate last message" data-i18n="[title]Regenerate last message" tabindex="0"></div>
                         <div id="mes_continue" class="fa-fw fa-solid fa-arrow-right interactable displayNone" title="Continue the last message" data-i18n="[title]Continue the last message"></div>
                         <div id="send_but" class="fa-solid fa-paper-plane interactable displayNone" title="Send a message" data-i18n="[title]Send a message"></div>
                     </div>

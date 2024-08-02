@@ -716,6 +716,14 @@ body .panelControlBar {
     order: 1;
 }
 
+#mes_regenerate {
+    order: 1;
+}
+
+#mes_impersonate {
+    order: 1;
+}
+
 #send_form .mes_stop {
     display: none;
     order: 2;
