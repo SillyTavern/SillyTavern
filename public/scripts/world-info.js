@@ -2115,7 +2115,13 @@ export function setWIOriginalDataValue(data, uid, key, value) {
     }
 }
 
-function deleteWIOriginalDataValue(data, uid) {
+/**
+ * Deletes the original data entry corresponding to the given uid from the provided data object
+ *
+ * @param {object} data - The data object containing the original data entries
+ * @param {string} uid - The unique identifier of the data entry to be deleted
+ */
+export function deleteWIOriginalDataValue(data, uid) {
     if (data.originalData && Array.isArray(data.originalData.entries)) {
         const originalIndex = data.originalData.entries.findIndex(x => x.uid === uid);
 
@@ -3003,7 +3009,8 @@ function getWorldEntry(name, data, entry) {
     deleteButton.data('uid', entry.uid);
     deleteButton.on('click', async function () {
         const uid = $(this).data('uid');
-        deleteWorldInfoEntry(data, uid);
+        const deleted = await deleteWorldInfoEntry(data, uid);
+        if (!deleted) return;
         deleteWIOriginalDataValue(data, uid);
         await saveWorldInfo(name, data);
         updateEditor(navigation_option.previous);
@@ -3241,17 +3248,22 @@ export function duplicateWorldInfoEntry(data, uid) {
  * Deletes a WI entry, with a user confirmation dialog
  * @param {*[]} data - The data of the book
  * @param {number} uid - The uid of the entry to copy in this book
+ * @param {object} [options={}] - Optional arguments
+ * @param {boolean} [options.silent=false] - Whether to prompt the user for deletion or just do it
+ * @returns {Promise<boolean>} Whether the entry deletion was successful
  */
-export function deleteWorldInfoEntry(data, uid) {
+export async function deleteWorldInfoEntry(data, uid, { silent = false } = {}) {
     if (!data || !('entries' in data)) {
         return;
     }
 
-    if (!confirm(`Delete the entry with UID: ${uid}? This action is irreversible!`)) {
-        throw new Error('User cancelled deletion');
+    const confirmation = silent || await Popup.show.confirm(`Delete the entry with UID: ${uid}?`, 'This action is irreversible!');
+    if (!confirmation) {
+        return false;
     }
 
     delete data.entries[uid];
+    return true;
 }
 
 /**
