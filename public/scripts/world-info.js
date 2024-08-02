@@ -1642,13 +1642,15 @@ function getWIElement(name) {
  * Sorts the given data based on the selected sort option
  *
  * @param {any[]} data WI entries
+ * @param {object} [options={}] - Optional arguments
+ * @param {{sortField?: string, sortOrder?: string, sortRule?: string}} [options.customSort={}] - Custom sort options, instead of the chosen UI sort
  * @returns {any[]} Sorted data
  */
-export function sortWorldInfoEntries(data) {
+export function sortWorldInfoEntries(data, { customSort = null } = {}) {
     const option = $('#world_info_sort_order').find(':selected');
-    const sortField = option.data('field');
-    const sortOrder = option.data('order');
-    const sortRule = option.data('rule');
+    const sortField = customSort.sortField ?? option.data('field');
+    const sortOrder = customSort.sortOrder ?? option.data('order');
+    const sortRule = customSort.sortRule ?? option.data('rule');
     const orderSign = sortOrder === 'asc' ? 1 : -1;
 
     if (!data.length) return data;
