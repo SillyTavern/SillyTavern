@@ -734,6 +734,16 @@ function logSecurityAlert(message) {
     process.exit(1);
 }
 
+
+
+function handleServerListenFail(v6Failed, v4Failed) {
+    if (v6Failed && v4Failed) {
+        console.error('fatal error: both v6 and v4 failed');
+        process.exit(1);
+    }
+}
+
+
 function startHTTPS() {
     let v6Failed = false;
     let v4Failed = false;
@@ -741,21 +751,19 @@ function startHTTPS() {
     // Handle IPv6 server
     if (!disableIPv6) {
 
-        try {
-            https.createServer(
-                {
-                    cert: fs.readFileSync(cliArguments.certPath),
-                    key: fs.readFileSync(cliArguments.keyPath),
-                }, app)
-                .listen(
-                    Number(tavernUrlV6.port) || 443,
-                    tavernUrlV6.hostname,
-                );
-        } catch (error) {
-            console.error('failed to start with IPv6', error);
-            v6Failed = true;
-        }
+        const ipv6Server = https.createServer(
+            {
+                cert: fs.readFileSync(cliArguments.certPath),
+                key: fs.readFileSync(cliArguments.keyPath),
+            }, app);
 
+        ipv6Server.on('error', (error) => {
+            console.error('non-fatal error: failed to start with IPv6', error);
+            v6Failed = true;
+            handleServerListenFail(v6Failed, v4Failed)
+        });
+
+        ipv6Server.listen(Number(tavernUrlV6.port) || 443, tavernUrlV6.hostname);
 
     }
 
@@ -763,20 +771,19 @@ function startHTTPS() {
     // Handle IPv4 server
     if (!disableIPv4) {
 
-        try {
-            https.createServer(
-                {
-                    cert: fs.readFileSync(cliArguments.certPath),
-                    key: fs.readFileSync(cliArguments.keyPath),
-                }, app)
-                .listen(
-                    Number(tavernUrl.port) || 443,
-                    tavernUrl.hostname,
-                );
-        } catch (error) {
-            console.error('failed to start with IPv4', error);
+        const ipv4Server = https.createServer(
+            {
+                cert: fs.readFileSync(cliArguments.certPath),
+                key: fs.readFileSync(cliArguments.keyPath),
+            }, app);
+
+        ipv4Server.on('error', (error) => {
+            console.error('non-fatal error: failed to start with IPv4', error);
             v4Failed = true;
-        }
+            handleServerListenFail(v6Failed, v4Failed)
+        });
+
+        ipv4Server.listen(Number(tavernUrl.port) || 443, tavernUrl.hostname);
 
 
     }
@@ -792,30 +799,28 @@ function startHTTP() {
     // Handle IPv6 server
 
     if (!disableIPv6) {
-        try {
-            http.createServer(app).listen(
-                Number(tavernUrlV6.port) || 80,
-                tavernUrlV6.hostname,
-            );
-        } catch (error) {
-            console.error('failed to start with IPv6', error);
+        const ipv6Server = http.createServer(app);
+        ipv6Server.on('error', (error) => {
+            console.error('non-fatal error: failed to start with IPv6', error);
             v6Failed = true;
-        }
+            handleServerListenFail(v6Failed, v4Failed)
+        });
+
+        ipv6Server.listen(Number(tavernUrlV6.port) || 80, tavernUrlV6.hostname);
     }
 
     // Handle IPv4 server
     if (!disableIPv4) {
-        try {
-            http.createServer(app).listen(
-                Number(tavernUrl.port) || 80,
-                tavernUrl.hostname,
-            );
-        } catch (error) {
-            console.error('failed to start with IPv4', error);
+        const ipv4Server = http.createServer(app);
+        ipv4Server.on('error', (error) => {
+            console.error('non-fatal error: failed to start with IPv4', error);
             v4Failed = true;
-        }
-    }
+            handleServerListenFail(v6Failed, v4Failed)
+        });
 
+        ipv4Server.listen(Number(tavernUrl.port) || 80, tavernUrl.hostname);
+    }
+    console.log(v6Failed)
     return [v6Failed, v4Failed];
 }
 
@@ -830,12 +835,9 @@ function startServer() {
         [v6Failed, v4Failed] = startHTTPS();
     } else {
         [v6Failed, v4Failed] = startHTTP();
+        console.log(v6Failed)
     }
 
-    if (v6Failed && v4Failed) {
-        console.error('both v6 and v4 failed');
-        process.exit(1);
-    }
 
     postSetupTasks(v6Failed, v4Failed);
 }
