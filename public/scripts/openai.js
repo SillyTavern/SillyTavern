@@ -341,7 +341,7 @@ const oai_settings = {
     personality_format: default_personality_format,
     openai_model: 'gpt-4-turbo',
     claude_model: 'claude-3-5-sonnet-20240620',
-    google_model: 'gemini-pro',
+    google_model: 'gemini-1.5-pro',
     ai21_model: 'j2-ultra',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
