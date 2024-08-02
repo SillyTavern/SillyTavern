@@ -3009,7 +3009,8 @@ function getWorldEntry(name, data, entry) {
     // delete button
     const deleteButton = template.find('.delete_entry_button');
     deleteButton.data('uid', entry.uid);
-    deleteButton.on('click', async function () {
+    deleteButton.on('click', async function (e) {
+        e.stopPropagation();
         const uid = $(this).data('uid');
         const deleted = await deleteWorldInfoEntry(data, uid);
         if (!deleted) return;
