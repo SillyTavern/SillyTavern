@@ -4,6 +4,12 @@ dataRoot: ./data
 # -- SERVER CONFIGURATION --
 # Listen for incoming connections
 listen: false
+# Enables IPv6
+enableIPv6: true
+# Enables IPv4
+enableIPv4: true
+# Prefers IPv6 for dns
+preferIPv6: false
 # Server port
 port: 8000
 # -- SECURITY CONFIGURATION --

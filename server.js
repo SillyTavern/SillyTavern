@@ -54,8 +54,9 @@ if (process.versions && process.versions.node && process.versions.node.match(/20
     if (net.setDefaultAutoSelectFamily) net.setDefaultAutoSelectFamily(false);
 }
 
-// Set default DNS resolution order to IPv6 first
-dns.setDefaultResultOrder('ipv6first');
+
+
+
 
 const DEFAULT_PORT = 8000;
 const DEFAULT_AUTORUN = false;
@@ -68,6 +69,8 @@ const DEFAULT_BASIC_AUTH = false;
 
 const DEFAULT_ENABLE_IPV6 = true;
 const DEFAULT_ENABLE_IPV4 = true;
+
+const DEFAULT_PREFER_IPV6 = false;
 
 const cliArguments = yargs(hideBin(process.argv))
     .usage('Usage: <your-start-script> <command> [options]')
@@ -107,14 +110,18 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'boolean',
         default: null,
         describe: 'Enables whitelist mode',
-    }).option('enableIPv6', {
+    }).option('disableIPv6', {
         type: 'boolean',
         default: null,
-        describe: `Enables IPv6\nIf not provided falls back to yaml config 'enableIPv6'.\n[config default: ${DEFAULT_ENABLE_IPV6}]`,
-    }).option('enableIPv4', {
+        describe: `Disables IPv6\nIf not provided falls back to yaml config 'enableIPv6'.\n[config default: ${!DEFAULT_ENABLE_IPV6}]`,
+    }).option('disableIPv4', {
         type: 'boolean',
         default: null,
-        describe: `Enables IPv4\nIf not provided falls back to yaml config 'enableIPv4'.\n[config default: ${DEFAULT_ENABLE_IPV4}]`,
+        describe: `Disables IPv4\nIf not provided falls back to yaml config 'enableIPv4'.\n[config default: ${!DEFAULT_ENABLE_IPV4}]`,
+    }).option('preferIPv6', {
+        type: 'boolean',
+        default: null,
+        describe: `Prefers IPv6 for dns\nyou should probably have the enabled if you're on an IPv6 only network\nIf not provided falls back to yaml config 'preferIPv6'.\n[config default: ${DEFAULT_PREFER_IPV6}]`,
     }).option('dataRoot', {
         type: 'string',
         default: null,
@@ -150,8 +157,30 @@ const enableAccounts = getConfigValue('enableUserAccounts', DEFAULT_ACCOUNTS);
 const uploadsPath = path.join(dataRoot, require('./src/constants').UPLOADS_DIRECTORY);
 
 
-const enableIPv6 = getConfigValue('enableIPv6', DEFAULT_ENABLE_IPV6);
-const enableIPv4 = getConfigValue('enableIPv4', DEFAULT_ENABLE_IPV4);
+const enableIPv6 = !cliArguments.disableIPv6 ?? getConfigValue('enableIPv6', DEFAULT_ENABLE_IPV6);
+const enableIPv4 = !cliArguments.disableIPv4 ?? getConfigValue('enableIPv4', DEFAULT_ENABLE_IPV4);
+
+const preferIPv6 = cliArguments.preferIPv6 ?? getConfigValue('enableIPv6', DEFAULT_PREFER_IPV6);
+
+
+if (preferIPv6) {
+    // Set default DNS resolution order to IPv6 first
+    dns.setDefaultResultOrder('ipv6first');
+    console.log("Preferring IPv6")
+} else {
+    // Set default DNS resolution order to IPv4 first
+    dns.setDefaultResultOrder('ipv4first');
+    console.log("Preferring IPv4")
+}
+
+
+
+if (!enableIPv6 && !enableIPv4) {
+    console.error('error: you can\'t disable all internet you must enable at least ipv6 or ipv4')
+    process.exit(1)
+}
+
+
 
 // CORS Settings //
 const CORS = cors({
