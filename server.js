@@ -66,6 +66,9 @@ const DEFAULT_ACCOUNTS = false;
 const DEFAULT_CSRF_DISABLED = false;
 const DEFAULT_BASIC_AUTH = false;
 
+const DEFAULT_ENABLE_IPV6 = true;
+const DEFAULT_ENABLE_IPV4 = true;
+
 const cliArguments = yargs(hideBin(process.argv))
     .usage('Usage: <your-start-script> <command> [options]')
     .option('port', {
@@ -104,6 +107,14 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'boolean',
         default: null,
         describe: 'Enables whitelist mode',
+    }).option('enableIPv6', {
+        type: 'boolean',
+        default: null,
+        describe: `Enables IPv6\nIf not provided falls back to yaml config 'enableIPv6'.\n[config default: ${DEFAULT_ENABLE_IPV6}]`,
+    }).option('enableIPv4', {
+        type: 'boolean',
+        default: null,
+        describe: `Enables IPv4\nIf not provided falls back to yaml config 'enableIPv4'.\n[config default: ${DEFAULT_ENABLE_IPV4}]`,
     }).option('dataRoot', {
         type: 'string',
         default: null,
@@ -137,6 +148,10 @@ const basicAuthMode = cliArguments.basicAuthMode ?? getConfigValue('basicAuthMod
 const enableAccounts = getConfigValue('enableUserAccounts', DEFAULT_ACCOUNTS);
 
 const uploadsPath = path.join(dataRoot, require('./src/constants').UPLOADS_DIRECTORY);
+
+
+const enableIPv6 = getConfigValue('enableIPv6', DEFAULT_ENABLE_IPV6);
+const enableIPv4 = getConfigValue('enableIPv4', DEFAULT_ENABLE_IPV4);
 
 // CORS Settings //
 const CORS = cors({
@@ -680,6 +695,114 @@ function logSecurityAlert(message) {
     process.exit(1);
 }
 
+function startHTTPS() {
+    let v6Failed = false;
+    let v4Failed = false;
+
+    // Handle IPv6 server
+    if (enableIPv6) {
+
+        try {
+            https.createServer(
+                {
+                    cert: fs.readFileSync(cliArguments.certPath),
+                    key: fs.readFileSync(cliArguments.keyPath),
+                }, app)
+                .listen(
+                    Number(tavernUrlV6.port) || 443,
+                    tavernUrlV6.hostname,
+                );
+        } catch (error) {
+            console.error('failed to start with IPv6', error);
+            v6Failed = true;
+        }
+
+
+    }
+
+
+    // Handle IPv4 server
+    if (enableIPv4) {
+
+        try {
+            https.createServer(
+                {
+                    cert: fs.readFileSync(cliArguments.certPath),
+                    key: fs.readFileSync(cliArguments.keyPath),
+                }, app)
+                .listen(
+                    Number(tavernUrl.port) || 443,
+                    tavernUrl.hostname,
+                );
+        } catch (error) {
+            console.error('failed to start with IPv4', error);
+            v4Failed = true;
+        }
+
+
+    }
+
+    return [v6Failed, v4Failed];
+}
+
+
+
+function startHTTP() {
+    let v6Failed = false;
+    let v4Failed = false;
+    // Handle IPv6 server
+
+    if (enableIPv6) {
+        try {
+            http.createServer(app).listen(
+                Number(tavernUrlV6.port) || 80,
+                tavernUrlV6.hostname,
+            );
+        } catch (error) {
+            console.error('failed to start with IPv6', error);
+            v6Failed = true;
+        }
+    }
+
+    // Handle IPv4 server
+    if (enableIPv4) {
+        try {
+            http.createServer(app).listen(
+                Number(tavernUrl.port) || 80,
+                tavernUrl.hostname,
+            );
+        } catch (error) {
+            console.error('failed to start with IPv4', error);
+            v4Failed = true;
+        }
+    }
+
+    return [v6Failed, v4Failed];
+}
+
+
+
+
+function startServer() {
+    let v6Failed = false;
+    let v4Failed = false;
+
+    if (cliArguments.ssl) {
+        [v6Failed, v4Failed] = startHTTPS();
+    } else {
+        [v6Failed, v4Failed] = startHTTP();
+    }
+
+    if (v6Failed && v4Failed) {
+        console.error('both v6 and v4 failed');
+        process.exit(1);
+    }
+
+    postSetupTasks();
+}
+
+
+
 async function verifySecuritySettings() {
     // Skip all security checks as listen is set to false
     if (!listen) {
@@ -714,68 +837,5 @@ userModule.initUserStorage(dataRoot)
     .then(verifySecuritySettings)
     .then(preSetupTasks)
     .finally(() => {
-        let v6Failed = false;
-        let v4Failed = false;
-        if (cliArguments.ssl) {
-            // Handle IPv6 server
-            try {
-                https.createServer(
-                    {
-                        cert: fs.readFileSync(cliArguments.certPath),
-                        key: fs.readFileSync(cliArguments.keyPath),
-                    }, app)
-                    .listen(
-                        Number(tavernUrlV6.port) || 443,
-                        tavernUrlV6.hostname,
-                        postSetupTasks,
-                    );
-            } catch (error) {
-                console.error('failed to start with IPv6', error);
-                v6Failed = true;
-            }
-
-            // Handle IPv4 server
-            try {
-                https.createServer(
-                    {
-                        cert: fs.readFileSync(cliArguments.certPath),
-                        key: fs.readFileSync(cliArguments.keyPath),
-                    }, app)
-                    .listen(
-                        Number(tavernUrl.port) || 443,
-                        tavernUrl.hostname,
-                        postSetupTasks,
-                    );
-            } catch (error) {
-                console.error('failed to start with IPv4', error);
-                v4Failed = true;
-            }
-        } else {
-            // Handle IPv6 server
-            try {
-                http.createServer(app).listen(
-                    Number(tavernUrlV6.port) || 80,
-                    tavernUrlV6.hostname,
-                );
-            } catch (error) {
-                console.error('failed to start with IPv6', error);
-                v6Failed = true;
-            }
-
-            // Handle IPv4 server
-            try {
-                http.createServer(app).listen(
-                    Number(tavernUrl.port) || 80,
-                    tavernUrl.hostname,
-                );
-            } catch (error) {
-                console.error('failed to start with IPv4', error);
-                v4Failed = true;
-            }
-        }
-        if (v6Failed && v4Failed) {
-            console.error('both v6 and v4 failed');
-            process.exit(1);
-        }
-        postSetupTasks();
+        startServer();
     });
