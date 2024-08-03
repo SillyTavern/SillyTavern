@@ -17,6 +17,7 @@ import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCom
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from './popup.js';
 import { StructuredCloneMap } from './util/StructuredCloneMap.js';
+import { idleQueue } from './idleQueue.js';
 
 export {
     world_info,
@@ -2252,7 +2253,7 @@ function parseRegexFromString(input) {
 }
 
 /**
- * Helper function to get a world entry's UI element
+ * Initializes a world entry's UI element for lazy loading
  * @param {*} name
  * @param {*} data
  * @param {*} entry
@@ -3009,8 +3010,6 @@ function getWorldEntryUI(name, data, entry) {
         updateEditor(navigation_option.previous);
     });
 
-    const counter = template.find('.world_entry_form_token_counter');
-
     /**
      * Function to build the keys input controls
      * @param {string} entryPropName
@@ -3109,7 +3108,8 @@ function getWorldEntryUI(name, data, entry) {
         return { isFancy: isFancyInput, control: input };
     }
 
-    template.find('.inline-drawer-toggle').on('click', function () {
+    const counter = template.find('.world_entry_form_token_counter');
+    let initer = function () {
         if (counter.data('first-run')) {
             counter.data('first-run', false);
 
@@ -3126,8 +3126,10 @@ function getWorldEntryUI(name, data, entry) {
             if (!keyInput.isFancy) initScrollHeight(keyInput.control);
             if (!keySecondaryInput.isFancy) initScrollHeight(keySecondaryInput.control);
         }
-    });
+    }
+    template.find('.inline-drawer-toggle').on('click', initer);
 
+    idleQueue.push(initer);// run Initer if idle
 
     return template;
 }
