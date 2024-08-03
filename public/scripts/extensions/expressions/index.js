@@ -111,10 +111,10 @@ async function updateVisualNovelMode(name, expression) {
 
     const setSpritePromises = await visualNovelSetCharacterSprites(container, name, expression);
 
-    await Promise.allSettled(setSpritePromises);
-
     // calculate layer indices based on recent messages
     await visualNovelUpdateLayers(container);
+
+    await Promise.allSettled(setSpritePromises);
 
     // update again based on new sprites
     if (setSpritePromises.length > 0) {
@@ -208,7 +208,7 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
                 template.fadeIn(250, () => resolve());
             });
             createCharacterPromises.push(fadeInPromise);
-            const setSpritePromise = setLastMessageSprite(template.find('img'), avatar, labels)
+            const setSpritePromise = setLastMessageSprite(template.find('img'), avatar, labels);
             setSpritePromises.push(setSpritePromise);
         }
     }
@@ -1156,7 +1156,7 @@ async function getExpressionLabel(text) {
 
                     functionResult = args?.arguments;
                 });
-                const emotionResponse = await generateRaw(text, main_api, false, false, prompt)
+                const emotionResponse = await generateRaw(text, main_api, false, false, prompt);
                 return parseLlmResponse(functionResult || emotionResponse, expressionsList);
             }
             // Extras
