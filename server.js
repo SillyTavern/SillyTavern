@@ -67,8 +67,8 @@ const DEFAULT_ACCOUNTS = false;
 const DEFAULT_CSRF_DISABLED = false;
 const DEFAULT_BASIC_AUTH = false;
 
-const DEFAULT_IPV6 = true;
-const DEFAULT_IPV4 = true;
+const DEFAULT_ENABLE_IPV6 = true;
+const DEFAULT_ENABLE_IPV4 = true;
 
 const DEFAULT_PREFER_IPV6 = false;
 
@@ -149,8 +149,8 @@ const enableAccounts = getConfigValue('enableUserAccounts', DEFAULT_ACCOUNTS);
 const uploadsPath = path.join(dataRoot, require('./src/constants').UPLOADS_DIRECTORY);
 
 
-const enableIPv6 = getConfigValue('protocol.ipv6', DEFAULT_IPV6);
-const enableIPv4 = getConfigValue('protocol.ipv4', DEFAULT_IPV4);
+const enableIPv6 = getConfigValue('protocol.ipv6', DEFAULT_ENABLE_IPV6);
+const enableIPv4 = getConfigValue('protocol.ipv4', DEFAULT_ENABLE_IPV4);
 
 const dnsPreferIPv6 = cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', DEFAULT_PREFER_IPV6);
 
