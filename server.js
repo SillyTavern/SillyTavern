@@ -67,8 +67,8 @@ const DEFAULT_ACCOUNTS = false;
 const DEFAULT_CSRF_DISABLED = false;
 const DEFAULT_BASIC_AUTH = false;
 
-const DEFAULT_DISABLE_IPV6 = false;
-const DEFAULT_DISABLE_IPV4 = false;
+const DEFAULT_IPV6 = true;
+const DEFAULT_IPV4 = true;
 
 const DEFAULT_PREFER_IPV6 = false;
 
@@ -110,15 +110,7 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'boolean',
         default: null,
         describe: 'Enables whitelist mode',
-    }).option('disableIPv6', {
-        type: 'boolean',
-        default: null,
-        describe: `Disables IPv6\nIf not provided falls back to yaml config 'disableIPv6'.\n[config default: ${DEFAULT_DISABLE_IPV6}]`,
-    }).option('disableIPv4', {
-        type: 'boolean',
-        default: null,
-        describe: `Disables IPv4\nIf not provided falls back to yaml config 'disableIPv4'.\n[config default: ${DEFAULT_DISABLE_IPV4}]`,
-    }).option('preferIPv6', {
+    }).option('dnsPreferIPv6', {
         type: 'boolean',
         default: null,
         describe: `Prefers IPv6 for dns\nyou should probably have the enabled if you're on an IPv6 only network\nIf not provided falls back to yaml config 'preferIPv6'.\n[config default: ${DEFAULT_PREFER_IPV6}]`,
@@ -157,13 +149,14 @@ const enableAccounts = getConfigValue('enableUserAccounts', DEFAULT_ACCOUNTS);
 const uploadsPath = path.join(dataRoot, require('./src/constants').UPLOADS_DIRECTORY);
 
 
-const disableIPv6 = cliArguments.disableIPv6 ?? getConfigValue('disableIPv6', DEFAULT_DISABLE_IPV6);
-const disableIPv4 = cliArguments.disableIPv4 ?? getConfigValue('disableIPv4', DEFAULT_DISABLE_IPV4);
+const enableIPv6 = getConfigValue('protocol.ipv6', DEFAULT_IPV6);
+const enableIPv4 = getConfigValue('protocol.ipv4', DEFAULT_IPV4);
 
-const preferIPv6 = cliArguments.preferIPv6 ?? getConfigValue('preferIPv6', DEFAULT_PREFER_IPV6);
+const dnsPreferIPv6 = cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', DEFAULT_PREFER_IPV6);
 
 
-if (preferIPv6) {
+
+if (dnsPreferIPv6) {
     // Set default DNS resolution order to IPv6 first
     dns.setDefaultResultOrder('ipv6first');
     console.log("Preferring IPv6 for dns")
@@ -175,7 +168,7 @@ if (preferIPv6) {
 
 
 
-if (disableIPv6 && disableIPv4) {
+if (!enableIPv6 && !enableIPv4) {
     console.error('error: you can\'t disable all internet you must enable at least ipv6 or ipv4')
     process.exit(1)
 }
@@ -668,11 +661,11 @@ const postSetupTasks = async function (v6Failed, v4Failed) {
 
     let log_listen = 'SillyTavern is listening on';
 
-    if (!disableIPv6 && !v6Failed) {
+    if (enableIPv6 && !v6Failed) {
         log_listen += ' IPv6: ' + tavernUrlV6
     }
 
-    if (!disableIPv4 && !v4Failed) {
+    if (enableIPv4 && !v4Failed) {
         log_listen += ' IPv4: ' + tavernUrl
     }
 
@@ -749,7 +742,7 @@ function startHTTPS() {
     let v4Failed = false;
 
     // Handle IPv6 server
-    if (!disableIPv6) {
+    if (enableIPv6) {
 
         const ipv6Server = https.createServer(
             {
@@ -769,7 +762,7 @@ function startHTTPS() {
 
 
     // Handle IPv4 server
-    if (!disableIPv4) {
+    if (enableIPv4) {
 
         const ipv4Server = https.createServer(
             {
@@ -798,7 +791,7 @@ function startHTTP() {
     let v4Failed = false;
     // Handle IPv6 server
 
-    if (!disableIPv6) {
+    if (enableIPv6) {
         const ipv6Server = http.createServer(app);
         ipv6Server.on('error', (error) => {
             console.error('non-fatal error: failed to start with IPv6', error);
@@ -810,7 +803,7 @@ function startHTTP() {
     }
 
     // Handle IPv4 server
-    if (!disableIPv4) {
+    if (enableIPv4) {
         const ipv4Server = http.createServer(app);
         ipv4Server.on('error', (error) => {
             console.error('non-fatal error: failed to start with IPv4', error);
@@ -820,7 +813,6 @@ function startHTTP() {
 
         ipv4Server.listen(Number(tavernUrl.port) || 80, tavernUrl.hostname);
     }
-    console.log(v6Failed)
     return [v6Failed, v4Failed];
 }
 
@@ -835,7 +827,6 @@ function startServer() {
         [v6Failed, v4Failed] = startHTTPS();
     } else {
         [v6Failed, v4Failed] = startHTTP();
-        console.log(v6Failed)
     }
 
 
