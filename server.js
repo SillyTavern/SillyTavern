@@ -159,18 +159,18 @@ const dnsPreferIPv6 = cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv
 if (dnsPreferIPv6) {
     // Set default DNS resolution order to IPv6 first
     dns.setDefaultResultOrder('ipv6first');
-    console.log("Preferring IPv6 for dns")
+    console.log('Preferring IPv6 for dns');
 } else {
     // Set default DNS resolution order to IPv4 first
     dns.setDefaultResultOrder('ipv4first');
-    console.log("Preferring IPv4 for dns")
+    console.log('Preferring IPv4 for dns');
 }
 
 
 
 if (!enableIPv6 && !enableIPv4) {
-    console.error('error: you can\'t disable all internet you must enable at least ipv6 or ipv4')
-    process.exit(1)
+    console.error('error: you can\'t disable all internet you must enable at least ipv6 or ipv4');
+    process.exit(1);
 }
 
 
@@ -662,11 +662,11 @@ const postSetupTasks = async function (v6Failed, v4Failed) {
     let log_listen = 'SillyTavern is listening on';
 
     if (enableIPv6 && !v6Failed) {
-        log_listen += ' IPv6: ' + tavernUrlV6
+        log_listen += ' IPv6: ' + tavernUrlV6;
     }
 
     if (enableIPv4 && !v4Failed) {
-        log_listen += ' IPv4: ' + tavernUrl
+        log_listen += ' IPv4: ' + tavernUrl;
     }
 
     console.log(color.green(log_listen));
@@ -733,14 +733,14 @@ function handleServerListenFail(v6Failed, v4Failed, error, from_ipv) {
     if (v6Failed && !enableIPv4) {
         console.error('fatal error: IPv6 failed and IPv4 disabled');
         process.exit(1);
-    } else if (from_ipv == "ipv6") {
+    } else if (from_ipv == 'ipv6') {
         console.error('non-fatal error: failed to start with IPv6', error);
     }
 
     if (v4Failed && !enableIPv6) {
         console.error('fatal error: IPv4 failed and IPv6 disabled');
         process.exit(1);
-    } else if (from_ipv == "ipv4") {
+    } else if (from_ipv == 'ipv4') {
         console.error('non-fatal error: failed to start with IPv4', error);
     }
 
@@ -766,7 +766,7 @@ function startHTTPS() {
 
         ipv6Server.on('error', (error) => {
             v6Failed = true;
-            handleServerListenFail(v6Failed, v4Failed, error, "ipv6")
+            handleServerListenFail(v6Failed, v4Failed, error, 'ipv6');
         });
 
         ipv6Server.listen(Number(tavernUrlV6.port) || 443, tavernUrlV6.hostname);
@@ -785,7 +785,7 @@ function startHTTPS() {
 
         ipv4Server.on('error', (error) => {
             v4Failed = true;
-            handleServerListenFail(v6Failed, v4Failed, error, "ipv4")
+            handleServerListenFail(v6Failed, v4Failed, error, 'ipv4');
         });
 
         ipv4Server.listen(Number(tavernUrl.port) || 443, tavernUrl.hostname);
@@ -807,7 +807,7 @@ function startHTTP() {
         const ipv6Server = http.createServer(app);
         ipv6Server.on('error', (error) => {
             v6Failed = true;
-            handleServerListenFail(v6Failed, v4Failed, error, "ipv6")
+            handleServerListenFail(v6Failed, v4Failed, error, 'ipv6');
         });
 
         ipv6Server.listen(Number(tavernUrlV6.port) || 80, tavernUrlV6.hostname);
@@ -818,7 +818,7 @@ function startHTTP() {
         const ipv4Server = http.createServer(app);
         ipv4Server.on('error', (error) => {
             v4Failed = true;
-            handleServerListenFail(v6Failed, v4Failed, error, "ipv4")
+            handleServerListenFail(v6Failed, v4Failed, error, 'ipv4');
         });
 
         ipv4Server.listen(Number(tavernUrl.port) || 80, tavernUrl.hostname);
