@@ -761,7 +761,9 @@ function startHTTPS() {
             }, app);
 
         ipv6Server.on('error', (error) => {
-            console.error('non-fatal error: failed to start with IPv6', error);
+            if (enableIPv4) {
+                console.error('non-fatal error: failed to start with IPv6', error);
+            }
             v6Failed = true;
             handleServerListenFail(v6Failed, v4Failed)
         });
@@ -781,7 +783,9 @@ function startHTTPS() {
             }, app);
 
         ipv4Server.on('error', (error) => {
-            console.error('non-fatal error: failed to start with IPv4', error);
+            if (enableIPv6) {
+                console.error('non-fatal error: failed to start with IPv4', error);
+            }
             v4Failed = true;
             handleServerListenFail(v6Failed, v4Failed)
         });
@@ -804,7 +808,9 @@ function startHTTP() {
     if (enableIPv6) {
         const ipv6Server = http.createServer(app);
         ipv6Server.on('error', (error) => {
-            console.error('non-fatal error: failed to start with IPv6', error);
+            if (enableIPv4) {
+                console.error('non-fatal error: failed to start with IPv6', error);
+            }
             v6Failed = true;
             handleServerListenFail(v6Failed, v4Failed)
         });
@@ -816,7 +822,9 @@ function startHTTP() {
     if (enableIPv4) {
         const ipv4Server = http.createServer(app);
         ipv4Server.on('error', (error) => {
-            console.error('non-fatal error: failed to start with IPv4', error);
+            if (enableIPv6) {
+                console.error('non-fatal error: failed to start with IPv4', error);
+            }
             v4Failed = true;
             handleServerListenFail(v6Failed, v4Failed)
         });
