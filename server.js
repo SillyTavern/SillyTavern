@@ -730,8 +730,18 @@ function logSecurityAlert(message) {
 
 
 function handleServerListenFail(v6Failed, v4Failed) {
+    if (v6Failed && !enableIPv4) {
+        console.error('fatal error: IPv6 failed and IPv4 disabled');
+        process.exit(1);
+    }
+
+    if (v4Failed && !enableIPv6) {
+        console.error('fatal error: IPv4 failed and IPv6 disabled');
+        process.exit(1);
+    }
+
     if (v6Failed && v4Failed) {
-        console.error('fatal error: both v6 and v4 failed');
+        console.error('fatal error: both IPv6 and IPv4 failed');
         process.exit(1);
     }
 }
