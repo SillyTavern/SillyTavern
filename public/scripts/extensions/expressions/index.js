@@ -208,7 +208,9 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
                 template.fadeIn(250, () => resolve());
             });
             createCharacterPromises.push(fadeInPromise);
-            const setSpritePromise = setLastMessageSprite(template.find('img'), avatar, labels);
+
+            const characterId = context.characters.findIndex(x => x == character);
+            const setSpritePromise = await setLastMessageSprite(template.find('img'), avatar, labels, characterId)
             setSpritePromises.push(setSpritePromise);
         }
     }
@@ -303,7 +305,7 @@ async function visualNovelUpdateLayers(container) {
     await Promise.allSettled(setLayerIndicesPromises);
 }
 
-async function setLastMessageSprite(img, avatar, labels) {
+async function setLastMessageSprite(img, avatar, labels, characterId = null) {
     const context = getContext();
     const lastMessage = context.chat.slice().reverse().find(x => x.original_avatar == avatar || (x.force_avatar && x.force_avatar.includes(encodeURIComponent(avatar))));
 
@@ -311,7 +313,7 @@ async function setLastMessageSprite(img, avatar, labels) {
         const text = lastMessage.mes || '';
         const spriteFolderName = getSpriteFolderName(lastMessage, lastMessage.name);
         const sprites = spriteCache[spriteFolderName] || [];
-        const label = await getExpressionLabel(text);
+        const label = await getExpressionLabel(text, characterId);
         const path = labels.includes(label) ? sprites.find(x => x.label === label)?.path : '';
 
         if (path) {
@@ -1108,7 +1110,7 @@ function onTextGenSettingsReady(args) {
     }
 }
 
-async function getExpressionLabel(text) {
+async function getExpressionLabel(text, character_id = null) {
     // Return if text is undefined, saving a costly fetch request
     if ((!modules.includes('classify') && extension_settings.expressions.api == EXPRESSION_API.extras) || !text) {
         return getFallbackExpression();
@@ -1156,7 +1158,7 @@ async function getExpressionLabel(text) {
 
                     functionResult = args?.arguments;
                 });
-                const emotionResponse = await generateQuietPrompt(prompt, false, false);
+                const emotionResponse = await generateQuietPrompt(prompt, false, false, null, null, null, character_id);
                 return parseLlmResponse(functionResult || emotionResponse, expressionsList);
             }
             // Extras

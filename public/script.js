@@ -2524,9 +2524,10 @@ export function getStoppingStrings(isImpersonate, isContinue) {
  * @param {string} quietImage Image to use for the quiet prompt
  * @param {string} quietName Name to use for the quiet prompt (defaults to "System:")
  * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
+ * @param {number} [character_id] (For Group Chats Only) The character associated with the request.
  * @returns
  */
-export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null) {
+export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null, character_id = null) {
     console.log('got into genQuietPrompt');
     const responseLengthCustomized = typeof responseLength === 'number' && responseLength > 0;
     let originalResponseLength = -1;
@@ -2539,6 +2540,7 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, q
             force_name2: true,
             quietImage: quietImage,
             quietName: quietName,
+            force_chid: character_id,   
         };
         originalResponseLength = responseLengthCustomized ? saveResponseLength(main_api, responseLength) : -1;
         const generateFinished = await Generate('quiet', options);
