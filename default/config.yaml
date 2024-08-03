@@ -8,7 +8,7 @@ listen: false
 protocol:
     ipv4: true
     ipv6: true
-# Prefers IPv6 for dns
+# Prefers IPv6 for dns, you should probably enable this on ISPs that don't have issues with ipv6
 dnsPreferIPv6: false
 # Server port
 port: 8000
