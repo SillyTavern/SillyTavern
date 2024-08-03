@@ -208,10 +208,7 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
                 template.fadeIn(250, () => resolve());
             });
             createCharacterPromises.push(fadeInPromise);
-
-            // LLM API requires character ID to be passed
-            const characterId = context.characters.findIndex(x => x == character);
-            const setSpritePromise = setLastMessageSprite(template.find('img'), avatar, labels, characterId)
+            const setSpritePromise = setLastMessageSprite(template.find('img'), avatar, labels)
             setSpritePromises.push(setSpritePromise);
         }
     }
@@ -306,7 +303,7 @@ async function visualNovelUpdateLayers(container) {
     await Promise.allSettled(setLayerIndicesPromises);
 }
 
-async function setLastMessageSprite(img, avatar, labels, characterId = null) {
+async function setLastMessageSprite(img, avatar, labels) {
     const context = getContext();
     const lastMessage = context.chat.slice().reverse().find(x => x.original_avatar == avatar || (x.force_avatar && x.force_avatar.includes(encodeURIComponent(avatar))));
 
@@ -314,7 +311,7 @@ async function setLastMessageSprite(img, avatar, labels, characterId = null) {
         const text = lastMessage.mes || '';
         const spriteFolderName = getSpriteFolderName(lastMessage, lastMessage.name);
         const sprites = spriteCache[spriteFolderName] || [];
-        const label = await getExpressionLabel(text, characterId);
+        const label = await getExpressionLabel(text);
         const path = labels.includes(label) ? sprites.find(x => x.label === label)?.path : '';
 
         if (path) {
@@ -1111,7 +1108,7 @@ function onTextGenSettingsReady(args) {
     }
 }
 
-async function getExpressionLabel(text, characterId = null) {
+async function getExpressionLabel(text) {
     // Return if text is undefined, saving a costly fetch request
     if ((!modules.includes('classify') && extension_settings.expressions.api == EXPRESSION_API.extras) || !text) {
         return getFallbackExpression();
