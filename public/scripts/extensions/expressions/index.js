@@ -114,8 +114,6 @@ async function updateVisualNovelMode(name, expression) {
     // calculate layer indices based on recent messages
     await visualNovelUpdateLayers(container);
 
-    await Promise.allSettled(setSpritePromises);
-
     // update again based on new sprites
     if (setSpritePromises.length > 0) {
         await visualNovelUpdateLayers(container);
@@ -216,7 +214,7 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
     }
 
     await Promise.allSettled(createCharacterPromises);
-    return setSpritePromises;
+    return await Promise.all(setSpritePromises);
 }
 
 async function visualNovelUpdateLayers(container) {
