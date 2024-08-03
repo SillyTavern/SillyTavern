@@ -111,6 +111,8 @@ async function updateVisualNovelMode(name, expression) {
 
     const setSpritePromises = await visualNovelSetCharacterSprites(container, name, expression);
 
+    await Promise.allSettled(setSpritePromises);
+
     // calculate layer indices based on recent messages
     await visualNovelUpdateLayers(container);
 
@@ -208,7 +210,14 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
             createCharacterPromises.push(fadeInPromise);
 
             const characterId = context.characters.findIndex(x => x == character);
-            const setSpritePromise = await await setLastMessageSprite(template.find('img'), avatar, labels, characterId)
+
+            var setSpritePromise;
+            // LLM API requires character ID and await for the promise to resolve
+            if (extension_settings.expressions.api == EXPRESSION_API.llm) {
+                setSpritePromise = await setLastMessageSprite(template.find('img'), avatar, labels, characterId);
+            } else {
+                setSpritePromise = setLastMessageSprite(template.find('img'), avatar, labels);
+            }
             setSpritePromises.push(setSpritePromise);
         }
     }
