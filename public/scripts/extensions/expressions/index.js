@@ -208,13 +208,13 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
             createCharacterPromises.push(fadeInPromise);
 
             const characterId = context.characters.findIndex(x => x == character);
-            const setSpritePromise = await setLastMessageSprite(template.find('img'), avatar, labels, characterId)
+            const setSpritePromise = await await setLastMessageSprite(template.find('img'), avatar, labels, characterId)
             setSpritePromises.push(setSpritePromise);
         }
     }
 
     await Promise.allSettled(createCharacterPromises);
-    return await Promise.all(setSpritePromises);
+    return setSpritePromises;
 }
 
 async function visualNovelUpdateLayers(container) {
@@ -1108,7 +1108,7 @@ function onTextGenSettingsReady(args) {
     }
 }
 
-async function getExpressionLabel(text, character_id = null) {
+async function getExpressionLabel(text, characterId = null) {
     // Return if text is undefined, saving a costly fetch request
     if ((!modules.includes('classify') && extension_settings.expressions.api == EXPRESSION_API.extras) || !text) {
         return getFallbackExpression();
@@ -1156,7 +1156,7 @@ async function getExpressionLabel(text, character_id = null) {
 
                     functionResult = args?.arguments;
                 });
-                const emotionResponse = await generateQuietPrompt(prompt, false, false, null, null, null, character_id);
+                const emotionResponse = await generateQuietPrompt(prompt, false, false, null, null, null, characterId, true);
                 return parseLlmResponse(functionResult || emotionResponse, expressionsList);
             }
             // Extras
