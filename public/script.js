@@ -2524,10 +2524,11 @@ export function getStoppingStrings(isImpersonate, isContinue) {
  * @param {string} quietImage Image to use for the quiet prompt
  * @param {string} quietName Name to use for the quiet prompt (defaults to "System:")
  * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
- * @param {number} [character_id] (For Group Chats Only) The character associated with the request.
+ * @param {number} [characterId] (For Group Chats Only) The character associated with the request.
+ * @param {boolean} [isClassification] Whether the request is for classification
  * @returns
  */
-export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null, character_id = null) {
+export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null, characterId = null, isClassification = false) {
     console.log('got into genQuietPrompt');
     const responseLengthCustomized = typeof responseLength === 'number' && responseLength > 0;
     let originalResponseLength = -1;
@@ -2540,7 +2541,8 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, q
             force_name2: true,
             quietImage: quietImage,
             quietName: quietName,
-            force_chid: character_id,   
+            force_chid: characterId,   
+            isClassification: isClassification,
         };
         originalResponseLength = responseLengthCustomized ? saveResponseLength(main_api, responseLength) : -1;
         const generateFinished = await Generate('quiet', options);
@@ -3260,9 +3262,9 @@ function removeLastMessage() {
  * @param {GenerateOptions} options Generation options
  * @param {boolean} dryRun Whether to actually generate a message or just assemble the prompt
  * @returns {Promise<any>} Returns a promise that resolves when the text is done generating.
- * @typedef {{automatic_trigger?: boolean, force_name2?: boolean, quiet_prompt?: string, quietToLoud?: boolean, skipWIAN?: boolean, force_chid?: number, signal?: AbortSignal, quietImage?: string, maxLoops?: number, quietName?: string }} GenerateOptions
+ * @typedef {{automatic_trigger?: boolean, force_name2?: boolean, quiet_prompt?: string, quietToLoud?: boolean, skipWIAN?: boolean, force_chid?: number, signal?: AbortSignal, quietImage?: string, maxLoops?: number, quietName?: string, isClassification?: boolean }} GenerateOptions
  */
-export async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops, quietName } = {}, dryRun = false) {
+export async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops, quietName, isClassification } = {}, dryRun = false) {
     console.log('Generate entered');
     eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops }, dryRun);
     setGenerationProgress(0);
@@ -3328,7 +3330,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (selected_group && !is_group_generating) {
         if (!dryRun) {
             // Returns the promise that generateGroupWrapper returns; resolves when generation is done
-            return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage, maxLoops });
+            return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage, maxLoops, isClassification });
         }
 
         const characterIndexMap = new Map(characters.map((char, index) => [char.avatar, index]));
@@ -3467,9 +3469,21 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     // Collect messages with usable content
-    let coreChat = chat.filter(x => !x.is_system);
-    if (type === 'swipe') {
-        coreChat.pop();
+    var coreChat;
+
+    if (isClassification) {
+        // Only grab the last message sent by the character
+        // This is done mainly so that the LLM classifies the last message
+        // similar to BERT classification.
+        let tempCoreChat = chat.filter(x => !x.is_system && !x.is_user);
+
+        const lastCharacterMessageIndex = tempCoreChat.findLastIndex(x => x.name === name2);
+        coreChat = tempCoreChat.slice(lastCharacterMessageIndex, lastCharacterMessageIndex + 1);
+    } else {
+        coreChat = chat.filter(x => !x.is_system);
+        if (type === 'swipe') {
+            coreChat.pop();
+        }
     }
 
     coreChat = await Promise.all(coreChat.map(async (chatItem, index) => {
