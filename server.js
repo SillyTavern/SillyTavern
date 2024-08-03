@@ -729,15 +729,19 @@ function logSecurityAlert(message) {
 
 
 
-function handleServerListenFail(v6Failed, v4Failed) {
+function handleServerListenFail(v6Failed, v4Failed, error, from_ipv) {
     if (v6Failed && !enableIPv4) {
         console.error('fatal error: IPv6 failed and IPv4 disabled');
         process.exit(1);
+    } else if (from_ipv == "ipv6") {
+        console.error('non-fatal error: failed to start with IPv6', error);
     }
 
     if (v4Failed && !enableIPv6) {
         console.error('fatal error: IPv4 failed and IPv6 disabled');
         process.exit(1);
+    } else if (from_ipv == "ipv4") {
+        console.error('non-fatal error: failed to start with IPv4', error);
     }
 
     if (v6Failed && v4Failed) {
@@ -761,11 +765,8 @@ function startHTTPS() {
             }, app);
 
         ipv6Server.on('error', (error) => {
-            if (enableIPv4) {
-                console.error('non-fatal error: failed to start with IPv6', error);
-            }
             v6Failed = true;
-            handleServerListenFail(v6Failed, v4Failed)
+            handleServerListenFail(v6Failed, v4Failed, error, "ipv6")
         });
 
         ipv6Server.listen(Number(tavernUrlV6.port) || 443, tavernUrlV6.hostname);
@@ -783,11 +784,8 @@ function startHTTPS() {
             }, app);
 
         ipv4Server.on('error', (error) => {
-            if (enableIPv6) {
-                console.error('non-fatal error: failed to start with IPv4', error);
-            }
             v4Failed = true;
-            handleServerListenFail(v6Failed, v4Failed)
+            handleServerListenFail(v6Failed, v4Failed, error, "ipv4")
         });
 
         ipv4Server.listen(Number(tavernUrl.port) || 443, tavernUrl.hostname);
@@ -808,11 +806,8 @@ function startHTTP() {
     if (enableIPv6) {
         const ipv6Server = http.createServer(app);
         ipv6Server.on('error', (error) => {
-            if (enableIPv4) {
-                console.error('non-fatal error: failed to start with IPv6', error);
-            }
             v6Failed = true;
-            handleServerListenFail(v6Failed, v4Failed)
+            handleServerListenFail(v6Failed, v4Failed, error, "ipv6")
         });
 
         ipv6Server.listen(Number(tavernUrlV6.port) || 80, tavernUrlV6.hostname);
@@ -822,11 +817,8 @@ function startHTTP() {
     if (enableIPv4) {
         const ipv4Server = http.createServer(app);
         ipv4Server.on('error', (error) => {
-            if (enableIPv6) {
-                console.error('non-fatal error: failed to start with IPv4', error);
-            }
             v4Failed = true;
-            handleServerListenFail(v6Failed, v4Failed)
+            handleServerListenFail(v6Failed, v4Failed, error, "ipv4")
         });
 
         ipv4Server.listen(Number(tavernUrl.port) || 80, tavernUrl.hostname);
