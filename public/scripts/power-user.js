@@ -1030,6 +1030,12 @@ function switchMovingUI() {
         if (power_user.movingUIState) {
             loadMovingUIState();
         }
+    } else {
+        if (Object.keys(power_user.movingUIState).length !== 0) {
+            power_user.movingUIState = {};
+            resetMovablePanels();
+            saveSettingsDebounced();
+        }
     }
 }
 
