@@ -1,13 +1,13 @@
 /**
  * List of jobs that should be run when the page is idle.
- * @type {(()=>void)[]}
+ * @type {{[key: string]: (()=>void)[]}}
  */
-export let idleQueue = [];
+export let idleQueueLists = {};
 
 const idleTime = 300 // 0.3 seconds
 
 function runIdleQueue(){
-    idleQueue.shift()?.();
+    for (let listName in idleQueueLists) idleQueueLists[listName].shift()?.();
     resetTimer();
 }
 

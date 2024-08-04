@@ -17,7 +17,7 @@ import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCom
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from './popup.js';
 import { StructuredCloneMap } from './util/StructuredCloneMap.js';
-import { idleQueue } from './idleQueue.js';
+import { idleQueueLists } from './idleQueue.js';
 
 export const world_info_insertion_strategy = {
     evenly: 0,
@@ -749,6 +749,10 @@ export const worldInfoCache = new StructuredCloneMap({ cloneOnGet: true, cloneOn
  * }}
  */
 const worldInfoUIElementCache = {};
+/**
+ * The background jobs of world info.
+ */
+const idleQueue = idleQueueLists.worldInfo ??= [];
 
 /**
  * Gets the world info based on chat messages.
@@ -1770,6 +1774,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
     updateEditor = (navigation, flashOnNav = true) => displayWorldEntries(name, data, navigation, flashOnNav);
 
     const worldEntriesList = $('#world_popup_entries_list');
+    idleQueue.length = 0; // Reset the showing queue
 
     // We save costly performance by removing all events before emptying. Because we know there are no relevant event handlers reacting on removing elements
     // This prevents jQuery from actually going through all registered events on the controls for each entry when removing it
@@ -1893,15 +1898,22 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
                     Trigger %
                 </small>
             </div>`;
-            const blocks = page.map(entry => getWorldEntryUI(name, data, entry)).filter(x => x);
-            const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
-            if (!isCustomOrder) {
-                blocks.forEach(block => {
-                    block.find('.drag-handle').remove();
-                });
-            }
             worldEntriesList.append(keywordHeaders);
-            worldEntriesList.append(blocks);
+
+            const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
+            const sliceSize = 10;
+            for (let i = 0; i < page.length; i += sliceSize) {
+                let slice = page.slice(i, i + sliceSize);
+                idleQueue.push(() => {
+                    const blocks = slice.map(entry => getWorldEntryUI(name, data, entry)).filter(x => x);
+                    if (!isCustomOrder) {
+                        blocks.forEach(block => {
+                            block.find('.drag-handle').remove();
+                        });
+                    }
+                    worldEntriesList.append(blocks);
+                })
+            }
         },
         afterSizeSelectorChange: function (e) {
             localStorage.setItem(storageKey, e.target.value);
