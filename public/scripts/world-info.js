@@ -1901,7 +1901,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
             worldEntriesList.append(keywordHeaders);
 
             const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
-            const sliceSize = worldInfoUIElementCache[name] ? 50 : 10; // larger sliceSize when has cache
+            const sliceSize = worldInfoUIElementCache[name] ? 50 : 13; // larger sliceSize when has cache
             worldInfoUIElementCache[name] ??= {};
 
             for (let i = 0; i < page.length; i += sliceSize) {
