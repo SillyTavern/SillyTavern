@@ -1901,7 +1901,9 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
             worldEntriesList.append(keywordHeaders);
 
             const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
-            const sliceSize = 10;
+            const sliceSize = worldInfoUIElementCache[name] ? 50 : 10; // larger sliceSize when has cache
+            worldInfoUIElementCache[name] ??= {};
+
             for (let i = 0; i < page.length; i += sliceSize) {
                 let slice = page.slice(i, i + sliceSize);
                 idleQueue.push(() => {
@@ -1914,6 +1916,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
                     worldEntriesList.append(blocks);
                 })
             }
+            idleQueue.shift()?.(); // show the first slice immediately
         },
         afterSizeSelectorChange: function (e) {
             localStorage.setItem(storageKey, e.target.value);
@@ -2745,7 +2748,6 @@ function getWorldEntryUI(name, data, entry) {
     if (!data.entries[entry.uid]) {
         return;
     }
-    worldInfoUIElementCache[name] ??= {};
     let UIcache = worldInfoUIElementCache[name];
     if (UIcache[entry.uid]) {
         return UIcache[entry.uid];
