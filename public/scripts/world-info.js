@@ -2734,12 +2734,13 @@ function getWorldEntryUI(name, data, entry) {
         return;
     }
     worldInfoUIElementCache[name] ??= {};
-    if (worldInfoUIElementCache[name][entry.uid]) {
-        return worldInfoUIElementCache[name][entry.uid];
+    let UIcache = worldInfoUIElementCache[name];
+    if (UIcache[entry.uid]) {
+        return UIcache[entry.uid];
     }
 
     const template = WI_ENTRY_EDIT_TEMPLATE.clone();
-    worldInfoUIElementCache[name][entry.uid] = template;
+    UIcache[entry.uid] = template;
     template.data('uid', entry.uid);
     template.attr('uid', entry.uid);
 
@@ -3175,6 +3176,7 @@ function getWorldEntryUI(name, data, entry) {
         const uid = $(this).data('uid');
         const deleted = await deleteWorldInfoEntry(data, uid);
         if (!deleted) return;
+        delete UIcache[uid];
         deleteWIOriginalDataValue(data, uid);
         await saveWorldInfo(name, data);
         updateEditor(navigation_option.previous);
@@ -3443,6 +3445,8 @@ async function renameWorldInfo(name, data) {
     await saveWorldInfo(newName, data, true);
     await deleteWorldInfo(oldName);
 
+    delete worldInfoUIElementCache[oldName]; // We can't move it to a new cache location because the old data is bound to the name.
+
     const existingCharLores = world_info.charLore?.filter((e) => e.extraBooks.includes(oldName));
     if (existingCharLores && existingCharLores.length > 0) {
         existingCharLores.forEach((charLore) => {
@@ -3491,6 +3495,7 @@ export async function deleteWorldInfo(worldInfoName) {
         selected_world_info.splice(existingWorldIndex, 1);
         saveSettingsDebounced();
     }
+    delete worldInfoUIElementCache[worldInfoName];
 
     await updateWorldInfoList();
     $('#world_editor_select').trigger('change');
