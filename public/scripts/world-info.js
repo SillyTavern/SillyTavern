@@ -740,6 +740,15 @@ export const wi_anchor_position = {
  * @type {StructuredCloneMap<string,object>}
  * */
 export const worldInfoCache = new StructuredCloneMap({ cloneOnGet: true, cloneOnSet: false });
+/**
+ * The cache of all world info UI elements that was shown in the UI.
+ * @type {{
+ *   [key: string]: {
+ *     [key: number]: JQuery<HTMLElement>
+ *   }
+ * }}
+ */
+const worldInfoUIElementCache = {};
 
 /**
  * Gets the world info based on chat messages.
@@ -1749,6 +1758,14 @@ function updateWorldEntryKeyOptionsCache(keyOptions, { remove = false, reset = f
     worldEntryKeyOptionsCache.sort((a, b) => b.count - a.count || a.text.localeCompare(b.text));
 }
 
+/**
+ * Display the list of world entries
+ * @param {*} name - The name of the world info book
+ * @param {*} data - The data to display
+ * @param {*} navigation - The navigation option
+ * @param {*} flashOnNav - Whether the flash should be shown
+ * @returns
+ */
 function displayWorldEntries(name, data, navigation = navigation_option.none, flashOnNav = true) {
     updateEditor = (navigation, flashOnNav = true) => displayWorldEntries(name, data, navigation, flashOnNav);
 
@@ -2707,17 +2724,22 @@ function InitWorldEntryUILazy(name, data, entry, element) {
 
 /**
  * Helper function to get a world entry's UI element
- * @param {*} name
- * @param {*} data
- * @param {*} entry
+ * @param {*} name - name of the world info book
+ * @param {*} data - data of the world info book
+ * @param {*} entry - the entry
  * @returns {JQuery<HTMLElement>}
  */
 function getWorldEntryUI(name, data, entry) {
     if (!data.entries[entry.uid]) {
         return;
     }
+    worldInfoUIElementCache[name] ??= {};
+    if (worldInfoUIElementCache[name][entry.uid]) {
+        return worldInfoUIElementCache[name][entry.uid];
+    }
 
     const template = WI_ENTRY_EDIT_TEMPLATE.clone();
+    worldInfoUIElementCache[name][entry.uid] = template;
     template.data('uid', entry.uid);
     template.attr('uid', entry.uid);
 
