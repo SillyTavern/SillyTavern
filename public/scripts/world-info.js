@@ -3154,7 +3154,7 @@ function getWorldEntryUI(name, data, entry) {
         }
     }
     template.find('.inline-drawer-toggle').on('click', initer);
-    idleQueue.push(initer); // run Initer if idle
+    if (!entry.disable) idleQueue.push(initer); // run Initer if idle
 
     // duplicate button
     const duplicateButton = template.find('.duplicate_entry_button');
