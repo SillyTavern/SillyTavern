@@ -1929,3 +1929,31 @@ export function getFreeName(name, list, numberFormatter = (n) => ` #${n}`) {
     }
     return `${name}${numberFormatter(counter)}`;
 }
+
+
+/**
+ * Toggles the visibility of a drawer by changing the display style of its content.
+ * This function skips the usual drawer animation.
+ *
+ * @param {HTMLElement} drawer - The drawer element to toggle
+ * @param {boolean} [expand=true] - Whether to expand or collapse the drawer
+ */
+export function toggleDrawer(drawer, expand = true) {
+    /** @type {HTMLElement} */
+    const icon = drawer.querySelector('.inline-drawer-icon');
+    /** @type {HTMLElement} */
+    const content = drawer.querySelector('.inline-drawer-content');
+
+    if (expand) {
+        icon.classList.remove('up', 'fa-circle-chevron-up');
+        icon.classList.add('down', 'fa-circle-chevron-down');
+        content.style.display = 'block';
+    } else {
+        icon.classList.remove('down', 'fa-circle-chevron-down');
+        icon.classList.add('up', 'fa-circle-chevron-up');
+        content.style.display = 'none';
+    }
+
+    // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
+    content.querySelectorAll('textarea.autoSetHeight').forEach(resetScrollHeight);
+}
