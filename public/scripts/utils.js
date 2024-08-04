@@ -1728,20 +1728,24 @@ export function select2ModifyOptions(element, items, { select = false, changeEve
     /** @type {Select2Option[]} */
     const dataItems = items.map(x => typeof x === 'string' ? { id: getSelect2OptionId(x), text: x } : x);
 
-    const existingValues = [];
+    const optionsToSelect = [];
+    const newOptions = [];
+
     dataItems.forEach(item => {
         // Set the value, creating a new option if necessary
         if (element.find('option[value=\'' + item.id + '\']').length) {
-            if (select) existingValues.push(item.id);
+            if (select) optionsToSelect.push(item.id);
         } else {
             // Create a DOM Option and optionally pre-select by default
             var newOption = new Option(item.text, item.id, select, select);
             // Append it to the select
-            element.append(newOption);
-            if (select) element.trigger('change', changeEventArgs);
+            newOptions.push(newOption);
+            if (select) optionsToSelect.push(item.id);
         }
-        if (existingValues.length) element.val(existingValues).trigger('change', changeEventArgs);
     });
+
+    element.append(newOptions);
+    if (optionsToSelect.length) element.val(optionsToSelect).trigger('change', changeEventArgs);
 }
 
 /**

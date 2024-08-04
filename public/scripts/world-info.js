@@ -2293,6 +2293,9 @@ function getWorldEntry(name, data, entry) {
         }
 
         if (isFancyInput) {
+            // First initialize existing values as options, before initializing select2, to speed up performance
+            select2ModifyOptions(input, entry[entryPropName], { select: true, changeEventArgs: { skipReset: true, noSave: true } });
+
             input.select2({
                 ajax: dynamicSelect2DataViaAjax(() => worldEntryKeyOptionsCache),
                 tags: true,
@@ -2334,8 +2337,6 @@ function getWorldEntry(name, data, entry) {
                 input.next('span.select2-container').find('textarea')
                     .val(key).trigger('input');
             }, { openDrawer: true });
-
-            select2ModifyOptions(input, entry[entryPropName], { select: true, changeEventArgs: { skipReset: true, noSave: true } });
         }
         else {
             // Compatibility with mobile devices. On mobile we need a text input field, not a select option control, so we need its own event handlers
