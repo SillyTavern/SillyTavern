@@ -164,6 +164,7 @@ let power_user = {
     quote_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeQuoteColor').trim()}`,
     blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBlurTintColor').trim()}`,
     chat_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeChatTintColor').trim()}`,
+    chat_letterbox_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeChatLetterboxColor').trim()}`,
     user_mes_blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeUserMesBlurTintColor').trim()}`,
     bot_mes_blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBotMesBlurTintColor').trim()}`,
     shadow_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeShadowColor').trim()}`,
@@ -320,6 +321,7 @@ const storage_keys = {
     quote_text_color: 'TavernAI_quote_text_color',
     blur_tint_color: 'TavernAI_blur_tint_color',
     chat_tint_color: 'TavernAI_chat_tint_color',
+    chat_letterbox_color: 'chat_letterbox_color',
     user_mes_blur_tint_color: 'TavernAI_user_mes_blur_tint_color',
     bot_mes_blur_tint_color: 'TavernAI_bot_mes_blur_tint_color',
     blur_strength: 'TavernAI_blur_strength',
@@ -1186,6 +1188,9 @@ async function applyThemeColor(type) {
     if (type === 'chatTint') {
         document.documentElement.style.setProperty('--SmartThemeChatTintColor', power_user.chat_tint_color);
     }
+    if (type === 'chatLetterbox') {
+        document.documentElement.style.setProperty('--SmartThemeChatLetterboxColor', power_user.chat_letterbox_color);
+    }
     if (type === 'userMesBlurTint') {
         document.documentElement.style.setProperty('--SmartThemeUserMesBlurTintColor', power_user.user_mes_blur_tint_color);
     }
@@ -1268,6 +1273,7 @@ async function applyTheme(name) {
         { key: 'quote_text_color', selector: '#quote-color-picker', type: 'quote' },
         { key: 'blur_tint_color', selector: '#blur-tint-color-picker', type: 'blurTint' },
         { key: 'chat_tint_color', selector: '#chat-tint-color-picker', type: 'chatTint' },
+        { key: 'chat-letterbox-color-picker', selector: '#chat-letterbox-color-picker', type: 'chatLetterbox' },
         { key: 'user_mes_blur_tint_color', selector: '#user-mes-blur-tint-color-picker', type: 'userMesBlurTint' },
         { key: 'bot_mes_blur_tint_color', selector: '#bot-mes-blur-tint-color-picker', type: 'botMesBlurTint' },
         { key: 'shadow_color', selector: '#shadow-color-picker', type: 'shadow' },
@@ -1767,6 +1773,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#quote-color-picker').attr('color', power_user.quote_text_color);
     $('#blur-tint-color-picker').attr('color', power_user.blur_tint_color);
     $('#chat-tint-color-picker').attr('color', power_user.chat_tint_color);
+    $('#chat-letterbox-color-picker').attr('color', power_user.chat_letterbox_color);
     $('#user-mes-blur-tint-color-picker').attr('color', power_user.user_mes_blur_tint_color);
     $('#bot-mes-blur-tint-color-picker').attr('color', power_user.bot_mes_blur_tint_color);
     $('#shadow-color-picker').attr('color', power_user.shadow_color);
@@ -2488,6 +2495,7 @@ function getThemeObject(name) {
         quote_text_color: power_user.quote_text_color,
         blur_tint_color: power_user.blur_tint_color,
         chat_tint_color: power_user.chat_tint_color,
+        chat_letterbox_color: power_user.chat_letterbox_color,
         user_mes_blur_tint_color: power_user.user_mes_blur_tint_color,
         bot_mes_blur_tint_color: power_user.bot_mes_blur_tint_color,
         shadow_color: power_user.shadow_color,
@@ -3507,6 +3515,12 @@ $(document).ready(() => {
     $('#chat-tint-color-picker').on('change', (evt) => {
         power_user.chat_tint_color = evt.detail.rgba;
         applyThemeColor('chatTint');
+        saveSettingsDebounced();
+    });
+
+    $('#chat-letterbox-color-picker').on('change', (evt) => {
+        power_user.chat_letterbox_color = evt.detail.rgba;
+        applyThemeColor('chatLetterbox');
         saveSettingsDebounced();
     });
 
