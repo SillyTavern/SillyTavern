@@ -498,9 +498,8 @@ export function restoreCaretPosition(element, position) {
 }
 
 export async function resetScrollHeight(element) {
-    let scrollHeight = $(element).prop('scrollHeight');
     $(element).css('height', '0px');
-    $(element).css('height', scrollHeight + 3 + 'px');
+    $(element).css('height', $(element).prop('scrollHeight') + 3 + 'px');
 }
 
 /**
