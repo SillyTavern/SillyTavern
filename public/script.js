@@ -10613,9 +10613,6 @@ jQuery(async function () {
         }
     });
 
-    $(document).on('click', '#OpenAllWIEntries', function () {
-        $('#world_popup_entries_list').children().find('.down').click();
-    });
     $(document).on('click', '#CloseAllWIEntries', function () {
         $('#world_popup_entries_list').children().find('.up').click();
     });

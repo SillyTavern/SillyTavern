@@ -1763,6 +1763,9 @@ function updateWorldEntryKeyOptionsCache(keyOptions, { remove = false, reset = f
     worldEntryKeyOptionsCache.sort((a, b) => b.count - a.count || a.text.localeCompare(b.text));
 }
 
+const perPagestorageKey = 'WI_PerPage';
+const perPageDefault = 25;
+
 /**
  * Display the list of world entries
  * @param {*} name - The name of the world info book
@@ -1844,8 +1847,6 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
         return entriesArray;
     }
 
-    const storageKey = 'WI_PerPage';
-    const perPageDefault = 25;
     let startPage = 1;
 
     if (navigation === navigation_option.previous) {
@@ -1855,13 +1856,13 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
     if (typeof navigation === 'number' && Number(navigation) >= 0) {
         const data = getDataArray();
         const uidIndex = data.findIndex(x => x.uid === navigation);
-        const perPage = Number(localStorage.getItem(storageKey)) || perPageDefault;
+        const perPage = Number(localStorage.getItem(perPagestorageKey)) || perPageDefault;
         startPage = Math.floor(uidIndex / perPage) + 1;
     }
 
     $('#world_info_pagination').pagination({
         dataSource: getDataArray,
-        pageSize: Number(localStorage.getItem(storageKey)) || perPageDefault,
+        pageSize: Number(localStorage.getItem(perPagestorageKey)) || perPageDefault,
         sizeChangerOptions: [10, 25, 50, 100, 500, 1000],
         showSizeChanger: true,
         pageRange: 1,
@@ -1900,13 +1901,17 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
             idleQueue.shift()?.(); // show the first slice immediately
         },
         afterSizeSelectorChange: function (e) {
-            localStorage.setItem(storageKey, e.target.value);
+            localStorage.setItem(perPagestorageKey, e.target.value);
         },
         afterPaging: function () {
             $('#world_popup_entries_list textarea[name="comment"]').each(function () {
                 initScrollHeight($(this));
             });
         },
+    });
+
+    $(document).on('click', '#OpenAllWIEntries', function () {
+        OpenAllWIEntries(name, data)
     });
 
     if (typeof navigation === 'number' && Number(navigation) >= 0) {
@@ -3170,6 +3175,26 @@ function getWorldEntryUI(name, data, entry) {
     });
 
     return template;
+}
+
+function OpenAllWIEntries(name, data) {
+    let pageNumber = Number(localStorage.getItem(perPagestorageKey)) || perPageDefault
+    let list = $('#world_popup_entries_list').children().find('.down')
+    for (let job of idleQueue) {
+        if (list.length != pageNumber && list.length < data.entries.length) {
+            job()
+        }
+        else break
+    }
+    idleQueue.length = 0
+
+    const sliceSize = 4;
+
+    for (let i = 0; i < list.length; i += sliceSize) {
+        let slice = list.slice(i, i + sliceSize);
+        idleQueue.push(() => slice.click())
+    }
+    idleQueue.shift()?.(); // show the first slice immediately
 }
 
 /**
