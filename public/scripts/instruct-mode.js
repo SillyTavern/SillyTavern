@@ -91,15 +91,17 @@ export function loadInstructMode(data) {
         if (control.isCheckbox) {
             $element.prop('checked', power_user.instruct[control.property]);
         } else {
-            $element.val(power_user.instruct[control.property]);
+            $element[0].innerText = (power_user.instruct[control.property]);
         }
 
         $element.on('input', async function () {
-            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this)[0].innerText;
             saveSettingsDebounced();
+            /*
             if (!control.isCheckbox) {
                 await resetScrollHeight($element);
             }
+             */
         });
 
         if (control.trigger) {
@@ -641,7 +643,8 @@ jQuery(() => {
                 if (control.isCheckbox) {
                     $element.prop('checked', power_user.instruct[control.property]).trigger('input');
                 } else {
-                    $element.val(power_user.instruct[control.property]).trigger('input');
+                    $element[0].innerText = (power_user.instruct[control.property]);
+                    $element.trigger('input');
                 }
             }
         });

@@ -3061,14 +3061,14 @@
                                 <label for="context_story_string">
                                     <small data-i18n="Story String">Story String</small>
                                 </label>
-                                <textarea id="context_story_string" class="text_pole textarea_compact autoSetHeight" rows="1"></textarea>
+                                <div contenteditable="true" id="context_story_string" class="text_pole textarea_compact autoSetHeight" rows="1"></div>
                                 <div class="flex-container">
                                     <div class="flex1">
                                         <label for="context_example_separator">
                                             <small data-i18n="Example Separator">Example Separator</small>
                                         </label>
                                         <div>
-                                            <textarea id="context_example_separator" class="text_pole textarea_compact autoSetHeight" maxlength="500" rows="1"></textarea>
+                                            <div contenteditable="true" id="context_example_separator" class="text_pole textarea_compact autoSetHeight" maxlength="500" rows="1"></div>
                                         </div>
                                     </div>
                                     <div class="flex1">
@@ -3076,7 +3076,7 @@
                                             <small data-i18n="Chat Start">Chat Start</small>
                                         </label>
                                         <div>
-                                            <textarea id="context_chat_start" class="text_pole textarea_compact autoSetHeight" maxlength="500" rows="1"></textarea>
+                                            <div contenteditable="true" id="context_chat_start" class="text_pole textarea_compact autoSetHeight" maxlength="500" rows="1"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -3172,7 +3172,7 @@
                                 </small>
                             </label>
                             <div data-newbie-hidden>
-                                <textarea id="instruct_activation_regex" class="text_pole textarea_compact autoSetHeight" maxlength="5000" rows="1"></textarea>
+                                <div contenteditable="true" id="instruct_activation_regex" class="text_pole textarea_compact autoSetHeight" maxlength="5000" rows="1"></div>
                             </div>
                             <div data-newbie-hidden>
                                 <label for="instruct_wrap" class="checkbox_label">
@@ -3200,7 +3200,7 @@
                                 <label>
                                     <small data-i18n="System Prompt">System Prompt</small>
                                 </label>
-                                <textarea id="instruct_system_prompt" class="text_pole textarea_compact autoSetHeight" rows="1"></textarea>
+                                <div contenteditable="true" id="instruct_system_prompt" class="text_pole textarea_compact autoSetHeight" rows="1"></div>
                             </div>
                             <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn">
                                 <div class="inline-drawer-toggle inline-drawer-header">
@@ -3217,7 +3217,7 @@
                                                 <small data-i18n="System Prompt Prefix">System Prompt Prefix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_system_sequence_prefix" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_system_sequence_prefix" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                         <div class="flex1" title="Inserted after a System prompt." data-i18n="[title]Inserted after a System prompt.">
@@ -3225,7 +3225,7 @@
                                                 <small data-i18n="System Prompt Suffix">System Prompt Suffix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -3238,7 +3238,7 @@
                                                 <small data-i18n="User Message Prefix">User Message Prefix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_input_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_input_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                         <div class="flex1" title="Inserted after a User message." data-i18n="[title]Inserted after a User message.">
@@ -3246,7 +3246,7 @@
                                                 <small data-i18n="User Message Suffix">User Message Suffix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_input_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_input_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -3256,7 +3256,7 @@
                                                 <small data-i18n="Assistant Message Prefix">Assistant Message Prefix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                         <div class="flex1" title="Inserted after an Assistant message." data-i18n="[title]Inserted after an Assistant message.">
@@ -3264,7 +3264,7 @@
                                                 <small data-i18n="Assistant Message Suffix">Assistant Message Suffix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_output_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_output_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -3274,7 +3274,7 @@
                                                 <small data-i18n="System Message Prefix">System Message Prefix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_system_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_system_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                         <div class="flex1" title="Inserted after a System message." data-i18n="[title]Inserted after a System message.">
@@ -3282,7 +3282,7 @@
                                                 <small data-i18n="System Message Suffix">System Message Suffix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_system_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_system_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                         <div class="flexBasis100p" title="If enabled, System Sequences will be the same as User Sequences." data-i18n="[title]If enabled, System Sequences will be the same as User Sequences.">
@@ -3301,7 +3301,7 @@
                                                 <small data-i18n="First Assistant Prefix">First Assistant Prefix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_first_output_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_first_output_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                         <div class="flex1" title="Inserted before the last Assistant's message or as a last prompt line when generating an AI reply (except a neutral/system role)." data-i18n="[title]instruct_last_output_sequence">
@@ -3309,7 +3309,7 @@
                                                 <small data-i18n="Last Assistant Prefix">Last Assistant Prefix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -3319,7 +3319,7 @@
                                                 <small data-i18n="First User Prefix">First User Prefix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_first_input_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_first_input_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                         <div class="flex1" title="Inserted before the last User's message." data-i18n="[title]instruct_last_input_sequence">
@@ -3327,7 +3327,7 @@
                                                 <small data-i18n="Last User Prefix">Last User Prefix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_last_input_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_last_input_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -3337,7 +3337,7 @@
                                                 <small data-i18n="System Instruction Prefix">System Instruction Prefix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_last_system_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_last_system_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                         <div class="flex1" title="If a stop sequence is generated, everything past it will be removed from the output (inclusive)." data-i18n="[title]If a stop sequence is generated, everything past it will be removed from the output (inclusive).">
@@ -3345,7 +3345,7 @@
                                                 <small data-i18n="Stop Sequence">Stop Sequence</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -3355,7 +3355,7 @@
                                                 <small data-i18n="User Filler Message">User Filler Message</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_user_alignment_message" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <div contenteditable="true" id="instruct_user_alignment_message" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -3448,7 +3448,7 @@
                                     </span>
                                 </h4>
                                 <div>
-                                    <textarea id="start_reply_with" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]AI reply prefix" placeholder="AI reply prefix"></textarea>
+                                    <div contenteditable="true" id="start_reply_with" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]AI reply prefix" placeholder="AI reply prefix"></div>
                                 </div>
                                 <label class="checkbox_label" for="chat-show-reply-prefix-checkbox">
                                     <input id="chat-show-reply-prefix-checkbox" type="checkbox" />
@@ -3482,7 +3482,7 @@
                                     </small>
                                 </div>
                                 <div>
-                                    <textarea id="custom_stopping_strings" rows="2" class="text_pole textarea_compact monospace" placeholder="[&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></textarea>
+                                    <div contenteditable="true" id="custom_stopping_strings" rows="2" class="text_pole textarea_compact monospace" placeholder="[&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></div>
                                 </div>
                                 <label class="checkbox_label" for="custom_stopping_strings_macro">
                                     <input id="custom_stopping_strings_macro" type="checkbox" checked>

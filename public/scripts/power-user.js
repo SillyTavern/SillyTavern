@@ -1607,7 +1607,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#auto_swipe_minimum_length').val(power_user.auto_swipe_minimum_length);
     $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(', '));
     $('#auto_swipe_blacklist_threshold').val(power_user.auto_swipe_blacklist_threshold);
-    $('#custom_stopping_strings').val(power_user.custom_stopping_strings);
+    $('#custom_stopping_strings').text(power_user.custom_stopping_strings);
     $('#custom_stopping_strings_macro').prop('checked', power_user.custom_stopping_strings_macro);
     $('#fuzzy_search_checkbox').prop('checked', power_user.fuzzy_search);
     $('#persona_show_notifications').prop('checked', power_user.persona_show_notifications);
@@ -1637,7 +1637,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#waifuMode').prop('checked', power_user.waifuMode);
     $('#movingUImode').prop('checked', power_user.movingUI);
     $('#noShadowsmode').prop('checked', power_user.noShadows);
-    $('#start_reply_with').val(power_user.user_prompt_bias);
+    $('#start_reply_with').text(power_user.user_prompt_bias);
     $('#chat-show-reply-prefix-checkbox').prop('checked', power_user.show_user_prompt_bias);
     $('#auto_continue_enabled').prop('checked', power_user.auto_continue.enabled);
     $('#auto_continue_allow_chat_completions').prop('checked', power_user.auto_continue.allow_chat_completions);
@@ -1887,13 +1887,14 @@ async function loadContextSettings() {
         if (control.isCheckbox) {
             $element.prop('checked', power_user.context[control.property]);
         } else {
-            $element.val(power_user.context[control.property]);
+            $element.text(power_user.context[control.property]);
         }
+        console.log(`Setting ${$element.prop('id')} to ${power_user.context[control.property]}`);
 
         // If the setting already exists, no need to duplicate it
         // TODO: Maybe check the power_user object for the setting instead of a flag?
-        $element.on('input', async function () {
-            const value = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+        $element.on('input keyUp', async function () {
+            const value = control.isCheckbox ? !!$(this).prop('checked') : $(this)[0].innerText;
             if (control.isGlobalSetting) {
                 power_user[control.property] = value;
             } else {
@@ -1901,9 +1902,11 @@ async function loadContextSettings() {
             }
 
             saveSettingsDebounced();
+            /*
             if (!control.isCheckbox) {
                 await resetScrollHeight($element);
             }
+            */
         });
     });
 
@@ -1917,7 +1920,7 @@ async function loadContextSettings() {
     });
 
     $('#context_presets').on('change', function () {
-        const name = String($(this).find(':selected').val());
+        const name = String($(this).find(':selected').text());
         const preset = context_presets.find(x => x.name === name);
 
         if (!preset) {
@@ -1942,9 +1945,8 @@ async function loadContextSettings() {
                         .prop('checked', control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
                         .trigger('input');
                 } else {
-                    $element
-                        .val(control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
-                        .trigger('input');
+                    $element[0].innerText = (control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
+                    $element.trigger('input');
                 }
             }
         });
@@ -3246,7 +3248,7 @@ $(document).ready(() => {
     });
 
     $('#start_reply_with').on('input', function () {
-        power_user.user_prompt_bias = String($(this).val());
+        power_user.user_prompt_bias = String($(this)[0].innerText);
         saveSettingsDebounced();
     });
 
@@ -3785,7 +3787,7 @@ $(document).ready(() => {
     });
 
     $('#custom_stopping_strings').on('input', function () {
-        power_user.custom_stopping_strings = String($(this).val());
+        power_user.custom_stopping_strings = String($(this)[0].innerText).trim();
         saveSettingsDebounced();
     });
 
