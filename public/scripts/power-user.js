@@ -4118,6 +4118,14 @@ $(document).ready(() => {
         helpString: 'Swaps the chat mode.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vn',
+        callback: async () => {
+            await switchChatMode(chat_modes.VN);
+            return '';
+        },
+        helpString: '(DEPRECATED) Use `/chat-mode vn` instead. Swaps the chat mode to Visual Novel mode.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'newchat',
         /** @type {(args: { delete: string?}, string) => Promise<''>} */
         callback: async (args, _) => {
