@@ -779,7 +779,6 @@ function createHttpServer(url) {
 async function startHTTPorHTTPS() {
     let v6Failed = false;
     let v4Failed = false;
-    // Handle IPv6 server
 
     let createFunc = createHttpServer;
     if (cliArguments.ssl) {
@@ -794,7 +793,6 @@ async function startHTTPorHTTPS() {
         }
     }
 
-    // Handle IPv4 server
     if (enableIPv4) {
         try {
             await createFunc(tavernUrl);
