@@ -773,31 +773,6 @@ function createHttpServer(url) {
     });
 }
 
-async function startHTTPS() {
-    let v6Failed = false;
-    let v4Failed = false;
-
-    // Handle IPv6 server
-    if (enableIPv6) {
-        try {
-            await createHttpServer(tavernUrlV6);
-        } catch {
-            v6Failed = true;
-        }
-    }
-
-
-    // Handle IPv4 server
-    if (enableIPv4) {
-        try {
-            await createHttpServer(tavernUrl);
-        } catch {
-            v4Failed = true;
-        }
-    }
-
-    return [v6Failed, v4Failed];
-}
 
 
 
