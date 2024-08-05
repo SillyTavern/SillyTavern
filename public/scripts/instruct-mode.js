@@ -85,6 +85,12 @@ export function loadInstructMode(data) {
 
     migrateInstructModeSettings(power_user.instruct);
 
+    if (power_user.instruct.enabled) {
+        $('#instruct_enabled').parent().find('i').addClass('toggleEnabled');
+    } else {
+        $('#instruct_enabled').parent().find('i').removeClass('toggleEnabled');
+    }
+
     controls.forEach(control => {
         const $element = $(`#${control.id}`);
 
@@ -606,11 +612,34 @@ jQuery(() => {
 
     $('#instruct_system_same_as_user').on('input', function () {
         const state = !!$(this).prop('checked');
-        $('#instruct_system_sequence').prop('disabled', state);
-        $('#instruct_system_suffix').prop('disabled', state);
+        if (state == true) {
+            let tempHeightForDisabled = $('#instruct_system_sequence').css('height');
+            $('#instruct_system_sequence_block').addClass('disabled');
+            $('#instruct_system_suffix_block').addClass('disabled');
+            $('#instruct_system_sequence').css('height', tempHeightForDisabled);
+            $('#instruct_system_suffix').css('height', tempHeightForDisabled);
+
+            $('#instruct_system_sequence').prop('contenteditable', false);
+            $('#instruct_system_suffix').prop('contenteditable', false);
+        } else {
+            $('#instruct_system_sequence_block').removeClass('disabled');
+            $('#instruct_system_suffix_block').removeClass('disabled');
+            $('#instruct_system_sequence').css('height', '');
+            $('#instruct_system_sequence').css('height', '');
+            $('#instruct_system_sequence').prop('contenteditable', true);
+            $('#instruct_system_suffix').prop('contenteditable', true);
+        }
+
     });
 
     $('#instruct_enabled').on('change', function () {
+        //color toggle for the main switch
+        if (power_user.instruct.enabled) {
+            $('#instruct_enabled').parent().find('i').addClass('toggleEnabled');
+        } else {
+            $('#instruct_enabled').parent().find('i').removeClass('toggleEnabled');
+        }
+
         if (!power_user.instruct.bind_to_context) {
             return;
         }
