@@ -2331,7 +2331,7 @@ function getWorldEntry(name, data, entry) {
                 /** @type {string[]} */
                 const keys = ($(this).select2('data')).map(x => x.text);
 
-                !skipReset && resetScrollHeight(this);
+                !skipReset && await resetScrollHeight(this);
                 if (!noSave) {
                     data.entries[uid][entryPropName] = keys;
                     setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
@@ -2369,7 +2369,7 @@ function getWorldEntry(name, data, entry) {
             input.on('input', async function (_, { skipReset, noSave } = {}) {
                 const uid = $(this).data('uid');
                 const value = String($(this).val());
-                !skipReset && resetScrollHeight(this);
+                !skipReset && await resetScrollHeight(this);
                 if (!noSave) {
                     data.entries[uid][entryPropName] = splitKeywordsAndRegexes(value);
                     setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
@@ -2538,7 +2538,7 @@ function getWorldEntry(name, data, entry) {
     commentInput.on('input', async function (_, { skipReset } = {}) {
         const uid = $(this).data('uid');
         const value = $(this).val();
-        !skipReset && resetScrollHeight(this);
+        !skipReset && await resetScrollHeight(this);
         data.entries[uid].comment = value;
 
         setWIOriginalDataValue(data, uid, 'comment', data.entries[uid].comment);

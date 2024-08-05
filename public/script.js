@@ -6424,7 +6424,7 @@ export async function getSettings() {
         loadHordeSettings(settings);
 
         // Load power user settings
-        loadPowerUserSettings(settings, data);
+        await loadPowerUserSettings(settings, data);
 
         // Load character tags
         loadTagsSettings(settings);
@@ -10457,8 +10457,9 @@ jQuery(async function () {
             }
 
             // Set the height of "autoSetHeight" textareas within the drawer to their scroll height
-            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(function () {
-                resetScrollHeight($(this));
+            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(async function () {
+                await resetScrollHeight($(this));
+                return;
             });
 
         } else if (drawerWasOpenAlready) { //to close manually
@@ -10531,8 +10532,9 @@ jQuery(async function () {
         $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
 
         // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
-        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(function () {
-            resetScrollHeight($(this));
+        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(async function () {
+            await resetScrollHeight($(this));
+            return;
         });
     });
 
