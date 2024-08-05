@@ -10,6 +10,49 @@
     width: 100vw;
 }
 
+body.hLetterBox #visual-novel-letterbox-one {
+    width: 100vw;
+    height: calc(0vh + var(--letterboxSize));
+    top: 0;
+    position: fixed;
+    background-color: var(--letterbox-color);
+    z-index: 2;
+    justify-content: center;
+    align-items: center;
+}
+body.hLetterBox #visual-novel-letterbox-two {
+    width: 100vw;
+    height: calc(0vh + var(--letterboxSize));
+    bottom: 0;
+    position: fixed;
+    background-color: var(--letterbox-color);
+    z-index: 2;
+    justify-content: center;
+    align-items: center;
+}
+body.vLetterBox #visual-novel-letterbox-one {
+    width: calc(0vw + var(--letterboxSize));
+    height: 100vh;
+    top: 0;
+    left: 0;
+    position: fixed;
+    background-color: var(--letterbox-color);
+    z-index: 2;
+    justify-content: center;
+    align-items: center;
+}
+body.vLetterBox #visual-novel-letterbox-two {
+    width: calc(0vw + var(--letterboxSize));
+    height: 100vh;
+    top: 0;
+    right: 0;
+    position: fixed;
+    background-color: var(--letterbox-color);
+    z-index: 2;
+    justify-content: center;
+    align-items: center;
+}
+
 #visual-novel-wrapper {
     display: flex;
     height: calc(100vh - var(--topBarBlockSize));

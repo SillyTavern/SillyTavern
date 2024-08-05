@@ -3788,6 +3788,15 @@
                             <!-- <h4><span data-i18n="UI Colors">Theme Settings</span></h4> -->
                             <div name="AvatarAndChatDisplay" class="flex-container flexFlowColumn">
                                 <div class="flex-container">
+                                    <span data-i18n="Chat Mode:">Chat Mode:</span><br>
+                                    <select id="chat_mode" class="widthNatural flex1 margin0">
+                                        <option value="0" data-i18n="Normal">Normal</span>
+                                        <option value="1" data-i18n="Visual Novel (VN)">Visual Novel (VN)</option>
+                                        <option value="2" data-i18n="VN w/ Vertical Letterbox">VN w/ Vertical Letterbox</option>
+                                        <option value="3" data-i18n="VN w/ Horizontal Letterbox">VN w/ Horizontal Letterbox</option>
+                                    </select>
+                                </div>
+                                <div class="flex-container">
                                     <span data-i18n="Avatar Style">Avatars:</span>
                                     <select id="avatar_style" class="widthNatural flex1 margin0">
                                         <option value="0" data-i18n="Circle">Circle</option>
@@ -3892,6 +3901,104 @@
                                     <input class="neo-range-slider" type="range" id="shadow_width" name="shadow_width" min="0" max="5" step="1">
                                     <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="shadow_width" id="shadow_width_counter">
                                 </div>
+
+                                <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                    <small>
+                                        <span data-i18n="Letterbox Size">Letterbox Size</span>
+                                        <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Adjusts the size of the letterbox" title="Adjusts the size of the letterbox"></div>
+                                    </small>
+                                    <input class="neo-range-slider" type="range" id="letterbox_size" name="letterbox_size" min="1" max="50" step="1">
+                                    <input class="neo-range-input" type="number" min="1" max="50" step="1" data-for="letterbox_size" id="letterbox_size_counter">
+                                </div>
+
+
+
+                                <!--                                 <div data-newbie-hidden class="range-block">
+                                    <label for="compact_input_area" class="range-block-title">
+                                        <span data-i18n="Chat Width (PC)">
+                                            Chat Width
+                                        </span>
+                                        <i class="fa-solid fa-desktop"></i>
+                                    </label>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input id="chat_width_slider" class="wide100p" type="range" min="25" max="100" step="1" value="50">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <input type="number" min="25" max="100" step="1" value="50" data-for="chat_width_slider" id="chat_width_slider_counter">
+                                        </div>
+                                    </div>
+                                </div> -->
+
+                                <!--                                 <div id="font-scale-block" class="range-block">
+                                    <div class="range-block-title" data-i18n="Font Scale">
+                                        Font Scale
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <input type="number" min="0.8" max="1.2" step="0.01" data-for="font_scale" id="font_scale_counter">
+                                        </div>
+                                    </div>
+                                </div> -->
+                                <!--                                 <div id="blur-strength-block" class="range-block">
+                                    <div class="range-block-title" data-i18n="Blur Strength">
+                                        Blur Strength
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="blur_strength" name="blur_strength" min="0" max="30" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <input type="number" min="0" max="30" step="1" data-for="blur_strength" id="blur_strength_counter">
+                                        </div>
+                                    </div>
+                                </div> -->
+                                <!--                                 <div id="shadow-width-block" class="range-block">
+                                    <div class="range-block-title" data-i18n="Text Shadow Width">
+                                        Text Shadow Width
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="shadow_width" name="shadow_width" min="0" max="5" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <input type="number" min="0" max="5" step="1" data-for="shadow_width" id="shadow_width_counter">
+                                        </div>
+                                    </div>
+                                </div> -->
+                                <!--                                 <div id="chat-truncation-block" class="range-block">
+                                    <label for="compact_input_area" class="range-block-title">
+                                        <span data-i18n="Chat Truncation">
+                                            Chat Truncation
+                                        </span>
+                                        <small data-i18n="(0 = unlimited)">(0 = unlimited)</small>
+                                    </label>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="chat_truncation" name="chat_truncation" min="0" max="1000" step="25">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <input type="number" min="0" max="1000" step="1" data-for="chat_truncation" id="chat_truncation_counter">
+                                        </div>
+                                    </div>
+                                </div> -->
+                                <!--                                 <div id="streaming-fps" class="range-block">
+                                    <div class="range-block-title" data-i18n="Streaming FPS">
+                                        Streaming FPS
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="streaming_fps" name="streaming_fps" min="5" max="100" step="5">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <input type="number" min="5" max="100" step="1" data-for="streaming_fps" id="streaming_fps_counter">
+                                        </div>
+                                    </div>
+                                </div> -->
+
                             </div>
                             <hr>
                             <div name="themeToggles">
@@ -3908,10 +4015,6 @@
                                 <label data-newbie-hidden for="noShadowsmode" class="checkbox_label" title="Remove text shadow effect." data-i18n="[title]Remove text shadow effect">
                                     <input id="noShadowsmode" type="checkbox" />
                                     <small data-i18n="No Text Shadows">No Text Shadows</small>
-                                </label>
-                                <label for="waifuMode" class="checkbox_label" title="Reduce chat height, and put a static sprite behind the chat window." data-i18n="[title]Reduce chat height, and put a static sprite behind the chat window">
-                                    <input id="waifuMode" type="checkbox" />
-                                    <small data-i18n="Waifu Mode">Visual Novel Mode</small>
                                 </label>
                                 <label data-newbie-hidden for="expandMessageActions" class="checkbox_label" title="Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'." data-i18n="[title]Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'">
                                     <input id="expandMessageActions" type="checkbox" />

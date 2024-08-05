@@ -1,7 +1,7 @@
 import { callPopup, eventSource, event_types, generateRaw, getRequestHeaders, main_api, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types } from '../../../script.js';
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
-import { loadMovingUIState, power_user } from '../../power-user.js';
+import { chat_modes, loadMovingUIState, power_user } from '../../power-user.js';
 import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence, waitUntilCondition } from '../../utils.js';
 import { hideMutedSprites } from '../../group-chats.js';
 import { isJsonSchemaSupported } from '../../textgen-settings.js';
@@ -93,7 +93,11 @@ function toggleTalkingHeadCommand(_) {
 }
 
 function isVisualNovelMode() {
-    return Boolean(!isMobile() && power_user.waifuMode && getContext().groupId);
+    return Boolean(!isMobile() && (power_user.chat_mode == chat_modes.VN || power_user.chat_mode == chat_modes.VN_H || power_user.chat_mode == chat_modes.VN_V) && getContext().groupId);
+}   
+
+function isLetterboxMode() {
+    return Boolean(!isMobile() && (power_user.chat_mode == chat_modes.VN_H || power_user.chat_mode == chat_modes.VN_V) && getContext().groupId);
 }
 
 async function forceUpdateVisualNovelMode() {
@@ -623,12 +627,21 @@ async function moduleWorker() {
     }
 
     const vnMode = isVisualNovelMode();
+    const letterboxMode = isLetterboxMode();
     const vnWrapperVisible = $('#visual-novel-wrapper').is(':visible');
 
     if (vnMode) {
+        if (letterboxMode) {
+            $('#visual-novel-letterbox-one').hide();
+            $('#visual-novel-letterbox-two').hide();
+        }
         $('#expression-wrapper').hide();
         $('#visual-novel-wrapper').show();
     } else {
+        if (letterboxMode) {
+            $('#visual-novel-letterbox-one').show();
+            $('#visual-novel-letterbox-two').show();
+        }
         $('#expression-wrapper').show();
         $('#visual-novel-wrapper').hide();
     }
@@ -1913,12 +1926,15 @@ function migrateSettings() {
 (async function () {
     function addExpressionImage() {
         const html = `
+        <div id="visual-novel-letterbox-one"></div>
         <div id="expression-wrapper">
             <div id="expression-holder" class="expression-holder" style="display:none;">
                 <div id="expression-holderheader" class="fa-solid fa-grip drag-grabber"></div>
                 <img id="expression-image" class="expression">
             </div>
-        </div>`;
+        </div>
+        <div id="visual-novel-letterbox-two"></div>`;
+
         $('body').append(html);
         loadMovingUIState();
     }

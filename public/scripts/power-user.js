@@ -91,6 +91,13 @@ export const chat_styles = {
     DOCUMENT: 2,
 };
 
+export const chat_modes = {
+    DEFAULT: 0,
+    VN: 1,
+    VN_V: 2,
+    VN_H: 3,
+}
+
 const send_on_enter_options = {
     DISABLED: -1,
     AUTO: 0,
@@ -133,6 +140,7 @@ let power_user = {
     ui_mode: ui_mode.POWER,
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
+    chat_mode: chat_modes.DEFAULT,
     chat_display: chat_styles.DEFAULT,
     chat_width: 50,
     never_resize_avatars: false,
@@ -148,6 +156,7 @@ let power_user = {
     font_scale: 1,
     blur_strength: 10,
     shadow_width: 2,
+    letterbox_size: 8,
 
     main_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor').trim()}`,
     italics_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeEmColor').trim()}`,
@@ -161,8 +170,6 @@ let power_user = {
     border_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBorderColor').trim()}`,
 
     custom_css: '',
-
-    waifuMode: false,
     movingUI: false,
     movingUIState: {},
     movingUIPreset: '',
@@ -302,6 +309,7 @@ export let context_presets = [];
 const storage_keys = {
     fast_ui_mode: 'TavernAI_fast_ui_mode',
     avatar_style: 'TavernAI_avatar_style',
+    chat_mode: 'chat_mode',
     chat_display: 'TavernAI_chat_display',
     chat_width: 'chat_width',
     font_scale: 'TavernAI_font_scale',
@@ -318,10 +326,9 @@ const storage_keys = {
     shadow_color: 'TavernAI_shadow_color',
     shadow_width: 'TavernAI_shadow_width',
     border_color: 'TavernAI_border_color',
+    letterbox_size: 'letterbox_size',
 
     custom_css: 'TavernAI_custom_css',
-
-    waifuMode: 'TavernAI_waifuMode',
     movingUI: 'TavernAI_movingUI',
     noShadows: 'TavernAI_noShadows',
 
@@ -989,10 +996,8 @@ function toggleWaifu() {
     return '';
 }
 
-function switchWaifuMode() {
-    $('body').toggleClass('waifuMode', power_user.waifuMode);
-    $('#waifuMode').prop('checked', power_user.waifuMode);
-    scrollChatToBottom();
+function toggleLetterbox() {
+    $('#enableLetterbox').trigger('click');
 }
 
 function switchSpoilerMode() {
@@ -1061,6 +1066,46 @@ function applyAvatarStyle() {
     $('#avatar_style').val(power_user.avatar_style).prop('selected', true);
     //$(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
 
+}
+
+function applyChatMode() {
+    if (!power_user.chat_mode === (null || undefined)) {
+        console.debug('applyChatMode: saw no chat mode defined');
+        return;
+    }
+    console.debug(`poweruser.chat_mode ${power_user.chat_mode}`);
+    $('#chat_mode').val(power_user.chat_mode).prop('selected', true);
+
+    switch (power_user.chat_mode) {
+        case 0: {
+            console.log('applying default chat');
+            $('body').toggleClass('waifuMode', false);
+            $('body').toggleClass('hLetterBox', false);
+            $('body').toggleClass('vLetterBox', false);
+            break;
+        }
+        case 1: {
+            console.log('applying vn mode');
+            $('body').toggleClass('waifuMode', true);
+            $('body').toggleClass('hLetterBox', false);
+            $('body').toggleClass('vLetterBox', false);
+            break;
+        }
+        case 2: {
+            console.log('applying vn mode with vertical letterbox');
+            $('body').toggleClass('waifuMode', true);
+            $('body').toggleClass('hLetterBox', false);
+            $('body').toggleClass('vLetterBox', true);
+            break;
+        }
+        case 3: {
+            console.log('applying vn mode with horizontal letterbox');
+            $('body').toggleClass('waifuMode', true);
+            $('body').toggleClass('hLetterBox', true);
+            $('body').toggleClass('vLetterBox', false);
+            break;
+        }
+    }
 }
 
 function applyChatDisplay() {
@@ -1177,8 +1222,6 @@ async function applyBlurStrength() {
     document.documentElement.style.setProperty('--blurStrength', power_user.blur_strength);
     $('#blur_strength_counter').val(power_user.blur_strength);
     $('#blur_strength').val(power_user.blur_strength);
-
-
 }
 
 async function applyShadowWidth() {
@@ -1187,6 +1230,13 @@ async function applyShadowWidth() {
     $('#shadow_width_counter').val(power_user.shadow_width);
     $('#shadow_width').val(power_user.shadow_width);
 
+}
+
+async function applyLetterboxSize() {
+    power_user.letterbox_size = Number(localStorage.getItem(storage_keys.letterbox_size) ?? 8);
+    document.documentElement.style.setProperty('--letterboxSize', `${power_user.letterbox_size}vh`);
+    $('#letterbox_size_counter').val(power_user.letterbox_size);
+    $('#letterbox_size').val(power_user.letterbox_size);
 }
 
 async function applyFontScale(type) {
@@ -1246,6 +1296,13 @@ async function applyTheme(name) {
             },
         },
         {
+            key: 'letterbox_size',
+            action: async () => {
+                localStorage.setItem(storage_keys.letterbox_size, power_user.letterbox_size);
+                await applyLetterboxSize();
+            },
+        },
+        {
             key: 'font_scale',
             action: async () => {
                 localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
@@ -1260,11 +1317,11 @@ async function applyTheme(name) {
             },
         },
         {
-            key: 'waifuMode',
+            key: 'chat_mode',
             action: async () => {
-                localStorage.setItem(storage_keys.waifuMode, power_user.waifuMode);
-                switchWaifuMode();
-            },
+                localStorage.setItem(storage_keys.chat_mode, power_user.chat_mode);
+                applyChatMode();
+            }
         },
         {
             key: 'chat_display',
@@ -1456,6 +1513,7 @@ applyChatWidth('forced');
 applyAvatarStyle();
 applyBlurStrength();
 applyShadowWidth();
+applyLetterboxSize();
 applyCustomCSS();
 switchMovingUI();
 noShadows();
@@ -1571,12 +1629,12 @@ async function loadPowerUserSettings(settings, data) {
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 10);
 
-    if (power_user.chat_display === '') {
-        power_user.chat_display = chat_styles.DEFAULT;
+    if (power_user.chat_mode === '') {
+        power_user.chat_mode = chat_modes.DEFAULT;
     }
 
-    if (power_user.waifuMode === '') {
-        power_user.waifuMode = false;
+    if (power_user.chat_display === '') {
+        power_user.chat_display = chat_styles.DEFAULT;
     }
 
     if (power_user.chat_width === '') {
@@ -1634,7 +1692,9 @@ async function loadPowerUserSettings(settings, data) {
     $('#disable_group_trimming').prop('checked', power_user.disable_group_trimming);
     $('#markdown_escape_strings').val(power_user.markdown_escape_strings);
     $('#fast_ui_mode').prop('checked', power_user.fast_ui_mode);
-    $('#waifuMode').prop('checked', power_user.waifuMode);
+    $('#waifuMode').prop('checked', power_user.chat_mode == chat_modes.VN);
+    $('#hLetterBox').prop('checked', power_user.chat_mode == chat_modes.VN_H);
+    $('#vLetterBox').prop('checked', power_user.chat_mode == chat_modes.VN_V);
     $('#movingUImode').prop('checked', power_user.movingUI);
     $('#noShadowsmode').prop('checked', power_user.noShadows);
     $('#start_reply_with').val(power_user.user_prompt_bias);
@@ -1661,6 +1721,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#enableZenSliders').prop('checked', power_user.enableZenSliders).trigger('input');
     $('#enableLabMode').prop('checked', power_user.enableLabMode).trigger('input');
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop('checked', true);
+    $(`#chat_mode option[value=${power_user.chat_mode}]`).attr('selected', true).trigger('change');
     $(`#chat_display option[value=${power_user.chat_display}]`).attr('selected', true).trigger('change');
     $('#chat_width_slider').val(power_user.chat_width);
     $('#token_padding').val(power_user.token_padding);
@@ -1702,6 +1763,9 @@ async function loadPowerUserSettings(settings, data) {
     $('#shadow_width').val(power_user.shadow_width);
     $('#shadow_width_counter').val(power_user.shadow_width);
 
+    $('#letterbox_size').val(power_user.letterbox_size);
+    $('#letterbox_size_counter').val(power_user.letterbox_size);
+
     $('#main-text-color-picker').attr('color', power_user.main_text_color);
     $('#italics-color-picker').attr('color', power_user.italics_text_color);
     $('#underline-color-picker').attr('color', power_user.underline_text_color);
@@ -1742,7 +1806,6 @@ async function loadPowerUserSettings(settings, data) {
     loadInstructMode(data);
     await loadContextSettings();
     loadMaxContextUnlocked();
-    switchWaifuMode();
     switchSpoilerMode();
     loadMovingUIState();
     loadCharListState();
@@ -2434,11 +2497,12 @@ function getThemeObject(name) {
         bot_mes_blur_tint_color: power_user.bot_mes_blur_tint_color,
         shadow_color: power_user.shadow_color,
         shadow_width: power_user.shadow_width,
+        letterbox_size: power_user.letterbox_size,
         border_color: power_user.border_color,
         font_scale: power_user.font_scale,
         fast_ui_mode: power_user.fast_ui_mode,
-        waifuMode: power_user.waifuMode,
         avatar_style: power_user.avatar_style,
+        chat_mode: power_user.chat_mode,
         chat_display: power_user.chat_display,
         noShadows: power_user.noShadows,
         chat_width: power_user.chat_width,
@@ -3304,12 +3368,6 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#waifuMode').on('change', () => {
-        power_user.waifuMode = $('#waifuMode').prop('checked');
-        switchWaifuMode();
-        saveSettingsDebounced();
-    });
-
     $('#customCSS').on('change', () => {
         power_user.custom_css = $('#customCSS').val();
         localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
@@ -3338,6 +3396,14 @@ $(document).ready(() => {
         power_user.avatar_style = Number(value);
         localStorage.setItem(storage_keys.avatar_style, power_user.avatar_style);
         applyAvatarStyle();
+        saveSettingsDebounced();
+    });
+
+    $('#chat_mode').on('change', function () {  
+        const value = $(this).find(':selected').val();
+        power_user.chat_mode = Number(value);
+        localStorage.setItem(storage_keys.chat_mode, power_user.chat_mode);
+        applyChatMode();
         saveSettingsDebounced();
     });
 
@@ -3402,6 +3468,14 @@ $(document).ready(() => {
         $('#shadow_width_counter').val(power_user.shadow_width);
         localStorage.setItem(storage_keys.shadow_width, power_user.shadow_width);
         await applyShadowWidth();
+        saveSettingsDebounced();
+    });
+
+    $('input[name="letterbox_size"]').on('input', async function (e) {
+        power_user.letterbox_size = Number(e.target.value);
+        $('#letterbox_size_counter').val(power_user.letterbox_size);
+        localStorage.setItem(storage_keys.letterbox_size, power_user.letterbox_size);
+        await applyLetterboxSize();
         saveSettingsDebounced();
     });
 
@@ -4002,6 +4076,10 @@ $(document).ready(() => {
         name: 'vn',
         callback: toggleWaifu,
         helpString: 'Swaps Visual Novel Mode On/Off',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'letterbox',
+        callback: toggleLetterbox,
+        helpString: 'Swaps Letterbox Mode On/Off (Requires VN Mode to be Enabled)',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'newchat',

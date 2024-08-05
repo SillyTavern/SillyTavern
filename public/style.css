@@ -115,6 +115,10 @@
 
     --animation-duration: 125ms;
     --animation-duration-slow: calc(var(--animation-duration) * 3);
+
+    /*styles for letterbox mode*/
+    --letterboxSize: 8vh;
+    --letterbox-color : #000;
 }
 
 * {
