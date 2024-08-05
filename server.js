@@ -155,7 +155,6 @@ const enableIPv4 = getConfigValue('protocol.ipv4', DEFAULT_ENABLE_IPV4);
 const dnsPreferIPv6 = cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', DEFAULT_PREFER_IPV6);
 
 
-
 if (dnsPreferIPv6) {
     // Set default DNS resolution order to IPv6 first
     dns.setDefaultResultOrder('ipv6first');
@@ -166,14 +165,10 @@ if (dnsPreferIPv6) {
     console.log('Preferring IPv4 for dns');
 }
 
-
-
 if (!enableIPv6 && !enableIPv4) {
     console.error('error: You can\'t disable all internet protocols: at least IPv6 or IPv4 must be enabled.');
     process.exit(1);
 }
-
-
 
 // CORS Settings //
 const CORS = cors({
