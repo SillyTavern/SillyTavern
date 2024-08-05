@@ -815,7 +815,6 @@ async function startServer() {
 
     [v6Failed, v4Failed] = await startHTTPorHTTPS();
 
-    console.log("v6f ul:", v6Failed);
     handleServerListenFail(v6Failed, v4Failed);
     postSetupTasks(v6Failed, v4Failed);
 }
