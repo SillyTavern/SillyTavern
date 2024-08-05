@@ -16,7 +16,7 @@ body.hLetterBox #visual-novel-letterbox-one {
     top: 0;
     position: fixed;
     background-color: var(--SmartThemeChatLetterboxColor);
-    z-index: 2;
+    z-index: 3;
     justify-content: center;
     align-items: center;
 }
@@ -26,7 +26,7 @@ body.hLetterBox #visual-novel-letterbox-two {
     bottom: 0;
     position: fixed;
     background-color: var(--SmartThemeChatLetterboxColor);
-    z-index: 2;
+    z-index: 3;
     justify-content: center;
     align-items: center;
 }
@@ -37,7 +37,7 @@ body.vLetterBox #visual-novel-letterbox-one {
     left: 0;
     position: fixed;
     background-color: var(--SmartThemeChatLetterboxColor);
-    z-index: 2;
+    z-index: 3;
     justify-content: center;
     align-items: center;
 }
@@ -48,7 +48,7 @@ body.vLetterBox #visual-novel-letterbox-two {
     right: 0;
     position: fixed;
     background-color: var(--SmartThemeChatLetterboxColor);
-    z-index: 2;
+    z-index: 3;
     justify-content: center;
     align-items: center;
 }
