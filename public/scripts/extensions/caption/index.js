@@ -169,7 +169,11 @@ async function sendCaptionedMessage(caption, image) {
         },
     };
     context.chat.push(message);
+    const messageId = context.chat.length - 1;
+    await eventSource.emit(event_types.MESSAGE_SENT, messageId);
     context.addOneMessage(message);
+    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, messageId);
+    await context.saveChat();
 }
 
 /**
