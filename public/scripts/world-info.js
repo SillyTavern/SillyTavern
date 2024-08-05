@@ -2301,6 +2301,109 @@ export function parseRegexFromString(input) {
 function InitWorldEntryUILazy(name, data, entry, element) {
     let template = element;
 
+    /**
+     * Function to build the keys input controls
+     * @param {string} entryPropName
+     * @param {string} originalDataValueName
+     */
+    function enableKeysInput(entryPropName, originalDataValueName) {
+        const isFancyInput = !isMobile() && !power_user.wi_key_input_plaintext;
+        const input = isFancyInput ? template.find(`select[name="${entryPropName}"]`) : template.find(`textarea[name="${entryPropName}"]`);
+        input.data('uid', entry.uid);
+        input.on('click', function (event) {
+            // Prevent closing the drawer on clicking the input
+            event.stopPropagation();
+        });
+
+        function templateStyling(/** @type {Select2Option} */ item, { searchStyle = false } = {}) {
+            const content = $('<span>').addClass('item').text(item.text).attr('title', `${item.text}\n\nClick to edit`);
+            const isRegex = isValidRegex(item.text);
+            if (isRegex) {
+                content.html(highlightRegex(item.text));
+                content.addClass('regex_item').prepend($('<span>').addClass('regex_icon').text('•*').attr('title', 'Regex'));
+            }
+
+            if (searchStyle && item.count) {
+                // Build a wrapping element
+                const wrapper = $('<span>').addClass('result_block')
+                    .append(content);
+                wrapper.append($('<span>').addClass('item_count').text(item.count).attr('title', `Used as a key ${item.count} ${item.count != 1 ? 'times' : 'time'} in this lorebook`));
+                return wrapper;
+            }
+
+            return content;
+        }
+
+        if (isFancyInput) {
+            input.select2({
+                ajax: dynamicSelect2DataViaAjax(() => worldEntryKeyOptionsCache),
+                tags: true,
+                tokenSeparators: [','],
+                tokenizer: customTokenizer,
+                placeholder: input.attr('placeholder'),
+                templateResult: item => templateStyling(item, { searchStyle: true }),
+                templateSelection: item => templateStyling(item),
+            });
+            input.on('change', async function (_, { skipReset, noSave } = {}) {
+                const uid = $(this).data('uid');
+                /** @type {string[]} */
+                const keys = ($(this).select2('data')).map(x => x.text);
+
+                !skipReset && resetScrollHeight(this);
+                if (!noSave) {
+                    data.entries[uid][entryPropName] = keys;
+                    setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
+                    await saveWorldInfo(name, data);
+                }
+            });
+            input.on('select2:select', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data]));
+            input.on('select2:unselect', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data], { remove: true }));
+
+            select2ChoiceClickSubscribe(input, target => {
+                const key = $(target).text();
+                console.debug('Editing WI key', key);
+
+                // Remove the current key from the actual selection
+                const selected = input.val();
+                if (!Array.isArray(selected)) return;
+                var index = selected.indexOf(getSelect2OptionId(key));
+                if (index > -1) selected.splice(index, 1);
+                input.val(selected).trigger('change');
+                // Manually update the cache, that change event is not gonna trigger it
+                updateWorldEntryKeyOptionsCache([key], { remove: true });
+
+                // We need to "hack" the actual text input into the currently open textarea
+                input.next('span.select2-container').find('textarea')
+                    .val(key).trigger('input');
+            }, { openDrawer: true });
+
+            select2ModifyOptions(input, entry[entryPropName], { select: true, changeEventArgs: { skipReset: true, noSave: true } });
+        }
+        else {
+            // Compatibility with mobile devices. On mobile we need a text input field, not a select option control, so we need its own event handlers
+            template.find(`select[name="${entryPropName}"]`).hide();
+            input.show();
+
+            input.on('input', async function (_, { skipReset, noSave } = {}) {
+                const uid = $(this).data('uid');
+                const value = String($(this).val());
+                !skipReset && resetScrollHeight(this);
+                if (!noSave) {
+                    data.entries[uid][entryPropName] = splitKeywordsAndRegexes(value);
+                    setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
+                    await saveWorldInfo(name, data);
+                }
+            });
+            input.val(entry[entryPropName].join(', ')).trigger('input', { skipReset: true });
+        }
+        return { isFancy: isFancyInput, control: input };
+    }
+
+    // keys
+    const keyInput = enableKeysInput('key', 'keys');
+    const keySecondaryInput = enableKeysInput('keysecondary', 'secondary_keys');
+    if (!keyInput.isFancy) initScrollHeight(keyInput.control);
+    if (!keySecondaryInput.isFancy) initScrollHeight(keySecondaryInput.control);
     // draw key input switch button
     template.find('.switch_input_type_icon').on('click', function () {
         power_user.wi_key_input_plaintext = !power_user.wi_key_input_plaintext;
@@ -2469,7 +2572,8 @@ function InitWorldEntryUILazy(name, data, entry, element) {
         // count tokens
         countTokensDebounced(counter, value);
     });
-    contentInput.val(entry.content).trigger('input', { skipCount: true });
+    contentInput.text(entry.content).trigger('input', { skipCount: true });
+    countTokensDebounced(counter, contentInput.text());
     //initScrollHeight(contentInput);
 
     // selective
@@ -2971,13 +3075,6 @@ function getWorldEntryUI(name, data, entry) {
     orderInput.val(entry.order).trigger('input');
     orderInput.css('width', 'calc(3em + 15px)');
 
-    const counter = template.find('.world_entry_form_token_counter');
-    const contentInput = template.find('textarea[name="content"]');
-    const countTokensDebounced = debounce(async function (counter, value) {
-        const numberOfTokens = await getTokenCountAsync(value);
-        $(counter).text(numberOfTokens);
-    }, debounce_timeout.relaxed);
-
     // probability
     if (entry.probability === undefined) {
         entry.probability = null;
@@ -3037,115 +3134,10 @@ function getWorldEntryUI(name, data, entry) {
     probabilityToggle.prop('checked', true /* entry.useProbability */).trigger('input');
     probabilityToggle.parent().hide();
 
-    /**
-     * Function to build the keys input controls
-     * @param {string} entryPropName
-     * @param {string} originalDataValueName
-     */
-    function enableKeysInput(entryPropName, originalDataValueName) {
-        const isFancyInput = !isMobile() && !power_user.wi_key_input_plaintext;
-        const input = isFancyInput ? template.find(`select[name="${entryPropName}"]`) : template.find(`textarea[name="${entryPropName}"]`);
-        input.data('uid', entry.uid);
-        input.on('click', function (event) {
-            // Prevent closing the drawer on clicking the input
-            event.stopPropagation();
-        });
-
-        function templateStyling(/** @type {Select2Option} */ item, { searchStyle = false } = {}) {
-            const content = $('<span>').addClass('item').text(item.text).attr('title', `${item.text}\n\nClick to edit`);
-            const isRegex = isValidRegex(item.text);
-            if (isRegex) {
-                content.html(highlightRegex(item.text));
-                content.addClass('regex_item').prepend($('<span>').addClass('regex_icon').text('•*').attr('title', 'Regex'));
-            }
-
-            if (searchStyle && item.count) {
-                // Build a wrapping element
-                const wrapper = $('<span>').addClass('result_block')
-                    .append(content);
-                wrapper.append($('<span>').addClass('item_count').text(item.count).attr('title', `Used as a key ${item.count} ${item.count != 1 ? 'times' : 'time'} in this lorebook`));
-                return wrapper;
-            }
-
-            return content;
-        }
-
-        if (isFancyInput) {
-            input.select2({
-                ajax: dynamicSelect2DataViaAjax(() => worldEntryKeyOptionsCache),
-                tags: true,
-                tokenSeparators: [','],
-                tokenizer: customTokenizer,
-                placeholder: input.attr('placeholder'),
-                templateResult: item => templateStyling(item, { searchStyle: true }),
-                templateSelection: item => templateStyling(item),
-            });
-            input.on('change', async function (_, { skipReset, noSave } = {}) {
-                const uid = $(this).data('uid');
-                /** @type {string[]} */
-                const keys = ($(this).select2('data')).map(x => x.text);
-
-                !skipReset && resetScrollHeight(this);
-                if (!noSave) {
-                    data.entries[uid][entryPropName] = keys;
-                    setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
-                    await saveWorldInfo(name, data);
-                }
-            });
-            input.on('select2:select', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data]));
-            input.on('select2:unselect', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data], { remove: true }));
-
-            select2ChoiceClickSubscribe(input, target => {
-                const key = $(target).text();
-                console.debug('Editing WI key', key);
-
-                // Remove the current key from the actual selection
-                const selected = input.val();
-                if (!Array.isArray(selected)) return;
-                var index = selected.indexOf(getSelect2OptionId(key));
-                if (index > -1) selected.splice(index, 1);
-                input.val(selected).trigger('change');
-                // Manually update the cache, that change event is not gonna trigger it
-                updateWorldEntryKeyOptionsCache([key], { remove: true });
-
-                // We need to "hack" the actual text input into the currently open textarea
-                input.next('span.select2-container').find('textarea')
-                    .val(key).trigger('input');
-            }, { openDrawer: true });
-
-            select2ModifyOptions(input, entry[entryPropName], { select: true, changeEventArgs: { skipReset: true, noSave: true } });
-        }
-        else {
-            // Compatibility with mobile devices. On mobile we need a text input field, not a select option control, so we need its own event handlers
-            template.find(`select[name="${entryPropName}"]`).hide();
-            input.show();
-
-            input.on('input', async function (_, { skipReset, noSave } = {}) {
-                const uid = $(this).data('uid');
-                const value = String($(this).val());
-                !skipReset && resetScrollHeight(this);
-                if (!noSave) {
-                    data.entries[uid][entryPropName] = splitKeywordsAndRegexes(value);
-                    setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
-                    await saveWorldInfo(name, data);
-                }
-            });
-            input.val(entry[entryPropName].join(', ')).trigger('input', { skipReset: true });
-        }
-        return { isFancy: isFancyInput, control: input };
-    }
-
-    // keys
-    const keyInput = enableKeysInput('key', 'keys');
-    const keySecondaryInput = enableKeysInput('keysecondary', 'secondary_keys');
-
     let initer = function () {
-        if (counter.data('first-run')) {
-            counter.data('first-run', false);
+        if (!template.data('inited')) {
+            template.data('inited', true);
             InitWorldEntryUILazy(name, data, entry, template);
-            countTokensDebounced(counter, contentInput.val());
-            if (!keyInput.isFancy) initScrollHeight(keyInput.control);
-            if (!keySecondaryInput.isFancy) initScrollHeight(keySecondaryInput.control);
         }
     }
     template.find('.inline-drawer-toggle').on('click', initer);
