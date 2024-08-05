@@ -334,12 +334,12 @@ export function debouncedThrottle(func, limit = 300) {
     let last, deferTimer;
     let db = debounce(func);
 
-    return function() {
+    return function () {
         let now = +new Date, args = arguments;
-        if(!last || (last && now < last + limit)) {
+        if (!last || (last && now < last + limit)) {
             clearTimeout(deferTimer);
             db.apply(this, args);
-            deferTimer = setTimeout(function() {
+            deferTimer = setTimeout(function () {
                 last = now;
                 func.apply(this, args);
             }, limit);
@@ -498,8 +498,9 @@ export function restoreCaretPosition(element, position) {
 }
 
 export async function resetScrollHeight(element) {
+    let scrollHeight = $(element).prop('scrollHeight');
     $(element).css('height', '0px');
-    $(element).css('height', $(element).prop('scrollHeight') + 3 + 'px');
+    $(element).css('height', scrollHeight + 3 + 'px');
 }
 
 /**
@@ -1936,7 +1937,7 @@ export async function fetchFaFile(name) {
     document.head.append(style);
     const sheet = style.sheet;
     style.remove();
-    return [...sheet.cssRules].filter(it=>it.style?.content).map(it=>it.selectorText.split('::').shift().slice(1));
+    return [...sheet.cssRules].filter(it => it.style?.content).map(it => it.selectorText.split('::').shift().slice(1));
 }
 export async function fetchFa() {
     return [...new Set((await Promise.all([
@@ -1961,8 +1962,8 @@ export async function showFontAwesomePicker(customList = null) {
                 qry.type = 'search';
                 qry.placeholder = 'Filter icons';
                 qry.autofocus = true;
-                const qryDebounced = debounce(()=>{
-                    const result = faList.filter(it=>it.includes(qry.value));
+                const qryDebounced = debounce(() => {
+                    const result = faList.filter(it => it.includes(qry.value));
                     for (const fa of faList) {
                         if (!result.includes(fa)) {
                             fas[fa].classList.add('hidden');

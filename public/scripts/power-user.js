@@ -1030,6 +1030,12 @@ function switchMovingUI() {
         if (power_user.movingUIState) {
             loadMovingUIState();
         }
+    } else {
+        if (Object.keys(power_user.movingUIState).length !== 0) {
+            power_user.movingUIState = {};
+            resetMovablePanels();
+            saveSettingsDebounced();
+        }
     }
 }
 
@@ -1474,7 +1480,7 @@ function getExampleMessagesBehavior() {
     return 'normal';
 }
 
-function loadPowerUserSettings(settings, data) {
+async function loadPowerUserSettings(settings, data) {
     const defaultStscript = JSON.parse(JSON.stringify(power_user.stscript));
     // Load from settings.json
     if (settings.power_user !== undefined) {
@@ -1734,7 +1740,7 @@ function loadPowerUserSettings(settings, data) {
     switchCompactInputArea();
     reloadMarkdownProcessor(power_user.render_formulas);
     loadInstructMode(data);
-    loadContextSettings();
+    await loadContextSettings();
     loadMaxContextUnlocked();
     switchWaifuMode();
     switchSpoilerMode();
@@ -1866,7 +1872,7 @@ function getContextSettings() {
 
 // TODO: Maybe add a refresh button to reset settings to preset
 // TODO: Add "global state" if a preset doesn't set the power_user checkboxes
-function loadContextSettings() {
+async function loadContextSettings() {
     contextControls.forEach(control => {
         const $element = $(`#${control.id}`);
 
@@ -1886,7 +1892,7 @@ function loadContextSettings() {
 
         // If the setting already exists, no need to duplicate it
         // TODO: Maybe check the power_user object for the setting instead of a flag?
-        $element.on('input', function () {
+        $element.on('input', async function () {
             const value = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
             if (control.isGlobalSetting) {
                 power_user[control.property] = value;
@@ -1896,7 +1902,7 @@ function loadContextSettings() {
 
             saveSettingsDebounced();
             if (!control.isCheckbox) {
-                resetScrollHeight($element);
+                await resetScrollHeight($element);
             }
         });
     });

@@ -2354,7 +2354,7 @@ function InitWorldEntryUILazy(name, data, entry, element) {
                 /** @type {string[]} */
                 const keys = ($(this).select2('data')).map(x => x.text);
 
-                !skipReset && resetScrollHeight(this);
+                !skipReset && await resetScrollHeight(this);
                 if (!noSave) {
                     data.entries[uid][entryPropName] = keys;
                     setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
@@ -2392,7 +2392,7 @@ function InitWorldEntryUILazy(name, data, entry, element) {
             input.on('input', async function (_, { skipReset, noSave } = {}) {
                 const uid = $(this).data('uid');
                 const value = String($(this).val());
-                !skipReset && resetScrollHeight(this);
+                !skipReset && await resetScrollHeight(this);
                 if (!noSave) {
                     data.entries[uid][entryPropName] = splitKeywordsAndRegexes(value);
                     setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
@@ -2858,7 +2858,7 @@ function getWorldEntryUI(name, data, entry) {
     commentInput.on('input', async function (_, { skipReset } = {}) {
         const uid = $(this).data('uid');
         const value = $(this).val();
-        !skipReset && resetScrollHeight(this);
+        !skipReset && await resetScrollHeight(this);
         data.entries[uid].comment = value;
 
         setWIOriginalDataValue(data, uid, 'comment', data.entries[uid].comment);
@@ -2876,6 +2876,7 @@ function getWorldEntryUI(name, data, entry) {
         await saveWorldInfo(name, data);
         value ? commentContainer.show() : commentContainer.hide();
     });
+
     commentInput.val(entry.comment).trigger('input', { skipReset: true });
     //initScrollHeight(commentInput);
     commentToggle.prop('checked', true /* entry.addMemo */).trigger('input');

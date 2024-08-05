@@ -719,29 +719,29 @@ function onChatChanged() {
     adjustElementScrollHeight();
 }
 
-function adjustElementScrollHeight() {
+async function adjustElementScrollHeight() {
     if (!$('.sd_settings').is(':visible')) {
         return;
     }
 
-    resetScrollHeight($('#sd_prompt_prefix'));
-    resetScrollHeight($('#sd_negative_prompt'));
-    resetScrollHeight($('#sd_character_prompt'));
-    resetScrollHeight($('#sd_character_negative_prompt'));
+    await resetScrollHeight($('#sd_prompt_prefix'));
+    await resetScrollHeight($('#sd_negative_prompt'));
+    await resetScrollHeight($('#sd_character_prompt'));
+    await resetScrollHeight($('#sd_character_negative_prompt'));
 }
 
-function onCharacterPromptInput() {
+async function onCharacterPromptInput() {
     const key = getCharaFilename(this_chid);
     extension_settings.sd.character_prompts[key] = $('#sd_character_prompt').val();
-    resetScrollHeight($(this));
+    await resetScrollHeight($(this));
     saveSettingsDebounced();
     writePromptFieldsDebounced(this_chid);
 }
 
-function onCharacterNegativePromptInput() {
+async function onCharacterNegativePromptInput() {
     const key = getCharaFilename(this_chid);
     extension_settings.sd.character_negative_prompts[key] = $('#sd_character_negative_prompt').val();
-    resetScrollHeight($(this));
+    await resetScrollHeight($(this));
     saveSettingsDebounced();
     writePromptFieldsDebounced(this_chid);
 }
@@ -850,15 +850,15 @@ function onStepsInput() {
     saveSettingsDebounced();
 }
 
-function onPromptPrefixInput() {
+async function onPromptPrefixInput() {
     extension_settings.sd.prompt_prefix = $('#sd_prompt_prefix').val();
-    resetScrollHeight($(this));
+    await resetScrollHeight($(this));
     saveSettingsDebounced();
 }
 
-function onNegativePromptInput() {
+async function onNegativePromptInput() {
     extension_settings.sd.negative_prompt = $('#sd_negative_prompt').val();
-    resetScrollHeight($(this));
+    await resetScrollHeight($(this));
     saveSettingsDebounced();
 }
 
