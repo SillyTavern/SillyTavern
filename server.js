@@ -733,15 +733,11 @@ function handleServerListenFail(v6Failed, v4Failed, error, from_ipv) {
     if (v6Failed && !enableIPv4) {
         console.error('fatal error: IPv6 failed and IPv4 disabled');
         process.exit(1);
-    } else if (from_ipv == 'ipv6') {
-        console.error('non-fatal error: failed to start with IPv6', error);
     }
 
     if (v4Failed && !enableIPv6) {
         console.error('fatal error: IPv4 failed and IPv6 disabled');
         process.exit(1);
-    } else if (from_ipv == 'ipv4') {
-        console.error('non-fatal error: failed to start with IPv4', error);
     }
 
     if (v6Failed && v4Failed) {
@@ -788,7 +784,8 @@ async function startHTTPorHTTPS() {
     if (enableIPv6) {
         try {
             await createFunc(tavernUrlV6);
-        } catch {
+        } catch(error) {
+            console.error('non-fatal error: failed to start with IPv6', error);
             v6Failed = true;
         }
     }
@@ -796,7 +793,8 @@ async function startHTTPorHTTPS() {
     if (enableIPv4) {
         try {
             await createFunc(tavernUrl);
-        } catch {
+        } catch(error) {
+            console.error('non-fatal error: failed to start with IPv4', error);
             v4Failed = true;
         }
     }
