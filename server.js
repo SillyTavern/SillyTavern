@@ -751,46 +751,49 @@ function handleServerListenFail(v6Failed, v4Failed, error, from_ipv) {
 }
 
 
-function startHTTPS() {
+function createHttpsServer(url) {
+    return new Promise((resolve, reject) => {
+        const server = https.createServer(
+            {
+                cert: fs.readFileSync(cliArguments.certPath),
+                key: fs.readFileSync(cliArguments.keyPath),
+            }, app);
+        server.on('error', reject);
+        server.on('listening', resolve);
+        server.listen(url.port, url.hostname);
+    });
+}
+
+function createHttpServer(url) {
+    return new Promise((resolve, reject) => {
+        const server = http.createServer(app);
+        server.on('error', reject);
+        server.on('listening', resolve);
+        server.listen(url.port, url.hostname);
+    });
+}
+
+async function startHTTPS() {
     let v6Failed = false;
     let v4Failed = false;
 
     // Handle IPv6 server
     if (enableIPv6) {
-
-        const ipv6Server = https.createServer(
-            {
-                cert: fs.readFileSync(cliArguments.certPath),
-                key: fs.readFileSync(cliArguments.keyPath),
-            }, app);
-
-        ipv6Server.on('error', (error) => {
+        try {
+            await createHttpServer(tavernUrlV6);
+        } catch {
             v6Failed = true;
-            handleServerListenFail(v6Failed, v4Failed, error, 'ipv6');
-        });
-
-        ipv6Server.listen(Number(tavernUrlV6.port) || 443, tavernUrlV6.hostname);
-
+        }
     }
 
 
     // Handle IPv4 server
     if (enableIPv4) {
-
-        const ipv4Server = https.createServer(
-            {
-                cert: fs.readFileSync(cliArguments.certPath),
-                key: fs.readFileSync(cliArguments.keyPath),
-            }, app);
-
-        ipv4Server.on('error', (error) => {
+        try {
+            await createHttpServer(tavernUrl);
+        } catch {
             v4Failed = true;
-            handleServerListenFail(v6Failed, v4Failed, error, 'ipv4');
-        });
-
-        ipv4Server.listen(Number(tavernUrl.port) || 443, tavernUrl.hostname);
-
-
+        }
     }
 
     return [v6Failed, v4Failed];
@@ -798,48 +801,47 @@ function startHTTPS() {
 
 
 
-function startHTTP() {
+async function startHTTPorHTTPS() {
     let v6Failed = false;
     let v4Failed = false;
     // Handle IPv6 server
 
-    if (enableIPv6) {
-        const ipv6Server = http.createServer(app);
-        ipv6Server.on('error', (error) => {
-            v6Failed = true;
-            handleServerListenFail(v6Failed, v4Failed, error, 'ipv6');
-        });
-
-        ipv6Server.listen(Number(tavernUrlV6.port) || 80, tavernUrlV6.hostname);
-    }
-
-    // Handle IPv4 server
-    if (enableIPv4) {
-        const ipv4Server = http.createServer(app);
-        ipv4Server.on('error', (error) => {
-            v4Failed = true;
-            handleServerListenFail(v6Failed, v4Failed, error, 'ipv4');
-        });
-
-        ipv4Server.listen(Number(tavernUrl.port) || 80, tavernUrl.hostname);
-    }
-    return [v6Failed, v4Failed];
-}
-
-
-
-
-function startServer() {
-    let v6Failed = false;
-    let v4Failed = false;
-
+    let createFunc = createHttpServer;
     if (cliArguments.ssl) {
-        [v6Failed, v4Failed] = startHTTPS();
-    } else {
-        [v6Failed, v4Failed] = startHTTP();
+        createFunc = createHttpsServer;
     }
 
+    if (enableIPv6) {
+        try {
+            await createFunc(tavernUrlV6);
+        } catch {
+            v6Failed = true;
+        }
+    }
 
+    // Handle IPv4 server
+    if (enableIPv4) {
+        try {
+            await createFunc(tavernUrl);
+        } catch {
+            v4Failed = true;
+        }
+    }
+    return [v6Failed, v4Failed];
+}
+
+
+
+
+async function startServer() {
+    let v6Failed = false;
+    let v4Failed = false;
+
+
+    [v6Failed, v4Failed] = await startHTTPorHTTPS();
+
+    console.log("v6f ul:", v6Failed);
+    handleServerListenFail(v6Failed, v4Failed);
     postSetupTasks(v6Failed, v4Failed);
 }
 
