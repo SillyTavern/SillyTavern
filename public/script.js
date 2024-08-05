@@ -156,6 +156,7 @@ import {
     ensureImageFormatSupported,
     flashHighlight,
     isTrueBoolean,
+    toggleDrawer,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -10615,12 +10616,19 @@ jQuery(async function () {
         }
     });
 
-    $(document).on('click', '#OpenAllWIEntries', function () {
-        $('#world_popup_entries_list').children().find('.down').click();
+    document.addEventListener('click', function (e) {
+        if (!(e.target instanceof HTMLElement)) return;
+        if (e.target.matches('#OpenAllWIEntries')) {
+            document.querySelectorAll('#world_popup_entries_list .inline-drawer').forEach((/** @type {HTMLElement} */ drawer) => {
+                toggleDrawer(drawer, true);
+            });
+        } else if (e.target.matches('#CloseAllWIEntries')) {
+            document.querySelectorAll('#world_popup_entries_list .inline-drawer').forEach((/** @type {HTMLElement} */ drawer) => {
+                toggleDrawer(drawer, false);
+            });
+        }
     });
-    $(document).on('click', '#CloseAllWIEntries', function () {
-        $('#world_popup_entries_list').children().find('.up').click();
-    });
+
     $(document).on('click', '.open_alternate_greetings', openAlternateGreetings);
     /* $('#set_character_world').on('click', openCharacterWorldPopup); */
 

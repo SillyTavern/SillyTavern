@@ -1875,7 +1875,8 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
                     Trigger %
                 </small>
             </div>`;
-            const blocks = page.map(entry => getWorldEntry(name, data, entry)).filter(x => x);
+            const blocksPromises = page.map(async (entry) => await getWorldEntry(name, data, entry)).filter(x => x);
+            const blocks = await Promise.all(blocksPromises);
             const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
             if (!isCustomOrder) {
                 blocks.forEach(block => {
@@ -2275,7 +2276,7 @@ export function parseRegexFromString(input) {
     }
 }
 
-function getWorldEntry(name, data, entry) {
+async function getWorldEntry(name, data, entry) {
     if (!data.entries[entry.uid]) {
         return;
     }
@@ -2317,6 +2318,9 @@ function getWorldEntry(name, data, entry) {
         }
 
         if (isFancyInput) {
+            // First initialize existing values as options, before initializing select2, to speed up performance
+            select2ModifyOptions(input, entry[entryPropName], { select: true, changeEventArgs: { skipReset: true, noSave: true } });
+
             input.select2({
                 ajax: dynamicSelect2DataViaAjax(() => worldEntryKeyOptionsCache),
                 tags: true,
@@ -2358,8 +2362,6 @@ function getWorldEntry(name, data, entry) {
                 input.next('span.select2-container').find('textarea')
                     .val(key).trigger('input');
             }, { openDrawer: true });
-
-            select2ModifyOptions(input, entry[entryPropName], { select: true, changeEventArgs: { skipReset: true, noSave: true } });
         }
         else {
             // Compatibility with mobile devices. On mobile we need a text input field, not a select option control, so we need its own event handlers

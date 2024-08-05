@@ -3505,6 +3505,8 @@ grammarly-extension {
 
 .drag-handle {
     cursor: grab;
+    /* Make the drag handle not selectable in most browsers */
+    user-select: none;
 }
 
 #form_rename_chat {

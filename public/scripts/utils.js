@@ -1728,20 +1728,24 @@ export function select2ModifyOptions(element, items, { select = false, changeEve
     /** @type {Select2Option[]} */
     const dataItems = items.map(x => typeof x === 'string' ? { id: getSelect2OptionId(x), text: x } : x);
 
-    const existingValues = [];
+    const optionsToSelect = [];
+    const newOptions = [];
+
     dataItems.forEach(item => {
         // Set the value, creating a new option if necessary
         if (element.find('option[value=\'' + item.id + '\']').length) {
-            if (select) existingValues.push(item.id);
+            if (select) optionsToSelect.push(item.id);
         } else {
             // Create a DOM Option and optionally pre-select by default
             var newOption = new Option(item.text, item.id, select, select);
             // Append it to the select
-            element.append(newOption);
-            if (select) element.trigger('change', changeEventArgs);
+            newOptions.push(newOption);
+            if (select) optionsToSelect.push(item.id);
         }
-        if (existingValues.length) element.val(existingValues).trigger('change', changeEventArgs);
     });
+
+    element.append(newOptions);
+    if (optionsToSelect.length) element.val(optionsToSelect).trigger('change', changeEventArgs);
 }
 
 /**
@@ -1928,6 +1932,34 @@ export function getFreeName(name, list, numberFormatter = (n) => ` #${n}`) {
         counter++;
     }
     return `${name}${numberFormatter(counter)}`;
+}
+
+
+/**
+ * Toggles the visibility of a drawer by changing the display style of its content.
+ * This function skips the usual drawer animation.
+ *
+ * @param {HTMLElement} drawer - The drawer element to toggle
+ * @param {boolean} [expand=true] - Whether to expand or collapse the drawer
+ */
+export function toggleDrawer(drawer, expand = true) {
+    /** @type {HTMLElement} */
+    const icon = drawer.querySelector('.inline-drawer-icon');
+    /** @type {HTMLElement} */
+    const content = drawer.querySelector('.inline-drawer-content');
+
+    if (expand) {
+        icon.classList.remove('up', 'fa-circle-chevron-up');
+        icon.classList.add('down', 'fa-circle-chevron-down');
+        content.style.display = 'block';
+    } else {
+        icon.classList.remove('down', 'fa-circle-chevron-down');
+        icon.classList.add('up', 'fa-circle-chevron-up');
+        content.style.display = 'none';
+    }
+
+    // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
+    content.querySelectorAll('textarea.autoSetHeight').forEach(resetScrollHeight);
 }
 
 export async function fetchFaFile(name) {
