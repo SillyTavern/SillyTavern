@@ -729,7 +729,7 @@ function logSecurityAlert(message) {
 
 
 
-function handleServerListenFail(v6Failed, v4Failed, error, from_ipv) {
+function handleServerListenFail(v6Failed, v4Failed) {
     if (v6Failed && !enableIPv4) {
         console.error('fatal error: IPv6 failed and IPv4 disabled');
         process.exit(1);
