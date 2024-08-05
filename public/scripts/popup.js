@@ -101,6 +101,21 @@ const showPopupHelper = {
         if (typeof result === 'string' || typeof result === 'boolean') throw new Error(`Invalid popup result. CONFIRM popups only support numbers, or null. Result: ${result}`);
         return result;
     },
+    /**
+     * Asynchronously displays a text popup with the given header and text, returning the clicked result button value.
+     *
+     * @param {string?} header - The header text for the popup.
+     * @param {string?} text - The main text for the popup.
+     * @param {PopupOptions} [popupOptions={}] - Options for the popup.
+     * @return {Promise<POPUP_RESULT>} A Promise that resolves with the result of the user's interaction.
+     */
+    text: async (header, text, popupOptions = {}) => {
+        const content = PopupUtils.BuildTextWithHeader(header, text);
+        const popup = new Popup(content, POPUP_TYPE.TEXT, null, popupOptions);
+        const result = await popup.show();
+        if (typeof result === 'string' || typeof result === 'boolean') throw new Error(`Invalid popup result. TEXT popups only support numbers, or null. Result: ${result}`);
+        return result;
+    },
 };
 
 export class Popup {
@@ -510,6 +525,15 @@ export class Popup {
         this.#hide();
 
         return this.#promise;
+    }
+    async completeAffirmative() {
+        return await this.complete(POPUP_RESULT.AFFIRMATIVE);
+    }
+    async completeNegative() {
+        return await this.complete(POPUP_RESULT.NEGATIVE);
+    }
+    async completeCancelled() {
+        return await this.complete(POPUP_RESULT.CANCELLED);
     }
 
     /**

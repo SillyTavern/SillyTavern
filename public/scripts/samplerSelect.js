@@ -1,9 +1,7 @@
 import {
     main_api,
     saveSettingsDebounced,
-    novelai_setting_names,
     callPopup,
-    settings,
 } from '../script.js';
 import { power_user } from './power-user.js';
 //import { BIAS_CACHE, displayLogitBias, getLogitBiasListResult } from './logit-bias.js';
@@ -20,132 +18,6 @@ const forcedOffColoring = 'filter: sepia(1) hue-rotate(308deg) contrast(0.7) sat
 
 let userDisabledSamplers, userShownSamplers;
 
-/*
-
-for reference purposes:
-
-//NAI
-const nai_settings = {
-    temperature: 1.5,
-    repetition_penalty: 2.25,
-    repetition_penalty_range: 2048,
-    repetition_penalty_slope: 0.09,
-    repetition_penalty_frequency: 0,
-    repetition_penalty_presence: 0.005,
-    tail_free_sampling: 0.975,
-    top_k: 10,
-    top_p: 0.75,
-    top_a: 0.08,
-    typical_p: 0.975,
-    min_length: 1,
-    model_novel: 'clio-v1',
-    preset_settings_novel: 'Talker-Chat-Clio',
-    streaming_novel: false,
-    preamble: default_preamble,
-    prefix: '',
-    cfg_uc: '',
-    banned_tokens: '',
-    order: default_order,
-    logit_bias: [],
-};
-
-// TG Types
-export const textgen_types = {
-    OOBA: 'ooba',
-    MANCER: 'mancer',
-    VLLM: 'vllm',
-    APHRODITE: 'aphrodite',
-    TABBY: 'tabby',
-    KOBOLDCPP: 'koboldcpp',
-    TOGETHERAI: 'togetherai',
-    LLAMACPP: 'llamacpp',
-    OLLAMA: 'ollama',
-    INFERMATICAI: 'infermaticai',
-    DREAMGEN: 'dreamgen',
-    OPENROUTER: 'openrouter',
-};
-
-//KAI and TextGen
-const setting_names = [
-    'temp',
-    'temperature_last',
-    'rep_pen',
-    'rep_pen_range',
-    'no_repeat_ngram_size',
-    'top_k',
-    'top_p',
-    'top_a',
-    'tfs',
-    'epsilon_cutoff',
-    'eta_cutoff',
-    'typical_p',
-    'min_p',
-    'penalty_alpha',
-    'num_beams',
-    'length_penalty',
-    'min_length',
-    'dynatemp',
-    'min_temp',
-    'max_temp',
-    'dynatemp_exponent',
-    'smoothing_factor',
-    'smoothing_curve',
-    'max_tokens_second',
-    'encoder_rep_pen',
-    'freq_pen',
-    'presence_pen',
-    'do_sample',
-    'early_stopping',
-    'seed',
-    'add_bos_token',
-    'ban_eos_token',
-    'skip_special_tokens',
-    'streaming',
-    'mirostat_mode',
-    'mirostat_tau',
-    'mirostat_eta',
-    'guidance_scale',
-    'negative_prompt',
-    'grammar_string',
-    'json_schema',
-    'banned_tokens',
-    'legacy_api',
-    //'n_aphrodite',
-    //'best_of_aphrodite',
-    'ignore_eos_token',
-    'spaces_between_special_tokens',
-    //'logits_processors_aphrodite',
-    //'log_probs_aphrodite',
-    //'prompt_log_probs_aphrodite'
-    'sampler_order',
-    'sampler_priority',
-    'samplers',
-    'n',
-    'logit_bias',
-    'custom_model',
-    'bypass_status_check',
-];
-
-//OAI settings
-
-const default_settings = {
-    preset_settings_openai: 'Default',
-    temp_openai: 1.0,
-    freq_pen_openai: 0,
-    pres_pen_openai: 0,
-    count_pen: 0.0,
-    top_p_openai: 1.0,
-    top_k_openai: 0,
-    min_p_openai: 0,
-    top_a_openai: 1,
-    repetition_penalty_openai: 1,
-    stream_openai: false,
-    //...
-}
-
-
-*/
-
 // Goal 1: show popup with all samplers for active API
 async function showSamplerSelectPopup() {
     const popup = $('#dialogue_popup');
@@ -158,12 +30,12 @@ async function showSamplerSelectPopup() {
         <div class="flex-container justifyCenter">
             <h3>Sampler Select</h3>
             <div class="flex-container alignItemsBaseline">
-            <div id="resetSelectedSamplers" class="menu_button menu_button_icon tag_view_create" title="Reset custom sampler selection">
+            <div id="resetSelectedSamplers" class="menu_button menu_button_icon" title="Reset custom sampler selection">
                 <i class="fa-solid fa-recycle"></i>
             </div>
         </div>
             <!--<div class="flex-container alignItemsBaseline">
-                <div class="menu_button menu_button_icon tag_view_create" title="Create a new sampler">
+                <div class="menu_button menu_button_icon" title="Create a new sampler">
                     <i class="fa-solid fa-plus"></i>
                     <span data-i18n="Create">Create</span>
                 </div>
@@ -189,6 +61,15 @@ async function showSamplerSelectPopup() {
         power_user.selectSamplers.forceShown = [];
         power_user.selectSamplers.forceHidden = [];
         await validateDisabledSamplers(true);
+    });
+
+    $('#textgen_type').on('change', async function () {
+        console.log('changed TG Type, resetting custom samplers'); //unfortunate, but necessary unless we save custom samplers for each TGTytpe
+        userDisabledSamplers = [];
+        userShownSamplers = [];
+        power_user.selectSamplers.forceShown = [];
+        power_user.selectSamplers.forceHidden = [];
+        await validateDisabledSamplers();
     });
 }
 
@@ -221,6 +102,11 @@ function setSamplerListListeners() {
             targetDisplayType = 'block';
         }
 
+        if (samplerName === 'dry_multiplier') {
+            relatedDOMElement = $('#dryBlock');
+            targetDisplayType = 'block';
+        }
+
         if (samplerName === 'dynatemp') {
             relatedDOMElement = $('#dynatemp_block_ooba');
             targetDisplayType = 'block';
@@ -231,9 +117,30 @@ function setSamplerListListeners() {
             targetDisplayType = 'block';
         }
 
-        if (samplerName === 'sampler_order') {
-            relatedDOMElement = $('#sampler_order_block');
-            targetDisplayType = 'flex';
+        if (samplerName === 'sampler_order') { //this is for kcpp sampler order
+            relatedDOMElement = $('#sampler_order_block_kcpp');
+        }
+
+        if (samplerName === 'samplers') { //this is for lcpp sampler order
+            relatedDOMElement = $('#sampler_order_block_lcpp');
+        }
+
+        if (samplerName === 'sampler_priority') { //this is for ooba's sampler priority
+            relatedDOMElement = $('#sampler_priority_block_ooba');
+        }
+
+        if (samplerName === 'penalty_alpha') { //contrastive search only has one sampler, does it need its own block?
+            relatedDOMElement = $('#contrastiveSearchBlock');
+        }
+
+        if (samplerName === 'num_beams') { // num_beams is the killswitch for Beam Search
+            relatedDOMElement = $('#beamSearchBlock');
+            targetDisplayType = 'block';
+        }
+
+        if (samplerName === 'smoothing_factor') { // num_beams is the killswitch for Beam Search
+            relatedDOMElement = $('#smoothingBlock');
+            targetDisplayType = 'block';
         }
 
         // Get the current state of the custom data attribute
@@ -301,7 +208,7 @@ async function listSamplers(main_api, arrayOnly = false) {
     let availableSamplers;
     if (main_api === 'textgenerationwebui') {
         availableSamplers = TGsamplerNames;
-        const valuesToRemove = new Set(['streaming', 'seed', 'bypass_status_check', 'custom_model', 'legacy_api', 'samplers']);
+        const valuesToRemove = new Set(['streaming', 'bypass_status_check', 'custom_model', 'legacy_api']);
         availableSamplers = availableSamplers.filter(sampler => !valuesToRemove.has(sampler));
         availableSamplers.sort();
     }
@@ -312,8 +219,70 @@ async function listSamplers(main_api, arrayOnly = false) {
     }
 
     const samplersListHTML = availableSamplers.reduce((html, sampler) => {
-        let customColor;
-        const targetDOMelement = $(`#${sampler}_${main_api}`);
+        let customColor, displayname;
+        let targetDOMelement = $(`#${sampler}_${main_api}`);
+
+        if (sampler === 'sampler_order') { //this is for kcpp sampler order
+            targetDOMelement = $('#sampler_order_block_kcpp');
+            displayname = 'KCPP Sampler Order Block';
+        }
+
+        if (sampler === 'samplers') { //this is for lcpp sampler order
+            targetDOMelement = $('#sampler_order_block_lcpp');
+            displayname = 'LCPP Sampler Order Block';
+        }
+
+        if (sampler === 'sampler_priority') { //this is for ooba's sampler priority
+            targetDOMelement = $('#sampler_priority_block_ooba');
+            displayname = 'Ooba Sampler Priority Block';
+        }
+
+        if (sampler === 'penalty_alpha') { //contrastive search only has one sampler, does it need its own block?
+            targetDOMelement = $('#contrastiveSearchBlock');
+            displayname = 'Contrast Search Block';
+        }
+
+        if (sampler === 'num_beams') { // num_beams is the killswitch for Beam Search
+            targetDOMelement = $('#beamSearchBlock');
+            displayname = 'Beam Search Block';
+        }
+
+        if (sampler === 'smoothing_factor') { // num_beams is the killswitch for Beam Search
+            targetDOMelement = $('#smoothingBlock');
+            displayname = 'Smoothing Block';
+        }
+
+        if (sampler === 'dry_multiplier') {
+            targetDOMelement = $('#dryBlock');
+            displayname = 'DRY Rep Pen Block';
+        }
+
+        if (sampler === 'dynatemp') {
+            targetDOMelement = $('#dynatemp_block_ooba');
+            displayname = 'DynaTemp Block';
+        }
+
+        if (sampler === 'json_schema') {
+            targetDOMelement = $('#json_schema_block');
+            displayname = 'JSON Schema Block';
+        }
+
+        if (sampler === 'grammar_string') {
+            targetDOMelement = $('#grammar_block_ooba');
+            displayname = 'Grammar Block';
+        }
+
+        if (sampler === 'guidance_scale') {
+            targetDOMelement = $('#cfg_block_ooba');
+            displayname = 'CFG Block';
+        }
+
+        if (sampler === 'mirostat_mode') {
+            targetDOMelement = $('#mirostat_block_ooba');
+            displayname = 'Mirostat Block';
+        }
+
+
 
         const isInForceHiddenArray = userDisabledSamplers.includes(sampler);
         const isInForceShownArray = userShownSamplers.includes(sampler);
@@ -335,11 +304,12 @@ async function listSamplers(main_api, arrayOnly = false) {
             }
             else { return isVisibleInDOM; }
         };
-        console.log(sampler, isInDefaultState(), isInForceHiddenArray, shouldBeChecked());
+        console.log(sampler, targetDOMelement.prop('id'), isInDefaultState(), isInForceShownArray, isInForceHiddenArray, shouldBeChecked());
+        if (displayname === undefined) { displayname = sampler; }
         return html + `
         <div class="sampler_view_list_item wide50p flex-container">
             <input type="checkbox" name="${sampler}_checkbox" ${shouldBeChecked() ? 'checked' : ''}>
-            <small class="sampler_name" style="${customColor}">${sampler}</small>
+            <small class="sampler_name" style="${customColor}">${displayname}</small>
         </div>
         `;
     }, '');
@@ -391,8 +361,33 @@ export async function validateDisabledSamplers(redraw = false) {
             targetDisplayType = 'block';
         }
 
-        if (sampler === 'sampler_order') {
-            relatedDOMElement = $('#sampler_order_block');
+        if (sampler === 'sampler_order') { //this is for kcpp sampler order
+            relatedDOMElement = $('#sampler_order_block_kcpp');
+        }
+
+        if (sampler === 'samplers') { //this is for lcpp sampler order
+            relatedDOMElement = $('#sampler_order_block_lcpp');
+        }
+
+        if (sampler === 'sampler_priority') { //this is for ooba's sampler priority
+            relatedDOMElement = $('#sampler_priority_block_ooba');
+        }
+
+        if (sampler === 'dry_multiplier') {
+            relatedDOMElement = $('#dryBlock');
+            targetDisplayType = 'block';
+        }
+
+        if (sampler === 'penalty_alpha') { //contrastive search only has one sampler, does it need its own block?
+            relatedDOMElement = $('#contrastiveSearchBlock');
+        }
+
+        if (sampler === 'num_beams') { // num_beams is the killswitch for Beam Search
+            relatedDOMElement = $('#beamSearchBlock');
+        }
+
+        if (sampler === 'smoothing_factor') { // num_beams is the killswitch for Beam Search
+            relatedDOMElement = $('#smoothingBlock');
         }
 
         if (power_user?.selectSamplers?.forceHidden.includes(sampler)) {
@@ -418,6 +413,7 @@ export async function validateDisabledSamplers(redraw = false) {
             setSamplerListListeners();
         }
 
+        await saveSettingsDebounced();
 
     }
 }

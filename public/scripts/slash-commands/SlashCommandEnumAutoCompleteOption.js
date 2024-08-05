@@ -3,6 +3,17 @@ import { SlashCommand } from './SlashCommand.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
 
 export class SlashCommandEnumAutoCompleteOption extends AutoCompleteOption {
+    /**
+     * @param {SlashCommand} cmd
+     * @param {SlashCommandEnumValue} enumValue
+     * @returns {SlashCommandEnumAutoCompleteOption}
+     */
+    static from(cmd, enumValue) {
+        const mapped = this.valueToOptionMap.find(it=>enumValue instanceof it.value)?.option ?? this;
+        return new mapped(cmd, enumValue);
+    }
+    /**@type {{value:(typeof SlashCommandEnumValue), option:(typeof SlashCommandEnumAutoCompleteOption)}[]} */
+    static valueToOptionMap = [];
     /**@type {SlashCommand}*/ cmd;
     /**@type {SlashCommandEnumValue}*/ enumValue;
 
@@ -13,7 +24,7 @@ export class SlashCommandEnumAutoCompleteOption extends AutoCompleteOption {
      * @param {SlashCommandEnumValue} enumValue
      */
     constructor(cmd, enumValue) {
-        super(enumValue.value, enumValue.typeIcon, enumValue.type);
+        super(enumValue.value, enumValue.typeIcon, enumValue.type, enumValue.matchProvider, enumValue.valueProvider, enumValue.makeSelectable);
         this.cmd = cmd;
         this.enumValue = enumValue;
     }

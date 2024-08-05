@@ -228,7 +228,7 @@ import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay
 import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
-import { MacrosParser, evaluateMacros } from './scripts/macros.js';
+import { MacrosParser, evaluateMacros, getLastMessageId } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
@@ -440,6 +440,7 @@ export const event_types = {
     GROUP_CHAT_CREATED: 'group_chat_created',
     GENERATE_BEFORE_COMBINE_PROMPTS: 'generate_before_combine_prompts',
     GENERATE_AFTER_COMBINE_PROMPTS: 'generate_after_combine_prompts',
+    GENERATE_AFTER_DATA: 'generate_after_data',
     GROUP_MEMBER_DRAFTED: 'group_member_drafted',
     WORLD_INFO_ACTIVATED: 'world_info_activated',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
@@ -1721,16 +1722,24 @@ export async function replaceCurrentChat() {
 }
 
 export function showMoreMessages() {
-    let messageId = Number($('#chat').children('.mes').first().attr('mesid'));
+    const firstDisplayedMesId = $('#chat').children('.mes').first().attr('mesid');
+    let messageId = Number(firstDisplayedMesId);
     let count = power_user.chat_truncation || Number.MAX_SAFE_INTEGER;
+
+    // If there are no messages displayed, or the message somehow has no mesid, we default to one higher than last message id,
+    // so the first "new" message being shown will be the last available message
+    if (isNaN(messageId)) {
+        messageId = getLastMessageId() + 1;
+    }
 
     console.debug('Inserting messages before', messageId, 'count', count, 'chat length', chat.length);
     const prevHeight = $('#chat').prop('scrollHeight');
 
     while (messageId > 0 && count > 0) {
+        let newMessageId = messageId - 1;
+        addOneMessage(chat[newMessageId], { insertBefore: messageId >= chat.length ? null : messageId, scroll: false, forceId: newMessageId });
         count--;
         messageId--;
-        addOneMessage(chat[messageId], { insertBefore: messageId + 1, scroll: false, forceId: messageId });
     }
 
     if (messageId == 0) {
@@ -2471,26 +2480,30 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
  * @returns {string[]} Array of stopping strings
  */
 export function getStoppingStrings(isImpersonate, isContinue) {
-    const charString = `\n${name2}:`;
-    const userString = `\n${name1}:`;
-    const result = isImpersonate ? [charString] : [userString];
+    const result = [];
 
-    result.push(userString);
+    if (power_user.context.names_as_stop_strings) {
+        const charString = `\n${name2}:`;
+        const userString = `\n${name1}:`;
+        result.push(isImpersonate ? charString : userString);
 
-    if (isContinue && Array.isArray(chat) && chat[chat.length - 1]?.is_user) {
-        result.push(charString);
-    }
+        result.push(userString);
 
-    // Add other group members as the stopping strings
-    if (selected_group) {
-        const group = groups.find(x => x.id === selected_group);
+        if (isContinue && Array.isArray(chat) && chat[chat.length - 1]?.is_user) {
+            result.push(charString);
+        }
 
-        if (group && Array.isArray(group.members)) {
-            const names = group.members
-                .map(x => characters.find(y => y.avatar == x))
-                .filter(x => x && x.name && x.name !== name2)
-                .map(x => `\n${x.name}:`);
-            result.push(...names);
+        // Add other group members as the stopping strings
+        if (selected_group) {
+            const group = groups.find(x => x.id === selected_group);
+
+            if (group && Array.isArray(group.members)) {
+                const names = group.members
+                    .map(x => characters.find(y => y.avatar == x))
+                    .filter(x => x && x.name && x.name !== name2)
+                    .map(x => `\n${x.name}:`);
+                result.push(...names);
+            }
         }
     }
 
@@ -4212,6 +4225,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
     }
 
+    await eventSource.emit(event_types.GENERATE_AFTER_DATA, generate_data);
+
     if (dryRun) {
         generatedPromptCache = '';
         return Promise.resolve();
@@ -5075,7 +5090,7 @@ function setInContextMessages(lastmsg, type) {
  * @param {object} data Generation data
  * @returns {Promise<object>} Response data from the API
  */
-async function sendGenerationRequest(type, data) {
+export async function sendGenerationRequest(type, data) {
     if (main_api === 'openai') {
         return await sendOpenAIRequest(type, data.prompt, abortController.signal);
     }
@@ -5107,7 +5122,7 @@ async function sendGenerationRequest(type, data) {
  * @param {object} data Generation data
  * @returns {Promise<any>} Streaming generator
  */
-async function sendStreamingRequest(type, data) {
+export async function sendStreamingRequest(type, data) {
     if (abortController?.signal?.aborted) {
         throw new Error('Generation was aborted.');
     }
@@ -5611,6 +5626,7 @@ export function activateSendButtons() {
     is_send_press = false;
     $('#send_but').removeClass('displayNone');
     $('#mes_continue').removeClass('displayNone');
+    $('#mes_impersonate').removeClass('displayNone');
     $('.mes_buttons:last').show();
     hideStopButton();
 }
@@ -5618,6 +5634,7 @@ export function activateSendButtons() {
 export function deactivateSendButtons() {
     $('#send_but').addClass('displayNone');
     $('#mes_continue').addClass('displayNone');
+    $('#mes_impersonate').addClass('displayNone');
     showStopButton();
 }
 
@@ -6408,7 +6425,7 @@ export async function getSettings() {
         loadHordeSettings(settings);
 
         // Load power user settings
-        loadPowerUserSettings(settings, data);
+        await loadPowerUserSettings(settings, data);
 
         // Load character tags
         loadTagsSettings(settings);
@@ -7918,6 +7935,8 @@ window['SillyTavern'].getContext = function () {
         eventTypes: event_types,
         addOneMessage: addOneMessage,
         generate: Generate,
+        sendStreamingRequest: sendStreamingRequest,
+        sendGenerationRequest: sendGenerationRequest,
         stopGeneration: stopGeneration,
         getTokenCount: getTokenCount,
         extensionPrompts: extension_prompts,
@@ -8497,7 +8516,7 @@ export async function processDroppedFiles(files, data = new Map()) {
 
     for (const file of files) {
         const extension = file.name.split('.').pop().toLowerCase();
-        if (allowedMimeTypes.includes(file.type) || allowedExtensions.includes(extension)) {
+        if (allowedMimeTypes.some(x => file.type.startsWith(x)) || allowedExtensions.includes(extension)) {
             const preservedName = data instanceof Map && data.get(file);
             await importCharacter(file, preservedName);
         } else {
@@ -9096,14 +9115,14 @@ jQuery(async function () {
     $('#send_textarea').on('focusin focus click', () => {
         S_TAPreviouslyFocused = true;
     });
-    $('#send_but, #option_regenerate, #option_continue, #mes_continue').on('click', () => {
+    $('#send_but, #option_regenerate, #option_continue, #mes_continue, #mes_impersonate').on('click', () => {
         if (S_TAPreviouslyFocused) {
             $('#send_textarea').focus();
         }
     });
     $(document).click(event => {
         if ($(':focus').attr('id') !== 'send_textarea') {
-            var validIDs = ['options_button', 'send_but', 'mes_continue', 'send_textarea', 'option_regenerate', 'option_continue'];
+            var validIDs = ['options_button', 'send_but', 'mes_impersonate', 'mes_continue', 'send_textarea', 'option_regenerate', 'option_continue'];
             if (!validIDs.includes($(event.target).attr('id'))) {
                 S_TAPreviouslyFocused = false;
             }
@@ -9139,6 +9158,9 @@ jQuery(async function () {
         debouncedCharacterSearch(searchQuery);
     });
 
+    $('#mes_impersonate').on('click', function () {
+        $('#option_impersonate').trigger('click');
+    });
 
     $('#mes_continue').on('click', function () {
         $('#option_continue').trigger('click');
@@ -10436,8 +10458,9 @@ jQuery(async function () {
             }
 
             // Set the height of "autoSetHeight" textareas within the drawer to their scroll height
-            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(function () {
-                resetScrollHeight($(this));
+            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(async function () {
+                await resetScrollHeight($(this));
+                return;
             });
 
         } else if (drawerWasOpenAlready) { //to close manually
@@ -10510,8 +10533,9 @@ jQuery(async function () {
         $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
 
         // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
-        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(function () {
-            resetScrollHeight($(this));
+        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(async function () {
+            await resetScrollHeight($(this));
+            return;
         });
     });
 

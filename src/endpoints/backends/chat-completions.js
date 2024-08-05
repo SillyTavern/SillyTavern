@@ -271,7 +271,7 @@ async function sendMakerSuiteRequest(request, response) {
     };
 
     function getGeminiBody() {
-        const should_use_system_prompt = ['gemini-1.5-flash-latest', 'gemini-1.5-pro-latest'].includes(model) && request.body.use_makersuite_sysprompt;
+        const should_use_system_prompt = (model.includes('gemini-1.5-flash') || model.includes('gemini-1.5-pro')) && request.body.use_makersuite_sysprompt;
         const prompt = convertGooglePrompt(request.body.messages, model, should_use_system_prompt, request.body.char_name, request.body.user_name);
         let body = {
             contents: prompt.contents,

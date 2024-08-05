@@ -264,8 +264,13 @@ function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '
     const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
     const visionSupportedModels = [
+        'gemini-1.5-flash',
         'gemini-1.5-flash-latest',
+        'gemini-1.5-flash-001',
+        'gemini-1.5-pro',
         'gemini-1.5-pro-latest',
+        'gemini-1.5-pro-001',
+        'gemini-1.5-pro-exp-0801',
         'gemini-1.0-pro-vision-latest',
         'gemini-pro-vision',
     ];

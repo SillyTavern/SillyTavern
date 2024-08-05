@@ -17,7 +17,10 @@ import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNa
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
 import { MacroAutoCompleteOption } from '../autocomplete/MacroAutoCompleteOption.js';
+import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
+import { SlashCommandDebugController } from './SlashCommandDebugController.js';
 import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
+import { SlashCommandBreak } from './SlashCommandBreak.js';
 
 /** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
 /** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
@@ -53,7 +56,7 @@ export class SlashCommandParser {
      * @param {SlashCommand} command
      */
     static addCommandObject(command) {
-        const reserved = ['/', '#', ':', 'parser-flag'];
+        const reserved = ['/', '#', ':', 'parser-flag', 'breakpoint'];
         for (const start of reserved) {
             if (command.name.toLowerCase().startsWith(start) || (command.aliases ?? []).find(a=>a.toLowerCase().startsWith(start))) {
                 throw new Error(`Illegal Name. Slash command name cannot begin with "${start}".`);
@@ -68,6 +71,18 @@ export class SlashCommandParser {
     static addCommandObjectUnsafe(command) {
         if ([command.name, ...command.aliases].some(x => Object.hasOwn(this.commands, x))) {
             console.trace('WARN: Duplicate slash command registered!', [command.name, ...command.aliases]);
+        }
+
+        const stack = new Error().stack.split('\n').map(it=>it.trim());
+        command.isExtension = stack.find(it=>it.includes('/scripts/extensions/')) != null;
+        command.isThirdParty = stack.find(it=>it.includes('/scripts/extensions/third-party/')) != null;
+        if (command.isThirdParty) {
+            command.source = stack.find(it=>it.includes('/scripts/extensions/third-party/')).replace(/^.*?\/scripts\/extensions\/third-party\/([^/]+)\/.*$/, '$1');
+        } else if (command.isExtension) {
+            command.source = stack.find(it=>it.includes('/scripts/extensions/')).replace(/^.*?\/scripts\/extensions\/([^/]+)\/.*$/, '$1');
+        } else {
+            const idx = stack.findLastIndex(it=>it.includes('at SlashCommandParser.')) + 1;
+            command.source = stack[idx].replace(/^.*?\/((?:scripts\/)?(?:[^/]+)\.js).*$/, '$1');
         }
 
         this.commands[command.name] = command;
@@ -89,6 +104,7 @@ export class SlashCommandParser {
     /**@type {string}*/ text;
     /**@type {number}*/ index;
     /**@type {SlashCommandAbortController}*/ abortController;
+    /**@type {SlashCommandDebugController}*/ debugController;
     /**@type {SlashCommandScope}*/ scope;
     /**@type {SlashCommandClosure}*/ closure;
 
@@ -100,6 +116,8 @@ export class SlashCommandParser {
     /**@type {{start:number, end:number, name:string}[]}*/ macroIndex;
     /**@type {SlashCommandExecutor[]}*/ commandIndex;
     /**@type {SlashCommandScope[]}*/ scopeIndex;
+
+    /**@type {string}*/ parserContext;
 
     get userIndex() { return this.index; }
 
@@ -154,6 +172,21 @@ export class SlashCommandParser {
                 helpString: 'Write a comment.',
             }));
         }
+        if (!Object.keys(this.commands).includes('breakpoint')) {
+            SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({ name: 'breakpoint',
+                helpString: 'Set a breakpoint for debugging in the QR Editor.',
+            }));
+        }
+        if (!Object.keys(this.commands).includes('break')) {
+            SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({ name: 'break',
+                helpString: 'Break out of a loop or closure executed through /run or /:',
+                unnamedArgumentList: [
+                    SlashCommandArgument.fromProps({ description: 'value to pass down the pipe instead of the current pipe value',
+                        typeList: Object.values(ARGUMENT_TYPE),
+                    }),
+                ],
+            }));
+        }
 
         //TODO should not be re-registered from every instance
         this.registerLanguage();
@@ -191,13 +224,19 @@ export class SlashCommandParser {
 
         function getQuotedRunRegex() {
             try {
-                return new RegExp('(".+?(?<!\\\\)")|(\\S+?)');
+                return new RegExp('(".+?(?<!\\\\)")|(\\S+?)(\\||$|\\s)');
             } catch {
                 // fallback for browsers that don't support lookbehind
-                return /(".+?")|(\S+?)/;
+                return /(".+?")|(\S+?)(\||$|\s)/;
             }
         }
 
+        const BLOCK_COMMENT = {
+            scope: 'comment',
+            begin: /\/\*/,
+            end: /\*\|/,
+            contains: [],
+        };
         const COMMENT = {
             scope: 'comment',
             begin: /\/[/#]/,
@@ -205,9 +244,29 @@ export class SlashCommandParser {
             contains: [],
         };
         const ABORT = {
-            scope: 'abort',
-            begin: /\/abort/,
-            end: /\||$|:}/,
+            begin: /\/(abort|breakpoint)/,
+            beginScope: 'abort',
+            end: /\||$|(?=:})/,
+            excludeEnd: false,
+            returnEnd: true,
+            contains: [],
+        };
+        const IMPORT = {
+            scope: 'command',
+            begin: /\/(import)/,
+            beginScope: 'keyword',
+            end: /\||$|(?=:})/,
+            excludeEnd: false,
+            returnEnd: true,
+            contains: [],
+        };
+        const BREAK = {
+            scope: 'command',
+            begin: /\/(break)/,
+            beginScope: 'keyword',
+            end: /\||$|(?=:})/,
+            excludeEnd: false,
+            returnEnd: true,
             contains: [],
         };
         const LET = {
@@ -218,26 +277,31 @@ export class SlashCommandParser {
                 1: 'variable',
             },
             end: /\||$|:}/,
+            excludeEnd: false,
+            returnEnd: true,
             contains: [],
         };
         const SETVAR = {
             begin: /\/(setvar|setglobalvar)\s+/,
             beginScope: 'variable',
             end: /\||$|:}/,
-            excludeEnd: true,
+            excludeEnd: false,
+            returnEnd: true,
             contains: [],
         };
         const GETVAR = {
             begin: /\/(getvar|getglobalvar)\s+/,
             beginScope: 'variable',
             end: /\||$|:}/,
-            excludeEnd: true,
+            excludeEnd: false,
+            returnEnd: true,
             contains: [],
         };
         const RUN = {
             match: [
                 /\/:/,
                 getQuotedRunRegex(),
+                /\||$|(?=:})/,
             ],
             className: {
                 1: 'variable.language',
@@ -250,7 +314,8 @@ export class SlashCommandParser {
             begin: /\/\S+/,
             beginScope: 'title.function',
             end: /\||$|(?=:})/,
-            excludeEnd: true,
+            excludeEnd: false,
+            returnEnd: true,
             contains: [], // defined later
         };
         const CLOSURE = {
@@ -271,6 +336,19 @@ export class SlashCommandParser {
             begin: /{{/,
             end: /}}/,
         };
+        const PIPEBREAK = {
+            beginScope: 'pipebreak',
+            begin: /\|\|/,
+            end: '',
+        };
+        const PIPE = {
+            beginScope: 'pipe',
+            begin: /\|/,
+            end: '',
+        };
+        BLOCK_COMMENT.contains.push(
+            BLOCK_COMMENT,
+        );
         RUN.contains.push(
             hljs.BACKSLASH_ESCAPE,
             NAMED_ARG,
@@ -278,6 +356,22 @@ export class SlashCommandParser {
             NUMBER,
             MACRO,
             CLOSURE,
+        );
+        IMPORT.contains.push(
+            hljs.BACKSLASH_ESCAPE,
+            NAMED_ARG,
+            NUMBER,
+            MACRO,
+            CLOSURE,
+            hljs.QUOTE_STRING_MODE,
+        );
+        BREAK.contains.push(
+            hljs.BACKSLASH_ESCAPE,
+            NAMED_ARG,
+            NUMBER,
+            MACRO,
+            CLOSURE,
+            hljs.QUOTE_STRING_MODE,
         );
         LET.contains.push(
             hljs.BACKSLASH_ESCAPE,
@@ -303,6 +397,14 @@ export class SlashCommandParser {
             MACRO,
             CLOSURE,
         );
+        ABORT.contains.push(
+            hljs.BACKSLASH_ESCAPE,
+            NAMED_ARG,
+            NUMBER,
+            MACRO,
+            CLOSURE,
+            hljs.QUOTE_STRING_MODE,
+        );
         COMMAND.contains.push(
             hljs.BACKSLASH_ESCAPE,
             NAMED_ARG,
@@ -313,8 +415,11 @@ export class SlashCommandParser {
         );
         CLOSURE.contains.push(
             hljs.BACKSLASH_ESCAPE,
+            BLOCK_COMMENT,
             COMMENT,
             ABORT,
+            IMPORT,
+            BREAK,
             NAMED_ARG,
             NUMBER,
             MACRO,
@@ -325,20 +430,27 @@ export class SlashCommandParser {
             COMMAND,
             'self',
             hljs.QUOTE_STRING_MODE,
+            PIPEBREAK,
+            PIPE,
         );
         hljs.registerLanguage('stscript', ()=>({
             case_insensitive: false,
-            keywords: ['|'],
+            keywords: [],
             contains: [
                 hljs.BACKSLASH_ESCAPE,
+                BLOCK_COMMENT,
                 COMMENT,
                 ABORT,
+                IMPORT,
+                BREAK,
                 RUN,
                 LET,
                 GETVAR,
                 SETVAR,
                 COMMAND,
                 CLOSURE,
+                PIPEBREAK,
+                PIPE,
             ],
         }));
     }
@@ -415,7 +527,7 @@ export class SlashCommandParser {
                 );
                 return result;
             }
-            const result = new SlashCommandAutoCompleteNameResult(executor, this.commands);
+            const result = new SlashCommandAutoCompleteNameResult(executor, this.scopeIndex[this.commandIndex.indexOf(executor)], this.commands);
             return result;
         }
         return null;
@@ -515,11 +627,14 @@ export class SlashCommandParser {
     }
 
     replaceGetvar(value) {
-        return value.replace(/{{(get(?:global)?var)::([^}]+)}}/gi, (_, cmd, name) => {
+        return value.replace(/{{(get(?:global)?var)::([^}]+)}}/gi, (match, cmd, name, idx) => {
             name = name.trim();
+            const startIdx = this.index - value.length + idx;
+            const endIdx = this.index - value.length + idx + match.length;
             // store pipe
-            const pipeName = `_PARSER_${uuidv4()}`;
-            const storePipe = new SlashCommandExecutor(null); {
+            const pipeName = `_PARSER_PIPE_${uuidv4()}`;
+            const storePipe = new SlashCommandExecutor(startIdx); {
+                storePipe.end = endIdx;
                 storePipe.command = this.commands['let'];
                 storePipe.name = 'let';
                 const nameAss = new SlashCommandUnnamedArgumentAssignment();
@@ -530,17 +645,19 @@ export class SlashCommandParser {
                 this.closure.executorList.push(storePipe);
             }
             // getvar / getglobalvar
-            const getvar = new SlashCommandExecutor(null); {
+            const getvar = new SlashCommandExecutor(startIdx); {
+                getvar.end = endIdx;
                 getvar.command = this.commands[cmd];
-                getvar.name = 'cmd';
+                getvar.name = cmd;
                 const nameAss = new SlashCommandUnnamedArgumentAssignment();
                 nameAss.value = name;
                 getvar.unnamedArgumentList = [nameAss];
                 this.closure.executorList.push(getvar);
             }
             // set to temp scoped var
-            const varName = `_PARSER_${uuidv4()}`;
-            const setvar = new SlashCommandExecutor(null); {
+            const varName = `_PARSER_VAR_${uuidv4()}`;
+            const setvar = new SlashCommandExecutor(startIdx); {
+                setvar.end = endIdx;
                 setvar.command = this.commands['let'];
                 setvar.name = 'let';
                 const nameAss = new SlashCommandUnnamedArgumentAssignment();
@@ -551,7 +668,8 @@ export class SlashCommandParser {
                 this.closure.executorList.push(setvar);
             }
             // return pipe
-            const returnPipe = new SlashCommandExecutor(null); {
+            const returnPipe = new SlashCommandExecutor(startIdx); {
+                returnPipe.end = endIdx;
                 returnPipe.command = this.commands['return'];
                 returnPipe.name = 'return';
                 const varAss = new SlashCommandUnnamedArgumentAssignment();
@@ -564,12 +682,13 @@ export class SlashCommandParser {
     }
 
 
-    parse(text, verifyCommandNames = true, flags = null, abortController = null) {
+    parse(text, verifyCommandNames = true, flags = null, abortController = null, debugController = null) {
         this.verifyCommandNames = verifyCommandNames;
         for (const key of Object.keys(PARSER_FLAG)) {
             this.flags[PARSER_FLAG[key]] = flags?.[PARSER_FLAG[key]] ?? power_user.stscript.parser.flags[PARSER_FLAG[key]] ?? false;
         }
         this.abortController = abortController;
+        this.debugController = debugController;
         this.text = text;
         this.index = 0;
         this.scope = null;
@@ -577,6 +696,7 @@ export class SlashCommandParser {
         this.commandIndex = [];
         this.scopeIndex = [];
         this.macroIndex = [];
+        this.parserContext = uuidv4();
         const closure = this.parseClosure(true);
         return closure;
     }
@@ -604,8 +724,12 @@ export class SlashCommandParser {
         if (!isRoot) this.take(2); // discard opening {:
         const textStart = this.index;
         let closure = new SlashCommandClosure(this.scope);
+        closure.parserContext = this.parserContext;
+        closure.fullText = this.text;
         closure.abortController = this.abortController;
+        closure.debugController = this.debugController;
         this.scope = closure.scope;
+        const oldClosure = this.closure;
         this.closure = closure;
         this.discardWhitespace();
         while (this.testNamedArgument()) {
@@ -615,7 +739,9 @@ export class SlashCommandParser {
             this.discardWhitespace();
         }
         while (!this.testClosureEnd()) {
-            if (this.testComment()) {
+            if (this.testBlockComment()) {
+                this.parseBlockComment();
+            } else if (this.testComment()) {
                 this.parseComment();
             } else if (this.testParserFlag()) {
                 this.parseParserFlag();
@@ -623,6 +749,14 @@ export class SlashCommandParser {
                 const cmd = this.parseRunShorthand();
                 closure.executorList.push(cmd);
                 injectPipe = true;
+            } else if (this.testBreakPoint()) {
+                const bp = this.parseBreakPoint();
+                if (this.debugController) {
+                    closure.executorList.push(bp);
+                }
+            } else if (this.testBreak()) {
+                const b = this.parseBreak();
+                closure.executorList.push(b);
             } else if (this.testCommand()) {
                 const cmd = this.parseCommand();
                 cmd.injectPipe = injectPipe;
@@ -651,14 +785,83 @@ export class SlashCommandParser {
         }
         closureIndexEntry.end = this.index - 1;
         this.scope = closure.scope.parent;
+        this.closure = oldClosure ?? closure;
         return closure;
+    }
+
+    testBreakPoint() {
+        return this.testSymbol(/\/breakpoint\s*\|/);
+    }
+    parseBreakPoint() {
+        const cmd = new SlashCommandBreakPoint();
+        cmd.name = 'breakpoint';
+        cmd.command = this.commands['breakpoint'];
+        cmd.start = this.index + 1;
+        this.take('/breakpoint'.length);
+        cmd.end = this.index;
+        this.commandIndex.push(cmd);
+        this.scopeIndex.push(this.scope.getCopy());
+        return cmd;
+    }
+
+    testBreak() {
+        return this.testSymbol(/\/break(\s|\||$)/);
+    }
+    parseBreak() {
+        const cmd = new SlashCommandBreak();
+        cmd.name = 'break';
+        cmd.command = this.commands['break'];
+        cmd.start = this.index + 1;
+        this.take('/break'.length);
+        this.discardWhitespace();
+        if (this.testUnnamedArgument()) {
+            cmd.unnamedArgumentList.push(...this.parseUnnamedArgument());
+        }
+        cmd.end = this.index;
+        this.commandIndex.push(cmd);
+        this.scopeIndex.push(this.scope.getCopy());
+        return cmd;
+    }
+
+    testBlockComment() {
+        return this.testSymbol('/*');
+    }
+    testBlockCommentEnd() {
+        if (!this.verifyCommandNames) {
+            if (this.index >= this.text.length) return true;
+        } else {
+            if (this.ahead.length < 1) throw new SlashCommandParserError(`Unclosed block comment at position ${this.userIndex}`, this.text, this.index);
+        }
+        return this.testSymbol('*|');
+    }
+    parseBlockComment() {
+        const start = this.index + 1;
+        const cmd = new SlashCommandExecutor(start);
+        cmd.command = this.commands['*'];
+        this.commandIndex.push(cmd);
+        this.scopeIndex.push(this.scope.getCopy());
+        this.take(); // discard "/"
+        cmd.name = this.take(); //set "*" as name
+        while (!this.testBlockCommentEnd()) {
+            if (this.testBlockComment()) {
+                this.parseBlockComment();
+            }
+            this.take();
+        }
+        this.take(2); // take closing "*|"
+        cmd.end = this.index - 1;
     }
 
     testComment() {
         return this.testSymbol(/\/[/#]/);
     }
     testCommentEnd() {
-        return this.testCommandEnd();
+        if (!this.verifyCommandNames) {
+            if (this.index >= this.text.length) return true;
+        } else {
+            if (this.endOfText) throw new SlashCommandParserError(`Unclosed comment at position ${this.userIndex}`, this.text, this.index);
+        }
+        return this.testSymbol('|');
     }
     parseComment() {
         const start = this.index + 1;
@@ -719,11 +922,13 @@ export class SlashCommandParser {
         else assignment.value = this.parseValue();
         cmd.unnamedArgumentList = [assignment];
         this.discardWhitespace();
+        cmd.startNamedArgs = this.index;
         while (this.testNamedArgument()) {
             const arg = this.parseNamedArgument();
             cmd.namedArgumentList.push(arg);
             this.discardWhitespace();
         }
+        cmd.endNamedArgs = this.index;
         this.discardWhitespace();
         // /run shorthand does not take unnamed arguments (the command name practically *is* the unnamed argument)
         if (this.testRunShorthandEnd()) {
@@ -761,10 +966,10 @@ export class SlashCommandParser {
             this.discardWhitespace();
         }
         this.discardWhitespace();
-        cmd.startUnnamedArgs = this.index;
+        cmd.startUnnamedArgs = this.index - (/\s(\s*)$/s.exec(this.behind)?.[1]?.length ?? 0);
         cmd.endUnnamedArgs = this.index;
         if (this.testUnnamedArgument()) {
-            cmd.unnamedArgumentList = this.parseUnnamedArgument(cmd.command?.unnamedArgumentList?.length && cmd?.command?.splitUnnamedArgument);
+            cmd.unnamedArgumentList = this.parseUnnamedArgument(cmd.command?.unnamedArgumentList?.length && cmd?.command?.splitUnnamedArgument, cmd?.command?.splitUnnamedArgumentCount);
             cmd.endUnnamedArgs = this.index;
             if (cmd.name == 'let') {
                 const keyArg = cmd.namedArgumentList.find(it=>it.name == 'key');
@@ -772,6 +977,17 @@ export class SlashCommandParser {
                     this.scope.variableNames.push(keyArg.value.toString());
                 } else if (typeof cmd.unnamedArgumentList[0]?.value == 'string') {
                     this.scope.variableNames.push(cmd.unnamedArgumentList[0].value);
+                }
+            } else if (cmd.name == 'import') {
+                const value = /**@type {string[]}*/(cmd.unnamedArgumentList.map(it=>it.value));
+                for (let i = 0; i < value.length; i++) {
+                    const srcName = value[i];
+                    let dstName = srcName;
+                    if (i + 2 < value.length && value[i + 1] == 'as') {
+                        dstName = value[i + 2];
+                        i += 2;
+                    }
+                    this.scope.variableNames.push(dstName);
                 }
             }
         }
@@ -813,24 +1029,60 @@ export class SlashCommandParser {
     testUnnamedArgumentEnd() {
         return this.testCommandEnd();
     }
-    parseUnnamedArgument(split) {
+    parseUnnamedArgument(split, splitCount = null) {
+        const wasSplit = split;
         /**@type {SlashCommandClosure|String}*/
         let value = this.jumpedEscapeSequence ? this.take() : ''; // take the first, already tested, char if it is an escaped one
         let isList = split;
         let listValues = [];
+        let listQuoted = []; // keep track of which listValues were quoted
         /**@type {SlashCommandUnnamedArgumentAssignment}*/
         let assignment = new SlashCommandUnnamedArgumentAssignment();
         assignment.start = this.index;
+        if (!split && this.testQuotedValue()) {
+            // if the next bit is a quoted value, take the whole value and gather contents as a list
+            assignment.value = this.parseQuotedValue();
+            assignment.end = this.index;
+            isList = true;
+            listValues.push(assignment);
+            listQuoted.push(true);
+            assignment = new SlashCommandUnnamedArgumentAssignment();
+            assignment.start = this.index;
+        }
         while (!this.testUnnamedArgumentEnd()) {
+            if (split && splitCount && listValues.length >= splitCount) {
+                // the split count has just been reached: stop splitting, the rest is one singular value
+                split = false;
+                if (this.testQuotedValue()) {
+                    // if the next bit is a quoted value, take the whole value
+                    assignment.value = this.parseQuotedValue();
+                    assignment.end = this.index;
+                    listValues.push(assignment);
+                    listQuoted.push(true);
+                    assignment = new SlashCommandUnnamedArgumentAssignment();
+                    assignment.start = this.index;
+                }
+            }
             if (this.testClosure()) {
                 isList = true;
                 if (value.length > 0) {
                     this.indexMacros(this.index - value.length, value);
                     assignment.value = value;
                     listValues.push(assignment);
+                    listQuoted.push(false);
                     assignment = new SlashCommandUnnamedArgumentAssignment();
                     assignment.start = this.index;
-                    value = '';
+                    if (!split && this.testQuotedValue()) {
+                        // if where currently not splitting and the next bit is a quoted value, take the whole value
+                        assignment.value = this.parseQuotedValue();
+                        assignment.end = this.index;
+                        listValues.push(assignment);
+                        listQuoted.push(true);
+                        assignment = new SlashCommandUnnamedArgumentAssignment();
+                        assignment.start = this.index;
+                    } else {
+                        value = '';
+                    }
                 }
                 assignment.start = this.index;
                 assignment.value = this.parseClosure();
@@ -845,18 +1097,21 @@ export class SlashCommandParser {
                     assignment.value = this.parseQuotedValue();
                     assignment.end = this.index;
                     listValues.push(assignment);
+                    listQuoted.push(true);
                     assignment = new SlashCommandUnnamedArgumentAssignment();
                 } else if (this.testListValue()) {
                     assignment.start = this.index;
                     assignment.value = this.parseListValue();
                     assignment.end = this.index;
                     listValues.push(assignment);
+                    listQuoted.push(false);
                     assignment = new SlashCommandUnnamedArgumentAssignment();
                 } else if (this.testValue()) {
                     assignment.start = this.index;
                     assignment.value = this.parseValue();
                     assignment.end = this.index;
                     listValues.push(assignment);
+                    listQuoted.push(false);
                     assignment = new SlashCommandUnnamedArgumentAssignment();
                 } else {
                     throw new SlashCommandParserError(`Unexpected end of unnamed argument at index ${this.userIndex}.`);
@@ -870,8 +1125,48 @@ export class SlashCommandParser {
         if (isList && value.length > 0) {
             assignment.value = value;
             listValues.push(assignment);
+            listQuoted.push(false);
         }
         if (isList) {
+            const firstVal = listValues[0];
+            if (typeof firstVal?.value == 'string') {
+                if (!listQuoted[0]) {
+                    // only trim the first part if it wasn't quoted
+                    firstVal.value = firstVal.value.trimStart();
+                }
+                if (firstVal.value.length == 0) {
+                    listValues.shift();
+                    listQuoted.shift();
+                }
+            }
+            const lastVal = listValues.slice(-1)[0];
+            if (typeof lastVal?.value == 'string') {
+                if (!listQuoted.slice(-1)[0]) {
+                    // only trim the last part if it wasn't quoted
+                    lastVal.value = lastVal.value.trimEnd();
+                }
+                if (lastVal.value.length == 0) {
+                    listValues.pop();
+                    listQuoted.pop();
+                }
+            }
+            if (wasSplit && splitCount && splitCount + 1 < listValues.length) {
+                // if split with a split count and there are more values than expected
+                // -> should be result of quoting + additional (non-whitespace) text
+                // -> join the parts into one and restore quotes
+                const joined = new SlashCommandUnnamedArgumentAssignment();
+                joined.start = listValues[splitCount].start;
+                joined.end = listValues.slice(-1)[0].end;
+                joined.value = '';
+                for (let i = splitCount; i < listValues.length; i++) {
+                    if (listQuoted[i]) joined.value += `"${listValues[i].value}"`;
+                    else joined.value += listValues[i].value;
+                }
+                listValues = [
+                    ...listValues.slice(0, splitCount),
+                    joined,
+                ];
+            }
             return listValues;
         }
         this.indexMacros(this.index - value.length, value);

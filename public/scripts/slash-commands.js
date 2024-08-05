@@ -51,7 +51,7 @@ import { autoSelectPersona, retriggerFirstMessageOnEmptyChat, setPersonaLockStat
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync } from './tokenizers.js';
-import { debounce, delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
+import { debounce, delay, isFalseBoolean, isTrueBoolean, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { background_settings } from './backgrounds.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
@@ -64,6 +64,9 @@ import { SlashCommandNamedArgumentAssignment } from './slash-commands/SlashComma
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandDebugController } from './slash-commands/SlashCommandDebugController.js';
+import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
+import { SlashCommandExecutionError } from './slash-commands/SlashCommandExecutionError.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -1120,10 +1123,10 @@ export function initDefaultSlashCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'scoped variable or qr label',
-                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING],
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.CLOSURE],
                 isRequired: true,
-                enumProvider: () => [
-                    ...commonEnumProviders.variables('scope')(),
+                enumProvider: (executor, scope) => [
+                    ...commonEnumProviders.variables('scope')(executor, scope),
                     ...(typeof window['qrEnumProviderExecutables'] === 'function') ? window['qrEnumProviderExecutables']() : [],
                 ],
             }),
@@ -1477,6 +1480,21 @@ export function initDefaultSlashCommands() {
         ],
         helpString: 'Sets the specified prompt manager entry/entries on or off.',
     }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'pick-icon',
+        callback: async()=>((await showFontAwesomePicker()) ?? false).toString(),
+        returns: 'The chosen icon name or false if cancelled.',
+        helpString: `
+                <div>Opens a popup with all the available Font Awesome icons and returns the selected icon's name.</div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code>/pick-icon |\n/if left={{pipe}} rule=eq right=false\n\telse={: /echo chosen icon: "{{pipe}}" :}\n\t{: /echo cancelled icon selection :}\n|</code></pre>
+                        </li>
+                    </ul>
+                </div>
+            `,
+    }));
 
     registerVariableCommands();
 }
@@ -1821,6 +1839,11 @@ async function runCallback(args, name) {
         throw new Error('No name provided for /run command');
     }
 
+    if (name instanceof SlashCommandClosure) {
+        name.breakController = new SlashCommandBreakController();
+        return (await name.execute())?.pipe;
+    }
+
     /**@type {SlashCommandScope} */
     const scope = args._scope;
     if (scope.existsVariable(name)) {
@@ -1829,6 +1852,11 @@ async function runCallback(args, name) {
             throw new Error(`"${name}" is not callable.`);
         }
         closure.scope.parent = scope;
+        closure.breakController = new SlashCommandBreakController();
+        if (args._debugController && !closure.debugController) {
+            closure.debugController = args._debugController;
+        }
+        while (closure.providedArgumentList.pop());
         closure.argumentList.forEach(arg => {
             if (Object.keys(args).includes(arg.name)) {
                 const providedArg = new SlashCommandNamedArgumentAssignment();
@@ -1847,9 +1875,14 @@ async function runCallback(args, name) {
 
     try {
         name = name.trim();
-        return await window['executeQuickReplyByName'](name, args);
+        /**@type {ExecuteSlashCommandsOptions} */
+        const options = {
+            abortController: args._abortController,
+            debugController: args._debugController,
+        };
+        return await window['executeQuickReplyByName'](name, args, options);
     } catch (error) {
-        throw new Error(`Error running Quick Reply "${name}": ${error.message}`, 'Error');
+        throw new Error(`Error running Quick Reply "${name}": ${error.message}`);
     }
 }
 
@@ -3428,7 +3461,9 @@ const clearCommandProgressDebounced = debounce(clearCommandProgress);
  * @prop {boolean} [handleExecutionErrors] (false) Whether to handle execution errors (show toast on error) or throw
  * @prop {{[id:PARSER_FLAG]:boolean}} [parserFlags] (null) Parser flags to apply
  * @prop {SlashCommandAbortController} [abortController] (null) Controller used to abort or pause command execution
+ * @prop {SlashCommandDebugController} [debugController] (null) Controller used to control debug execution
  * @prop {(done:number, total:number)=>void} [onProgress] (null) Callback to handle progress events
+ * @prop {string} [source] (null) String indicating where the code come from (e.g., QR name)
  */
 
 /**
@@ -3436,6 +3471,7 @@ const clearCommandProgressDebounced = debounce(clearCommandProgress);
  * @prop {SlashCommandScope} [scope] (null) The scope to be used when executing the commands.
  * @prop {{[id:PARSER_FLAG]:boolean}} [parserFlags] (null) Parser flags to apply
  * @prop {boolean} [clearChatInput] (false) Whether to clear the chat input textarea
+ * @prop {string} [source] (null) String indicating where the code come from (e.g., QR name)
  */
 
 /**
@@ -3451,6 +3487,7 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
         scope: null,
         parserFlags: null,
         clearChatInput: false,
+        source: null,
     }, options);
 
     isExecutingCommandsFromChatInput = true;
@@ -3473,13 +3510,21 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
 
     /**@type {SlashCommandClosureResult} */
     let result = null;
+    let currentProgress = 0;
     try {
         commandsFromChatInputAbortController = new SlashCommandAbortController();
         result = await executeSlashCommandsWithOptions(text, {
             abortController: commandsFromChatInputAbortController,
-            onProgress: (done, total) => ta.style.setProperty('--prog', `${done / total * 100}%`),
+            onProgress: (done, total) => {
+                const newProgress = done / total;
+                if (newProgress > currentProgress) {
+                    currentProgress = newProgress;
+                    ta.style.setProperty('--prog', `${newProgress * 100}%`);
+                }
+            },
             parserFlags: options.parserFlags,
             scope: options.scope,
+            source: options.source,
         });
         if (commandsFromChatInputAbortController.signal.aborted) {
             document.querySelector('#form_sheld').classList.add('script_aborted');
@@ -3492,7 +3537,23 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
         result.isError = true;
         result.errorMessage = e.message || 'An unknown error occurred';
         if (e.cause !== 'abort') {
-            toastr.error(result.errorMessage);
+            if (e instanceof SlashCommandExecutionError) {
+                /**@type {SlashCommandExecutionError}*/
+                const ex = e;
+                const toast = `
+                    <div>${ex.message}</div>
+                    <div>Line: ${ex.line} Column: ${ex.column}</div>
+                    <pre style="text-align:left;">${ex.hint}</pre>
+                    `;
+                const clickHint = '<p>Click to see details</p>';
+                toastr.error(
+                    `${toast}${clickHint}`,
+                    'SlashCommandExecutionError',
+                    { escapeHtml: false, timeOut: 10000, onclick: () => callPopup(toast, 'text') },
+                );
+            } else {
+                toastr.error(result.errorMessage);
+            }
         }
     } finally {
         delay(1000).then(() => clearCommandProgressDebounced());
@@ -3520,7 +3581,9 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
         handleExecutionErrors: false,
         parserFlags: null,
         abortController: null,
+        debugController: null,
         onProgress: null,
+        source: null,
     }, options);
 
     let closure;
@@ -3528,6 +3591,8 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
         closure = parser.parse(text, true, options.parserFlags, options.abortController ?? new SlashCommandAbortController());
         closure.scope.parent = options.scope;
         closure.onProgress = options.onProgress;
+        closure.debugController = options.debugController;
+        closure.source = options.source;
     } catch (e) {
         if (options.handleParserErrors && e instanceof SlashCommandParserError) {
             /**@type {SlashCommandParserError}*/
@@ -3559,7 +3624,23 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
         return result;
     } catch (e) {
         if (options.handleExecutionErrors) {
-            toastr.error(e.message);
+            if (e instanceof SlashCommandExecutionError) {
+                /**@type {SlashCommandExecutionError}*/
+                const ex = e;
+                const toast = `
+                    <div>${ex.message}</div>
+                    <div>Line: ${ex.line} Column: ${ex.column}</div>
+                    <pre style="text-align:left;">${ex.hint}</pre>
+                    `;
+                const clickHint = '<p>Click to see details</p>';
+                toastr.error(
+                    `${toast}${clickHint}`,
+                    'SlashCommandExecutionError',
+                    { escapeHtml: false, timeOut: 10000, onclick: () => callPopup(toast, 'text') },
+                );
+            } else {
+                toastr.error(e.message);
+            }
             const result = new SlashCommandClosureResult();
             result.isError = true;
             result.errorMessage = e.message;
@@ -3596,6 +3677,7 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
  *
  * @param {HTMLTextAreaElement} textarea The textarea to receive autocomplete
  * @param {Boolean} isFloating Whether to show the auto complete as a floating window (e.g., large QR editor)
+ * @returns {Promise<AutoComplete>}
  */
 export async function setSlashCommandAutoComplete(textarea, isFloating = false) {
     function canUseNegativeLookbehind() {
@@ -3619,6 +3701,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         async (text, index) => await parser.getNameAt(text, index),
         isFloating,
     );
+    return ac;
 }
 /**@type {HTMLTextAreaElement} */
 const sendTextarea = document.querySelector('#send_textarea');

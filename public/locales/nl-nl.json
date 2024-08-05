@@ -207,7 +207,7 @@
     "JSON Schema": "JSON-schema",
     "Type in the desired JSON schema": "Typ het gewenste JSON-schema",
     "Grammar String": "Grammaticareeks",
-    "GNBF or ENBF, depends on the backend in use. If you're using this you should know which.": "GNBF of ENBF, hangt af van de gebruikte backend. Als u dit gebruikt, moet u weten welke.",
+    "GBNF or EBNF, depends on the backend in use. If you're using this you should know which.": "GBNF of EBNF, hangt af van de gebruikte backend. Als u dit gebruikt, moet u weten welke.",
     "Top P & Min P": "Top P & Min P",
     "Load default order": "Standaardvolgorde laden",
     "llama.cpp only. Determines the order of samplers. If Mirostat mode is not 0, sampler order is ignored.": "alleen lama.cpp. Bepaalt de volgorde van de samplers. Als de Mirostat-modus niet 0 is, wordt de samplervolgorde genegeerd.",
