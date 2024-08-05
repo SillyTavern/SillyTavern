@@ -169,7 +169,7 @@ if (dnsPreferIPv6) {
 
 
 if (!enableIPv6 && !enableIPv4) {
-    console.error('error: you can\'t disable all internet you must enable at least ipv6 or ipv4');
+    console.error('error: You can\'t disable all internet protocols: at least IPv6 or IPv4 must be enabled.');
     process.exit(1);
 }
 
@@ -731,17 +731,17 @@ function logSecurityAlert(message) {
 
 function handleServerListenFail(v6Failed, v4Failed) {
     if (v6Failed && !enableIPv4) {
-        console.error('fatal error: IPv6 failed and IPv4 disabled');
+        console.error('fatal error: Failed to start server on IPv6 and IPv4 disabled');
         process.exit(1);
     }
 
     if (v4Failed && !enableIPv6) {
-        console.error('fatal error: IPv4 failed and IPv6 disabled');
+        console.error('fatal error: Failed to start server on IPv4 and IPv6 disabled');
         process.exit(1);
     }
 
     if (v6Failed && v4Failed) {
-        console.error('fatal error: both IPv6 and IPv4 failed');
+        console.error('fatal error: Failed to start server on both IPv6 and IPv4');
         process.exit(1);
     }
 }
@@ -786,7 +786,7 @@ async function startHTTPorHTTPS() {
             await createFunc(tavernUrlV6);
         } catch(error) {
             if (enableIPv4) {
-                console.error('non-fatal error: failed to start with IPv6', error);
+                console.error('non-fatal error: failed to start server on IPv6', error);
             }
 
             v6Failed = true;
@@ -798,7 +798,7 @@ async function startHTTPorHTTPS() {
             await createFunc(tavernUrl);
         } catch(error) {
             if (enableIPv6) {
-                console.error('non-fatal error: failed to start with IPv4', error);
+                console.error('non-fatal error: failed to start server on IPv4', error);
             }
 
             v4Failed = true;
