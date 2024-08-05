@@ -991,13 +991,11 @@ function switchUiMode() {
     }
 }
 
-function toggleWaifu() {
-    $('#waifuMode').trigger('click');
-    return '';
-}
-
-function toggleLetterbox() {
-    $('#enableLetterbox').trigger('click');
+function switchChatMode(mode) {
+    power_user.chat_mode = mode;
+    localStorage.setItem(storage_keys.chat_mode, power_user.chat_mode);
+    applyChatMode();
+    saveSettingsDebounced();
 }
 
 function switchSpoilerMode() {
@@ -1692,9 +1690,6 @@ async function loadPowerUserSettings(settings, data) {
     $('#disable_group_trimming').prop('checked', power_user.disable_group_trimming);
     $('#markdown_escape_strings').val(power_user.markdown_escape_strings);
     $('#fast_ui_mode').prop('checked', power_user.fast_ui_mode);
-    $('#waifuMode').prop('checked', power_user.chat_mode == chat_modes.VN);
-    $('#hLetterBox').prop('checked', power_user.chat_mode == chat_modes.VN_H);
-    $('#vLetterBox').prop('checked', power_user.chat_mode == chat_modes.VN_V);
     $('#movingUImode').prop('checked', power_user.movingUI);
     $('#noShadowsmode').prop('checked', power_user.noShadows);
     $('#start_reply_with').val(power_user.user_prompt_bias);
@@ -4073,13 +4068,40 @@ $(document).ready(() => {
     });
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'vn',
-        callback: toggleWaifu,
-        helpString: 'Swaps Visual Novel Mode On/Off',
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'letterbox',
-        callback: toggleLetterbox,
-        helpString: 'Swaps Letterbox Mode On/Off (Requires VN Mode to be Enabled)',
+        name: 'chat-mode',
+        /** @type {(args: { mode: string }) => void} */
+        callback: async (args, _) => {
+            switch (args.mode) {
+                case 'default':
+                    await switchChatMode(chat_modes.DEFAULT);
+                    break;
+                case 'vn':
+                    await switchChatMode(chat_modes.VN);
+                    break;
+                case 'vn_h':
+                    await switchChatMode(chat_modes.VN_H);
+                    break;
+                case 'vn_v':
+                    await switchChatMode(chat_modes.VN_V);
+                    break;
+            }
+            return '';
+        },
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'mode',
+                description: 'The chat mode to switch to. VN is for Visual Novel mode whilst VN_H and VN_V is VN Mode with horizontal and vertical letterboxes respectively.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumList: [
+                    "default",
+                    "vn",
+                    "vn_h",
+                    "vn_v",
+                ],
+            }),
+        ],
+        helpString: 'Swaps the chat mode.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'newchat',
