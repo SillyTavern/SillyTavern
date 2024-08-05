@@ -127,6 +127,7 @@ const max_128k = 128 * 1000;
 const max_200k = 200 * 1000;
 const max_256k = 256 * 1000;
 const max_1mil = 1000 * 1000;
+const max_2mil = 2000 * 1000;
 const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const claude_100k_max = 99000;
@@ -260,7 +261,7 @@ const default_settings = {
     personality_format: default_personality_format,
     openai_model: 'gpt-4-turbo',
     claude_model: 'claude-3-5-sonnet-20240620',
-    google_model: 'gemini-pro',
+    google_model: 'gemini-1.5-pro',
     ai21_model: 'j2-ultra',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
@@ -340,7 +341,7 @@ const oai_settings = {
     personality_format: default_personality_format,
     openai_model: 'gpt-4-turbo',
     claude_model: 'claude-3-5-sonnet-20240620',
-    google_model: 'gemini-pro',
+    google_model: 'gemini-1.5-pro',
     ai21_model: 'j2-ultra',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
@@ -4056,15 +4057,22 @@ async function onModelChange() {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         if (oai_settings.max_context_unlocked) {
+            $('#openai_max_context').attr('max', max_2mil);
+        } else if (value.includes('gemini-1.5-pro')) {
+            $('#openai_max_context').attr('max', max_2mil);
+        } else if (value.includes('gemini-1.5-flash')) {
             $('#openai_max_context').attr('max', max_1mil);
-        } else if (value === 'gemini-1.5-pro-latest' || value.includes('gemini-1.5-flash')) {
-            $('#openai_max_context').attr('max', max_1mil);
-        } else if (value === 'gemini-ultra' || value === 'gemini-1.0-pro-latest' || value === 'gemini-pro' || value === 'gemini-1.0-ultra-latest') {
-            $('#openai_max_context').attr('max', max_32k);
-        } else if (value === 'gemini-1.0-pro-vision-latest' || value === 'gemini-pro-vision') {
+        } else if (value.includes('gemini-1.0-pro-vision') || value === 'gemini-pro-vision') {
             $('#openai_max_context').attr('max', max_16k);
-        } else {
+        } else if (value.includes('gemini-1.0-pro') || value === 'gemini-pro') {
+            $('#openai_max_context').attr('max', max_32k);
+        } else if (value === 'text-bison-001') {
             $('#openai_max_context').attr('max', max_8k);
+        // The ultra endpoints are possibly dead:
+        } else if (value.includes('gemini-1.0-ultra') || value === 'gemini-ultra') {
+            $('#openai_max_context').attr('max', max_32k);
+        } else {
+            $('#openai_max_context').attr('max', max_4k);
         }
         let makersuite_max_temp = (value.includes('vision') || value.includes('ultra')) ? 1.0 : 2.0;
         oai_settings.temp_openai = Math.min(makersuite_max_temp, oai_settings.temp_openai);

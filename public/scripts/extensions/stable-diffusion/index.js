@@ -37,6 +37,7 @@ const MODULE_NAME = 'sd';
 const UPDATE_INTERVAL = 1000;
 // This is a 1x1 transparent PNG
 const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+const CUSTOM_STOP_EVENT = 'sd_stop_generation';
 
 const sources = {
     extras: 'extras',
@@ -718,29 +719,29 @@ function onChatChanged() {
     adjustElementScrollHeight();
 }
 
-function adjustElementScrollHeight() {
+async function adjustElementScrollHeight() {
     if (!$('.sd_settings').is(':visible')) {
         return;
     }
 
-    resetScrollHeight($('#sd_prompt_prefix'));
-    resetScrollHeight($('#sd_negative_prompt'));
-    resetScrollHeight($('#sd_character_prompt'));
-    resetScrollHeight($('#sd_character_negative_prompt'));
+    await resetScrollHeight($('#sd_prompt_prefix'));
+    await resetScrollHeight($('#sd_negative_prompt'));
+    await resetScrollHeight($('#sd_character_prompt'));
+    await resetScrollHeight($('#sd_character_negative_prompt'));
 }
 
-function onCharacterPromptInput() {
+async function onCharacterPromptInput() {
     const key = getCharaFilename(this_chid);
     extension_settings.sd.character_prompts[key] = $('#sd_character_prompt').val();
-    resetScrollHeight($(this));
+    await resetScrollHeight($(this));
     saveSettingsDebounced();
     writePromptFieldsDebounced(this_chid);
 }
 
-function onCharacterNegativePromptInput() {
+async function onCharacterNegativePromptInput() {
     const key = getCharaFilename(this_chid);
     extension_settings.sd.character_negative_prompts[key] = $('#sd_character_negative_prompt').val();
-    resetScrollHeight($(this));
+    await resetScrollHeight($(this));
     saveSettingsDebounced();
     writePromptFieldsDebounced(this_chid);
 }
@@ -849,15 +850,15 @@ function onStepsInput() {
     saveSettingsDebounced();
 }
 
-function onPromptPrefixInput() {
+async function onPromptPrefixInput() {
     extension_settings.sd.prompt_prefix = $('#sd_prompt_prefix').val();
-    resetScrollHeight($(this));
+    await resetScrollHeight($(this));
     saveSettingsDebounced();
 }
 
-function onNegativePromptInput() {
+async function onNegativePromptInput() {
     extension_settings.sd.negative_prompt = $('#sd_negative_prompt').val();
-    resetScrollHeight($(this));
+    await resetScrollHeight($(this));
     saveSettingsDebounced();
 }
 
@@ -2290,6 +2291,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
 
     const dimensions = setTypeSpecificDimensions(generationType);
     const abortController = new AbortController();
+    const stopButton = document.getElementById('sd_stop_gen');
     let negativePromptPrefix = args?.negative || '';
     let imagePath = '';
 
@@ -2300,9 +2302,8 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         const prompt = await getPrompt(generationType, message, trigger, quietPrompt, combineNegatives);
         console.log('Processed image prompt:', prompt);
 
-        eventSource.once(event_types.GENERATION_STOPPED, stopListener);
-        context.deactivateSendButtons();
-        hideSwipeButtons();
+        $(stopButton).show();
+        eventSource.once(CUSTOM_STOP_EVENT, stopListener);
 
         if (typeof args?._abortController?.addEventListener === 'function') {
             args._abortController.addEventListener('abort', stopListener);
@@ -2311,13 +2312,13 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback, initiator, abortController.signal);
     } catch (err) {
         console.trace(err);
-        throw new Error('SD prompt text generation failed.');
+        toastr.error('SD prompt text generation failed. Reason: ' + err, 'Image Generation');
+        throw new Error('SD prompt text generation failed. Reason: ' + err);
     }
     finally {
+        $(stopButton).hide();
         restoreOriginalDimensions(dimensions);
-        eventSource.removeListener(event_types.GENERATION_STOPPED, stopListener);
-        context.activateSendButtons();
-        showSwipeButtons();
+        eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
     }
 
     return imagePath;
@@ -3350,8 +3351,11 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
         },
     };
     context.chat.push(message);
+    const messageId = context.chat.length - 1;
+    await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId);
     context.addOneMessage(message);
-    context.saveChat();
+    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId);
+    await context.saveChat();
 }
 
 /**
@@ -3395,7 +3399,7 @@ async function addSDGenButtons() {
     $(document).on('click touchend', function (e) {
         const target = $(e.target);
         if (target.is(dropdown) || target.closest(dropdown).length) return;
-        if (target.is(button) && !dropdown.is(':visible') && $('#send_but').is(':visible')) {
+        if ((target.is(button) || target.closest(button).length) && !dropdown.is(':visible') && $('#send_but').is(':visible')) {
             e.preventDefault();
 
             dropdown.fadeIn(animation_duration);
@@ -3425,6 +3429,10 @@ async function addSDGenButtons() {
             generatePicture(initiators.wand, {}, param);
         }
     });
+
+    const stopGenButton = $('#sd_stop_gen');
+    stopGenButton.hide();
+    stopGenButton.on('click', () => eventSource.emit(CUSTOM_STOP_EVENT));
 }
 
 function isValidState() {

@@ -2802,23 +2802,26 @@
                             <div>
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
-                                    <optgroup label="Latest">
-                                        <!-- Doesn't work without "latest". Maybe my key is scuffed? -->
-                                        <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
-                                        <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro</option>
-                                        <!-- Points to 1.0, no default 1.5 endpoint -->
-                                        <option value="gemini-pro">Gemini Pro</option>
-                                        <option value="gemini-pro-vision">Gemini Pro Vision</option>
-                                        <option value="gemini-ultra">Gemini Ultra</option>
-                                        <option value="text-bison-001">Bison Text</option>
-                                        <option value="chat-bison-001">Bison Chat</option>
-                                    </optgroup>
-                                    <optgroup label="Sub-versions">
-                                        <option value="gemini-1.5-pro-exp-0801">Gemini 1.5 Pro Experiment 2024-08-01</option>
-                                        <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro</option>
-                                        <option value="gemini-1.0-pro-latest">Gemini 1.0 Pro</option>
-                                        <option value="gemini-1.0-pro-vision-latest">Gemini 1.0 Pro Vision</option>
+                                    <optgroup label="Primary">
+                                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                                        <option value="gemini-1.0-pro">Gemini 1.0 Pro</option>
+                                        <option value="gemini-pro">Gemini Pro (1.0)</option>
+                                        <option value="gemini-pro-vision">Gemini Pro Vision (1.0)</option>
+                                        <option value="gemini-ultra">Gemini Ultra (1.0)</option>
                                         <option value="gemini-1.0-ultra-latest">Gemini 1.0 Ultra</option>
+                                        <option value="text-bison-001">PaLM 2 (Legacy)</option>
+                                        <option value="chat-bison-001">PaLM 2 Chat (Legacy)</option>
+                                    </optgroup>
+                                    <optgroup label="Subversions">
+                                        <option value="gemini-1.5-pro-exp-0801">Gemini 1.5 Pro Experiment 2024-08-01</option>
+                                        <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro [latest]</option>
+                                        <option value="gemini-1.5-pro-001">Gemini 1.5 Pro [001]</option>
+                                        <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash [latest]</option>
+                                        <option value="gemini-1.5-flash-001">Gemini 1.5 Flash [001]</option>
+                                        <option value="gemini-1.0-pro-latest">Gemini 1.0 Pro [latest]</option>
+                                        <option value="gemini-1.0-pro-001">Gemini 1.0 Pro (Tuning) [001]</option>
+                                        <option value="gemini-1.0-pro-vision-latest">Gemini 1.0 Pro Vision [latest]</option>
                                     </optgroup>
                                 </select>
                             </div>
@@ -4072,21 +4075,23 @@
                                 <input id="restore_user_input" type="checkbox" />
                                 <small data-i18n="Restore User Input">Restore User Input</small>
                             </label>
-                            <label data-newbie-hidden id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label" title="Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile." data-i18n="[title]Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile">
-                                <input id="movingUImode" type="checkbox" />
-                                <small data-i18n="Movable UI Panels">MovingUI&nbsp;<i class="fa-solid fa-desktop"></i></small>
-                            </label>
+                            <div class="flex-container alignItemsCenter">
+                                <label data-newbie-hidden id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label" title="Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile." data-i18n="[title]Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile">
+                                    <input id="movingUImode" type="checkbox" />
+                                    <small data-i18n="Movable UI Panels">MovingUI&nbsp;<i class="fa-solid fa-desktop"></i></small>
+                                </label>
+                                <div data-newbie-hidden id="movingUIreset" title="Reset MovingUI panel sizes/locations." class="menu_button margin0" data-i18n="[title]Reset MovingUI panel sizes/locations."><i class=" fa-solid fa-recycle margin-r5"></i> Reset</div>
+                            </div>
                             <div data-newbie-hidden id="MovingUI-presets-block" class="flex-container alignitemscenter">
                                 <div class="flex-container alignItemsFlexEnd">
                                     <label for="movingUIPresets" title="MovingUI preset. Predefined/saved draggable positions." data-i18n="[title]MovingUI preset. Predefined/saved draggable positions">
-                                        <small data-i18n="MUI Preset">MUI Preset:</small>
+                                        <small data-i18n="MUI Preset">MovingUI Preset:</small>
                                         <div class="flex-container flexnowrap">
                                             <select id="movingUIPresets" class="widthNatural flex1 margin0">
                                             </select>
                                         </div>
                                     </label>
                                     <div id="movingui-preset-save-button" title="Save changes to a new MovingUI preset file." data-i18n="[title]Save movingUI changes to a new file" class="menu_button margin0 fa-solid fa-save"></div>
-                                    <div data-newbie-hidden id="movingUIreset" title="Reset MovingUI panel sizes/locations." class="menu_button fa-solid fa-recycle margin0" data-i18n="[title]Reset MovingUI panel sizes/locations."></div>
                                 </div>
                             </div>
                             <div data-newbie-hidden id="CustomCSS-block" class="flex-container flexFlowColumn">
@@ -4156,6 +4161,12 @@
                                     <input id="quick_continue" type="checkbox" />
                                     <small data-i18n="Quick 'Continue' button">
                                         Quick "Continue" button
+                                    </small>
+                                </label>
+                                <label class="checkbox_label" for="quick_impersonate" title="Show a button in the input area to ask the AI to impersonate your character for a single message." data-i18n="[title]Show a button in the input area to ask the AI to impersonate your character for a single message">
+                                    <input id="quick_impersonate" type="checkbox" />
+                                    <small data-i18n="Quick 'Impersonate' button">
+                                        Quick "Impersonate" button
                                     </small>
                                 </label>
                                 <div class="checkbox-container flex-container">
@@ -5835,6 +5846,7 @@
                     Enable simple UI mode
                 </span>
             </label>
+            <div class="expander"></div>
             <div class="textAlignCenter">
                 <h3 data-i18n="Looking for AI characters?">
                     Looking for AI characters?
@@ -5853,6 +5865,7 @@
                     </span>
                 </span>
             </div>
+            <div class="expander"></div>
             <h3 data-i18n="Your Persona">
                 Your Persona
             </h3>
@@ -6366,6 +6379,7 @@
                         <div id="mes_stop" title="Abort request" class="mes_stop" data-i18n="[title]Abort request">
                             <i class="fa-solid fa-circle-stop"></i>
                         </div>
+                        <div id="mes_impersonate" class="fa-solid fa-user-secret interactable displayNone" title="Ask AI to write your message for you" data-i18n="[title]Ask AI to write your message for you" tabindex="0"></div>
                         <div id="mes_continue" class="fa-fw fa-solid fa-arrow-right interactable displayNone" title="Continue the last message" data-i18n="[title]Continue the last message"></div>
                         <div id="send_but" class="fa-solid fa-paper-plane interactable displayNone" title="Send a message" data-i18n="[title]Send a message"></div>
                     </div>

@@ -197,6 +197,7 @@ let power_user = {
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
     quick_continue: false,
+    quick_impersonate: false,
     continue_on_send: false,
     trim_spaces: true,
     relaxed_api_urls: false,
@@ -1029,6 +1030,12 @@ function switchMovingUI() {
         if (power_user.movingUIState) {
             loadMovingUIState();
         }
+    } else {
+        if (Object.keys(power_user.movingUIState).length !== 0) {
+            power_user.movingUIState = {};
+            resetMovablePanels();
+            saveSettingsDebounced();
+        }
     }
 }
 
@@ -1473,7 +1480,7 @@ function getExampleMessagesBehavior() {
     return 'normal';
 }
 
-function loadPowerUserSettings(settings, data) {
+async function loadPowerUserSettings(settings, data) {
     const defaultStscript = JSON.parse(JSON.stringify(power_user.stscript));
     // Load from settings.json
     if (settings.power_user !== undefined) {
@@ -1592,7 +1599,9 @@ function loadPowerUserSettings(settings, data) {
     $('#trim_spaces').prop('checked', power_user.trim_spaces);
     $('#continue_on_send').prop('checked', power_user.continue_on_send);
     $('#quick_continue').prop('checked', power_user.quick_continue);
+    $('#quick_impersonate').prop('checked', power_user.quick_continue);
     $('#mes_continue').css('display', power_user.quick_continue ? '' : 'none');
+    $('#mes_impersonate').css('display', power_user.quick_impersonate ? '' : 'none');
     $('#gestures-checkbox').prop('checked', power_user.gestures);
     $('#auto_swipe').prop('checked', power_user.auto_swipe);
     $('#auto_swipe_minimum_length').val(power_user.auto_swipe_minimum_length);
@@ -1731,7 +1740,7 @@ function loadPowerUserSettings(settings, data) {
     switchCompactInputArea();
     reloadMarkdownProcessor(power_user.render_formulas);
     loadInstructMode(data);
-    loadContextSettings();
+    await loadContextSettings();
     loadMaxContextUnlocked();
     switchWaifuMode();
     switchSpoilerMode();
@@ -1863,7 +1872,7 @@ function getContextSettings() {
 
 // TODO: Maybe add a refresh button to reset settings to preset
 // TODO: Add "global state" if a preset doesn't set the power_user checkboxes
-function loadContextSettings() {
+async function loadContextSettings() {
     contextControls.forEach(control => {
         const $element = $(`#${control.id}`);
 
@@ -1883,7 +1892,7 @@ function loadContextSettings() {
 
         // If the setting already exists, no need to duplicate it
         // TODO: Maybe check the power_user object for the setting instead of a flag?
-        $element.on('input', function () {
+        $element.on('input', async function () {
             const value = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
             if (control.isGlobalSetting) {
                 power_user[control.property] = value;
@@ -1893,7 +1902,7 @@ function loadContextSettings() {
 
             saveSettingsDebounced();
             if (!control.isCheckbox) {
-                resetScrollHeight($element);
+                await resetScrollHeight($element);
             }
         });
     });
@@ -3736,6 +3745,13 @@ $(document).ready(() => {
         const value = !!$(this).prop('checked');
         power_user.quick_continue = value;
         $('#mes_continue').css('display', value ? '' : 'none');
+        saveSettingsDebounced();
+    });
+
+    $('#quick_impersonate').on('input', function () {
+        const value = !!$(this).prop('checked');
+        power_user.quick_impersonate = value;
+        $('#mes_impersonate').css('display', value ? '' : 'none');
         saveSettingsDebounced();
     });
 

@@ -5625,6 +5625,7 @@ export function activateSendButtons() {
     is_send_press = false;
     $('#send_but').removeClass('displayNone');
     $('#mes_continue').removeClass('displayNone');
+    $('#mes_impersonate').removeClass('displayNone');
     $('.mes_buttons:last').show();
     hideStopButton();
 }
@@ -5632,6 +5633,7 @@ export function activateSendButtons() {
 export function deactivateSendButtons() {
     $('#send_but').addClass('displayNone');
     $('#mes_continue').addClass('displayNone');
+    $('#mes_impersonate').addClass('displayNone');
     showStopButton();
 }
 
@@ -6422,7 +6424,7 @@ export async function getSettings() {
         loadHordeSettings(settings);
 
         // Load power user settings
-        loadPowerUserSettings(settings, data);
+        await loadPowerUserSettings(settings, data);
 
         // Load character tags
         loadTagsSettings(settings);
@@ -9112,14 +9114,14 @@ jQuery(async function () {
     $('#send_textarea').on('focusin focus click', () => {
         S_TAPreviouslyFocused = true;
     });
-    $('#send_but, #option_regenerate, #option_continue, #mes_continue').on('click', () => {
+    $('#send_but, #option_regenerate, #option_continue, #mes_continue, #mes_impersonate').on('click', () => {
         if (S_TAPreviouslyFocused) {
             $('#send_textarea').focus();
         }
     });
     $(document).click(event => {
         if ($(':focus').attr('id') !== 'send_textarea') {
-            var validIDs = ['options_button', 'send_but', 'mes_continue', 'send_textarea', 'option_regenerate', 'option_continue'];
+            var validIDs = ['options_button', 'send_but', 'mes_impersonate', 'mes_continue', 'send_textarea', 'option_regenerate', 'option_continue'];
             if (!validIDs.includes($(event.target).attr('id'))) {
                 S_TAPreviouslyFocused = false;
             }
@@ -9155,6 +9157,9 @@ jQuery(async function () {
         debouncedCharacterSearch(searchQuery);
     });
 
+    $('#mes_impersonate').on('click', function () {
+        $('#option_impersonate').trigger('click');
+    });
 
     $('#mes_continue').on('click', function () {
         $('#option_continue').trigger('click');
@@ -10452,8 +10457,9 @@ jQuery(async function () {
             }
 
             // Set the height of "autoSetHeight" textareas within the drawer to their scroll height
-            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(function () {
-                resetScrollHeight($(this));
+            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(async function () {
+                await resetScrollHeight($(this));
+                return;
             });
 
         } else if (drawerWasOpenAlready) { //to close manually
@@ -10526,8 +10532,9 @@ jQuery(async function () {
         $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
 
         // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
-        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(function () {
-            resetScrollHeight($(this));
+        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(async function () {
+            await resetScrollHeight($(this));
+            return;
         });
     });
 
