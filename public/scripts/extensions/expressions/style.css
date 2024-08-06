@@ -14,7 +14,7 @@ body.hLetterBox #visual-novel-letterbox-one {
     width: 100vw;
     height: calc(0vh + var(--letterboxSize));
     top: 0;
-    position: fixed;
+    position: absolute;
     background-color: var(--SmartThemeChatLetterboxColor);
     z-index: 3;
     justify-content: center;
@@ -24,7 +24,7 @@ body.hLetterBox #visual-novel-letterbox-two {
     width: 100vw;
     height: calc(0vh + var(--letterboxSize));
     bottom: 0;
-    position: fixed;
+    position: absolute;
     background-color: var(--SmartThemeChatLetterboxColor);
     z-index: 3;
     justify-content: center;
