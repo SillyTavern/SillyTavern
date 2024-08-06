@@ -602,7 +602,6 @@
     "Remove text shadow effect": "Supprimer l'effet d'ombre du texte",
     "No Text Shadows": "Pas d'ombres de texte",
     "Reduce chat height, and put a static sprite behind the chat window": "Réduire la hauteur de la discussion et placer un sprite statique derrière la fenêtre de discussion",
-    "Waifu Mode": "Mode Waifu",
     "Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'": "Afficher toujours la liste complète des éléments de contexte Actions de message pour les messages de discussion, au lieu de les cacher derrière '...' ",
     "Auto-Expand Message Actions": "Extension automatique des actions de message",
     "Alternative UI for numeric sampling parameters with fewer steps": "Interface utilisateur alternative pour les paramètres d'échantillonnage numérique avec moins d'étapes",
@@ -1450,5 +1449,11 @@
     "Still have questions?": "Vous avez encore des questions ?",
     "Join the SillyTavern Discord": "Rejoignez le Discord de SillyTavern",
     "Post a GitHub issue": "Poster un problème sur GitHub",
-    "Contact the developers": "Contacter les développeurs"
+    "Contact the developers": "Contacter les développeurs",
+    "Chat Mode:": "Mode de chat:",
+    "Visual Novel": "Roman visuel",
+    "Visual Novel with Vertical Letterbox": "Roman visuel avec boîte aux lettres verticale",
+    "Visual Novel with Horizontal Letterbox": "Roman visuel avec boîte aux lettres horizontale",
+    "Chat Letterbox": "Boîte aux lettres de chat",
+    "Letterbox Size": "Taille de la boîte aux lettres"
 }
