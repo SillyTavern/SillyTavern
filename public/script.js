@@ -225,7 +225,7 @@ import {
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
+import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels, initTextGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { MacrosParser, evaluateMacros, getLastMessageId } from './scripts/macros.js';
@@ -912,6 +912,7 @@ async function firstLoadInit() {
     await readSecretState();
     initLocales();
     initDefaultSlashCommands();
+    initTextGenModels();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     await getSettings();

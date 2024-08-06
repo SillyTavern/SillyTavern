@@ -618,7 +618,7 @@ export function getCurrentDreamGenModelTokenizer() {
     }
 }
 
-jQuery(function () {
+export function initTextGenModels() {
     $('#mancer_model').on('change', onMancerModelSelect);
     $('#model_togetherai_select').on('change', onTogetherModelSelect);
     $('#model_infermaticai_select').on('change', onInfermaticAIModelSelect);
@@ -718,4 +718,4 @@ jQuery(function () {
             $(this).trigger('change');
         });
     }
-});
+}
