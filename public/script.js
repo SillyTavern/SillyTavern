@@ -84,6 +84,7 @@ import {
     context_presets,
     resetMovableStyles,
     forceCharacterEditorTokenize,
+    chat_modes,
 } from './scripts/power-user.js';
 
 import {
@@ -2377,7 +2378,7 @@ export function scrollChatToBottom() {
     if (power_user.auto_scroll_chat_to_bottom) {
         let position = chatElement[0].scrollHeight;
 
-        if (power_user.waifuMode) {
+        if (power_user.chat_mode == chat_modes.VN || power_user.chat_mode == chat_modes.VN_H || power_user.chat_mode == chat_modes.VN_V) {
             const lastMessage = chatElement.find('.mes').last();
             if (lastMessage.length) {
                 const lastMessagePosition = lastMessage.position().top;
@@ -9229,7 +9230,7 @@ jQuery(async function () {
     });
     const chatElementScroll = document.getElementById('chat');
     const chatScrollHandler = function () {
-        if (power_user.waifuMode) {
+        if (power_user.chat_mode == chat_modes.VN || power_user.chat_mode == chat_modes.VN_H || power_user.chat_mode == chat_modes.VN_V) {
             scrollLock = true;
             return;
         }
