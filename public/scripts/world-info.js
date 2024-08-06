@@ -17,6 +17,7 @@ import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCom
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from './popup.js';
 import { StructuredCloneMap } from './util/StructuredCloneMap.js';
+import { renderTemplateAsync } from './templates.js';
 
 export const world_info_insertion_strategy = {
     evenly: 0,
@@ -1854,27 +1855,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
             worldEntriesList.find('*').off();
             worldEntriesList.empty();
 
-            const keywordHeaders = `
-            <div id="WIEntryHeaderTitlesPC" class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding:0 4.5em;">
-            <small class="flex1">
-            Title/Memo
-        </small>
-                <small style="width: calc(3.5em + 15px)">
-                    Status
-                </small>
-                <small style="width: calc(3.5em + 30px)">
-                    Position
-                </small>
-                <small style="width: calc(3.5em + 20px)">
-                    Depth
-                </small>
-                <small style="width: calc(3.5em + 20px)">
-                    Order
-                </small>
-                <small style="width: calc(3.5em + 15px)">
-                    Trigger %
-                </small>
-            </div>`;
+            const keywordHeaders = await renderTemplateAsync('worldInfoKeywordHeaders');
             const blocksPromises = page.map(async (entry) => await getWorldEntry(name, data, entry)).filter(x => x);
             const blocks = await Promise.all(blocksPromises);
             const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
