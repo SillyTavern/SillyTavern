@@ -1450,5 +1450,12 @@
     "Still have questions?": "¿Todavía tienes preguntas?",
     "Join the SillyTavern Discord": "Únete al Discord de SillyTavern",
     "Post a GitHub issue": "Publicar un problema en GitHub",
-    "Contact the developers": "Contactar a los desarrolladores"
+    "Contact the developers": "Contactar a los desarrolladores",
+    "Chat Mode:": "Modo de chat:",
+    "Visual Novel (VN)": "Novela visual",
+    "VN w/ Horizontal Letterbox": "Novela visual con mattes horizontales",
+    "VN w/ Vertical Letterbox": "Novela visual con mattes verticales",
+    "Letterbox Size": "Tamaño de mattes",
+    "Chat Letterbox": "Color de mattes",
+    "Adjusts the size of the letterbox": "Ajusta el tamaño de los mattes"
 }
