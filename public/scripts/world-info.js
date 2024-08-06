@@ -770,6 +770,13 @@ export async function getWorldInfoPrompt(chat, maxContext, isDryRun) {
     };
 }
 
+/**
+ * Sets the world info settings based on the provided settings object and data object.
+ *
+ * @param {Object} settings - The settings object containing the world info settings.
+ * @param {Object} data - The data object containing the world names.
+ * @return {void} This function does not return a value.
+ */
 export function setWorldInfoSettings(settings, data) {
     if (settings.world_info_depth !== undefined)
         world_info_depth = Number(settings.world_info_depth);
@@ -1606,6 +1613,13 @@ export async function loadWorldInfo(name) {
     return null;
 }
 
+/**
+ * Updates the list of world names by fetching the data from the '/api/settings/get' endpoint.
+ * Removes all existing options from the '#world_info' and '#world_editor_select' elements and
+ * appends new options with the updated world names.
+ *
+ * @return {Promise<void>} A promise that resolves when the list is successfully updated.
+ */
 async function updateWorldInfoList() {
     const result = await fetch('/api/settings/get', {
         method: 'POST',
@@ -1626,10 +1640,21 @@ async function updateWorldInfoList() {
     }
 }
 
+/**
+ * Hides the world editor by calling the `displayWorldEntries` function with `null` values for the `name` and `data` parameters.
+ *
+ * @return {void} This function does not return anything.
+ */
 function hideWorldEditor() {
     displayWorldEntries(null, null);
 }
 
+/**
+ * Retrieves a jQuery element from the '#world_info' container that matches the given name.
+ *
+ * @param {string} name - The name of the element to retrieve.
+ * @return {JQuery<HTMLElement>} The jQuery element that matches the given name, or an empty jQuery object if no match is found.
+ */
 function getWIElement(name) {
     const wiElement = $('#world_info').children().filter(function () {
         return $(this).text().toLowerCase() === name.toLowerCase();
@@ -1713,12 +1738,26 @@ export function sortWorldInfoEntries(data, { customSort = null } = {}) {
     return data;
 }
 
+/**
+ * Displays an informational toast message indicating that a new World Info file needs to be created or imported.
+ *
+ * @return {void} This function does not return anything.
+ */
 function nullWorldInfo() {
     toastr.info('Create or import a new World Info file first.', 'World Info is not set', { timeOut: 10000, preventDuplicates: true });
 }
 
 /** @type {Select2Option[]} Cache all keys as selectable dropdown option */
 const worldEntryKeyOptionsCache = [];
+/**
+ * Charge the UI Element of WI entries
+ * @type {{
+ *  [key: string]: {
+ *   [key: number]: JQuery<HTMLElement>
+ *  }
+ * }}
+ */
+const worldEntryUIElementCache = {};
 
 /**
  * Update the cache and all select options for the keys with new values to display
@@ -1748,6 +1787,15 @@ function updateWorldEntryKeyOptionsCache(keyOptions, { remove = false, reset = f
     worldEntryKeyOptionsCache.sort((a, b) => b.count - a.count || a.text.localeCompare(b.text));
 }
 
+/**
+ * Displays the world entries in the UI, including pagination and various controls.
+ *
+ * @param {string} name - The name of the world.
+ * @param {object} data - The data object containing the world entries.
+ * @param {object} [navigation=navigation_option.none] - The navigation option to determine the starting page.
+ * @param {boolean} [flashOnNav=true] - Whether to flash the highlighted entry when navigating.
+ * @return {void}
+ */
 function displayWorldEntries(name, data, navigation = navigation_option.none, flashOnNav = true) {
     updateEditor = (navigation, flashOnNav = true) => displayWorldEntries(name, data, navigation, flashOnNav);
 
@@ -1875,6 +1923,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
                     Trigger %
                 </small>
             </div>`;
+            worldEntryUIElementCache[name] ??= {};
             const blocksPromises = page.map(async (entry) => await getWorldEntry(name, data, entry)).filter(x => x);
             const blocks = await Promise.all(blocksPromises);
             const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
@@ -2276,17 +2325,29 @@ export function parseRegexFromString(input) {
     }
 }
 
+/**
+ * Asynchronously gets a world entry and its data, and builds a UI element for it.
+ *
+ * @param {string} name - The name of the world.
+ * @param {object} data - The data object containing the world entries.
+ * @param {object} entry - The specific entry to build the UI element for.
+ * @return {Promise<JQuery<HTMLElement>>} A Promise that resolves to a jQuery object representing the UI element for the entry.
+ */
 async function getWorldEntry(name, data, entry) {
     if (!data.entries[entry.uid]) {
         return;
     }
+    const UIElementCache = worldEntryUIElementCache[name];
+    if (UIElementCache[entry.uid]) {
+        return UIElementCache[entry.uid];
+    }
 
-    const template = WI_ENTRY_EDIT_TEMPLATE.clone();
+    const template = UIElementCache[entry.uid] = WI_ENTRY_EDIT_TEMPLATE.clone();
     template.data('uid', entry.uid);
     template.attr('uid', entry.uid);
 
     // Init default state of WI Key toggle (=> true)
-    if (typeof power_user.wi_key_input_plaintext === 'undefined') power_user.wi_key_input_plaintext = true;
+    power_user.wi_key_input_plaintext ??= true;
 
     /** Function to build the keys input controls @param {string} entryPropName @param {string} originalDataValueName */
     function enableKeysInput(entryPropName, originalDataValueName) {
@@ -3016,6 +3077,7 @@ async function getWorldEntry(name, data, entry) {
         const uid = $(this).data('uid');
         const deleted = await deleteWorldInfoEntry(data, uid);
         if (!deleted) return;
+        delete UIElementCache[uid];
         deleteWIOriginalDataValue(data, uid);
         await saveWorldInfo(name, data);
         updateEditor(navigation_option.previous);
@@ -3158,6 +3220,14 @@ function getInclusionGroupCallback(data) {
     };
 }
 
+/**
+ * Returns a callback function that generates a list of automation IDs based on the provided data.
+ *
+ * @param {Object} data - The data object containing entries.
+ * @return {Function} The callback function that takes control, input, and output as parameters.
+ *                    The function filters the automation IDs from the data entries and the quickReplyApi,
+ *                    if available, and returns a sorted list of matching automation IDs.
+ */
 function getAutomationIdCallback(data) {
     return function (control, input, output) {
         const uid = $(control).data('uid');
@@ -3335,6 +3405,13 @@ export function createWorldInfoEntry(_name, data) {
     return newEntry;
 }
 
+/**
+ * Prevents double saving and updates the world info data on the server.
+ *
+ * @param {string} name - The name of the world info entry.
+ * @param {any} data - The data to be saved for the world info entry.
+ * @return {Promise<void>} A promise that resolves after the data is successfully saved.
+ */
 async function _save(name, data) {
     // Prevent double saving if both immediate and debounced save are called
     cancelDebounce(saveWorldDebounced);
@@ -3376,6 +3453,13 @@ export async function saveWorldInfo(name, data, immediately = false) {
     saveWorldDebounced(name, data);
 }
 
+/**
+ * Renames the world info.
+ *
+ * @param {string} name - The current name of the world info.
+ * @param {any} data - The data associated with the world info.
+ * @return {Promise<void>} A promise that resolves when the world info is renamed.
+ */
 async function renameWorldInfo(name, data) {
     const oldName = name;
     const newName = await Popup.show.input('Rename World Info', 'Enter a new name:', oldName);
@@ -3385,6 +3469,7 @@ async function renameWorldInfo(name, data) {
         return;
     }
 
+    delete worldEntryUIElementCache[name]; // We can't move a cached entry because it's deeply bound to name
     const entryPreviouslySelected = selected_world_info.findIndex((e) => e === oldName);
 
     await saveWorldInfo(newName, data, true);
@@ -3433,6 +3518,7 @@ export async function deleteWorldInfo(worldInfoName) {
         return false;
     }
 
+    delete worldEntryUIElementCache[worldInfoName];
     const existingWorldIndex = selected_world_info.findIndex((e) => e === worldInfoName);
     if (existingWorldIndex !== -1) {
         selected_world_info.splice(existingWorldIndex, 1);
@@ -3453,6 +3539,12 @@ export async function deleteWorldInfo(worldInfoName) {
     return true;
 }
 
+/**
+ * Returns a unique identifier (UID) that is not already in use in the given data object.
+ *
+ * @param {Object} data - The data object containing entries.
+ * @return {number|null} The first available UID or null if no UID is available.
+ */
 export function getFreeWorldEntryUid(data) {
     if (!data || !('entries' in data)) {
         return null;
@@ -3469,6 +3561,11 @@ export function getFreeWorldEntryUid(data) {
     return null;
 }
 
+/**
+ * Generates a unique name for a new world.
+ *
+ * @return {string|undefined} A new world name that is not already in use, or undefined if no unique name can be found.
+ */
 export function getFreeWorldName() {
     const MAX_FREE_NAME = 100_000;
     for (let index = 1; index < MAX_FREE_NAME; index++) {
@@ -3518,6 +3615,11 @@ export async function createNewWorldInfo(worldName, { interactive = false } = {}
     return true;
 }
 
+/**
+ * Retrieves the lore information for a character.
+ *
+ * @return {Promise<Array<Object>>} An array of lore entries for the character, each containing a unique ID, world name, and rest of the entry data.
+ */
 async function getCharacterLore() {
     const character = characters[this_chid];
     const name = character?.name;
@@ -4275,6 +4377,12 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanSt
     }
 }
 
+/**
+ * Converts an Agnai Memory Book object into a new format.
+ *
+ * @param {Object} inputObj - The input object containing the entries.
+ * @return {Object} The converted output object with entries.
+ */
 function convertAgnaiMemoryBook(inputObj) {
     const outputObj = { entries: {} };
 
@@ -4317,6 +4425,12 @@ function convertAgnaiMemoryBook(inputObj) {
     return outputObj;
 }
 
+/**
+ * Converts a Risu Lorebook object into a new format.
+ *
+ * @param {Object} inputObj - The input object containing the entries.
+ * @return {Object} The converted output object with entries.
+ */
 function convertRisuLorebook(inputObj) {
     const outputObj = { entries: {} };
 
@@ -4359,6 +4473,12 @@ function convertRisuLorebook(inputObj) {
     return outputObj;
 }
 
+/**
+ * Converts a Novel Lorebook object into a new format.
+ *
+ * @param {Object} inputObj - The input object containing the entries.
+ * @return {Object} The converted output object with entries.
+ */
 function convertNovelLorebook(inputObj) {
     const outputObj = {
         entries: {},
@@ -4406,6 +4526,12 @@ function convertNovelLorebook(inputObj) {
     return outputObj;
 }
 
+/**
+ * Converts a character book object to a new format.
+ *
+ * @param {Object} characterBook - The character book object to be converted.
+ * @return {Object} The converted character book object.
+ */
 function convertCharacterBook(characterBook) {
     const result = { entries: {}, originalData: characterBook };
 
@@ -4455,6 +4581,13 @@ function convertCharacterBook(characterBook) {
     return result;
 }
 
+/**
+ * Sets the CSS class of the elements with IDs 'set_character_world' and 'world_button' based on the value of the 'world' property in the 'extensions' object of the character with the given ID. If the 'forceValue' parameter is provided, it sets the class to 'world_set' if 'forceValue' is truthy, and removes the class otherwise. If the 'chid' parameter is falsy, the function does nothing.
+ *
+ * @param {string} chid - The ID of the character.
+ * @param {boolean} [forceValue] - If provided, sets the class to 'world_set' if 'forceValue' is truthy, and removes the class otherwise.
+ * @return {void} This function does not return anything.
+ */
 export function setWorldInfoButtonClass(chid, forceValue = undefined) {
     if (forceValue !== undefined) {
         $('#set_character_world, #world_button').toggleClass('world_set', forceValue);
@@ -4470,6 +4603,12 @@ export function setWorldInfoButtonClass(chid, forceValue = undefined) {
     $('#set_character_world, #world_button').toggleClass('world_set', worldSet);
 }
 
+/**
+ * Checks if the character with the given ID has an embedded world/lorebook. If it does, displays an alert or a popup to import the embedded world/lorebook.
+ *
+ * @param {string} chid - The ID of the character to check.
+ * @return {boolean} Returns true if the character has an embedded world/lorebook, false otherwise.
+ */
 export function checkEmbeddedWorld(chid) {
     $('#import_character_info').hide();
 
@@ -4511,6 +4650,12 @@ export function checkEmbeddedWorld(chid) {
     return false;
 }
 
+/**
+ * Imports the embedded world information for a character.
+ *
+ * @param {boolean} skipPopup - Whether to skip the confirmation popup.
+ * @return {Promise<void>} A promise that resolves when the import is complete.
+ */
 export async function importEmbeddedWorldInfo(skipPopup = false) {
     const chid = $('#import_character_info').data('chid');
 
@@ -4546,6 +4691,13 @@ export async function importEmbeddedWorldInfo(skipPopup = false) {
     setWorldInfoButtonClass(chid, true);
 }
 
+/**
+ * Handles the change event for the world info.
+ *
+ * @param {Object} args - The arguments for the event.
+ * @param {string} text - The text entered by the user.
+ * @return {string} An empty string.
+ */
 export function onWorldInfoChange(args, text) {
     if (args !== '__notSlashCommand__') { // if it's a slash command
         const silent = isTrueBoolean(args.silent);
@@ -4620,6 +4772,12 @@ export function onWorldInfoChange(args, text) {
     return '';
 }
 
+/**
+ * Imports world information from a file.
+ *
+ * @param {File} file - The file containing the world information.
+ * @return {Promise<boolean>} A promise that resolves to true if the import is successful, false otherwise.
+ */
 export async function importWorldInfo(file) {
     if (!file) {
         return;
@@ -4697,6 +4855,11 @@ export async function importWorldInfo(file) {
     });
 }
 
+/**
+ * Assigns a lorebook to the current chat.
+ *
+ * @return {void} This function does not return anything.
+ */
 export function assignLorebookToChat() {
     const selectedName = chat_metadata[METADATA_KEY];
     const template = $('#chat_world_template .chat_world').clone();
