@@ -602,7 +602,7 @@
     "Remove text shadow effect": "Видалити тінь тексту",
     "No Text Shadows": "Без тіней тексту",
     "Reduce chat height, and put a static sprite behind the chat window": "Зменшити висоту чату та розмістити статичний спрайт за вікном чату",
-    "Waifu Mode": "Режим візуальної новели",
+    
     "Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'": "Завжди показувати повний список контекстних дій для повідомлень чату, а не приховувати їх за '...' ",
     "Auto-Expand Message Actions": "Автоматично розгортати дії повідомлень",
     "Alternative UI for numeric sampling parameters with fewer steps": "Альтернативний інтерфейс для числових параметрів вибірки з меншою кількістю кроків",

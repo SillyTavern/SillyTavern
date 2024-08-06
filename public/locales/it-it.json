@@ -602,7 +602,7 @@
     "Remove text shadow effect": "Rimuovi effetto ombra del testo",
     "No Text Shadows": "Nessuna ombra di testo",
     "Reduce chat height, and put a static sprite behind the chat window": "Riduci l'altezza della chat e metti uno sprite statico dietro la finestra della chat",
-    "Waifu Mode": "Modalità Waifu",
+    
     "Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'": "Mostra sempre l'elenco completo degli elementi di contesto delle Azioni Messaggio per i messaggi della chat, invece di nasconderli dietro '...'",
     "Auto-Expand Message Actions": "Espandi Automaticamente le Azioni Messaggio",
     "Alternative UI for numeric sampling parameters with fewer steps": "UI alternativa per i parametri di campionamento numerico con meno passaggi",

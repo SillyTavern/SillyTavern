@@ -602,7 +602,7 @@
     "Remove text shadow effect": "Loại bỏ hiệu ứng bóng đèn văn bản",
     "No Text Shadows": "Không có bóng văn bản",
     "Reduce chat height, and put a static sprite behind the chat window": "Giảm chiều cao của cuộc trò chuyện và đặt một sprite tĩnh phía sau cửa sổ trò chuyện",
-    "Waifu Mode": "Chế độ Waifu",
+    
     "Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'": "Luôn hiển thị danh sách đầy đủ các mục ngữ cảnh Hành động Tin nhắn cho các tin nhắn trò chuyện, thay vì ẩn chúng sau '...'",
     "Auto-Expand Message Actions": "Tự động mở rộng Hành động Tin nhắn",
     "Alternative UI for numeric sampling parameters with fewer steps": "Giao diện người dùng thay thế cho các tham số mẫu số học với ít bước hơn",

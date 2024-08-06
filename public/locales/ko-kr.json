@@ -602,7 +602,7 @@
     "Remove text shadow effect": "텍스트 그림자 효과 제거",
     "No Text Shadows": "텍스트 그림자 없음",
     "Reduce chat height, and put a static sprite behind the chat window": "채팅 높이를 줄이고, 채팅 창 뒤에 정적 스프라이트를 넣습니다",
-    "Waifu Mode": "와이프 모드",
+    
     "Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'": "채팅 메시지의 메시지 액션 컨텍스트 항목의 전체 목록을 항상 표시하십시오. 대신 '...' 뒤에 숨기지 않습니다.",
     "Auto-Expand Message Actions": "메시지 액션 자동 확장",
     "Alternative UI for numeric sampling parameters with fewer steps": "단계가 적은 숫자 샘플링 매개변수에 대한 대체 UI",

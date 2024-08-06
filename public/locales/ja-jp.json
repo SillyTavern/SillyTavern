@@ -602,7 +602,7 @@
     "Remove text shadow effect": "テキストの影の効果を削除する",
     "No Text Shadows": "テキストシャドウなし",
     "Reduce chat height, and put a static sprite behind the chat window": "チャットの高さを縮小し、チャットウィンドウの背後に静的なスプライトを配置する",
-    "Waifu Mode": "ワイフモード",
+    
     "Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'": "チャットメッセージのメッセージアクションコンテキスト項目の完全なリストを常に表示し、それらを '...' の後ろに隠す代わりに",
     "Auto-Expand Message Actions": "メッセージアクションを自動展開する",
     "Alternative UI for numeric sampling parameters with fewer steps": "より少ないステップで数値サンプリングパラメーターの代替UI",

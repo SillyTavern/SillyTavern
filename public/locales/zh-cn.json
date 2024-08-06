@@ -635,7 +635,7 @@
     "Remove text shadow effect": "移除文本阴影效果",
     "No Text Shadows": "禁用文本阴影",
     "Reduce chat height, and put a static sprite behind the chat window": "缩小聊天窗口的高度，并在聊天窗口后面放置一个固定的表情图。",
-    "Waifu Mode": "视觉小说模式",
+    
     "Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'": "始终显示聊天消息的操作菜单完整列表，而不是将它们隐藏在“...”后面",
     "Auto-Expand Message Actions": "自动展开消息操作菜单",
     "Alternative UI for numeric sampling parameters with fewer steps": "为数字采样参数提供一个步骤更少的替代用户界面。",

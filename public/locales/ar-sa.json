@@ -602,7 +602,7 @@
     "Remove text shadow effect": "إزالة تأثير الظل النصي",
     "No Text Shadows": "عدم وجود ظلال للنص",
     "Reduce chat height, and put a static sprite behind the chat window": "تقليل ارتفاع الدردشة ووضع صورة ثابتة خلف نافذة الدردشة",
-    "Waifu Mode": "وضع الوايفو",
+    
     "Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'": "إظهار دائمًا القائمة الكاملة لبنود سياق إجراءات الرسائل لرسائل الدردشة بدلاً من إخفائها خلف '...' ",
     "Auto-Expand Message Actions": "توسيع إجراءات الرسالة تلقائيًا",
     "Alternative UI for numeric sampling parameters with fewer steps": "واجهة مستخدم بديلة لمعلمات العينات الرقمية بعدد أقل من الخطوات",
