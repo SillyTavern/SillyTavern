@@ -3048,6 +3048,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.names_behavior = settings.names_behavior ?? default_settings.names_behavior;
     oai_settings.continue_postfix = settings.continue_postfix ?? default_settings.continue_postfix;
     oai_settings.function_calling = settings.function_calling ?? default_settings.function_calling;
+    oai_settings.openrouter_providers = settings.openrouter_providers ?? default_settings.openrouter_providers;
 
     // Migrate from old settings
     if (settings.names_in_completion === true) {
