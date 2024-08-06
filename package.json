@@ -14,7 +14,7 @@
         "csrf-csrf": "^2.2.3",
         "express": "^4.19.2",
         "form-data": "^4.0.0",
-        "google-translate-api-browser": "^3.0.1",
+        "google-translate-api-browser": "^5.0.0",
         "he": "^1.2.0",
         "helmet": "^7.1.0",
         "ip-matching": "^2.1.2",

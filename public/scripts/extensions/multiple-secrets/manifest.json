@@ -1,0 +1,10 @@
+{
+    "display_name": "Multiple Secrets",
+    "loading_order": 10,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "author": "@zhongerxll@kakadragonn@咔咔龙",
+    "version": "1.0.0",
+    "homePage": "None"
+}
