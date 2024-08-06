@@ -1855,7 +1855,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
             worldEntriesList.find('*').off();
             worldEntriesList.empty();
 
-            const keywordHeaders = await renderTemplateAsync('WorldInfoKeywordHeaders');
+            const keywordHeaders = await renderTemplateAsync('worldInfoKeywordHeaders');
             const blocksPromises = page.map(async (entry) => await getWorldEntry(name, data, entry)).filter(x => x);
             const blocks = await Promise.all(blocksPromises);
             const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
