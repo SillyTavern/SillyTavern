@@ -1076,36 +1076,10 @@ function applyChatMode() {
     console.debug(`poweruser.chat_mode ${power_user.chat_mode}`);
     $('#chat_mode').val(power_user.chat_mode).prop('selected', true);
 
-    switch (power_user.chat_mode) {
-        case 0: {
-            console.log('applying default chat');
-            $('body').toggleClass('waifuMode', false);
-            $('body').toggleClass('hLetterBox', false);
-            $('body').toggleClass('vLetterBox', false);
-            break;
-        }
-        case 1: {
-            console.log('applying vn mode');
-            $('body').toggleClass('waifuMode', true);
-            $('body').toggleClass('hLetterBox', false);
-            $('body').toggleClass('vLetterBox', false);
-            break;
-        }
-        case 2: {
-            console.log('applying vn mode with vertical letterbox');
-            $('body').toggleClass('waifuMode', true);
-            $('body').toggleClass('hLetterBox', false);
-            $('body').toggleClass('vLetterBox', true);
-            break;
-        }
-        case 3: {
-            console.log('applying vn mode with horizontal letterbox');
-            $('body').toggleClass('waifuMode', true);
-            $('body').toggleClass('hLetterBox', true);
-            $('body').toggleClass('vLetterBox', false);
-            break;
-        }
-    }
+    console.log("Applying chat mode: ", Object.entries(chat_modes).find(x => x[1] === power_user.chat_mode))
+    $('body').toggleClass('waifuMode', power_user.chat_mode !== chat_modes.DEFAULT);  
+    $('body').toggleClass('hLetterBox', power_user.chat_mode === chat_modes.VN_V);  
+    $('body').toggleClass('vLetterBox', power_user.chat_mode === chat_modes.VN_H);  
 }
 
 function applyChatDisplay() {
@@ -1635,6 +1609,12 @@ async function loadPowerUserSettings(settings, data) {
 
     if (power_user.chat_mode === '') {
         power_user.chat_mode = chat_modes.DEFAULT;
+    }
+
+    // For backwards compatibility
+    if (power_user.waifu_mode != undefined) {
+        power_user.chat_mode = power_user.waifu_mode ? chat_modes.VN : chat_modes.DEFAULT;
+        delete power_user.waifu_mode;
     }
 
     if (power_user.chat_display === '') {
@@ -4083,35 +4063,39 @@ $(document).ready(() => {
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'chat-mode',
-        /** @type {(args: { mode: string }) => void} */
+        /** @type {(args: { mode: string | undefined }) => void} */
         callback: async (args, _) => {
-            switch (args.mode) {
-                case 'default':
-                    await switchChatMode(chat_modes.DEFAULT);
-                    break;
-                case 'vn':
-                    await switchChatMode(chat_modes.VN);
-                    break;
-                case 'vn_h':
-                    await switchChatMode(chat_modes.VN_H);
-                    break;
-                case 'vn_v':
-                    await switchChatMode(chat_modes.VN_V);
-                    break;
+            if (args.mode != undefined) {
+                switch (args.mode) {
+                    case 'default':
+                        await switchChatMode(chat_modes.DEFAULT);
+                        break;
+                    case 'vn':
+                        await switchChatMode(chat_modes.VN);
+                        break;
+                    case 'vn_h':
+                        await switchChatMode(chat_modes.VN_H);
+                        break;
+                    case 'vn_v':
+                        await switchChatMode(chat_modes.VN_V);
+                        break;
+                    default:
+                        toastr.error(args.mode + ' is not a valid chat mode');
+                        break;
+                }
             }
-            return '';
+            return power_user.chat_mode;
         },
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'mode',
-                description: 'The chat mode to switch to. VN is for Visual Novel mode whilst VN_H and VN_V is VN Mode with horizontal and vertical letterboxes respectively.',
+                description: 'The chat mode to switch to.',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
                 enumList: [
-                    "default",
-                    "vn",
-                    "vn_h",
-                    "vn_v",
+                    new SlashCommandEnumValue("default", "The default chat mode.", enumTypes.namedArgument),
+                    new SlashCommandEnumValue("vn", "Visual Novel mode.", enumTypes.namedArgument),
+                    new SlashCommandEnumValue("vn_h", "Visual Novel mode with horizontal letterbox.", enumTypes.namedArgument),
+                    new SlashCommandEnumValue("vn_v", "Visual Novel mode with vertical letterbox.", enumTypes.namedArgument),
                 ],
             }),
         ],
@@ -4121,7 +4105,7 @@ $(document).ready(() => {
         name: 'vn',
         callback: async () => {
             await switchChatMode(chat_modes.VN);
-            return '';
+            return power_user.chat_mode;
         },
         helpString: '(DEPRECATED) Use `/chat-mode vn` instead. Swaps the chat mode to Visual Novel mode.',
     }));
