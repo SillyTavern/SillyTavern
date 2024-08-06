@@ -708,6 +708,7 @@ export function initTextGenModels() {
             searchInputPlaceholder: 'Search providers...',
             searchInputCssClass: 'text_pole',
             width: '100%',
+            closeOnSelect: false,
         });
         providersSelect.on('select2:select', function (/** @type {any} */ evt) {
             const element = evt.params.data.element;
