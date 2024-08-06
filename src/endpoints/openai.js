@@ -67,7 +67,6 @@ router.post('/caption-image', jsonParser, async (request, response) => {
                     ],
                 },
             ],
-            max_tokens: 500,
             ...bodyParams,
         };
 
