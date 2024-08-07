@@ -148,12 +148,10 @@ const enableAccounts = getConfigValue('enableUserAccounts', DEFAULT_ACCOUNTS);
 
 const uploadsPath = path.join(dataRoot, require('./src/constants').UPLOADS_DIRECTORY);
 
-
 const enableIPv6 = getConfigValue('protocol.ipv6', DEFAULT_ENABLE_IPV6);
 const enableIPv4 = getConfigValue('protocol.ipv4', DEFAULT_ENABLE_IPV4);
 
 const dnsPreferIPv6 = cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', DEFAULT_PREFER_IPV6);
-
 
 if (dnsPreferIPv6) {
     // Set default DNS resolution order to IPv6 first
