@@ -25,7 +25,6 @@ async function switchSecretsFromArray(generationType, _args, isDryRun) {
 }
 
 async function saveSecretsArray() {
-	console.log("保存")
 	const key = "api_key_"+oai_settings.chat_completion_source
 	const value = Array.from(document.querySelectorAll('.api_key_array')).map(input => input.value).filter(item => item.length > 0);
 	await writeSecret(key+"_array", value)
@@ -34,7 +33,6 @@ async function saveSecretsArray() {
 }
 
 function addApiKeyArray(){
-	// console.log($('.api_key_array'))
 	$('#api_key_array_container').append(`
         <div class="flex-container">
             <input name="api_key_array" class="text_pole flex1 api_key_array" maxlength="500" value="" type="text" autocomplete="off" placeholder="Please enter your API key">
