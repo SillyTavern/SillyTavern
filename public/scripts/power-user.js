@@ -3310,8 +3310,8 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#customCSS').on('change', () => {
-        power_user.custom_css = $('#customCSS').val();
+    $('#customCSS').on('input', () => {
+        power_user.custom_css = String($('#customCSS').val());
         localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
         saveSettingsDebounced();
         applyCustomCSS();
