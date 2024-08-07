@@ -851,6 +851,4 @@ userModule.initUserStorage(dataRoot)
     .then(userModule.migrateUserData)
     .then(verifySecuritySettings)
     .then(preSetupTasks)
-    .finally(() => {
-        startServer();
-    });
+    .finally(startServer);
