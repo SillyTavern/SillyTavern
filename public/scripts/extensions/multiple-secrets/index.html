@@ -4,16 +4,24 @@
             <b data-i18n="Auto Switch Secrets">Auto Switch Secrets</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
-
         <div class="inline-drawer-content">
-            <!-- <label class="checkbox_label" for="switch_secrets_enable" title="Enable Auto Switch Secrets"> -->
-                <!-- <input id="switch_secrets_enable" type="checkbox"> -->
-                <!-- <span data-i18n="Enable Auto Switch Secrets">Enable Auto Switch Secrets</span> -->
-            <!-- </label> -->
-            <div class="flex-container">
-                <input id="api_key_array" name="api_key_makersuite" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off" placeholder="">
-                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key-array"></div>
-                <div title="Save your API key" data-i18n="[title]Save your API key" class="menu_button fa-solid fa-save save-api-key-array">
+        	<div id="api_key_array_container">
+                <!-- <label class="checkbox_label" for="switch_secrets_enable" title="Enable Auto Switch Secrets"> -->
+                    <!-- <input id="switch_secrets_enable" type="checkbox"> -->
+                    <!-- <span data-i18n="Enable Auto Switch Secrets">Enable Auto Switch Secrets</span> -->
+                <!-- </label> -->
+                <div class="flex-container">
+                    <input name="api_key_array" class="text_pole flex1 api_key_array" maxlength="500" value="" type="text" autocomplete="off" placeholder="Please enter your API key">
+                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark remove-api-key-array"></div>
+                </div>
+            </div>
+            <small data-i18n="Please enter an API key for each input field.">Please enter an API key for each input field.</small>
+            <div class="flex-container alignitemscenter spaceBetween">
+            	<div class="flex-container">
+                    <div id="save-api-key-array" title="Save your API key" class="menu_button menu_button_icon" data-i18n="Save">Save</div>
+                    <div id="add_api_key_array" class="menu_button menu_button_icon add_api_key_array" data-i18n="Add input field">Add input field</div>
+                </div>
+                    <div class="viewSecrets menu_button menu_button_icon add_api_key_array" data-i18n="View hidden API keys">View hidden API keys</div>
             </div>
         </div>
     </div>

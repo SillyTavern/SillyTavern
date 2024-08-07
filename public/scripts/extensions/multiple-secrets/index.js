@@ -1,7 +1,7 @@
 import { eventSource, event_types, saveSettingsDebounced } from "../../../script.js";
 import { getRequestHeaders } from '../../../script.js';
 import { oai_settings } from '../../openai.js';
-import { secret_state, updateSecretDisplay, writeSecret } from '../../secrets.js';
+import { secret_state, updateSecretDisplay, writeSecret, viewSecrets } from '../../secrets.js';
 import { renderExtensionTemplateAsync, extension_settings } from '../../extensions.js';
 
 
@@ -24,35 +24,32 @@ async function switchSecretsFromArray(generationType, _args, isDryRun) {
     }
 }
 
-function updateSecretsArrayDisplay() {
-    const validSecret = !!secret_state["api_key_"+oai_settings.chat_completion_source];
-    const placeholder = $('#viewSecrets').attr(validSecret ? 'key_saved_text' : 'missing_key_text');
-    $("#api_key_array").attr('placeholder', placeholder);
-}
-
 async function saveSecretsArray() {
+	console.log("保存")
 	const key = "api_key_"+oai_settings.chat_completion_source
-	const value = document.getElementById("api_key_array").value.split(",")
+	const value = Array.from(document.querySelectorAll('.api_key_array')).map(input => input.value).filter(item => item.length > 0);
 	await writeSecret(key+"_array", value)
 	await switchSecretsFromArray()
 	$('#api_button_openai').trigger('click');
 }
 
-function clearSecretsArray() {
-    const key = "api_key_"+oai_settings.chat_completion_source;
-    writeSecret(key+"_array", '');
-    secret_state[key] = false;
-    updateSecretDisplay();
-    updateSecretsArrayDisplay()
-    $('#api_key_array').val('').trigger('input');
-    $('#main_api').trigger('change');
-    $('#api_button_openai').trigger('click');
+function addApiKeyArray(){
+	// console.log($('.api_key_array'))
+	$('#api_key_array_container').append(`
+        <div class="flex-container">
+            <input name="api_key_array" class="text_pole flex1 api_key_array" maxlength="500" value="" type="text" autocomplete="off" placeholder="Please enter your API key">
+            <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark remove-api-key-array"></div>
+        </div>`
+    );
 }
 
 const html = await renderExtensionTemplateAsync('multiple-secrets', 'index');
 $('#extensions_settings').append('<div id="multiplesecrets_container" class="extension_container"></div>');
 $('#multiplesecrets_container').append(html);
 eventSource.on(event_types.GENERATION_STARTED, switchSecretsFromArray);
-$(document).on('click', '.clear-api-key-array', clearSecretsArray);
-$(document).on('click', '.save-api-key-array', saveSecretsArray);
-updateSecretsArrayDisplay()
+$(document).on('click', '.remove-api-key-array', function() {
+	$(event.target).closest('.flex-container').remove();
+});
+$(document).on('click', '#save-api-key-array', saveSecretsArray);
+$(document).on('click', '#add_api_key_array', addApiKeyArray);
+$('.viewSecrets').on('click', viewSecrets);

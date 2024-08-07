@@ -83,7 +83,7 @@ export function updateSecretDisplay() {
     }
 }
 
-async function viewSecrets() {
+export async function viewSecrets() {
     const response = await fetch('/api/secrets/view', {
         method: 'POST',
         headers: getRequestHeaders(),
