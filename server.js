@@ -67,7 +67,7 @@ const DEFAULT_ACCOUNTS = false;
 const DEFAULT_CSRF_DISABLED = false;
 const DEFAULT_BASIC_AUTH = false;
 
-const DEFAULT_ENABLE_IPV6 = true;
+const DEFAULT_ENABLE_IPV6 = false;
 const DEFAULT_ENABLE_IPV4 = true;
 
 const DEFAULT_PREFER_IPV6 = false;
@@ -156,11 +156,11 @@ const dnsPreferIPv6 = cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv
 if (dnsPreferIPv6) {
     // Set default DNS resolution order to IPv6 first
     dns.setDefaultResultOrder('ipv6first');
-    console.log('Preferring IPv6 for dns');
+    console.log('Preferring IPv6 for DNS resolution');
 } else {
     // Set default DNS resolution order to IPv4 first
     dns.setDefaultResultOrder('ipv4first');
-    console.log('Preferring IPv4 for dns');
+    console.log('Preferring IPv4 for DNS resolution');
 }
 
 if (!enableIPv6 && !enableIPv4) {

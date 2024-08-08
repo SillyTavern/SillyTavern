@@ -7,7 +7,7 @@ listen: false
 # Enables IPv6 and/or IPv4
 protocol:
     ipv4: true
-    ipv6: true
+    ipv6: false
 # Prefers IPv6 for dns, you should probably enable this on ISPs that don't have issues with IPv6
 dnsPreferIPv6: false
 # Server port
