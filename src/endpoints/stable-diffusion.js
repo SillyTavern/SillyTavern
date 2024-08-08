@@ -8,6 +8,7 @@ const writeFileAtomicSync = require('write-file-atomic').sync;
 const { jsonParser } = require('../express-common');
 const { readSecret, SECRET_KEYS } = require('./secrets.js');
 const FormData = require('form-data');
+const { scheduler } = require('timers/promises');
 
 /**
  * Sanitizes a string.
@@ -908,10 +909,102 @@ stability.post('/generate', jsonParser, async (request, response) => {
     }
 });
 
+const blockentropy = express.Router();
+
+blockentropy.post('/models', jsonParser, async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.BLOCKENTROPY);
+
+        if (!key) {
+            console.log('Block Entropy key not found.');
+            return response.sendStatus(400);
+        }
+
+        const modelsResponse = await fetch('https://api.blockentropy.ai/sdapi/v1/schedulers', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!modelsResponse.ok) {
+            console.log('Block Entropy returned an error.');
+            return response.sendStatus(500);
+        }
+
+        const data = await modelsResponse.json();
+
+        if (!Array.isArray(data)) {
+            console.log('Block Entropy returned invalid data.');
+            return response.sendStatus(500);
+        }
+        const models = data.map(x => ({ value: x.name, text: x.name }));
+        return response.send(models);
+
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+blockentropy.post('/generate', jsonParser, async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.BLOCKENTROPY);
+
+        if (!key) {
+            console.log('Block Entropy key not found.');
+            return response.sendStatus(400);
+        }
+
+        console.log('Block Entropy request:', request.body);
+
+        const result = await fetch('https://api.blockentropy.ai/sdapi/v1/txt2img', {
+            method: 'POST',
+            body: JSON.stringify({
+                request_type: 'image-model-inference',
+                prompt: request.body.prompt,
+                negative_prompt: request.body.negative_prompt,
+                height: request.body.height,
+                width: request.body.width,
+                model: request.body.model,
+                steps: request.body.steps,
+                scheduler: request.body.scheduler,
+                n: 1,
+                // Limited to 10000 on playground, works fine with more.
+                seed: request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 10_000_000),
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            console.log('Block Entropy returned an error.');
+            return response.sendStatus(500);
+        }
+
+        const data = await result.json();
+        console.log('Block Entropy response:', data);
+
+        //if (data.status !== 'finished') {
+        //    console.log('Block Entropy job failed.');
+         //   return response.sendStatus(500);
+        //}
+
+        return response.send(data);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+
 router.use('/comfy', comfy);
 router.use('/together', together);
 router.use('/drawthings', drawthings);
 router.use('/pollinations', pollinations);
 router.use('/stability', stability);
+router.use('/blockentropy', blockentropy);
 
 module.exports = { router };

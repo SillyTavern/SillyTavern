@@ -185,6 +185,7 @@ export const chat_completion_sources = {
     PERPLEXITY: 'perplexity',
     GROQ: 'groq',
     ZEROONEAI: '01ai',
+    BLOCKENTROPY: 'blockentropy',
 };
 
 const character_names_behavior = {
@@ -267,6 +268,7 @@ const default_settings = {
     perplexity_model: 'llama-3-70b-instruct',
     groq_model: 'llama3-70b-8192',
     zerooneai_model: 'yi-large',
+    blockentropy_model: 'be-70b-base-llama3.1',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -347,6 +349,7 @@ const oai_settings = {
     perplexity_model: 'llama-3-70b-instruct',
     groq_model: 'llama3-70b-8192',
     zerooneai_model: 'yi-large',
+    blockentropy_model: 'be-70b-base-llama3.1',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -1541,6 +1544,8 @@ function getChatCompletionModel() {
             return oai_settings.groq_model;
         case chat_completion_sources.ZEROONEAI:
             return oai_settings.zerooneai_model;
+        case chat_completion_sources.BLOCKENTROPY:
+            return oai_settings.blockentropy_model;
         default:
             throw new Error(`Unknown chat completion source: ${oai_settings.chat_completion_source}`);
     }
@@ -1653,6 +1658,23 @@ function saveModelList(data) {
         }
 
         $('#model_01ai_select').val(oai_settings.zerooneai_model).trigger('change');
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.BLOCKENTROPY) {
+        $('.model_blockentropy_select').empty();
+        model_list.forEach((model) => {
+            $('.model_blockentropy_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
+        });
+
+        if (!oai_settings.blockentropy_model && model_list.length > 0) {
+            oai_settings.blockentropy_model = model_list[0].id;
+        }
+
+        $('#model_blockentropy_select').val(oai_settings.blockentropy_model).trigger('change');
     }
 }
 
@@ -4037,6 +4059,12 @@ async function onModelChange() {
         oai_settings.zerooneai_model = value;
     }
 
+    if (value && $(this).is('#model_blockentropy_select')) {
+        console.log('Block Entropy model changed to', value);
+        oai_settings.blockentropy_model = value;
+        $('#blockentropy_model_id').val(value).trigger('input');
+    }
+
     if (value && $(this).is('#model_custom_select')) {
         console.log('Custom model changed to', value);
         oai_settings.custom_model = value;
@@ -4302,6 +4330,19 @@ async function onModelChange() {
         oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
+    if (oai_settings.chat_completion_source === chat_completion_sources.BLOCKENTROPY) {
+        if (oai_settings.max_context_unlocked) {
+            $('#openai_max_context').attr('max', unlocked_max);
+        } else {
+            $('#openai_max_context').attr('max', max_32k);
+        }
+
+        oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
 
     $('#openai_max_context_counter').attr('max', Number($('#openai_max_context').attr('max')));
 
@@ -4506,6 +4547,18 @@ async function onConnectButtonClick(e) {
 
         if (!secret_state[SECRET_KEYS.ZEROONEAI]) {
             console.log('No secret key saved for 01.AI');
+            return;
+        }
+    }
+    if (oai_settings.chat_completion_source == chat_completion_sources.BLOCKENTROPY) {
+        const api_key_blockentropy = String($('#api_key_blockentropy').val()).trim();
+
+        if (api_key_blockentropy.length) {
+            await writeSecret(SECRET_KEYS.BLOCKENTROPY, api_key_blockentropy);
+        }
+
+        if (!secret_state[SECRET_KEYS.BLOCKENTROPY]) {
+            console.log('No secret key saved for Block Entropy');
             return;
         }
     }
@@ -5282,6 +5335,7 @@ $(document).ready(async function () {
     $('#model_perplexity_select').on('change', onModelChange);
     $('#model_groq_select').on('change', onModelChange);
     $('#model_01ai_select').on('change', onModelChange);
+    $('#model_blockentropy_select').on('change', onModelChange);
     $('#model_custom_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);

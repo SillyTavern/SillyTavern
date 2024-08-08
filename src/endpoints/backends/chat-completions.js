@@ -18,6 +18,7 @@ const API_PERPLEXITY = 'https://api.perplexity.ai';
 const API_GROQ = 'https://api.groq.com/openai/v1';
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 const API_01AI = 'https://api.01.ai/v1';
+const API_BLOCKENTROPY = 'https://api.blockentropy.ai/v1';
 
 /**
  * Applies a post-processing step to the generated messages.
@@ -675,6 +676,10 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         api_url = API_01AI;
         api_key_openai = readSecret(request.user.directories, SECRET_KEYS.ZEROONEAI);
         headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BLOCKENTROPY) {
+        api_url = API_BLOCKENTROPY;
+        api_key_openai = readSecret(request.user.directories, SECRET_KEYS.BLOCKENTROPY);
+        headers = {};
     } else {
         console.log('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
@@ -939,6 +944,11 @@ router.post('/generate', jsonParser, function (request, response) {
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZEROONEAI) {
         apiUrl = API_01AI;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.ZEROONEAI);
+        headers = {};
+        bodyParams = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BLOCKENTROPY) {
+        apiUrl = API_BLOCKENTROPY;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.BLOCKENTROPY);
         headers = {};
         bodyParams = {};
     } else {
