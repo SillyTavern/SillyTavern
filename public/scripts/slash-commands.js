@@ -717,6 +717,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'delswipe',
         callback: deleteSwipeCallback,
+        returns: 'the new, currently selected swipe id',
         aliases: ['swipedel'],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -2269,7 +2270,7 @@ async function deleteSwipeCallback(_, arg) {
     await saveChatConditional();
     await reloadCurrentChat();
 
-    return '';
+    return String(newSwipeId);
 }
 
 async function askCharacter(args, text) {
