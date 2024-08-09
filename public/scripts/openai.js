@@ -3597,6 +3597,8 @@ async function onPresetImportFileChange(e) {
         }
     }
 
+    await eventSource.emit(event_types.OAI_PRESET_IMPORT_READY, { data: presetBody, presetName: name });
+
     const savePresetSettings = await fetch(`/api/presets/save-openai?name=${name}`, {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -3652,6 +3654,7 @@ async function onExportPresetClick() {
         sensitiveFields.forEach(field => delete preset[field]);
     }
 
+    await eventSource.emit(event_types.OAI_PRESET_EXPORT_READY, preset);
     const presetJsonString = JSON.stringify(preset, null, 4);
     const presetFileName = `${oai_settings.preset_settings_openai}.json`;
     download(presetJsonString, presetFileName, 'application/json');
