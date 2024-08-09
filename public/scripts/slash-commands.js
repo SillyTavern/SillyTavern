@@ -717,6 +717,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'delswipe',
         callback: deleteSwipeCallback,
+        returns: 'the new, currently selected swipe id',
         aliases: ['swipedel'],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -912,13 +913,28 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'addswipe',
         callback: addSwipeCallback,
+        returns: 'the new swipe id',
         aliases: ['swipeadd'],
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'switch',
+                description: 'switch to the new swipe',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean()(),
+            }),
+        ],
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'text', [ARGUMENT_TYPE.STRING], true,
             ),
         ],
-        helpString: 'Adds a swipe to the last chat message.',
+        helpString: `
+        <div>
+            Adds a swipe to the last chat message.
+        </div>
+        <div>
+            Use switch=true to switch to directly switch to the new swipe.
+        </div>`,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'stop',
@@ -2154,8 +2170,11 @@ async function echoCallback(args, value) {
     }
 }
 
-
-async function addSwipeCallback(_, arg) {
+/**
+ * @param {{switch?: string}} args - named arguments
+ * @param {string} value - The swipe text to add (unnamed argument)
+ */
+async function addSwipeCallback(args, value) {
     const lastMessage = chat[chat.length - 1];
 
     if (!lastMessage) {
@@ -2163,7 +2182,7 @@ async function addSwipeCallback(_, arg) {
         return '';
     }
 
-    if (!arg) {
+    if (!value) {
         console.warn('WARN: No argument provided for /addswipe command');
         return '';
     }
@@ -2192,23 +2211,30 @@ async function addSwipeCallback(_, arg) {
         lastMessage.swipe_info = lastMessage.swipes.map(() => ({}));
     }
 
-    lastMessage.swipes.push(arg);
+    lastMessage.swipes.push(value);
     lastMessage.swipe_info.push({
         send_date: getMessageTimeStamp(),
         gen_started: null,
         gen_finished: null,
         extra: {
-            bias: extractMessageBias(arg),
+            bias: extractMessageBias(value),
             gen_id: Date.now(),
             api: 'manual',
             model: 'slash command',
         },
     });
 
+    const newSwipeId = lastMessage.swipes.length - 1;
+
+    if (isTrueBoolean(args.switch)) {
+        lastMessage.swipe_id = newSwipeId;
+        lastMessage.mes = lastMessage.swipes[newSwipeId];
+    }
+
     await saveChatConditional();
     await reloadCurrentChat();
 
-    return '';
+    return String(newSwipeId);
 }
 
 async function deleteSwipeCallback(_, arg) {
@@ -2244,7 +2270,7 @@ async function deleteSwipeCallback(_, arg) {
     await saveChatConditional();
     await reloadCurrentChat();
 
-    return '';
+    return String(newSwipeId);
 }
 
 async function askCharacter(args, text) {
