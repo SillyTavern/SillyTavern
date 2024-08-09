@@ -82,7 +82,7 @@ const Def = {
 
             using(Tokens.WhiteSpace),
 
-            // Last fallback, before we need to exit the mode, as we might have characters we falsely haven't defined yet
+            // Last fallback, before we need to exit the mode, as we might have characters we (wrongly) haven't defined yet
             using(Tokens.Unknown),
 
             // Args are optional, and we don't know how long, so exit the mode to be able to capture the actual macro end

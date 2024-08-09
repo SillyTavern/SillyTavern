@@ -1,4 +1,5 @@
 /** @typedef {import('../../public/lib/chevrotain.js').ILexingResult} ILexingResult */
+/** @typedef {import('../../public/lib/chevrotain.js').ILexingError} ILexingError */
 /** @typedef {{type: string, text: string}} TestableToken */
 
 describe('MacroLexer', () => {
@@ -583,14 +584,20 @@ describe('MacroLexer', () => {
             expect(tokens).toEqual(expectedTokens);
         });
         // {{ @unknown }}
-        it('do not capture unknown special characters as flag', async () => {
+        it('[Error] do not capture unknown special characters as flag', async () => {
             const input = '{{ @unknown }}';
-            const tokens = await runLexerGetTokens(input);
+            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+
+            const expectedErrors = [
+                { message: 'unexpected character: ->@<- at offset: 3, skipped 1 characters.' },
+            ];
+
+            expect(errors).toMatchObject(expectedErrors);
 
             const expectedTokens = [
                 { type: 'MacroStart', text: '{{' },
-                { type: 'Unknown', text: '@' },
-                { type: 'Identifier', text: 'unknown' },
+                // Do not capture '@' as anything, as it's a lexer error
+                { type: 'MacroIdentifier', text: 'unknown' },
                 { type: 'MacroEnd', text: '}}' },
             ];
 
@@ -611,14 +618,19 @@ describe('MacroLexer', () => {
             expect(tokens).toEqual(expectedTokens);
         });
         // {{ 2 cents }}
-        it('do not capture numbers as flag - they are also invalid macro identifiers', async () => {
+        it('[Error] do not capture numbers as flag - they are also invalid macro identifiers', async () => {
             const input = '{{ 2 cents }}';
-            const tokens = await runLexerGetTokens(input);
+            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+
+            const expectedErrors = [
+                { message: 'unexpected character: ->2<- at offset: 3, skipped 1 characters.' },
+            ];
+            expect(errors).toMatchObject(expectedErrors);
 
             const expectedTokens = [
                 { type: 'MacroStart', text: '{{' },
-                { type: 'Unknown', text: '2' },
-                { type: 'Identifier', text: 'cents' },
+                // Do not capture '2' as anything, as it's a lexer error
+                { type: 'MacroIdentifier', text: 'cents' },
                 { type: 'MacroEnd', text: '}}' },
             ];
 
@@ -677,7 +689,7 @@ describe('MacroLexer', () => {
         });
     });
 
-    describe('Error Cases in Macro Lexing', () => {
+    describe('"Error" Cases in Macro Lexing', () => {
         // this is an unopened_macro}} and will be done
         it('lexer treats unopened macors as simple plaintext', async () => {
             const input = 'this is an unopened_macro}} and will be done';
@@ -690,7 +702,7 @@ describe('MacroLexer', () => {
             expect(tokens).toEqual(expectedTokens);
         });
         // { { not a macro } }
-        it('treats opening/clasing with whitspaces between brackets as not macros', async () => {
+        it('treats opening/closing with whitspaces between brackets not as macros', async () => {
             const input = '{ { not a macro } }';
             const tokens = await runLexerGetTokens(input);
 
@@ -706,10 +718,33 @@ describe('MacroLexer', () => {
 /**
  * Asynchronously runs the MacroLexer on the given input and returns the tokens.
  *
+ * Lexer errors will throw an Error. To test and validate lexer errors, use `runLexerGetTokensAndErrors`.
+ *
  * @param {string} input - The input string to be tokenized.
- * @return {Promise<TestableToken[]>} A promise that resolves to an array of tokens.
+ * @returns {Promise<TestableToken[]>} A promise that resolves to an array of tokens.
  */
 async function runLexerGetTokens(input) {
+    const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+
+    // Make sure that lexer errors get correctly marked as errors during testing, even if the resulting tokens might work.
+    // If we don't test for errors, the test should fail.
+    if (errors.length > 0) {
+        throw new Error('Lexer errors found\n' + errors.map(x => x.message).join('\n'));
+    }
+
+    return tokens;
+}
+
+
+/**
+ * Asynchronously runs the MacroLexer on the given input and returns the tokens and errors.
+ *
+ * Use `runLexerGetTokens` if you don't want to explicitly test against lexer errors
+ *
+ * @param {string} input - The input string to be tokenized.
+ * @returns {Promise<{tokens: TestableToken[], errors: LexerError[]}>} A promise that resolves to an object containing an array of tokens and an array of lexer errors.
+ */
+async function runLexerGetTokensAndErrors(input) {
     const result = await page.evaluate(async (input) => {
         /** @type {import('../../public/scripts/macros/MacroLexer.js')} */
         const { MacroLexer } = await import('./scripts/macros/MacroLexer.js');
@@ -718,23 +753,17 @@ async function runLexerGetTokens(input) {
         return result;
     }, input);
 
-    const tokens = getTestableTokens(result);
-    return tokens;
+    return getTestableTokens(result);
 }
 
 /**
  *
  * @param {ILexingResult} result The result from the lexer
- * @returns {TestableToken[]} The tokens
+ * @returns {{tokens: TestableToken[], errors: ILexingError[]}} The tokens
  */
 function getTestableTokens(result) {
-    // Make sure that lexer errors get correctly marked as errors during testing, even if the resulting tokens might work.
-    // The lexer should generally be able to parse all kinds of tokens.
-    if (result.errors.length > 0) {
-        throw new Error('Lexer errors found\n' + result.errors.map(x => x.message).join('\n'));
-    }
-
-    return result.tokens
+    const errors = result.errors;
+    const tokens = result.tokens
         // Filter out the mode popper. We don't care aobut that for testing
         .filter(token => token.tokenType.name !== 'EndMode')
         // Extract relevant properties from tokens for comparison
@@ -742,4 +771,6 @@ function getTestableTokens(result) {
             type: token.tokenType.name,
             text: token.image,
         }));
+
+    return { tokens, errors };
 }
