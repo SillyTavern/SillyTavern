@@ -6,6 +6,7 @@ import { createToken, Lexer } from '../../lib/chevrotain.js';
 const modes = {
     plaintext: 'plaintext_mode',
     macro_def: 'macro_def_mode',
+    macro_identifier_end: 'macro_identifier_end',
     macro_args: 'macro_args_mode',
 };
 
@@ -19,9 +20,11 @@ const Tokens = {
         Start: createToken({ name: 'MacroStart', pattern: /\{\{/ }),
         // Separate macro identifier needed, that is similar to the global indentifier, but captures the actual macro "name"
         // We need this, because this token is going to switch lexer mode, while the general identifier does not.
-        Identifier: createToken({ name: 'MacroIdentifier', pattern: /[a-zA-Z][\w-]*/ }),
         Flags: createToken({ name: 'MacroFlag', pattern: /[!?#~/.$]/ }),
-        // CaptureBeforeEnd: createToken({ name: 'MacroCaptureBeforeEnd', pattern: /.*?(?=\}\})/, pop_mode: true/*, group: Lexer.SKIPPED */ }),
+        Identifier: createToken({ name: 'MacroIdentifier', pattern: /[a-zA-Z][\w-]*/ }),
+        // At the end of an identifier, there has to be whitspace, or must be directly followed by colon/double-colon separator, output modifier or closing braces
+        EndOfIdentifier: createToken({ name: 'MacroEndOfIdentifier', pattern: /(?:\s+|(?=:{1,2})|(?=[|}]))/, group: Lexer.SKIPPED }),
+        BeforeEnd: createToken({ name: 'MacroBeforeEnd', pattern: /(?=\}\})/, group: Lexer.SKIPPED }),
         End: createToken({ name: 'MacroEnd', pattern: /\}\}/ }),
     },
 
@@ -46,7 +49,7 @@ const Tokens = {
     // DANGER ZONE: Careful with this token. This is used as a way to pop the current mode, if no other token matches.
     // Can be used in modes that don't have a "defined" end really, like when capturing a single argument, argument list, etc.
     // Has to ALWAYS be the last token.
-    ModePopper: createToken({ name: 'EndMode', pattern: () => [''], pop_mode: true/*, group: Lexer.SKIPPED */ }),
+    ModePopper: createToken({ name: 'ModePopper', pattern: () => [''], pop_mode: true, group: Lexer.SKIPPED }),
 };
 
 /** @type {Map<string,string>} Saves all token definitions that are marked as entering modes */
@@ -67,8 +70,15 @@ const Def = {
             using(Tokens.WhiteSpace),
 
             // Inside a macro, we will match the identifier
-            // Enter 'macro_args' mode automatically at the end of the identifier, to match any optional arguments
-            enter(Tokens.Macro.Identifier, modes.macro_args),
+            // Enter 'macro_identifier_end' mode automatically at the end of the identifier, so we don't match more than one identifier
+            enter(Tokens.Macro.Identifier, modes.macro_identifier_end),
+        ],
+        [modes.macro_identifier_end]: [
+            exits(Tokens.Macro.BeforeEnd, modes.macro_identifier_end),
+
+            // After a macro identifier, there are only a few valid options. We check those, before we try to find optional macro args.
+            // Must either be followed with whitespace or colon/double-colon, which get captured, or must follow-up with macro end braces or an output modifier pipe.
+            enter(Tokens.Macro.EndOfIdentifier, modes.macro_args, { andExits: modes.macro_identifier_end }),
         ],
         [modes.macro_args]: [
             // Macro args allow nested macros
@@ -134,15 +144,21 @@ instance = MacroLexer.instance;
  *
  * Marks the token to **enter** the following lexer mode.
  *
+ * Optionally, you can specify the modes to exit when entering this mode.
+ *
  * @param {TokenType} token - The token to modify
  * @param {string} mode - The mode to set
+ * @param {object} [options={}] - Additional options
+ * @param {string?} [options.andExits=null] - The modes to exit when entering this mode
  * @returns {TokenType} The token again
  */
-function enter(token, mode) {
+function enter(token, mode, { andExits = null } = {}) {
     if (!token) throw new Error('Token must not be undefined');
     if (enterModesMap.has(token.name) && enterModesMap.get(token.name) !== mode) {
         throw new Error(`Token ${token.name} already is set to enter mode ${enterModesMap.get(token.name)}. The token definition are global, so they cannot be used to lead to different modes.`);
     }
+
+    if (andExits) exits(token, andExits);
 
     token.PUSH_MODE = mode;
     enterModesMap.set(token.name, mode);
