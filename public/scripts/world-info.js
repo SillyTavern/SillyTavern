@@ -2916,10 +2916,9 @@ async function getWorldEntry(name, data, entry) {
     const entryKillSwitch = template.find('div[name="entryKillSwitch"]');
     entryKillSwitch.data('uid', entry.uid);
     entryKillSwitch.on('click', async function (event) {
-        event.stopPropagation();
         const uid = entry.uid;
         data.entries[uid].disable = !data.entries[uid].disable;
-        let isActive = data.entries[uid].disable;
+        let isActive = !data.entries[uid].disable;
         setWIOriginalDataValue(data, uid, 'enabled', isActive);
         if (isActive) {
             template.removeClass('disabledWIEntry');
