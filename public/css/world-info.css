@@ -181,6 +181,10 @@
     width: 7em;
 }
 
+.world_entry .killSwitch.fa-toggle-on {
+    color: var(--SmartThemeQuoteColor);
+}
+
 .wi-card-entry {
     border: 1px solid;
     border-color: var(--SmartThemeBorderColor);
