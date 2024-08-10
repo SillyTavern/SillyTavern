@@ -984,11 +984,6 @@ blockentropy.post('/generate', jsonParser, async (request, response) => {
         const data = await result.json();
         console.log('Block Entropy response:', data);
 
-        //if (data.status !== 'finished') {
-        //    console.log('Block Entropy job failed.');
-         //   return response.sendStatus(500);
-        //}
-
         return response.send(data);
     } catch (error) {
         console.log(error);
