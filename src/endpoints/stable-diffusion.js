@@ -8,7 +8,6 @@ const writeFileAtomicSync = require('write-file-atomic').sync;
 const { jsonParser } = require('../express-common');
 const { readSecret, SECRET_KEYS } = require('./secrets.js');
 const FormData = require('form-data');
-const { scheduler } = require('timers/promises');
 
 /**
  * Sanitizes a string.
