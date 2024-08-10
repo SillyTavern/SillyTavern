@@ -8,6 +8,8 @@ const modes = {
     macro_def: 'macro_def_mode',
     macro_identifier_end: 'macro_identifier_end',
     macro_args: 'macro_args_mode',
+    macro_filter_modifer: 'macro_filter_modifer_mode',
+    macro_filter_modifier_end: 'macro_filter_modifier_end',
 };
 
 /** @readonly */
@@ -34,6 +36,13 @@ const Tokens = {
         Colon: createToken({ name: 'Colon', pattern: /:/ }),
         Equals: createToken({ name: 'Equals', pattern: /=/ }),
         Quote: createToken({ name: 'Quote', pattern: /"/ }),
+    },
+
+    Filter: {
+        Pipe: createToken({ name: 'Pipe', pattern: /(?<!\\)\|/ }),
+        Identifier: createToken({ name: 'FilterIdentifier', pattern: /[a-zA-Z][\w-]*/ }),
+        // At the end of an identifier, there has to be whitspace, or must be directly followed by colon/double-colon separator, output modifier or closing braces
+        EndOfIdentifier: createToken({ name: 'FilterEndOfIdentifier', pattern: /(?:\s+|(?=:{1,2})|(?=[|}]))/, group: Lexer.SKIPPED }),
     },
 
     // All tokens that can be captured inside a macro
@@ -74,15 +83,16 @@ const Def = {
             enter(Tokens.Macro.Identifier, modes.macro_identifier_end),
         ],
         [modes.macro_identifier_end]: [
+            // Valid options after a macro identifier: whitespace, colon/double-colon (captured), macro end braces, or output modifier pipe.
             exits(Tokens.Macro.BeforeEnd, modes.macro_identifier_end),
-
-            // After a macro identifier, there are only a few valid options. We check those, before we try to find optional macro args.
-            // Must either be followed with whitespace or colon/double-colon, which get captured, or must follow-up with macro end braces or an output modifier pipe.
             enter(Tokens.Macro.EndOfIdentifier, modes.macro_args, { andExits: modes.macro_identifier_end }),
         ],
         [modes.macro_args]: [
             // Macro args allow nested macros
             enter(Tokens.Macro.Start, modes.macro_def),
+
+            // If at any place during args writing there is a pipe, we lex it as an output identifier, and then continue with lex its args
+            enter(Tokens.Filter.Pipe, modes.macro_filter_modifer),
 
             using(Tokens.Args.DoubleColon),
             using(Tokens.Args.Colon),
@@ -97,6 +107,16 @@ const Def = {
 
             // Args are optional, and we don't know how long, so exit the mode to be able to capture the actual macro end
             exits(Tokens.ModePopper, modes.macro_args),
+        ],
+        [modes.macro_filter_modifer]: [
+            using(Tokens.WhiteSpace),
+
+            enter(Tokens.Filter.Identifier, modes.macro_filter_modifier_end, { andExits: modes.macro_filter_modifer }),
+        ],
+        [modes.macro_filter_modifier_end]: [
+            // Valid options after a filter itenfier: whitespace, colon/double-colon (captured), macro end braces, or output modifier pipe.
+            exits(Tokens.Macro.BeforeEnd, modes.macro_identifier_end),
+            exits(Tokens.Filter.EndOfIdentifier, modes.macro_filter_modifer),
         ],
     },
     defaultMode: modes.plaintext,

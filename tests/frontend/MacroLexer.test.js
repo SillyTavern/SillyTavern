@@ -659,6 +659,279 @@ describe('MacroLexer', () => {
         });
     });
 
+    describe('Macro Output Modifiers', () => {
+        // {{macro | outputModifier}}
+        it('should support output modifier without arguments', async () => {
+            const input = '{{macro | outputModifier}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Pipe', text: '|' },
+                { type: 'FilterIdentifier', text: 'outputModifier' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{macro | outputModifier arg1=val1 arg2=val2}}
+        it('should support output modifier with named arguments', async () => {
+            const input = '{{macro | outputModifier arg1=val1 arg2=val2}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Pipe', text: '|' },
+                { type: 'FilterIdentifier', text: 'outputModifier' },
+                { type: 'Identifier', text: 'arg1' },
+                { type: 'Equals', text: '=' },
+                { type: 'Identifier', text: 'val1' },
+                { type: 'Identifier', text: 'arg2' },
+                { type: 'Equals', text: '=' },
+                { type: 'Identifier', text: 'val2' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{macro | outputModifier "unnamed1" "unnamed2"}}
+        it('should support output modifier with unnamed arguments', async () => {
+            const input = '{{macro | outputModifier "unnamed1" "unnamed2"}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Pipe', text: '|' },
+                { type: 'FilterIdentifier', text: 'outputModifier' },
+                { type: 'Quote', text: '"' },
+                { type: 'Identifier', text: 'unnamed1' },
+                { type: 'Quote', text: '"' },
+                { type: 'Quote', text: '"' },
+                { type: 'Identifier', text: 'unnamed2' },
+                { type: 'Quote', text: '"' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{macro arg1=val1 | outputModifier arg2=val2 "unnamed1"}}
+        it('should support macro arguments before output modifier', async () => {
+            const input = '{{macro arg1=val1 | outputModifier arg2=val2 "unnamed1"}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Identifier', text: 'arg1' },
+                { type: 'Equals', text: '=' },
+                { type: 'Identifier', text: 'val1' },
+                { type: 'Pipe', text: '|' },
+                { type: 'FilterIdentifier', text: 'outputModifier' },
+                { type: 'Identifier', text: 'arg2' },
+                { type: 'Equals', text: '=' },
+                { type: 'Identifier', text: 'val2' },
+                { type: 'Quote', text: '"' },
+                { type: 'Identifier', text: 'unnamed1' },
+                { type: 'Quote', text: '"' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{macro | outputModifier1 | outputModifier2}}
+        it('should support chaining multiple output modifiers', async () => {
+            const input = '{{macro | outputModifier1 | outputModifier2}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Pipe', text: '|' },
+                { type: 'FilterIdentifier', text: 'outputModifier1' },
+                { type: 'Pipe', text: '|' },
+                { type: 'FilterIdentifier', text: 'outputModifier2' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{macro | outputModifier1 arg1=val1 | outputModifier2 arg2=val2}}
+        it('should support chaining multiple output modifiers with arguments', async () => {
+            const input = '{{macro | outputModifier1 arg1=val1 | outputModifier2 arg2=val2}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Pipe', text: '|' },
+                { type: 'FilterIdentifier', text: 'outputModifier1' },
+                { type: 'Identifier', text: 'arg1' },
+                { type: 'Equals', text: '=' },
+                { type: 'Identifier', text: 'val1' },
+                { type: 'Pipe', text: '|' },
+                { type: 'FilterIdentifier', text: 'outputModifier2' },
+                { type: 'Identifier', text: 'arg2' },
+                { type: 'Equals', text: '=' },
+                { type: 'Identifier', text: 'val2' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{macro|outputModifier}}
+        it('should support output modifiers without whitespace', async () => {
+            const input = '{{macro|outputModifier}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Pipe', text: '|' },
+                { type: 'FilterIdentifier', text: 'outputModifier' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{ macro test escaped \| pipe }}
+        it('should support escaped pipes, not treating them as output modifiers', async () => {
+            const input = '{{ macro test escaped \\| pipe }}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Identifier', text: 'test' },
+                { type: 'Identifier', text: 'escaped' },
+                { type: 'Unknown', text: '\\' },
+                { type: 'Unknown', text: '|' },
+                { type: 'Identifier', text: 'pipe' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{|macro}}
+        it('[Error] should not capture when starting the macro with a pipe', async () => {
+            const input = '{{|macro}}';
+            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+
+            const expectedErrors = [
+                { message: 'unexpected character: ->|<- at offset: 2, skipped 1 characters.' },
+            ];
+
+            expect(errors).toMatchObject(expectedErrors);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{macro | Iam$peci@l}}
+        it('[Error] do not allow special characters inside output modifier identifier', async () => {
+            const input = '{{macro | Iam$peci@l}}';
+            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+
+            const expectedErrors = [
+                { message: 'unexpected character: ->$<- at offset: 13, skipped 7 characters.' },
+            ];
+
+            expect(errors).toMatchObject(expectedErrors);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Pipe', text: '|' },
+                { type: 'FilterIdentifier', text: 'Iam' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{macro | !cannotBeImportant }}
+        it('[Error] do not allow output modifiers to have execution modifiers', async () => {
+            const input = '{{macro | !cannotBeImportant }}';
+            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+
+            const expectedErrors = [
+                { message: 'unexpected character: ->!<- at offset: 10, skipped 1 characters.' },
+            ];
+
+            expect(errors).toMatchObject(expectedErrors);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Pipe', text: '|' },
+                { type: 'FilterIdentifier', text: 'cannotBeImportant' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{macro | 2invalidIdentifier}}
+        it('[Error] should throw an error for an invalid identifier starting with a number', async () => {
+            const input = '{{macro | 2invalidIdentifier}}';
+            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+
+            const expectedErrors = [
+                { message: 'unexpected character: ->2<- at offset: 10, skipped 1 characters.' },
+            ];
+
+            expect(errors).toMatchObject(expectedErrors);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Pipe', text: '|' },
+                { type: 'FilterIdentifier', text: 'invalidIdentifier' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{macro || outputModifier}}
+        it('[Error] should throw an error when double pipe is used without an identifier', async () => {
+            const input = '{{macro || outputModifier}}';
+            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+
+            const expectedErrors = [
+                { message: 'unexpected character: ->|<- at offset: 9, skipped 1 characters.' },
+            ];
+
+            expect(errors).toMatchObject(expectedErrors);
+
+            const expectedTokens = [
+                { type: 'MacroStart', text: '{{' },
+                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Pipe', text: '|' },
+                { type: 'FilterIdentifier', text: 'outputModifier' },
+                { type: 'MacroEnd', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+    });
+
     describe('Macro While Typing..', () => {
     // {{unclosed_macro word and more. Done.
         it('lexer allows unclosed macros, but tries to parse it as a macro', async () => {
