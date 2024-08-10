@@ -5298,12 +5298,15 @@
         <div class="world_entry">
             <form class="world_entry_form  wi-card-entry">
                 <div class="inline-drawer wide100p">
-                    <div class="inline-drawer-toggle inline-drawer-header gap5px padding0">
+                    <div class="inline-drawer-header gap5px padding0">
                         <span class="drag-handle">&#9776;</span>
                         <div class="gap5px world_entry_thin_controls wide100p alignitemscenter">
-                            <div class="fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                            <div class="inline-drawer-toggle fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                            <div class="fa-solid fa-toggle-on" name="entryKillSwitch"></div>
                             <div class="flex-container alignitemscenter wide100p">
+
                                 <div class="WIEntryTitleAndStatus flex-container flex1 alignitemscenter">
+
                                     <div class="flex-container flex1">
                                         <textarea class="text_pole" rows="1" name="comment" maxlength="5000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
                                     </div>
@@ -5312,7 +5315,7 @@
                                         <option value="constant" title="Constant" data-i18n="[title]WI_Entry_Status_Constant">🔵</option>
                                         <option value="normal" title="Normal" data-i18n="[title]WI_Entry_Status_Normal">🟢</option>
                                         <option value="vectorized" title="Vectorized" data-i18n="[title]WI_Entry_Status_Vectorized">🔗</option>
-                                        <option value="disabled" title="Disabled" data-i18n="[title]WI_Entry_Status_Disabled">❌</option>
+                                        <!--<option value="disabled" title="Disabled" data-i18n="[title]WI_Entry_Status_Disabled">❌</option>-->
                                     </select>
                                 </div>
                                 <div class="WIEnteryHeaderControls flex-container">

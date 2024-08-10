@@ -2859,21 +2859,7 @@ async function getWorldEntry(name, data, entry) {
     //add UID above content box (less important doesn't need to be always visible)
     template.find('.world_entry_form_uid_value').text(`(UID: ${entry.uid})`);
 
-    // disable
-    /*
-    const disableInput = template.find('input[name="disable"]');
-    disableInput.data("uid", entry.uid);
-    disableInput.on("input", async function () {
-        const uid = $(this).data("uid");
-        const value = $(this).prop("checked");
-        data.entries[uid].disable = value;
-        setOriginalDataValue(data, uid, "enabled", !data.entries[uid].disable);
-        await saveWorldInfo(name, data);
-    });
-    disableInput.prop("checked", entry.disable).trigger("input");
-    */
-
-    //new tri-state selector for constant/normal/disabled
+    //new tri-state selector for constant/normal/vectorized
     const entryStateSelector = template.find('select[name="entryStateSelector"]');
     entryStateSelector.data('uid', entry.uid);
     entryStateSelector.on('click', function (event) {
@@ -2886,31 +2872,32 @@ async function getWorldEntry(name, data, entry) {
         switch (value) {
             case 'constant':
                 data.entries[uid].constant = true;
-                data.entries[uid].disable = false;
+                //data.entries[uid].disable = false;
                 data.entries[uid].vectorized = false;
                 setWIOriginalDataValue(data, uid, 'enabled', true);
                 setWIOriginalDataValue(data, uid, 'constant', true);
                 setWIOriginalDataValue(data, uid, 'extensions.vectorized', false);
-                template.removeClass('disabledWIEntry');
+                //template.removeClass('disabledWIEntry');
                 break;
             case 'normal':
                 data.entries[uid].constant = false;
-                data.entries[uid].disable = false;
+                //data.entries[uid].disable = false;
                 data.entries[uid].vectorized = false;
                 setWIOriginalDataValue(data, uid, 'enabled', true);
                 setWIOriginalDataValue(data, uid, 'constant', false);
                 setWIOriginalDataValue(data, uid, 'extensions.vectorized', false);
-                template.removeClass('disabledWIEntry');
+                //template.removeClass('disabledWIEntry');
                 break;
             case 'vectorized':
                 data.entries[uid].constant = false;
-                data.entries[uid].disable = false;
+                //data.entries[uid].disable = false;
                 data.entries[uid].vectorized = true;
                 setWIOriginalDataValue(data, uid, 'enabled', true);
                 setWIOriginalDataValue(data, uid, 'constant', false);
                 setWIOriginalDataValue(data, uid, 'extensions.vectorized', true);
-                template.removeClass('disabledWIEntry');
+                //template.removeClass('disabledWIEntry');
                 break;
+            /*
             case 'disabled':
                 data.entries[uid].constant = false;
                 data.entries[uid].disable = true;
@@ -2920,15 +2907,38 @@ async function getWorldEntry(name, data, entry) {
                 setWIOriginalDataValue(data, uid, 'extensions.vectorized', false);
                 template.addClass('disabledWIEntry');
                 break;
+                */
+        }
+        await saveWorldInfo(name, data);
+
+    });
+
+    const entryKillSwitch = template.find('div[name="entryKillSwitch"]');
+    entryKillSwitch.data('uid', entry.uid);
+    entryKillSwitch.on('click', async function (event) {
+        event.stopPropagation();
+        const uid = entry.uid;
+        data.entries[uid].disable = !data.entries[uid].disable;
+        let isActive = data.entries[uid].disable;
+        setWIOriginalDataValue(data, uid, 'enabled', isActive);
+        if (isActive) {
+            template.removeClass('disabledWIEntry');
+            entryKillSwitch.removeClass('fa-toggle-off');
+            entryKillSwitch.addClass('fa-toggle-on');
+        } else {
+            template.addClass('disabledWIEntry');
+            entryKillSwitch.addClass('fa-toggle-off');
+            entryKillSwitch.removeClass('fa-toggle-on');
         }
         await saveWorldInfo(name, data);
 
     });
 
     const entryState = function () {
-        if (entry.disable === true) {
-            return 'disabled';
-        } else if (entry.constant === true) {
+        /*  if (entry.disable === true) {
+             return 'disabled';
+         } else  */
+        if (entry.constant === true) {
             return 'constant';
         } else if (entry.vectorized === true) {
             return 'vectorized';
@@ -2936,6 +2946,20 @@ async function getWorldEntry(name, data, entry) {
             return 'normal';
         }
     };
+
+    const isActive = !entry.disable;
+    if (isActive) {
+        console.warn(`${entry.uid} is active`);
+        template.removeClass('disabledWIEntry');
+        entryKillSwitch.removeClass('fa-toggle-off');
+        entryKillSwitch.addClass('fa-toggle-on');
+    } else {
+        console.warn(`${entry.uid} is not active`);
+        template.addClass('disabledWIEntry');
+        entryKillSwitch.addClass('fa-toggle-off');
+        entryKillSwitch.removeClass('fa-toggle-on');
+    }
+
     template
         .find(`select[name="entryStateSelector"] option[value=${entryState()}]`)
         .prop('selected', true)
