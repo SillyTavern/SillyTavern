@@ -6,6 +6,9 @@ describe('MacroLexer', () => {
     beforeAll(async () => {
         await page.goto(global.ST_URL);
         await page.waitForFunction('document.getElementById("preloader") === null', { timeout: 0 });
+
+        // Those tests ar evaluating via puppeteer, the need more time to run and finish
+        jest.setTimeout(10_000);
     });
 
     describe('General Macro', () => {
