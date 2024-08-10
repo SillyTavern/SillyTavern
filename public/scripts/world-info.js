@@ -2872,42 +2872,22 @@ async function getWorldEntry(name, data, entry) {
         switch (value) {
             case 'constant':
                 data.entries[uid].constant = true;
-                //data.entries[uid].disable = false;
                 data.entries[uid].vectorized = false;
-                setWIOriginalDataValue(data, uid, 'enabled', true);
                 setWIOriginalDataValue(data, uid, 'constant', true);
                 setWIOriginalDataValue(data, uid, 'extensions.vectorized', false);
-                //template.removeClass('disabledWIEntry');
                 break;
             case 'normal':
                 data.entries[uid].constant = false;
-                //data.entries[uid].disable = false;
                 data.entries[uid].vectorized = false;
-                setWIOriginalDataValue(data, uid, 'enabled', true);
                 setWIOriginalDataValue(data, uid, 'constant', false);
                 setWIOriginalDataValue(data, uid, 'extensions.vectorized', false);
-                //template.removeClass('disabledWIEntry');
                 break;
             case 'vectorized':
                 data.entries[uid].constant = false;
-                //data.entries[uid].disable = false;
                 data.entries[uid].vectorized = true;
-                setWIOriginalDataValue(data, uid, 'enabled', true);
                 setWIOriginalDataValue(data, uid, 'constant', false);
                 setWIOriginalDataValue(data, uid, 'extensions.vectorized', true);
-                //template.removeClass('disabledWIEntry');
                 break;
-            /*
-            case 'disabled':
-                data.entries[uid].constant = false;
-                data.entries[uid].disable = true;
-                data.entries[uid].vectorized = false;
-                setWIOriginalDataValue(data, uid, 'enabled', false);
-                setWIOriginalDataValue(data, uid, 'constant', false);
-                setWIOriginalDataValue(data, uid, 'extensions.vectorized', false);
-                template.addClass('disabledWIEntry');
-                break;
-                */
         }
         await saveWorldInfo(name, data);
 
@@ -2918,7 +2898,7 @@ async function getWorldEntry(name, data, entry) {
     entryKillSwitch.on('click', async function (event) {
         const uid = entry.uid;
         data.entries[uid].disable = !data.entries[uid].disable;
-        let isActive = !data.entries[uid].disable;
+        const isActive = !data.entries[uid].disable;
         setWIOriginalDataValue(data, uid, 'enabled', isActive);
         template.toggleClass('disabledWIEntry', !isActive);
         entryKillSwitch.toggleClass('fa-toggle-off', !isActive);
@@ -2928,9 +2908,6 @@ async function getWorldEntry(name, data, entry) {
     });
 
     const entryState = function () {
-        /*  if (entry.disable === true) {
-             return 'disabled';
-         } else  */
         if (entry.constant === true) {
             return 'constant';
         } else if (entry.vectorized === true) {
