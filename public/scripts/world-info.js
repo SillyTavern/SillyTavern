@@ -2920,15 +2920,9 @@ async function getWorldEntry(name, data, entry) {
         data.entries[uid].disable = !data.entries[uid].disable;
         let isActive = !data.entries[uid].disable;
         setWIOriginalDataValue(data, uid, 'enabled', isActive);
-        if (isActive) {
-            template.removeClass('disabledWIEntry');
-            entryKillSwitch.removeClass('fa-toggle-off');
-            entryKillSwitch.addClass('fa-toggle-on');
-        } else {
-            template.addClass('disabledWIEntry');
-            entryKillSwitch.addClass('fa-toggle-off');
-            entryKillSwitch.removeClass('fa-toggle-on');
-        }
+        template.toggleClass('disabledWIEntry', !isActive);
+        entryKillSwitch.toggleClass('fa-toggle-off', !isActive);
+        entryKillSwitch.toggleClass('fa-toggle-on', isActive);
         await saveWorldInfo(name, data);
 
     });
@@ -2947,17 +2941,9 @@ async function getWorldEntry(name, data, entry) {
     };
 
     const isActive = !entry.disable;
-    if (isActive) {
-        console.warn(`${entry.uid} is active`);
-        template.removeClass('disabledWIEntry');
-        entryKillSwitch.removeClass('fa-toggle-off');
-        entryKillSwitch.addClass('fa-toggle-on');
-    } else {
-        console.warn(`${entry.uid} is not active`);
-        template.addClass('disabledWIEntry');
-        entryKillSwitch.addClass('fa-toggle-off');
-        entryKillSwitch.removeClass('fa-toggle-on');
-    }
+    template.toggleClass('disabledWIEntry', !isActive);
+    entryKillSwitch.toggleClass('fa-toggle-off', !isActive);
+    entryKillSwitch.toggleClass('fa-toggle-on', isActive);
 
     template
         .find(`select[name="entryStateSelector"] option[value=${entryState()}]`)
