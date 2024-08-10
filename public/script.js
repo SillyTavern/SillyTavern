@@ -2496,8 +2496,8 @@ export function getStoppingStrings(isImpersonate, isContinue) {
             result.push(charString);
         }
 
-        // Add other group members as the stopping strings
-        if (selected_group) {
+        // Add group members as stopping strings if generating for a specific group member or user. (Allow slash commands to work around name stopping string restrictions)
+        if (selected_group && (name2 || isImpersonate)) {
             const group = groups.find(x => x.id === selected_group);
 
             if (group && Array.isArray(group.members)) {
