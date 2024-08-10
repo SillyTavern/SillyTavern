@@ -2692,7 +2692,16 @@ async function generateBlockEntropyImage(prompt, negativePrompt, signal) {
 
     if (result.ok) {
         const data = await result.json();
-        return { format: 'png', data: data.images[0] };
+    
+        // Default format is 'jpg'
+        let format = 'jpg';
+    
+        // Check if a format is specified in the result
+        if (data.format) {
+            format = data.format.toLowerCase();
+        }
+    
+        return { format: format, data: data.images[0] };
     } else {
         const text = await result.text();
         throw new Error(text);

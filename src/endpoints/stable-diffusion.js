@@ -920,7 +920,7 @@ blockentropy.post('/models', jsonParser, async (request, response) => {
             return response.sendStatus(400);
         }
 
-        const modelsResponse = await fetch('https://api.blockentropy.ai/sdapi/v1/schedulers', {
+        const modelsResponse = await fetch('https://api.blockentropy.ai/sdapi/v1/sd-models', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${key}`,
@@ -961,16 +961,13 @@ blockentropy.post('/generate', jsonParser, async (request, response) => {
         const result = await fetch('https://api.blockentropy.ai/sdapi/v1/txt2img', {
             method: 'POST',
             body: JSON.stringify({
-                request_type: 'image-model-inference',
                 prompt: request.body.prompt,
                 negative_prompt: request.body.negative_prompt,
-                height: request.body.height,
-                width: request.body.width,
                 model: request.body.model,
                 steps: request.body.steps,
-                scheduler: request.body.scheduler,
-                n: 1,
-                // Limited to 10000 on playground, works fine with more.
+                width: request.body.width,
+                height: request.body.height,
+                // Random seed if negative.
                 seed: request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 10_000_000),
             }),
             headers: {
