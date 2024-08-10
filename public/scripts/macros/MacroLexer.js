@@ -19,30 +19,30 @@ const Tokens = {
 
     // General macro capture
     Macro: {
-        Start: createToken({ name: 'MacroStart', pattern: /\{\{/ }),
+        Start: createToken({ name: 'Macro.Start', pattern: /\{\{/ }),
         // Separate macro identifier needed, that is similar to the global indentifier, but captures the actual macro "name"
         // We need this, because this token is going to switch lexer mode, while the general identifier does not.
-        Flags: createToken({ name: 'MacroFlag', pattern: /[!?#~/.$]/ }),
-        Identifier: createToken({ name: 'MacroIdentifier', pattern: /[a-zA-Z][\w-]*/ }),
+        Flags: createToken({ name: 'Macro.Flag', pattern: /[!?#~/.$]/ }),
+        Identifier: createToken({ name: 'Macro.Identifier', pattern: /[a-zA-Z][\w-]*/ }),
         // At the end of an identifier, there has to be whitspace, or must be directly followed by colon/double-colon separator, output modifier or closing braces
-        EndOfIdentifier: createToken({ name: 'MacroEndOfIdentifier', pattern: /(?:\s+|(?=:{1,2})|(?=[|}]))/, group: Lexer.SKIPPED }),
-        BeforeEnd: createToken({ name: 'MacroBeforeEnd', pattern: /(?=\}\})/, group: Lexer.SKIPPED }),
-        End: createToken({ name: 'MacroEnd', pattern: /\}\}/ }),
+        EndOfIdentifier: createToken({ name: 'Macro.EndOfIdentifier', pattern: /(?:\s+|(?=:{1,2})|(?=[|}]))/, group: Lexer.SKIPPED }),
+        BeforeEnd: createToken({ name: 'Macro.BeforeEnd', pattern: /(?=\}\})/, group: Lexer.SKIPPED }),
+        End: createToken({ name: 'Macro.End', pattern: /\}\}/ }),
     },
 
     // Captures that only appear inside arguments
     Args: {
-        DoubleColon: createToken({ name: 'DoubleColon', pattern: /::/ }),
-        Colon: createToken({ name: 'Colon', pattern: /:/ }),
-        Equals: createToken({ name: 'Equals', pattern: /=/ }),
-        Quote: createToken({ name: 'Quote', pattern: /"/ }),
+        DoubleColon: createToken({ name: 'Args.DoubleColon', pattern: /::/ }),
+        Colon: createToken({ name: 'Args.Colon', pattern: /:/ }),
+        Equals: createToken({ name: 'Args.Equals', pattern: /=/ }),
+        Quote: createToken({ name: 'Args.Quote', pattern: /"/ }),
     },
 
     Filter: {
-        Pipe: createToken({ name: 'Pipe', pattern: /(?<!\\)\|/ }),
-        Identifier: createToken({ name: 'FilterIdentifier', pattern: /[a-zA-Z][\w-]*/ }),
+        Pipe: createToken({ name: 'Filter.Pipe', pattern: /(?<!\\)\|/ }),
+        Identifier: createToken({ name: 'Filter.Identifier', pattern: /[a-zA-Z][\w-]*/ }),
         // At the end of an identifier, there has to be whitspace, or must be directly followed by colon/double-colon separator, output modifier or closing braces
-        EndOfIdentifier: createToken({ name: 'FilterEndOfIdentifier', pattern: /(?:\s+|(?=:{1,2})|(?=[|}]))/, group: Lexer.SKIPPED }),
+        EndOfIdentifier: createToken({ name: 'Filter.EndOfIdentifier', pattern: /(?:\s+|(?=:{1,2})|(?=[|}]))/, group: Lexer.SKIPPED }),
     },
 
     // All tokens that can be captured inside a macro

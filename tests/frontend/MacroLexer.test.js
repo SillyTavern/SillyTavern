@@ -15,9 +15,9 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'user' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'user' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -28,8 +28,8 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -40,9 +40,9 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'user' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'user' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -53,12 +53,12 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro1' },
-                { type: 'MacroEnd', text: '}}' },
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro2' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro1' },
+                { type: 'Macro.End', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro2' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -72,12 +72,12 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'outerMacro' },
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'innerMacro' },
-                { type: 'MacroEnd', text: '}}' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'outerMacro' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'innerMacro' },
+                { type: 'Macro.End', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -88,16 +88,16 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'doStuff' },
-                { type: 'Quote', text: '"' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'doStuff' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'inner' },
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'nested' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'nested' },
+                { type: 'Macro.End', text: '}}' },
                 { type: 'Identifier', text: 'string' },
-                { type: 'Quote', text: '"' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Args.Quote', text: '"' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -111,9 +111,9 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'a' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'a' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -124,10 +124,10 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'some' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'some' },
                 { type: 'Identifier', text: 'macro' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -138,9 +138,9 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'my2cents' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'my2cents' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -151,9 +151,9 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'SCREAM' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'SCREAM' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -164,9 +164,9 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'some-longer-macro' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'some-longer-macro' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -183,10 +183,10 @@ describe('MacroLexer', () => {
             expect(errors).toMatchObject(expectedErrors);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
                 // Do not lex the wrong characters
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -203,10 +203,10 @@ describe('MacroLexer', () => {
             expect(errors).toMatchObject(expectedErrors);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'ma' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'ma' },
                 // Do not lex the wrong characters
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -220,16 +220,16 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'setvar' },
-                { type: 'DoubleColon', text: '::' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'setvar' },
+                { type: 'Args.DoubleColon', text: '::' },
                 { type: 'Identifier', text: 'myVar' },
-                { type: 'DoubleColon', text: '::' },
+                { type: 'Args.DoubleColon', text: '::' },
                 { type: 'Identifier', text: 'This' },
                 { type: 'Identifier', text: 'is' },
                 { type: 'Identifier', text: 'Sparta' },
                 { type: 'Unknown', text: '!' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -240,15 +240,15 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'doStuff' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'doStuff' },
                 { type: 'Identifier', text: 'key' },
-                { type: 'Equals', text: '=' },
+                { type: 'Args.Equals', text: '=' },
                 { type: 'Identifier', text: 'MyValue' },
                 { type: 'Identifier', text: 'another' },
-                { type: 'Equals', text: '=' },
+                { type: 'Args.Equals', text: '=' },
                 { type: 'Identifier', text: 'AnotherValue' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -259,15 +259,15 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'getvar' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'getvar' },
                 { type: 'Identifier', text: 'key' },
-                { type: 'Equals', text: '=' },
-                { type: 'Quote', text: '"' },
+                { type: 'Args.Equals', text: '=' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'My' },
                 { type: 'Identifier', text: 'variable' },
-                { type: 'Quote', text: '"' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Args.Quote', text: '"' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -278,12 +278,12 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'getvar' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'getvar' },
                 { type: 'Identifier', text: 'KEY' },
-                { type: 'Equals', text: '=' },
+                { type: 'Args.Equals', text: '=' },
                 { type: 'Identifier', text: 'big' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -294,12 +294,12 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'dostuff' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'dostuff' },
                 { type: 'Identifier', text: 'longer-key' },
-                { type: 'Equals', text: '=' },
+                { type: 'Args.Equals', text: '=' },
                 { type: 'Identifier', text: 'value' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -310,21 +310,21 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'random' },
-                { type: 'Quote', text: '"' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'random' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'this' },
-                { type: 'Quote', text: '"' },
-                { type: 'Quote', text: '"' },
+                { type: 'Args.Quote', text: '"' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'and' },
                 { type: 'Identifier', text: 'that' },
-                { type: 'Quote', text: '"' },
-                { type: 'Quote', text: '"' },
+                { type: 'Args.Quote', text: '"' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'and' },
                 { type: 'Identifier', text: 'some' },
                 { type: 'Identifier', text: 'more' },
-                { type: 'Quote', text: '"' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Args.Quote', text: '"' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -335,19 +335,19 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'doStuff' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'doStuff' },
                 { type: 'Identifier', text: 'key' },
-                { type: 'Equals', text: '=' },
-                { type: 'Quote', text: '"' },
+                { type: 'Args.Equals', text: '=' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'My' },
                 { type: 'Identifier', text: 'Spaced' },
                 { type: 'Identifier', text: 'Value' },
-                { type: 'Quote', text: '"' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'otherKey' },
-                { type: 'Equals', text: '=' },
+                { type: 'Args.Equals', text: '=' },
                 { type: 'Identifier', text: 'SingleKey' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -358,11 +358,11 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'doStuff' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'doStuff' },
                 { type: 'Identifier', text: 'key' },
-                { type: 'Equals', text: '=' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Args.Equals', text: '=' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -373,13 +373,13 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'random' },
-                { type: 'Quote', text: '"' },
-                { type: 'Quote', text: '"' },
-                { type: 'Quote', text: '"' },
-                { type: 'Quote', text: '"' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'random' },
+                { type: 'Args.Quote', text: '"' },
+                { type: 'Args.Quote', text: '"' },
+                { type: 'Args.Quote', text: '"' },
+                { type: 'Args.Quote', text: '"' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -390,8 +390,8 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'doStuff' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'doStuff' },
                 { type: 'Identifier', text: 'special' },
                 { type: 'Identifier', text: 'chars' },
                 { type: 'Unknown', text: '#' },
@@ -401,7 +401,7 @@ describe('MacroLexer', () => {
                 { type: 'Unknown', text: '*' },
                 { type: 'Unknown', text: '(' },
                 { type: 'Unknown', text: ')' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -412,24 +412,24 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'longMacro' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'longMacro' },
                 { type: 'Identifier', text: 'arg1' },
-                { type: 'Equals', text: '=' },
-                { type: 'Quote', text: '"' },
+                { type: 'Args.Equals', text: '=' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'value1' },
-                { type: 'Quote', text: '"' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'arg2' },
-                { type: 'Equals', text: '=' },
-                { type: 'Quote', text: '"' },
+                { type: 'Args.Equals', text: '=' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'value2' },
-                { type: 'Quote', text: '"' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'arg3' },
-                { type: 'Equals', text: '=' },
-                { type: 'Quote', text: '"' },
+                { type: 'Args.Equals', text: '=' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'value3' },
-                { type: 'Quote', text: '"' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Args.Quote', text: '"' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -440,20 +440,20 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'complexMacro' },
-                { type: 'Quote', text: '"' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'complexMacro' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'text' },
                 { type: 'Identifier', text: 'with' },
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'nested' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'nested' },
+                { type: 'Macro.End', text: '}}' },
                 { type: 'Identifier', text: 'content' },
-                { type: 'Quote', text: '"' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'key' },
-                { type: 'Equals', text: '=' },
+                { type: 'Args.Equals', text: '=' },
                 { type: 'Identifier', text: 'val' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -468,10 +468,10 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroFlag', text: '!' },
-                { type: 'MacroIdentifier', text: 'immediate' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Flag', text: '!' },
+                { type: 'Macro.Identifier', text: 'immediate' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -482,10 +482,10 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroFlag', text: '?' },
-                { type: 'MacroIdentifier', text: 'lazy' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Flag', text: '?' },
+                { type: 'Macro.Identifier', text: 'lazy' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -496,10 +496,10 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroFlag', text: '~' },
-                { type: 'MacroIdentifier', text: 'reevaluate' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Flag', text: '~' },
+                { type: 'Macro.Identifier', text: 'reevaluate' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -510,10 +510,10 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroFlag', text: '/' },
-                { type: 'MacroIdentifier', text: 'if' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Flag', text: '/' },
+                { type: 'Macro.Identifier', text: 'if' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -524,10 +524,10 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroFlag', text: '.' },
-                { type: 'MacroIdentifier', text: 'variable' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Flag', text: '.' },
+                { type: 'Macro.Identifier', text: 'variable' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -538,10 +538,10 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroFlag', text: '$' },
-                { type: 'MacroIdentifier', text: 'variable' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Flag', text: '$' },
+                { type: 'Macro.Identifier', text: 'variable' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -552,10 +552,10 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroFlag', text: '#' },
-                { type: 'MacroIdentifier', text: 'legacy' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Flag', text: '#' },
+                { type: 'Macro.Identifier', text: 'legacy' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -566,10 +566,10 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroFlag', text: '!' },
-                { type: 'MacroIdentifier', text: 'identifier' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Flag', text: '!' },
+                { type: 'Macro.Identifier', text: 'identifier' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -580,11 +580,11 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroFlag', text: '?' },
-                { type: 'MacroFlag', text: '~' },
-                { type: 'MacroIdentifier', text: 'lateragain' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Flag', text: '?' },
+                { type: 'Macro.Flag', text: '~' },
+                { type: 'Macro.Identifier', text: 'lateragain' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -595,11 +595,11 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroFlag', text: '!' },
-                { type: 'MacroFlag', text: '.' },
-                { type: 'MacroIdentifier', text: 'importantvariable' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Flag', text: '!' },
+                { type: 'Macro.Flag', text: '.' },
+                { type: 'Macro.Identifier', text: 'importantvariable' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -616,10 +616,10 @@ describe('MacroLexer', () => {
             expect(errors).toMatchObject(expectedErrors);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
+                { type: 'Macro.Start', text: '{{' },
                 // Do not capture '@' as anything, as it's a lexer error
-                { type: 'MacroIdentifier', text: 'unknown' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Identifier', text: 'unknown' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -630,10 +630,10 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'a' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'a' },
                 { type: 'Identifier', text: 'shaaark' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -649,10 +649,10 @@ describe('MacroLexer', () => {
             expect(errors).toMatchObject(expectedErrors);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
+                { type: 'Macro.Start', text: '{{' },
                 // Do not capture '2' as anything, as it's a lexer error
-                { type: 'MacroIdentifier', text: 'cents' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Identifier', text: 'cents' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -666,11 +666,11 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
-                { type: 'Pipe', text: '|' },
-                { type: 'FilterIdentifier', text: 'outputModifier' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
+                { type: 'Filter.Pipe', text: '|' },
+                { type: 'Filter.Identifier', text: 'outputModifier' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -682,17 +682,17 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
-                { type: 'Pipe', text: '|' },
-                { type: 'FilterIdentifier', text: 'outputModifier' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
+                { type: 'Filter.Pipe', text: '|' },
+                { type: 'Filter.Identifier', text: 'outputModifier' },
                 { type: 'Identifier', text: 'arg1' },
-                { type: 'Equals', text: '=' },
+                { type: 'Args.Equals', text: '=' },
                 { type: 'Identifier', text: 'val1' },
                 { type: 'Identifier', text: 'arg2' },
-                { type: 'Equals', text: '=' },
+                { type: 'Args.Equals', text: '=' },
                 { type: 'Identifier', text: 'val2' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -704,17 +704,17 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
-                { type: 'Pipe', text: '|' },
-                { type: 'FilterIdentifier', text: 'outputModifier' },
-                { type: 'Quote', text: '"' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
+                { type: 'Filter.Pipe', text: '|' },
+                { type: 'Filter.Identifier', text: 'outputModifier' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'unnamed1' },
-                { type: 'Quote', text: '"' },
-                { type: 'Quote', text: '"' },
+                { type: 'Args.Quote', text: '"' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'unnamed2' },
-                { type: 'Quote', text: '"' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Args.Quote', text: '"' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -726,20 +726,20 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
                 { type: 'Identifier', text: 'arg1' },
-                { type: 'Equals', text: '=' },
+                { type: 'Args.Equals', text: '=' },
                 { type: 'Identifier', text: 'val1' },
-                { type: 'Pipe', text: '|' },
-                { type: 'FilterIdentifier', text: 'outputModifier' },
+                { type: 'Filter.Pipe', text: '|' },
+                { type: 'Filter.Identifier', text: 'outputModifier' },
                 { type: 'Identifier', text: 'arg2' },
-                { type: 'Equals', text: '=' },
+                { type: 'Args.Equals', text: '=' },
                 { type: 'Identifier', text: 'val2' },
-                { type: 'Quote', text: '"' },
+                { type: 'Args.Quote', text: '"' },
                 { type: 'Identifier', text: 'unnamed1' },
-                { type: 'Quote', text: '"' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Args.Quote', text: '"' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -751,13 +751,13 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
-                { type: 'Pipe', text: '|' },
-                { type: 'FilterIdentifier', text: 'outputModifier1' },
-                { type: 'Pipe', text: '|' },
-                { type: 'FilterIdentifier', text: 'outputModifier2' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
+                { type: 'Filter.Pipe', text: '|' },
+                { type: 'Filter.Identifier', text: 'outputModifier1' },
+                { type: 'Filter.Pipe', text: '|' },
+                { type: 'Filter.Identifier', text: 'outputModifier2' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -769,19 +769,19 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
-                { type: 'Pipe', text: '|' },
-                { type: 'FilterIdentifier', text: 'outputModifier1' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
+                { type: 'Filter.Pipe', text: '|' },
+                { type: 'Filter.Identifier', text: 'outputModifier1' },
                 { type: 'Identifier', text: 'arg1' },
-                { type: 'Equals', text: '=' },
+                { type: 'Args.Equals', text: '=' },
                 { type: 'Identifier', text: 'val1' },
-                { type: 'Pipe', text: '|' },
-                { type: 'FilterIdentifier', text: 'outputModifier2' },
+                { type: 'Filter.Pipe', text: '|' },
+                { type: 'Filter.Identifier', text: 'outputModifier2' },
                 { type: 'Identifier', text: 'arg2' },
-                { type: 'Equals', text: '=' },
+                { type: 'Args.Equals', text: '=' },
                 { type: 'Identifier', text: 'val2' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -793,11 +793,11 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
-                { type: 'Pipe', text: '|' },
-                { type: 'FilterIdentifier', text: 'outputModifier' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
+                { type: 'Filter.Pipe', text: '|' },
+                { type: 'Filter.Identifier', text: 'outputModifier' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -809,14 +809,14 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
                 { type: 'Identifier', text: 'test' },
                 { type: 'Identifier', text: 'escaped' },
                 { type: 'Unknown', text: '\\' },
                 { type: 'Unknown', text: '|' },
                 { type: 'Identifier', text: 'pipe' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -834,9 +834,9 @@ describe('MacroLexer', () => {
             expect(errors).toMatchObject(expectedErrors);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -854,11 +854,11 @@ describe('MacroLexer', () => {
             expect(errors).toMatchObject(expectedErrors);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
-                { type: 'Pipe', text: '|' },
-                { type: 'FilterIdentifier', text: 'Iam' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
+                { type: 'Filter.Pipe', text: '|' },
+                { type: 'Filter.Identifier', text: 'Iam' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -876,11 +876,11 @@ describe('MacroLexer', () => {
             expect(errors).toMatchObject(expectedErrors);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
-                { type: 'Pipe', text: '|' },
-                { type: 'FilterIdentifier', text: 'cannotBeImportant' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
+                { type: 'Filter.Pipe', text: '|' },
+                { type: 'Filter.Identifier', text: 'cannotBeImportant' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -898,11 +898,11 @@ describe('MacroLexer', () => {
             expect(errors).toMatchObject(expectedErrors);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
-                { type: 'Pipe', text: '|' },
-                { type: 'FilterIdentifier', text: 'invalidIdentifier' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
+                { type: 'Filter.Pipe', text: '|' },
+                { type: 'Filter.Identifier', text: 'invalidIdentifier' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -920,11 +920,11 @@ describe('MacroLexer', () => {
             expect(errors).toMatchObject(expectedErrors);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
-                { type: 'Pipe', text: '|' },
-                { type: 'FilterIdentifier', text: 'outputModifier' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
+                { type: 'Filter.Pipe', text: '|' },
+                { type: 'Filter.Identifier', text: 'outputModifier' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
@@ -939,8 +939,8 @@ describe('MacroLexer', () => {
             const tokens = await runLexerGetTokens(input);
 
             const expectedTokens = [
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'unclosed_macro' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'unclosed_macro' },
                 { type: 'Identifier', text: 'word' },
                 { type: 'Identifier', text: 'and' },
                 { type: 'Identifier', text: 'more' },
@@ -961,9 +961,9 @@ describe('MacroLexer', () => {
 
             const expectedTokens = [
                 { type: 'Plaintext', text: 'Hello, ' },
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'user' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'user' },
+                { type: 'Macro.End', text: '}}' },
                 { type: 'Plaintext', text: '!' },
             ];
 
@@ -1019,13 +1019,13 @@ describe('MacroLexer', () => {
 
             const expectedTokens = [
                 { type: 'Plaintext', text: 'invalid ' },
-                { type: 'MacroStart', text: '{{' },
+                { type: 'Macro.Start', text: '{{' },
                 // Do not capture '000' as anything, as it's a lexer error
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
                 { type: 'Plaintext', text: ' followed by correct ' },
-                { type: 'MacroStart', text: '{{' },
-                { type: 'MacroIdentifier', text: 'macro' },
-                { type: 'MacroEnd', text: '}}' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
+                { type: 'Macro.End', text: '}}' },
             ];
 
             expect(tokens).toEqual(expectedTokens);
