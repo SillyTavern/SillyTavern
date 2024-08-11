@@ -339,6 +339,22 @@ describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
+        // {{roll:1d4}}
+        it('should handle argument with legacy one colon syntax to start the arguments', async () => {
+            const input = '{{roll:1d4}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'roll' },
+                { type: 'Args.Colon', text: ':' },
+                { type: 'Unknown', text: '1' },
+                { type: 'Identifier', text: 'd4' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
         // {{random "this" "and that" "and some more"}}
         it('should handle multiple unnamed arguments in quotation marks', async () => {
             const input = '{{random "this" "and that" "and some more"}}';
