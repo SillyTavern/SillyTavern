@@ -723,6 +723,10 @@ body .panelControlBar {
     order: 1;
 }
 
+#mes_impersonate {
+    order: 1;
+}
+
 #send_form .mes_stop {
     display: none;
     order: 2;
@@ -3501,6 +3505,8 @@ grammarly-extension {
 
 .drag-handle {
     cursor: grab;
+    /* Make the drag handle not selectable in most browsers */
+    user-select: none;
 }
 
 #form_rename_chat {
@@ -5284,6 +5290,7 @@ body:not(.movingUI) .drawer-content.maximized {
     flex-direction: column;
     gap: 10px;
     text-align: left;
+    height: 100%;
 }
 
 .onboarding span.menu_button {

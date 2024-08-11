@@ -94,11 +94,11 @@ export function loadInstructMode(data) {
             $element.val(power_user.instruct[control.property]);
         }
 
-        $element.on('input', function () {
+        $element.on('input', async function () {
             power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
             saveSettingsDebounced();
             if (!control.isCheckbox) {
-                resetScrollHeight($element);
+                await resetScrollHeight($element);
             }
         });
 

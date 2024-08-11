@@ -156,6 +156,7 @@ import {
     ensureImageFormatSupported,
     flashHighlight,
     isTrueBoolean,
+    toggleDrawer,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -224,7 +225,7 @@ import {
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
+import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels, initTextGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { MacrosParser, evaluateMacros, getLastMessageId } from './scripts/macros.js';
@@ -424,6 +425,8 @@ export const event_types = {
     CHATCOMPLETION_MODEL_CHANGED: 'chatcompletion_model_changed',
     OAI_PRESET_CHANGED_BEFORE: 'oai_preset_changed_before',
     OAI_PRESET_CHANGED_AFTER: 'oai_preset_changed_after',
+    OAI_PRESET_EXPORT_READY: 'oai_preset_export_ready',
+    OAI_PRESET_IMPORT_READY: 'oai_preset_import_ready',
     WORLDINFO_SETTINGS_UPDATED: 'worldinfo_settings_updated',
     WORLDINFO_UPDATED: 'worldinfo_updated',
     CHARACTER_EDITED: 'character_edited',
@@ -911,6 +914,7 @@ async function firstLoadInit() {
     await readSecretState();
     initLocales();
     initDefaultSlashCommands();
+    initTextGenModels();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     await getSettings();
@@ -2492,8 +2496,8 @@ export function getStoppingStrings(isImpersonate, isContinue) {
             result.push(charString);
         }
 
-        // Add other group members as the stopping strings
-        if (selected_group) {
+        // Add group members as stopping strings if generating for a specific group member or user. (Allow slash commands to work around name stopping string restrictions)
+        if (selected_group && (name2 || isImpersonate)) {
             const group = groups.find(x => x.id === selected_group);
 
             if (group && Array.isArray(group.members)) {
@@ -5625,6 +5629,7 @@ export function activateSendButtons() {
     is_send_press = false;
     $('#send_but').removeClass('displayNone');
     $('#mes_continue').removeClass('displayNone');
+    $('#mes_impersonate').removeClass('displayNone');
     $('.mes_buttons:last').show();
     hideStopButton();
 }
@@ -5632,6 +5637,7 @@ export function activateSendButtons() {
 export function deactivateSendButtons() {
     $('#send_but').addClass('displayNone');
     $('#mes_continue').addClass('displayNone');
+    $('#mes_impersonate').addClass('displayNone');
     showStopButton();
 }
 
@@ -6422,7 +6428,7 @@ export async function getSettings() {
         loadHordeSettings(settings);
 
         // Load power user settings
-        loadPowerUserSettings(settings, data);
+        await loadPowerUserSettings(settings, data);
 
         // Load character tags
         loadTagsSettings(settings);
@@ -9112,14 +9118,14 @@ jQuery(async function () {
     $('#send_textarea').on('focusin focus click', () => {
         S_TAPreviouslyFocused = true;
     });
-    $('#send_but, #option_regenerate, #option_continue, #mes_continue').on('click', () => {
+    $('#send_but, #option_regenerate, #option_continue, #mes_continue, #mes_impersonate').on('click', () => {
         if (S_TAPreviouslyFocused) {
             $('#send_textarea').focus();
         }
     });
     $(document).click(event => {
         if ($(':focus').attr('id') !== 'send_textarea') {
-            var validIDs = ['options_button', 'send_but', 'mes_continue', 'send_textarea', 'option_regenerate', 'option_continue'];
+            var validIDs = ['options_button', 'send_but', 'mes_impersonate', 'mes_continue', 'send_textarea', 'option_regenerate', 'option_continue'];
             if (!validIDs.includes($(event.target).attr('id'))) {
                 S_TAPreviouslyFocused = false;
             }
@@ -9155,6 +9161,9 @@ jQuery(async function () {
         debouncedCharacterSearch(searchQuery);
     });
 
+    $('#mes_impersonate').on('click', function () {
+        $('#option_impersonate').trigger('click');
+    });
 
     $('#mes_continue').on('click', function () {
         $('#option_continue').trigger('click');
@@ -10452,8 +10461,9 @@ jQuery(async function () {
             }
 
             // Set the height of "autoSetHeight" textareas within the drawer to their scroll height
-            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(function () {
-                resetScrollHeight($(this));
+            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(async function () {
+                await resetScrollHeight($(this));
+                return;
             });
 
         } else if (drawerWasOpenAlready) { //to close manually
@@ -10526,8 +10536,9 @@ jQuery(async function () {
         $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
 
         // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
-        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(function () {
-            resetScrollHeight($(this));
+        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(async function () {
+            await resetScrollHeight($(this));
+            return;
         });
     });
 
@@ -10608,12 +10619,19 @@ jQuery(async function () {
         }
     });
 
-    $(document).on('click', '#OpenAllWIEntries', function () {
-        $('#world_popup_entries_list').children().find('.down').click();
+    document.addEventListener('click', function (e) {
+        if (!(e.target instanceof HTMLElement)) return;
+        if (e.target.matches('#OpenAllWIEntries')) {
+            document.querySelectorAll('#world_popup_entries_list .inline-drawer').forEach((/** @type {HTMLElement} */ drawer) => {
+                toggleDrawer(drawer, true);
+            });
+        } else if (e.target.matches('#CloseAllWIEntries')) {
+            document.querySelectorAll('#world_popup_entries_list .inline-drawer').forEach((/** @type {HTMLElement} */ drawer) => {
+                toggleDrawer(drawer, false);
+            });
+        }
     });
-    $(document).on('click', '#CloseAllWIEntries', function () {
-        $('#world_popup_entries_list').children().find('.up').click();
-    });
+
     $(document).on('click', '.open_alternate_greetings', openAlternateGreetings);
     /* $('#set_character_world').on('click', openCharacterWorldPopup); */
 
@@ -10729,62 +10747,66 @@ jQuery(async function () {
     var isManualInput = false;
     var valueBeforeManualInput;
 
-    $('.range-block-counter input, .neo-range-input').on('click', function () {
+    $(document).on('input', '.range-block-counter input, .neo-range-input', function () {
         valueBeforeManualInput = $(this).val();
         console.log(valueBeforeManualInput);
-    })
-        .on('change', function (e) {
-            e.target.focus();
-            e.target.dispatchEvent(new Event('keyup'));
-        })
-        .on('keydown', function (e) {
-            const masterSelector = '#' + $(this).data('for');
-            const masterElement = $(masterSelector);
-            if (e.key === 'Enter') {
-                let manualInput = Number($(this).val());
-                if (isManualInput) {
-                    //disallow manual inputs outside acceptable range
-                    if (manualInput >= Number($(this).attr('min')) && manualInput <= Number($(this).attr('max'))) {
-                        //if value is ok, assign to slider and update handle text and position
-                        //newSlider.val(manualInput)
-                        //handleSlideEvent.call(newSlider, null, { value: parseFloat(manualInput) }, 'manual');
-                        valueBeforeManualInput = manualInput;
-                        $(masterElement).val($(this).val()).trigger('input', { forced: true });
-                    } else {
-                        //if value not ok, warn and reset to last known valid value
-                        toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`);
-                        console.log(valueBeforeManualInput);
-                        //newSlider.val(valueBeforeManualInput)
-                        $(this).val(valueBeforeManualInput);
-                    }
-                }
-            }
-        })
-        .on('keyup', function () {
-            valueBeforeManualInput = $(this).val();
-            console.log(valueBeforeManualInput);
-            isManualInput = true;
-        })
-        //trigger slider changes when user clicks away
-        .on('mouseup blur', function () {
-            const masterSelector = '#' + $(this).data('for');
-            const masterElement = $(masterSelector);
+    });
+
+    $(document).on('change', '.range-block-counter input, .neo-range-input', function (e) {
+        e.target.focus();
+        e.target.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+    });
+
+    $(document).on('keydown', '.range-block-counter input, .neo-range-input', function (e) {
+        const masterSelector = '#' + $(this).data('for');
+        const masterElement = $(masterSelector);
+        if (e.key === 'Enter') {
             let manualInput = Number($(this).val());
             if (isManualInput) {
-                //if value is between correct range for the slider
+                //disallow manual inputs outside acceptable range
                 if (manualInput >= Number($(this).attr('min')) && manualInput <= Number($(this).attr('max'))) {
+                    //if value is ok, assign to slider and update handle text and position
+                    //newSlider.val(manualInput)
+                    //handleSlideEvent.call(newSlider, null, { value: parseFloat(manualInput) }, 'manual');
                     valueBeforeManualInput = manualInput;
-                    //set the slider value to input value
                     $(masterElement).val($(this).val()).trigger('input', { forced: true });
                 } else {
                     //if value not ok, warn and reset to last known valid value
                     toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`);
                     console.log(valueBeforeManualInput);
+                    //newSlider.val(valueBeforeManualInput)
                     $(this).val(valueBeforeManualInput);
                 }
             }
-            isManualInput = false;
-        });
+        }
+    });
+
+    $(document).on('keyup', '.range-block-counter input, .neo-range-input', function () {
+        valueBeforeManualInput = $(this).val();
+        console.log(valueBeforeManualInput);
+        isManualInput = true;
+    });
+
+    //trigger slider changes when user clicks away
+    $(document).on('mouseup blur', '.range-block-counter input, .neo-range-input', function () {
+        const masterSelector = '#' + $(this).data('for');
+        const masterElement = $(masterSelector);
+        let manualInput = Number($(this).val());
+        if (isManualInput) {
+            //if value is between correct range for the slider
+            if (manualInput >= Number($(this).attr('min')) && manualInput <= Number($(this).attr('max'))) {
+                valueBeforeManualInput = manualInput;
+                //set the slider value to input value
+                $(masterElement).val($(this).val()).trigger('input', { forced: true });
+            } else {
+                //if value not ok, warn and reset to last known valid value
+                toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`);
+                console.log(valueBeforeManualInput);
+                $(this).val(valueBeforeManualInput);
+            }
+        }
+        isManualInput = false;
+    });
 
     $('.user_stats_button').on('click', function () {
         userStatsHandler();

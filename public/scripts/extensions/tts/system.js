@@ -124,7 +124,7 @@ class SystemTtsProvider {
                 if (hasEnabledVoice) {
                     return;
                 }
-                const utterance = new SpeechSynthesisUtterance('hi');
+                const utterance = new SpeechSynthesisUtterance(' . ');
                 utterance.volume = 0;
                 speechSynthesis.speak(utterance);
                 hasEnabledVoice = true;

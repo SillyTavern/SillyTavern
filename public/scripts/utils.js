@@ -334,12 +334,12 @@ export function debouncedThrottle(func, limit = 300) {
     let last, deferTimer;
     let db = debounce(func);
 
-    return function() {
+    return function () {
         let now = +new Date, args = arguments;
-        if(!last || (last && now < last + limit)) {
+        if (!last || (last && now < last + limit)) {
             clearTimeout(deferTimer);
             db.apply(this, args);
-            deferTimer = setTimeout(function() {
+            deferTimer = setTimeout(function () {
                 last = now;
                 func.apply(this, args);
             }, limit);
@@ -1728,20 +1728,24 @@ export function select2ModifyOptions(element, items, { select = false, changeEve
     /** @type {Select2Option[]} */
     const dataItems = items.map(x => typeof x === 'string' ? { id: getSelect2OptionId(x), text: x } : x);
 
-    const existingValues = [];
+    const optionsToSelect = [];
+    const newOptions = [];
+
     dataItems.forEach(item => {
         // Set the value, creating a new option if necessary
         if (element.find('option[value=\'' + item.id + '\']').length) {
-            if (select) existingValues.push(item.id);
+            if (select) optionsToSelect.push(item.id);
         } else {
             // Create a DOM Option and optionally pre-select by default
             var newOption = new Option(item.text, item.id, select, select);
             // Append it to the select
-            element.append(newOption);
-            if (select) element.trigger('change', changeEventArgs);
+            newOptions.push(newOption);
+            if (select) optionsToSelect.push(item.id);
         }
-        if (existingValues.length) element.val(existingValues).trigger('change', changeEventArgs);
     });
+
+    element.append(newOptions);
+    if (optionsToSelect.length) element.val(optionsToSelect).trigger('change', changeEventArgs);
 }
 
 /**
@@ -1930,13 +1934,41 @@ export function getFreeName(name, list, numberFormatter = (n) => ` #${n}`) {
     return `${name}${numberFormatter(counter)}`;
 }
 
+
+/**
+ * Toggles the visibility of a drawer by changing the display style of its content.
+ * This function skips the usual drawer animation.
+ *
+ * @param {HTMLElement} drawer - The drawer element to toggle
+ * @param {boolean} [expand=true] - Whether to expand or collapse the drawer
+ */
+export function toggleDrawer(drawer, expand = true) {
+    /** @type {HTMLElement} */
+    const icon = drawer.querySelector('.inline-drawer-icon');
+    /** @type {HTMLElement} */
+    const content = drawer.querySelector('.inline-drawer-content');
+
+    if (expand) {
+        icon.classList.remove('up', 'fa-circle-chevron-up');
+        icon.classList.add('down', 'fa-circle-chevron-down');
+        content.style.display = 'block';
+    } else {
+        icon.classList.remove('down', 'fa-circle-chevron-down');
+        icon.classList.add('up', 'fa-circle-chevron-up');
+        content.style.display = 'none';
+    }
+
+    // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
+    content.querySelectorAll('textarea.autoSetHeight').forEach(resetScrollHeight);
+}
+
 export async function fetchFaFile(name) {
     const style = document.createElement('style');
     style.innerHTML = await (await fetch(`/css/${name}`)).text();
     document.head.append(style);
     const sheet = style.sheet;
     style.remove();
-    return [...sheet.cssRules].filter(it=>it.style?.content).map(it=>it.selectorText.split('::').shift().slice(1));
+    return [...sheet.cssRules].filter(it => it.style?.content).map(it => it.selectorText.split('::').shift().slice(1));
 }
 export async function fetchFa() {
     return [...new Set((await Promise.all([
@@ -1961,8 +1993,8 @@ export async function showFontAwesomePicker(customList = null) {
                 qry.type = 'search';
                 qry.placeholder = 'Filter icons';
                 qry.autofocus = true;
-                const qryDebounced = debounce(()=>{
-                    const result = faList.filter(it=>it.includes(qry.value));
+                const qryDebounced = debounce(() => {
+                    const result = faList.filter(it => it.includes(qry.value));
                     for (const fa of faList) {
                         if (!result.includes(fa)) {
                             fas[fa].classList.add('hidden');

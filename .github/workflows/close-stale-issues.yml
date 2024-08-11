@@ -16,21 +16,21 @@ jobs:
         uses: actions/stale@v4
         with:
           repo-token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
-          days-before-stale: 360
-          days-before-close: 5
+          days-before-stale: 183
+          days-before-close: 7
           operations-per-run: 30
           remove-stale-when-updated: true
           enable-statistics: true
           stale-issue-message: > 
-            This issue has gone 3 months without an update. To keep the ticket open, please indicate that it is still relevant in a comment below.
-            Otherwise it will be closed in 5 working days.
+            This issue has gone 6 months without an update. To keep the ticket open, please indicate that it is still relevant in a comment below.
+            Otherwise it will be closed in 7 days.
           stale-pr-message: >
-            This PR is stale because it has been open 6 weeks with no activity. Either remove the stale label or comment below with a short update,
-            otherwise this PR will be closed in 5 days.
+            This PR is stale because it has been open 6 months with no activity. Either remove the stale label or comment below with a short update,
+            otherwise this PR will be closed in 7 days.
           close-issue-message: >
-            This issue was automatically closed because it has been stalled for over 1 year with no activity.
+            This issue was automatically closed because it has been stalled for over 6 months with no activity.
           close-pr-message: >
-            This pull request was automatically closed because it has been stalled for over 1 year with no activity.
+            This pull request was automatically closed because it has been stalled for over 6 months with no activity.
           stale-issue-label: '⚰️ Stale'
           close-issue-label: '🕸️ Inactive'
           stale-pr-label: '⚰️ Stale'
@@ -44,8 +44,8 @@ jobs:
         uses: actions/stale@v4
         with:
           repo-token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
-          days-before-stale: 5
-          days-before-close: 3
+          days-before-stale: 7
+          days-before-close: 7
           operations-per-run: 30
           remove-stale-when-updated: true
           stale-issue-message: >
@@ -65,7 +65,7 @@ jobs:
         with:
           repo-token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           days-before-stale: 7
-          days-before-close: 365
+          days-before-close: 183
           operations-per-run: 30
           remove-stale-when-updated: true
           stale-issue-message: Hey SillyTavern, - Don't forget to respond!
