@@ -659,7 +659,10 @@ const preSetupTasks = async function () {
     });
 };
 
-
+function removeColorFormatting(text) {
+    // ANSI escape codes for colors are usually in the format \x1b[<codes>m
+    return text.replace(/\x1b\[\d{1,2}(;\d{1,2})*m/g, '');
+}
 
 function getSeparator(n) {
     return '='.repeat(n);
@@ -725,7 +728,7 @@ const postSetupTasks = async function (v6Failed, v4Failed) {
     }
 
     let goToLog = 'Go to: ' + color.blue(autorunUrl) + ' to open SillyTavern';
-    let plainGoToLog = goToLog.replace(/\x1b\[[0-9;]*m/g, '');
+    let plainGoToLog = removeColorFormatting(goToLog);
 
     console.log(logListen);
     console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
