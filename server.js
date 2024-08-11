@@ -77,14 +77,34 @@ const DEFAULT_AUTORUN_PORT = -1;
 
 const cliArguments = yargs(hideBin(process.argv))
     .usage('Usage: <your-start-script> <command> [options]')
-    .option('port', {
+    .option('enableIPv6', {
+        type: 'boolean',
+        default: null,
+        describe: `Enables IPv6.\n[config default: ${DEFAULT_ENABLE_IPV6}]`,
+    }).option('enableIPv4', {
+        type: 'boolean',
+        default: null,
+        describe: `Enables IPv4.\n[config default: ${DEFAULT_ENABLE_IPV4}]`,
+    }).option('port', {
         type: 'number',
         default: null,
         describe: `Sets the port under which SillyTavern will run.\nIf not provided falls back to yaml config 'port'.\n[config default: ${DEFAULT_PORT}]`,
+    }).option('dnsPreferIPv6', {
+        type: 'boolean',
+        default: null,
+        describe: `Prefers IPv6 for dns\nyou should probably have the enabled if you're on an IPv6 only network\nIf not provided falls back to yaml config 'preferIPv6'.\n[config default: ${DEFAULT_PREFER_IPV6}]`,
     }).option('autorun', {
         type: 'boolean',
         default: null,
         describe: `Automatically launch SillyTavern in the browser.\nAutorun is automatically disabled if --ssl is set to true.\nIf not provided falls back to yaml config 'autorun'.\n[config default: ${DEFAULT_AUTORUN}]`,
+    }).option('autorunHostname', {
+        type: 'string',
+        default: null,
+        describe: 'the autorun hostname, probably best left on \'auto\'.\nuse values like \'localhost\', \'st.example.com\'',
+    }).option('autorunPortOverride', {
+        type: 'string',
+        default: null,
+        describe: 'Overrides the port for autorun with open your browser with this port and ignore what port the server is running on. -1 is use server port',
     }).option('listen', {
         type: 'boolean',
         default: null,
@@ -113,26 +133,6 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'boolean',
         default: null,
         describe: 'Enables whitelist mode',
-    }).option('enableIPv6', {
-        type: 'boolean',
-        default: null,
-        describe: `Enables IPv6.\n[config default: ${DEFAULT_ENABLE_IPV6}]`,
-    }).option('enableIPv4', {
-        type: 'boolean',
-        default: null,
-        describe: `Enables IPv4.\n[config default: ${DEFAULT_ENABLE_IPV4}]`,
-    }).option('autorunHostname', {
-        type: 'string',
-        default: null,
-        describe: 'the autorun hostname, probably best left on \'auto\'.\nuse values like \'localhost\', \'st.example.com\'',
-    }).option('autorunPortOverride', {
-        type: 'string',
-        default: null,
-        describe: 'Overrides the port for autorun with open your browser with this port and ignore what port the server is running on. -1 is use server port',
-    }).option('dnsPreferIPv6', {
-        type: 'boolean',
-        default: null,
-        describe: `Prefers IPv6 for dns\nyou should probably have the enabled if you're on an IPv6 only network\nIf not provided falls back to yaml config 'preferIPv6'.\n[config default: ${DEFAULT_PREFER_IPV6}]`,
     }).option('dataRoot', {
         type: 'string',
         default: null,
