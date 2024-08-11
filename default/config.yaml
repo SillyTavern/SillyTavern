@@ -98,6 +98,13 @@ mistral:
   # Enables prefilling of the reply with the last assistant message in the prompt
   # CAUTION: The prefix is echoed into the completion. You may want to use regex to trim it out.
   enablePrefix: false
+# -- OLLAMA API CONFIGURATION --
+ollama:
+  # Controls how long the model will stay loaded into memory following the request
+  # * -1: Keep the model loaded indefinitely
+  # * 0: Unload the model immediately after the request
+  # * 5m: Keep the model loaded for 5 minutes after the request. Accepts duration strings (e.g. 5h30m40s)
+  keepAlive: -1
 # -- SERVER PLUGIN CONFIGURATION --
 enableServerPlugins: false
 # User session timeout *in seconds* (defaults to 24 hours).
