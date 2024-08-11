@@ -2427,6 +2427,7 @@
                             <optgroup>
                                 <option value="01ai">01.AI (Yi)</option>
                                 <option value="ai21">AI21</option>
+                                <option value="blockentropy">Block Entropy</option>
                                 <option value="claude">Claude</option>
                                 <option value="cohere">Cohere</option>
                                 <option value="groq">Groq</option>
@@ -2950,6 +2951,20 @@
                                         <option value="command-nightly">command-nightly</option>
                                     </optgroup>
                                 </select>
+                            </div>
+                        </form>
+                        <form id="blockentropy_form" data-source="blockentropy">
+                            <h4 data-i18n="Block Entropy API Key">Block Entropy API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_blockentropy" name="api_key_blockentropy" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_blockentropy"></div>
+                            </div>
+                            <div data-for="api_key_blockentropy" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <h4 data-i18n="Select a Model">Select a Model</h4>
+                            <div class="flex-container">
+                                <select id="model_blockentropy_select" class="text_pole"></select>
                             </div>
                         </form>
                         <form id="custom_form" data-source="custom">

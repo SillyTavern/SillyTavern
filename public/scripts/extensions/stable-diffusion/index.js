@@ -51,6 +51,7 @@ const sources = {
     drawthings: 'drawthings',
     pollinations: 'pollinations',
     stability: 'stability',
+    blockentropy: 'blockentropy',
 };
 
 const initiators = {
@@ -1222,7 +1223,7 @@ async function onModelChange() {
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
     saveSettingsDebounced();
 
-    const cloudSources = [sources.horde, sources.novel, sources.openai, sources.togetherai, sources.pollinations, sources.stability];
+    const cloudSources = [sources.horde, sources.novel, sources.openai, sources.togetherai, sources.pollinations, sources.stability, sources.blockentropy];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
         return;
@@ -1434,6 +1435,9 @@ async function loadSamplers() {
         case sources.stability:
             samplers = ['N/A'];
             break;
+        case sources.blockentropy:
+            samplers = ['N/A'];
+            break;
     }
 
     for (const sampler of samplers) {
@@ -1620,6 +1624,9 @@ async function loadModels() {
         case sources.stability:
             models = await loadStabilityModels();
             break;
+        case sources.blockentropy:
+            models = await loadBlockEntropyModels();
+            break;
     }
 
     for (const model of models) {
@@ -1708,6 +1715,26 @@ async function loadTogetherAIModels() {
 
     if (result.ok) {
         const data = await result.json();
+        return data;
+    }
+
+    return [];
+}
+
+async function loadBlockEntropyModels() {
+    if (!secret_state[SECRET_KEYS.BLOCKENTROPY]) {
+        console.debug('Block Entropy API key is not set.');
+        return [];
+    }
+
+    const result = await fetch('/api/sd/blockentropy/models', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+    console.log(result);
+    if (result.ok) {
+        const data = await result.json();
+        console.log(data);
         return data;
     }
 
@@ -1980,6 +2007,9 @@ async function loadSchedulers() {
         case sources.stability:
             schedulers = ['N/A'];
             break;
+        case sources.blockentropy:
+            schedulers = ['N/A'];
+            break;
     }
 
     for (const scheduler of schedulers) {
@@ -2054,6 +2084,9 @@ async function loadVaes() {
             vaes = await loadComfyVaes();
             break;
         case sources.stability:
+            vaes = ['N/A'];
+            break;
+        case sources.blockentropy:
             vaes = ['N/A'];
             break;
     }
@@ -2584,6 +2617,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             case sources.stability:
                 result = await generateStabilityImage(prefixedPrompt, negativePrompt, signal);
                 break;
+            case sources.blockentropy:
+                result = await generateBlockEntropyImage(prefixedPrompt, negativePrompt, signal);
+                break;
         }
 
         if (!result.data) {
@@ -2633,6 +2669,40 @@ async function generateTogetherAIImage(prompt, negativePrompt, signal) {
     if (result.ok) {
         const data = await result.json();
         return { format: 'jpg', data: data?.output?.choices?.[0]?.image_base64 };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+async function generateBlockEntropyImage(prompt, negativePrompt, signal) {
+    const result = await fetch('/api/sd/blockentropy/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify({
+            prompt: prompt,
+            negative_prompt: negativePrompt,
+            model: extension_settings.sd.model,
+            steps: extension_settings.sd.steps,
+            width: extension_settings.sd.width,
+            height: extension_settings.sd.height,
+            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+    
+        // Default format is 'jpg'
+        let format = 'jpg';
+    
+        // Check if a format is specified in the result
+        if (data.format) {
+            format = data.format.toLowerCase();
+        }
+    
+        return { format: format, data: data.images[0] };
     } else {
         const text = await result.text();
         throw new Error(text);
@@ -3459,6 +3529,8 @@ function isValidState() {
             return true;
         case sources.stability:
             return secret_state[SECRET_KEYS.STABILITY];
+        case sources.blockentropy:
+            return secret_state[SECRET_KEYS.BLOCKENTROPY];
     }
 }
 
