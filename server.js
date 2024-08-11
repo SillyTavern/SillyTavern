@@ -72,7 +72,7 @@ const DEFAULT_ENABLE_IPV4 = true;
 
 const DEFAULT_PREFER_IPV6 = false;
 
-const DEFAULT_AUTORUN_HOSTNAME = "auto";
+const DEFAULT_AUTORUN_HOSTNAME = 'auto';
 const DEFAULT_AUTORUN_PORT = -1;
 
 const cliArguments = yargs(hideBin(process.argv))
@@ -113,6 +113,22 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'boolean',
         default: null,
         describe: 'Enables whitelist mode',
+    }).option('enableIPv6', {
+        type: 'boolean',
+        default: null,
+        describe: `Enables IPv6.\n[config default: ${DEFAULT_ENABLE_IPV6}]`,
+    }).option('enableIPv4', {
+        type: 'boolean',
+        default: null,
+        describe: `Enables IPv4.\n[config default: ${DEFAULT_ENABLE_IPV4}]`,
+    }).option('autorunHostname', {
+        type: 'string',
+        default: null,
+        describe: 'the autorun hostname, probably best left on \'auto\'.\nuse values like \'localhost\', \'st.example.com\'',
+    }).option('autorunPortOverride', {
+        type: 'string',
+        default: null,
+        describe: 'Overrides the port for autorun with open your browser with this port and ignore what port the server is running on. -1 is use server port',
     }).option('dnsPreferIPv6', {
         type: 'boolean',
         default: null,
@@ -151,11 +167,11 @@ const enableAccounts = getConfigValue('enableUserAccounts', DEFAULT_ACCOUNTS);
 
 const uploadsPath = path.join(dataRoot, require('./src/constants').UPLOADS_DIRECTORY);
 
-const enableIPv6 = getConfigValue('protocol.ipv6', DEFAULT_ENABLE_IPV6);
-const enableIPv4 = getConfigValue('protocol.ipv4', DEFAULT_ENABLE_IPV4);
+const enableIPv6 = cliArguments.enableIPv6 ?? getConfigValue('protocol.ipv6', DEFAULT_ENABLE_IPV6);
+const enableIPv4 = cliArguments.enableIPv4 ?? getConfigValue('protocol.ipv4', DEFAULT_ENABLE_IPV4);
 
-const autorunHostname = getConfigValue('autorunHostname', DEFAULT_AUTORUN_HOSTNAME);
-const autorunPort = getConfigValue('autorunPortOverride', DEFAULT_AUTORUN_PORT);
+const autorunHostname = cliArguments.autorunHostname ?? getConfigValue('autorunHostname', DEFAULT_AUTORUN_HOSTNAME);
+const autorunPortOverride = cliArguments.autorunPortOverride ?? getConfigValue('autorunPortOverride', DEFAULT_AUTORUN_PORT);
 
 const dnsPreferIPv6 = cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', DEFAULT_PREFER_IPV6);
 
@@ -647,28 +663,28 @@ const preSetupTasks = async function () {
 
 function getSeparator(n) {
     return '='.repeat(n);
-};
+}
 
 
 
 function getAutorunHostname() {
 
-    if (autorunHostname === "auto") {
+    if (autorunHostname === 'auto') {
         if (enableIPv6 && enableIPv4) {
-            return "localhost"
+            return 'localhost';
         }
 
         if (enableIPv6) {
-            return "[::1]"
+            return '[::1]';
         }
 
         if (enableIPv4) {
-            return "127.0.0.1"
+            return '127.0.0.1';
         }
     }
 
-    return autorunHostname
-};
+    return autorunHostname;
+}
 
 
 /**
@@ -681,7 +697,7 @@ const postSetupTasks = async function (v6Failed, v4Failed) {
         (cliArguments.ssl ? 'https://' : 'http://') +
         (getAutorunHostname()) +
         (':') +
-        ((autorunPort >= 0) ? autorunPort : server_port),
+        ((autorunPortOverride >= 0) ? autorunPortOverride : server_port),
     );
 
 
@@ -708,13 +724,13 @@ const postSetupTasks = async function (v6Failed, v4Failed) {
         logListen += ipv4Color(' IPv4: ' + tavernUrl);
     }
 
-    let goToLog = "Go to: "+color.blue(autorunUrl)+" to open SillyTavern";
+    let goToLog = 'Go to: ' + color.blue(autorunUrl) + ' to open SillyTavern';
     let plainGoToLog = goToLog.replace(/\x1b\[[0-9;]*m/g, '');
 
     console.log(logListen);
-    console.log("\n"+getSeparator(plainGoToLog.length)+"\n");
+    console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
     console.log(goToLog);
-    console.log("\n"+getSeparator(plainGoToLog.length)+"\n");
+    console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
 
     if (listen) {
         console.log('[::] or 0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (::1 or 127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
