@@ -4335,13 +4335,13 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
-        else if (oai_settings.groq_model.includes('llama3.1')) {
+        else if (oai_settings.blockentropy_model.includes('llama3.1')) {
             $('#openai_max_context').attr('max', max_16k);
         }
-        else if (oai_settings.groq_model.includes('72b')) {
+        else if (oai_settings.blockentropy_model.includes('72b')) {
             $('#openai_max_context').attr('max', max_16k);
         }
-        else if (oai_settings.groq_model.includes('120b')) {
+        else if (oai_settings.blockentropy_model.includes('120b')) {
             $('#openai_max_context').attr('max', max_12k);
         }
         else {
