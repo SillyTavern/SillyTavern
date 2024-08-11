@@ -32,6 +32,7 @@ export const SECRET_KEYS = {
     ZEROONEAI: 'api_key_01ai',
     HUGGINGFACE: 'api_key_huggingface',
     STABILITY: 'api_key_stability',
+    BLOCKENTROPY: 'api_key_blockentropy',
 };
 
 const INPUT_MAP = {
@@ -63,6 +64,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.FEATHERLESS]: '#api_key_featherless',
     [SECRET_KEYS.ZEROONEAI]: '#api_key_01ai',
     [SECRET_KEYS.HUGGINGFACE]: '#api_key_huggingface',
+    [SECRET_KEYS.BLOCKENTROPY]: '#api_key_blockentropy',
 };
 
 async function clearSecret() {
