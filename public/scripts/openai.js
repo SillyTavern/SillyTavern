@@ -120,6 +120,7 @@ const default_bias_presets = {
 const max_2k = 2047;
 const max_4k = 4095;
 const max_8k = 8191;
+const max_12k = 12287;
 const max_16k = 16383;
 const max_32k = 32767;
 const max_64k = 65535;
@@ -4333,8 +4334,18 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source === chat_completion_sources.BLOCKENTROPY) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else {
-            $('#openai_max_context').attr('max', max_32k);
+        }
+        else if (oai_settings.groq_model.includes('llama3.1')) {
+            $('#openai_max_context').attr('max', max_16k);
+        }
+        else if (oai_settings.groq_model.includes('72b')) {
+            $('#openai_max_context').attr('max', max_16k);
+        }
+        else if (oai_settings.groq_model.includes('120b')) {
+            $('#openai_max_context').attr('max', max_12k);
+        }
+        else {
+            $('#openai_max_context').attr('max', max_8k);
         }
 
         oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
