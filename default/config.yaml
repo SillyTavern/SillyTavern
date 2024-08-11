@@ -10,6 +10,8 @@ protocol:
     ipv6: false
 # Prefers IPv6 for dns, you should probably enable this on ISPs that don't have issues with IPv6
 dnsPreferIPv6: false
+# the hostname that autorun opens probably best left on auto. use options like 'localhost', 'st.example.com'
+autorunHostname: "auto"
 # Server port
 port: 8000
 # -- SECURITY CONFIGURATION --

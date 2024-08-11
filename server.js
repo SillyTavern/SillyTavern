@@ -71,6 +71,7 @@ const DEFAULT_ENABLE_IPV6 = false;
 const DEFAULT_ENABLE_IPV4 = true;
 
 const DEFAULT_PREFER_IPV6 = false;
+const DEFAULT_AUTORUN_HOSTNAME = "auto";
 
 const cliArguments = yargs(hideBin(process.argv))
     .usage('Usage: <your-start-script> <command> [options]')
@@ -150,6 +151,8 @@ const uploadsPath = path.join(dataRoot, require('./src/constants').UPLOADS_DIREC
 
 const enableIPv6 = getConfigValue('protocol.ipv6', DEFAULT_ENABLE_IPV6);
 const enableIPv4 = getConfigValue('protocol.ipv4', DEFAULT_ENABLE_IPV4);
+
+const autorunHostname = getConfigValue('autorunHostname', DEFAULT_AUTORUN_HOSTNAME);
 
 const dnsPreferIPv6 = cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', DEFAULT_PREFER_IPV6);
 
@@ -588,11 +591,6 @@ const tavernUrl = new URL(
     (':' + server_port),
 );
 
-const autorunUrl = new URL(
-    (cliArguments.ssl ? 'https://' : 'http://') +
-    ('localhost') +
-    (':' + server_port),
-);
 
 /**
  * Tasks that need to be run before the server starts listening.
@@ -642,30 +640,80 @@ const preSetupTasks = async function () {
     });
 };
 
+
+
+function getSeparator(n) {
+    return '='.repeat(n);
+};
+
+
+
+function getAutorunHostname() {
+
+    if (autorunHostname === "auto") {
+        if (enableIPv6 && enableIPv4) {
+            return "localhost"
+        }
+
+        if (enableIPv6) {
+            return "[::1]"
+        }
+
+        if (enableIPv4) {
+            return "127.0.0.1"
+        }
+    }
+
+    return autorunHostname
+};
+
+
 /**
  * Tasks that need to be run after the server starts listening.
  */
 const postSetupTasks = async function (v6Failed, v4Failed) {
+
+
+    const autorunUrl = new URL(
+        (cliArguments.ssl ? 'https://' : 'http://') +
+        (getAutorunHostname()) +
+        (':' + server_port),
+    );
+
+
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
 
     setWindowTitle('SillyTavern WebServer');
 
-    let log_listen = 'SillyTavern is listening on';
+
+    let logListenColorIP = color.green;
+    let logListen = 'SillyTavern is listening on';
 
     if (enableIPv6 && !v6Failed) {
-        log_listen += ' IPv6: ' + tavernUrlV6;
+        logListen += logListenColorIP(' IPv6: ' + tavernUrlV6);
     }
 
     if (enableIPv4 && !v4Failed) {
-        log_listen += ' IPv4: ' + tavernUrl;
+        let ipv4Color = logListenColorIP;
+        if (enableIPv6) {
+            ipv4Color = color.red;
+        }
+
+        logListen += ipv4Color(' IPv4: ' + tavernUrl);
     }
 
-    console.log(color.green(log_listen));
+    let goToLog = "Go to: "+color.blue(autorunUrl)+" to open SillyTavern";
+    let plainGoToLog = goToLog.replace(/\x1b\[[0-9;]*m/g, '');
+
+    console.log(logListen);
+    console.log("\n"+getSeparator(plainGoToLog.length)+"\n");
+    console.log(goToLog);
+    console.log("\n"+getSeparator(plainGoToLog.length));
 
     if (listen) {
-        console.log('\n:: or 0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (::1 or 127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
+        console.log('\n[::] or 0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (::1 or 127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
     }
 
     if (basicAuthMode) {
