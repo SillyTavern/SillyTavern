@@ -677,7 +677,6 @@ function getAutorunHostname() {
 const postSetupTasks = async function (v6Failed, v4Failed) {
 
 
-    console.log(autorunPort)
     const autorunUrl = new URL(
         (cliArguments.ssl ? 'https://' : 'http://') +
         (getAutorunHostname()) +
