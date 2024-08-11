@@ -3947,7 +3947,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         // Get instruct mode line
         if (isInstruct && !isContinue) {
-            const name = (quiet_prompt && !quietToLoud) ? (quietName ?? 'System') : (isImpersonate ? name1 : name2);
+            const name = (quiet_prompt && !quietToLoud && !isImpersonate) ? (quietName ?? 'System') : (isImpersonate ? name1 : name2);
             const isQuiet = quiet_prompt && type == 'quiet';
             lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2, isQuiet, quietToLoud);
         }
