@@ -174,45 +174,48 @@ describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
-        // {{macro!@#%}}
-        it('do not lex special characters as part of the macro identifier', async () => {
-            const input = '{{macro!@#%}}';
-            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
 
-            const expectedErrors = [
-                { message: 'unexpected character: ->!<- at offset: 7, skipped 4 characters.' },
-            ];
+        describe('Error Cases (Macro Identifier)', () => {
+            // {{macro!@#%}}
+            it('[Error] do not lex special characters as part of the macro identifier', async () => {
+                const input = '{{macro!@#%}}';
+                const { tokens, errors } = await runLexerGetTokensAndErrors(input);
 
-            expect(errors).toMatchObject(expectedErrors);
+                const expectedErrors = [
+                    { message: 'unexpected character: ->!<- at offset: 7, skipped 4 characters.' },
+                ];
 
-            const expectedTokens = [
-                { type: 'Macro.Start', text: '{{' },
-                { type: 'Macro.Identifier', text: 'macro' },
-                // Do not lex the wrong characters
-                { type: 'Macro.End', text: '}}' },
-            ];
+                expect(errors).toMatchObject(expectedErrors);
 
-            expect(tokens).toEqual(expectedTokens);
-        });
-        // {{ma!@#%ro}}
-        it('[Error] invalid chars in macro identifier are not parsed as valid macro identifier', async () => {
-            const input = '{{ma!@#%ro}}';
-            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+                const expectedTokens = [
+                    { type: 'Macro.Start', text: '{{' },
+                    { type: 'Macro.Identifier', text: 'macro' },
+                    // Do not lex the wrong characters
+                    { type: 'Macro.End', text: '}}' },
+                ];
 
-            const expectedErrors = [
-                { message: 'unexpected character: ->!<- at offset: 4, skipped 6 characters.' },
-            ];
+                expect(tokens).toEqual(expectedTokens);
+            });
+            // {{ma!@#%ro}}
+            it('[Error] invalid chars in macro identifier are not parsed as valid macro identifier', async () => {
+                const input = '{{ma!@#%ro}}';
+                const { tokens, errors } = await runLexerGetTokensAndErrors(input);
 
-            expect(errors).toMatchObject(expectedErrors);
+                const expectedErrors = [
+                    { message: 'unexpected character: ->!<- at offset: 4, skipped 6 characters.' },
+                ];
 
-            const expectedTokens = [
-                { type: 'Macro.Start', text: '{{' },
-                { type: 'Macro.Identifier', text: 'ma' },
-                // Do not lex the wrong characters
-                { type: 'Macro.End', text: '}}' },
-            ];
+                expect(errors).toMatchObject(expectedErrors);
 
-            expect(tokens).toEqual(expectedTokens);
+                const expectedTokens = [
+                    { type: 'Macro.Start', text: '{{' },
+                    { type: 'Macro.Identifier', text: 'ma' },
+                    // Do not lex the wrong characters
+                    { type: 'Macro.End', text: '}}' },
+                ];
+
+                expect(tokens).toEqual(expectedTokens);
+            });
         });
     });
 
@@ -607,26 +610,6 @@ describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
-        // {{ @unknown }}
-        it('[Error] do not capture unknown special characters as flag', async () => {
-            const input = '{{ @unknown }}';
-            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
-
-            const expectedErrors = [
-                { message: 'unexpected character: ->@<- at offset: 3, skipped 1 characters.' },
-            ];
-
-            expect(errors).toMatchObject(expectedErrors);
-
-            const expectedTokens = [
-                { type: 'Macro.Start', text: '{{' },
-                // Do not capture '@' as anything, as it's a lexer error
-                { type: 'Macro.Identifier', text: 'unknown' },
-                { type: 'Macro.End', text: '}}' },
-            ];
-
-            expect(tokens).toEqual(expectedTokens);
-        });
         // {{ a shaaark }}
         it('do not capture single letter as flag, but as macro identifiers', async () => {
             const input = '{{ a shaaark }}';
@@ -641,24 +624,47 @@ describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
-        // {{ 2 cents }}
-        it('[Error] do not capture numbers as flag - they are also invalid macro identifiers', async () => {
-            const input = '{{ 2 cents }}';
-            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
 
-            const expectedErrors = [
-                { message: 'unexpected character: ->2<- at offset: 3, skipped 1 characters.' },
-            ];
-            expect(errors).toMatchObject(expectedErrors);
+        describe('Error Cases (Macro Execution Modifiers)', () => {
+            // {{ @unknown }}
+            it('[Error] do not capture unknown special characters as flag', async () => {
+                const input = '{{ @unknown }}';
+                const { tokens, errors } = await runLexerGetTokensAndErrors(input);
 
-            const expectedTokens = [
-                { type: 'Macro.Start', text: '{{' },
-                // Do not capture '2' as anything, as it's a lexer error
-                { type: 'Macro.Identifier', text: 'cents' },
-                { type: 'Macro.End', text: '}}' },
-            ];
+                const expectedErrors = [
+                    { message: 'unexpected character: ->@<- at offset: 3, skipped 1 characters.' },
+                ];
 
-            expect(tokens).toEqual(expectedTokens);
+                expect(errors).toMatchObject(expectedErrors);
+
+                const expectedTokens = [
+                    { type: 'Macro.Start', text: '{{' },
+                    // Do not capture '@' as anything, as it's a lexer error
+                    { type: 'Macro.Identifier', text: 'unknown' },
+                    { type: 'Macro.End', text: '}}' },
+                ];
+
+                expect(tokens).toEqual(expectedTokens);
+            });
+            // {{ 2 cents }}
+            it('[Error] do not capture numbers as flag - they are also invalid macro identifiers', async () => {
+                const input = '{{ 2 cents }}';
+                const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+
+                const expectedErrors = [
+                    { message: 'unexpected character: ->2<- at offset: 3, skipped 1 characters.' },
+                ];
+                expect(errors).toMatchObject(expectedErrors);
+
+                const expectedTokens = [
+                    { type: 'Macro.Start', text: '{{' },
+                    // Do not capture '2' as anything, as it's a lexer error
+                    { type: 'Macro.Identifier', text: 'cents' },
+                    { type: 'Macro.End', text: '}}' },
+                ];
+
+                expect(tokens).toEqual(expectedTokens);
+            });
         });
     });
 
@@ -678,7 +684,6 @@ describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
-
         // {{macro | outputModifier arg1=val1 arg2=val2}}
         it('should support output modifier with named arguments', async () => {
             const input = '{{macro | outputModifier arg1=val1 arg2=val2}}';
@@ -700,7 +705,6 @@ describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
-
         // {{macro | outputModifier "unnamed1" "unnamed2"}}
         it('should support output modifier with unnamed arguments', async () => {
             const input = '{{macro | outputModifier "unnamed1" "unnamed2"}}';
@@ -722,7 +726,6 @@ describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
-
         // {{macro arg1=val1 | outputModifier arg2=val2 "unnamed1"}}
         it('should support macro arguments before output modifier', async () => {
             const input = '{{macro arg1=val1 | outputModifier arg2=val2 "unnamed1"}}';
@@ -747,7 +750,6 @@ describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
-
         // {{macro | outputModifier1 | outputModifier2}}
         it('should support chaining multiple output modifiers', async () => {
             const input = '{{macro | outputModifier1 | outputModifier2}}';
@@ -765,7 +767,6 @@ describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
-
         // {{macro | outputModifier1 arg1=val1 | outputModifier2 arg2=val2}}
         it('should support chaining multiple output modifiers with arguments', async () => {
             const input = '{{macro | outputModifier1 arg1=val1 | outputModifier2 arg2=val2}}';
@@ -789,7 +790,6 @@ describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
-
         // {{macro|outputModifier}}
         it('should support output modifiers without whitespace', async () => {
             const input = '{{macro|outputModifier}}';
@@ -805,7 +805,6 @@ describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
-
         // {{ macro test escaped \| pipe }}
         it('should support escaped pipes, not treating them as output modifiers', async () => {
             const input = '{{ macro test escaped \\| pipe }}';
@@ -825,114 +824,111 @@ describe('MacroLexer', () => {
             expect(tokens).toEqual(expectedTokens);
         });
 
-        // {{|macro}}
-        it('[Error] should not capture when starting the macro with a pipe', async () => {
-            const input = '{{|macro}}';
-            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+        describe('Error Cases (Macro Output Modifiers)', () => {
+            // {{|macro}}
+            it('[Error] should not capture when starting the macro with a pipe', async () => {
+                const input = '{{|macro}}';
+                const { tokens, errors } = await runLexerGetTokensAndErrors(input);
 
-            const expectedErrors = [
-                { message: 'unexpected character: ->|<- at offset: 2, skipped 1 characters.' },
-            ];
+                const expectedErrors = [
+                    { message: 'unexpected character: ->|<- at offset: 2, skipped 1 characters.' },
+                ];
 
-            expect(errors).toMatchObject(expectedErrors);
+                expect(errors).toMatchObject(expectedErrors);
 
-            const expectedTokens = [
-                { type: 'Macro.Start', text: '{{' },
-                { type: 'Macro.Identifier', text: 'macro' },
-                { type: 'Macro.End', text: '}}' },
-            ];
+                const expectedTokens = [
+                    { type: 'Macro.Start', text: '{{' },
+                    { type: 'Macro.Identifier', text: 'macro' },
+                    { type: 'Macro.End', text: '}}' },
+                ];
 
-            expect(tokens).toEqual(expectedTokens);
+                expect(tokens).toEqual(expectedTokens);
+            });
+            // {{macro | Iam$peci@l}}
+            it('[Error] do not allow special characters inside output modifier identifier', async () => {
+                const input = '{{macro | Iam$peci@l}}';
+                const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+
+                const expectedErrors = [
+                    { message: 'unexpected character: ->$<- at offset: 13, skipped 7 characters.' },
+                ];
+
+                expect(errors).toMatchObject(expectedErrors);
+
+                const expectedTokens = [
+                    { type: 'Macro.Start', text: '{{' },
+                    { type: 'Macro.Identifier', text: 'macro' },
+                    { type: 'Filter.Pipe', text: '|' },
+                    { type: 'Filter.Identifier', text: 'Iam' },
+                    { type: 'Macro.End', text: '}}' },
+                ];
+
+                expect(tokens).toEqual(expectedTokens);
+            });
+            // {{macro | !cannotBeImportant }}
+            it('[Error] do not allow output modifiers to have execution modifiers', async () => {
+                const input = '{{macro | !cannotBeImportant }}';
+                const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+
+                const expectedErrors = [
+                    { message: 'unexpected character: ->!<- at offset: 10, skipped 1 characters.' },
+                ];
+
+                expect(errors).toMatchObject(expectedErrors);
+
+                const expectedTokens = [
+                    { type: 'Macro.Start', text: '{{' },
+                    { type: 'Macro.Identifier', text: 'macro' },
+                    { type: 'Filter.Pipe', text: '|' },
+                    { type: 'Filter.Identifier', text: 'cannotBeImportant' },
+                    { type: 'Macro.End', text: '}}' },
+                ];
+
+                expect(tokens).toEqual(expectedTokens);
+            });
+            // {{macro | 2invalidIdentifier}}
+            it('[Error] should throw an error for an invalid identifier starting with a number', async () => {
+                const input = '{{macro | 2invalidIdentifier}}';
+                const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+
+                const expectedErrors = [
+                    { message: 'unexpected character: ->2<- at offset: 10, skipped 1 characters.' },
+                ];
+
+                expect(errors).toMatchObject(expectedErrors);
+
+                const expectedTokens = [
+                    { type: 'Macro.Start', text: '{{' },
+                    { type: 'Macro.Identifier', text: 'macro' },
+                    { type: 'Filter.Pipe', text: '|' },
+                    { type: 'Filter.Identifier', text: 'invalidIdentifier' },
+                    { type: 'Macro.End', text: '}}' },
+                ];
+
+                expect(tokens).toEqual(expectedTokens);
+            });
+            // {{macro || outputModifier}}
+            it('[Error] should throw an error when double pipe is used without an identifier', async () => {
+                const input = '{{macro || outputModifier}}';
+                const { tokens, errors } = await runLexerGetTokensAndErrors(input);
+
+                const expectedErrors = [
+                    { message: 'unexpected character: ->|<- at offset: 9, skipped 1 characters.' },
+                ];
+
+                expect(errors).toMatchObject(expectedErrors);
+
+                const expectedTokens = [
+                    { type: 'Macro.Start', text: '{{' },
+                    { type: 'Macro.Identifier', text: 'macro' },
+                    { type: 'Filter.Pipe', text: '|' },
+                    { type: 'Filter.Identifier', text: 'outputModifier' },
+                    { type: 'Macro.End', text: '}}' },
+                ];
+
+                expect(tokens).toEqual(expectedTokens);
+            });
         });
-
-        // {{macro | Iam$peci@l}}
-        it('[Error] do not allow special characters inside output modifier identifier', async () => {
-            const input = '{{macro | Iam$peci@l}}';
-            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
-
-            const expectedErrors = [
-                { message: 'unexpected character: ->$<- at offset: 13, skipped 7 characters.' },
-            ];
-
-            expect(errors).toMatchObject(expectedErrors);
-
-            const expectedTokens = [
-                { type: 'Macro.Start', text: '{{' },
-                { type: 'Macro.Identifier', text: 'macro' },
-                { type: 'Filter.Pipe', text: '|' },
-                { type: 'Filter.Identifier', text: 'Iam' },
-                { type: 'Macro.End', text: '}}' },
-            ];
-
-            expect(tokens).toEqual(expectedTokens);
-        });
-
-        // {{macro | !cannotBeImportant }}
-        it('[Error] do not allow output modifiers to have execution modifiers', async () => {
-            const input = '{{macro | !cannotBeImportant }}';
-            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
-
-            const expectedErrors = [
-                { message: 'unexpected character: ->!<- at offset: 10, skipped 1 characters.' },
-            ];
-
-            expect(errors).toMatchObject(expectedErrors);
-
-            const expectedTokens = [
-                { type: 'Macro.Start', text: '{{' },
-                { type: 'Macro.Identifier', text: 'macro' },
-                { type: 'Filter.Pipe', text: '|' },
-                { type: 'Filter.Identifier', text: 'cannotBeImportant' },
-                { type: 'Macro.End', text: '}}' },
-            ];
-
-            expect(tokens).toEqual(expectedTokens);
-        });
-
-        // {{macro | 2invalidIdentifier}}
-        it('[Error] should throw an error for an invalid identifier starting with a number', async () => {
-            const input = '{{macro | 2invalidIdentifier}}';
-            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
-
-            const expectedErrors = [
-                { message: 'unexpected character: ->2<- at offset: 10, skipped 1 characters.' },
-            ];
-
-            expect(errors).toMatchObject(expectedErrors);
-
-            const expectedTokens = [
-                { type: 'Macro.Start', text: '{{' },
-                { type: 'Macro.Identifier', text: 'macro' },
-                { type: 'Filter.Pipe', text: '|' },
-                { type: 'Filter.Identifier', text: 'invalidIdentifier' },
-                { type: 'Macro.End', text: '}}' },
-            ];
-
-            expect(tokens).toEqual(expectedTokens);
-        });
-
-        // {{macro || outputModifier}}
-        it('[Error] should throw an error when double pipe is used without an identifier', async () => {
-            const input = '{{macro || outputModifier}}';
-            const { tokens, errors } = await runLexerGetTokensAndErrors(input);
-
-            const expectedErrors = [
-                { message: 'unexpected character: ->|<- at offset: 9, skipped 1 characters.' },
-            ];
-
-            expect(errors).toMatchObject(expectedErrors);
-
-            const expectedTokens = [
-                { type: 'Macro.Start', text: '{{' },
-                { type: 'Macro.Identifier', text: 'macro' },
-                { type: 'Filter.Pipe', text: '|' },
-                { type: 'Filter.Identifier', text: 'outputModifier' },
-                { type: 'Macro.End', text: '}}' },
-            ];
-
-            expect(tokens).toEqual(expectedTokens);
-        });
-
     });
 
     describe('Macro While Typing..', () => {
