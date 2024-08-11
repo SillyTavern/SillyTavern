@@ -14,6 +14,8 @@ dnsPreferIPv6: false
 autorunHostname: "auto"
 # Server port
 port: 8000
+# overrides the port for autorun with open your browser with this port and ignore what port the server is running on. -1 is use server port
+autorunPortOverride: -1
 # -- SECURITY CONFIGURATION --
 # Toggle whitelist mode
 whitelistMode: true

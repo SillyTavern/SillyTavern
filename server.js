@@ -71,7 +71,9 @@ const DEFAULT_ENABLE_IPV6 = false;
 const DEFAULT_ENABLE_IPV4 = true;
 
 const DEFAULT_PREFER_IPV6 = false;
+
 const DEFAULT_AUTORUN_HOSTNAME = "auto";
+const DEFAULT_AUTORUN_PORT = -1;
 
 const cliArguments = yargs(hideBin(process.argv))
     .usage('Usage: <your-start-script> <command> [options]')
@@ -153,6 +155,7 @@ const enableIPv6 = getConfigValue('protocol.ipv6', DEFAULT_ENABLE_IPV6);
 const enableIPv4 = getConfigValue('protocol.ipv4', DEFAULT_ENABLE_IPV4);
 
 const autorunHostname = getConfigValue('autorunHostname', DEFAULT_AUTORUN_HOSTNAME);
+const autorunPort = getConfigValue('autorunPortOverride', DEFAULT_AUTORUN_PORT);
 
 const dnsPreferIPv6 = cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', DEFAULT_PREFER_IPV6);
 
@@ -674,10 +677,12 @@ function getAutorunHostname() {
 const postSetupTasks = async function (v6Failed, v4Failed) {
 
 
+    console.log(autorunPort)
     const autorunUrl = new URL(
         (cliArguments.ssl ? 'https://' : 'http://') +
         (getAutorunHostname()) +
-        (':' + server_port),
+        (':') +
+        ((autorunPort >= 0) ? autorunPort : server_port),
     );
 
 
