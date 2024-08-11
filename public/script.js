@@ -134,6 +134,10 @@ import {
 } from './scripts/horde.js';
 
 import {
+    reGeneratePicture,
+} from './scripts/extensions/stable-diffusion/index.js';
+
+import {
     debounce,
     delay,
     trimToEndSentence,
@@ -7373,7 +7377,6 @@ export function showSwipeButtons() {
         !swipes ||
         Number($('.mes:last').attr('mesid')) < 0 ||
         chat[chat.length - 1].is_user ||
-        chat[chat.length - 1].extra?.image ||
         (selected_group && is_group_generating)
     ) { return; }
 
@@ -7938,6 +7941,7 @@ window['SillyTavern'].getContext = function () {
         eventTypes: event_types,
         addOneMessage: addOneMessage,
         generate: Generate,
+        reGeneratePicture: reGeneratePicture,
         sendStreamingRequest: sendStreamingRequest,
         sendGenerationRequest: sendGenerationRequest,
         stopGeneration: stopGeneration,
@@ -8243,6 +8247,12 @@ const swipe_right = () => {
                     // resets the timer
                     swipeMessage.find('.mes_timer').html('');
                     swipeMessage.find('.tokenCounterDisplay').text('');
+                    if (chat[chat.length - 1].extra?.image) {
+                        const imgElement = swipeMessage.find('.mes_img');
+                        if (imgElement.length > 0) {
+                            imgElement.attr('src', '');  // Set src to an empty string to clear existing image
+                        }
+                    }
                 } else {
                     //console.log('showing previously generated swipe candidate, or "..."');
                     //console.log('onclick right swipe calling addOneMessage');
@@ -8292,7 +8302,12 @@ const swipe_right = () => {
                                     console.debug('caught here 2');
                                     is_send_press = true;
                                     $('.mes_buttons:last').hide();
-                                    await Generate('swipe');
+                                    // If the swipe is an image, regenerate the image.  Else, generate a new message.
+                                    if (chat[chat.length - 1].extra?.image) {
+                                        await reGeneratePicture(chat[chat.length - 1].extra.generationType, chat[chat.length - 1].extra.title, {});
+                                    } else {
+                                        await Generate('swipe');
+                                    }
                                 } else {
                                     if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
                                         saveChatDebounced();

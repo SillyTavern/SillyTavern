@@ -31,7 +31,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { debounce_timeout } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from '../../popup.js';
-export { MODULE_NAME };
+export { MODULE_NAME, reGeneratePicture };
 
 const MODULE_NAME = 'sd';
 const UPDATE_INTERVAL = 1000;
@@ -58,6 +58,7 @@ const initiators = {
     action: 'action',
     interactive: 'interactive',
     wand: 'wand',
+    regen: 'regen',
 };
 
 const generationMode = {
@@ -2324,6 +2325,63 @@ async function generatePicture(initiator, args, trigger, message, callback) {
     return imagePath;
 }
 
+/**
+ * Re-Generates an image based on a right swipe.
+ * @param {number} generationType Subject trigger word
+ * @param {string} [prompt] Chat message
+ * @param {Record<string, object>} args Command arguments
+ * @param {function} [callback] Callback function
+ * @returns {Promise<string>} Image path
+ */
+async function reGeneratePicture(generationType, prompt, args, callback) {
+    if (!isValidState()) {
+        toastr.warning('Image generation is not available. Check your settings and try again.');
+        return;
+    }
+
+    extension_settings.sd.sampler = $('#sd_sampler').find(':selected').val();
+    extension_settings.sd.model = $('#sd_model').find(':selected').val();
+
+    const context = getContext();
+    const characterName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString();
+
+    if (isTrueBoolean(args?.quiet)) {
+        callback = () => { };
+    }
+
+    const dimensions = setTypeSpecificDimensions(generationType);
+    const abortController = new AbortController();
+    const stopButton = document.getElementById('sd_stop_gen');
+    let negativePromptPrefix = args?.negative || '';
+    let imagePath = '';
+
+    const stopListener = () => abortController.abort('Aborted by user');
+    try {
+        const combineNegatives = (prefix) => { negativePromptPrefix = combinePrefixes(negativePromptPrefix, prefix); };
+
+        $(stopButton).show();
+        eventSource.once(CUSTOM_STOP_EVENT, stopListener);
+        context.deactivateSendButtons();
+        if (typeof args?._abortController?.addEventListener === 'function') {
+            args._abortController.addEventListener('abort', stopListener);
+        }
+
+        imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback, initiators.regen, abortController.signal);
+    } catch (err) {
+        console.trace(err);
+        toastr.error('SD prompt text generation failed. Reason: ' + err, 'Image Generation');
+        throw new Error('SD prompt text generation failed. Reason: ' + err);
+    }
+    finally {
+        $(stopButton).hide();
+        restoreOriginalDimensions(dimensions);
+        eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
+        context.activateSendButtons();
+    }
+
+    return imagePath;
+}
+
 function setTypeSpecificDimensions(generationType) {
     const prevSDHeight = extension_settings.sd.height;
     const prevSDWidth = extension_settings.sd.width;
@@ -3350,10 +3408,31 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
             inline_image: false,
         },
     };
-    context.chat.push(message);
-    const messageId = context.chat.length - 1;
-    await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId);
-    context.addOneMessage(message);
+    if (initiator === initiators.regen) {
+        const messageId = context.chat.length - 1;
+        await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId);
+        context.addOneMessage(message, {type: 'swipe', showSwipes: true});
+        
+    }
+    else {
+        context.chat.push(message);
+        const messageId = context.chat.length - 1;
+        await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId);
+        context.addOneMessage(message);
+    }
+    // Grab the last message and fill in the swipe info details to support image swipes
+    const item = context.chat[context.chat.length - 1];
+    if (item['swipe_info'] == undefined) {
+        item['swipe_info'] = [];
+    }
+    if (item['swipe_id'] !== undefined) {
+        const swipeId = item['swipe_id'];
+        item['swipes'][swipeId] = messageText;
+        item['swipe_info'][swipeId] = {
+            send_date: message['send_date'],
+            extra: JSON.parse(JSON.stringify(message['extra'])),
+        }
+    }
     await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId);
     await context.saveChat();
 }
@@ -3371,6 +3450,8 @@ function getVisibilityByInitiator(initiator) {
             return !!extension_settings.sd.wand_visible;
         case initiators.command:
             return !!extension_settings.sd.command_visible;
+        case initiators.regen:
+            return true;
         default:
             return false;
     }
