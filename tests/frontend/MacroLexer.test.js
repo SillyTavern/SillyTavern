@@ -174,6 +174,19 @@ describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
+        // {{legacy_macro}}
+        it('allow underscores as legacy in macro identifiers', async () => {
+            const input = '{{legacy_macro}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'legacy_macro' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
 
         describe('Error Cases (Macro Identifier)', () => {
             // {{macro!@#%}}
@@ -305,6 +318,22 @@ describe('MacroLexer', () => {
                 { type: 'Identifier', text: 'longer-key' },
                 { type: 'Args.Equals', text: '=' },
                 { type: 'Identifier', text: 'value' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{macro legacy_key=blah}}
+        it('should handle legacy argument name identifiers', async () => {
+            const input = '{{macro legacy_key=blah}}';
+            const tokens = await runLexerGetTokens(input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'macro' },
+                { type: 'Identifier', text: 'legacy_key' },
+                { type: 'Args.Equals', text: '=' },
+                { type: 'Identifier', text: 'blah' },
                 { type: 'Macro.End', text: '}}' },
             ];
 

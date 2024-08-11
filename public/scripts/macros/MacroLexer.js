@@ -23,7 +23,7 @@ const Tokens = {
         // Separate macro identifier needed, that is similar to the global indentifier, but captures the actual macro "name"
         // We need this, because this token is going to switch lexer mode, while the general identifier does not.
         Flags: createToken({ name: 'Macro.Flag', pattern: /[!?#~/.$]/ }),
-        Identifier: createToken({ name: 'Macro.Identifier', pattern: /[a-zA-Z][\w-]*/ }),
+        Identifier: createToken({ name: 'Macro.Identifier', pattern: /[a-zA-Z][\w-_]*/ }),
         // At the end of an identifier, there has to be whitspace, or must be directly followed by colon/double-colon separator, output modifier or closing braces
         EndOfIdentifier: createToken({ name: 'Macro.EndOfIdentifier', pattern: /(?:\s+|(?=:{1,2})|(?=[|}]))/, group: Lexer.SKIPPED }),
         BeforeEnd: createToken({ name: 'Macro.BeforeEnd', pattern: /(?=\}\})/, group: Lexer.SKIPPED }),
@@ -40,13 +40,13 @@ const Tokens = {
 
     Filter: {
         Pipe: createToken({ name: 'Filter.Pipe', pattern: /(?<!\\)\|/ }),
-        Identifier: createToken({ name: 'Filter.Identifier', pattern: /[a-zA-Z][\w-]*/ }),
+        Identifier: createToken({ name: 'Filter.Identifier', pattern: /[a-zA-Z][\w-_]*/ }),
         // At the end of an identifier, there has to be whitspace, or must be directly followed by colon/double-colon separator, output modifier or closing braces
         EndOfIdentifier: createToken({ name: 'Filter.EndOfIdentifier', pattern: /(?:\s+|(?=:{1,2})|(?=[|}]))/, group: Lexer.SKIPPED }),
     },
 
     // All tokens that can be captured inside a macro
-    Identifier: createToken({ name: 'Identifier', pattern: /[a-zA-Z][\w-]*/ }),
+    Identifier: createToken({ name: 'Identifier', pattern: /[a-zA-Z][\w-_]*/ }),
     WhiteSpace: createToken({ name: 'WhiteSpace', pattern: /\s+/, group: Lexer.SKIPPED }),
 
     // Capture unknown characters one by one, to still allow other tokens being matched once they are there
