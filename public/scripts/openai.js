@@ -808,7 +808,8 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
     // Reserve budget for group nudge
     let groupNudgeMessage = null;
-    if (selected_group) {
+    const noGroupNudgeTypes = ['impersonate'];
+    if (selected_group && prompts.has('groupNudge') && !noGroupNudgeTypes.includes(type)) {
         groupNudgeMessage = Message.fromPrompt(prompts.get('groupNudge'));
         chatCompletion.reserveBudget(groupNudgeMessage);
     }
