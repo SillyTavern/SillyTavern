@@ -860,8 +860,7 @@ describe('MacroLexer', () => {
                 { type: 'Macro.Identifier', text: 'macro' },
                 { type: 'Identifier', text: 'test' },
                 { type: 'Identifier', text: 'escaped' },
-                { type: 'Unknown', text: '\\' },
-                { type: 'Unknown', text: '|' },
+                { type: 'Filter.EscapedPipe', text: '\\|' },
                 { type: 'Identifier', text: 'pipe' },
                 { type: 'Macro.End', text: '}}' },
             ];

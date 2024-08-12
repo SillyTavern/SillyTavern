@@ -39,7 +39,8 @@ const Tokens = {
     },
 
     Filter: {
-        Pipe: createToken({ name: 'Filter.Pipe', pattern: /(?<!\\)\|/ }),
+        EscapedPipe: createToken({ name: 'Filter.EscapedPipe', pattern: /\\\|/ }),
+        Pipe: createToken({ name: 'Filter.Pipe', pattern: /\|/ }),
         Identifier: createToken({ name: 'Filter.Identifier', pattern: /[a-zA-Z][\w-_]*/ }),
         // At the end of an identifier, there has to be whitspace, or must be directly followed by colon/double-colon separator, output modifier or closing braces
         EndOfIdentifier: createToken({ name: 'Filter.EndOfIdentifier', pattern: /(?:\s+|(?=:{1,2})|(?=[|}]))/, group: Lexer.SKIPPED }),
@@ -58,7 +59,7 @@ const Tokens = {
     // DANGER ZONE: Careful with this token. This is used as a way to pop the current mode, if no other token matches.
     // Can be used in modes that don't have a "defined" end really, like when capturing a single argument, argument list, etc.
     // Has to ALWAYS be the last token.
-    ModePopper: createToken({ name: 'ModePopper', pattern: () => [''], pop_mode: true, group: Lexer.SKIPPED }),
+    ModePopper: createToken({ name: 'ModePopper', pattern: () => [''], line_breaks: false, group: Lexer.SKIPPED }),
 };
 
 /** @type {Map<string,string>} Saves all token definitions that are marked as entering modes */
@@ -90,6 +91,9 @@ const Def = {
         [modes.macro_args]: [
             // Macro args allow nested macros
             enter(Tokens.Macro.Start, modes.macro_def),
+
+            // We allow escaped pipes to not start output modifiers. We need to capture this first, before the pipe
+            using(Tokens.Filter.EscapedPipe),
 
             // If at any place during args writing there is a pipe, we lex it as an output identifier, and then continue with lex its args
             enter(Tokens.Filter.Pipe, modes.macro_filter_modifer),
