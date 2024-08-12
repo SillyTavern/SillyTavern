@@ -2394,8 +2394,6 @@ async function reGeneratePicture(generationType, prompt, args, callback) {
 
     const stopListener = () => abortController.abort('Aborted by user');
     try {
-        const combineNegatives = (prefix) => { negativePromptPrefix = combinePrefixes(negativePromptPrefix, prefix); };
-
         $(stopButton).show();
         eventSource.once(CUSTOM_STOP_EVENT, stopListener);
         context.deactivateSendButtons();
@@ -2755,15 +2753,12 @@ async function generateBlockEntropyImage(prompt, negativePrompt, signal) {
 
     if (result.ok) {
         const data = await result.json();
-    
         // Default format is 'jpg'
         let format = 'jpg';
-    
         // Check if a format is specified in the result
         if (data.format) {
             format = data.format.toLowerCase();
         }
-    
         return { format: format, data: data.images[0] };
     } else {
         const text = await result.text();
@@ -3485,7 +3480,7 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
     let messageId = context.chat.length - 1;
     if (initiator === initiators.regen) {
         await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId);
-        context.addOneMessage(message, {type: 'swipe'});
+        context.addOneMessage(message, { type: 'swipe' });
     }
     else {
         context.chat.push(message);
@@ -3507,7 +3502,7 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
         item['swipe_info'][swipeId] = {
             send_date: message['send_date'],
             extra: JSON.parse(JSON.stringify(message['extra'])),
-        }
+        };
         showSwipeButtons();
     }
     await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId);
