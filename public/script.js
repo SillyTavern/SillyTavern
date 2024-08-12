@@ -7373,7 +7373,7 @@ export function showSwipeButtons() {
     }
 
     if (
-        chat[chat.length - 1].is_system ||
+        (chat[chat.length - 1].is_system && !chat[chat.length - 1].extra?.image) ||
         !swipes ||
         Number($('.mes:last').attr('mesid')) < 0 ||
         chat[chat.length - 1].is_user ||
@@ -8250,7 +8250,9 @@ const swipe_right = () => {
                     if (chat[chat.length - 1].extra?.image) {
                         const imgElement = swipeMessage.find('.mes_img');
                         if (imgElement.length > 0) {
-                            imgElement.attr('src', '');  // Set src to an empty string to clear existing image
+                            imgElement.removeAttr('src');  // Set src to null to clear existing image
+                            imgElement.removeAttr('title');  // Remove the title attribute
+                            swipeMessage.find('.mes_text').removeClass('displayNone');
                         }
                     }
                 } else {
@@ -8305,6 +8307,7 @@ const swipe_right = () => {
                                     // If the swipe is an image, regenerate the image.  Else, generate a new message.
                                     if (chat[chat.length - 1].extra?.image) {
                                         await reGeneratePicture(chat[chat.length - 1].extra.generationType, chat[chat.length - 1].extra.title, {});
+                                        swipeMessage.find('.mes_text').addClass('displayNone');
                                     } else {
                                         await Generate('swipe');
                                     }

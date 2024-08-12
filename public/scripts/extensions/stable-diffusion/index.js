@@ -2375,6 +2375,10 @@ async function reGeneratePicture(generationType, prompt, args, callback) {
     extension_settings.sd.sampler = $('#sd_sampler').find(':selected').val();
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
 
+    // If requesting to regenerate, use a random seed
+    extension_settings.sd.seed = Math.floor(Math.random() * 1000000);
+    hideSwipeButtons();
+
     const context = getContext();
     const characterName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString();
 
@@ -3478,30 +3482,33 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
             inline_image: false,
         },
     };
+    let messageId = context.chat.length - 1;
     if (initiator === initiators.regen) {
-        const messageId = context.chat.length - 1;
         await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId);
-        context.addOneMessage(message, {type: 'swipe', showSwipes: true});
-        
+        context.addOneMessage(message, {type: 'swipe'});
     }
     else {
         context.chat.push(message);
-        const messageId = context.chat.length - 1;
+        messageId = context.chat.length - 1;
         await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId);
         context.addOneMessage(message);
     }
     // Grab the last message and fill in the swipe info details to support image swipes
-    const item = context.chat[context.chat.length - 1];
+    const item = context.chat[messageId];
+    // If first swipe, initialize the swipe arrays
     if (item['swipe_info'] == undefined) {
         item['swipe_info'] = [];
+        item['swipe_id'] = 0;
     }
     if (item['swipe_id'] !== undefined) {
+        item.extra.image = image;
         const swipeId = item['swipe_id'];
         item['swipes'][swipeId] = messageText;
         item['swipe_info'][swipeId] = {
             send_date: message['send_date'],
             extra: JSON.parse(JSON.stringify(message['extra'])),
         }
+        showSwipeButtons();
     }
     await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId);
     await context.saveChat();
@@ -3521,7 +3528,7 @@ function getVisibilityByInitiator(initiator) {
         case initiators.command:
             return !!extension_settings.sd.command_visible;
         case initiators.regen:
-            return true;
+            return false;
         default:
             return false;
     }
