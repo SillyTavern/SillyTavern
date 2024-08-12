@@ -1,5 +1,5 @@
 import { getRequestHeaders } from '../../script.js';
-import { extension_settings } from '../extensions.js';
+import { extension_settings, openThirdPartyExtensionMenu } from '../extensions.js';
 import { oai_settings } from '../openai.js';
 import { SECRET_KEYS, secret_state } from '../secrets.js';
 import { textgen_types, textgenerationwebui_settings } from '../textgen-settings.js';
@@ -202,18 +202,7 @@ export function isWebLlmSupported() {
                 timeOut: 0,
                 extendedTimeOut: 0,
                 preventDuplicates: true,
-                onclick: () => {
-                    const button = document.getElementById('third_party_extension_button');
-                    if (button) {
-                        button.click();
-                    }
-
-                    const input = document.querySelector('dialog textarea');
-
-                    if (input instanceof HTMLTextAreaElement) {
-                        input.value = 'https://github.com/SillyTavern/Extension-WebLLM';
-                    }
-                },
+                onclick: () => openThirdPartyExtensionMenu('https://github.com/SillyTavern/Extension-WebLLM'),
             });
             sessionStorage.setItem(warningKey, '1');
         }
