@@ -137,6 +137,10 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'string',
         default: null,
         describe: 'Root directory for data storage',
+    }).option('avoidLocalhost', {
+        type: 'boolean',
+        default: false,
+        describe: 'avoids using localhost for autorun in auto mode.\nuse if you don\'t have localhost in your hosts file',
     }).option('basicAuthMode', {
         type: 'boolean',
         default: null,
@@ -674,6 +678,7 @@ function getAutorunHostname() {
 
     if (autorunHostname === 'auto') {
         if (enableIPv6 && enableIPv4) {
+            if (cliArguments.avoidLocalhost) return '[::1]';
             return 'localhost';
         }
 
