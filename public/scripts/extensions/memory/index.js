@@ -65,7 +65,7 @@ async function getSourceContextSize() {
     }
 
     if (extension_settings.source === summary_sources.extras) {
-        return 1024;
+        return 1024 - 64;
     }
 
     return getMaxContextSize(overrideLength);
@@ -792,7 +792,7 @@ async function summarizeChatExtras(context) {
     const reversedChat = chat.slice().reverse();
     reversedChat.shift();
     const memoryBuffer = [];
-    const CONTEXT_SIZE = 1024 - 64;
+    const CONTEXT_SIZE = await getSourceContextSize();
 
     for (const message of reversedChat) {
         // we reached the point of latest memory
@@ -810,14 +810,14 @@ async function summarizeChatExtras(context) {
         memoryBuffer.push(entry);
 
         // check if token limit was reached
-        const tokens = getTextTokens(tokenizers.GPT2, getMemoryString()).length;
+        const tokens = await countSourceTokens(getMemoryString());
         if (tokens >= CONTEXT_SIZE) {
             break;
         }
     }
 
     const resultingString = getMemoryString();
-    const resultingTokens = getTextTokens(tokenizers.GPT2, resultingString).length;
+    const resultingTokens = await countSourceTokens(resultingString);
 
     if (!resultingString || resultingTokens < CONTEXT_SIZE) {
         console.debug('Not enough context to summarize');
