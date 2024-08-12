@@ -16,10 +16,37 @@ class MacroParser extends CstParser {
     /** @private */
     constructor() {
         super(MacroLexer.def);
+        const Tokens = MacroLexer.tokens;
 
-        // const $ = this;
+        const $ = this;
+
+        this.macro = $.RULE("macro", () => {
+            $.CONSUME(Tokens.Macro.Start);
+            $.CONSUME(Tokens.Macro.Identifier);
+            $.OPTION(() => $.SUBRULE($.arguments));
+            $.CONSUME(Tokens.Macro.End);
+        });
+
+        this.arguments = $.RULE("arguments", () => {
+            $.CONSUME(Tokens.Identifier);
+        });
 
         this.performSelfAnalysis();
+    }
+
+    test(input) {
+        const lexingResult = MacroLexer.tokenize(input);
+        // "input" is a setter which will reset the parser's state.
+        this.input = lexingResult.tokens;
+        const node = this.macro();
+
+
+        if (this.errors.length > 0) {
+            console.error('Parser errors', this.errors);
+            throw new Error('Parser errors found\n' + this.errors.map(x => x.message).join('\n'));
+        }
+
+        return node;
     }
 }
 

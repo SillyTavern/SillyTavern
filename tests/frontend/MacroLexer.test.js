@@ -2,13 +2,13 @@
 /** @typedef {import('../../public/lib/chevrotain.js').ILexingError} ILexingError */
 /** @typedef {{type: string, text: string}} TestableToken */
 
+// Those tests ar evaluating via puppeteer, the need more time to run and finish
+jest.setTimeout(10_000);
+
 describe('MacroLexer', () => {
     beforeAll(async () => {
         await page.goto(global.ST_URL);
         await page.waitForFunction('document.getElementById("preloader") === null', { timeout: 0 });
-
-        // Those tests ar evaluating via puppeteer, the need more time to run and finish
-        jest.setTimeout(10_000);
     });
 
     describe('General Macro', () => {
@@ -1114,19 +1114,18 @@ async function runLexerGetTokensAndErrors(input) {
         return result;
     }, input);
 
-    return getTestableTokens(result);
+    return simplifyTokens(result);
 }
 
 /**
+ * Simplify the lexer tokens result into an easily testable format.
  *
  * @param {ILexingResult} result The result from the lexer
  * @returns {{tokens: TestableToken[], errors: ILexingError[]}} The tokens
  */
-function getTestableTokens(result) {
+function simplifyTokens(result) {
     const errors = result.errors;
     const tokens = result.tokens
-        // Filter out the mode popper. We don't care aobut that for testing
-        //.filter(token => !['ModePopper', 'BeforeEnd'].includes(token.tokenType.name))
         // Extract relevant properties from tokens for comparison
         .map(token => ({
             type: token.tokenType.name,

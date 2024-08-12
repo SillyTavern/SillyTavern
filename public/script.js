@@ -244,6 +244,7 @@ import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/Slash
 import { enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
 import { MacroLexer } from './scripts/macros/MacroLexer.js';
 import { MacroEngine } from './scripts/macros/MacroEngine.js';
+import { MacroParser } from './scripts/macros/MacroParser.js';
 
 //exporting functions and vars for mods
 export {
@@ -7971,7 +7972,7 @@ window['SillyTavern'].getContext = function () {
         POPUP_RESULT: POPUP_RESULT,
         macros: {
             MacroLexer,
-            MacrosParser,
+            MacroParser,
             MacroEngine,
         },
     };
