@@ -1100,7 +1100,7 @@ async function runLexerGetTokens(input) {
 /**
  * Asynchronously runs the MacroLexer on the given input and returns the tokens and errors.
  *
- * Use `runLexerGetTokens` if you don't want to explicitly test against lexer errors
+ * Use `runLexerGetTokens` if you don't want to explicitly test against lexer errors.
  *
  * @param {string} input - The input string to be tokenized.
  * @returns {Promise<{tokens: TestableToken[], errors: LexerError[]}>} A promise that resolves to an object containing an array of tokens and an array of lexer errors.

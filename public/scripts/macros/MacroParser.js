@@ -38,15 +38,13 @@ class MacroParser extends CstParser {
         const lexingResult = MacroLexer.tokenize(input);
         // "input" is a setter which will reset the parser's state.
         this.input = lexingResult.tokens;
-        const node = this.macro();
+        const cst = this.macro();
 
+        // For testing purposes we need to actually persist the error messages in the object,
+        // otherwise the test cases cannot read those, as they don't have access to the exception object type.
+        const errors = this.errors.map(x => ({ message: x.message, ...x, stack: x.stack }));
 
-        if (this.errors.length > 0) {
-            console.error('Parser errors', this.errors);
-            throw new Error('Parser errors found\n' + this.errors.map(x => x.message).join('\n'));
-        }
-
-        return node;
+        return { cst, errors: errors };
     }
 }
 
