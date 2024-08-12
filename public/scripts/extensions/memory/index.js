@@ -40,6 +40,7 @@ let inApiCall = false;
 /**
  * Count the number of tokens in the provided text.
  * @param {string} text Text to count tokens for
+ * @param {number} padding Number of additional tokens to add to the count
  * @returns {Promise<number>} Number of tokens in the text
  */
 async function countSourceTokens(text, padding = 0) {
@@ -389,16 +390,13 @@ function getIndexOfLatestChatSummary(chat) {
 
 async function onChatEvent() {
     // Module not enabled
-    if (extension_settings.memory.source === summary_sources.extras) {
-        if (!modules.includes('summarize')) {
-            return;
-        }
+    if (extension_settings.memory.source === summary_sources.extras && !modules.includes('summarize')) {
+        return;
     }
 
-    if (extension_settings.memory.source === summary_sources.webllm) {
-        if (!isWebLlmSupported()) {
-            return;
-        }
+    // WebLLM is not supported
+    if (extension_settings.memory.source === summary_sources.webllm && !isWebLlmSupported()) {
+        return;
     }
 
     const context = getContext();
@@ -510,6 +508,11 @@ async function summarizeCallback(args, text) {
                 return await callExtrasSummarizeAPI(text);
             case summary_sources.main:
                 return await generateRaw(text, '', false, false, prompt, extension_settings.memory.overrideResponseLength);
+            case summary_sources.webllm: {
+                const messages = [{ role: 'system', content: prompt }, { role: 'user', content: text }].filter(m => m.content);
+                const params = extension_settings.memory.overrideResponseLength > 0 ? { max_tokens: extension_settings.memory.overrideResponseLength } : {};
+                return await generateWebLlmChatPrompt(messages, params);
+            }
             default:
                 toastr.warning('Invalid summarization source specified');
                 return '';
@@ -1045,7 +1048,7 @@ jQuery(async function () {
         name: 'summarize',
         callback: summarizeCallback,
         namedArgumentList: [
-            new SlashCommandNamedArgument('source', 'API to use for summarization', [ARGUMENT_TYPE.STRING], false, false, '', ['main', 'extras']),
+            new SlashCommandNamedArgument('source', 'API to use for summarization', [ARGUMENT_TYPE.STRING], false, false, '', Object.values(summary_sources)),
             SlashCommandNamedArgument.fromProps({
                 name: 'prompt',
                 description: 'prompt to use for summarization',
