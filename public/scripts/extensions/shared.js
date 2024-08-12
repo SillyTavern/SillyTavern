@@ -183,32 +183,40 @@ function throwIfInvalidModel(useReverseProxy) {
  */
 export function isWebLlmSupported() {
     if (!('gpu' in navigator)) {
-        toastr.error('Your browser does not support the WebGPU API. Please use a different browser.', 'WebLLM', {
-            preventDuplicates: true,
-            timeOut: 0,
-            extendedTimeOut: 0,
-        });
+        const warningKey = 'webllm_browser_warning_shown';
+        if (!sessionStorage.getItem(warningKey)) {
+            toastr.error('Your browser does not support the WebGPU API. Please use a different browser.', 'WebLLM', {
+                preventDuplicates: true,
+                timeOut: 0,
+                extendedTimeOut: 0,
+            });
+            sessionStorage.setItem(warningKey, '1');
+        }
         return false;
     }
 
     if (!('llm' in SillyTavern)) {
-        toastr.error('WebLLM extension is not installed. Click here to install it.', 'WebLLM', {
-            timeOut: 0,
-            extendedTimeOut: 0,
-            preventDuplicates: true,
-            onclick: () => {
-                const button = document.getElementById('third_party_extension_button');
-                if (button) {
-                    button.click();
-                }
+        const warningKey = 'webllm_extension_warning_shown';
+        if (!sessionStorage.getItem(warningKey)) {
+            toastr.error('WebLLM extension is not installed. Click here to install it.', 'WebLLM', {
+                timeOut: 0,
+                extendedTimeOut: 0,
+                preventDuplicates: true,
+                onclick: () => {
+                    const button = document.getElementById('third_party_extension_button');
+                    if (button) {
+                        button.click();
+                    }
 
-                const input = document.querySelector('dialog textarea');
+                    const input = document.querySelector('dialog textarea');
 
-                if (input instanceof HTMLTextAreaElement) {
-                    input.value = 'https://github.com/SillyTavern/Extension-WebLLM';
-                }
-            },
-        });
+                    if (input instanceof HTMLTextAreaElement) {
+                        input.value = 'https://github.com/SillyTavern/Extension-WebLLM';
+                    }
+                },
+            });
+            sessionStorage.setItem(warningKey, '1');
+        }
         return false;
     }
 
@@ -218,15 +226,16 @@ export function isWebLlmSupported() {
 /**
  * Generates text in response to a chat prompt using WebLLM.
  * @param {any[]} messages Messages to use for generating
+ * @param {object} params Additional parameters
  * @returns {Promise<string>} Generated response
  */
-export async function generateWebLlmChatPrompt(messages) {
+export async function generateWebLlmChatPrompt(messages, params = {}) {
     if (!isWebLlmSupported()) {
         throw new Error('WebLLM extension is not installed.');
     }
 
     const engine = SillyTavern.llm;
-    const response = await engine.generateChatPrompt(messages);
+    const response = await engine.generateChatPrompt(messages, params);
     return response;
 }
 
