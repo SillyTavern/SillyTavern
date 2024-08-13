@@ -31,7 +31,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { debounce_timeout } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from '../../popup.js';
-export { MODULE_NAME, reGeneratePicture };
+export { MODULE_NAME };
 
 const MODULE_NAME = 'sd';
 const UPDATE_INTERVAL = 1000;
