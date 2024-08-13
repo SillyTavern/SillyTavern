@@ -1,5 +1,5 @@
 import { getRequestHeaders } from '../../../script.js';
-import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
+import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { SECRET_KEYS, findSecret, secret_state, writeSecret } from '../../secrets.js';
 import { getPreviewString, saveTtsProviderSettings } from './index.js';
 export { AzureTtsProvider };
@@ -70,7 +70,19 @@ class AzureTtsProvider {
             const popupText = 'Azure TTS API Key';
             const savedKey = secret_state[SECRET_KEYS.AZURE_TTS] ? await findSecret(SECRET_KEYS.AZURE_TTS) : '';
 
-            const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, savedKey);
+            const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, savedKey, {
+                customButtons: [{
+                    text: 'Remove Key',
+                    appendAtEnd: true,
+                    result: POPUP_RESULT.NEGATIVE,
+                    action: async () => {
+                        await writeSecret(SECRET_KEYS.AZURE_TTS, '');
+                        $('#azure_tts_key').toggleClass('success', secret_state[SECRET_KEYS.AZURE_TTS]);
+                        toastr.success('API Key removed');
+                        await this.onRefreshClick();
+                    },
+                }],
+            });
 
             if (key == false || key == '') {
                 return;
