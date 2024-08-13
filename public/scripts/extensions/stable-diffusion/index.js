@@ -3617,9 +3617,22 @@ async function sdMessageButton(e) {
 
     function saveGeneratedImage(prompt, image, generationType, negative) {
         // Some message sources may not create the extra object
-        if (typeof message.extra !== 'object') {
+        if (typeof message.extra !== 'object' || message.extra === null) {
             message.extra = {};
         }
+
+        // Add image to the swipe list if it's not already there
+        if (!Array.isArray(message.extra.image_swipes)) {
+            message.extra.image_swipes = [];
+        }
+
+        const swipes = message.extra.image_swipes;
+
+        if (message.extra.image && !swipes.includes(message.extra.image)) {
+            swipes.push(message.extra.image);
+        }
+
+        swipes.push(image);
 
         // If already contains an image and it's not inline - leave it as is
         message.extra.inline_image = message.extra.image && !message.extra.inline_image ? false : true;
