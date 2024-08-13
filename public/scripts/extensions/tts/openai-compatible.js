@@ -1,4 +1,6 @@
 import { getRequestHeaders } from '../../../script.js';
+import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
+import { findSecret, SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { getPreviewString, saveTtsProviderSettings } from './index.js';
 
 export { OpenAICompatibleTtsProvider };
@@ -21,7 +23,15 @@ class OpenAICompatibleTtsProvider {
     get settingsHtml() {
         let html = `
         <label for="openai_compatible_tts_endpoint">Provider Endpoint:</label>
-        <input id="openai_compatible_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
+        <div class="flex-container alignItemsCenter">
+            <div class="flex1">
+                <input id="openai_compatible_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
+            </div>
+            <div id="openai_compatible_tts_key" class="menu_button menu_button_icon">
+                <i class="fa-solid fa-key"></i>
+                <span>API Key</span>
+            </div>
+        </div>
         <label for="openai_compatible_model">Model:</label>
         <input id="openai_compatible_model" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.model}"/>
         <label for="openai_compatible_tts_voices">Available Voices (comma separated):</label>
@@ -64,7 +74,35 @@ class OpenAICompatibleTtsProvider {
 
         $('#openai_compatible_tts_speed_output').text(this.settings.speed);
 
-        this.refreshSession();
+        $('#openai_compatible_tts_key').toggleClass('success', secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
+        $('#openai_compatible_tts_key').on('click', async () => {
+            const popupText = 'OpenAI-compatible TTS API Key';
+            const savedKey = secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS] ? await findSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS) : '';
+
+            const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, savedKey, {
+                customButtons: [{
+                    text: 'Remove Key',
+                    appendAtEnd: true,
+                    result: POPUP_RESULT.CANCELLED,
+                    action: async () => {
+                        await writeSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS, '');
+                        $('#openai_compatible_tts_key').toggleClass('success', secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
+                        toastr.success('API Key removed');
+                        await this.onRefreshClick();
+                    },
+                }],
+            });
+
+            if (key == false || key == '' || key == null) {
+                return;
+            }
+
+            await writeSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS, String(key));
+
+            toastr.success('API Key saved');
+            $('#openai_compatible_tts_key').toggleClass('success', secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
+            await this.onRefreshClick();
+        });
 
         await this.checkReady();
 
@@ -75,7 +113,7 @@ class OpenAICompatibleTtsProvider {
         // Update dynamically
         this.settings.provider_endpoint = String($('#openai_compatible_tts_endpoint').val());
         this.settings.model = String($('#openai_compatible_model').val());
-        this.settings.available_voices = $('#openai_compatible_tts_voices').val().split(',');
+        this.settings.available_voices = String($('#openai_compatible_tts_voices').val()).split(',');
         this.settings.speed = Number($('#openai_compatible_tts_speed').val());
         $('#openai_compatible_tts_speed_output').text(this.settings.speed);
         saveTtsProviderSettings();
@@ -132,15 +170,16 @@ class OpenAICompatibleTtsProvider {
 
     async fetchTtsGeneration(inputText, voiceId) {
         console.info(`Generating new TTS for voice_id ${voiceId}`);
-        const response = await fetch(this.settings.provider_endpoint, {
+        const response = await fetch('/api/openai/custom/generate-voice', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
-                'model': this.settings.model,
-                'input': inputText,
-                'voice': voiceId,
-                'response_format': 'mp3',
-                'speed': this.settings.speed,
+                provider_endpoint: this.settings.provider_endpoint,
+                model: this.settings.model,
+                input: inputText,
+                voice: voiceId,
+                response_format: 'mp3',
+                speed: this.settings.speed,
             }),
         });
 
