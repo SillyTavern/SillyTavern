@@ -140,7 +140,7 @@ const cliArguments = yargs(hideBin(process.argv))
     }).option('avoidLocalhost', {
         type: 'boolean',
         default: false,
-        describe: 'avoids using localhost for autorun in auto mode.\nuse if you don\'t have localhost in your hosts file',
+        describe: 'Avoids using \'localhost\' for autorun in auto mode.\nuse if you don\'t have \'localhost\' in your hosts file',
     }).option('basicAuthMode', {
         type: 'boolean',
         default: null,
