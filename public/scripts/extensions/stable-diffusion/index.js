@@ -30,7 +30,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { debounce_timeout } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
-import { POPUP_TYPE, Popup, callGenericPopup } from '../../popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from '../../popup.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'sd';
@@ -1098,7 +1098,18 @@ function onComfyWorkflowChange() {
 
 async function onStabilityKeyClick() {
     const popupText = 'Stability AI API Key:';
-    const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT);
+    const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, '', {
+        customButtons: [{
+            text: 'Remove Key',
+            appendAtEnd: true,
+            result: POPUP_RESULT.NEGATIVE,
+            action: async () => {
+                await writeSecret(SECRET_KEYS.STABILITY, '');
+                toastr.success('API Key removed');
+                await loadSettingOptions();
+            },
+        }],
+    });
 
     if (!key) {
         return;
@@ -2755,6 +2766,7 @@ async function generateBlockEntropyImage(prompt, negativePrompt, signal) {
         const data = await result.json();
         // Default format is 'jpg'
         let format = 'jpg';
+
         // Check if a format is specified in the result
         if (data.format) {
             format = data.format.toLowerCase();

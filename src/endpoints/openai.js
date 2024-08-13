@@ -282,4 +282,48 @@ router.post('/generate-image', jsonParser, async (request, response) => {
     }
 });
 
+const custom = express.Router();
+
+custom.post('/generate-voice', jsonParser, async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CUSTOM_OPENAI_TTS);
+        const { input, provider_endpoint, response_format, voice, speed, model } = request.body;
+
+        if (!provider_endpoint) {
+            console.log('No OpenAI-compatible TTS provider endpoint provided');
+            return response.sendStatus(400);
+        }
+
+        const result = await fetch(provider_endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${key ?? ''}`,
+            },
+            body: JSON.stringify({
+                input: input ?? '',
+                response_format: response_format ?? 'mp3',
+                voice: voice ?? 'alloy',
+                speed: speed ?? 1,
+                model: model ?? 'tts-1',
+            }),
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.log('OpenAI request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const buffer = await result.arrayBuffer();
+        response.setHeader('Content-Type', 'audio/mpeg');
+        return response.send(Buffer.from(buffer));
+    } catch (error) {
+        console.error('OpenAI TTS generation failed', error);
+        response.status(500).send('Internal server error');
+    }
+});
+
+router.use('/custom', custom);
+
 module.exports = { router };
