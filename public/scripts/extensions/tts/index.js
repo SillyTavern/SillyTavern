@@ -9,6 +9,7 @@ import { SystemTtsProvider } from './system.js';
 import { NovelTtsProvider } from './novel.js';
 import { power_user } from '../../power-user.js';
 import { OpenAITtsProvider } from './openai.js';
+import { OpenAICompatibleTtsProvider } from './openai-compatible.js';
 import { XTTSTtsProvider } from './xtts.js';
 import { VITSTtsProvider } from './vits.js';
 import { GSVITtsProvider } from './gsvi.js';
@@ -96,6 +97,7 @@ const ttsProviders = {
     AllTalk: AllTalkTtsProvider,
     SpeechT5: SpeechT5TtsProvider,
     Azure: AzureTtsProvider,
+    OpenAICompatible: OpenAICompatibleTtsProvider,
 };
 let ttsProvider;
 let ttsProviderName;
