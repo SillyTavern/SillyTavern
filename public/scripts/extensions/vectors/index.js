@@ -31,6 +31,12 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
+import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
+
+/**
+ * @typedef {object} HashedMessage
+ * @property {string} text - The hashed message text
+ */
 
 const MODULE_NAME = 'vectors';
 
@@ -192,6 +198,11 @@ function splitByChunks(items) {
     return chunkedItems;
 }
 
+/**
+ * Summarizes messages using the Extras API method.
+ * @param {HashedMessage[]} hashedMessages Array of hashed messages
+ * @returns {Promise<HashedMessage[]>} Summarized messages
+ */
 async function summarizeExtra(hashedMessages) {
     for (const element of hashedMessages) {
         try {
@@ -223,6 +234,11 @@ async function summarizeExtra(hashedMessages) {
     return hashedMessages;
 }
 
+/**
+ * Summarizes messages using the main API method.
+ * @param {HashedMessage[]} hashedMessages Array of hashed messages
+ * @returns {Promise<HashedMessage[]>} Summarized messages
+ */
 async function summarizeMain(hashedMessages) {
     for (const element of hashedMessages) {
         element.text = await generateRaw(element.text, '', false, false, settings.summary_prompt);
@@ -231,12 +247,39 @@ async function summarizeMain(hashedMessages) {
     return hashedMessages;
 }
 
+/**
+ * Summarizes messages using WebLLM.
+ * @param {HashedMessage[]} hashedMessages Array of hashed messages
+ * @returns {Promise<HashedMessage[]>} Summarized messages
+ */
+async function summarizeWebLLM(hashedMessages) {
+    if (!isWebLlmSupported()) {
+        console.warn('Vectors: WebLLM is not supported');
+        return hashedMessages;
+    }
+
+    for (const element of hashedMessages) {
+        const messages = [{ role:'system', content: settings.summary_prompt }, { role:'user', content: element.text }];
+        element.text = await generateWebLlmChatPrompt(messages);
+    }
+
+    return hashedMessages;
+}
+
+/**
+ * Summarizes messages using the chosen method.
+ * @param {HashedMessage[]} hashedMessages Array of hashed messages
+ * @param {string} endpoint Type of endpoint to use
+ * @returns {Promise<HashedMessage[]>} Summarized messages
+ */
 async function summarize(hashedMessages, endpoint = 'main') {
     switch (endpoint) {
         case 'main':
             return await summarizeMain(hashedMessages);
         case 'extras':
             return await summarizeExtra(hashedMessages);
+        case 'webllm':
+            return await summarizeWebLLM(hashedMessages);
         default:
             console.error('Unsupported endpoint', endpoint);
     }
