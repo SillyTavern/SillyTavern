@@ -30,6 +30,7 @@ import { textgen_types, textgenerationwebui_settings } from '../../textgen-setti
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
 
 /**
@@ -1342,11 +1343,30 @@ jQuery(async () => {
         saveSettingsDebounced();
         toggleSettings();
     });
-    $('#api_key_nomicai').on('change', () => {
-        const nomicKey = String($('#api_key_nomicai').val()).trim();
-        if (nomicKey.length) {
-            writeSecret(SECRET_KEYS.NOMICAI, nomicKey);
+    $('#api_key_nomicai').on('click', async () => {
+        const popupText = 'NomicAI API Key:';
+        const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, '', {
+            customButtons: [{
+                text: 'Remove Key',
+                appendAtEnd: true,
+                result: POPUP_RESULT.NEGATIVE,
+                action: async () => {
+                    await writeSecret(SECRET_KEYS.NOMICAI, '');
+                    toastr.success('API Key removed');
+                    $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
+                    saveSettingsDebounced();
+                },
+            }],
+        });
+
+        if (!key) {
+            return;
         }
+
+        await writeSecret(SECRET_KEYS.NOMICAI, String(key));
+        $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
+
+        toastr.success('API Key saved');
         saveSettingsDebounced();
     });
     $('#vectors_togetherai_model').val(settings.togetherai_model).on('change', () => {
@@ -1574,9 +1594,7 @@ jQuery(async () => {
         $('#dialogue_popup_input').val(presetModel);
     });
 
-    const validSecret = !!secret_state[SECRET_KEYS.NOMICAI];
-    const placeholder = validSecret ? '✔️ Key saved' : '❌ Missing key';
-    $('#api_key_nomicai').attr('placeholder', placeholder);
+    $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
 
     toggleSettings();
     eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);
