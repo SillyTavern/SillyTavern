@@ -223,8 +223,10 @@ export async function generateWebLlmChatPrompt(messages, params = {}) {
         throw new Error('WebLLM extension is not installed.');
     }
 
+    console.debug('WebLLM chat completion request:', messages, params);
     const engine = SillyTavern.llm;
     const response = await engine.generateChatPrompt(messages, params);
+    console.debug('WebLLM chat completion response:', response);
     return response;
 }
 
