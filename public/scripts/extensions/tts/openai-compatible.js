@@ -83,7 +83,7 @@ class OpenAICompatibleTtsProvider {
                 customButtons: [{
                     text: 'Remove Key',
                     appendAtEnd: true,
-                    result: POPUP_RESULT.CANCELLED,
+                    result: POPUP_RESULT.NEGATIVE,
                     action: async () => {
                         await writeSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS, '');
                         $('#openai_compatible_tts_key').toggleClass('success', secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
@@ -93,7 +93,7 @@ class OpenAICompatibleTtsProvider {
                 }],
             });
 
-            if (key == false || key == '' || key == null) {
+            if (key == false || key == '') {
                 return;
             }
 
