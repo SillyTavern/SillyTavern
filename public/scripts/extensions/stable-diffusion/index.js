@@ -3776,7 +3776,6 @@ jQuery(async () => {
         helpString: '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <pre><code>/imagine-comfy-workflow MyWorkflow</code></pre>',
     }));
 
-
     const template = await renderExtensionTemplateAsync('stable-diffusion', 'settings', defaultSettings);
     $('#sd_container').append(template);
     $('#sd_source').on('change', onSourceChange);
@@ -3868,6 +3867,9 @@ jQuery(async () => {
     });
 
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
+    eventSource.on(event_types.IMAGE_SWIPED, async (generationType, prompt) => {
+        reGeneratePicture(generationType, prompt, {});
+    });
 
     await loadSettings();
     $('body').addClass('sd');

@@ -134,10 +134,6 @@ import {
 } from './scripts/horde.js';
 
 import {
-    reGeneratePicture,
-} from './scripts/extensions/stable-diffusion/index.js';
-
-import {
     debounce,
     delay,
     trimToEndSentence,
@@ -413,6 +409,7 @@ export const event_types = {
     MESSAGE_DELETED: 'message_deleted',
     MESSAGE_UPDATED: 'message_updated',
     MESSAGE_FILE_EMBEDDED: 'message_file_embedded',
+    IMAGE_SWIPED: 'image_swiped',
     IMPERSONATE_READY: 'impersonate_ready',
     CHAT_CHANGED: 'chat_id_changed',
     GENERATION_STARTED: 'generation_started',
@@ -7941,7 +7938,6 @@ window['SillyTavern'].getContext = function () {
         eventTypes: event_types,
         addOneMessage: addOneMessage,
         generate: Generate,
-        reGeneratePicture: reGeneratePicture,
         sendStreamingRequest: sendStreamingRequest,
         sendGenerationRequest: sendGenerationRequest,
         stopGeneration: stopGeneration,
@@ -8306,8 +8302,7 @@ const swipe_right = () => {
                                     $('.mes_buttons:last').hide();
                                     // If the swipe is an image, regenerate the image.  Else, generate a new message.
                                     if (chat[chat.length - 1].extra?.image) {
-                                        await reGeneratePicture(chat[chat.length - 1].extra.generationType, chat[chat.length - 1].extra.title, {});
-                                        swipeMessage.find('.mes_text').addClass('displayNone');
+                                        await eventSource.emit(event_types.IMAGE_SWIPED, chat[chat.length - 1].extra.generationType, chat[chat.length - 1].extra.title);
                                     } else {
                                         await Generate('swipe');
                                     }
