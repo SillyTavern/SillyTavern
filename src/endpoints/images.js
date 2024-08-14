@@ -82,7 +82,7 @@ router.post('/list/:folder', (request, response) => {
     }
 
     try {
-        const images = getImages(directoryPath);
+        const images = getImages(directoryPath, 'date');
         return response.send(images);
     } catch (error) {
         console.error(error);
