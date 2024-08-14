@@ -44,6 +44,7 @@ export class QuickReply {
     /**@type {boolean}*/ executeOnAi = false;
     /**@type {boolean}*/ executeOnChatChange = false;
     /**@type {boolean}*/ executeOnGroupMemberDraft = false;
+    /**@type {boolean}*/ executeOnNewChat = false;
     /**@type {string}*/ automationId = '';
 
     /**@type {function}*/ onExecute;
@@ -1058,6 +1059,13 @@ export class QuickReply {
             executeOnGroupMemberDraft.checked = this.executeOnGroupMemberDraft;
             executeOnGroupMemberDraft.addEventListener('click', ()=>{
                 this.executeOnGroupMemberDraft = executeOnGroupMemberDraft.checked;
+                this.updateContext();
+            });
+            /**@type {HTMLInputElement}*/
+            const executeOnNewChat = dom.querySelector('#qr--executeOnNewChat');
+            executeOnNewChat.checked = this.executeOnNewChat;
+            executeOnNewChat.addEventListener('click', ()=>{
+                this.executeOnNewChat = executeOnNewChat.checked;
                 this.updateContext();
             });
             /**@type {HTMLInputElement}*/

@@ -105,6 +105,7 @@ const loadSets = async () => {
                     qr.executeOnAi = slot.autoExecute_botMessage ?? false;
                     qr.executeOnChatChange = slot.autoExecute_chatLoad ?? false;
                     qr.executeOnGroupMemberDraft = slot.autoExecute_groupMemberDraft ?? false;
+                    qr.executeOnNewChat = slot.autoExecute_newChat ?? false;
                     qr.automationId = slot.automationId ?? '';
                     qr.contextList = (slot.contextMenu ?? []).map(it=>({
                         set: it.preset,
@@ -260,3 +261,8 @@ const onWIActivation = async (entries) => {
     await autoExec.handleWIActivation(entries);
 };
 eventSource.on(event_types.WORLD_INFO_ACTIVATED, (...args) => executeIfReadyElseQueue(onWIActivation, args));
+
+const onNewChat = async () => {
+    await autoExec.handleNewChat();
+};
+eventSource.on(event_types.CHAT_CREATED, (...args) => executeIfReadyElseQueue(onNewChat, args));

@@ -34,3 +34,8 @@
   - What did you do to achieve this?
   - How would a reviewer test the change?
 6. Mind the license. Your contributions will be licensed under the GNU Affero General Public License. If you don't know what that implies, consult your lawyer.
+
+## Further reading
+
+1. [How to write UI extensions](https://docs.sillytavern.app/for-contributors/writing-extensions/)
+2. [How to write server plugins](https://docs.sillytavern.app/for-contributors/server-plugins)
