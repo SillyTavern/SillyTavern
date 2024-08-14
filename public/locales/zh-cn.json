@@ -1305,6 +1305,7 @@
     "ext_sum_current_summary": "当前摘要：",
     "ext_sum_restore_previous": "恢复上一个",
     "ext_sum_memory_placeholder": "摘要将在这里生成...",
+    "ext_sum_restore_tip": "恢复先前的摘要；重复使用以清除此聊天的摘要状态",
     "ext_sum_force_tip": "立即触发摘要更新。",
     "ext_sum_force_text": "现在总结",
     "Disable automatic summary updates. While paused, the summary remains as-is. You can still force an update by pressing the Summarize now button (which is only available with the Main API).": "禁用自动摘要更新。暂停时，摘要保持原样。您仍然可以通过按“立即汇总”按钮（仅适用于主 API）强制更新。",
