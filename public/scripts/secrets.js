@@ -33,6 +33,7 @@ export const SECRET_KEYS = {
     HUGGINGFACE: 'api_key_huggingface',
     STABILITY: 'api_key_stability',
     BLOCKENTROPY: 'api_key_blockentropy',
+    CUSTOM_OPENAI_TTS: 'api_key_custom_openai_tts',
 };
 
 const INPUT_MAP = {
@@ -127,7 +128,7 @@ export async function writeSecret(key, value) {
             const text = await response.text();
 
             if (text == 'ok') {
-                secret_state[key] = true;
+                secret_state[key] = !!value;
                 updateSecretDisplay();
             }
         }

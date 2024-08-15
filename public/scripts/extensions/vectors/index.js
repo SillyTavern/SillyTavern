@@ -30,6 +30,13 @@ import { textgen_types, textgenerationwebui_settings } from '../../textgen-setti
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
+import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
+
+/**
+ * @typedef {object} HashedMessage
+ * @property {string} text - The hashed message text
+ */
 
 const MODULE_NAME = 'vectors';
 
@@ -191,6 +198,11 @@ function splitByChunks(items) {
     return chunkedItems;
 }
 
+/**
+ * Summarizes messages using the Extras API method.
+ * @param {HashedMessage[]} hashedMessages Array of hashed messages
+ * @returns {Promise<HashedMessage[]>} Summarized messages
+ */
 async function summarizeExtra(hashedMessages) {
     for (const element of hashedMessages) {
         try {
@@ -222,6 +234,11 @@ async function summarizeExtra(hashedMessages) {
     return hashedMessages;
 }
 
+/**
+ * Summarizes messages using the main API method.
+ * @param {HashedMessage[]} hashedMessages Array of hashed messages
+ * @returns {Promise<HashedMessage[]>} Summarized messages
+ */
 async function summarizeMain(hashedMessages) {
     for (const element of hashedMessages) {
         element.text = await generateRaw(element.text, '', false, false, settings.summary_prompt);
@@ -230,12 +247,39 @@ async function summarizeMain(hashedMessages) {
     return hashedMessages;
 }
 
+/**
+ * Summarizes messages using WebLLM.
+ * @param {HashedMessage[]} hashedMessages Array of hashed messages
+ * @returns {Promise<HashedMessage[]>} Summarized messages
+ */
+async function summarizeWebLLM(hashedMessages) {
+    if (!isWebLlmSupported()) {
+        console.warn('Vectors: WebLLM is not supported');
+        return hashedMessages;
+    }
+
+    for (const element of hashedMessages) {
+        const messages = [{ role:'system', content: settings.summary_prompt }, { role:'user', content: element.text }];
+        element.text = await generateWebLlmChatPrompt(messages);
+    }
+
+    return hashedMessages;
+}
+
+/**
+ * Summarizes messages using the chosen method.
+ * @param {HashedMessage[]} hashedMessages Array of hashed messages
+ * @param {string} endpoint Type of endpoint to use
+ * @returns {Promise<HashedMessage[]>} Summarized messages
+ */
 async function summarize(hashedMessages, endpoint = 'main') {
     switch (endpoint) {
         case 'main':
             return await summarizeMain(hashedMessages);
         case 'extras':
             return await summarizeExtra(hashedMessages);
+        case 'webllm':
+            return await summarizeWebLLM(hashedMessages);
         default:
             console.error('Unsupported endpoint', endpoint);
     }
@@ -1299,11 +1343,30 @@ jQuery(async () => {
         saveSettingsDebounced();
         toggleSettings();
     });
-    $('#api_key_nomicai').on('change', () => {
-        const nomicKey = String($('#api_key_nomicai').val()).trim();
-        if (nomicKey.length) {
-            writeSecret(SECRET_KEYS.NOMICAI, nomicKey);
+    $('#api_key_nomicai').on('click', async () => {
+        const popupText = 'NomicAI API Key:';
+        const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, '', {
+            customButtons: [{
+                text: 'Remove Key',
+                appendAtEnd: true,
+                result: POPUP_RESULT.NEGATIVE,
+                action: async () => {
+                    await writeSecret(SECRET_KEYS.NOMICAI, '');
+                    toastr.success('API Key removed');
+                    $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
+                    saveSettingsDebounced();
+                },
+            }],
+        });
+
+        if (!key) {
+            return;
         }
+
+        await writeSecret(SECRET_KEYS.NOMICAI, String(key));
+        $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
+
+        toastr.success('API Key saved');
         saveSettingsDebounced();
     });
     $('#vectors_togetherai_model').val(settings.togetherai_model).on('change', () => {
@@ -1531,9 +1594,7 @@ jQuery(async () => {
         $('#dialogue_popup_input').val(presetModel);
     });
 
-    const validSecret = !!secret_state[SECRET_KEYS.NOMICAI];
-    const placeholder = validSecret ? '✔️ Key saved' : '❌ Missing key';
-    $('#api_key_nomicai').attr('placeholder', placeholder);
+    $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
 
     toggleSettings();
     eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);

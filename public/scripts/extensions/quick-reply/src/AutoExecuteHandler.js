@@ -83,6 +83,15 @@ export class AutoExecuteHandler {
         await this.performAutoExecute(qrList);
     }
 
+    async handleNewChat() {
+        if (!this.checkExecute()) return;
+        const qrList = [
+            ...this.settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.executeOnNewChat)).flat(),
+            ...(this.settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnNewChat))?.flat() ?? []),
+        ];
+        await this.performAutoExecute(qrList);
+    }
+
     /**
      * @param {any[]} entries Set of activated entries
      */

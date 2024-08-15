@@ -382,14 +382,31 @@ function removeOldBackups(directory, prefix) {
     }
 }
 
-function getImages(path) {
+/**
+ * Get a list of images in a directory.
+ * @param {string} directoryPath Path to the directory containing the images
+ * @param {'name' | 'date'} sortBy Sort images by name or date
+ * @returns {string[]} List of image file names
+ */
+function getImages(directoryPath, sortBy = 'name') {
+    function getSortFunction() {
+        switch (sortBy) {
+            case 'name':
+                return Intl.Collator().compare;
+            case 'date':
+                return (a, b) => fs.statSync(path.join(directoryPath, a)).mtimeMs - fs.statSync(path.join(directoryPath, b)).mtimeMs;
+            default:
+                return (_a, _b) => 0;
+        }
+    }
+
     return fs
-        .readdirSync(path)
+        .readdirSync(directoryPath)
         .filter(file => {
             const type = mime.lookup(file);
             return type && type.startsWith('image/');
         })
-        .sort(Intl.Collator().compare);
+        .sort(getSortFunction());
 }
 
 /**

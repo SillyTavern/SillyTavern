@@ -268,6 +268,10 @@ function getTokenizerModel(requestModel) {
         return 'gpt-4o';
     }
 
+    if (requestModel.includes('chatgpt-4o-latest')) {
+        return 'gpt-4o';
+    }
+
     if (requestModel.includes('gpt-4-32k')) {
         return 'gpt-4-32k';
     }

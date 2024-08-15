@@ -383,7 +383,7 @@
                                         Max Response Length (tokens)
                                     </div>
                                     <div class="wide100p">
-                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="50" max="8000">
+                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="16384">
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,custom">
@@ -2573,6 +2573,7 @@
                                         <option value="gpt-4o">gpt-4o</option>
                                         <option value="gpt-4o-2024-08-06">gpt-4o-2024-08-06</option>
                                         <option value="gpt-4o-2024-05-13">gpt-4o-2024-05-13</option>
+                                        <option value="chatgpt-4o-latest">chatgpt-4o-latest</option>
                                     </optgroup>
                                     <optgroup label="gpt-4o-mini">
                                         <option value="gpt-4o-mini">gpt-4o-mini</option>
@@ -2901,10 +2902,13 @@
                             </div>
                             <h4 data-i18n="Perplexity Model">Perplexity Model</h4>
                             <select id="model_perplexity_select">
-                                <optgroup label="Perplexity Models">
+                                <optgroup label="Perplexity Sonar Models">
                                     <option value="llama-3.1-sonar-small-128k-online">llama-3.1-sonar-small-128k-online</option>
-                                    <option value="llama-3.1-sonar-small-128k-chat">llama-3.1-sonar-small-128k-chat</option>
                                     <option value="llama-3.1-sonar-large-128k-online">llama-3.1-sonar-large-128k-online</option>
+                                    <option value="llama-3.1-sonar-huge-128k-online">llama-3.1-sonar-huge-128k-online</option>
+                                </optgroup>
+                                <optgroup label="Perplexity Chat Models">
+                                    <option value="llama-3.1-sonar-small-128k-chat">llama-3.1-sonar-small-128k-chat</option>
                                     <option value="llama-3.1-sonar-large-128k-chat">llama-3.1-sonar-large-128k-chat</option>
                                 </optgroup>
                                 <optgroup label="Open-Source Models">
@@ -5800,6 +5804,11 @@
                         <div title="Enlarge" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_img_enlarge" data-i18n="[title]Enlarge"></div>
                         <div title="Caption" class="right_menu_button fa-lg fa-solid fa-envelope-open-text mes_img_caption" data-i18n="[title]Caption"></div>
                         <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_img_delete" data-i18n="[title]Delete"></div>
+                    </div>
+                    <div class="mes_img_swipes">
+                        <div title="Swipe left" class="right_menu_button fa-lg fa-solid fa-chevron-left mes_img_swipe_left" data-i18n="[title]Swipe left"></div>
+                        <div class="mes_img_swipe_counter">1/1</div>
+                        <div title="Swipe right" class="right_menu_button fa-lg fa-solid fa-chevron-right mes_img_swipe_right" data-i18n="[title]Swipe right"></div>
                     </div>
                     <img class="mes_img" src="" />
                 </div>

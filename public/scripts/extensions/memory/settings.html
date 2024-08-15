@@ -13,6 +13,7 @@
                 <select id="summary_source">
                     <option value="main" data-i18n="ext_sum_main_api">Main API</option>
                     <option value="extras">Extras API</option>
+                    <option value="webllm" data-i18n="ext_sum_webllm">WebLLM Extension</option>
                 </select><br>
 
                 <div class="flex-container justifyspacebetween alignitemscenter">
@@ -24,7 +25,7 @@
 
                 <textarea id="memory_contents" class="text_pole textarea_compact" rows="6" data-i18n="[placeholder]ext_sum_memory_placeholder" placeholder="Summary will be generated here..."></textarea>
                 <div class="memory_contents_controls">
-                    <div id="memory_force_summarize" data-summary-source="main" class="menu_button menu_button_icon" title="Trigger a summary update right now." data-i18n="[title]ext_sum_force_tip">
+                    <div id="memory_force_summarize" data-summary-source="main,webllm" class="menu_button menu_button_icon" title="Trigger a summary update right now." data-i18n="[title]ext_sum_force_tip">
                         <i class="fa-solid fa-database"></i>
                         <span data-i18n="ext_sum_force_text">Summarize now</span>
                     </div>
@@ -58,7 +59,7 @@
                             <span data-i18n="ext_sum_prompt_builder_3">Classic, blocking</span>
                         </label>
                     </div>
-                    <div data-summary-source="main">
+                    <div data-summary-source="main,webllm">
                         <label for="memory_prompt" class="title_restorable">
                             <span data-i18n="Summary Prompt">Summary Prompt</span>
                             <div id="memory_prompt_restore" data-i18n="[title]ext_sum_restore_default_prompt_tip" title="Restore default prompt" class="right_menu_button">
@@ -74,7 +75,7 @@
                         </label>
                         <input id="memory_override_response_length" type="range" value="{{defaultSettings.overrideResponseLength}}" min="{{defaultSettings.overrideResponseLengthMin}}" max="{{defaultSettings.overrideResponseLengthMax}}" step="{{defaultSettings.overrideResponseLengthStep}}" />
                         <label for="memory_max_messages_per_request">
-                            <span data-i18n="ext_sum_raw_max_msg">[Raw] Max messages per request</span> (<span id="memory_max_messages_per_request_value"></span>)
+                            <span data-i18n="ext_sum_raw_max_msg">[Raw/WebLLM] Max messages per request</span> (<span id="memory_max_messages_per_request_value"></span>)
                             <small class="memory_disabled_hint" data-i18n="ext_sum_0_unlimited">0 = unlimited</small>
                         </label>
                         <input id="memory_max_messages_per_request" type="range" value="{{defaultSettings.maxMessagesPerRequest}}" min="{{defaultSettings.maxMessagesPerRequestMin}}" max="{{defaultSettings.maxMessagesPerRequestMax}}" step="{{defaultSettings.maxMessagesPerRequestStep}}" />
