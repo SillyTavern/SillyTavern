@@ -141,7 +141,7 @@ const cliArguments = yargs(hideBin(process.argv))
         describe: 'Root directory for data storage',
     }).option('avoidLocalhost', {
         type: 'boolean',
-        default: false,
+        default: null,
         describe: 'Avoids using \'localhost\' for autorun in auto mode.\nuse if you don\'t have \'localhost\' in your hosts file',
     }).option('basicAuthMode', {
         type: 'boolean',
