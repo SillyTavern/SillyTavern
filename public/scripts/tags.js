@@ -750,10 +750,16 @@ async function handleTagImport(character, { importAll = false, importExisting = 
     const folderTags = getOpenBogusFolders();
 
     // Choose the setting for this dialog. If from settings, verify the setting really exists, otherwise take "ASK".
-    const setting = forceShow ? tag_import_setting.ASK
-        : importAll ? tag_import_setting.ALL
-            : importExisting ? tag_import_setting.ONLY_EXISTING
-                : Object.values(tag_import_setting).find(setting => setting === power_user.tag_import_setting) ?? tag_import_setting.ASK;
+    let setting;
+    if (forceShow) {
+        setting = tag_import_setting.ASK;
+    } else if (importAll) {
+        setting = tag_import_setting.ALL;
+    } else if (importExisting) {
+        setting = tag_import_setting.ONLY_EXISTING;
+    } else {
+        setting = Object.values(tag_import_setting).find(setting => setting === power_user.tag_import_setting) ?? tag_import_setting.ASK;
+    }
 
     switch (setting) {
         case tag_import_setting.ALL:
