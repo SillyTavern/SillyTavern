@@ -721,7 +721,7 @@ const postSetupTasks = async function (v6Failed, v4Failed) {
 
 
     let ipv6Color = color.green;
-    let ipv4Color = color.red;
+    let ipv4Color = color.green;
     let autorunColor = color.blue;
 
     let logListen = 'SillyTavern is listening on';
