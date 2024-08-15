@@ -72,6 +72,8 @@ const DEFAULT_ENABLE_IPV4 = true;
 
 const DEFAULT_PREFER_IPV6 = false;
 
+const DEFAULT_AVOID_LOCALHOST = false;
+
 const DEFAULT_AUTORUN_HOSTNAME = 'auto';
 const DEFAULT_AUTORUN_PORT = -1;
 
@@ -178,6 +180,8 @@ const autorunHostname = cliArguments.autorunHostname ?? getConfigValue('autorunH
 const autorunPortOverride = cliArguments.autorunPortOverride ?? getConfigValue('autorunPortOverride', DEFAULT_AUTORUN_PORT);
 
 const dnsPreferIPv6 = cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', DEFAULT_PREFER_IPV6);
+
+const avoidLocalhost = cliArguments.avoidLocalhost ?? getConfigValue('avoidLocalhost', DEFAULT_AVOID_LOCALHOST);
 
 if (dnsPreferIPv6) {
     // Set default DNS resolution order to IPv6 first
@@ -678,7 +682,7 @@ function getAutorunHostname() {
 
     if (autorunHostname === 'auto') {
         if (enableIPv6 && enableIPv4) {
-            if (cliArguments.avoidLocalhost) return '[::1]';
+            if (avoidLocalhost) return '[::1]';
             return 'localhost';
         }
 
@@ -739,7 +743,7 @@ const postSetupTasks = async function (v6Failed, v4Failed) {
     console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
 
     if (listen) {
-        console.log('[::] or 0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (::1 or 127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
+        console.log('[::] or 0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost ([::1] or 127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
     }
 
     if (basicAuthMode) {

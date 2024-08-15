@@ -46,6 +46,9 @@ securityOverride: false
 # -- ADVANCED CONFIGURATION --
 # Open the browser automatically
 autorun: true
+# Avoids using 'localhost' for autorun in auto mode.
+# use if you don't have 'localhost' in your hosts file
+avoidLocalhost: false
 # Disable thumbnail generation
 disableThumbnails: false
 # Thumbnail quality (0-100)
