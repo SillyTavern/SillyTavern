@@ -459,6 +459,7 @@ export const event_types = {
     LLM_FUNCTION_TOOL_REGISTER: 'llm_function_tool_register',
     LLM_FUNCTION_TOOL_CALL: 'llm_function_tool_call',
     ONLINE_STATUS_CHANGED: 'online_status_changed',
+    IMAGE_SWIPED: 'image_swiped',
 };
 
 export const eventSource = new EventEmitter();
@@ -2112,6 +2113,7 @@ export function updateMessageBlock(messageId, message) {
 export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
     // Add image to message
     if (mes.extra?.image) {
+        const container = messageElement.find('.mes_img_container');
         const chatHeight = $('#chat').prop('scrollHeight');
         const image = messageElement.find('.mes_img');
         const text = messageElement.find('.mes_text');
@@ -2127,9 +2129,27 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         });
         image.attr('src', mes.extra?.image);
         image.attr('title', mes.extra?.title || mes.title || '');
-        messageElement.find('.mes_img_container').addClass('img_extra');
+        container.addClass('img_extra');
         image.toggleClass('img_inline', isInline);
         text.toggleClass('displayNone', !isInline);
+
+        const imageSwipes = mes.extra.image_swipes;
+        if (Array.isArray(imageSwipes) && imageSwipes.length > 0) {
+            container.addClass('img_swipes');
+            const counter = container.find('.mes_img_swipe_counter');
+            const currentImage = imageSwipes.indexOf(mes.extra.image) + 1;
+            counter.text(`${currentImage}/${imageSwipes.length}`);
+
+            const swipeLeft = container.find('.mes_img_swipe_left');
+            swipeLeft.off('click').on('click', function () {
+                eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'left' });
+            });
+
+            const swipeRight = container.find('.mes_img_swipe_right');
+            swipeRight.off('click').on('click', function () {
+                eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'right' });
+            });
+        }
     }
 
     // Add file to message

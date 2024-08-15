@@ -59,6 +59,7 @@ const initiators = {
     action: 'action',
     interactive: 'interactive',
     wand: 'wand',
+    swipe: 'swipe',
 };
 
 const generationMode = {
@@ -2275,9 +2276,9 @@ async function generatePicture(initiator, args, trigger, message, callback) {
     const quietPrompt = getQuietPrompt(generationType, trigger);
     const context = getContext();
 
-    // if context.characterId is not null, then we get context.characters[context.characterId].avatar, else we get groupId and context.groups[groupId].id
-    // sadly, groups is not an array, but is a dict with keys being index numbers, so we have to filter it
-    const characterName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString();
+    const characterName = context.groupId
+        ? context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString()
+        : context.characters[context.characterId]?.name;
 
     if (generationType == generationMode.BACKGROUND) {
         const callbackOriginal = callback;
@@ -3393,6 +3394,7 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
             generationType: generationType,
             negative: additionalNegativePrefix,
             inline_image: false,
+            image_swipes: [image],
         },
     };
     context.chat.push(message);
@@ -3535,7 +3537,9 @@ async function sdMessageButton(e) {
     const $mes = $icon.closest('.mes');
     const message_id = $mes.attr('mesid');
     const message = context.chat[message_id];
-    const characterFileName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString();
+    const characterFileName = context.groupId
+        ? context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString()
+        : context.characters[context.characterId]?.name;
     const messageText = message?.mes;
     const hasSavedImage = message?.extra?.image && message?.extra?.title;
     const hasSavedNegative = message?.extra?.negative;
@@ -3579,9 +3583,22 @@ async function sdMessageButton(e) {
 
     function saveGeneratedImage(prompt, image, generationType, negative) {
         // Some message sources may not create the extra object
-        if (typeof message.extra !== 'object') {
+        if (typeof message.extra !== 'object' || message.extra === null) {
             message.extra = {};
         }
+
+        // Add image to the swipe list if it's not already there
+        if (!Array.isArray(message.extra.image_swipes)) {
+            message.extra.image_swipes = [];
+        }
+
+        const swipes = message.extra.image_swipes;
+
+        if (message.extra.image && !swipes.includes(message.extra.image)) {
+            swipes.push(message.extra.image);
+        }
+
+        swipes.push(image);
 
         // If already contains an image and it's not inline - leave it as is
         message.extra.inline_image = message.extra.image && !message.extra.inline_image ? false : true;
@@ -3619,6 +3636,99 @@ async function writePromptFields(characterId) {
         negative: negativePromptPrefix,
     };
     await writeExtensionField(characterId, 'sd_character_prompt', promptObject);
+}
+
+/**
+ * Switches an image to the next or previous one in the swipe list.
+ * @param {object} args Event arguments
+ * @param {any} args.message Message object
+ * @param {JQuery<HTMLElement>} args.element Message element
+ * @param {string} args.direction Swipe direction
+ * @returns {Promise<void>}
+ */
+async function onImageSwiped({ message, element, direction }) {
+    const context = getContext();
+    const animationClass = 'fa-fade';
+    const messageImg = element.find('.mes_img');
+
+    // Current image is already animating
+    if (messageImg.hasClass(animationClass)) {
+        return;
+    }
+
+    const swipes = message?.extra?.image_swipes;
+
+    if (!Array.isArray(swipes)) {
+        console.warn('No image swipes found in the message');
+        return;
+    }
+
+    const currentIndex = swipes.indexOf(message.extra.image);
+
+    if (currentIndex === -1) {
+        console.warn('Current image not found in the swipes');
+        return;
+    }
+
+    // Switch to previous image or wrap around if at the beginning
+    if (direction === 'left') {
+        const newIndex = currentIndex === 0 ? swipes.length - 1 : currentIndex - 1;
+        message.extra.image = swipes[newIndex];
+
+        // Update the image in the message
+        appendMediaToMessage(message, element, false);
+    }
+
+    // Switch to next image or generate a new one if at the end
+    if (direction === 'right') {
+        const newIndex = currentIndex === swipes.length - 1 ? swipes.length : currentIndex + 1;
+
+        if (newIndex === swipes.length) {
+            const abortController = new AbortController();
+            const swipeControls = element.find('.mes_img_swipes');
+            const stopButton = document.getElementById('sd_stop_gen');
+            const stopListener = () => abortController.abort('Aborted by user');
+            const generationType = message?.extra?.generationType ?? generationMode.FREE;
+            const dimensions = setTypeSpecificDimensions(generationType);
+            const originalSeed = extension_settings.sd.seed;
+            extension_settings.sd.seed = Math.round(Math.random() * Number.MAX_SAFE_INTEGER);
+            let imagePath = '';
+
+            try {
+                $(stopButton).show();
+                eventSource.once(CUSTOM_STOP_EVENT, stopListener);
+                const callback = () => { };
+                const hasNegative = message.extra.negative;
+                const prompt = await refinePrompt(message.extra.title, false, false);
+                const negativePromptPrefix = hasNegative ? await refinePrompt(message.extra.negative, false, true) : '';
+                const characterName = context.groupId
+                    ? context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString()
+                    : context.characters[context.characterId]?.name;
+
+                messageImg.addClass(animationClass);
+                swipeControls.hide();
+                imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback, initiators.swipe, abortController.signal);
+            } finally {
+                $(stopButton).hide();
+                messageImg.removeClass(animationClass);
+                swipeControls.show();
+                eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
+                restoreOriginalDimensions(dimensions);
+                extension_settings.sd.seed = originalSeed;
+            }
+
+            if (!imagePath) {
+                return;
+            }
+
+            swipes.push(imagePath);
+        }
+
+        message.extra.image = swipes[newIndex];
+        appendMediaToMessage(message, element, false);
+    }
+
+    await context.saveChat();
 }
 
 jQuery(async () => {
@@ -3758,6 +3868,8 @@ jQuery(async () => {
             await loadSettingOptions();
         }
     });
+
+    eventSource.on(event_types.IMAGE_SWIPED, onImageSwiped);
 
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
 
