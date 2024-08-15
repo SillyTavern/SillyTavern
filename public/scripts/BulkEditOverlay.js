@@ -200,7 +200,7 @@ class BulkTagPopupHandler {
             <div id="bulk_tag_popup">
                 <div id="bulk_tag_popup_holder">
                     <h3 class="marginBot5">Modify tags of ${this.characterIds.length} characters</h3>
-                    <small class="bulk_tags_desc m-b-1">Add or remove the mutual tags of all selected characters.</small>
+                    <small class="bulk_tags_desc m-b-1">Add or remove the mutual tags of all selected characters. Import all or existing tags for all selected characters.</small>
                     <div id="bulk_tags_avatars_block" class="avatars_inline avatars_inline_small tags tags_inline"></div>
                     <br>
                     <div id="bulk_tags_div" class="marginBot5" data-characters='${characterData}'>
@@ -221,6 +221,9 @@ class BulkTagPopupHandler {
                         </div>
                         <div id="bulk_tag_popup_import_all_tags" class="menu_button" title="Import all tags from selected characters" data-i18n="[title]Import all tags from selected characters">
                             Import All
+                        </div>
+                        <div id="bulk_tag_popup_import_existing_tags" class="menu_button" title="Import existing tags from selected characters" data-i18n="[title]Import existing tags from selected characters">
+                            Import Existing
                         </div>
                         <div id="bulk_tag_popup_cancel" class="menu_button" data-i18n="Cancel">Close</div>
                     </div>
@@ -258,6 +261,18 @@ class BulkTagPopupHandler {
         document.querySelector('#bulk_tag_popup_remove_mutual').addEventListener('click', this.removeMutual.bind(this));
         document.querySelector('#bulk_tag_popup_cancel').addEventListener('click', this.hide.bind(this));
         document.querySelector('#bulk_tag_popup_import_all_tags').addEventListener('click', this.importAllTags.bind(this));
+        document.querySelector('#bulk_tag_popup_import_existing_tags').addEventListener('click', this.importExistingTags.bind(this));
+    }
+
+    /**
+     * Import existing tags for all selected characters
+     */
+    async importExistingTags() {
+        for (const characterId of this.characterIds) {
+            await importTags(characters[characterId], { importExisting: true });
+        }
+
+        $('#bulkTagList').empty();
     }
 
     /**
