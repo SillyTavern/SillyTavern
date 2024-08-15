@@ -599,6 +599,10 @@ export function getCurrentOpenRouterModelTokenizer() {
             return tokenizers.YI;
         case 'Mistral':
             return tokenizers.MISTRAL;
+        case 'Gemini':
+            return tokenizers.GEMMA;
+        case 'Claude':
+            return tokenizers.CLAUDE;
         default:
             return tokenizers.OPENAI;
     }

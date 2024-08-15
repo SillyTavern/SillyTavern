@@ -26,6 +26,7 @@ export const tokenizers = {
     API_KOBOLD: 10,
     CLAUDE: 11,
     LLAMA3: 12,
+    GEMMA: 13,
     BEST_MATCH: 99,
 };
 
@@ -34,6 +35,7 @@ export const SENTENCEPIECE_TOKENIZERS = [
     tokenizers.MISTRAL,
     tokenizers.YI,
     tokenizers.LLAMA3,
+    tokenizers.GEMMA,
     // uncomment when NovelAI releases Kayra and Clio weights, lol
     //tokenizers.NERD,
     //tokenizers.NERD2,
@@ -90,6 +92,11 @@ const TOKENIZER_URLS = {
         encode: '/api/tokenizers/llama3/encode',
         decode: '/api/tokenizers/llama3/decode',
         count: '/api/tokenizers/llama3/encode',
+    },
+    [tokenizers.GEMMA]: {
+        encode: '/api/tokenizers/gemma/encode',
+        decode: '/api/tokenizers/gemma/decode',
+        count: '/api/tokenizers/gemma/encode',
     },
     [tokenizers.API_TEXTGENERATIONWEBUI]: {
         encode: '/api/tokenizers/remote/textgenerationwebui/encode',
@@ -231,6 +238,9 @@ export function getTokenizerBestMatch(forApi) {
             }
             if (model.includes('mistral') || model.includes('mixtral')) {
                 return tokenizers.MISTRAL;
+            }
+            if (model.includes('gemma')) {
+                return tokenizers.GEMMA;
             }
         }
 
@@ -441,12 +451,14 @@ export function getTokenizerModel() {
     const turbo0301Tokenizer = 'gpt-3.5-turbo-0301';
     const turboTokenizer = 'gpt-3.5-turbo';
     const gpt4Tokenizer = 'gpt-4';
+    const gpt4oTokenizer = 'gpt-4o';
     const gpt2Tokenizer = 'gpt2';
     const claudeTokenizer = 'claude';
     const llamaTokenizer = 'llama';
     const llama3Tokenizer = 'llama3';
     const mistralTokenizer = 'mistral';
     const yiTokenizer = 'yi';
+    const gemmaTokenizer = 'gemma';
 
     // Assuming no one would use it for different models.. right?
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
@@ -491,6 +503,12 @@ export function getTokenizerModel() {
         else if (model?.architecture?.tokenizer === 'Yi') {
             return yiTokenizer;
         }
+        else if (model?.architecture?.tokenizer === 'Gemini') {
+            return gemmaTokenizer;
+        }
+        else if (oai_settings.openrouter_model.includes('gpt-4o')) {
+            return gpt4oTokenizer;
+        }
         else if (oai_settings.openrouter_model.includes('gpt-4')) {
             return gpt4Tokenizer;
         }
@@ -509,7 +527,7 @@ export function getTokenizerModel() {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
-        return oai_settings.google_model;
+        return gemmaTokenizer;
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
@@ -542,6 +560,9 @@ export function getTokenizerModel() {
         }
         if (oai_settings.groq_model.includes('mistral') || oai_settings.groq_model.includes('mixtral')) {
             return mistralTokenizer;
+        }
+        if (oai_settings.groq_model.includes('gemma')) {
+            return gemmaTokenizer;
         }
     }
 
