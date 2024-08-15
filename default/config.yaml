@@ -4,17 +4,21 @@ dataRoot: ./data
 # -- SERVER CONFIGURATION --
 # Listen for incoming connections
 listen: false
-# Enables IPv6 and/or IPv4
+# Enables IPv6 and/or IPv4 protocols. Need to have at least one enabled!
 protocol:
     ipv4: true
     ipv6: false
-# Prefers IPv6 for dns, you should probably enable this on ISPs that don't have issues with IPv6
+# Prefers IPv6 for DNS. Enable this on ISPs that don't have issues with IPv6
 dnsPreferIPv6: false
-# the hostname that autorun opens probably best left on auto. use options like 'localhost', 'st.example.com'
+# The hostname that autorun opens.
+# - Use "auto" to let the server decide
+# - Use options like 'localhost', 'st.example.com'
 autorunHostname: "auto"
 # Server port
 port: 8000
-# overrides the port for autorun with open your browser with this port and ignore what port the server is running on. -1 is use server port
+# Overrides the port for autorun in browser.
+# - Use -1 to use the server port.
+# - Specify a port to override the default.
 autorunPortOverride: -1
 # -- SECURITY CONFIGURATION --
 # Toggle whitelist mode

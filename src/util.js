@@ -627,6 +627,25 @@ class Cache {
     }
 }
 
+/**
+ * Removes color formatting from a text string.
+ * @param {string} text Text with color formatting
+ * @returns {string} Text without color formatting
+ */
+function removeColorFormatting(text) {
+    // ANSI escape codes for colors are usually in the format \x1b[<codes>m
+    return text.replace(/\x1b\[\d{1,2}(;\d{1,2})*m/g, '');
+}
+
+/**
+ * Gets a separator string repeated n times.
+ * @param {number} n Number of times to repeat the separator
+ * @returns {string} Separator string
+ */
+function getSeparator(n) {
+    return '='.repeat(n);
+}
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -654,4 +673,6 @@ module.exports = {
     trimV1,
     Cache,
     makeHttp2Request,
+    removeColorFormatting,
+    getSeparator,
 };

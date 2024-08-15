@@ -43,6 +43,8 @@ const {
     getConfigValue,
     color,
     forwardFetchResponse,
+    removeColorFormatting,
+    getSeparator,
 } = require('./src/util');
 const { ensureThumbnailCache } = require('./src/endpoints/thumbnails');
 
@@ -53,10 +55,6 @@ if (process.versions && process.versions.node && process.versions.node.match(/20
     // @ts-ignore
     if (net.setDefaultAutoSelectFamily) net.setDefaultAutoSelectFamily(false);
 }
-
-
-
-
 
 const DEFAULT_PORT = 8000;
 const DEFAULT_AUTORUN = false;
@@ -618,7 +616,6 @@ const tavernUrl = new URL(
     (':' + server_port),
 );
 
-
 /**
  * Tasks that need to be run before the server starts listening.
  */
@@ -667,19 +664,11 @@ const preSetupTasks = async function () {
     });
 };
 
-function removeColorFormatting(text) {
-    // ANSI escape codes for colors are usually in the format \x1b[<codes>m
-    return text.replace(/\x1b\[\d{1,2}(;\d{1,2})*m/g, '');
-}
-
-function getSeparator(n) {
-    return '='.repeat(n);
-}
-
-
-
+/**
+ * Gets the hostname to use for autorun in the browser.
+ * @returns {string} The hostname to use for autorun
+ */
 function getAutorunHostname() {
-
     if (autorunHostname === 'auto') {
         if (enableIPv6 && enableIPv4) {
             if (avoidLocalhost) return '[::1]';
@@ -698,13 +687,12 @@ function getAutorunHostname() {
     return autorunHostname;
 }
 
-
 /**
  * Tasks that need to be run after the server starts listening.
+ * @param {boolean} v6Failed If the server failed to start on IPv6
+ * @param {boolean} v4Failed If the server failed to start on IPv4
  */
 const postSetupTasks = async function (v6Failed, v4Failed) {
-
-
     const autorunUrl = new URL(
         (cliArguments.ssl ? 'https://' : 'http://') +
         (getAutorunHostname()) +
@@ -712,30 +700,24 @@ const postSetupTasks = async function (v6Failed, v4Failed) {
         ((autorunPortOverride >= 0) ? autorunPortOverride : server_port),
     );
 
-
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
 
     setWindowTitle('SillyTavern WebServer');
 
-
-    let ipv6Color = color.green;
-    let ipv4Color = color.green;
-    let autorunColor = color.blue;
-
     let logListen = 'SillyTavern is listening on';
 
     if (enableIPv6 && !v6Failed) {
-        logListen += ipv6Color(' IPv6: ' + tavernUrlV6.host);
+        logListen += color.green(' IPv6: ' + tavernUrlV6.host);
     }
 
     if (enableIPv4 && !v4Failed) {
-        logListen += ipv4Color(' IPv4: ' + tavernUrl.host);
+        logListen += color.green(' IPv4: ' + tavernUrl.host);
     }
 
-    let goToLog = 'Go to: ' + autorunColor(autorunUrl) + ' to open SillyTavern';
-    let plainGoToLog = removeColorFormatting(goToLog);
+    const goToLog = 'Go to: ' + color.blue(autorunUrl) + ' to open SillyTavern';
+    const plainGoToLog = removeColorFormatting(goToLog);
 
     console.log(logListen);
     console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
@@ -798,8 +780,11 @@ function logSecurityAlert(message) {
     process.exit(1);
 }
 
-
-
+/**
+ * Handles the case where the server failed to start on one or both protocols.
+ * @param {boolean} v6Failed If the server failed to start on IPv6
+ * @param {boolean} v4Failed If the server failed to start on IPv4
+ */
 function handleServerListenFail(v6Failed, v4Failed) {
     if (v6Failed && !enableIPv4) {
         console.error('fatal error: Failed to start server on IPv6 and IPv4 disabled');
@@ -817,7 +802,12 @@ function handleServerListenFail(v6Failed, v4Failed) {
     }
 }
 
-
+/**
+ * Creates an HTTPS server.
+ * @param {URL} url The URL to listen on
+ * @returns {Promise<void>} A promise that resolves when the server is listening
+ * @throws {Error} If the server fails to start
+ */
 function createHttpsServer(url) {
     return new Promise((resolve, reject) => {
         const server = https.createServer(
@@ -831,6 +821,12 @@ function createHttpsServer(url) {
     });
 }
 
+/**
+ * Creates an HTTP server.
+ * @param {URL} url The URL to listen on
+ * @returns {Promise<void>} A promise that resolves when the server is listening
+ * @throws {Error} If the server fails to start
+ */
 function createHttpServer(url) {
     return new Promise((resolve, reject) => {
         const server = http.createServer(app);
@@ -840,22 +836,16 @@ function createHttpServer(url) {
     });
 }
 
-
-
-
 async function startHTTPorHTTPS() {
     let v6Failed = false;
     let v4Failed = false;
 
-    let createFunc = createHttpServer;
-    if (cliArguments.ssl) {
-        createFunc = createHttpsServer;
-    }
+    const createFunc = cliArguments.ssl ? createHttpsServer : createHttpServer;
 
     if (enableIPv6) {
         try {
             await createFunc(tavernUrlV6);
-        } catch(error) {
+        } catch (error) {
             if (enableIPv4) {
                 console.error('non-fatal error: failed to start server on IPv6', error);
             }
@@ -867,7 +857,7 @@ async function startHTTPorHTTPS() {
     if (enableIPv4) {
         try {
             await createFunc(tavernUrl);
-        } catch(error) {
+        } catch (error) {
             if (enableIPv6) {
                 console.error('non-fatal error: failed to start server on IPv4', error);
             }
@@ -875,24 +865,16 @@ async function startHTTPorHTTPS() {
             v4Failed = true;
         }
     }
+
     return [v6Failed, v4Failed];
 }
 
-
-
-
 async function startServer() {
-    let v6Failed = false;
-    let v4Failed = false;
-
-
-    [v6Failed, v4Failed] = await startHTTPorHTTPS();
+    const [v6Failed, v4Failed] = await startHTTPorHTTPS();
 
     handleServerListenFail(v6Failed, v4Failed);
     postSetupTasks(v6Failed, v4Failed);
 }
-
-
 
 async function verifySecuritySettings() {
     // Skip all security checks as listen is set to false
