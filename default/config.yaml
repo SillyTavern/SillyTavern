@@ -41,6 +41,11 @@ enableCorsProxy: false
 enableUserAccounts: false
 # Enable discreet login mode: hides user list on the login screen
 enableDiscreetLogin: false
+# User session timeout *in seconds* (defaults to 24 hours).
+## Set to a positive number to expire session after a certain time of inactivity
+## Set to 0 to expire session when the browser is closed
+## Set to a negative number to disable session expiration
+sessionTimeout: 86400
 # Used to sign session cookies. Will be auto-generated if not set
 cookieSecret: ''
 # Disable CSRF protection - NOT RECOMMENDED
@@ -123,10 +128,14 @@ ollama:
   # * 0: Unload the model immediately after the request
   # * 5m: Keep the model loaded for 5 minutes after the request. Accepts duration strings (e.g. 5h30m40s)
   keepAlive: -1
+# -- ANTHROPIC CLAUDE API CONFIGURATION --
+claude:
+  # Enables caching of the system prompt (if supported).
+  # https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
+  # -- IMPORTANT! --
+  # Use only when the prompt before the chat history is static and doesn't change between requests
+  # (e.g {{random}} macro or lorebooks not as in-chat injections).
+  # Otherwise, you'll just waste money on cache misses.
+  enableSystemPromptCache: false
 # -- SERVER PLUGIN CONFIGURATION --
 enableServerPlugins: false
-# User session timeout *in seconds* (defaults to 24 hours).
-## Set to a positive number to expire session after a certain time of inactivity
-## Set to 0 to expire session when the browser is closed
-## Set to a negative number to disable session expiration
-sessionTimeout: 86400

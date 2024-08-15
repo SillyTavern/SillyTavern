@@ -105,6 +105,7 @@ async function sendClaudeRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_CLAUDE).toString();
     const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.CLAUDE);
     const divider = '-'.repeat(process.stdout.columns);
+    const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false);
 
     if (!apiKey) {
         console.log(color.red(`Claude API key is missing.\n${divider}`));
@@ -118,8 +119,8 @@ async function sendClaudeRequest(request, response) {
             controller.abort();
         });
         const additionalHeaders = {};
-        let use_system_prompt = (request.body.model.startsWith('claude-2') || request.body.model.startsWith('claude-3')) && request.body.claude_use_sysprompt;
-        let converted_prompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, use_system_prompt, request.body.human_sysprompt_message, request.body.char_name, request.body.user_name);
+        const useSystemPrompt = (request.body.model.startsWith('claude-2') || request.body.model.startsWith('claude-3')) && request.body.claude_use_sysprompt;
+        const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, request.body.human_sysprompt_message, request.body.char_name, request.body.user_name);
         // Add custom stop sequences
         const stopSequences = [];
         if (Array.isArray(request.body.stop)) {
@@ -127,7 +128,7 @@ async function sendClaudeRequest(request, response) {
         }
 
         const requestBody = {
-            messages: converted_prompt.messages,
+            messages: convertedPrompt.messages,
             model: request.body.model,
             max_tokens: request.body.max_tokens,
             stop_sequences: stopSequences,
@@ -136,13 +137,15 @@ async function sendClaudeRequest(request, response) {
             top_k: request.body.top_k,
             stream: request.body.stream,
         };
-        if (use_system_prompt) {
-            requestBody.system = converted_prompt.systemPrompt;
+        if (useSystemPrompt) {
+            requestBody.system = enableSystemPromptCache
+                ? [{ type: 'text', text: convertedPrompt.systemPrompt, cache_control: { type: 'ephemeral' } }]
+                : convertedPrompt.systemPrompt;
         }
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
             // Claude doesn't do prefills on function calls, and doesn't allow empty messages
-            if (converted_prompt.messages.length && converted_prompt.messages[converted_prompt.messages.length - 1].role === 'assistant') {
-                converted_prompt.messages.push({ role: 'user', content: '.' });
+            if (convertedPrompt.messages.length && convertedPrompt.messages[convertedPrompt.messages.length - 1].role === 'assistant') {
+                convertedPrompt.messages.push({ role: 'user', content: '.' });
             }
             additionalHeaders['anthropic-beta'] = 'tools-2024-05-16';
             requestBody.tool_choice = { type: request.body.tool_choice === 'required' ? 'any' : 'auto' };
@@ -150,6 +153,9 @@ async function sendClaudeRequest(request, response) {
                 .filter(tool => tool.type === 'function')
                 .map(tool => tool.function)
                 .map(fn => ({ name: fn.name, description: fn.description, input_schema: fn.parameters }));
+        }
+        if (enableSystemPromptCache) {
+            additionalHeaders['anthropic-beta'] = 'prompt-caching-2024-07-31';
         }
         console.log('Claude request:', requestBody);
 
