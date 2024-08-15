@@ -18,7 +18,7 @@ import {
 import { favsToHotswap } from './RossAscends-mods.js';
 import { hideLoader, showLoader } from './loader.js';
 import { convertCharacterToPersona } from './personas.js';
-import { createTagInput, getTagKeyForEntity, getTagsList, printTagList, tag_map, compareTagsForSort, removeTagFromMap } from './tags.js';
+import { createTagInput, getTagKeyForEntity, getTagsList, printTagList, tag_map, compareTagsForSort, removeTagFromMap, importTags } from './tags.js';
 
 /**
  * Static object representing the actions of the
@@ -219,6 +219,9 @@ class BulkTagPopupHandler {
                             <i class="fa-solid fa-trash-can margin-right-10px"></i>
                             Mutual
                         </div>
+                        <div id="bulk_tag_popup_import_all_tags" class="menu_button" title="Import all tags from selected characters" data-i18n="[title]Import all tags from selected characters">
+                            Import All
+                        </div>
                         <div id="bulk_tag_popup_cancel" class="menu_button" data-i18n="Cancel">Close</div>
                     </div>
                 </div>
@@ -254,6 +257,18 @@ class BulkTagPopupHandler {
         document.querySelector('#bulk_tag_popup_reset').addEventListener('click', this.resetTags.bind(this));
         document.querySelector('#bulk_tag_popup_remove_mutual').addEventListener('click', this.removeMutual.bind(this));
         document.querySelector('#bulk_tag_popup_cancel').addEventListener('click', this.hide.bind(this));
+        document.querySelector('#bulk_tag_popup_import_all_tags').addEventListener('click', this.importAllTags.bind(this));
+    }
+
+    /**
+     * Import all tags for all selected characters
+     */
+    async importAllTags() {
+        for (const characterId of this.characterIds) {
+            await importTags(characters[characterId], { importAll: true });
+        }
+
+        $('#bulkTagList').empty();
     }
 
     /**
@@ -570,7 +585,7 @@ class BulkEditOverlay {
             this.container.removeEventListener('mouseup', cancelHold);
             this.container.removeEventListener('touchend', cancelHold);
         },
-        BulkEditOverlay.longPressDelay);
+            BulkEditOverlay.longPressDelay);
     };
 
     handleLongPressEnd = (event) => {
