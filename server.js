@@ -723,11 +723,11 @@ const postSetupTasks = async function (v6Failed, v4Failed) {
     let logListen = 'SillyTavern is listening on';
 
     if (enableIPv6 && !v6Failed) {
-        logListen += ipv6Color(' IPv6: ' + tavernUrlV6);
+        logListen += ipv6Color(' IPv6: ' + tavernUrlV6.host);
     }
 
     if (enableIPv4 && !v4Failed) {
-        logListen += ipv4Color(' IPv4: ' + tavernUrl);
+        logListen += ipv4Color(' IPv4: ' + tavernUrl.host);
     }
 
     let goToLog = 'Go to: ' + autorunColor(autorunUrl) + ' to open SillyTavern';
