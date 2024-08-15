@@ -1667,48 +1667,12 @@ async function loadStabilityModels() {
 async function loadPollinationsModels() {
     return [
         {
-            value: 'pixart',
-            text: 'PixArt-αlpha',
-        },
-        {
-            value: 'playground',
-            text: 'Playground v2',
-        },
-        {
-            value: 'dalle3xl',
-            text: 'DALL•E 3 XL',
-        },
-        {
-            value: 'formulaxl',
-            text: 'FormulaXL',
-        },
-        {
-            value: 'dreamshaper',
-            text: 'DreamShaper',
-        },
-        {
-            value: 'deliberate',
-            text: 'Deliberate',
-        },
-        {
-            value: 'dpo',
-            text: 'SDXL-DPO',
-        },
-        {
-            value: 'swizz8',
-            text: 'Swizz8',
-        },
-        {
-            value: 'juggernaut',
-            text: 'Juggernaut',
+            value: 'flux',
+            text: 'FLUX.1 [schnell]',
         },
         {
             value: 'turbo',
             text: 'SDXL Turbo',
-        },
-        {
-            value: 'realvis',
-            text: 'Realistic Vision',
         },
     ];
 }
