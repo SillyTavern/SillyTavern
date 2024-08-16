@@ -846,7 +846,8 @@ async function startHTTPorHTTPS() {
         try {
             await createFunc(tavernUrlV6);
         } catch (error) {
-            console.error('non-fatal error: failed to start server on IPv6', error);
+            console.error('non-fatal error: failed to start server on IPv6');
+            console.error(error);
 
             v6Failed = true;
         }
@@ -856,7 +857,8 @@ async function startHTTPorHTTPS() {
         try {
             await createFunc(tavernUrl);
         } catch (error) {
-            console.error('non-fatal error: failed to start server on IPv4', error);
+            console.error('non-fatal error: failed to start server on IPv4');
+            console.error(error);
 
             v4Failed = true;
         }
