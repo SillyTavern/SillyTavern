@@ -32,7 +32,7 @@
         "rate-limiter-flexible": "^5.0.0",
         "response-time": "^2.3.2",
         "sanitize-filename": "^1.6.3",
-        "sillytavern-transformers": "^2.14.6",
+        "sillytavern-transformers": "2.14.6",
         "simple-git": "^3.19.1",
         "tiktoken": "^1.0.15",
         "vectra": "^0.2.2",
