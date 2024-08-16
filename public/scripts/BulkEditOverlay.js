@@ -197,7 +197,7 @@ class BulkTagPopupHandler {
     #getHtml = () => {
         const characterData = JSON.stringify({ characterIds: this.characterIds });
         return `<div id="bulk_tag_shadow_popup">
-            <div id="bulk_tag_popup">
+            <div id="bulk_tag_popup" class="wider_dialogue_popup">
                 <div id="bulk_tag_popup_holder">
                     <h3 class="marginBot5">Modify tags of ${this.characterIds.length} characters</h3>
                     <small class="bulk_tags_desc m-b-1">Add or remove the mutual tags of all selected characters. Import all or existing tags for all selected characters.</small>

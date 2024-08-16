@@ -3195,7 +3195,7 @@ grammarly-extension {
 
 #bulk_tag_popup,
 #dialogue_popup {
-    width: 750px;
+    width: 500px;
     max-width: 90vw;
     max-width: 90dvw;
     position: absolute;
