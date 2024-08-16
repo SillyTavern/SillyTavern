@@ -708,14 +708,12 @@ const ANTI_TROLL_MAX_TAGS = 15;
  *
  * @param {Character} character - The character
  * @param {object} [options] - Options
- * @param {boolean} [options.importAll=false] - Whether to import all tags without dialog
- * @param {boolean} [options.importExisting=false] - Whether to import existing tags without dialog
- * @param {boolean} [options.forceShow=false] - Whether to force showing the import dialog
+ * @param {tag_import_setting} [options.importSetting=null] - Force a tag import setting
  * @returns {Promise<boolean>} Boolean indicating whether any tag was imported
  */
-async function importTags(character, { importAll = false, importExisting = false, forceShow = false } = {}) {
+async function importTags(character, { importSetting = null } = {}) {
     // Gather the tags to import based on the selected setting
-    const tagNamesToImport = await handleTagImport(character, { importAll, importExisting, forceShow });
+    const tagNamesToImport = await handleTagImport(character, { importSetting });
     if (!tagNamesToImport?.length) {
         console.debug('No tags to import');
         return;
@@ -734,12 +732,10 @@ async function importTags(character, { importAll = false, importExisting = false
  *
  * @param {Character} character - The character
  * @param {object} [options] - Options
- * @param {boolean} [options.importAll=false] - Whether to import all tags without dialog
- * @param {boolean} [options.importExisting=false] - Whether to import existing tags without dialog
- * @param {boolean} [options.forceShow=false] - Whether to force showing the import dialog
+ * @param {tag_import_setting} [options.importSetting=null] - Force a tag import setting
  * @returns {Promise<string[]>} Array of strings representing the tags to import
  */
-async function handleTagImport(character, { importAll = false, importExisting = false, forceShow = false } = {}) {
+async function handleTagImport(character, { importSetting = null } = {}) {
     /** @type {string[]} */
     const importTags = character.tags.map(t => t.trim()).filter(t => t)
         .filter(t => !IMPORT_EXLCUDED_TAGS.includes(t))
@@ -749,17 +745,9 @@ async function handleTagImport(character, { importAll = false, importExisting = 
         .map(newTag);
     const folderTags = getOpenBogusFolders();
 
-    // Choose the setting for this dialog. If from settings, verify the setting really exists, otherwise take "ASK".
-    let setting;
-    if (forceShow) {
-        setting = tag_import_setting.ASK;
-    } else if (importAll) {
-        setting = tag_import_setting.ALL;
-    } else if (importExisting) {
-        setting = tag_import_setting.ONLY_EXISTING;
-    } else {
-        setting = Object.values(tag_import_setting).find(setting => setting === power_user.tag_import_setting) ?? tag_import_setting.ASK;
-    }
+    // Choose the setting for this dialog. First check override, then saved setting or finally use "ASK".
+    const setting = importSetting ? importSetting :
+        Object.values(tag_import_setting).find(setting => setting === power_user.tag_import_setting) ?? tag_import_setting.ASK;
 
     switch (setting) {
         case tag_import_setting.ALL:

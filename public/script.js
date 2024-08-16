@@ -10738,7 +10738,7 @@ jQuery(async function () {
                 }
             } break;
             case 'import_tags': {
-                await importTags(characters[this_chid], { forceShow: true });
+                await importTags(characters[this_chid], { importSetting: tag_import_setting.ASK });
             } break;
             /*case 'delete_button':
                 popup_type = "del_ch";
