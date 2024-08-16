@@ -401,7 +401,7 @@ async function processFiles(chat) {
         const dataBankCollectionIds = await ingestDataBankAttachments();
 
         if (dataBankCollectionIds.length) {
-            const queryText = await getQueryText(chat);
+            const queryText = await getQueryText(chat, 'file');
             await injectDataBankChunks(queryText, dataBankCollectionIds);
         }
 
@@ -435,7 +435,7 @@ async function processFiles(chat) {
                 await vectorizeFile(fileText, fileName, collectionId, settings.chunk_size, settings.overlap_percent);
             }
 
-            const queryText = await getQueryText(chat);
+            const queryText = await getQueryText(chat, 'file');
             const fileChunks = await retrieveFileChunks(queryText, collectionId);
 
             message.mes = `${fileChunks}\n\n${message.mes}`;
@@ -596,7 +596,7 @@ async function rearrangeChat(chat) {
             return;
         }
 
-        const queryText = await getQueryText(chat);
+        const queryText = await getQueryText(chat, 'chat');
 
         if (queryText.length === 0) {
             console.debug('Vectors: No text to query');
@@ -683,15 +683,16 @@ const onChatEvent = debounce(async () => await moduleWorker.update(), debounce_t
 /**
  * Gets the text to query from the chat
  * @param {object[]} chat Chat messages
+ * @param {'file'|'chat'|'world-info'} initiator Initiator of the query
  * @returns {Promise<string>} Text to query
  */
-async function getQueryText(chat) {
+async function getQueryText(chat, initiator) {
     let queryText = '';
     let i = 0;
 
     let hashedMessages = chat.map(x => ({ text: String(substituteParams(x.mes)) }));
 
-    if (settings.summarize && settings.summarize_sent) {
+    if (initiator === 'chat' && settings.enabled_chats && settings.summarize && settings.summarize_sent) {
         hashedMessages = await summarize(hashedMessages, settings.summary_source);
     }
 
@@ -1279,7 +1280,7 @@ async function activateWorldInfo(chat) {
     }
 
     // Perform a multi-query
-    const queryText = await getQueryText(chat);
+    const queryText = await getQueryText(chat, 'world-info');
 
     if (queryText.length === 0) {
         console.debug('Vectors: No text to query for WI');
