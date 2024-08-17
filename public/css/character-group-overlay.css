@@ -99,6 +99,6 @@
 }
 
 #bulk_tag_shadow_popup #bulk_tag_popup #dialogue_popup_controls .menu_button {
-    width: 100px;
+    width: unset;
     padding: 0.25em;
 }
