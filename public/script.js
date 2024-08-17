@@ -8528,9 +8528,30 @@ async function connectAPISlash(_, text) {
  * @param {string?} [args.api=null] - the API name to set/get the URL for
  * @param {string?} [args.connect=true] - whether to connect to the API after setting
  * @param {string} url - the API URL to set
- * @returns {string}
+ * @returns {Promise<string>}
  */
-function setApiUrlCallback({ api = null, connect = 'true' }, url) {
+async function setApiUrlCallback({ api = null, connect = 'true' }, url) {
+    // Special handling for Chat Completion Custom OpenAI compatible, that one can also support API url handling
+    const isCurrentlyCustomOpenai = main_api === 'openai' && oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
+    if (api === chat_completion_sources.CUSTOM || (!api && isCurrentlyCustomOpenai)) {
+        if (url && !isCurrentlyCustomOpenai) {
+            toastr.warning(`Custom OpenAI API is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.`);
+            return '';
+        }
+
+        if (!url) {
+            return oai_settings.custom_url ?? '';
+        }
+
+        $('#custom_api_url_text').val(url).trigger('input');
+
+        if (isTrueBoolean(connect)) {
+            $('#api_button_openai').trigger('click');
+        }
+
+        return url;
+    }
+
     // Do some checks and get the api type we are targeting with this command
     if (api && !Object.values(textgen_types).includes(api)) {
         toastr.warning(`API '${api}' is not a valid text_gen API.`);
@@ -9059,7 +9080,10 @@ jQuery(async function () {
                 name: 'api',
                 description: 'API to set/get the URL for - if not provided, current API is used',
                 typeList: [ARGUMENT_TYPE.STRING],
-                enumList: Object.values(textgen_types).map(api => new SlashCommandEnumValue(api, null, enumTypes.enum)),
+                enumList: [
+                    new SlashCommandEnumValue('custom', 'custom openai compatible', enumTypes.getBasedOnIndex(uniqueAPIs.findIndex(x => x === 'openai')), 'O'),
+                    ...Object.values(textgen_types).map(api => new SlashCommandEnumValue(api, null, enumTypes.getBasedOnIndex(uniqueAPIs.findIndex(x => x === 'textgenerationwebui')), 'T')),
+                ],
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'connect',
