@@ -20,6 +20,8 @@ import {
     validateTextGenUrl,
     parseTextgenLogprobs,
     parseTabbyLogprobs,
+    textgenerationwebui_settings,
+    SERVER_INPUTS,
 } from './scripts/textgen-settings.js';
 
 const { MANCER, TOGETHERAI, OOBA, VLLM, APHRODITE, TABBY, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER, FEATHERLESS } = textgen_types;
@@ -242,7 +244,7 @@ import { DragAndDropHandler } from './scripts/dragdrop.js';
 import { INTERACTABLE_CONTROL_CLASS, initKeyboard } from './scripts/keyboard.js';
 import { initDynamicStyles } from './scripts/dynamic-styles.js';
 import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/SlashCommandEnumValue.js';
-import { enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
+import { commonEnumProviders, enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
 
 //exporting functions and vars for mods
 export {
@@ -8520,6 +8522,56 @@ async function connectAPISlash(_, text) {
 }
 
 /**
+ * Sets the API URL and triggers the text generation web UI button click.
+ *
+ * @param {object} args - named args
+ * @param {string?} [args.api=null] - the API name to set/get the URL for
+ * @param {string?} [args.connect=true] - whether to connect to the API after setting
+ * @param {string} url - the API URL to set
+ * @returns {string}
+ */
+function setApiUrlCallback({ api = null, connect = 'true' }, url) {
+    // Do some checks and get the api type we are targeting with this command
+    if (api && !Object.values(textgen_types).includes(api)) {
+        toastr.warning(`API '${api}' is not a valid text_gen API.`);
+        return '';
+    }
+    if (!api && !Object.values(textgen_types).includes(textgenerationwebui_settings.type)) {
+        toastr.warning(`API '${textgenerationwebui_settings.type}' is not a valid text_gen API.`);
+        return '';
+    }
+    if (api && url && isTrueBoolean(connect) && api !== textgenerationwebui_settings.type) {
+        toastr.warning(`API '${api}' is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.`);
+        return '';
+    }
+    const type = api || textgenerationwebui_settings.type;
+
+    const inputSelector = SERVER_INPUTS[type];
+    if (!inputSelector) {
+        toastr.warning(`API '${type}' does not have a server url input.`);
+        return '';
+    }
+
+    // If no url was provided, return the current one
+    if (!url) {
+        return textgenerationwebui_settings.server_urls[type] ?? '';
+    }
+
+    // else, we want to actually set the url
+    $(inputSelector).val(url).trigger('input');
+    // trigger blur debounced, so we hide the autocomplete menu
+    setTimeout(() => $(inputSelector).trigger('blur'), 1);
+
+    // Trigger the auto connect via connect button, if requested
+    if (isTrueBoolean(connect)) {
+        $('#api_button_textgenerationwebui').trigger('click');
+    }
+
+    // We still re-acquire the value, as it might have been modified by the validation on connect
+    return textgenerationwebui_settings.server_urls[type] ?? '';
+}
+
+/**
  * Imports supported files dropped into the app window.
  * @param {File[]} files Array of files to process
  * @param {Map<File, string>} [data] Extra data to pass to the import function
@@ -8977,11 +9029,11 @@ jQuery(async function () {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'api',
         callback: connectAPISlash,
+        returns: 'the current API',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'API to connect to',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: false,
                 enumList: Object.entries(CONNECT_API_MAP).map(([api, { selected }]) =>
                     new SlashCommandEnumValue(api, selected, enumTypes.getBasedOnIndex(uniqueAPIs.findIndex(x => x === selected)),
                         selected[0].toUpperCase() ?? enumIcons.default)),
@@ -8994,6 +9046,42 @@ jQuery(async function () {
             <div>
                 <strong>Available APIs:</strong>
                 <pre><code>${Object.keys(CONNECT_API_MAP).join(', ')}</code></pre>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'api-url',
+        callback: setApiUrlCallback,
+        returns: 'the current API url',
+        aliases: ['server'],
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'api',
+                description: 'API to set/get the URL for - if not provided, current API is used',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumList: Object.values(textgen_types).map(api => new SlashCommandEnumValue(api, null, enumTypes.enum)),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'connect',
+                description: 'Whether to auto-connect to the API after setting the URL',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'API url to connect to',
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+        ],
+        helpString: `
+            <div>
+                Set the API url / server url for the currently selected API, including the port. If no argument is provided, it will return the current API url.
+            </div>
+            <div>
+                If a manual API is provided to <b>set</b>the URL, make sure to set <code>connect=false</code>, as auto-connect only works for the currently selected API,
+                or consider switching to it with <code>/api</code> first.
             </div>
         `,
     }));
