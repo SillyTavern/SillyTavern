@@ -10658,6 +10658,7 @@ jQuery(async function () {
     /* $('#set_character_world').on('click', openCharacterWorldPopup); */
 
     $(document).on('focus', 'input.auto-select, textarea.auto-select', function () {
+        if (!power_user.enable_auto_select_input) return;
         const control = $(this)[0];
         if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) {
             control.select();
