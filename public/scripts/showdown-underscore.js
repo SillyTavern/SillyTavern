@@ -7,11 +7,11 @@ export const markdownUnderscoreExt = () => {
         }
 
         return [{
-            type: 'lang',
-            regex: /(`{3,})\s*\n[\s\S]*?\n\1(?:\n|$)|(`{1,2}).*?\2|(\n`\n[\s\S]*?\n`\n)|(?<!\S)_(?!_)([^_\n]+?)(?<!_)_(?!\w)/g,
-            replace: function(match, tripleBackticks, singleOrDoubleBackticks, singleBackticksWithLineBreaks, italicContent) {
-                if (singleOrDoubleBackticks || tripleBackticks || singleBackticksWithLineBreaks) {
-                    // If it's any type of backticks, return unchanged
+            type: 'output',
+            regex: new RegExp('(<code>[\\s\\S]*?<\\/code>)|(?<!\\S)_(?!_)([^_\\n]+?)(?<!_)_(?!\\w)', 'g'),
+            replace: function(match, codeContent, italicContent) {
+                if (codeContent) {
+                    // If it's inside <code> tags, return unchanged
                     return match;
                 } else if (italicContent) {
                     // If it's an italic group, apply the replacement
