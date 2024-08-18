@@ -8,8 +8,16 @@ export const markdownUnderscoreExt = () => {
 
         return [{
             type: 'lang',
-            regex: new RegExp('\\b(?<!_)_(?!_)(.*?)(?<!_)_(?!_)\\b', 'g'),
-            replace: '<em>$1</em>',
+            regex: new RegExp('(`{1,3}).*?\\1|\\b(?<!_)_(?!_)(.*?)(?<!_)_(?!_)\\b', 'gs'),
+            replace: function(match, codeBlock, italicContent) {
+                if (codeBlock) {
+                    // If it's a code block, return it unchanged
+                    return match;
+                } else {
+                    // If it's an italic group, apply the replacement
+                    return `<em>${italicContent}</em>`;
+                }
+            },
         }];
     } catch (e) {
         console.error('Error in Showdown-underscore extension:', e);
