@@ -148,6 +148,24 @@ async function resetTokenCache() {
 }
 
 /**
+ * Maps tokenizer IDs to their names.
+ * @example { 0: 'none', 1: 'gpt2', ... }
+ */
+export const TOKENIZER_NAME_MAP = Object.fromEntries(
+    Object.entries(tokenizers).map(([name, id]) => [id, name.toLowerCase()]));
+
+/**
+ * Selects tokenizer if not already selected.
+ * @param {number} tokenizerId Tokenizer ID.
+ */
+export function selectTokenizer(tokenizerId) {
+    if (tokenizerId !== power_user.tokenizer) {
+        $('#tokenizer').val(tokenizerId).trigger('change');
+        toastr.info(`Tokenizer: "${TOKENIZER_NAME_MAP[tokenizerId]}" selected`);
+    }
+}
+
+/**
  * Gets the friendly name of the current tokenizer.
  * @param {string} forApi API to get the tokenizer for. Defaults to the main API.
  * @returns { { tokenizerName: string, tokenizerId: number } } Tokenizer info

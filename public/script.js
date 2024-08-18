@@ -212,7 +212,7 @@ import {
     selectContextPreset,
 } from './scripts/instruct-mode.js';
 import { initLocales, t, translate } from './scripts/i18n.js';
-import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
+import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache, selectTokenizer, TOKENIZER_NAME_MAP, tokenizers } from './scripts/tokenizers.js';
 import {
     user_avatar,
     getUserAvatars,
@@ -8451,6 +8451,25 @@ async function selectInstructCallback(_, name) {
     return foundName;
 }
 
+async function selectTokenizerCallback(_, name) {
+    if (!name) {
+        return TOKENIZER_NAME_MAP[power_user.tokenizer];
+    }
+
+    const tokenizerNames = Object.values(TOKENIZER_NAME_MAP);
+    const fuse = new Fuse(tokenizerNames);
+    const result = fuse.search(name);
+
+    if (result.length === 0) {
+        toastr.warning(`Tokenizer "${name}" not found`);
+        return '';
+    }
+
+    const foundName = result[0].item;
+    selectTokenizer(tokenizers[foundName.toUpperCase()]);
+    return foundName;
+}
+
 async function enableInstructCallback() {
     $('#instruct_enabled').prop('checked', true).trigger('change');
     return '';
@@ -9094,6 +9113,28 @@ jQuery(async function () {
                 </ul>
             </div>
         `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'tokenizer',
+        callback: selectTokenizerCallback,
+        returns: 'current tokenizer',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'tokenizer name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumList: Object.values(TOKENIZER_NAME_MAP).map(tokenizer =>
+                    new SlashCommandEnumValue(tokenizer, null, enumTypes.enum, enumIcons.default)),
+            }),
+        ],
+        helpString: `
+            <div>
+                Selects tokenizer by name. Gets the current tokenizer if no name is provided.
+            </div>
+            <div>
+                <strong>Available tokenizers:</strong>
+                <pre><code>${Object.values(TOKENIZER_NAME_MAP).join(', ')}</code></pre>
+            </div>
+        `
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'instruct-on',
