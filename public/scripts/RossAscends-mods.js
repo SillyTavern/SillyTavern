@@ -954,6 +954,11 @@ export function initRossMods() {
      * @param {KeyboardEvent} event
      */
     async function processHotkeys(event) {
+        // Default hotkeys and shortcuts shouldn't work if any popup is currently open
+        if (Popup.util.isPopupOpen()) {
+            return;
+        }
+
         //Enter to send when send_textarea in focus
         if (document.activeElement == hotkeyTargets['send_textarea']) {
             const sendOnEnter = shouldSendOnEnter();
@@ -1107,10 +1112,6 @@ export function initRossMods() {
         }
 
         if (event.key == 'Escape') { //closes various panels
-            // Do not close panels if we are currently inside a popup
-            if (Popup.util.isPopupOpen())
-                return;
-
             //dont override Escape hotkey functions from script.js
             //"close edit box" and "cancel stream generation".
             if ($('#curEditTextarea').is(':visible') || $('#mes_stop').is(':visible')) {
