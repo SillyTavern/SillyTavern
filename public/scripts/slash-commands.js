@@ -1895,12 +1895,7 @@ async function getMessagesCallback(args, value) {
 
     const messages = await Promise.all(messagePromises);
 
-    for (let i = 0; i < messages.length; /**/ ) {
-        if (messages[i] !== null) ++i;
-        else messages.splice(i, 1);
-    }
-
-    return messages.join('\n\n');
+    return messages.filter(m => m !== null).join('\n\n');
 }
 
 async function runCallback(args, name) {
