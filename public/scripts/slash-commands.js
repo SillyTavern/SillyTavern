@@ -1,7 +1,9 @@
 import {
     Generate,
+    UNIQUE_APIS,
     activateSendButtons,
     addOneMessage,
+    api_server,
     callPopup,
     characters,
     chat,
@@ -1496,8 +1498,9 @@ export function initDefaultSlashCommands() {
         ],
         helpString: 'Sets the specified prompt manager entry/entries on or off.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'pick-icon',
-        callback: async()=>((await showFontAwesomePicker()) ?? false).toString(),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'pick-icon',
+        callback: async () => ((await showFontAwesomePicker()) ?? false).toString(),
         returns: 'The chosen icon name or false if cancelled.',
         helpString: `
                 <div>Opens a popup with all the available Font Awesome icons and returns the selected icon's name.</div>
@@ -1522,8 +1525,9 @@ export function initDefaultSlashCommands() {
                 description: 'API to set/get the URL for - if not provided, current API is used',
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumList: [
-                    new SlashCommandEnumValue('custom', 'custom openai compatible', enumTypes.getBasedOnIndex(uniqueAPIs.findIndex(x => x === 'openai')), 'O'),
-                    ...Object.values(textgen_types).map(api => new SlashCommandEnumValue(api, null, enumTypes.getBasedOnIndex(uniqueAPIs.findIndex(x => x === 'textgenerationwebui')), 'T')),
+                    new SlashCommandEnumValue('custom', 'custom OpenAI-compatible', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'openai')), 'O'),
+                    new SlashCommandEnumValue('kobold', 'KoboldAI Classic', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'kobold')), 'K'),
+                    ...Object.values(textgen_types).map(api => new SlashCommandEnumValue(api, null, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'textgenerationwebui')), 'T')),
                 ],
             }),
             SlashCommandNamedArgument.fromProps({
@@ -1545,11 +1549,11 @@ export function initDefaultSlashCommands() {
                 Set the API url / server url for the currently selected API, including the port. If no argument is provided, it will return the current API url.
             </div>
             <div>
-                If a manual API is provided to <b>set</b>the URL, make sure to set <code>connect=false</code>, as auto-connect only works for the currently selected API,
+                If a manual API is provided to <b>set</b> the URL, make sure to set <code>connect=false</code>, as auto-connect only works for the currently selected API,
                 or consider switching to it with <code>/api</code> first.
             </div>
             <div>
-                This slash command works for most of the Text Completion sources, and also Custom OpenAI compatible for the Chat Completion sources. If unsure which APIs are supported,
+                This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible for the Chat Completion sources. If unsure which APIs are supported,
                 check the auto-completion of the optional <code>api</code> argument of this command.
             </div>
         `,
@@ -3471,25 +3475,50 @@ function setPromptEntryCallback(args, targetState) {
  * @returns {Promise<string>}
  */
 async function setApiUrlCallback({ api = null, connect = 'true' }, url) {
+    const autoConnect = isTrueBoolean(connect);
+
     // Special handling for Chat Completion Custom OpenAI compatible, that one can also support API url handling
     const isCurrentlyCustomOpenai = main_api === 'openai' && oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
     if (api === chat_completion_sources.CUSTOM || (!api && isCurrentlyCustomOpenai)) {
-        if (url && !isCurrentlyCustomOpenai) {
-            toastr.warning('Custom OpenAI API is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.');
-            return '';
-        }
-
         if (!url) {
             return oai_settings.custom_url ?? '';
         }
 
+        if (!isCurrentlyCustomOpenai && autoConnect) {
+            toastr.warning('Custom OpenAI API is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.');
+            return '';
+        }
+
         $('#custom_api_url_text').val(url).trigger('input');
 
-        if (isTrueBoolean(connect)) {
+        if (autoConnect) {
             $('#api_button_openai').trigger('click');
         }
 
         return url;
+    }
+
+    // Special handling for Kobold Classic API
+    const isCurrentlyKoboldClassic = main_api === 'kobold';
+    if (api === 'kobold' || (!api && isCurrentlyKoboldClassic)) {
+        if (!url) {
+            return api_server ?? '';
+        }
+
+        if (!isCurrentlyKoboldClassic && autoConnect) {
+            toastr.warning('Kobold Classic API is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.');
+            return '';
+        }
+
+        $('#api_url_text').val(url).trigger('input');
+        // trigger blur debounced, so we hide the autocomplete menu
+        setTimeout(() => $('#api_url_text').trigger('blur'), 1);
+
+        if (autoConnect) {
+            $('#api_button').trigger('click');
+        }
+
+        return api_server ?? '';
     }
 
     // Do some checks and get the api type we are targeting with this command
@@ -3501,7 +3530,7 @@ async function setApiUrlCallback({ api = null, connect = 'true' }, url) {
         toastr.warning(`API '${textgenerationwebui_settings.type}' is not a valid text_gen API.`);
         return '';
     }
-    if (api && url && isTrueBoolean(connect) && api !== textgenerationwebui_settings.type) {
+    if (api && url && autoConnect && api !== textgenerationwebui_settings.type) {
         toastr.warning(`API '${api}' is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.`);
         return '';
     }
@@ -3524,7 +3553,7 @@ async function setApiUrlCallback({ api = null, connect = 'true' }, url) {
     setTimeout(() => $(inputSelector).trigger('blur'), 1);
 
     // Trigger the auto connect via connect button, if requested
-    if (isTrueBoolean(connect)) {
+    if (autoConnect) {
         $('#api_button_textgenerationwebui').trigger('click');
     }
 
