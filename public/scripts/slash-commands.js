@@ -1835,7 +1835,7 @@ async function popupCallback(args, value) {
     return String(value);
 }
 
-function getMessagesCallback(args, value) {
+async function getMessagesCallback(args, value) {
     const includeNames = !isFalseBoolean(args?.names);
     const includeHidden = isTrueBoolean(args?.hidden);
     const role = args?.role;
@@ -1868,33 +1868,34 @@ function getMessagesCallback(args, value) {
         throw new Error(`Invalid role provided. Expected one of: system, assistant, user. Got: ${role}`);
     };
 
-    const messages = [];
-
-    for (let messageId = range.start; messageId <= range.end; messageId++) {
-        const message = chat[messageId];
-        if (!message) {
-            console.warn(`WARN: No message found with ID ${messageId}`);
-            continue;
+    const processMessage = async (mesId) => {
+        const msg = chat[mesId];
+        if (!msg) {
+            console.warn(`WARN: No message found with ID ${mesId}`);
+            return null;
         }
 
-        if (role && !filterByRole(message)) {
-            console.debug(`/messages: Skipping message with ID ${messageId} due to role filter`);
-            continue;
+        if (role && !filterByRole(msg)) {
+            console.debug(`/messages: Skipping message with ID ${mesId} due to role filter`);
+            return null;
         }
 
-        if (!includeHidden && message.is_system) {
-            console.debug(`/messages: Skipping hidden message with ID ${messageId}`);
-            continue;
+        if (!includeHidden && msg.is_system) {
+            console.debug(`/messages: Skipping hidden message with ID ${mesId}`);
+            return null;
         }
 
-        if (includeNames) {
-            messages.push(`${message.name}: ${message.mes}`);
-        } else {
-            messages.push(message.mes);
-        }
-    }
+        return includeNames ? `${msg.name}: ${msg.mes}` : msg.mes;
+    };
 
-    return messages.join('\n\n');
+    const messagePromises = [];
+
+    for (let rInd = range.start; rInd <= range.end; ++rInd)
+        messagePromises.push(processMessage(rInd));
+
+    const messages = await Promise.all(messagePromises);
+
+    return messages.filter(m => m !== null).join('\n\n');
 }
 
 async function runCallback(args, name) {
