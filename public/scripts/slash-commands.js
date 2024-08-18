@@ -1888,10 +1888,10 @@ async function getMessagesCallback(args, value) {
         return includeNames ? `${msg.name}: ${msg.mes}` : msg.mes;
     };
 
-    const messagePromises = new Array(range.end - range.start + 1);
+    const messagePromises = [];
 
     for (let rInd = range.start; rInd <= range.end; ++rInd)
-        messagePromises[rInd - range.start] = processMessage(rInd);
+        messagePromises.push(processMessage(rInd));
 
     const messages = await Promise.all(messagePromises);
 
