@@ -2,10 +2,23 @@
 	<div id="qr--main">
 		<h3 data-i18n="Labels and Message">Labels and Message</h3>
 		<div class="qr--labels">
-			<label>
-				<span class="qr--labelText" data-i18n="Label">Label</span>
-				<input type="text" class="text_pole" id="qr--modal-label">
+			<label class="qr--fit">
+				<span class="qr--labelText" data-i18n="Label">Icon</span>
+				<small class="qr--labelHint">&nbsp;</small>
+				<div class="menu_button fa-fw" id="qr--modal-icon" title="Click to change icon"></div>
 			</label>
+			<div class="label">
+				<span class="qr--labelText" data-i18n="Label">Label</span>
+				<small class="qr--labelHint" data-i18n="(label of the button, if no icon is chosen) ">(label of the button, if no icon is chosen)</small>
+				<div class="qr--inputGroup">
+					<label class="checkbox_label" title="Show label even if an icon is assigned">
+						<input type="checkbox" id="qr--modal-showLabel">
+						Show
+					</label>
+					<input type="text" class="text_pole" id="qr--modal-label">
+					<div class="menu_button fa-fw fa-solid fa-chevron-down" id="qr--modal-switcher" title="Switch to another QR"></div>
+				</div>
+			</div>
 			<label>
 				<span class="qr--labelText" data-i18n="Title">Title</span>
 				<small class="qr--labelHint" data-i18n="(tooltip, leave empty to show message or /command)">(tooltip, leave empty to show message or /command)</small>
@@ -33,6 +46,8 @@
 					<input type="checkbox" id="qr--modal-syntax">
 					<span>Syntax highlight</span>
 				</label>
+				<small>Ctrl+Alt+Click (or F9) to set / remove breakpoints</small>
+				<small>Ctrl+<span id="qr--modal-commentKey"></span> to toggle block comments</small>
 			</div>
 			<div id="qr--modal-messageHolder">
 				<pre id="qr--modal-messageSyntax"><code id="qr--modal-messageSyntaxInner" class="hljs language-stscript"></code></pre>
@@ -40,6 +55,10 @@
 			</div>
 		</div>
 	</div>
+
+
+
+	<div id="qr--resizeHandle"></div>
 
 
 
@@ -64,7 +83,7 @@
 
 
 		<h3 data-i18n="Auto-Execute">Auto-Execute</h3>
-		<div class="flex-container flexFlowColumn">
+		<div id="qr--autoExec" class="flex-container flexFlowColumn">
 			<label class="checkbox_label" title="Prevent this quick reply from triggering other auto-executed quick replies while auto-executing (i.e., prevent recursive auto-execution)">
 				<input type="checkbox" id="qr--preventAutoExecute" >
 				<span><i class="fa-solid fa-fw fa-plane-slash"></i><span data-i18n="Don't trigger auto-execute">Don't trigger auto-execute</span></span>
@@ -89,6 +108,10 @@
 				<input type="checkbox" id="qr--executeOnChatChange" >
 				<span><i class="fa-solid fa-fw fa-message"></i><span data-i18n="Execute on chat change">Execute on chat change</span></span>
 			</label>
+            <label class="checkbox_label">
+                <input type="checkbox" id="qr--executeOnNewChat">
+                <span><i class="fa-solid fa-fw fa-comments"></i><span data-i18n="Execute on new chat">Execute on new chat</span></span>
+            </label>
             <label class="checkbox_label">
                 <input type="checkbox" id="qr--executeOnGroupMemberDraft">
                 <span><i class="fa-solid fa-fw fa-people-group"></i><span data-i18n="Execute on group member draft">Execute on group member draft</span></span>
@@ -117,11 +140,18 @@
 			</div>
 		</div>
 		<div id="qr--modal-executeProgress"></div>
-		<label class="checkbox_label">
-			<input type="checkbox" id="qr--modal-executeHide">
-			<span title="Hide editor while executing"> Hide editor while executing</span>
-		</label>
 		<div id="qr--modal-executeErrors"></div>
 		<div id="qr--modal-executeResult"></div>
+
+		<div id="qr--modal-debugButtons">
+			<div title="Resume" id="qr--modal-resume" class="qr--modal-debugButton menu_button"></div>
+			<div title="Step Over" id="qr--modal-step" class="qr--modal-debugButton menu_button"></div>
+			<div title="Step Into" id="qr--modal-stepInto" class="qr--modal-debugButton menu_button"></div>
+			<div title="Step Out" id="qr--modal-stepOut" class="qr--modal-debugButton menu_button"></div>
+			<div title="Minimize" id="qr--modal-minimize" class="qr--modal-debugButton menu_button fa-solid fa-minimize"></div>
+			<div title="Maximize" id="qr--modal-maximize" class="qr--modal-debugButton menu_button fa-solid fa-maximize"></div>
+		</div>
+		<textarea rows="1" id="qr--modal-send_textarea" placeholder="Chat input for use with {{input}}" title="Chat input for use with {{input}}"></textarea>
+		<div id="qr--modal-debugState"></div>
 	</div>
 </div>

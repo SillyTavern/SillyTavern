@@ -73,8 +73,8 @@ const showPopupHelper = {
     /**
      * Asynchronously displays an input popup with the given header and text, and returns the user's input.
      *
-     * @param {string} header - The header text for the popup.
-     * @param {string} text - The main text for the popup.
+     * @param {string?} header - The header text for the popup.
+     * @param {string?} text - The main text for the popup.
      * @param {string} [defaultValue=''] - The default value for the input field.
      * @param {PopupOptions} [popupOptions={}] - Options for the popup.
      * @return {Promise<string?>} A Promise that resolves with the user's input.
@@ -99,6 +99,21 @@ const showPopupHelper = {
         const popup = new Popup(content, POPUP_TYPE.CONFIRM, null, popupOptions);
         const result = await popup.show();
         if (typeof result === 'string' || typeof result === 'boolean') throw new Error(`Invalid popup result. CONFIRM popups only support numbers, or null. Result: ${result}`);
+        return result;
+    },
+    /**
+     * Asynchronously displays a text popup with the given header and text, returning the clicked result button value.
+     *
+     * @param {string?} header - The header text for the popup.
+     * @param {string?} text - The main text for the popup.
+     * @param {PopupOptions} [popupOptions={}] - Options for the popup.
+     * @return {Promise<POPUP_RESULT>} A Promise that resolves with the result of the user's interaction.
+     */
+    text: async (header, text, popupOptions = {}) => {
+        const content = PopupUtils.BuildTextWithHeader(header, text);
+        const popup = new Popup(content, POPUP_TYPE.TEXT, null, popupOptions);
+        const result = await popup.show();
+        if (typeof result === 'string' || typeof result === 'boolean') throw new Error(`Invalid popup result. TEXT popups only support numbers, or null. Result: ${result}`);
         return result;
     },
 };
@@ -511,6 +526,15 @@ export class Popup {
 
         return this.#promise;
     }
+    async completeAffirmative() {
+        return await this.complete(POPUP_RESULT.AFFIRMATIVE);
+    }
+    async completeNegative() {
+        return await this.complete(POPUP_RESULT.NEGATIVE);
+    }
+    async completeCancelled() {
+        return await this.complete(POPUP_RESULT.CANCELLED);
+    }
 
     /**
      * Hides the popup, using the internal resolver to return the value to the original show promise
@@ -591,15 +615,15 @@ class PopupUtils {
     /**
      * Builds popup content with header and text below
      *
-     * @param {string} header - The header to be added to the text
-     * @param {string} text - The main text content
+     * @param {string?} header - The header to be added to the text
+     * @param {string?} text - The main text content
      */
     static BuildTextWithHeader(header, text) {
         if (!header) {
             return text;
         }
         return `<h3>${header}</h3>
-            ${text}`;
+            ${text ?? ''}`; // Convert no text to empty string
     }
 }
 

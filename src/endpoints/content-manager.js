@@ -434,7 +434,7 @@ async function downloadJannyCharacter(uuid) {
             const imageResult = await fetch(downloadResult.downloadUrl);
             const buffer = await imageResult.buffer();
             const fileName = `${sanitize(uuid)}.png`;
-            const fileType = result.headers.get('content-type');
+            const fileType = imageResult.headers.get('content-type');
 
             return { buffer, fileName, fileType };
         }

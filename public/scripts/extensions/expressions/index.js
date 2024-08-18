@@ -1,4 +1,4 @@
-import { callPopup, eventSource, event_types, generateQuietPrompt, getRequestHeaders, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types } from '../../../script.js';
+import { callPopup, eventSource, event_types, generateRaw, getRequestHeaders, main_api, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types } from '../../../script.js';
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, power_user } from '../../power-user.js';
@@ -1156,7 +1156,7 @@ async function getExpressionLabel(text) {
 
                     functionResult = args?.arguments;
                 });
-                const emotionResponse = await generateQuietPrompt(prompt, false, false);
+                const emotionResponse = await generateRaw(text, main_api, false, false, prompt);
                 return parseLlmResponse(functionResult || emotionResponse, expressionsList);
             }
             // Extras
@@ -1387,7 +1387,8 @@ async function getExpressionsList() {
         }
 
         // If there was no specific list, or an error, just return the default expressions
-        return DEFAULT_EXPRESSIONS;
+        expressionsList = DEFAULT_EXPRESSIONS.filter(e => e !== 'talkinghead').slice();
+        return expressionsList;
     }
 
     const result = await resolveExpressionsList();
@@ -1618,11 +1619,13 @@ async function onClickExpressionRemoveCustom() {
     moduleWorker();
 }
 
-function onExperesionApiChanged() {
+function onExpressionApiChanged() {
     const tempApi = this.value;
     if (tempApi) {
         extension_settings.expressions.api = Number(tempApi);
         $('.expression_llm_prompt_block').toggle(extension_settings.expressions.api === EXPRESSION_API.llm);
+        expressionsList = null;
+        spriteCache = {};
         moduleWorker();
         saveSettingsDebounced();
     }
@@ -1972,7 +1975,7 @@ function migrateSettings() {
         $('#expression_custom_add').on('click', onClickExpressionAddCustom);
         $('#expression_custom_remove').on('click', onClickExpressionRemoveCustom);
         $('#expression_fallback').on('change', onExpressionFallbackChanged);
-        $('#expression_api').on('change', onExperesionApiChanged);
+        $('#expression_api').on('change', onExpressionApiChanged);
     }
 
     // Pause Talkinghead to save resources when the ST tab is not visible or the window is minimized.

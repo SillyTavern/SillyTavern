@@ -43,6 +43,8 @@ const {
     getConfigValue,
     color,
     forwardFetchResponse,
+    removeColorFormatting,
+    getSeparator,
 } = require('./src/util');
 const { ensureThumbnailCache } = require('./src/endpoints/thumbnails');
 
@@ -54,9 +56,6 @@ if (process.versions && process.versions.node && process.versions.node.match(/20
     if (net.setDefaultAutoSelectFamily) net.setDefaultAutoSelectFamily(false);
 }
 
-// Set default DNS resolution order to IPv4 first
-dns.setDefaultResultOrder('ipv4first');
-
 const DEFAULT_PORT = 8000;
 const DEFAULT_AUTORUN = false;
 const DEFAULT_LISTEN = false;
@@ -66,16 +65,46 @@ const DEFAULT_ACCOUNTS = false;
 const DEFAULT_CSRF_DISABLED = false;
 const DEFAULT_BASIC_AUTH = false;
 
+const DEFAULT_ENABLE_IPV6 = false;
+const DEFAULT_ENABLE_IPV4 = true;
+
+const DEFAULT_PREFER_IPV6 = false;
+
+const DEFAULT_AVOID_LOCALHOST = false;
+
+const DEFAULT_AUTORUN_HOSTNAME = 'auto';
+const DEFAULT_AUTORUN_PORT = -1;
+
 const cliArguments = yargs(hideBin(process.argv))
     .usage('Usage: <your-start-script> <command> [options]')
-    .option('port', {
+    .option('enableIPv6', {
+        type: 'boolean',
+        default: null,
+        describe: `Enables IPv6.\n[config default: ${DEFAULT_ENABLE_IPV6}]`,
+    }).option('enableIPv4', {
+        type: 'boolean',
+        default: null,
+        describe: `Enables IPv4.\n[config default: ${DEFAULT_ENABLE_IPV4}]`,
+    }).option('port', {
         type: 'number',
         default: null,
         describe: `Sets the port under which SillyTavern will run.\nIf not provided falls back to yaml config 'port'.\n[config default: ${DEFAULT_PORT}]`,
+    }).option('dnsPreferIPv6', {
+        type: 'boolean',
+        default: null,
+        describe: `Prefers IPv6 for dns\nyou should probably have the enabled if you're on an IPv6 only network\nIf not provided falls back to yaml config 'preferIPv6'.\n[config default: ${DEFAULT_PREFER_IPV6}]`,
     }).option('autorun', {
         type: 'boolean',
         default: null,
         describe: `Automatically launch SillyTavern in the browser.\nAutorun is automatically disabled if --ssl is set to true.\nIf not provided falls back to yaml config 'autorun'.\n[config default: ${DEFAULT_AUTORUN}]`,
+    }).option('autorunHostname', {
+        type: 'string',
+        default: null,
+        describe: 'the autorun hostname, probably best left on \'auto\'.\nuse values like \'localhost\', \'st.example.com\'',
+    }).option('autorunPortOverride', {
+        type: 'string',
+        default: null,
+        describe: 'Overrides the port for autorun with open your browser with this port and ignore what port the server is running on. -1 is use server port',
     }).option('listen', {
         type: 'boolean',
         default: null,
@@ -108,6 +137,10 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'string',
         default: null,
         describe: 'Root directory for data storage',
+    }).option('avoidLocalhost', {
+        type: 'boolean',
+        default: null,
+        describe: 'Avoids using \'localhost\' for autorun in auto mode.\nuse if you don\'t have \'localhost\' in your hosts file',
     }).option('basicAuthMode', {
         type: 'boolean',
         default: null,
@@ -137,6 +170,31 @@ const basicAuthMode = cliArguments.basicAuthMode ?? getConfigValue('basicAuthMod
 const enableAccounts = getConfigValue('enableUserAccounts', DEFAULT_ACCOUNTS);
 
 const uploadsPath = path.join(dataRoot, require('./src/constants').UPLOADS_DIRECTORY);
+
+const enableIPv6 = cliArguments.enableIPv6 ?? getConfigValue('protocol.ipv6', DEFAULT_ENABLE_IPV6);
+const enableIPv4 = cliArguments.enableIPv4 ?? getConfigValue('protocol.ipv4', DEFAULT_ENABLE_IPV4);
+
+const autorunHostname = cliArguments.autorunHostname ?? getConfigValue('autorunHostname', DEFAULT_AUTORUN_HOSTNAME);
+const autorunPortOverride = cliArguments.autorunPortOverride ?? getConfigValue('autorunPortOverride', DEFAULT_AUTORUN_PORT);
+
+const dnsPreferIPv6 = cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', DEFAULT_PREFER_IPV6);
+
+const avoidLocalhost = cliArguments.avoidLocalhost ?? getConfigValue('avoidLocalhost', DEFAULT_AVOID_LOCALHOST);
+
+if (dnsPreferIPv6) {
+    // Set default DNS resolution order to IPv6 first
+    dns.setDefaultResultOrder('ipv6first');
+    console.log('Preferring IPv6 for DNS resolution');
+} else {
+    // Set default DNS resolution order to IPv4 first
+    dns.setDefaultResultOrder('ipv4first');
+    console.log('Preferring IPv4 for DNS resolution');
+}
+
+if (!enableIPv6 && !enableIPv4) {
+    console.error('error: You can\'t disable all internet protocols: at least IPv6 or IPv4 must be enabled.');
+    process.exit(1);
+}
 
 // CORS Settings //
 const CORS = cors({
@@ -546,15 +604,15 @@ app.use('/api/speech', require('./src/endpoints/speech').router);
 // Azure TTS
 app.use('/api/azure', require('./src/endpoints/azure').router);
 
-const tavernUrl = new URL(
+const tavernUrlV6 = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
-    (listen ? '0.0.0.0' : '127.0.0.1') +
+    (listen ? '[::]' : '[::1]') +
     (':' + server_port),
 );
 
-const autorunUrl = new URL(
+const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
-    ('127.0.0.1') +
+    (listen ? '0.0.0.0' : '127.0.0.1') +
     (':' + server_port),
 );
 
@@ -607,19 +665,67 @@ const preSetupTasks = async function () {
 };
 
 /**
- * Tasks that need to be run after the server starts listening.
+ * Gets the hostname to use for autorun in the browser.
+ * @returns {string} The hostname to use for autorun
  */
-const postSetupTasks = async function () {
+function getAutorunHostname() {
+    if (autorunHostname === 'auto') {
+        if (enableIPv6 && enableIPv4) {
+            if (avoidLocalhost) return '[::1]';
+            return 'localhost';
+        }
+
+        if (enableIPv6) {
+            return '[::1]';
+        }
+
+        if (enableIPv4) {
+            return '127.0.0.1';
+        }
+    }
+
+    return autorunHostname;
+}
+
+/**
+ * Tasks that need to be run after the server starts listening.
+ * @param {boolean} v6Failed If the server failed to start on IPv6
+ * @param {boolean} v4Failed If the server failed to start on IPv4
+ */
+const postSetupTasks = async function (v6Failed, v4Failed) {
+    const autorunUrl = new URL(
+        (cliArguments.ssl ? 'https://' : 'http://') +
+        (getAutorunHostname()) +
+        (':') +
+        ((autorunPortOverride >= 0) ? autorunPortOverride : server_port),
+    );
+
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
 
     setWindowTitle('SillyTavern WebServer');
 
-    console.log(color.green('SillyTavern is listening on: ' + tavernUrl));
+    let logListen = 'SillyTavern is listening on';
+
+    if (enableIPv6 && !v6Failed) {
+        logListen += color.green(' IPv6: ' + tavernUrlV6.host);
+    }
+
+    if (enableIPv4 && !v4Failed) {
+        logListen += color.green(' IPv4: ' + tavernUrl.host);
+    }
+
+    const goToLog = 'Go to: ' + color.blue(autorunUrl) + ' to open SillyTavern';
+    const plainGoToLog = removeColorFormatting(goToLog);
+
+    console.log(logListen);
+    console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
+    console.log(goToLog);
+    console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
 
     if (listen) {
-        console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
+        console.log('[::] or 0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost ([::1] or 127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
     }
 
     if (basicAuthMode) {
@@ -674,6 +780,100 @@ function logSecurityAlert(message) {
     process.exit(1);
 }
 
+/**
+ * Handles the case where the server failed to start on one or both protocols.
+ * @param {boolean} v6Failed If the server failed to start on IPv6
+ * @param {boolean} v4Failed If the server failed to start on IPv4
+ */
+function handleServerListenFail(v6Failed, v4Failed) {
+    if (v6Failed && !enableIPv4) {
+        console.error(color.red('fatal error: Failed to start server on IPv6 and IPv4 disabled'));
+        process.exit(1);
+    }
+
+    if (v4Failed && !enableIPv6) {
+        console.error(color.red('fatal error: Failed to start server on IPv4 and IPv6 disabled'));
+        process.exit(1);
+    }
+
+    if (v6Failed && v4Failed) {
+        console.error(color.red('fatal error: Failed to start server on both IPv6 and IPv4'));
+        process.exit(1);
+    }
+}
+
+/**
+ * Creates an HTTPS server.
+ * @param {URL} url The URL to listen on
+ * @returns {Promise<void>} A promise that resolves when the server is listening
+ * @throws {Error} If the server fails to start
+ */
+function createHttpsServer(url) {
+    return new Promise((resolve, reject) => {
+        const server = https.createServer(
+            {
+                cert: fs.readFileSync(cliArguments.certPath),
+                key: fs.readFileSync(cliArguments.keyPath),
+            }, app);
+        server.on('error', reject);
+        server.on('listening', resolve);
+        server.listen(url.port, url.hostname);
+    });
+}
+
+/**
+ * Creates an HTTP server.
+ * @param {URL} url The URL to listen on
+ * @returns {Promise<void>} A promise that resolves when the server is listening
+ * @throws {Error} If the server fails to start
+ */
+function createHttpServer(url) {
+    return new Promise((resolve, reject) => {
+        const server = http.createServer(app);
+        server.on('error', reject);
+        server.on('listening', resolve);
+        server.listen(url.port, url.hostname);
+    });
+}
+
+async function startHTTPorHTTPS() {
+    let v6Failed = false;
+    let v4Failed = false;
+
+    const createFunc = cliArguments.ssl ? createHttpsServer : createHttpServer;
+
+    if (enableIPv6) {
+        try {
+            await createFunc(tavernUrlV6);
+        } catch (error) {
+            console.error('non-fatal error: failed to start server on IPv6');
+            console.error(error);
+
+            v6Failed = true;
+        }
+    }
+
+    if (enableIPv4) {
+        try {
+            await createFunc(tavernUrl);
+        } catch (error) {
+            console.error('non-fatal error: failed to start server on IPv4');
+            console.error(error);
+
+            v4Failed = true;
+        }
+    }
+
+    return [v6Failed, v4Failed];
+}
+
+async function startServer() {
+    const [v6Failed, v4Failed] = await startHTTPorHTTPS();
+
+    handleServerListenFail(v6Failed, v4Failed);
+    postSetupTasks(v6Failed, v4Failed);
+}
+
 async function verifySecuritySettings() {
     // Skip all security checks as listen is set to false
     if (!listen) {
@@ -707,23 +907,4 @@ userModule.initUserStorage(dataRoot)
     .then(userModule.migrateUserData)
     .then(verifySecuritySettings)
     .then(preSetupTasks)
-    .finally(() => {
-        if (cliArguments.ssl) {
-            https.createServer(
-                {
-                    cert: fs.readFileSync(cliArguments.certPath),
-                    key: fs.readFileSync(cliArguments.keyPath),
-                }, app)
-                .listen(
-                    Number(tavernUrl.port) || 443,
-                    tavernUrl.hostname,
-                    postSetupTasks,
-                );
-        } else {
-            http.createServer(app).listen(
-                Number(tavernUrl.port) || 80,
-                tavernUrl.hostname,
-                postSetupTasks,
-            );
-        }
-    });
+    .finally(startServer);

@@ -9,6 +9,11 @@ declare global {
             };
         }
     }
+
+    /**
+     * The root directory for user data.
+     */
+    var DATA_ROOT: string;
 }
 
 declare module 'express-session' {

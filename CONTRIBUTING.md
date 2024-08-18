@@ -29,4 +29,13 @@
   - Updating GitHub Actions.
   - Hotfixing a critical bug.
 4. Project maintainers will test and can change your code before merging.
-5. Mind the license. Your contributions will be licensed under the GNU Affero General Public License. If you don't know what that implies, consult your lawyer.
+5. Write at least somewhat meaningful PR descriptions. There's no "right" way to do it, but the following may help with outlining a general structure:
+  - What is the reason for a change?
+  - What did you do to achieve this?
+  - How would a reviewer test the change?
+6. Mind the license. Your contributions will be licensed under the GNU Affero General Public License. If you don't know what that implies, consult your lawyer.
+
+## Further reading
+
+1. [How to write UI extensions](https://docs.sillytavern.app/for-contributors/writing-extensions/)
+2. [How to write server plugins](https://docs.sillytavern.app/for-contributors/server-plugins)

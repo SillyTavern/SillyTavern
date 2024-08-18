@@ -4,10 +4,11 @@ import { executeSlashCommandsWithOptions } from './slash-commands.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortController.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
+import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
-import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
-import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
+import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { isFalseBoolean } from './utils.js';
@@ -40,7 +41,7 @@ function getLocalVariable(name, args = {}) {
         }
     }
 
-    return (localVariable === '' || isNaN(Number(localVariable))) ? (localVariable || '') : Number(localVariable);
+    return (localVariable?.trim?.() === '' || isNaN(Number(localVariable))) ? (localVariable || '') : Number(localVariable);
 }
 
 function setLocalVariable(name, value, args = {}) {
@@ -93,7 +94,7 @@ function getGlobalVariable(name, args = {}) {
         }
     }
 
-    return (globalVariable === '' || isNaN(Number(globalVariable))) ? (globalVariable || '') : Number(globalVariable);
+    return (globalVariable?.trim?.() === '' || isNaN(Number(globalVariable))) ? (globalVariable || '') : Number(globalVariable);
 }
 
 function setGlobalVariable(name, value, args = {}) {
@@ -348,11 +349,13 @@ async function whileCallback(args, value) {
 
         if (result && command) {
             if (command instanceof SlashCommandClosure) {
+                command.breakController = new SlashCommandBreakController();
                 commandResult = await command.execute();
             } else {
                 commandResult = await executeSubCommands(command, args._scope, args._parserFlags, args._abortController);
             }
             if (commandResult.isAborted) break;
+            if (commandResult.isBreak) break;
         } else {
             break;
         }
@@ -390,8 +393,8 @@ async function timesCallback(args, value) {
     const iterations = Math.min(Number(repeats), isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS);
     let result;
     for (let i = 0; i < iterations; i++) {
-        /**@type {SlashCommandClosureResult}*/
         if (command instanceof SlashCommandClosure) {
+            command.breakController = new SlashCommandBreakController();
             command.scope.setMacro('timesIndex', i);
             result = await command.execute();
         }
@@ -399,6 +402,7 @@ async function timesCallback(args, value) {
             result = await executeSubCommands(command.replace(/\{\{timesIndex\}\}/g, i.toString()), args._scope, args._parserFlags, args._abortController);
         }
         if (result.isAborted) break;
+        if (result.isBreak) break;
     }
 
     return result?.pipe ?? '';
@@ -461,7 +465,7 @@ function existsGlobalVariable(name) {
  * @param {object} args Command arguments
  * @returns {{a: string | number, b: string | number, rule: string}} Boolean operands
  */
-function parseBooleanOperands(args) {
+export function parseBooleanOperands(args) {
     // Resolution order: numeric literal, local variable, global variable, string literal
     /**
      * @param {string} operand Boolean operand candidate
@@ -510,36 +514,15 @@ function parseBooleanOperands(args) {
  * @param {string|number} b The right operand
  * @returns {boolean} True if the rule yields true, false otherwise
  */
-function evalBoolean(rule, a, b) {
+export function evalBoolean(rule, a, b) {
     if (!rule) {
         toastr.warning('The rule must be specified for the boolean comparison.', 'Invalid command');
         throw new Error('Invalid command.');
     }
 
     let result = false;
-
-    if (typeof a === 'string' && typeof b !== 'number') {
-        const aString = String(a).toLowerCase();
-        const bString = String(b).toLowerCase();
-
-        switch (rule) {
-            case 'in':
-                result = aString.includes(bString);
-                break;
-            case 'nin':
-                result = !aString.includes(bString);
-                break;
-            case 'eq':
-                result = aString === bString;
-                break;
-            case 'neq':
-                result = aString !== bString;
-                break;
-            default:
-                toastr.error('Unknown boolean comparison rule for type string.', 'Invalid /if command');
-                throw new Error('Invalid command.');
-        }
-    } else if (typeof a === 'number') {
+    if (typeof a === 'number' && typeof b === 'number') {
+        // only do numeric comparison if both operands are numbers
         const aNumber = Number(a);
         const bNumber = Number(b);
 
@@ -567,6 +550,38 @@ function evalBoolean(rule, a, b) {
                 break;
             default:
                 toastr.error('Unknown boolean comparison rule for type number.', 'Invalid command');
+                throw new Error('Invalid command.');
+        }
+    } else {
+        // otherwise do case-insensitive string comparsion, stringify non-strings
+        let aString;
+        let bString;
+        if (typeof a == 'string') {
+            aString = a.toLowerCase();
+        } else {
+            aString = JSON.stringify(a).toLowerCase();
+        }
+        if (typeof b == 'string') {
+            bString = b.toLowerCase();
+        } else {
+            bString = JSON.stringify(b).toLowerCase();
+        }
+
+        switch (rule) {
+            case 'in':
+                result = aString.includes(bString);
+                break;
+            case 'nin':
+                result = !aString.includes(bString);
+                break;
+            case 'eq':
+                result = aString === bString;
+                break;
+            case 'neq':
+                result = aString !== bString;
+                break;
+            default:
+                toastr.error('Unknown boolean comparison rule for type string.', 'Invalid /if command');
                 throw new Error('Invalid command.');
         }
     }
@@ -783,24 +798,29 @@ function randValuesCallback(from, to, args) {
  * @returns The variable's value
  */
 function letCallback(args, value) {
-    if (Array.isArray(value)) {
-        args._scope.letVariable(value[0], typeof value[1] == 'string' ? value.slice(1).join(' ') : value[1]);
-        return value[1];
-    }
+    if (!Array.isArray(value)) value = [value];
     if (args.key !== undefined) {
         const key = args.key;
-        const val = value;
+        if (typeof key != 'string') throw new Error('Key must be a string');
+        if (args._hasUnnamedArgument) {
+            const val = typeof value[0] == 'string' ? value.join(' ') : value[0];
+            args._scope.letVariable(key, val);
+            return val;
+        } else {
+            args._scope.letVariable(key);
+            return '';
+        }
+    }
+    const key = value.shift();
+    if (typeof key != 'string') throw new Error('Key must be a string');
+    if (value.length > 0) {
+        const val = typeof value[0] == 'string' ? value.join(' ') : value[0];
         args._scope.letVariable(key, val);
         return val;
+    } else {
+        args._scope.letVariable(key);
+        return '';
     }
-    if (value instanceof SlashCommandClosure) throw new Error('/let unnamed argument does not support closures if no key is provided');
-    if (value.includes(' ')) {
-        const key = value.split(' ')[0];
-        const val = value.split(' ').slice(1).join(' ');
-        args._scope.letVariable(key, val);
-        return val;
-    }
-    args._scope.letVariable(value);
 }
 
 /**
@@ -813,8 +833,9 @@ function varCallback(args, value) {
     if (!Array.isArray(value)) value = [value];
     if (args.key !== undefined) {
         const key = args.key;
+        if (typeof key != 'string') throw new Error('Key must be a string');
         if (args._hasUnnamedArgument) {
-            const val = value.join(' ');
+            const val = typeof value[0] == 'string' ? value.join(' ') : value[0];
             args._scope.setVariable(key, val, args.index);
             return val;
         } else {
@@ -822,8 +843,9 @@ function varCallback(args, value) {
         }
     }
     const key = value.shift();
+    if (typeof key != 'string') throw new Error('Key must be a string');
     if (value.length > 0) {
-        const val = value.join(' ');
+        const val = typeof value[0] == 'string' ? value.join(' ') : value[0];
         args._scope.setVariable(key, val, args.index);
         return val;
     } else {
@@ -1382,6 +1404,7 @@ export function registerVariableCommands() {
             ),
         ],
         splitUnnamedArgument: true,
+        splitUnnamedArgumentCount: 1,
         helpString: `
             <div>
                 Execute any valid slash command enclosed in quotes <code>repeats</code> number of times.
@@ -1459,7 +1482,7 @@ export function registerVariableCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'add',
-        callback: addValuesCallback,
+        callback: (args, /**@type {string[]}*/value) => addValuesCallback(args, value.join(' ')),
         returns: 'sum of the provided values',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -1467,10 +1490,32 @@ export function registerVariableCommands() {
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
                 acceptsMultiple: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: (executor, scope)=>{
+                    const vars = commonEnumProviders.variables('all')(executor, scope);
+                    vars.push(
+                        new SlashCommandEnumValue(
+                            'any variable name',
+                            null,
+                            enumTypes.variable,
+                            enumIcons.variable,
+                            (input)=>/^\w*$/.test(input),
+                            (input)=>input,
+                        ),
+                        new SlashCommandEnumValue(
+                            'any number',
+                            null,
+                            enumTypes.number,
+                            enumIcons.number,
+                            (input)=>input == '' || !Number.isNaN(Number(input)),
+                            (input)=>input,
+                        ),
+                    );
+                    return vars;
+                },
                 forceEnum: false,
             }),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Performs an addition of the set of values and passes the result down the pipe.
@@ -2001,6 +2046,7 @@ export function registerVariableCommands() {
             ),
         ],
         splitUnnamedArgument: true,
+        splitUnnamedArgumentCount: 1,
         helpString: `
             <div>
                 Get or set a variable.
@@ -2043,6 +2089,7 @@ export function registerVariableCommands() {
             ),
         ],
         splitUnnamedArgument: true,
+        splitUnnamedArgumentCount: 1,
         helpString: `
             <div>
                 Declares a new variable in the current scope.

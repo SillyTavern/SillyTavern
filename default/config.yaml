@@ -4,8 +4,22 @@ dataRoot: ./data
 # -- SERVER CONFIGURATION --
 # Listen for incoming connections
 listen: false
+# Enables IPv6 and/or IPv4 protocols. Need to have at least one enabled!
+protocol:
+    ipv4: true
+    ipv6: false
+# Prefers IPv6 for DNS. Enable this on ISPs that don't have issues with IPv6
+dnsPreferIPv6: false
+# The hostname that autorun opens.
+# - Use "auto" to let the server decide
+# - Use options like 'localhost', 'st.example.com'
+autorunHostname: "auto"
 # Server port
 port: 8000
+# Overrides the port for autorun in browser.
+# - Use -1 to use the server port.
+# - Specify a port to override the default.
+autorunPortOverride: -1
 # -- SECURITY CONFIGURATION --
 # Toggle whitelist mode
 whitelistMode: true
@@ -13,6 +27,7 @@ whitelistMode: true
 enableForwardedWhitelist: true
 # Whitelist of allowed IP addresses
 whitelist:
+  - ::1
   - 127.0.0.1
 # Toggle basic authentication for endpoints
 basicAuthMode: false
@@ -26,6 +41,11 @@ enableCorsProxy: false
 enableUserAccounts: false
 # Enable discreet login mode: hides user list on the login screen
 enableDiscreetLogin: false
+# User session timeout *in seconds* (defaults to 24 hours).
+## Set to a positive number to expire session after a certain time of inactivity
+## Set to 0 to expire session when the browser is closed
+## Set to a negative number to disable session expiration
+sessionTimeout: 86400
 # Used to sign session cookies. Will be auto-generated if not set
 cookieSecret: ''
 # Disable CSRF protection - NOT RECOMMENDED
@@ -35,6 +55,9 @@ securityOverride: false
 # -- ADVANCED CONFIGURATION --
 # Open the browser automatically
 autorun: true
+# Avoids using 'localhost' for autorun in auto mode.
+# use if you don't have 'localhost' in your hosts file
+avoidLocalhost: false
 # Disable thumbnail generation
 disableThumbnails: false
 # Thumbnail quality (0-100)
@@ -93,10 +116,26 @@ openai:
 deepl:
   # Available options: default, more, less, prefer_more, prefer_less
   formality: default
+# -- MISTRAL API CONFIGURATION --
+mistral:
+  # Enables prefilling of the reply with the last assistant message in the prompt
+  # CAUTION: The prefix is echoed into the completion. You may want to use regex to trim it out.
+  enablePrefix: false
+# -- OLLAMA API CONFIGURATION --
+ollama:
+  # Controls how long the model will stay loaded into memory following the request
+  # * -1: Keep the model loaded indefinitely
+  # * 0: Unload the model immediately after the request
+  # * 5m: Keep the model loaded for 5 minutes after the request. Accepts duration strings (e.g. 5h30m40s)
+  keepAlive: -1
+# -- ANTHROPIC CLAUDE API CONFIGURATION --
+claude:
+  # Enables caching of the system prompt (if supported).
+  # https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
+  # -- IMPORTANT! --
+  # Use only when the prompt before the chat history is static and doesn't change between requests
+  # (e.g {{random}} macro or lorebooks not as in-chat injections).
+  # Otherwise, you'll just waste money on cache misses.
+  enableSystemPromptCache: false
 # -- SERVER PLUGIN CONFIGURATION --
 enableServerPlugins: false
-# User session timeout *in seconds* (defaults to 24 hours).
-## Set to a positive number to expire session after a certain time of inactivity
-## Set to 0 to expire session when the browser is closed
-## Set to a negative number to disable session expiration
-sessionTimeout: 86400

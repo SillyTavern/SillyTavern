@@ -3,7 +3,7 @@ import { getRequestHeaders } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
 import { collapseNewlines } from './power-user.js';
 import { debounce_timeout } from './constants.js';
-import { Popup } from './popup.js';
+import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 
 /**
  * Pagination status string template.
@@ -334,12 +334,12 @@ export function debouncedThrottle(func, limit = 300) {
     let last, deferTimer;
     let db = debounce(func);
 
-    return function() {
+    return function () {
         let now = +new Date, args = arguments;
-        if(!last || (last && now < last + limit)) {
+        if (!last || (last && now < last + limit)) {
             clearTimeout(deferTimer);
             db.apply(this, args);
-            deferTimer = setTimeout(function() {
+            deferTimer = setTimeout(function () {
                 last = now;
                 func.apply(this, args);
             }, limit);
@@ -704,63 +704,6 @@ export function isOdd(number) {
     return number % 2 !== 0;
 }
 
-const dateCache = new Map();
-
-/**
- * Cached version of moment() to avoid re-parsing the same date strings.
- * Important: Moment objects are mutable, so use clone() before modifying them!
- * @param {string|number} timestamp String or number representing a date.
- * @returns {moment.Moment} Moment object
- */
-export function timestampToMoment(timestamp) {
-    if (dateCache.has(timestamp)) {
-        return dateCache.get(timestamp);
-    }
-
-    const moment = parseTimestamp(timestamp);
-    dateCache.set(timestamp, moment);
-    return moment;
-}
-
-function parseTimestamp(timestamp) {
-    if (!timestamp) {
-        return moment.invalid();
-    }
-
-    // Unix time (legacy TAI / tags)
-    if (typeof timestamp === 'number' || /^\d+$/.test(timestamp)) {
-        if (isNaN(timestamp) || !isFinite(timestamp) || timestamp < 0) {
-            return moment.invalid();
-        }
-        return moment(Number(timestamp));
-    }
-
-    // ST "humanized" format pattern
-    const pattern1 = /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/;
-    const replacement1 = (match, year, month, day, hour, minute, second, millisecond) => {
-        return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}.${millisecond.padStart(3, '0')}Z`;
-    };
-    const isoTimestamp1 = timestamp.replace(pattern1, replacement1);
-    if (moment(isoTimestamp1).isValid()) {
-        return moment(isoTimestamp1);
-    }
-
-    // New format pattern: "June 19, 2023 4:13pm"
-    const pattern2 = /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i;
-    const replacement2 = (match, month, day, year, hour, minute, meridiem) => {
-        const monthNum = moment().month(month).format('MM');
-        const hour24 = meridiem.toLowerCase() === 'pm' ? (parseInt(hour, 10) % 12) + 12 : parseInt(hour, 10) % 12;
-        return `${year}-${monthNum}-${day.padStart(2, '0')}T${hour24.toString().padStart(2, '0')}:${minute.padStart(2, '0')}:00`;
-    };
-    const isoTimestamp2 = timestamp.replace(pattern2, replacement2);
-    if (moment(isoTimestamp2).isValid()) {
-        return moment(isoTimestamp2);
-    }
-
-    // If none of the patterns match, return an invalid moment object
-    return moment.invalid();
-}
-
 /**
  * Compare two moment objects for sorting.
  * @param {moment.Moment} a The first moment object.
@@ -775,6 +718,71 @@ export function sortMoments(a, b) {
     } else {
         return 0;
     }
+}
+
+const dateCache = new Map();
+
+/**
+ * Cached version of moment() to avoid re-parsing the same date strings.
+ * Important: Moment objects are mutable, so use clone() before modifying them!
+ * @param {string|number} timestamp String or number representing a date.
+ * @returns {moment.Moment} Moment object
+ */
+export function timestampToMoment(timestamp) {
+    if (dateCache.has(timestamp)) {
+        return dateCache.get(timestamp);
+    }
+
+    const iso8601 = parseTimestamp(timestamp);
+    const objMoment = iso8601 ? moment(iso8601) : moment.invalid();
+
+    dateCache.set(timestamp, objMoment);
+    return objMoment;
+}
+
+/**
+ * Parses a timestamp and returns a moment object representing the parsed date and time.
+ * @param {string|number} timestamp - The timestamp to parse. It can be a string or a number.
+ * @returns {string} - If the timestamp is valid, returns an ISO 8601 string.
+ */
+function parseTimestamp(timestamp) {
+    if (!timestamp) return;
+
+    // Unix time (legacy TAI / tags)
+    if (typeof timestamp === 'number' || /^\d+$/.test(timestamp)) {
+        const unixTime = Number(timestamp);
+        const isValid = Number.isFinite(unixTime) && !Number.isNaN(unixTime) && unixTime >= 0;
+        if (!isValid) return;
+        return new Date(unixTime).toISOString();
+    }
+
+    let dtFmt = [];
+
+    // meridiem-based format
+    const convertFromMeridiemBased = (_, month, day, year, hour, minute, meridiem) => {
+        const monthNum = moment().month(month).format('MM');
+        const hour24 = meridiem.toLowerCase() === 'pm' ? (parseInt(hour, 10) % 12) + 12 : parseInt(hour, 10) % 12;
+        return `${year}-${monthNum}-${day.padStart(2, '0')}T${hour24.toString().padStart(2, '0')}:${minute.padStart(2, '0')}:00`;
+    };
+    // June 19, 2023 2:20pm
+    dtFmt.push({ callback: convertFromMeridiemBased, pattern: /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i });
+
+    // ST "humanized" format patterns
+    const convertFromHumanized = (_, year, month, day, hour, min, sec, ms) => {
+        ms = typeof ms !== 'undefined' ? `.${ms.padStart(3, '0')}` : '';
+        return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${min.padStart(2, '0')}:${sec.padStart(2, '0')}${ms}Z`;
+    };
+    // 2024-7-12@01h31m37s
+    dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2})@(\d{1,2})h(\d{1,2})m(\d{1,2})s/ });
+    // 2024-6-5 @14h 56m 50s 682ms
+    dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/ });
+
+    for (const x of dtFmt) {
+        let rgxMatch = timestamp.match(x.pattern);
+        if (!rgxMatch) continue;
+        return x.callback(...rgxMatch);
+    }
+    return;
 }
 
 /** Split string to parts no more than length in size.
@@ -1720,20 +1728,24 @@ export function select2ModifyOptions(element, items, { select = false, changeEve
     /** @type {Select2Option[]} */
     const dataItems = items.map(x => typeof x === 'string' ? { id: getSelect2OptionId(x), text: x } : x);
 
-    const existingValues = [];
+    const optionsToSelect = [];
+    const newOptions = [];
+
     dataItems.forEach(item => {
         // Set the value, creating a new option if necessary
         if (element.find('option[value=\'' + item.id + '\']').length) {
-            if (select) existingValues.push(item.id);
+            if (select) optionsToSelect.push(item.id);
         } else {
             // Create a DOM Option and optionally pre-select by default
             var newOption = new Option(item.text, item.id, select, select);
             // Append it to the select
-            element.append(newOption);
-            if (select) element.trigger('change', changeEventArgs);
+            newOptions.push(newOption);
+            if (select) optionsToSelect.push(item.id);
         }
-        if (existingValues.length) element.val(existingValues).trigger('change', changeEventArgs);
     });
+
+    element.append(newOptions);
+    if (optionsToSelect.length) element.val(optionsToSelect).trigger('change', changeEventArgs);
 }
 
 /**
@@ -1920,4 +1932,104 @@ export function getFreeName(name, list, numberFormatter = (n) => ` #${n}`) {
         counter++;
     }
     return `${name}${numberFormatter(counter)}`;
+}
+
+
+/**
+ * Toggles the visibility of a drawer by changing the display style of its content.
+ * This function skips the usual drawer animation.
+ *
+ * @param {HTMLElement} drawer - The drawer element to toggle
+ * @param {boolean} [expand=true] - Whether to expand or collapse the drawer
+ */
+export function toggleDrawer(drawer, expand = true) {
+    /** @type {HTMLElement} */
+    const icon = drawer.querySelector('.inline-drawer-icon');
+    /** @type {HTMLElement} */
+    const content = drawer.querySelector('.inline-drawer-content');
+
+    if (expand) {
+        icon.classList.remove('up', 'fa-circle-chevron-up');
+        icon.classList.add('down', 'fa-circle-chevron-down');
+        content.style.display = 'block';
+    } else {
+        icon.classList.remove('down', 'fa-circle-chevron-down');
+        icon.classList.add('up', 'fa-circle-chevron-up');
+        content.style.display = 'none';
+    }
+
+    // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
+    content.querySelectorAll('textarea.autoSetHeight').forEach(resetScrollHeight);
+}
+
+export async function fetchFaFile(name) {
+    const style = document.createElement('style');
+    style.innerHTML = await (await fetch(`/css/${name}`)).text();
+    document.head.append(style);
+    const sheet = style.sheet;
+    style.remove();
+    return [...sheet.cssRules].filter(it => it.style?.content).map(it => it.selectorText.split('::').shift().slice(1));
+}
+export async function fetchFa() {
+    return [...new Set((await Promise.all([
+        fetchFaFile('fontawesome.min.css'),
+    ])).flat())];
+}
+/**
+ * Opens a popup with all the available Font Awesome icons and returns the selected icon's name.
+ * @prop {string[]} customList A custom list of Font Awesome icons to use instead of all available icons.
+ * @returns {Promise<string>} The icon name (fa-pencil) or null if cancelled.
+ */
+export async function showFontAwesomePicker(customList = null) {
+    const faList = customList ?? await fetchFa();
+    const fas = {};
+    const dom = document.createElement('div'); {
+        dom.classList.add('faPicker-container');
+        const search = document.createElement('div'); {
+            search.classList.add('faQuery-container');
+            const qry = document.createElement('input'); {
+                qry.classList.add('text_pole');
+                qry.classList.add('faQuery');
+                qry.type = 'search';
+                qry.placeholder = 'Filter icons';
+                qry.autofocus = true;
+                const qryDebounced = debounce(() => {
+                    const result = faList.filter(it => it.includes(qry.value));
+                    for (const fa of faList) {
+                        if (!result.includes(fa)) {
+                            fas[fa].classList.add('hidden');
+                        } else {
+                            fas[fa].classList.remove('hidden');
+                        }
+                    }
+                });
+                qry.addEventListener('input', () => qryDebounced());
+                search.append(qry);
+            }
+            dom.append(search);
+        }
+        const grid = document.createElement('div'); {
+            grid.classList.add('faPicker');
+            for (const fa of faList) {
+                const opt = document.createElement('div'); {
+                    fas[fa] = opt;
+                    opt.classList.add('menu_button');
+                    opt.classList.add('fa-solid');
+                    opt.classList.add(fa);
+                    opt.title = fa.slice(3);
+                    opt.dataset.result = POPUP_RESULT.AFFIRMATIVE.toString();
+                    opt.addEventListener('click', () => value = fa);
+                    grid.append(opt);
+                }
+            }
+            dom.append(grid);
+        }
+    }
+    let value = '';
+    const picker = new Popup(dom, POPUP_TYPE.TEXT, null, { allowVerticalScrolling: true, okButton: 'No Icon', cancelButton: 'Cancel' });
+    await picker.show();
+    if (picker.result == POPUP_RESULT.AFFIRMATIVE) {
+        return value;
+    }
+    return null;
 }

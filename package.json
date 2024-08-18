@@ -32,7 +32,7 @@
         "rate-limiter-flexible": "^5.0.0",
         "response-time": "^2.3.2",
         "sanitize-filename": "^1.6.3",
-        "sillytavern-transformers": "^2.14.6",
+        "sillytavern-transformers": "2.14.6",
         "simple-git": "^3.19.1",
         "tiktoken": "^1.0.15",
         "vectra": "^0.2.2",
@@ -70,7 +70,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.12.3",
+    "version": "1.12.4",
     "scripts": {
         "start": "node server.js",
         "start:no-csrf": "node server.js --disableCsrf",
@@ -90,7 +90,7 @@
     "main": "server.js",
     "devDependencies": {
         "@types/jquery": "^3.5.29",
-        "eslint": "^8.55.0",
+        "eslint": "^8.57.0",
         "jquery": "^3.6.4"
     }
 }

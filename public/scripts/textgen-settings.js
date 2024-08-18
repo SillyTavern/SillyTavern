@@ -326,18 +326,21 @@ async function selectPreset(name) {
 function formatTextGenURL(value) {
     try {
         const noFormatTypes = [MANCER, TOGETHERAI, INFERMATICAI, DREAMGEN, OPENROUTER];
+        const legacyApiTypes = [OOBA, APHRODITE];
         if (noFormatTypes.includes(settings.type)) {
             return value;
         }
 
         const url = new URL(value);
-        if (url.pathname === '/api' && !settings.legacy_api) {
-            toastr.info('Enable Legacy API or start Ooba with the OpenAI extension enabled.', 'Legacy API URL detected. Generation may fail.', { preventDuplicates: true, timeOut: 10000, extendedTimeOut: 20000 });
-            url.pathname = '';
-        }
+        if (legacyApiTypes.includes(settings.type)) {
+            if (url.pathname === '/api' && !settings.legacy_api) {
+                toastr.info('Enable Legacy API or start Ooba with the OpenAI extension enabled.', 'Legacy API URL detected. Generation may fail.', { preventDuplicates: true, timeOut: 10000, extendedTimeOut: 20000 });
+                url.pathname = '';
+            }
 
-        if (!power_user.relaxed_api_urls && settings.legacy_api) {
-            url.pathname = '/api';
+            if (!power_user.relaxed_api_urls && settings.legacy_api) {
+                url.pathname = '/api';
+            }
         }
         return url.toString();
     } catch {
@@ -1184,7 +1187,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
     if (settings.type === HUGGINGFACE) {
         params.top_p = Math.min(Math.max(Number(params.top_p), 0.0), 0.999);
         params.stop = Array.isArray(params.stop) ? params.stop.slice(0, 4) : [];
-        nonAphroditeParams.seed = settings.seed >= 0 ? settings.seed : undefined;
+        nonAphroditeParams.seed = settings.seed >= 0 ? settings.seed : Math.floor(Math.random() * Math.pow(2, 32));
     }
 
     if (settings.type === MANCER) {

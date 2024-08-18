@@ -143,6 +143,7 @@ const spp_nerd = new SentencePieceTokenizer('src/tokenizers/nerdstash.model');
 const spp_nerd_v2 = new SentencePieceTokenizer('src/tokenizers/nerdstash_v2.model');
 const spp_mistral = new SentencePieceTokenizer('src/tokenizers/mistral.model');
 const spp_yi = new SentencePieceTokenizer('src/tokenizers/yi.model');
+const spp_gemma = new SentencePieceTokenizer('src/tokenizers/gemma.model');
 const claude_tokenizer = new WebTokenizer('src/tokenizers/claude.json');
 const llama3_tokenizer = new WebTokenizer('src/tokenizers/llama3.json');
 
@@ -152,6 +153,7 @@ const sentencepieceTokenizers = [
     'nerdstash_v2',
     'mistral',
     'yi',
+    'gemma',
 ];
 
 /**
@@ -178,6 +180,10 @@ function getSentencepiceTokenizer(model) {
 
     if (model.includes('yi')) {
         return spp_yi;
+    }
+
+    if (model.includes('gemma')) {
+        return spp_gemma;
     }
 
     return null;
@@ -268,6 +274,10 @@ function getTokenizerModel(requestModel) {
         return 'gpt-4o';
     }
 
+    if (requestModel.includes('chatgpt-4o-latest')) {
+        return 'gpt-4o';
+    }
+
     if (requestModel.includes('gpt-4-32k')) {
         return 'gpt-4-32k';
     }
@@ -308,8 +318,8 @@ function getTokenizerModel(requestModel) {
         return 'yi';
     }
 
-    if (requestModel.includes('gemini')) {
-        return 'gpt-4o';
+    if (requestModel.includes('gemma') || requestModel.includes('gemini')) {
+        return 'gemma';
     }
 
     // default
@@ -579,6 +589,7 @@ router.post('/nerdstash/encode', jsonParser, createSentencepieceEncodingHandler(
 router.post('/nerdstash_v2/encode', jsonParser, createSentencepieceEncodingHandler(spp_nerd_v2));
 router.post('/mistral/encode', jsonParser, createSentencepieceEncodingHandler(spp_mistral));
 router.post('/yi/encode', jsonParser, createSentencepieceEncodingHandler(spp_yi));
+router.post('/gemma/encode', jsonParser, createSentencepieceEncodingHandler(spp_gemma));
 router.post('/gpt2/encode', jsonParser, createTiktokenEncodingHandler('gpt2'));
 router.post('/claude/encode', jsonParser, createWebTokenizerEncodingHandler(claude_tokenizer));
 router.post('/llama3/encode', jsonParser, createWebTokenizerEncodingHandler(llama3_tokenizer));
@@ -587,6 +598,7 @@ router.post('/nerdstash/decode', jsonParser, createSentencepieceDecodingHandler(
 router.post('/nerdstash_v2/decode', jsonParser, createSentencepieceDecodingHandler(spp_nerd_v2));
 router.post('/mistral/decode', jsonParser, createSentencepieceDecodingHandler(spp_mistral));
 router.post('/yi/decode', jsonParser, createSentencepieceDecodingHandler(spp_yi));
+router.post('/gemma/decode', jsonParser, createSentencepieceDecodingHandler(spp_gemma));
 router.post('/gpt2/decode', jsonParser, createTiktokenDecodingHandler('gpt2'));
 router.post('/claude/decode', jsonParser, createWebTokenizerDecodingHandler(claude_tokenizer));
 router.post('/llama3/decode', jsonParser, createWebTokenizerDecodingHandler(llama3_tokenizer));
@@ -617,6 +629,11 @@ router.post('/openai/encode', jsonParser, async function (req, res) {
 
         if (queryModel.includes('claude')) {
             const handler = createWebTokenizerEncodingHandler(claude_tokenizer);
+            return handler(req, res);
+        }
+
+        if (queryModel.includes('gemma') || queryModel.includes('gemini')) {
+            const handler = createSentencepieceEncodingHandler(spp_gemma);
             return handler(req, res);
         }
 
@@ -655,6 +672,11 @@ router.post('/openai/decode', jsonParser, async function (req, res) {
 
         if (queryModel.includes('claude')) {
             const handler = createWebTokenizerDecodingHandler(claude_tokenizer);
+            return handler(req, res);
+        }
+
+        if (queryModel.includes('gemma') || queryModel.includes('gemini')) {
+            const handler = createSentencepieceDecodingHandler(spp_gemma);
             return handler(req, res);
         }
 
@@ -701,6 +723,11 @@ router.post('/openai/count', jsonParser, async function (req, res) {
 
         if (model === 'yi') {
             num_tokens = await countSentencepieceArrayTokens(spp_yi, req.body);
+            return res.send({ 'token_count': num_tokens });
+        }
+
+        if (model === 'gemma' || model === 'gemini') {
+            num_tokens = await countSentencepieceArrayTokens(spp_gemma, req.body);
             return res.send({ 'token_count': num_tokens });
         }
 

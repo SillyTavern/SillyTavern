@@ -105,6 +105,7 @@ const loadSets = async () => {
                     qr.executeOnAi = slot.autoExecute_botMessage ?? false;
                     qr.executeOnChatChange = slot.autoExecute_chatLoad ?? false;
                     qr.executeOnGroupMemberDraft = slot.autoExecute_groupMemberDraft ?? false;
+                    qr.executeOnNewChat = slot.autoExecute_newChat ?? false;
                     qr.automationId = slot.automationId ?? '';
                     qr.contextList = (slot.contextMenu ?? []).map(it=>({
                         set: it.preset,
@@ -176,7 +177,7 @@ const init = async () => {
     buttons.show();
     settings.onSave = ()=>buttons.refresh();
 
-    window['executeQuickReplyByName'] = async(name, args = {}) => {
+    window['executeQuickReplyByName'] = async(name, args = {}, options = {}) => {
         let qr = [...settings.config.setList, ...(settings.chatConfig?.setList ?? [])]
             .map(it=>it.set.qrList)
             .flat()
@@ -191,7 +192,7 @@ const init = async () => {
             }
         }
         if (qr && qr.onExecute) {
-            return await qr.execute(args, false, true);
+            return await qr.execute(args, false, true, options);
         } else {
             throw new Error(`No Quick Reply found for "${name}".`);
         }
@@ -260,3 +261,8 @@ const onWIActivation = async (entries) => {
     await autoExec.handleWIActivation(entries);
 };
 eventSource.on(event_types.WORLD_INFO_ACTIVATED, (...args) => executeIfReadyElseQueue(onWIActivation, args));
+
+const onNewChat = async () => {
+    await autoExec.handleNewChat();
+};
+eventSource.on(event_types.CHAT_CREATED, (...args) => executeIfReadyElseQueue(onNewChat, args));

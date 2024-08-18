@@ -383,7 +383,7 @@
                                         Max Response Length (tokens)
                                     </div>
                                     <div class="wide100p">
-                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="50" max="8000">
+                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="16384">
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,custom">
@@ -1273,7 +1273,7 @@
                                         <input class="neo-range-slider" type="range" id="max_tokens_second_textgenerationwebui" name="volume" min="0" max="20" step="1" />
                                         <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="max_tokens_second_textgenerationwebui" id="max_tokens_second_counter_textgenerationwebui">
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="mancer, ooba, koboldcpp, aphrodite, tabby" name="smoothingBlock" class="wide100p">
+                                    <div data-newbie-hidden data-tg-type="mancer, ooba, koboldcpp, aphrodite, tabby" id="smoothingBlock" name="smoothingBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Smooth Sampling">Smooth Sampling</label>
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Smooth_Sampling_desc" title="Allows you to use quadratic/cubic transformations to adjust the distribution. Lower Smoothing Factor values will be more creative, usually between 0.2-0.3 is the sweetspot (assuming the curve = 1). Higher Smoothing Curve values will make the curve steeper, which will punish low probability choices more aggressively. 1.0 curve is equivalent to only using Smoothing Factor."></div>
@@ -1358,7 +1358,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden id="mirostat_block_ooba" class="wide100p">
+                                    <div data-newbie-hidden data-tg-type="ooba,aphrodite,infermaticai,koboldcpp,llamacpp,mancer,ollama,tabby" id="mirostat_block_ooba" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat</label>
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Mirostat_desc" title="Mirostat is a thermostat for output perplexity.&#13;Mirostat matches the output perplexity to that of the input, thus avoiding the repetition trap&#13;(where, as the autoregressive inference produces text, the perplexity of the output tends toward zero)&#13;and the confusion trap (where the perplexity diverges).&#13;For details, see the paper Mirostat: A Neural Text Decoding Algorithm that Directly Controls Perplexity by Basu et al. (2020).&#13;Mode chooses the Mirostat version. 0=disable, 1=Mirostat 1.0 (llama.cpp only), 2=Mirostat 2.0."></div>
@@ -1387,7 +1387,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="ooba, vllm" name="beamSearchBlock" class="wide100p">
+                                    <div data-newbie-hidden data-tg-type="ooba, vllm" id="beamSearchBlock" name="beamSearchBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label>
                                                 <span data-i18n="Beam search">Beam Search</span>
@@ -1413,7 +1413,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-tg-type="ooba" data-newbie-hidden name="contrastiveSearchBlock" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-tg-type="ooba" data-newbie-hidden id="contrastiveSearchBlock" name="contrastiveSearchBlock" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <h4 class="textAlignCenter" data-i18n="Contrastive search">Contrastive Search
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="Contrastive_search_txt" title="A sampler that encourages diversity while maintaining coherence, by exploiting the isotropicity of the representation space of most LLMs. For details, see the paper A Contrastive Framework for Neural Text Generation by Su et al. (2022)."></div>
                                         </h4>
@@ -1544,7 +1544,7 @@
                                         <h4 class="wide100p textAlignCenter">
                                             <label>
                                                 <span data-i18n="Grammar String">Grammar String</span>
-                                                <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]GNBF or ENBF, depends on the backend in use. If you're using this you should know which." title="GNBF or ENBF, depends on the backend in use. If you're using this you should know which."></div>
+                                                <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]GBNF or EBNF, depends on the backend in use. If you're using this you should know which." title="GBNF or EBNF, depends on the backend in use. If you're using this you should know which."></div>
                                                 <a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">
                                                     <small>
                                                         <div class="fa-solid fa-up-right-from-square note-link-span"></div>
@@ -1554,13 +1554,13 @@
                                         </h4>
                                         <textarea id="grammar_string_textgenerationwebui" rows="4" class="text_pole textarea_compact monospace" data-i18n="[placeholder]Type in the desired custom grammar" placeholder="Type in the desired custom grammar"></textarea>
                                     </div>
-                                    <div id="sampler_order_block" data-newbie-hidden data-tg-type="koboldcpp" class="range-block flexFlowColumn wide100p">
+                                    <div id="sampler_order_block_kcpp" data-newbie-hidden data-tg-type="koboldcpp" class="range-block flexFlowColumn wide100p">
                                         <hr class="wide100p">
                                         <div class="range-block-title">
                                             <span data-i18n="Samplers Order">Samplers Order</span>
                                         </div>
                                         <div class="toggle-description widthUnset" data-i18n="Samplers will be applied in a top-down order. Use with caution.">
-                                            Samplers will be applied in a top-down order.
+                                            kcpp only. Samplers will be applied in a top-down order.
                                             Use with caution.
                                         </div>
                                         <div id="koboldcpp_order" class="prompt_order">
@@ -1597,10 +1597,10 @@
                                             <span data-i18n="Load default order">Load default order</span>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="llamacpp" class="range-block flexFlowColumn wide100p">
+                                    <div id="sampler_order_block_lcpp" data-newbie-hidden data-tg-type="llamacpp" class="range-block flexFlowColumn wide100p">
                                         <hr class="wide100p">
                                         <h4 class="range-block-title justifyCenter">
-                                            <span data-i18n="Samplers Order">Samplers Order</span>
+                                            <span data-i18n="Sampler Order">Sampler Order</span>
                                             <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]llama.cpp only. Determines the order of samplers. If Mirostat mode is not 0, sampler order is ignored." title="llama.cpp only. Determines the order of samplers. If Mirostat mode is not 0, sampler order is ignored."></div>
                                         </h4>
                                         <div class="toggle-description widthUnset" data-i18n="llama.cpp only. Determines the order of samplers. If Mirostat mode is not 0, sampler order is ignored.">
@@ -1618,7 +1618,7 @@
                                             <span data-i18n="Load default order">Load default order</span>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="ooba" class="range-block flexFlowColumn wide100p">
+                                    <div id="sampler_priority_block_ooba" data-newbie-hidden data-tg-type="ooba" class="range-block flexFlowColumn wide100p">
                                         <hr class="wide100p">
                                         <h4 class="range-block-title justifyCenter">
                                             <span data-i18n="Sampler Priority">Sampler Priority</span>
@@ -1660,16 +1660,24 @@
                                         </div>
                                         <div class="inline-drawer-content">
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_none">
-                                                <input type="radio" id="character_names_none" name="character_names" value="0">
+                                                <input type="radio" id="character_names_none" name="character_names" value="-1">
                                                 <span data-i18n="None">None</span>
-                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Except for groups and past personas. Otherwise, make sure you provide names in the prompt." data-i18n="[title]character_names_none"></i>
-                                                <small class="flexBasis100p" data-i18n="Don't add character names.">
-                                                    Don't add character names.
+                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Never add character name prefixes. May behave poorly in groups, choose with caution." data-i18n="[title]character_names_none"></i>
+                                                <small class="flexBasis100p" data-i18n="Never add character names.">
+                                                    Never add character names.
+                                                </small>
+                                            </label>
+                                            <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_default">
+                                                <input type="radio" id="character_names_default" name="character_names" value="0">
+                                                <span data-i18n="Default">Default</span>
+                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Add prefixes for groups and past personas. Otherwise, make sure you provide names in the prompt." data-i18n="[title]character_names_default"></i>
+                                                <small class="flexBasis100p" data-i18n="Don't add character names unless necessary.">
+                                                    Don't add character names unless necessary.
                                                 </small>
                                             </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_completion">
                                                 <input type="radio" id="character_names_completion" name="character_names" value="1">
-                                                <span data-i18n="Completion">Completion Object</span>
+                                                <span data-i18n="Completion Object">Completion Object</span>
                                                 <i class="right_menu_button fa-solid fa-circle-exclamation" title="Restrictions apply: only Latin alphanumerics and underscores. Doesn't work for all sources, notably: Claude, MistralAI, Google." data-i18n="[title]character_names_completion"></i>
                                                 <small class="flexBasis100p" data-i18n="Add character names to completion objects.">
                                                     Add character names to completion objects.
@@ -1762,13 +1770,13 @@
                                             </div>
                                         </label>
                                     </div>
-                                    <div class="range-block" data-source="openai,openrouter,makersuite,claude,custom">
+                                    <div class="range-block" data-source="openai,openrouter,makersuite,claude,custom,01ai">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
                                             <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
                                                 <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it (e.g. GPT-4V, Claude 3 or Llava 13B).
-                                                Use the</span> <code><i class="fa-solid fa-paperclip"></i></code> <span data-i18n="image_inlining_hint_2">action on any message or the</span>
+                                                    Use the</span> <code><i class="fa-solid fa-paperclip"></i></code> <span data-i18n="image_inlining_hint_2">action on any message or the</span>
                                                 <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
                                             </div>
                                         </label>
@@ -1815,10 +1823,16 @@
                                     </div>
                                     <div data-newbie-hidden class="range-block" data-source="claude">
                                         <div class="wide100p">
-                                            <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
-                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
-                                            <span id="claude_assistant_impersonation_text" data-i18n="Assistant Impersonation Prefill">Assistant Impersonation Prefill</span>
-                                            <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact" name="assistant_impersonation autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <div class="flex-container alignItemsCenter">
+                                                <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
+                                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="claude_assistant_prefill" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                                            </div>
+                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill" rows="6" maxlength="100000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <div class="flex-container alignItemsCenter">
+                                                <span id="claude_assistant_impersonation_text" data-i18n="Assistant Impersonation Prefill">Assistant Impersonation Prefill</span>
+                                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="claude_assistant_impersonation" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                                            </div>
+                                            <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact" name="assistant_impersonation" rows="6" maxlength="100000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
                                         <label for="claude_use_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="claude_use_sysprompt" type="checkbox" />
@@ -2419,6 +2433,7 @@
                             <optgroup>
                                 <option value="01ai">01.AI (Yi)</option>
                                 <option value="ai21">AI21</option>
+                                <option value="blockentropy">Block Entropy</option>
                                 <option value="claude">Claude</option>
                                 <option value="cohere">Cohere</option>
                                 <option value="groq">Groq</option>
@@ -2562,7 +2577,9 @@
                                     </optgroup>
                                     <optgroup label="GPT-4o">
                                         <option value="gpt-4o">gpt-4o</option>
+                                        <option value="gpt-4o-2024-08-06">gpt-4o-2024-08-06</option>
                                         <option value="gpt-4o-2024-05-13">gpt-4o-2024-05-13</option>
+                                        <option value="chatgpt-4o-latest">chatgpt-4o-latest</option>
                                     </optgroup>
                                     <optgroup label="gpt-4o-mini">
                                         <option value="gpt-4o-mini">gpt-4o-mini</option>
@@ -2794,21 +2811,26 @@
                             <div>
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
-                                    <optgroup label="Latest">
-                                        <!-- Doesn't work without "latest". Maybe my key is scuffed? -->
-                                        <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
-                                        <!-- Points to 1.0, no default 1.5 endpoint -->
-                                        <option value="gemini-pro">Gemini Pro</option>
-                                        <option value="gemini-pro-vision">Gemini Pro Vision</option>
-                                        <option value="gemini-ultra">Gemini Ultra</option>
-                                        <option value="text-bison-001">Bison Text</option>
-                                        <option value="chat-bison-001">Bison Chat</option>
-                                    </optgroup>
-                                    <optgroup label="Sub-versions">
-                                        <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro</option>
-                                        <option value="gemini-1.0-pro-latest">Gemini 1.0 Pro</option>
-                                        <option value="gemini-1.0-pro-vision-latest">Gemini 1.0 Pro Vision</option>
+                                    <optgroup label="Primary">
+                                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                                        <option value="gemini-1.0-pro">Gemini 1.0 Pro</option>
+                                        <option value="gemini-pro">Gemini Pro (1.0)</option>
+                                        <option value="gemini-pro-vision">Gemini Pro Vision (1.0)</option>
+                                        <option value="gemini-ultra">Gemini Ultra (1.0)</option>
                                         <option value="gemini-1.0-ultra-latest">Gemini 1.0 Ultra</option>
+                                        <option value="text-bison-001">PaLM 2 (Legacy)</option>
+                                        <option value="chat-bison-001">PaLM 2 Chat (Legacy)</option>
+                                    </optgroup>
+                                    <optgroup label="Subversions">
+                                        <option value="gemini-1.5-pro-exp-0801">Gemini 1.5 Pro Experiment 2024-08-01</option>
+                                        <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro [latest]</option>
+                                        <option value="gemini-1.5-pro-001">Gemini 1.5 Pro [001]</option>
+                                        <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash [latest]</option>
+                                        <option value="gemini-1.5-flash-001">Gemini 1.5 Flash [001]</option>
+                                        <option value="gemini-1.0-pro-latest">Gemini 1.0 Pro [latest]</option>
+                                        <option value="gemini-1.0-pro-001">Gemini 1.0 Pro (Tuning) [001]</option>
+                                        <option value="gemini-1.0-pro-vision-latest">Gemini 1.0 Pro Vision [latest]</option>
                                     </optgroup>
                                 </select>
                             </div>
@@ -2845,6 +2867,7 @@
                                         <option value="mistral-small-2402">mistral-small-2402</option>
                                         <option value="mistral-medium-2312">mistral-medium-2312</option>
                                         <option value="mistral-large-2402">mistral-large-2402</option>
+                                        <option value="mistral-large-2407">mistral-large-2407</option>
                                         <option value="codestral-2405">codestral-2405</option>
                                         <option value="codestral-mamba-2407">codestral-mamba-2407</option>
                                     </optgroup>
@@ -2885,7 +2908,20 @@
                             </div>
                             <h4 data-i18n="Perplexity Model">Perplexity Model</h4>
                             <select id="model_perplexity_select">
-                                <optgroup label="Perplexity Models">
+                                <optgroup label="Perplexity Sonar Models">
+                                    <option value="llama-3.1-sonar-small-128k-online">llama-3.1-sonar-small-128k-online</option>
+                                    <option value="llama-3.1-sonar-large-128k-online">llama-3.1-sonar-large-128k-online</option>
+                                    <option value="llama-3.1-sonar-huge-128k-online">llama-3.1-sonar-huge-128k-online</option>
+                                </optgroup>
+                                <optgroup label="Perplexity Chat Models">
+                                    <option value="llama-3.1-sonar-small-128k-chat">llama-3.1-sonar-small-128k-chat</option>
+                                    <option value="llama-3.1-sonar-large-128k-chat">llama-3.1-sonar-large-128k-chat</option>
+                                </optgroup>
+                                <optgroup label="Open-Source Models">
+                                    <option value="llama-3.1-8b-instruct">llama-3.1-8b-instruct</option>
+                                    <option value="llama-3.1-70b-instruct">llama-3.1-70b-instruct</option>
+                                </optgroup>
+                                <optgroup label="Deprecated Models">
                                     <option value="llama-3-sonar-small-32k-chat">llama-3-sonar-small-32k-chat</option>
                                     <option value="llama-3-sonar-small-32k-online">llama-3-sonar-small-32k-online</option>
                                     <option value="llama-3-sonar-large-32k-chat">llama-3-sonar-large-32k-chat</option>
@@ -2894,8 +2930,6 @@
                                     <option value="sonar-small-online">sonar-small-online</option>
                                     <option value="sonar-medium-chat">sonar-medium-chat</option>
                                     <option value="sonar-medium-online">sonar-medium-online</option>
-                                </optgroup>
-                                <optgroup label="Open-Source Models">
                                     <option value="llama-3-8b-instruct">llama-3-8b-instruct</option>
                                     <option value="llama-3-70b-instruct">llama-3-70b-instruct</option>
                                     <option value="mistral-7b-instruct">mistral-7b-instruct (v0.2)</option>
@@ -2927,6 +2961,20 @@
                                         <option value="command-nightly">command-nightly</option>
                                     </optgroup>
                                 </select>
+                            </div>
+                        </form>
+                        <form id="blockentropy_form" data-source="blockentropy">
+                            <h4 data-i18n="Block Entropy API Key">Block Entropy API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_blockentropy" name="api_key_blockentropy" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_blockentropy"></div>
+                            </div>
+                            <div data-for="api_key_blockentropy" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <h4 data-i18n="Select a Model">Select a Model</h4>
+                            <div class="flex-container">
+                                <select id="model_blockentropy_select" class="text_pole"></select>
                             </div>
                         </form>
                         <form id="custom_form" data-source="custom">
@@ -3060,7 +3108,11 @@
                                 </div>
                                 <label class="checkbox_label" title="Add Chat Start and Example Separator to a list of stopping strings." data-i18n="[title]Add Chat Start and Example Separator to a list of stopping strings.">
                                     <input id="context_use_stop_strings" type="checkbox" />
-                                    <small data-i18n="Use as Stop Strings">Use as Stop Strings</small>
+                                    <small data-i18n="Separators as Stop Strings">Separators as Stop Strings</small>
+                                </label>
+                                <label class="checkbox_label" title="Add Character and User names to a list of stopping strings." data-i18n="[title]Add Character and User names to a list of stopping strings.">
+                                    <input id="context_names_as_stop_strings" type="checkbox" />
+                                    <small data-i18n="Names as Stop Strings">Names as Stop Strings</small>
                                 </label>
                                 <label class="checkbox_label" title="Includes Post-History Instructions at the end of the prompt, if defined in the character card AND ''Prefer Char. Instructions'' is enabled.&#10;THIS IS NOT RECOMMENDED FOR TEXT COMPLETION MODELS, CAN LEAD TO BAD OUTPUT." data-i18n="[title]context_allow_post_history_instructions">
                                     <input id="context_allow_jailbreak" type="checkbox" />
@@ -3288,6 +3340,24 @@
                                         </div>
                                     </div>
                                     <div class="flex-container">
+                                        <div class="flex1" title="Inserted before the first User's message." data-i18n="[title]Inserted before the first User's message.">
+                                            <label for="instruct_first_input_sequence">
+                                                <small data-i18n="First User Prefix">First User Prefix</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_first_input_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="flex1" title="Inserted before the last User's message." data-i18n="[title]instruct_last_input_sequence">
+                                            <label for="instruct_last_input_sequence">
+                                                <small data-i18n="Last User Prefix">Last User Prefix</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_last_input_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-container">
                                         <div class="flex1" title="Will be inserted as a last prompt line when using system/neutral generation." data-i18n="[title]Will be inserted as a last prompt line when using system/neutral generation.">
                                             <label for="instruct_last_system_sequence">
                                                 <small data-i18n="System Instruction Prefix">System Instruction Prefix</small>
@@ -3379,6 +3449,7 @@
                                 <!-- Option #2 was a legacy GPT-2/3 tokenizer -->
                                 <option value="3">Llama 1/2</option>
                                 <option value="12">Llama 3</option>
+                                <option value="13">Gemma / Gemini</option>
                                 <option value="4">NerdStash (NovelAI Clio)</option>
                                 <option value="5">NerdStash v2 (NovelAI Kayra)</option>
                                 <option value="7">Mistral</option>
@@ -3635,8 +3706,8 @@
                             <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand" title="Open all Entries" data-i18n="[title]Open all Entries"></div>
                             <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress" title="Close all Entries" data-i18n="[title]Close all Entries"></div>
                             <div id="world_popup_new" class="menu_button fa-solid fa-plus" title="New Entry" data-i18n="[title]New Entry"></div>
-                            <div id="world_backfill_memos" class="menu_button fa-solid fa-notes-medical" title="Fill empty Memo/Titles with Keywords" data-i18n="[title]Fill empty Memo/Titles with Keywords"></div><div id="world_apply_custom_sorting" class="menu_button fa-solid fa-solid fa-arrow-down-9-1"
-                                title="Apply custom sorting as Order" data-i18n="[title]Apply custom sorting as Order"></div>
+                            <div id="world_backfill_memos" class="menu_button fa-solid fa-notes-medical" title="Fill empty Memo/Titles with Keywords" data-i18n="[title]Fill empty Memo/Titles with Keywords"></div>
+                            <div id="world_apply_current_sorting" class="menu_button fa-solid fa-solid fa-arrow-down-9-1" title="Apply current sorting as Order" data-i18n="[title]Apply current sorting as Order"></div>
                             <div id="world_import_button" class="menu_button fa-solid fa-file-import" title="Import World Info" data-i18n="[title]Import World Info"></div>
                             <div id="world_popup_export" class="menu_button fa-solid fa-file-export" title="Export World Info" data-i18n="[title]Export World Info"></div>
                             <div id="world_duplicate" class="menu_button fa-solid fa-paste" title="Duplicate World Info" data-i18n="[title]Duplicate World Info"></div>
@@ -3999,7 +4070,7 @@
                                     <input type="range" id="smooth_streaming_speed" name="smooth_streaming_speed" min="0" max="100" step="10" value="50">
                                     <div class="slider_hint">
                                         <span data-i18n="Slow">Slow</span>
-                                        <span data-i18n=""></span>
+                                        <span></span>
                                         <span data-i18n="Fast">Fast</span>
                                     </div>
                                 </div>
@@ -4031,21 +4102,23 @@
                                 <input id="restore_user_input" type="checkbox" />
                                 <small data-i18n="Restore User Input">Restore User Input</small>
                             </label>
-                            <label data-newbie-hidden id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label" title="Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile." data-i18n="[title]Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile">
-                                <input id="movingUImode" type="checkbox" />
-                                <small data-i18n="Movable UI Panels">MovingUI&nbsp;<i class="fa-solid fa-desktop"></i></small>
-                            </label>
+                            <div class="flex-container alignItemsCenter">
+                                <label data-newbie-hidden id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label" title="Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile." data-i18n="[title]Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile">
+                                    <input id="movingUImode" type="checkbox" />
+                                    <small data-i18n="Movable UI Panels">MovingUI&nbsp;<i class="fa-solid fa-desktop"></i></small>
+                                </label>
+                                <div data-newbie-hidden id="movingUIreset" title="Reset MovingUI panel sizes/locations." class="menu_button margin0" data-i18n="[title]Reset MovingUI panel sizes/locations."><i class=" fa-solid fa-recycle margin-r5"></i> Reset</div>
+                            </div>
                             <div data-newbie-hidden id="MovingUI-presets-block" class="flex-container alignitemscenter">
                                 <div class="flex-container alignItemsFlexEnd">
                                     <label for="movingUIPresets" title="MovingUI preset. Predefined/saved draggable positions." data-i18n="[title]MovingUI preset. Predefined/saved draggable positions">
-                                        <small data-i18n="MUI Preset">MUI Preset:</small>
+                                        <small data-i18n="MUI Preset">MovingUI Preset:</small>
                                         <div class="flex-container flexnowrap">
                                             <select id="movingUIPresets" class="widthNatural flex1 margin0">
                                             </select>
                                         </div>
                                     </label>
                                     <div id="movingui-preset-save-button" title="Save changes to a new MovingUI preset file." data-i18n="[title]Save movingUI changes to a new file" class="menu_button margin0 fa-solid fa-save"></div>
-                                    <div data-newbie-hidden id="movingUIreset" title="Reset MovingUI panel sizes/locations." class="menu_button fa-solid fa-recycle margin0" data-i18n="[title]Reset MovingUI panel sizes/locations."></div>
                                 </div>
                             </div>
                             <div data-newbie-hidden id="CustomCSS-block" class="flex-container flexFlowColumn">
@@ -4115,6 +4188,12 @@
                                     <input id="quick_continue" type="checkbox" />
                                     <small data-i18n="Quick 'Continue' button">
                                         Quick "Continue" button
+                                    </small>
+                                </label>
+                                <label class="checkbox_label" for="quick_impersonate" title="Show a button in the input area to ask the AI to impersonate your character for a single message." data-i18n="[title]Show a button in the input area to ask the AI to impersonate your character for a single message">
+                                    <input id="quick_impersonate" type="checkbox" />
+                                    <small data-i18n="Quick 'Impersonate' button">
+                                        Quick "Impersonate" button
                                     </small>
                                 </label>
                                 <div class="checkbox-container flex-container">
@@ -4237,6 +4316,16 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div title="Determines which keys select an item from the AutoComplete suggestions">
+                                    <label data-i18n="Keyboard">
+                                        <small>Keyboard:</small>
+                                    </label>
+                                    <select id="stscript_autocomplete_select">
+                                        <option value="3" data-i18n="Select with Tab or Enter">Select with Tab or Enter</option>
+                                        <option value="1" data-i18n="Select with Tab">Select with Tab</option>
+                                        <option value="2" data-i18n="Select with Enter">Select with Enter</option>
+                                    </select>
+                                </div>
                                 <div class="flex-container flexFlowColumn gap0" title="Sets the font size of the autocomplete." data-i18n="[title]Sets the font size of the autocomplete.">
                                     <label for="stscript_autocomplete_font_scale"><small>Font Scale</small></label>
                                     <input class="neo-range-slider" type="range" id="stscript_autocomplete_font_scale" min="0.5" max="2" step="0.01">
@@ -4275,7 +4364,7 @@
                                             <span class="fa-solid fa-circle-question note-link-span"></span>
                                         </a>
                                     </label>
-                                    <label class="checkbox_label" title="Prevents {{getvar::}} {{getglobalvar::}} macros from having literal macro-like values auto-evaluated.&NewLine;e.g. &quot;{{newline}}&quot; remains as literal string &quot;{{newline}}&quot;&NewLine;&NewLine;(This is done by internally replacing {{getvar::}} {{getglobalvar::}} macros with scoped variables.)" data-i18n="[title]Prevents {{getvar::}} {{getglobalvar::}} macros from having literal macro-like values auto-evaluated.&NewLine;e.g. &quot;{{newline}}&quot; remains as literal string &quot;{{newline}}&quot;&NewLine;&NewLine;(This is done by internally replacing {{getvar::}} {{getglobalvar::}} macros with scoped variables.)">
+                                    <label class="checkbox_label" title="Prevents {{getvar::}} {{getglobalvar::}} macros from having literal macro-like values auto-evaluated.&NewLine;e.g. &quot;{{newline}}&quot; remains as literal string &quot;{{newline}}&quot;&NewLine;&NewLine;(This is done by internally replacing {{getvar::}} {{getglobalvar::}} macros with scoped variables.)" data-i18n="[title]stscript_parser_flag_replace_getvar_label">
                                         <input id="stscript_parser_flag_replace_getvar" type="checkbox" />
                                         <span data-i18n="REPLACE_GETVAR"><small>REPLACE_GETVAR</small></span>
                                         <a href="https://docs.sillytavern.app/usage/st-script/#replace-variable-macros" target="_blank" class="notes-link">
@@ -4578,7 +4667,7 @@
                                             <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
                                             <input type="hidden" id="fav_checkbox" name="fav" />
                                             <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions" data-i18n="[title]Advanced Definition"></div>
-                                            <div id="world_button" class="menu_button fa-solid fa-globe" title="Character Lore" data-i18n="[title]Character Lore"></div>
+                                            <div id="world_button" class="menu_button fa-solid fa-globe" title="Character Lore&#10;&#10;Click to load&#10;Shift-click to open 'Link to World Info' popup" data-i18n="[title]world_button_title"></div>
                                             <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore" data-i18n="[title]Chat Lore"></div>
                                             <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download" data-i18n="[title]Export and Download"></div>
                                             <!-- <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div> -->
@@ -5235,21 +5324,22 @@
         <div class="world_entry">
             <form class="world_entry_form  wi-card-entry">
                 <div class="inline-drawer wide100p">
-                    <div class="inline-drawer-toggle inline-drawer-header gap5px padding0">
+                    <div class="inline-drawer-header gap5px padding0">
                         <span class="drag-handle">&#9776;</span>
                         <div class="gap5px world_entry_thin_controls wide100p alignitemscenter">
-                            <div class="fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                            <div class="inline-drawer-toggle fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                            <div class="fa-solid fa-toggle-on killSwitch" name="entryKillSwitch" title="Toggle entry's active state."></div>
                             <div class="flex-container alignitemscenter wide100p">
+
                                 <div class="WIEntryTitleAndStatus flex-container flex1 alignitemscenter">
+
                                     <div class="flex-container flex1">
                                         <textarea class="text_pole" rows="1" name="comment" maxlength="5000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
                                     </div>
-                                    <!-- <span class="world_entry_form_position_value"></span> -->
                                     <select data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal🔗 Vectorized❌ Disabled" title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;🔗 Vectorized&#13;❌ Disabled" name="entryStateSelector" class="text_pole widthNatural margin0">
                                         <option value="constant" title="Constant" data-i18n="[title]WI_Entry_Status_Constant">🔵</option>
                                         <option value="normal" title="Normal" data-i18n="[title]WI_Entry_Status_Normal">🟢</option>
                                         <option value="vectorized" title="Vectorized" data-i18n="[title]WI_Entry_Status_Vectorized">🔗</option>
-                                        <option value="disabled" title="Disabled" data-i18n="[title]WI_Entry_Status_Disabled">❌</option>
                                     </select>
                                 </div>
                                 <div class="WIEnteryHeaderControls flex-container">
@@ -5722,6 +5812,11 @@
                         <div title="Caption" class="right_menu_button fa-lg fa-solid fa-envelope-open-text mes_img_caption" data-i18n="[title]Caption"></div>
                         <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_img_delete" data-i18n="[title]Delete"></div>
                     </div>
+                    <div class="mes_img_swipes">
+                        <div title="Swipe left" class="right_menu_button fa-lg fa-solid fa-chevron-left mes_img_swipe_left" data-i18n="[title]Swipe left"></div>
+                        <div class="mes_img_swipe_counter">1/1</div>
+                        <div title="Swipe right" class="right_menu_button fa-lg fa-solid fa-chevron-right mes_img_swipe_right" data-i18n="[title]Swipe right"></div>
+                    </div>
                     <img class="mes_img" src="" />
                 </div>
                 <div class="mes_bias"></div>
@@ -5784,6 +5879,7 @@
                     Enable simple UI mode
                 </span>
             </label>
+            <div class="expander"></div>
             <div class="textAlignCenter">
                 <h3 data-i18n="Looking for AI characters?">
                     Looking for AI characters?
@@ -5802,6 +5898,7 @@
                     </span>
                 </span>
             </div>
+            <div class="expander"></div>
             <h3 data-i18n="Your Persona">
                 Your Persona
             </h3>
@@ -6315,6 +6412,7 @@
                         <div id="mes_stop" title="Abort request" class="mes_stop" data-i18n="[title]Abort request">
                             <i class="fa-solid fa-circle-stop"></i>
                         </div>
+                        <div id="mes_impersonate" class="fa-solid fa-user-secret interactable displayNone" title="Ask AI to write your message for you" data-i18n="[title]Ask AI to write your message for you" tabindex="0"></div>
                         <div id="mes_continue" class="fa-fw fa-solid fa-arrow-right interactable displayNone" title="Continue the last message" data-i18n="[title]Continue the last message"></div>
                         <div id="send_but" class="fa-solid fa-paper-plane interactable displayNone" title="Send a message" data-i18n="[title]Send a message"></div>
                     </div>
@@ -6430,6 +6528,9 @@
                         </button>
                         <button class="menu_button set_default_persona" title="Select this as default persona for the new chats." data-i18n="[title]Select this as default persona for the new chats.">
                             <i class="fa-fw fa-solid fa-crown"></i>
+                        </button>
+                        <button class="menu_button duplicate_persona" title="Duplicate persona" data-i18n="[title]Duplicate persona">
+                            <i class="fa-fw fa-solid fa-clone"></i>
                         </button>
                         <button class="menu_button delete_avatar" title="Delete persona" data-i18n="[title]Delete persona">
                             <i class="fa-fw fa-solid fa-trash-alt"></i>

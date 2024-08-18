@@ -51,7 +51,7 @@ import { autoSelectPersona, retriggerFirstMessageOnEmptyChat, setPersonaLockStat
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync } from './tokenizers.js';
-import { debounce, delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
+import { debounce, delay, isFalseBoolean, isTrueBoolean, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { background_settings } from './backgrounds.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
@@ -64,6 +64,9 @@ import { SlashCommandNamedArgumentAssignment } from './slash-commands/SlashComma
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandDebugController } from './slash-commands/SlashCommandDebugController.js';
+import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
+import { SlashCommandExecutionError } from './slash-commands/SlashCommandExecutionError.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -139,9 +142,8 @@ export function initDefaultSlashCommands() {
         returns: 'the current background',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'filename',
+                description: 'background filename',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
                 enumProvider: () => [...document.querySelectorAll('.bg_example')]
                     .map(it => new SlashCommandEnumValue(it.getAttribute('bgfile')))
                     .filter(it => it.value?.length),
@@ -152,10 +154,16 @@ export function initDefaultSlashCommands() {
             Sets a background according to the provided filename. Partial names allowed.
         </div>
         <div>
+            If no background is provided, this will return the currently selected background.
+        </div>
+        <div>
             <strong>Example:</strong>
             <ul>
                 <li>
                     <pre><code>/bg beach.jpg</code></pre>
+                </li>
+                <li>
+                    <pre><code>/bg</code></pre>
                 </li>
             </ul>
         </div>
@@ -709,6 +717,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'delswipe',
         callback: deleteSwipeCallback,
+        returns: 'the new, currently selected swipe id',
         aliases: ['swipedel'],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -904,13 +913,28 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'addswipe',
         callback: addSwipeCallback,
+        returns: 'the new swipe id',
         aliases: ['swipeadd'],
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'switch',
+                description: 'switch to the new swipe',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean()(),
+            }),
+        ],
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'text', [ARGUMENT_TYPE.STRING], true,
             ),
         ],
-        helpString: 'Adds a swipe to the last chat message.',
+        helpString: `
+        <div>
+            Adds a swipe to the last chat message.
+        </div>
+        <div>
+            Use switch=true to switch to directly switch to the new swipe.
+        </div>`,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'stop',
@@ -1115,10 +1139,10 @@ export function initDefaultSlashCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'scoped variable or qr label',
-                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING],
+                typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.CLOSURE],
                 isRequired: true,
-                enumProvider: () => [
-                    ...commonEnumProviders.variables('scope')(),
+                enumProvider: (executor, scope) => [
+                    ...commonEnumProviders.variables('scope')(executor, scope),
                     ...(typeof window['qrEnumProviderExecutables'] === 'function') ? window['qrEnumProviderExecutables']() : [],
                 ],
             }),
@@ -1356,7 +1380,7 @@ export function initDefaultSlashCommands() {
                 enumProvider: commonEnumProviders.injects,
             }),
             new SlashCommandNamedArgument(
-                'position', 'injection position', [ARGUMENT_TYPE.STRING], false, false, 'after', ['before', 'after', 'chat'],
+                'position', 'injection position', [ARGUMENT_TYPE.STRING], false, false, 'after', ['before', 'after', 'chat', 'none'],
             ),
             new SlashCommandNamedArgument(
                 'depth', 'injection depth', [ARGUMENT_TYPE.NUMBER], false, false, '4',
@@ -1384,7 +1408,7 @@ export function initDefaultSlashCommands() {
                 'text', [ARGUMENT_TYPE.STRING], false,
             ),
         ],
-        helpString: 'Injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false).',
+        helpString: 'Injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat", hidden with "none" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false). Hidden injects in "none" position are not inserted into the prompt but can be used for triggering WI entries.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'listinjects',
@@ -1472,6 +1496,21 @@ export function initDefaultSlashCommands() {
         ],
         helpString: 'Sets the specified prompt manager entry/entries on or off.',
     }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'pick-icon',
+        callback: async()=>((await showFontAwesomePicker()) ?? false).toString(),
+        returns: 'The chosen icon name or false if cancelled.',
+        helpString: `
+                <div>Opens a popup with all the available Font Awesome icons and returns the selected icon's name.</div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code>/pick-icon |\n/if left={{pipe}} rule=eq right=false\n\telse={: /echo chosen icon: "{{pipe}}" :}\n\t{: /echo cancelled icon selection :}\n|</code></pre>
+                        </li>
+                    </ul>
+                </div>
+            `,
+    }));
 
     registerVariableCommands();
 }
@@ -1486,6 +1525,7 @@ function injectCallback(args, value) {
         'before': extension_prompt_types.BEFORE_PROMPT,
         'after': extension_prompt_types.IN_PROMPT,
         'chat': extension_prompt_types.IN_CHAT,
+        'none': extension_prompt_types.NONE,
     };
     const roles = {
         'system': extension_prompt_roles.SYSTEM,
@@ -1815,6 +1855,11 @@ async function runCallback(args, name) {
         throw new Error('No name provided for /run command');
     }
 
+    if (name instanceof SlashCommandClosure) {
+        name.breakController = new SlashCommandBreakController();
+        return (await name.execute())?.pipe;
+    }
+
     /**@type {SlashCommandScope} */
     const scope = args._scope;
     if (scope.existsVariable(name)) {
@@ -1823,6 +1868,11 @@ async function runCallback(args, name) {
             throw new Error(`"${name}" is not callable.`);
         }
         closure.scope.parent = scope;
+        closure.breakController = new SlashCommandBreakController();
+        if (args._debugController && !closure.debugController) {
+            closure.debugController = args._debugController;
+        }
+        while (closure.providedArgumentList.pop());
         closure.argumentList.forEach(arg => {
             if (Object.keys(args).includes(arg.name)) {
                 const providedArg = new SlashCommandNamedArgumentAssignment();
@@ -1841,9 +1891,14 @@ async function runCallback(args, name) {
 
     try {
         name = name.trim();
-        return await window['executeQuickReplyByName'](name, args);
+        /**@type {ExecuteSlashCommandsOptions} */
+        const options = {
+            abortController: args._abortController,
+            debugController: args._debugController,
+        };
+        return await window['executeQuickReplyByName'](name, args, options);
     } catch (error) {
-        throw new Error(`Error running Quick Reply "${name}": ${error.message}`, 'Error');
+        throw new Error(`Error running Quick Reply "${name}": ${error.message}`);
     }
 }
 
@@ -2115,8 +2170,11 @@ async function echoCallback(args, value) {
     }
 }
 
-
-async function addSwipeCallback(_, arg) {
+/**
+ * @param {{switch?: string}} args - named arguments
+ * @param {string} value - The swipe text to add (unnamed argument)
+ */
+async function addSwipeCallback(args, value) {
     const lastMessage = chat[chat.length - 1];
 
     if (!lastMessage) {
@@ -2124,7 +2182,7 @@ async function addSwipeCallback(_, arg) {
         return '';
     }
 
-    if (!arg) {
+    if (!value) {
         console.warn('WARN: No argument provided for /addswipe command');
         return '';
     }
@@ -2153,23 +2211,30 @@ async function addSwipeCallback(_, arg) {
         lastMessage.swipe_info = lastMessage.swipes.map(() => ({}));
     }
 
-    lastMessage.swipes.push(arg);
+    lastMessage.swipes.push(value);
     lastMessage.swipe_info.push({
         send_date: getMessageTimeStamp(),
         gen_started: null,
         gen_finished: null,
         extra: {
-            bias: extractMessageBias(arg),
+            bias: extractMessageBias(value),
             gen_id: Date.now(),
             api: 'manual',
             model: 'slash command',
         },
     });
 
+    const newSwipeId = lastMessage.swipes.length - 1;
+
+    if (isTrueBoolean(args.switch)) {
+        lastMessage.swipe_id = newSwipeId;
+        lastMessage.mes = lastMessage.swipes[newSwipeId];
+    }
+
     await saveChatConditional();
     await reloadCurrentChat();
 
-    return '';
+    return String(newSwipeId);
 }
 
 async function deleteSwipeCallback(_, arg) {
@@ -2205,7 +2270,7 @@ async function deleteSwipeCallback(_, arg) {
     await saveChatConditional();
     await reloadCurrentChat();
 
-    return '';
+    return String(newSwipeId);
 }
 
 async function askCharacter(args, text) {
@@ -2846,7 +2911,6 @@ export async function sendMessageAs(args, text) {
 
     if (args.name) {
         name = args.name.trim();
-        mesText = text.trim();
 
         if (!name && !text) {
             toastr.warning('You must specify a name and text to send as');
@@ -2859,7 +2923,13 @@ export async function sendMessageAs(args, text) {
             localStorage.setItem(namelessWarningKey, 'true');
         }
         name = name2;
+        if (!text) {
+            toastr.warning('You must specify text to send as');
+            return '';
+        }
     }
+
+    mesText = text.trim();
 
     // Requires a regex check after the slash command is pushed to output
     mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND, { characterOverride: name });
@@ -3179,6 +3249,7 @@ function getModelOptions() {
         { id: 'model_perplexity_select', api: 'openai', type: chat_completion_sources.PERPLEXITY },
         { id: 'model_groq_select', api: 'openai', type: chat_completion_sources.GROQ },
         { id: 'model_01ai_select', api: 'openai', type: chat_completion_sources.ZEROONEAI },
+        { id: 'model_blockentropy_select', api: 'openai', type: chat_completion_sources.BLOCKENTROPY },
         { id: 'model_novel_select', api: 'novel', type: null },
         { id: 'horde_model', api: 'koboldhorde', type: null },
     ];
@@ -3417,7 +3488,9 @@ const clearCommandProgressDebounced = debounce(clearCommandProgress);
  * @prop {boolean} [handleExecutionErrors] (false) Whether to handle execution errors (show toast on error) or throw
  * @prop {{[id:PARSER_FLAG]:boolean}} [parserFlags] (null) Parser flags to apply
  * @prop {SlashCommandAbortController} [abortController] (null) Controller used to abort or pause command execution
+ * @prop {SlashCommandDebugController} [debugController] (null) Controller used to control debug execution
  * @prop {(done:number, total:number)=>void} [onProgress] (null) Callback to handle progress events
+ * @prop {string} [source] (null) String indicating where the code come from (e.g., QR name)
  */
 
 /**
@@ -3425,6 +3498,7 @@ const clearCommandProgressDebounced = debounce(clearCommandProgress);
  * @prop {SlashCommandScope} [scope] (null) The scope to be used when executing the commands.
  * @prop {{[id:PARSER_FLAG]:boolean}} [parserFlags] (null) Parser flags to apply
  * @prop {boolean} [clearChatInput] (false) Whether to clear the chat input textarea
+ * @prop {string} [source] (null) String indicating where the code come from (e.g., QR name)
  */
 
 /**
@@ -3440,6 +3514,7 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
         scope: null,
         parserFlags: null,
         clearChatInput: false,
+        source: null,
     }, options);
 
     isExecutingCommandsFromChatInput = true;
@@ -3462,13 +3537,21 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
 
     /**@type {SlashCommandClosureResult} */
     let result = null;
+    let currentProgress = 0;
     try {
         commandsFromChatInputAbortController = new SlashCommandAbortController();
         result = await executeSlashCommandsWithOptions(text, {
             abortController: commandsFromChatInputAbortController,
-            onProgress: (done, total) => ta.style.setProperty('--prog', `${done / total * 100}%`),
+            onProgress: (done, total) => {
+                const newProgress = done / total;
+                if (newProgress > currentProgress) {
+                    currentProgress = newProgress;
+                    ta.style.setProperty('--prog', `${newProgress * 100}%`);
+                }
+            },
             parserFlags: options.parserFlags,
             scope: options.scope,
+            source: options.source,
         });
         if (commandsFromChatInputAbortController.signal.aborted) {
             document.querySelector('#form_sheld').classList.add('script_aborted');
@@ -3481,7 +3564,23 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
         result.isError = true;
         result.errorMessage = e.message || 'An unknown error occurred';
         if (e.cause !== 'abort') {
-            toastr.error(result.errorMessage);
+            if (e instanceof SlashCommandExecutionError) {
+                /**@type {SlashCommandExecutionError}*/
+                const ex = e;
+                const toast = `
+                    <div>${ex.message}</div>
+                    <div>Line: ${ex.line} Column: ${ex.column}</div>
+                    <pre style="text-align:left;">${ex.hint}</pre>
+                    `;
+                const clickHint = '<p>Click to see details</p>';
+                toastr.error(
+                    `${toast}${clickHint}`,
+                    'SlashCommandExecutionError',
+                    { escapeHtml: false, timeOut: 10000, onclick: () => callPopup(toast, 'text') },
+                );
+            } else {
+                toastr.error(result.errorMessage);
+            }
         }
     } finally {
         delay(1000).then(() => clearCommandProgressDebounced());
@@ -3509,7 +3608,9 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
         handleExecutionErrors: false,
         parserFlags: null,
         abortController: null,
+        debugController: null,
         onProgress: null,
+        source: null,
     }, options);
 
     let closure;
@@ -3517,6 +3618,8 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
         closure = parser.parse(text, true, options.parserFlags, options.abortController ?? new SlashCommandAbortController());
         closure.scope.parent = options.scope;
         closure.onProgress = options.onProgress;
+        closure.debugController = options.debugController;
+        closure.source = options.source;
     } catch (e) {
         if (options.handleParserErrors && e instanceof SlashCommandParserError) {
             /**@type {SlashCommandParserError}*/
@@ -3548,7 +3651,23 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
         return result;
     } catch (e) {
         if (options.handleExecutionErrors) {
-            toastr.error(e.message);
+            if (e instanceof SlashCommandExecutionError) {
+                /**@type {SlashCommandExecutionError}*/
+                const ex = e;
+                const toast = `
+                    <div>${ex.message}</div>
+                    <div>Line: ${ex.line} Column: ${ex.column}</div>
+                    <pre style="text-align:left;">${ex.hint}</pre>
+                    `;
+                const clickHint = '<p>Click to see details</p>';
+                toastr.error(
+                    `${toast}${clickHint}`,
+                    'SlashCommandExecutionError',
+                    { escapeHtml: false, timeOut: 10000, onclick: () => callPopup(toast, 'text') },
+                );
+            } else {
+                toastr.error(e.message);
+            }
             const result = new SlashCommandClosureResult();
             result.isError = true;
             result.errorMessage = e.message;
@@ -3585,6 +3704,7 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
  *
  * @param {HTMLTextAreaElement} textarea The textarea to receive autocomplete
  * @param {Boolean} isFloating Whether to show the auto complete as a floating window (e.g., large QR editor)
+ * @returns {Promise<AutoComplete>}
  */
 export async function setSlashCommandAutoComplete(textarea, isFloating = false) {
     function canUseNegativeLookbehind() {
@@ -3608,6 +3728,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         async (text, index) => await parser.getNameAt(text, index),
         isFloating,
     );
+    return ac;
 }
 /**@type {HTMLTextAreaElement} */
 const sendTextarea = document.querySelector('#send_textarea');

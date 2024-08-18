@@ -44,6 +44,8 @@ const SECRET_KEYS = {
     ZEROONEAI: 'api_key_01ai',
     HUGGINGFACE: 'api_key_huggingface',
     STABILITY: 'api_key_stability',
+    BLOCKENTROPY: 'api_key_blockentropy',
+    CUSTOM_OPENAI_TTS: 'api_key_custom_openai_tts',
 };
 
 // These are the keys that are safe to expose, even if allowKeysExposure is false

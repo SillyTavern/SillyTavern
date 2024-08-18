@@ -137,7 +137,6 @@ body {
     width: 100%;
     /*fallback for JS load*/
     height: 100vh;
-    height: 100svh;
     height: 100dvh;
     /*defaults as 100%, then reassigned via JS as pixels, will work on PC and Android*/
     /*height: calc(var(--doc-height) - 1px);*/
@@ -451,7 +450,7 @@ code {
     border-radius: 5px;
     background-color: var(--black70a);
     padding: 0 3px;
-    /* max-width: calc(100svw - 95px); */
+    /* max-width: calc(100dvw - 95px); */
     line-height: var(--mainFontSize);
     color: var(--white70a);
 }
@@ -471,6 +470,13 @@ kbd {
     line-height: 1;
 }
 
+samp {
+    display: block;
+    font-family: var(--monoFontFamily);
+    white-space: pre-wrap;
+    text-align: start;
+    justify-content: left;
+}
 
 hr {
     background-image: linear-gradient(90deg, var(--transparent), var(--SmartThemeBodyColor), var(--transparent));
@@ -535,13 +541,13 @@ body.reduced-motion #bg_custom {
     flex-direction: column;
     /* -1px to give sheld some wiggle room to bounce off tobar when moving*/
     height: calc(100vh - var(--topBarBlockSize) - 1px);
-    height: calc(100svh - var(--topBarBlockSize) - 1px);
-    max-height: calc(100svh - var(--topBarBlockSize) - 1px);
+    height: calc(100dvh - var(--topBarBlockSize) - 1px);
+    max-height: calc(100dvh - var(--topBarBlockSize) - 1px);
     overflow-x: hidden;
     /* max-width: 50vw; */
     position: absolute;
     left: calc((100vw - var(--sheldWidth))/2);
-    left: calc((100svw - var(--sheldWidth))/2);
+    left: calc((100dvw - var(--sheldWidth))/2);
     top: var(--topBarBlockSize);
     margin: 0 auto;
     left: 0;
@@ -714,6 +720,10 @@ body .panelControlBar {
 }
 
 #mes_continue {
+    order: 1;
+}
+
+#mes_impersonate {
     order: 1;
 }
 
@@ -1160,12 +1170,12 @@ textarea {
     font-family: var(--mainFontFamily);
     padding: 5px 10px;
     max-height: 90vh;
-    max-height: 90svh;
+    max-height: 90dvh;
 }
 
 textarea.autoSetHeight {
     max-height: 50vh;
-    max-height: 50svh;
+    max-height: 50dvh;
 }
 
 input,
@@ -1179,7 +1189,7 @@ select {
     min-height: calc(var(--bottomFormBlockSize) + 2px);
     height: calc(var(--bottomFormBlockSize) + 2px);
     max-height: 50vh;
-    max-height: 50svh;
+    max-height: 50dvh;
     word-wrap: break-word;
     resize: vertical;
     display: block;
@@ -1377,6 +1387,8 @@ body[data-stscript-style="dark"] {
     --ac-style-color-matchedText: rgba(108 171 251 / 1);
     --ac-style-color-selectedBackground: rgba(32 57 92 / 1);
     --ac-style-color-selectedText: rgba(255 255 255 / 1);
+    --ac-style-color-notSelectableBackground: rgb(65, 78, 95);
+    --ac-style-color-notSelectableText: rgba(255 255 255 / 1);
     --ac-style-color-hoveredBackground: rgba(43 45 46 / 1);
     --ac-style-color-hoveredText: rgba(204 204 204 / 1);
     --ac-style-color-argName: rgba(171 209 239 / 1);
@@ -1392,6 +1404,7 @@ body[data-stscript-style="dark"] {
     --ac-style-color-punctuationL2: rgba(98 160 251 / 1);
     --ac-style-color-currentParenthesis: rgba(195 118 210 / 1);
     --ac-style-color-comment: rgba(122 151 90 / 1);
+    --ac-style-color-keyword: rgba(182 137 190 / 1);
 }
 
 body[data-stscript-style="light"] {
@@ -1402,6 +1415,8 @@ body[data-stscript-style="light"] {
     --ac-style-color-matchedText: rgba(61 104 188 / 1);
     --ac-style-color-selectedBackground: rgba(232 232 232 / 1);
     --ac-style-color-selectedText: rgba(0 0 0 / 1);
+    --ac-style-color-notSelectableBackground: rgba(232 232 232 / 1);
+    --ac-style-color-notSelectableText: rgb(83, 83, 83);
     --ac-style-color-hoveredBackground: rgba(242 242 242 / 1);
     --ac-style-color-hoveredText: rgba(59 59 59 / 1);
     --ac-style-color-argName: rgba(16 24 125 / 1);
@@ -1413,6 +1428,7 @@ body[data-stscript-style="light"] {
     --ac-style-color-variable: rgba(16 24 125 / 1);
     --ac-style-color-currentParenthesis: rgba(195 118 210 / 1);
     --ac-style-color-comment: rgba(70 126 26 / 1);
+    --ac-style-color-keyword: rgba(182 137 190 / 1);
 }
 
 body[data-stscript-style="theme"] {
@@ -1423,6 +1439,8 @@ body[data-stscript-style="theme"] {
     --ac-style-color-matchedText: var(--SmartThemeQuoteColor);
     --ac-style-color-selectedBackground: color-mix(in srgb, rgb(128 128 128) 75%, var(--SmartThemeChatTintColor));
     --ac-style-color-selectedText: var(--SmartThemeBodyColor);
+    --ac-style-color-notSelectableBackground: color-mix(in srgb, rgb(128 128 128) 50%, var(--SmartThemeChatTintColor));
+    --ac-style-color-notSelectableText: var(--SmartThemeBodyColor);
     --ac-style-color-hoveredBackground: color-mix(in srgb, rgb(128 128 128) 30%, var(--SmartThemeChatTintColor));
     --ac-style-color-hoveredText: var(--SmartThemeEmColor);
     --ac-style-color-argName: rgba(171 209 239 / 1);
@@ -1433,6 +1451,7 @@ body[data-stscript-style="theme"] {
     --ac-style-color-variable: rgba(131 193 252 / 1);
     --ac-style-color-currentParenthesis: rgba(195 118 210 / 1);
     --ac-style-color-comment: rgba(122 151 90 / 1);
+    --ac-style-color-keyword: rgba(182 137 190 / 1);
 }
 
 body {
@@ -1448,6 +1467,8 @@ body {
     --ac-color-matchedText: var(--ac-style-color-matchedText, rgba(108 171 251 / 1));
     --ac-color-selectedBackground: var(--ac-style-color-selectedBackground, rgba(32 57 92 / 1));
     --ac-color-selectedText: var(--ac-style-color-selectedText, rgba(255 255 255 / 1));
+    --ac-color-notSelectableBackground: var(--ac-style-color-notSelectableBackground, rgb(60, 73, 92));
+    --ac-color-notSelectableText: var(--ac-style-color-notSelectableText, rgba(255 255 255 / 1));
     --ac-color-hoveredBackground: var(--ac-style-color-hoveredBackground, rgba(43 45 46 / 1));
     --ac-color-hoveredText: var(--ac-style-color-hoveredText, rgba(204 204 204 / 1));
     --ac-color-argName: var(--ac-style-color-argName, rgba(171 209 239 / 1));
@@ -1463,6 +1484,7 @@ body {
     --ac-color-punctuationL2: var(--ac-style-color-punctuationL2, rgba(98 160 251 / 1));
     --ac-color-currentParenthesis: var(--ac-style-color-currentParenthesis, rgba(195 118 210 / 1));
     --ac-color-comment: var(--ac-style-color-comment, rgba(122 151 90 / 1));
+    --ac-color-keyword: var(--ac-style-color-keyword, rgba(182 137 190 / 1));
 
     font-size: calc(var(--ac-font-scale) * 1em);
 
@@ -1563,16 +1585,25 @@ body[data-stscript-style] .hljs.language-stscript {
         color: var(--ac-style-color-punctuation);
     }
 
-    .hljs-keyword {
-        color: var(--ac-style-color-variableLanguage);
-    }
-
     .hljs-comment {
         color: var(--ac-style-color-comment);
     }
 
     .hljs-abort {
         color: var(--ac-style-color-abort, #e38e23);
+        font-weight: bold;
+    }
+
+    .hljs-keyword {
+        color: var(--ac-style-color-keyword);
+        font-weight: bold;
+    }
+
+    .hljs-pipe {
+        color: var(--ac-style-color-punctuation);
+    }
+    .hljs-pipebreak {
+        color: var(--ac-style-color-type);
     }
 
     .hljs-closure {
@@ -1664,6 +1695,10 @@ body[data-stscript-style] .hljs.language-stscript {
             background-color: var(--ac-color-selectedBackground);
             color: var(--ac-color-selectedText);
         }
+        &.selected.not-selectable>* {
+            background-color: var(--ac-color-notSelectableBackground);
+            color: var(--ac-color-notSelectableText);
+        }
 
         >* {
             height: 100%;
@@ -1741,10 +1776,44 @@ body[data-stscript-style] .hljs.language-stscript {
         padding: 0.25em 0.25em 0.5em 0.25em;
         border-bottom: 1px solid var(--ac-color-border);
 
-        >.name {
+        > .head {
+            display: flex;
+            gap: 0.5em;
+        }
+        > .head > .name, > .name {
+            flex: 1 1 auto;
             font-weight: bold;
             color: var(--ac-color-text);
             cursor: help;
+
+            &:hover {
+                text-decoration: 1px dotted underline;
+            }
+        }
+        > .head > .source {
+            padding: 0 0.5em;
+            cursor: help;
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+            &.isThirdParty.isExtension {
+                color: #F89406;
+            }
+            &.isCore {
+                color: transparent;
+                &.isExtension {
+                    color: #51A351;
+                }
+                &:after {
+                    content: '';
+                    order: -1;
+                    height: 14px;
+                    aspect-ratio: 1 / 1;
+                    background-image: url('/favicon.ico');
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                }
+            }
 
             &:hover {
                 text-decoration: 1px dotted underline;
@@ -1837,7 +1906,8 @@ body[data-stscript-style] .hljs.language-stscript {
 
             >code {
                 display: block;
-                padding: 0;
+                padding: 1px;
+                tab-size: 4;
             }
         }
     }
@@ -2111,14 +2181,14 @@ textarea::placeholder {
 @media screen and (max-width: 1000px) {
     #form_create textarea {
         flex-grow: 1;
-        min-height: 20svh;
+        min-height: 20dvh;
     }
 }
 
 @media screen and (min-width: 1001px) {
     #description_textarea {
         height: 29vh;
-        height: 29svh;
+        height: 29dvh;
     }
 
     #firstmessage_textarea {
@@ -2394,8 +2464,8 @@ input[type="file"] {
 #floatingPrompt,
 #cfgConfig {
     overflow-y: auto;
-    max-width: 90svw;
-    max-height: 90svh;
+    max-width: 90dvw;
+    max-height: 90dvh;
     min-width: 100px;
     min-height: 100px;
     border-radius: 10px;
@@ -2411,7 +2481,7 @@ input[type="file"] {
     top: 0;
     margin: 0;
     right: unset;
-    width: calc(((100svw - var(--sheldWidth)) / 2) - 1px);
+    width: calc(((100dvw - var(--sheldWidth)) / 2) - 1px);
 
 }
 
@@ -2768,7 +2838,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex-wrap: wrap;
     width: calc(var(--sheldWidth) - 10px);
     max-width: 100vw;
-    max-width: 100svw;
+    max-width: 100dvw;
     justify-content: space-evenly;
 }
 
@@ -3032,6 +3102,10 @@ grammarly-extension {
     opacity: 1;
 }
 
+.avatar-container .avatar-buttons .menu_button {
+    padding: 3px;
+}
+
 /* Ross should be able to handle this later */
 /*.big-avatars .avatar-buttons{
     justify-content: center;
@@ -3123,7 +3197,7 @@ grammarly-extension {
 #dialogue_popup {
     width: 500px;
     max-width: 90vw;
-    max-width: 90svw;
+    max-width: 90dvw;
     position: absolute;
     z-index: 9999;
     margin-left: auto;
@@ -3139,7 +3213,7 @@ grammarly-extension {
     background-color: var(--SmartThemeBlurTintColor);
     border-radius: 10px;
     max-height: 90vh;
-    max-height: 90svh;
+    max-height: 90dvh;
     display: flex;
     flex-direction: column;
     overflow-y: hidden;
@@ -3153,9 +3227,9 @@ grammarly-extension {
 
 .large_dialogue_popup {
     height: 90vh !important;
-    height: 90svh !important;
+    height: 90dvh !important;
     max-width: 90vw !important;
-    max-width: 90svw !important;
+    max-width: 90dvw !important;
 }
 
 .wide_dialogue_popup {
@@ -3281,6 +3355,11 @@ grammarly-extension {
     text-align: center;
 }
 
+.menu_button.fa-fw {
+    /* Font Awesome icons that are a menu button and should be fixed width need a slight fix. 1.25em is their default, but we need to account for button spacing. */
+    min-width: calc(1.25em + 12px);
+}
+
 .avatar_div .menu_button,
 .form_create_bottom_buttons_block .menu_button {
     padding: 5px;
@@ -3307,7 +3386,7 @@ grammarly-extension {
     position: absolute;
     width: 100%;
     height: 100vh;
-    height: 100svh;
+    height: 100dvh;
     z-index: 9999;
     top: 0;
 }
@@ -3315,9 +3394,9 @@ grammarly-extension {
 #bgtest {
     display: none;
     width: 100vw;
-    width: 100svw;
+    width: 100dvw;
     height: 100vh;
-    height: 100svh;
+    height: 100dvh;
     position: absolute;
     z-index: -100;
     background-color: red;
@@ -3426,6 +3505,8 @@ grammarly-extension {
 
 .drag-handle {
     cursor: grab;
+    /* Make the drag handle not selectable in most browsers */
+    user-select: none;
 }
 
 #form_rename_chat {
@@ -3954,7 +4035,7 @@ input[type="range"]::-webkit-slider-thumb {
     position: absolute;
     width: 100%;
     height: 100vh;
-    height: 100svh;
+    height: 100dvh;
     z-index: 2058;
 }
 
@@ -3967,11 +4048,11 @@ input[type="range"]::-webkit-slider-thumb {
     min-width: 100px;
     max-width: var(--sheldWidth);
     height: calc(100vh - 84px);
-    height: calc(100svh - 84px);
+    height: calc(100dvh - 84px);
     min-height: calc(100vh - 84px);
-    min-height: calc(100svh - 84px);
+    min-height: calc(100dvh - 84px);
     max-height: calc(100vh - 84px);
-    max-height: calc(100svh - 84px);
+    max-height: calc(100dvh - 84px);
     position: absolute;
     z-index: 4001;
     margin-left: auto;
@@ -4050,7 +4131,7 @@ h5 {
     position: absolute;
     width: 100%;
     height: 100vh;
-    height: 100svh;
+    height: 100dvh;
     z-index: 4100;
     top: 0;
     background-color: var(--black70a);
@@ -4064,7 +4145,7 @@ h5 {
     max-width: var(--sheldWidth);
     height: min-content;
     max-height: calc(100vh - var(--topBarBlockSize));
-    max-height: calc(100svh - var(--topBarBlockSize));
+    max-height: calc(100dvh - var(--topBarBlockSize));
     min-height: 100px;
     position: absolute;
     z-index: 2066;
@@ -4384,14 +4465,14 @@ a {
     overflow-wrap: break-word;
     white-space: normal;
     max-width: calc(((100vw - 500px) / 2) - 10px);
-    max-width: calc(((100svw - 500px) / 2) - 10px);
+    max-width: calc(((100dvw - 500px) / 2) - 10px);
     position: absolute;
     z-index: 9999;
     max-height: 90vh;
-    max-height: 90svh;
+    max-height: 90dvh;
     /*unsure why, but this prevents scrollbars*/
     height: 49vh;
-    height: 49svh;
+    height: 49dvh;
 
     padding: 5px;
     overflow-y: auto;
@@ -4427,11 +4508,11 @@ a {
 
 #right-nav-panel {
     width: calc((100vw - var(--sheldWidth) - 2px) /2);
-    width: calc((100svw - var(--sheldWidth) - 2px) /2);
+    width: calc((100dvw - var(--sheldWidth) - 2px) /2);
     max-height: calc(100vh - var(--topBarBlockSize));
-    max-height: calc(100svh - var(--topBarBlockSize));
+    max-height: calc(100dvh - var(--topBarBlockSize));
     height: calc(100vh - var(--topBarBlockSize));
-    height: calc(100svh - var(--topBarBlockSize));
+    height: calc(100dvh - var(--topBarBlockSize));
     position: fixed;
     top: 0;
     margin: 0;
@@ -4484,10 +4565,11 @@ a {
     border-radius: 10px;
     max-width: 100%;
     max-height: 40vh;
-    max-height: 40svh;
+    max-height: 40dvh;
     image-rendering: -webkit-optimize-contrast;
 }
 
+.mes_img_swipes,
 .mes_img_controls {
     position: absolute;
     top: 0.1em;
@@ -4497,9 +4579,16 @@ a {
     opacity: 0;
     flex-direction: row;
     justify-content: space-between;
+    align-items: center;
     padding: 1em;
 }
 
+.mes_img_swipes {
+    top: unset;
+    bottom: 0.1rem;
+}
+
+.mes_img_swipes .right_menu_button,
 .mes_img_controls .right_menu_button {
     filter: brightness(90%);
     text-shadow: 1px 1px var(--SmartThemeShadowColor) !important;
@@ -4508,16 +4597,20 @@ a {
     width: 1.25em;
 }
 
+.mes_img_swipes .right_menu_button::before,
 .mes_img_controls .right_menu_button::before {
     /* Fix weird alignment with this font-awesome icons on focus */
     position: relative;
     top: 0.6125em;
 }
 
+.mes_img_swipes .right_menu_button:hover,
 .mes_img_controls .right_menu_button:hover {
     filter: brightness(150%);
 }
 
+.mes_img_container:hover .mes_img_swipes,
+.mes_img_container:focus-within .mes_img_swipes,
 .mes_img_container:hover .mes_img_controls,
 .mes_img_container:focus-within .mes_img_controls {
     opacity: 1;
@@ -4529,6 +4622,17 @@ a {
 
 body:not(.caption) .mes_img_caption {
     display: none;
+}
+
+.mes_img_container:not(.img_swipes) .mes_img_swipes,
+body:not(.sd) .mes_img_swipes {
+    display: none;
+}
+
+.mes_img_swipe_counter {
+    font-weight: 600;
+    filter: drop-shadow(2px 4px 6px black);
+    cursor: default;
 }
 
 .img_enlarged_holder {
@@ -4576,18 +4680,18 @@ body:not(.caption) .mes_img_caption {
 
 .img_enlarged_container pre {
     max-height: 25vh;
-    max-height: 25svh;
+    max-height: 25dvh;
     flex-shrink: 0;
     overflow: auto;
 }
 
 .popup:has(.img_enlarged.zoomed).large_dialogue_popup {
     height: 100vh !important;
-    height: 100svh !important;
+    height: 100dvh !important;
     max-height: 100vh !important;
-    max-height: 100svh !important;
+    max-height: 100dvh !important;
     max-width: 100vw !important;
-    max-width: 100svw !important;
+    max-width: 100dvw !important;
     padding: 0;
 }
 
@@ -4774,7 +4878,7 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     width: var(--sheldWidth);
     overflow-y: auto;
     max-height: calc(100vh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize)));
-    max-height: calc(100svh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize)));
+    max-height: calc(100dvh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize)));
     display: none;
     position: absolute;
     top: var(--topBarBlockSize);
@@ -4809,11 +4913,11 @@ body:not(.movingUI) .drawer-content.maximized {
 
 .fillLeft {
     width: calc((100vw - var(--sheldWidth) - 2px) /2);
-    width: calc((100svw - var(--sheldWidth) - 2px) /2);
+    width: calc((100dvw - var(--sheldWidth) - 2px) /2);
     height: calc(100vh - var(--topBarBlockSize));
-    height: calc(100svh - var(--topBarBlockSize));
+    height: calc(100dvh - var(--topBarBlockSize));
     max-height: calc(100vh - var(--topBarBlockSize));
-    max-height: calc(100svh - var(--topBarBlockSize));
+    max-height: calc(100dvh - var(--topBarBlockSize));
     position: fixed;
     top: 0;
     margin: 0;
@@ -5063,7 +5167,7 @@ body:not(.movingUI) .drawer-content.maximized {
     width: 100%;
     /* margin-inline: 10px; */
     max-height: 90vh;
-    max-width: 90svh;
+    max-width: 90dvh;
 }
 
 .zoomed_avatar img {
@@ -5209,6 +5313,7 @@ body:not(.movingUI) .drawer-content.maximized {
     flex-direction: column;
     gap: 10px;
     text-align: left;
+    height: 100%;
 }
 
 .onboarding span.menu_button {
@@ -5289,4 +5394,50 @@ body:not(.movingUI) .drawer-content.maximized {
 /* Pastel Red */
 .regex-highlight {
     color: #FAF8F6;
+}
+
+.popup:has(.faPicker) {
+    /* Fix height for fa picker popup, otherwise search is making it resize weirdly */
+    height: 70%;
+    .popup-content {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+.faPicker-container {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;;
+}
+
+.faQuery-container {
+    flex: 0 0 auto;
+}
+
+.faPicker {
+    flex: 1 1 auto;
+    overflow: auto;
+	gap: 1em;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(3.5em, 1fr));
+
+	.menu_button {
+		aspect-ratio: 1 / 1;
+		font-size: 2em;
+		height: 1lh;
+		line-height: 1.2;
+		padding: 0.25em;
+		width: unset;
+		box-sizing: content-box;
+        &.hidden {
+            display: none;
+        }
+	}
+}
+
+.faPicker:not(:has(:not(.hidden)))::after {
+    content: 'No icons found';
+    color: var(--SmartThemeBodyColor);
+    opacity: 0.7;
 }

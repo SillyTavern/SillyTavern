@@ -20,12 +20,6 @@ const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
 const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
 
 /**
- * The root directory for user data.
- * @type {string}
- */
-let DATA_ROOT = './data';
-
-/**
  * Cache for user directories.
  * @type {Map<string, UserDirectoryList>}
  */
@@ -138,7 +132,7 @@ async function migrateUserData() {
 
     console.log();
     console.log(color.magenta('Preparing to migrate user data...'));
-    console.log(`All public data will be moved to the ${DATA_ROOT} directory.`);
+    console.log(`All public data will be moved to the ${global.DATA_ROOT} directory.`);
     console.log('This process may take a while depending on the amount of data to move.');
     console.log(`Backups will be placed in the ${PUBLIC_DIRECTORIES.backups} directory.`);
     console.log(`The process will start in ${TIMEOUT} seconds. Press Ctrl+C to cancel.`);
@@ -352,11 +346,11 @@ function toAvatarKey(handle) {
  * @returns {Promise<void>}
  */
 async function initUserStorage(dataRoot) {
-    DATA_ROOT = dataRoot;
-    console.log('Using data root:', color.green(DATA_ROOT));
+    global.DATA_ROOT = dataRoot;
+    console.log('Using data root:', color.green(global.DATA_ROOT));
     console.log();
     await storage.init({
-        dir: path.join(DATA_ROOT, '_storage'),
+        dir: path.join(global.DATA_ROOT, '_storage'),
         ttl: false, // Never expire
     });
 
@@ -457,7 +451,7 @@ function getUserDirectories(handle) {
 
     const directories = structuredClone(USER_DIRECTORY_TEMPLATE);
     for (const key in directories) {
-        directories[key] = path.join(DATA_ROOT, handle, USER_DIRECTORY_TEMPLATE[key]);
+        directories[key] = path.join(global.DATA_ROOT, handle, USER_DIRECTORY_TEMPLATE[key]);
     }
     DIRECTORIES_CACHE.set(handle, directories);
     return directories;

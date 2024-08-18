@@ -14,7 +14,7 @@ import {
     saveChatConditional,
     saveItemizedPrompts,
 } from '../script.js';
-import { humanizedDateTime } from './RossAscends-mods.js';
+import { humanizedDateTime, getMessageTimeStamp } from './RossAscends-mods.js';
 import {
     getGroupPastChats,
     group_activation_strategy,
@@ -297,7 +297,7 @@ async function convertSoloToGroupChat() {
     if (groupChat.length === 0) {
         const newMessage = {
             ...system_messages[system_message_types.GROUP],
-            send_date: humanizedDateTime(),
+            send_date: getMessageTimeStamp(),
             extra: { type: system_message_types.GROUP },
         };
         groupChat.push(newMessage);

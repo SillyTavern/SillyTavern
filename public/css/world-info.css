@@ -120,6 +120,14 @@
     flex-wrap: wrap;
 }
 
+.world_entry .inline-drawer-header {
+    cursor: initial;
+}
+
+.world_entry .killSwitch {
+    cursor: pointer;
+}
+
 .world_entry_form_control input[type=button] {
     cursor: pointer;
 }
@@ -171,6 +179,10 @@
 
 #world_info_sort_order {
     width: 7em;
+}
+
+.world_entry .killSwitch.fa-toggle-on {
+    color: var(--SmartThemeQuoteColor);
 }
 
 .wi-card-entry {

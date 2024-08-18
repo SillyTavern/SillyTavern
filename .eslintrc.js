@@ -55,6 +55,7 @@ module.exports = {
                 isProbablyReaderable: 'readonly',
                 ePub: 'readonly',
                 diff_match_patch: 'readonly',
+                SillyTavern: 'readonly',
             },
         },
     ],

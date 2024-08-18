@@ -14,6 +14,7 @@ import {
     substituteParamsExtended,
     generateRaw,
     getMaxContextSize,
+    setExtensionPrompt,
 } from '../../../script.js';
 import { is_group_generating, selected_group } from '../../group-chats.js';
 import { loadMovingUIState } from '../../power-user.js';
@@ -24,6 +25,7 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { MacrosParser } from '../../macros.js';
+import { countWebLlmTokens, generateWebLlmChatPrompt, getWebLlmContextSize, isWebLlmSupported } from '../shared.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
@@ -34,6 +36,41 @@ let lastChatId = null;
 let lastMessageHash = null;
 let lastMessageId = null;
 let inApiCall = false;
+
+/**
+ * Count the number of tokens in the provided text.
+ * @param {string} text Text to count tokens for
+ * @param {number} padding Number of additional tokens to add to the count
+ * @returns {Promise<number>} Number of tokens in the text
+ */
+async function countSourceTokens(text, padding = 0) {
+    if (extension_settings.memory.source === summary_sources.webllm) {
+        const count = await countWebLlmTokens(text);
+        return count + padding;
+    }
+
+    if (extension_settings.memory.source === summary_sources.extras) {
+        const count = getTextTokens(tokenizers.GPT2, text).length;
+        return count + padding;
+    }
+
+    return await getTokenCountAsync(text, padding);
+}
+
+async function getSourceContextSize() {
+    const overrideLength = extension_settings.memory.overrideResponseLength;
+
+    if (extension_settings.memory.source === summary_sources.webllm) {
+        const maxContext = await getWebLlmContextSize();
+        return overrideLength > 0 ? (maxContext - overrideLength) : Math.round(maxContext * 0.75);
+    }
+
+    if (extension_settings.source === summary_sources.extras) {
+        return 1024 - 64;
+    }
+
+    return getMaxContextSize(overrideLength);
+}
 
 const formatMemoryValue = function (value) {
     if (!value) {
@@ -54,6 +91,7 @@ const saveChatDebounced = debounce(() => getContext().saveChat(), debounce_timeo
 const summary_sources = {
     'extras': 'extras',
     'main': 'main',
+    'webllm': 'webllm',
 };
 
 const prompt_builders = {
@@ -73,6 +111,7 @@ const defaultSettings = {
     template: defaultTemplate,
     position: extension_prompt_types.IN_PROMPT,
     role: extension_prompt_roles.SYSTEM,
+    scan: false,
     depth: 2,
     promptWords: 200,
     promptMinWords: 25,
@@ -122,17 +161,18 @@ function loadSettings() {
     $(`input[name="memory_prompt_builder"][value="${extension_settings.memory.prompt_builder}"]`).prop('checked', true).trigger('input');
     $('#memory_override_response_length').val(extension_settings.memory.overrideResponseLength).trigger('input');
     $('#memory_max_messages_per_request').val(extension_settings.memory.maxMessagesPerRequest).trigger('input');
+    $('#memory_include_wi_scan').prop('checked', extension_settings.memory.scan).trigger('input');
     switchSourceControls(extension_settings.memory.source);
 }
 
 async function onPromptForceWordsAutoClick() {
     const context = getContext();
-    const maxPromptLength = getMaxContextSize(extension_settings.memory.overrideResponseLength);
+    const maxPromptLength = await getSourceContextSize();
     const chat = context.chat;
     const allMessages = chat.filter(m => !m.is_system && m.mes).map(m => m.mes);
     const messagesWordCount = allMessages.map(m => extractAllWords(m)).flat().length;
     const averageMessageWordCount = messagesWordCount / allMessages.length;
-    const tokensPerWord = await getTokenCountAsync(allMessages.join('\n')) / messagesWordCount;
+    const tokensPerWord = await countSourceTokens(allMessages.join('\n')) / messagesWordCount;
     const wordsPerToken = 1 / tokensPerWord;
     const maxPromptLengthWords = Math.round(maxPromptLength * wordsPerToken);
     // How many words should pass so that messages will start be dropped out of context;
@@ -165,15 +205,15 @@ async function onPromptForceWordsAutoClick() {
 
 async function onPromptIntervalAutoClick() {
     const context = getContext();
-    const maxPromptLength = getMaxContextSize(extension_settings.memory.overrideResponseLength);
+    const maxPromptLength = await getSourceContextSize();
     const chat = context.chat;
     const allMessages = chat.filter(m => !m.is_system && m.mes).map(m => m.mes);
     const messagesWordCount = allMessages.map(m => extractAllWords(m)).flat().length;
-    const messagesTokenCount = await getTokenCountAsync(allMessages.join('\n'));
+    const messagesTokenCount = await countSourceTokens(allMessages.join('\n'));
     const tokensPerWord = messagesTokenCount / messagesWordCount;
     const averageMessageTokenCount = messagesTokenCount / allMessages.length;
     const targetSummaryTokens = Math.round(extension_settings.memory.promptWords * tokensPerWord);
-    const promptTokens = await getTokenCountAsync(extension_settings.memory.prompt);
+    const promptTokens = await countSourceTokens(extension_settings.memory.prompt);
     const promptAllowance = maxPromptLength - promptTokens - targetSummaryTokens;
     const maxMessagesPerSummary = extension_settings.memory.maxMessagesPerRequest || 0;
     const averageMessagesPerPrompt = Math.floor(promptAllowance / averageMessageTokenCount);
@@ -210,8 +250,8 @@ function onSummarySourceChange(event) {
 
 function switchSourceControls(value) {
     $('#memory_settings [data-summary-source]').each((_, element) => {
-        const source = $(element).data('summary-source');
-        $(element).toggle(source === value);
+        const source = element.dataset.summarySource.split(',').map(s => s.trim());
+        $(element).toggle(source.includes(value));
     });
 }
 
@@ -275,6 +315,13 @@ function onMemoryRoleInput() {
 function onMemoryPositionChange(e) {
     const value = e.target.value;
     extension_settings.memory.position = value;
+    reinsertMemory();
+    saveSettingsDebounced();
+}
+
+function onMemoryIncludeWIScanInput() {
+    const value = !!$(this).prop('checked');
+    extension_settings.memory.scan = value;
     reinsertMemory();
     saveSettingsDebounced();
 }
@@ -343,10 +390,13 @@ function getIndexOfLatestChatSummary(chat) {
 
 async function onChatEvent() {
     // Module not enabled
-    if (extension_settings.memory.source === summary_sources.extras) {
-        if (!modules.includes('summarize')) {
-            return;
-        }
+    if (extension_settings.memory.source === summary_sources.extras && !modules.includes('summarize')) {
+        return;
+    }
+
+    // WebLLM is not supported
+    if (extension_settings.memory.source === summary_sources.webllm && !isWebLlmSupported()) {
+        return;
     }
 
     const context = getContext();
@@ -421,8 +471,12 @@ async function forceSummarizeChat() {
         return '';
     }
 
-    toastr.info('Summarizing chat...', 'Please wait');
-    const value = await summarizeChatMain(context, true, skipWIAN);
+    const toast = toastr.info('Summarizing chat...', 'Please wait', { timeOut: 0, extendedTimeOut: 0 });
+    const value = extension_settings.memory.source === summary_sources.main
+        ? await summarizeChatMain(context, true, skipWIAN)
+        : await summarizeChatWebLLM(context, true);
+
+    toastr.clear(toast);
 
     if (!value) {
         toastr.warning('Failed to summarize chat');
@@ -454,6 +508,11 @@ async function summarizeCallback(args, text) {
                 return await callExtrasSummarizeAPI(text);
             case summary_sources.main:
                 return await generateRaw(text, '', false, false, prompt, extension_settings.memory.overrideResponseLength);
+            case summary_sources.webllm: {
+                const messages = [{ role: 'system', content: prompt }, { role: 'user', content: text }].filter(m => m.content);
+                const params = extension_settings.memory.overrideResponseLength > 0 ? { max_tokens: extension_settings.memory.overrideResponseLength } : {};
+                return await generateWebLlmChatPrompt(messages, params);
+            }
             default:
                 toastr.warning('Invalid summarization source specified');
                 return '';
@@ -474,16 +533,25 @@ async function summarizeChat(context) {
         case summary_sources.main:
             await summarizeChatMain(context, false, skipWIAN);
             break;
+        case summary_sources.webllm:
+            await summarizeChatWebLLM(context, false);
+            break;
         default:
             break;
     }
 }
 
-async function summarizeChatMain(context, force, skipWIAN) {
-
+/**
+ * Check if the chat should be summarized based on the current conditions.
+ * Return summary prompt if it should be summarized.
+ * @param {any} context ST context
+ * @param {boolean} force Summarize the chat regardless of the conditions
+ * @returns {Promise<string>} Summary prompt or empty string
+ */
+async function getSummaryPromptForNow(context, force) {
     if (extension_settings.memory.promptInterval === 0 && !force) {
         console.debug('Prompt interval is set to 0, skipping summarization');
-        return;
+        return '';
     }
 
     try {
@@ -495,17 +563,17 @@ async function summarizeChatMain(context, force, skipWIAN) {
         waitUntilCondition(() => is_send_press === false, 30000, 100);
     } catch {
         console.debug('Timeout waiting for is_send_press');
-        return;
+        return '';
     }
 
     if (!context.chat.length) {
         console.debug('No messages in chat to summarize');
-        return;
+        return '';
     }
 
     if (context.chat.length < extension_settings.memory.promptInterval && !force) {
         console.debug(`Not enough messages in chat to summarize (chat: ${context.chat.length}, interval: ${extension_settings.memory.promptInterval})`);
-        return;
+        return '';
     }
 
     let messagesSinceLastSummary = 0;
@@ -529,7 +597,7 @@ async function summarizeChatMain(context, force, skipWIAN) {
 
     if (!conditionSatisfied && !force) {
         console.debug(`Summary conditions not satisfied (messages: ${messagesSinceLastSummary}, interval: ${extension_settings.memory.promptInterval}, words: ${wordsSinceLastSummary}, force words: ${extension_settings.memory.promptForceWords})`);
-        return;
+        return '';
     }
 
     console.log('Summarizing chat, messages since last summary: ' + messagesSinceLastSummary, 'words since last summary: ' + wordsSinceLastSummary);
@@ -537,6 +605,63 @@ async function summarizeChatMain(context, force, skipWIAN) {
 
     if (!prompt) {
         console.debug('Summarization prompt is empty. Skipping summarization.');
+        return '';
+    }
+
+    return prompt;
+}
+
+async function summarizeChatWebLLM(context, force) {
+    if (!isWebLlmSupported()) {
+        return;
+    }
+
+    const prompt = await getSummaryPromptForNow(context, force);
+
+    if (!prompt) {
+        return;
+    }
+
+    const { rawPrompt, lastUsedIndex } = await getRawSummaryPrompt(context, prompt);
+
+    if (lastUsedIndex === null || lastUsedIndex === -1) {
+        if (force) {
+            toastr.info('To try again, remove the latest summary.', 'No messages found to summarize');
+        }
+
+        return null;
+    }
+
+    const messages = [
+        { role: 'system', content: prompt },
+        { role: 'user', content: rawPrompt },
+    ];
+
+    const params = {};
+
+    if (extension_settings.memory.overrideResponseLength > 0) {
+        params.max_tokens = extension_settings.memory.overrideResponseLength;
+    }
+
+    const summary = await generateWebLlmChatPrompt(messages, params);
+    const newContext = getContext();
+
+    // something changed during summarization request
+    if (newContext.groupId !== context.groupId ||
+        newContext.chatId !== context.chatId ||
+        (!newContext.groupId && (newContext.characterId !== context.characterId))) {
+        console.log('Context changed, summary discarded');
+        return;
+    }
+
+    setMemoryContext(summary, true, lastUsedIndex);
+    return summary;
+}
+
+async function summarizeChatMain(context, force, skipWIAN) {
+    const prompt = await getSummaryPromptForNow(context, force);
+
+    if (!prompt) {
         return;
     }
 
@@ -624,7 +749,7 @@ async function getRawSummaryPrompt(context, prompt) {
     chat.pop(); // We always exclude the last message from the buffer
     const chatBuffer = [];
     const PADDING = 64;
-    const PROMPT_SIZE = getMaxContextSize(extension_settings.memory.overrideResponseLength);
+    const PROMPT_SIZE = await getSourceContextSize();
     let latestUsedMessage = null;
 
     for (let index = latestSummaryIndex + 1; index < chat.length; index++) {
@@ -641,7 +766,7 @@ async function getRawSummaryPrompt(context, prompt) {
         const entry = `${message.name}:\n${message.mes}`;
         chatBuffer.push(entry);
 
-        const tokens = await getTokenCountAsync(getMemoryString(true), PADDING);
+        const tokens = await countSourceTokens(getMemoryString(true), PADDING);
 
         if (tokens > PROMPT_SIZE) {
             chatBuffer.pop();
@@ -670,7 +795,7 @@ async function summarizeChatExtras(context) {
     const reversedChat = chat.slice().reverse();
     reversedChat.shift();
     const memoryBuffer = [];
-    const CONTEXT_SIZE = 1024 - 64;
+    const CONTEXT_SIZE = await getSourceContextSize();
 
     for (const message of reversedChat) {
         // we reached the point of latest memory
@@ -688,14 +813,14 @@ async function summarizeChatExtras(context) {
         memoryBuffer.push(entry);
 
         // check if token limit was reached
-        const tokens = getTextTokens(tokenizers.GPT2, getMemoryString()).length;
+        const tokens = await countSourceTokens(getMemoryString());
         if (tokens >= CONTEXT_SIZE) {
             break;
         }
     }
 
     const resultingString = getMemoryString();
-    const resultingTokens = getTextTokens(tokenizers.GPT2, resultingString).length;
+    const resultingTokens = await countSourceTokens(resultingString);
 
     if (!resultingString || resultingTokens < CONTEXT_SIZE) {
         console.debug('Not enough context to summarize');
@@ -800,8 +925,7 @@ function reinsertMemory() {
  * @param {number|null} index Index of the chat message to save the summary to. If null, the pre-last message is used.
  */
 function setMemoryContext(value, saveToMessage, index = null) {
-    const context = getContext();
-    context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_settings.memory.position, extension_settings.memory.depth, false, extension_settings.memory.role);
+    setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_settings.memory.position, extension_settings.memory.depth, extension_settings.memory.scan, extension_settings.memory.role);
     $('#memory_contents').val(value);
 
     const summaryLog = value
@@ -809,6 +933,7 @@ function setMemoryContext(value, saveToMessage, index = null) {
         : 'Summary has no content';
     console.debug(summaryLog);
 
+    const context = getContext();
     if (saveToMessage && context.chat.length) {
         const idx = index ?? context.chat.length - 2;
         const mes = context.chat[idx < 0 ? 0 : idx];
@@ -894,6 +1019,7 @@ function setupListeners() {
     $('#memory_prompt_words_auto').off('click').on('click', onPromptForceWordsAutoClick);
     $('#memory_override_response_length').off('click').on('input', onOverrideResponseLengthInput);
     $('#memory_max_messages_per_request').off('click').on('input', onMaxMessagesPerRequestInput);
+    $('#memory_include_wi_scan').off('input').on('input', onMemoryIncludeWIScanInput);
     $('#summarySettingsBlockToggle').off('click').on('click', function () {
         console.log('saw settings button click');
         $('#summarySettingsBlock').slideToggle(200, 'swing'); //toggleClass("hidden");
@@ -922,7 +1048,7 @@ jQuery(async function () {
         name: 'summarize',
         callback: summarizeCallback,
         namedArgumentList: [
-            new SlashCommandNamedArgument('source', 'API to use for summarization', [ARGUMENT_TYPE.STRING], false, false, '', ['main', 'extras']),
+            new SlashCommandNamedArgument('source', 'API to use for summarization', [ARGUMENT_TYPE.STRING], false, false, '', Object.values(summary_sources)),
             SlashCommandNamedArgument.fromProps({
                 name: 'prompt',
                 description: 'prompt to use for summarization',
