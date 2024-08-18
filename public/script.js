@@ -8392,6 +8392,9 @@ const CONNECT_API_MAP = {
     },
 };
 
+// Collect all unique API names in an array
+export const UNIQUE_APIS = [...new Set(Object.values(CONNECT_API_MAP).map(x => x.selected))];
+
 // Fill connections map from textgen_types and chat_completion_sources
 for (const textGenType of Object.values(textgen_types)) {
     if (CONNECT_API_MAP[textGenType]) continue;
@@ -8966,9 +8969,6 @@ jQuery(async function () {
         return '';
     }
 
-    // Collect all unique API names in an array
-    const uniqueAPIs = [...new Set(Object.values(CONNECT_API_MAP).map(x => x.selected))];
-
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'dupe',
         callback: duplicateCharacter,
@@ -8977,13 +8977,13 @@ jQuery(async function () {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'api',
         callback: connectAPISlash,
+        returns: 'the current API',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'API to connect to',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: false,
                 enumList: Object.entries(CONNECT_API_MAP).map(([api, { selected }]) =>
-                    new SlashCommandEnumValue(api, selected, enumTypes.getBasedOnIndex(uniqueAPIs.findIndex(x => x === selected)),
+                    new SlashCommandEnumValue(api, selected, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === selected)),
                         selected[0].toUpperCase() ?? enumIcons.default)),
             }),
         ],
