@@ -8,10 +8,10 @@ export const markdownUnderscoreExt = () => {
 
         return [{
             type: 'lang',
-            regex: /(`{3,})\s*\n[\s\S]*?\n\1(?:\n|$)|(`{1,2}).*?\2|(?<!\S)_(?!_)([^_\n]+?)(?<!_)_(?!\w)/g,
-            replace: function(match, tripleBackticks, singleOrDoubleBackticks, italicContent) {
-                if (singleOrDoubleBackticks || tripleBackticks) {
-                    // If it's backticks, return unchanged
+            regex: /(`{3,})\s*\n[\s\S]*?\n\1(?:\n|$)|(`{1,2}).*?\2|(\n`\n[\s\S]*?\n`\n)|(?<!\S)_(?!_)([^_\n]+?)(?<!_)_(?!\w)/g,
+            replace: function(match, tripleBackticks, singleOrDoubleBackticks, singleBackticksWithLineBreaks, italicContent) {
+                if (singleOrDoubleBackticks || tripleBackticks || singleBackticksWithLineBreaks) {
+                    // If it's any type of backticks, return unchanged
                     return match;
                 } else if (italicContent) {
                     // If it's an italic group, apply the replacement
