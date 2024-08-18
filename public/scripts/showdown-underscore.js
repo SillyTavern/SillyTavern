@@ -8,16 +8,16 @@ export const markdownUnderscoreExt = () => {
 
         return [{
             type: 'lang',
-            regex: new RegExp('(`{3})[\\s\\S]*?\\1|(`{1,2}).*?\\2|\\b(?<!_)_(?!_)(.*?)(?<!_)_(?!_)\\b', 'g'),
+            regex: /(`{3,})\s*\n[\s\S]*?\n\1(?:\n|$)|(`{1,2}).*?\2|(?<!\S)_(?!_)([^_\n]+?)(?<!_)_(?!\w)/g,
             replace: function(match, tripleBackticks, singleOrDoubleBackticks, italicContent) {
-                if (tripleBackticks || singleOrDoubleBackticks) {
-                    // If it's any kind of code block, return it unchanged
+                if (singleOrDoubleBackticks || tripleBackticks) {
+                    // If it's backticks, return unchanged
                     return match;
                 } else if (italicContent) {
                     // If it's an italic group, apply the replacement
                     return '<em>' + italicContent + '</em>';
                 }
-                // If neither condition is met, return the original match
+                // If none of the conditions are met, return the original match
                 return match;
             },
         }];
