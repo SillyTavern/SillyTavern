@@ -596,7 +596,7 @@ export class Popup {
 
         /** @returns {boolean} Checks if any modal popup dialog is open */
         isPopupOpen() {
-            return Popup.util.popups.length > 0;
+            return Popup.util.popups.filter(x => x.dlg.hasAttribute('open')).length > 0;
         },
 
         /**
