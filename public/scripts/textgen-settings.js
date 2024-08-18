@@ -94,7 +94,7 @@ let DREAMGEN_SERVER = 'https://dreamgen.com';
 let OPENROUTER_SERVER = 'https://openrouter.ai/api';
 let FEATHERLESS_SERVER = 'https://api.featherless.ai/v1';
 
-const SERVER_INPUTS = {
+export const SERVER_INPUTS = {
     [textgen_types.OOBA]: '#textgenerationwebui_api_url_text',
     [textgen_types.VLLM]: '#vllm_api_url_text',
     [textgen_types.APHRODITE]: '#aphrodite_api_url_text',
