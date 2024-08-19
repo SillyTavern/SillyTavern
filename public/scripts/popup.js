@@ -41,7 +41,7 @@ export const POPUP_RESULT = {
  * @property {CustomPopupButton[]|string[]?} [customButtons=null] - Custom buttons to add to the popup. If only strings are provided, the buttons will be added with default options, and their result will be in order from `2` onward.
  * @property {CustomPopupInput[]?} [customInputs=null] - Custom inputs to add to the popup. The display below the content and the input box, one by one.
  * @property {(popup: Popup) => Promise<boolean?>|boolean?} [onClosing=null] - Handler called before the popup closes, return `false` to cancel the close
- * @property {(popup: Popup) => void?} [onClose=null] - Handler called after the popup closes, but before the DOM is cleaned up
+ * @property {(popup: Popup) => Promise<void?>|void?} [onClose=null] - Handler called after the popup closes, but before the DOM is cleaned up
  * @property {number?} [cropAspect=null] - Aspect ratio for the crop popup
  * @property {string?} [cropImage=null] - Image URL to display in the crop popup
  */
@@ -139,7 +139,7 @@ export class Popup {
     /** @readonly @type {CustomPopupInput[]} */ customInputs;
 
     /** @type {(popup: Popup) => Promise<boolean?>|boolean?} */ onClosing;
-    /** @type {(popup: Popup) => void?} */ onClose;
+    /** @type {(popup: Popup) => Promise<void?>|void?} */ onClose;
 
     /** @type {POPUP_RESULT|number} */ result;
     /** @type {any} */ value;
@@ -547,13 +547,13 @@ export class Popup {
         fixToastrForDialogs();
 
         // After the dialog is actually completely closed, remove it from the DOM
-        runAfterAnimation(this.dlg, () => {
+        runAfterAnimation(this.dlg, async () => {
             // Call the close on the dialog
             this.dlg.close();
 
             // Run a possible custom handler right before DOM removal
             if (this.onClose) {
-                this.onClose(this);
+                await this.onClose(this);
             }
 
             // Remove it from the dom
