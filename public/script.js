@@ -8453,11 +8453,11 @@ async function selectInstructCallback(_, name) {
 
 async function selectTokenizerCallback(_, name) {
     if (!name) {
-        return getFriendlyTokenizerName(main_api).tokenizerName;
+        return getAvailableTokenizers().find(tokenizer => tokenizer.tokenizerId === power_user.tokenizer)?.tokenizerKey ?? '';
     }
 
     const tokenizers = getAvailableTokenizers();
-    const fuse = new Fuse(tokenizers, { keys: ['tokenizerName'] });
+    const fuse = new Fuse(tokenizers, { keys: ['tokenizerKey', 'tokenizerName'] });
     const result = fuse.search(name);
 
     if (result.length === 0) {
@@ -8465,9 +8465,11 @@ async function selectTokenizerCallback(_, name) {
         return '';
     }
 
+    /** @type {import('./scripts/tokenizers.js').Tokenizer} */
     const foundTokenizer = result[0].item;
-    selectTokenizer(foundTokenizer.tokenizerName, foundTokenizer.tokenizerId);
-    return foundTokenizer.tokenizerName;
+    selectTokenizer(foundTokenizer.tokenizerId);
+
+    return foundTokenizer.tokenizerKey;
 }
 
 async function enableInstructCallback() {
@@ -9123,7 +9125,7 @@ jQuery(async function () {
                 description: 'tokenizer name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumList: getAvailableTokenizers().map(tokenizer =>
-                    new SlashCommandEnumValue(tokenizer.tokenizerName, null, enumTypes.enum, enumIcons.default)),
+                    new SlashCommandEnumValue(tokenizer.tokenizerKey, tokenizer.tokenizerName, enumTypes.enum, enumIcons.default)),
             }),
         ],
         helpString: `
@@ -9132,7 +9134,7 @@ jQuery(async function () {
             </div>
             <div>
                 <strong>Available tokenizers:</strong>
-                <pre><code>${getAvailableTokenizers().map(t => t.tokenizerName).join(', ')}</code></pre>
+                <pre><code>${getAvailableTokenizers().map(t => t.tokenizerKey).join(', ')}</code></pre>
             </div>
         `
     }));
