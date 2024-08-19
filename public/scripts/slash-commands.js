@@ -1,7 +1,9 @@
 import {
     Generate,
+    UNIQUE_APIS,
     activateSendButtons,
     addOneMessage,
+    api_server,
     callPopup,
     characters,
     chat,
@@ -49,8 +51,8 @@ import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSel
 import { chat_completion_sources, oai_settings, setupChatCompletionPromptManager } from './openai.js';
 import { autoSelectPersona, retriggerFirstMessageOnEmptyChat, setPersonaLockState, togglePersonaLock, user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
-import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
-import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync } from './tokenizers.js';
+import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
+import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer } from './tokenizers.js';
 import { debounce, delay, isFalseBoolean, isTrueBoolean, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { background_settings } from './backgrounds.js';
@@ -1496,8 +1498,9 @@ export function initDefaultSlashCommands() {
         ],
         helpString: 'Sets the specified prompt manager entry/entries on or off.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'pick-icon',
-        callback: async()=>((await showFontAwesomePicker()) ?? false).toString(),
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'pick-icon',
+        callback: async () => ((await showFontAwesomePicker()) ?? false).toString(),
         returns: 'The chosen icon name or false if cancelled.',
         helpString: `
                 <div>Opens a popup with all the available Font Awesome icons and returns the selected icon's name.</div>
@@ -1510,6 +1513,72 @@ export function initDefaultSlashCommands() {
                     </ul>
                 </div>
             `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'api-url',
+        callback: setApiUrlCallback,
+        returns: 'the current API url',
+        aliases: ['server'],
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'api',
+                description: 'API to set/get the URL for - if not provided, current API is used',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumList: [
+                    new SlashCommandEnumValue('custom', 'custom OpenAI-compatible', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'openai')), 'O'),
+                    new SlashCommandEnumValue('kobold', 'KoboldAI Classic', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'kobold')), 'K'),
+                    ...Object.values(textgen_types).map(api => new SlashCommandEnumValue(api, null, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'textgenerationwebui')), 'T')),
+                ],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'connect',
+                description: 'Whether to auto-connect to the API after setting the URL',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'API url to connect to',
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+        ],
+        helpString: `
+            <div>
+                Set the API url / server url for the currently selected API, including the port. If no argument is provided, it will return the current API url.
+            </div>
+            <div>
+                If a manual API is provided to <b>set</b> the URL, make sure to set <code>connect=false</code>, as auto-connect only works for the currently selected API,
+                or consider switching to it with <code>/api</code> first.
+            </div>
+            <div>
+                This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible for the Chat Completion sources. If unsure which APIs are supported,
+                check the auto-completion of the optional <code>api</code> argument of this command.
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'tokenizer',
+        callback: selectTokenizerCallback,
+        returns: 'current tokenizer',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'tokenizer name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumList: getAvailableTokenizers().map(tokenizer =>
+                    new SlashCommandEnumValue(tokenizer.tokenizerKey, tokenizer.tokenizerName, enumTypes.enum, enumIcons.default)),
+            }),
+        ],
+        helpString: `
+            <div>
+                Selects tokenizer by name. Gets the current tokenizer if no name is provided.
+            </div>
+            <div>
+                <strong>Available tokenizers:</strong>
+                <pre><code>${getAvailableTokenizers().map(t => t.tokenizerKey).join(', ')}</code></pre>
+            </div>
+        `,
     }));
 
     registerVariableCommands();
@@ -1788,7 +1857,7 @@ async function popupCallback(args, value) {
     return String(value);
 }
 
-function getMessagesCallback(args, value) {
+async function getMessagesCallback(args, value) {
     const includeNames = !isFalseBoolean(args?.names);
     const includeHidden = isTrueBoolean(args?.hidden);
     const role = args?.role;
@@ -1821,33 +1890,34 @@ function getMessagesCallback(args, value) {
         throw new Error(`Invalid role provided. Expected one of: system, assistant, user. Got: ${role}`);
     };
 
-    const messages = [];
-
-    for (let messageId = range.start; messageId <= range.end; messageId++) {
-        const message = chat[messageId];
-        if (!message) {
-            console.warn(`WARN: No message found with ID ${messageId}`);
-            continue;
+    const processMessage = async (mesId) => {
+        const msg = chat[mesId];
+        if (!msg) {
+            console.warn(`WARN: No message found with ID ${mesId}`);
+            return null;
         }
 
-        if (role && !filterByRole(message)) {
-            console.debug(`/messages: Skipping message with ID ${messageId} due to role filter`);
-            continue;
+        if (role && !filterByRole(msg)) {
+            console.debug(`/messages: Skipping message with ID ${mesId} due to role filter`);
+            return null;
         }
 
-        if (!includeHidden && message.is_system) {
-            console.debug(`/messages: Skipping hidden message with ID ${messageId}`);
-            continue;
+        if (!includeHidden && msg.is_system) {
+            console.debug(`/messages: Skipping hidden message with ID ${mesId}`);
+            return null;
         }
 
-        if (includeNames) {
-            messages.push(`${message.name}: ${message.mes}`);
-        } else {
-            messages.push(message.mes);
-        }
-    }
+        return includeNames ? `${msg.name}: ${msg.mes}` : msg.mes;
+    };
 
-    return messages.join('\n\n');
+    const messagePromises = [];
+
+    for (let rInd = range.start; rInd <= range.end; ++rInd)
+        messagePromises.push(processMessage(rInd));
+
+    const messages = await Promise.all(messagePromises);
+
+    return messages.filter(m => m !== null).join('\n\n');
 }
 
 async function runCallback(args, name) {
@@ -3416,6 +3486,123 @@ function setPromptEntryCallback(args, targetState) {
     promptManager.render();
     promptManager.saveServiceSettings();
     return '';
+}
+
+/**
+ * Sets the API URL and triggers the text generation web UI button click.
+ *
+ * @param {object} args - named args
+ * @param {string?} [args.api=null] - the API name to set/get the URL for
+ * @param {string?} [args.connect=true] - whether to connect to the API after setting
+ * @param {string} url - the API URL to set
+ * @returns {Promise<string>}
+ */
+async function setApiUrlCallback({ api = null, connect = 'true' }, url) {
+    const autoConnect = isTrueBoolean(connect);
+
+    // Special handling for Chat Completion Custom OpenAI compatible, that one can also support API url handling
+    const isCurrentlyCustomOpenai = main_api === 'openai' && oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
+    if (api === chat_completion_sources.CUSTOM || (!api && isCurrentlyCustomOpenai)) {
+        if (!url) {
+            return oai_settings.custom_url ?? '';
+        }
+
+        if (!isCurrentlyCustomOpenai && autoConnect) {
+            toastr.warning('Custom OpenAI API is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.');
+            return '';
+        }
+
+        $('#custom_api_url_text').val(url).trigger('input');
+
+        if (autoConnect) {
+            $('#api_button_openai').trigger('click');
+        }
+
+        return url;
+    }
+
+    // Special handling for Kobold Classic API
+    const isCurrentlyKoboldClassic = main_api === 'kobold';
+    if (api === 'kobold' || (!api && isCurrentlyKoboldClassic)) {
+        if (!url) {
+            return api_server ?? '';
+        }
+
+        if (!isCurrentlyKoboldClassic && autoConnect) {
+            toastr.warning('Kobold Classic API is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.');
+            return '';
+        }
+
+        $('#api_url_text').val(url).trigger('input');
+        // trigger blur debounced, so we hide the autocomplete menu
+        setTimeout(() => $('#api_url_text').trigger('blur'), 1);
+
+        if (autoConnect) {
+            $('#api_button').trigger('click');
+        }
+
+        return api_server ?? '';
+    }
+
+    // Do some checks and get the api type we are targeting with this command
+    if (api && !Object.values(textgen_types).includes(api)) {
+        toastr.warning(`API '${api}' is not a valid text_gen API.`);
+        return '';
+    }
+    if (!api && !Object.values(textgen_types).includes(textgenerationwebui_settings.type)) {
+        toastr.warning(`API '${textgenerationwebui_settings.type}' is not a valid text_gen API.`);
+        return '';
+    }
+    if (api && url && autoConnect && api !== textgenerationwebui_settings.type) {
+        toastr.warning(`API '${api}' is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.`);
+        return '';
+    }
+    const type = api || textgenerationwebui_settings.type;
+
+    const inputSelector = SERVER_INPUTS[type];
+    if (!inputSelector) {
+        toastr.warning(`API '${type}' does not have a server url input.`);
+        return '';
+    }
+
+    // If no url was provided, return the current one
+    if (!url) {
+        return textgenerationwebui_settings.server_urls[type] ?? '';
+    }
+
+    // else, we want to actually set the url
+    $(inputSelector).val(url).trigger('input');
+    // trigger blur debounced, so we hide the autocomplete menu
+    setTimeout(() => $(inputSelector).trigger('blur'), 1);
+
+    // Trigger the auto connect via connect button, if requested
+    if (autoConnect) {
+        $('#api_button_textgenerationwebui').trigger('click');
+    }
+
+    // We still re-acquire the value, as it might have been modified by the validation on connect
+    return textgenerationwebui_settings.server_urls[type] ?? '';
+}
+
+async function selectTokenizerCallback(_, name) {
+    if (!name) {
+        return getAvailableTokenizers().find(tokenizer => tokenizer.tokenizerId === power_user.tokenizer)?.tokenizerKey ?? '';
+    }
+
+    const tokenizers = getAvailableTokenizers();
+    const fuse = new Fuse(tokenizers, { keys: ['tokenizerKey', 'tokenizerName'] });
+    const result = fuse.search(name);
+
+    if (result.length === 0) {
+        toastr.warning(`Tokenizer "${name}" not found`);
+        return '';
+    }
+
+    /** @type {import('./tokenizers.js').Tokenizer} */
+    const foundTokenizer = result[0].item;
+    selectTokenizer(foundTokenizer.tokenizerId);
+
+    return foundTokenizer.tokenizerKey;
 }
 
 export let isExecutingCommandsFromChatInput = false;

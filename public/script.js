@@ -5426,9 +5426,11 @@ export function cleanUpMessage(getMessage, isImpersonate, isContinue, displayInc
         getMessage = fixMarkdown(getMessage, false);
     }
 
-    const nameToTrim2 = isImpersonate ? name1 : name2;
+    const nameToTrim2 = isImpersonate
+        ? (!power_user.allow_name1_display ? name1 : '')
+        : (!power_user.allow_name2_display ? name2 : '');
 
-    if (getMessage.startsWith(nameToTrim2 + ':')) {
+    if (nameToTrim2 && getMessage.startsWith(nameToTrim2 + ':')) {
         getMessage = getMessage.replace(nameToTrim2 + ':', '');
         getMessage = getMessage.trimStart();
     }
@@ -8390,6 +8392,9 @@ const CONNECT_API_MAP = {
     },
 };
 
+// Collect all unique API names in an array
+export const UNIQUE_APIS = [...new Set(Object.values(CONNECT_API_MAP).map(x => x.selected))];
+
 // Fill connections map from textgen_types and chat_completion_sources
 for (const textGenType of Object.values(textgen_types)) {
     if (CONNECT_API_MAP[textGenType]) continue;
@@ -8964,9 +8969,6 @@ jQuery(async function () {
         return '';
     }
 
-    // Collect all unique API names in an array
-    const uniqueAPIs = [...new Set(Object.values(CONNECT_API_MAP).map(x => x.selected))];
-
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'dupe',
         callback: duplicateCharacter,
@@ -8975,13 +8977,13 @@ jQuery(async function () {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'api',
         callback: connectAPISlash,
+        returns: 'the current API',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'API to connect to',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: false,
                 enumList: Object.entries(CONNECT_API_MAP).map(([api, { selected }]) =>
-                    new SlashCommandEnumValue(api, selected, enumTypes.getBasedOnIndex(uniqueAPIs.findIndex(x => x === selected)),
+                    new SlashCommandEnumValue(api, selected, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === selected)),
                         selected[0].toUpperCase() ?? enumIcons.default)),
             }),
         ],
@@ -10655,6 +10657,15 @@ jQuery(async function () {
     $(document).on('click', '.open_alternate_greetings', openAlternateGreetings);
     /* $('#set_character_world').on('click', openCharacterWorldPopup); */
 
+    $(document).on('focus', 'input.auto-select, textarea.auto-select', function () {
+        if (!power_user.enable_auto_select_input) return;
+        const control = $(this)[0];
+        if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) {
+            control.select();
+            console.debug('Auto-selecting content of input control', control);
+        }
+    });
+
     $(document).keyup(function (e) {
         if (e.key === 'Escape') {
             const isEditVisible = $('#curEditTextarea').is(':visible');
@@ -10738,7 +10749,7 @@ jQuery(async function () {
                 }
             } break;
             case 'import_tags': {
-                await importTags(characters[this_chid], { forceShow: true });
+                await importTags(characters[this_chid], { importSetting: tag_import_setting.ASK });
             } break;
             /*case 'delete_button':
                 popup_type = "del_ch";
