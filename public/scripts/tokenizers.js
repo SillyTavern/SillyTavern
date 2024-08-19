@@ -148,9 +148,45 @@ async function resetTokenCache() {
 }
 
 /**
+ * @typedef {object} Tokenizer
+ * @property {number} tokenizerId - The id of the tokenizer option
+ * @property {string} tokenizerKey - Internal name/key of the tokenizer
+ * @property {string} tokenizerName - Human-readable detailed name of the tokenizer (as displayed in the UI)
+ */
+
+/**
+ * Gets all tokenizers available to the user.
+ * @returns {Tokenizer[]} Tokenizer info.
+ */
+export function getAvailableTokenizers() {
+    const tokenizerOptions = $('#tokenizer').find('option').toArray();
+    return tokenizerOptions.map(tokenizerOption => ({
+        tokenizerId: Number(tokenizerOption.value),
+        tokenizerKey: Object.entries(tokenizers).find(([_, value]) => value === Number(tokenizerOption.value))[0].toLocaleLowerCase(),
+        tokenizerName: tokenizerOption.text,
+    }))
+}
+
+/**
+ * Selects tokenizer if not already selected.
+ * @param {number} tokenizerId Tokenizer ID.
+ */
+export function selectTokenizer(tokenizerId) {
+    if (tokenizerId !== power_user.tokenizer) {
+        const tokenizer = getAvailableTokenizers().find(tokenizer => tokenizer.tokenizerId === tokenizerId);
+        if (!tokenizer) {
+            console.warn('Failed to find tokenizer with id', tokenizerId);
+            return;
+        }
+        $('#tokenizer').val(tokenizer.tokenizerId).trigger('change');
+        toastr.info(`Tokenizer: "${tokenizer.tokenizerName}" selected`);
+    }
+}
+
+/**
  * Gets the friendly name of the current tokenizer.
  * @param {string} forApi API to get the tokenizer for. Defaults to the main API.
- * @returns { { tokenizerName: string, tokenizerId: number } } Tokenizer info
+ * @returns {Tokenizer} Tokenizer info
  */
 export function getFriendlyTokenizerName(forApi) {
     if (!forApi) {
@@ -185,7 +221,9 @@ export function getFriendlyTokenizerName(forApi) {
         ? tokenizers.OPENAI
         : tokenizerId;
 
-    return { tokenizerName, tokenizerId };
+    const tokenizerKey = Object.entries(tokenizers).find(([_, value]) => value === tokenizerId)[0].toLocaleLowerCase();
+
+    return { tokenizerName, tokenizerKey, tokenizerId };
 }
 
 /**

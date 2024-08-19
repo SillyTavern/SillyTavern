@@ -52,7 +52,7 @@ import { chat_completion_sources, oai_settings, setupChatCompletionPromptManager
 import { autoSelectPersona, retriggerFirstMessageOnEmptyChat, setPersonaLockState, togglePersonaLock, user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
-import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync } from './tokenizers.js';
+import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer } from './tokenizers.js';
 import { debounce, delay, isFalseBoolean, isTrueBoolean, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { background_settings } from './backgrounds.js';
@@ -1555,6 +1555,28 @@ export function initDefaultSlashCommands() {
             <div>
                 This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible for the Chat Completion sources. If unsure which APIs are supported,
                 check the auto-completion of the optional <code>api</code> argument of this command.
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'tokenizer',
+        callback: selectTokenizerCallback,
+        returns: 'current tokenizer',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'tokenizer name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumList: getAvailableTokenizers().map(tokenizer =>
+                    new SlashCommandEnumValue(tokenizer.tokenizerKey, tokenizer.tokenizerName, enumTypes.enum, enumIcons.default)),
+            }),
+        ],
+        helpString: `
+            <div>
+                Selects tokenizer by name. Gets the current tokenizer if no name is provided.
+            </div>
+            <div>
+                <strong>Available tokenizers:</strong>
+                <pre><code>${getAvailableTokenizers().map(t => t.tokenizerKey).join(', ')}</code></pre>
             </div>
         `,
     }));
@@ -3560,6 +3582,27 @@ async function setApiUrlCallback({ api = null, connect = 'true' }, url) {
 
     // We still re-acquire the value, as it might have been modified by the validation on connect
     return textgenerationwebui_settings.server_urls[type] ?? '';
+}
+
+async function selectTokenizerCallback(_, name) {
+    if (!name) {
+        return getAvailableTokenizers().find(tokenizer => tokenizer.tokenizerId === power_user.tokenizer)?.tokenizerKey ?? '';
+    }
+
+    const tokenizers = getAvailableTokenizers();
+    const fuse = new Fuse(tokenizers, { keys: ['tokenizerKey', 'tokenizerName'] });
+    const result = fuse.search(name);
+
+    if (result.length === 0) {
+        toastr.warning(`Tokenizer "${name}" not found`);
+        return '';
+    }
+
+    /** @type {import('./tokenizers.js').Tokenizer} */
+    const foundTokenizer = result[0].item;
+    selectTokenizer(foundTokenizer.tokenizerId);
+
+    return foundTokenizer.tokenizerKey;
 }
 
 export let isExecutingCommandsFromChatInput = false;
