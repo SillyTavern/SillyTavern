@@ -212,7 +212,7 @@ import {
     selectContextPreset,
 } from './scripts/instruct-mode.js';
 import { initLocales, t, translate } from './scripts/i18n.js';
-import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache, selectTokenizer, TOKENIZER_NAME_MAP, tokenizers } from './scripts/tokenizers.js';
+import { getAvailableTokenizers, getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache, selectTokenizer } from './scripts/tokenizers.js';
 import {
     user_avatar,
     getUserAvatars,
@@ -8453,11 +8453,11 @@ async function selectInstructCallback(_, name) {
 
 async function selectTokenizerCallback(_, name) {
     if (!name) {
-        return TOKENIZER_NAME_MAP[power_user.tokenizer];
+        return getFriendlyTokenizerName(main_api).tokenizerName;
     }
 
-    const tokenizerNames = Object.values(TOKENIZER_NAME_MAP);
-    const fuse = new Fuse(tokenizerNames);
+    const tokenizers = getAvailableTokenizers();
+    const fuse = new Fuse(tokenizers, { keys: ['tokenizerName'] });
     const result = fuse.search(name);
 
     if (result.length === 0) {
@@ -8465,9 +8465,9 @@ async function selectTokenizerCallback(_, name) {
         return '';
     }
 
-    const foundName = result[0].item;
-    selectTokenizer(tokenizers[foundName.toUpperCase()]);
-    return foundName;
+    const foundTokenizer = result[0].item;
+    selectTokenizer(foundTokenizer.tokenizerName, foundTokenizer.tokenizerId);
+    return foundTokenizer;
 }
 
 async function enableInstructCallback() {
@@ -9122,8 +9122,8 @@ jQuery(async function () {
             SlashCommandArgument.fromProps({
                 description: 'tokenizer name',
                 typeList: [ARGUMENT_TYPE.STRING],
-                enumList: Object.values(TOKENIZER_NAME_MAP).map(tokenizer =>
-                    new SlashCommandEnumValue(tokenizer, null, enumTypes.enum, enumIcons.default)),
+                enumList: getAvailableTokenizers().map(tokenizer =>
+                    new SlashCommandEnumValue(tokenizer.tokenizerName, null, enumTypes.enum, enumIcons.default)),
             }),
         ],
         helpString: `
@@ -9132,7 +9132,7 @@ jQuery(async function () {
             </div>
             <div>
                 <strong>Available tokenizers:</strong>
-                <pre><code>${Object.values(TOKENIZER_NAME_MAP).join(', ')}</code></pre>
+                <pre><code>${getAvailableTokenizers().map(t => t.tokenizerName).join(', ')}</code></pre>
             </div>
         `
     }));

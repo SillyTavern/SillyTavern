@@ -148,20 +148,26 @@ async function resetTokenCache() {
 }
 
 /**
- * Maps tokenizer IDs to their names.
- * @example { 0: 'none', 1: 'gpt2', ... }
+ * Gets all tokenizers available to the user.
+ * @returns { { tokenizerName: string, tokenizerId: number }[] } Tokenizer info.
  */
-export const TOKENIZER_NAME_MAP = Object.fromEntries(
-    Object.entries(tokenizers).map(([name, id]) => [id, name.toLowerCase()]));
+export function getAvailableTokenizers() {
+    const tokenizerOptions = $('#tokenizer').find('option').toArray();
+    return tokenizerOptions.map(tokenizerOption => ({
+        tokenizerName: tokenizerOption.text,
+        tokenizerId: Number(tokenizerOption.value),
+    }))
+}
 
 /**
  * Selects tokenizer if not already selected.
+ * @param {string} tokenizerName Tokenizer name.
  * @param {number} tokenizerId Tokenizer ID.
  */
-export function selectTokenizer(tokenizerId) {
+export function selectTokenizer(tokenizerName, tokenizerId) {
     if (tokenizerId !== power_user.tokenizer) {
         $('#tokenizer').val(tokenizerId).trigger('change');
-        toastr.info(`Tokenizer: "${TOKENIZER_NAME_MAP[tokenizerId]}" selected`);
+        toastr.info(`Tokenizer: "${tokenizerName}" selected`);
     }
 }
 
