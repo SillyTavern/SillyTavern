@@ -726,7 +726,11 @@ async function importTags(character, { importSetting = null } = {}) {
     const tagsToImport = tagNamesToImport.map(tag => getTag(tag, { createNew: true }));
     const added = addTagsToEntity(tagsToImport, character.avatar);
 
-    toastr.success(`Imported tags:<br />${tagsToImport.map(x => x.name).join(', ')}`, 'Importing Tags', { escapeHtml: false });
+    if (added) {
+        toastr.success(`Imported tags:<br />${tagsToImport.map(x => x.name).join(', ')}`, 'Importing Tags', { escapeHtml: false });
+    } else {
+        toastr.error(`Couldn't import tags:<br />${tagsToImport.map(x => x.name).join(', ')}`, 'Importing Tags', { escapeHtml: false });
+    }
 
     return added;
 }
