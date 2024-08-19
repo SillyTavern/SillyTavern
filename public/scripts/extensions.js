@@ -21,6 +21,7 @@ const defaultUrl = 'http://localhost:5100';
 let saveMetadataTimeout = null;
 
 let requiresReload = false;
+let stateChanged = false;
 
 export function saveMetadataDebounced() {
     const context = getContext();
@@ -238,6 +239,7 @@ function onEnableExtensionClick() {
 
 async function enableExtension(name, reload = true) {
     extension_settings.disabledExtensions = extension_settings.disabledExtensions.filter(x => x !== name);
+    stateChanged = true;
     await saveSettings();
     if (reload) {
         location.reload();
@@ -248,6 +250,7 @@ async function enableExtension(name, reload = true) {
 
 async function disableExtension(name, reload = true) {
     extension_settings.disabledExtensions.push(name);
+    stateChanged = true;
     await saveSettings();
     if (reload) {
         location.reload();
@@ -657,7 +660,20 @@ async function showExtensionsDetails() {
             await oldPopup.complete(POPUP_RESULT.CANCELLED);
         }
 
-        const popup = new Popup(html, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, customButtons: [updateAllButton], allowVerticalScrolling: true });
+        const popup = new Popup(html, POPUP_TYPE.TEXT, '', {
+            okButton: 'Close',
+            wide: true,
+            large: true,
+            customButtons: [updateAllButton],
+            allowVerticalScrolling: true,
+            onClosing: async () => {
+                if (stateChanged) {
+                    toastr.info('The page will be reloaded shortly...', 'Extensions state changed');
+                    await saveSettings();
+                }
+                return true;
+            },
+        });
         popupPromise = popup.show();
     } catch (error) {
         toastr.error('Error loading extensions. See browser console for details.');
