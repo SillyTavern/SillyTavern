@@ -2459,7 +2459,7 @@ async function getWorldEntry(name, data, entry) {
     if (!isMobile()) {
         $(characterFilter).select2({
             width: '100%',
-            placeholder: 'All characters will pull from this entry.',
+            placeholder: 'Tie this entry to specific characters or characters with specific tags',
             allowClear: true,
             closeOnSelect: false,
         });
