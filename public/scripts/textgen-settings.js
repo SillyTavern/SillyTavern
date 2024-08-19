@@ -80,7 +80,7 @@ const OOBA_DEFAULT_ORDER = [
     'top_a',
     'min_p',
     'mirostat',
-    "xtc"
+    'xtc',
 ];
 const BIAS_KEY = '#textgenerationwebui_api-settings';
 
@@ -724,7 +724,7 @@ jQuery(function () {
             'dry_base_textgenerationwebui': 1.75,
             'dry_penalty_last_n_textgenerationwebui': 0,
             'xtc_threshold_textgenerationwebui': 0.1,
-            'xtc_probability_textgenerationwebui': 0
+            'xtc_probability_textgenerationwebui': 0,
         };
 
         for (const [id, value] of Object.entries(inputs)) {
