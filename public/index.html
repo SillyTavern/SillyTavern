@@ -5592,13 +5592,16 @@
                         <div class="flex-container wide100p flexGap10">
                             <div class="flex4 flex-container flexFlowColumn flexNoGap">
                                 <div class="flex-container justifySpaceBetween">
-                                    <small for="characterFilter" data-i18n="Filter to Character(s)">
-                                        Filter to Character(s)
+                                    <small for="characterFilter" data-i18n="Filter to Characters or Tags">
+                                        Filter to Characters or Tags
                                     </small>
                                     <label class="checkbox_label flexNoGap margin-r5" for="character_exclusion">
                                         <input type="checkbox" name="character_exclusion" />
                                         <span>
-                                            <small data-i18n="Character Exclusion">Character Exclusion</small>
+                                            <small title="Switch the Character/Tags filter around to exclude the listed characters and tags from matching for this entry" data-i18n="[title]Switch the Character/Tags filter around to exclude the listed characters and tags from matching for this entry">
+                                                <span data-i18n="Exclude">Exclude</span>
+                                                <div class="fa-solid fa-circle-info opacity50p"></div>
+                                            </small>
                                         </span>
                                     </label>
                                 </div>
