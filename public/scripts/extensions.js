@@ -660,6 +660,8 @@ async function showExtensionsDetails() {
             await oldPopup.complete(POPUP_RESULT.CANCELLED);
         }
 
+        let waitingForSave = false;
+
         const popup = new Popup(html, POPUP_TYPE.TEXT, '', {
             okButton: 'Close',
             wide: true,
@@ -667,9 +669,14 @@ async function showExtensionsDetails() {
             customButtons: [updateAllButton],
             allowVerticalScrolling: true,
             onClosing: async () => {
+                if (waitingForSave) {
+                    return false;
+                }
                 if (stateChanged) {
-                    toastr.info('The page will be reloaded shortly...', 'Extensions state changed');
+                    waitingForSave = true;
+                    const toast = toastr.info('The page will be reloaded shortly...', 'Extensions state changed');
                     await saveSettings();
+                    toastr.clear(toast);
                 }
                 return true;
             },
