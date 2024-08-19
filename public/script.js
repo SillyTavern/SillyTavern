@@ -8467,7 +8467,7 @@ async function selectTokenizerCallback(_, name) {
 
     const foundTokenizer = result[0].item;
     selectTokenizer(foundTokenizer.tokenizerName, foundTokenizer.tokenizerId);
-    return foundTokenizer;
+    return foundTokenizer.tokenizerName;
 }
 
 async function enableInstructCallback() {
