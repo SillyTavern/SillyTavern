@@ -677,6 +677,8 @@ async function showExtensionsDetails() {
                     const toast = toastr.info('The page will be reloaded shortly...', 'Extensions state changed');
                     await saveSettings();
                     toastr.clear(toast);
+                    waitingForSave = false;
+                    requiresReload = true;
                 }
                 return true;
             },
