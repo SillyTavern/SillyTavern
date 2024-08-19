@@ -1291,6 +1291,26 @@
                                             </div>
                                         </div>
                                     </div>
+
+                                    <div data-newbie-hidden data-tg-type="ooba" id="xtc_block" class="wide100p">
+                                        <h4 class="wide100p textAlignCenter">
+                                            <label data-i18n="XTC Parameters">XTC Parameters</label>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]XTC_Parameters_desc" title="XTC (eXtreme Tail Cutting) parameters for controlling token sampling"></div>
+                                        </h4>
+                                        <div class="flex-container flexFlowRow gap10px flexShrink">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                                <small data-i18n="XTC Threshold">XTC Threshold</small>
+                                                <input class="neo-range-slider" type="range" id="xtc_threshold_textgenerationwebui" name="volume" min="0" max="1" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="xtc_threshold_textgenerationwebui" id="xtc_threshold_counter_textgenerationwebui">
+                                            </div>
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                                <small data-i18n="XTC Probability">XTC Probability</small>
+                                                <input class="neo-range-slider" type="range" id="xtc_probability_textgenerationwebui" name="volume" min="0" max="1" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="xtc_probability_textgenerationwebui" id="xtc_probability_counter_textgenerationwebui">
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <!-- Enable for llama.cpp when the PR is merged: https://github.com/ggerganov/llama.cpp/pull/6839 -->
                                     <div data-newbie-hidden data-tg-type="ooba, koboldcpp" id="dryBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" title="DRY penalizes tokens that would extend the end of the input into a sequence that has previously occurred in the input. Set multiplier to 0 to disable." data-i18n="[title]DRY_Repetition_Penalty_desc">
@@ -1640,6 +1660,7 @@
                                             <div data-name="top_a" draggable="true"><span>Top A</span><small></small></div>
                                             <div data-name="min_p" draggable="true"><span>Min P</span><small></small></div>
                                             <div data-name="mirostat" draggable="true"><span>Mirostat</span><small></small></div>
+                                            <div data-name="xtc" draggable="true"><span>XTC</span><small></small></div>
                                         </div>
                                         <div id="textgenerationwebui_default_order" class="menu_button menu_button_icon">
                                             <span data-i18n="Load default order">Load default order</span>

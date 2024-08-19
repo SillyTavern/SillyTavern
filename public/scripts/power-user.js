@@ -704,6 +704,21 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'dry_base_textgenerationwebui') {
         decimals = 2;
     }
+
+    if (sliderID == 'xtc_threshold_textgenerationwebui') {
+        numSteps = 100;
+        decimals = 2;
+        sliderMin = 0;
+        sliderMax = 1;
+        stepScale = 0.01;
+    }
+    if (sliderID == 'xtc_probability_textgenerationwebui') {
+        numSteps = 100;
+        decimals = 2;
+        sliderMin = 0;
+        sliderMax = 1;
+        stepScale = 0.01;
+    }
     if (sliderID == 'eta_cutoff_textgenerationwebui' ||
         sliderID == 'epsilon_cutoff_textgenerationwebui') {
         numSteps = 50;
