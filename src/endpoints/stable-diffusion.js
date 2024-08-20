@@ -991,11 +991,52 @@ blockentropy.post('/generate', jsonParser, async (request, response) => {
 });
 
 
+const huggingface = express.Router();
+
+huggingface.post('/generate', jsonParser, async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.HUGGINGFACE);
+
+        if (!key) {
+            console.log('Hugging Face key not found.');
+            return response.sendStatus(400);
+        }
+
+        console.log('Hugging Face request:', request.body);
+
+        const result = await fetch(`https://api-inference.huggingface.co/models/${request.body.model}`, {
+            method: 'POST',
+            body: JSON.stringify({
+                inputs: request.body.prompt,
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            console.log('Hugging Face returned an error.');
+            return response.sendStatus(500);
+        }
+
+        const buffer = await result.buffer();
+        return response.send({
+            image: buffer.toString('base64'),
+        });
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+
 router.use('/comfy', comfy);
 router.use('/together', together);
 router.use('/drawthings', drawthings);
 router.use('/pollinations', pollinations);
 router.use('/stability', stability);
 router.use('/blockentropy', blockentropy);
+router.use('/huggingface', huggingface);
 
 module.exports = { router };
