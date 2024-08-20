@@ -1,4 +1,4 @@
-import { getStringHash, debounce, waitUntilCondition, extractAllWords } from '../../utils.js';
+import { getStringHash, debounce, waitUntilCondition, extractAllWords, isTrueBoolean } from '../../utils.js';
 import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import {
     activateSendButtons,
@@ -26,6 +26,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { MacrosParser } from '../../macros.js';
 import { countWebLlmTokens, generateWebLlmChatPrompt, getWebLlmContextSize, isWebLlmSupported } from '../shared.js';
+import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
@@ -456,7 +457,12 @@ async function onChatEvent() {
     }
 }
 
-async function forceSummarizeChat() {
+/**
+ * Forces a summary generation for the current chat.
+ * @param {boolean} quiet If an informational toast should be displayed
+ * @returns {Promise<string>} Summarized text
+ */
+async function forceSummarizeChat(quiet) {
     if (extension_settings.memory.source === summary_sources.extras) {
         toastr.warning('Force summarization is not supported for Extras API');
         return;
@@ -471,7 +477,7 @@ async function forceSummarizeChat() {
         return '';
     }
 
-    const toast = toastr.info('Summarizing chat...', 'Please wait', { timeOut: 0, extendedTimeOut: 0 });
+    const toast = quiet ? jQuery() : toastr.info('Summarizing chat...', 'Please wait', { timeOut: 0, extendedTimeOut: 0 });
     const value = extension_settings.memory.source === summary_sources.main
         ? await summarizeChatMain(context, true, skipWIAN)
         : await summarizeChatWebLLM(context, true);
@@ -494,9 +500,10 @@ async function forceSummarizeChat() {
 async function summarizeCallback(args, text) {
     text = text.trim();
 
-    // Using forceSummarizeChat to summarize the current chat
+    // Summarize the current chat if no text provided
     if (!text) {
-        return await forceSummarizeChat();
+        const quiet = isTrueBoolean(args.quiet);
+        return await forceSummarizeChat(quiet);
     }
 
     const source = args.source || extension_settings.memory.source;
@@ -1005,7 +1012,7 @@ function setupListeners() {
     $('#memory_prompt_words').off('click').on('input', onMemoryPromptWordsInput);
     $('#memory_prompt_interval').off('click').on('input', onMemoryPromptIntervalInput);
     $('#memory_prompt').off('click').on('input', onMemoryPromptInput);
-    $('#memory_force_summarize').off('click').on('click', forceSummarizeChat);
+    $('#memory_force_summarize').off('click').on('click', () => forceSummarizeChat(false));
     $('#memory_template').off('click').on('input', onMemoryTemplateInput);
     $('#memory_depth').off('click').on('input', onMemoryDepthInput);
     $('#memory_role').off('click').on('input', onMemoryRoleInput);
@@ -1054,6 +1061,13 @@ jQuery(async function () {
                 description: 'prompt to use for summarization',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: 'suppress the toast message when summarizing the chat',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
             }),
         ],
         unnamedArgumentList: [
