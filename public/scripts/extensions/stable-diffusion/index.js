@@ -3547,7 +3547,7 @@ function isValidState() {
         case sources.blockentropy:
             return secret_state[SECRET_KEYS.BLOCKENTROPY];
         case sources.huggingface:
-            return true;
+            return secret_state[SECRET_KEYS.HUGGINGFACE];
     }
 }
 
