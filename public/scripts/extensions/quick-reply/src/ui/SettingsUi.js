@@ -14,6 +14,7 @@ export class SettingsUi {
 
     /**@type {HTMLInputElement}*/ isEnabled;
     /**@type {HTMLInputElement}*/ isCombined;
+    /**@type {HTMLInputElement}*/ showPopoutButton;
 
     /**@type {HTMLElement}*/ globalSetList;
 
@@ -79,6 +80,10 @@ export class SettingsUi {
         this.isCombined = this.dom.querySelector('#qr--isCombined');
         this.isCombined.checked = this.settings.isCombined;
         this.isCombined.addEventListener('click', ()=>this.onIsCombined());
+
+        this.showPopoutButton = this.dom.querySelector('#qr--showPopoutButton');
+        this.showPopoutButton.checked = this.settings.showPopoutButton;
+        this.showPopoutButton.addEventListener('click', ()=>this.onShowPopoutButton());
     }
 
     prepareGlobalSetList() {
@@ -232,6 +237,11 @@ export class SettingsUi {
 
     async onIsCombined() {
         this.settings.isCombined = this.isCombined.checked;
+        this.settings.save();
+    }
+
+    async onShowPopoutButton() {
+        this.settings.showPopoutButton = this.showPopoutButton.checked;
         this.settings.save();
     }
 
