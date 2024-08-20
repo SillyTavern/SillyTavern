@@ -1242,7 +1242,16 @@ async function onModelChange() {
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
     saveSettingsDebounced();
 
-    const cloudSources = [sources.horde, sources.novel, sources.openai, sources.togetherai, sources.pollinations, sources.stability, sources.blockentropy];
+    const cloudSources = [
+        sources.horde,
+        sources.novel,
+        sources.openai,
+        sources.togetherai,
+        sources.pollinations,
+        sources.stability,
+        sources.blockentropy,
+        sources.huggingface,
+    ];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
         return;
@@ -1457,6 +1466,9 @@ async function loadSamplers() {
         case sources.blockentropy:
             samplers = ['N/A'];
             break;
+        case sources.huggingface:
+            samplers = ['N/A'];
+            break;
     }
 
     for (const sampler of samplers) {
@@ -1645,6 +1657,9 @@ async function loadModels() {
             break;
         case sources.blockentropy:
             models = await loadBlockEntropyModels();
+            break;
+        case sources.huggingface:
+            models = [{ value: '', text: '<Enter Model ID above>' }];
             break;
     }
 
@@ -1993,6 +2008,9 @@ async function loadSchedulers() {
         case sources.blockentropy:
             schedulers = ['N/A'];
             break;
+        case sources.huggingface:
+            schedulers = ['N/A'];
+            break;
     }
 
     for (const scheduler of schedulers) {
@@ -2070,6 +2088,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.blockentropy:
+            vaes = ['N/A'];
+            break;
+        case sources.huggingface:
             vaes = ['N/A'];
             break;
     }
