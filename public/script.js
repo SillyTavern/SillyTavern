@@ -8384,6 +8384,12 @@ const CONNECT_API_MAP = {
         button: '#api_button_openai',
         source: chat_completion_sources.OPENAI,
     },
+    // Google alias
+    'google': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.MAKERSUITE,
+    },
     // OpenRouter special naming, to differentiate between chat comp and text comp
     'openrouter': {
         selected: 'openai',
