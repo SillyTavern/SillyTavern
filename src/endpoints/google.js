@@ -44,7 +44,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (!result.ok) {
             const error = await result.json();
-            console.log(`MakerSuite API returned error: ${result.status} ${result.statusText}`, error);
+            console.log(`Google AI Studio API returned error: ${result.status} ${result.statusText}`, error);
             return response.status(result.status).send({ error: true });
         }
 

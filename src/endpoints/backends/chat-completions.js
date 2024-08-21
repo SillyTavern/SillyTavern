@@ -259,7 +259,7 @@ async function sendMakerSuiteRequest(request, response) {
     const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
 
     if (!request.body.reverse_proxy && !apiKey) {
-        console.log('MakerSuite API key is missing.');
+        console.log('Google AI Studio API key is missing.');
         return response.status(400).send({ error: true });
     }
 
@@ -326,7 +326,7 @@ async function sendMakerSuiteRequest(request, response) {
     }
 
     const body = isGemini ? getGeminiBody() : getBisonBody();
-    console.log('MakerSuite request:', body);
+    console.log('Google AI Studio request:', body);
 
     try {
         const controller = new AbortController();
@@ -362,7 +362,7 @@ async function sendMakerSuiteRequest(request, response) {
             }
         } else {
             if (!generateResponse.ok) {
-                console.log(`MakerSuite API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+                console.log(`Google AI Studio API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
                 return response.status(generateResponse.status).send({ error: true });
             }
 
@@ -370,7 +370,7 @@ async function sendMakerSuiteRequest(request, response) {
 
             const candidates = generateResponseJson?.candidates;
             if (!candidates || candidates.length === 0) {
-                let message = 'MakerSuite API returned no candidate';
+                let message = 'Google AI Studio API returned no candidate';
                 console.log(message, generateResponseJson);
                 if (generateResponseJson?.promptFeedback?.blockReason) {
                     message += `\nPrompt was blocked due to : ${generateResponseJson.promptFeedback.blockReason}`;
@@ -381,19 +381,19 @@ async function sendMakerSuiteRequest(request, response) {
             const responseContent = candidates[0].content ?? candidates[0].output;
             const responseText = typeof responseContent === 'string' ? responseContent : responseContent?.parts?.[0]?.text;
             if (!responseText) {
-                let message = 'MakerSuite Candidate text empty';
+                let message = 'Google AI Studio Candidate text empty';
                 console.log(message, generateResponseJson);
                 return response.send({ error: { message } });
             }
 
-            console.log('MakerSuite response:', responseText);
+            console.log('Google AI Studio response:', responseText);
 
             // Wrap it back to OAI format
             const reply = { choices: [{ 'message': { 'content': responseText } }] };
             return response.send(reply);
         }
     } catch (error) {
-        console.log('Error communicating with MakerSuite API: ', error);
+        console.log('Error communicating with Google AI Studio API: ', error);
         if (!response.headersSent) {
             return response.status(500).send({ error: true });
         }
