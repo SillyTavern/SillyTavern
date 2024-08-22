@@ -69,17 +69,20 @@ export class ButtonUi {
                 root.id = 'qr--bar';
                 root.classList.add('flex-container');
                 root.classList.add('flexGap5');
-                const popout = document.createElement('div'); {
-                    popout.id = 'qr--popoutTrigger';
-                    popout.classList.add('menu_button');
-                    popout.classList.add('fa-solid');
-                    popout.classList.add('fa-window-restore');
-                    popout.addEventListener('click', ()=>{
-                        this.settings.isPopout = true;
-                        this.refresh();
-                        this.settings.save();
-                    });
-                    root.append(popout);
+                if (this.settings.showPopoutButton) {
+                    root.classList.add('popoutVisible');
+                    const popout = document.createElement('div'); {
+                        popout.id = 'qr--popoutTrigger';
+                        popout.classList.add('menu_button');
+                        popout.classList.add('fa-solid');
+                        popout.classList.add('fa-window-restore');
+                        popout.addEventListener('click', ()=>{
+                            this.settings.isPopout = true;
+                            this.refresh();
+                            this.settings.save();
+                        });
+                        root.append(popout);
+                    }
                 }
                 if (this.settings.isCombined) {
                     const buttons = document.createElement('div'); {
