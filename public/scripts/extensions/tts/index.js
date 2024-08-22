@@ -755,6 +755,11 @@ async function onMessageEvent(messageId, lastCharIndex) {
     const message = structuredClone(context.chat[messageId]);
     const hashNew = getStringHash(message?.mes ?? '');
 
+    // Ignore prompt-hidden messages
+    if (message.is_system) {
+        return;
+    }
+
     // if no new messages, or same message, or same message hash, do nothing
     if (hashNew === lastMessageHash) {
         return;
