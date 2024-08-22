@@ -8488,6 +8488,9 @@ async function connectAPISlash(args, text) {
 
             return key;
         }
+
+        console.error('FIXME: The current API is not in the API map');
+        return '';
     }
 
     const apiConfig = CONNECT_API_MAP[text.toLowerCase()];
@@ -8524,7 +8527,7 @@ async function connectAPISlash(args, text) {
     }
 
     toastr.clear(toast);
-    return '';
+    return text;
 }
 
 /**
