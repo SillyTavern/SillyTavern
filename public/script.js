@@ -8514,7 +8514,7 @@ async function connectAPISlash(args, text) {
     }
 
     const quiet = isTrueBoolean(args?.quiet);
-    quiet ? jQuery() : toastr.info(`API set to ${text}, trying to connect..`);
+    const toast = quiet ? jQuery() : toastr.info(`API set to ${text}, trying to connect..`);
 
     try {
         await waitUntilCondition(() => online_status !== 'no_connection', 10000, 100);
@@ -8523,6 +8523,7 @@ async function connectAPISlash(args, text) {
         console.log('Could not connect after 10 seconds, skipping.');
     }
 
+    toastr.clear(toast);
     return '';
 }
 
