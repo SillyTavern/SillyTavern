@@ -242,7 +242,7 @@ import { DragAndDropHandler } from './scripts/dragdrop.js';
 import { INTERACTABLE_CONTROL_CLASS, initKeyboard } from './scripts/keyboard.js';
 import { initDynamicStyles } from './scripts/dynamic-styles.js';
 import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/SlashCommandEnumValue.js';
-import { enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
+import { commonEnumProviders, enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
 
 //exporting functions and vars for mods
 export {
@@ -8475,7 +8475,7 @@ async function disableInstructCallback() {
 /**
  * @param {string} text API name
  */
-async function connectAPISlash(_, text) {
+async function connectAPISlash(args, text) {
     if (!text.trim()) {
         for (const [key, config] of Object.entries(CONNECT_API_MAP)) {
             if (config.selected !== main_api) continue;
@@ -8498,12 +8498,15 @@ async function connectAPISlash(_, text) {
 
             return key;
         }
+
+        console.error('FIXME: The current API is not in the API map');
+        return '';
     }
 
     const apiConfig = CONNECT_API_MAP[text.toLowerCase()];
     if (!apiConfig) {
         toastr.error(`Error: ${text} is not a valid API`);
-        return;
+        return '';
     }
 
     $(`#main_api option[value='${apiConfig.selected || text}']`).prop('selected', true);
@@ -8523,14 +8526,18 @@ async function connectAPISlash(_, text) {
         $(apiConfig.button).trigger('click');
     }
 
-    toastr.info(`API set to ${text}, trying to connect..`);
+    const quiet = isTrueBoolean(args?.quiet);
+    const toast = quiet ? jQuery() : toastr.info(`API set to ${text}, trying to connect..`);
 
     try {
         await waitUntilCondition(() => online_status !== 'no_connection', 10000, 100);
         console.log('Connection successful');
     } catch {
-        console.log('Could not connect after 5 seconds, skipping.');
+        console.log('Could not connect after 10 seconds, skipping.');
     }
+
+    toastr.clear(toast);
+    return text;
 }
 
 /**
@@ -8989,6 +8996,15 @@ jQuery(async function () {
         name: 'api',
         callback: connectAPISlash,
         returns: 'the current API',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: 'Suppress the toast message on connection',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'API to connect to',
