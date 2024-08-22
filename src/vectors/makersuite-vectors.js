@@ -23,8 +23,8 @@ async function getMakerSuiteVector(text, directories) {
     const key = readSecret(directories, SECRET_KEYS.MAKERSUITE);
 
     if (!key) {
-        console.log('No MakerSuite key found');
-        throw new Error('No MakerSuite key found');
+        console.log('No Google AI Studio key found');
+        throw new Error('No Google AI Studio key found');
     }
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/embedding-gecko-001:embedText?key=${key}`, {
@@ -39,8 +39,8 @@ async function getMakerSuiteVector(text, directories) {
 
     if (!response.ok) {
         const text = await response.text();
-        console.log('MakerSuite request failed', response.statusText, text);
-        throw new Error('MakerSuite request failed');
+        console.log('Google AI Studio request failed', response.statusText, text);
+        throw new Error('Google AI Studio request failed');
     }
 
     const data = await response.json();

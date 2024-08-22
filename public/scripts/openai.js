@@ -4473,7 +4473,7 @@ async function onConnectButtonClick(e) {
         }
 
         if (!secret_state[SECRET_KEYS.MAKERSUITE] && !oai_settings.reverse_proxy) {
-            console.log('No secret key saved for MakerSuite');
+            console.log('No secret key saved for Google AI Studio');
             return;
         }
     }
