@@ -447,7 +447,7 @@ export function getTagKeyForEntity(entityOrKey) {
     // Next lets check if its a valid character or character id, so we can swith it to its tag
     let character;
     if (!character && characters.indexOf(x) >= 0) character = x; // Check for char object
-    if (!character && typeof x === 'number') character = characters[x]; // check if its a char id
+    if (!character && !isNaN(parseInt(entityOrKey))) character = characters[x]; // check if its a char id
     if (!character) character = characters.find(y => y.avatar === x); // check if its a char key
 
     if (character) {
