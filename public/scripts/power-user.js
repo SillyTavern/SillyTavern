@@ -302,8 +302,6 @@ export let context_presets = [];
 
 const storage_keys = {
     chat_display: 'TavernAI_chat_display',
-    chat_width: 'chat_width',
-    font_scale: 'TavernAI_font_scale',
 
     main_text_color: 'TavernAI_main_text_color',
     italics_text_color: 'TavernAI_italics_text_color',
@@ -313,7 +311,6 @@ const storage_keys = {
     chat_tint_color: 'TavernAI_chat_tint_color',
     user_mes_blur_tint_color: 'TavernAI_user_mes_blur_tint_color',
     bot_mes_blur_tint_color: 'TavernAI_bot_mes_blur_tint_color',
-    blur_strength: 'TavernAI_blur_strength',
     shadow_color: 'TavernAI_shadow_color',
     shadow_width: 'TavernAI_shadow_width',
     border_color: 'TavernAI_border_color',
@@ -321,17 +318,9 @@ const storage_keys = {
     custom_css: 'TavernAI_custom_css',
 
     waifuMode: 'TavernAI_waifuMode',
-    movingUI: 'TavernAI_movingUI',
 
-    timer_enabled: 'TimerEnabled',
-    timestamps_enabled: 'TimestampsEnabled',
     timestamp_model_icon: 'TimestampModelIcon',
-    mesIDDisplay_enabled: 'mesIDDisplayEnabled',
-    hideChatAvatars_enabled: 'hideChatAvatarsEnabled',
     message_token_count_enabled: 'MessageTokenCountEnabled',
-    expand_message_actions: 'ExpandMessageActions',
-    enableZenSliders: 'enableZenSliders',
-    enableLabMode: 'enableLabMode',
     reduced_motion: 'reduced_motion',
     compact_input_area: 'compact_input_area',
     auto_connect_legacy: 'AutoConnectEnabled',
@@ -460,15 +449,11 @@ function switchHotswap() {
 }
 
 function switchTimer() {
-    const value = localStorage.getItem(storage_keys.timer_enabled);
-    power_user.timer_enabled = value === null ? true : value == 'true';
     $('body').toggleClass('no-timer', !power_user.timer_enabled);
     $('#messageTimerEnabled').prop('checked', power_user.timer_enabled);
 }
 
 function switchTimestamps() {
-    const value = localStorage.getItem(storage_keys.timestamps_enabled);
-    power_user.timestamps_enabled = value === null ? true : value == 'true';
     $('body').toggleClass('no-timestamps', !power_user.timestamps_enabled);
     $('#messageTimestampsEnabled').prop('checked', power_user.timestamps_enabled);
 }
@@ -488,30 +473,16 @@ function switchTokenCount() {
 }
 
 function switchMesIDDisplay() {
-    const value = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
-    power_user.mesIDDisplay_enabled = value === null ? true : value == 'true';
-    /*     console.log(`
-        localstorage value:${value},
-        poweruser before:${before},
-        poweruser after:${power_user.mesIDDisplay_enabled}`) */
     $('body').toggleClass('no-mesIDDisplay', !power_user.mesIDDisplay_enabled);
     $('#mesIDDisplayEnabled').prop('checked', power_user.mesIDDisplay_enabled);
 }
 
 function switchHideChatAvatars() {
-    const value = localStorage.getItem(storage_keys.hideChatAvatars_enabled);
-    power_user.hideChatAvatars_enabled = value === null ? false : value == 'true';
-    /*console.log(`
-        localstorage value:${value},
-        poweruser after:${power_user.hideChatAvatars_enabled}`)
-    */
     $('body').toggleClass('hideChatAvatars', power_user.hideChatAvatars_enabled);
     $('#hideChatAvatarsEnabled').prop('checked', power_user.hideChatAvatars_enabled);
 }
 
 function switchMessageActions() {
-    const value = localStorage.getItem(storage_keys.expand_message_actions);
-    power_user.expand_message_actions = value === null ? false : value == 'true';
     $('body').toggleClass('expandMessageActions', power_user.expand_message_actions);
     $('#expandMessageActions').prop('checked', power_user.expand_message_actions);
     $('.extraMesButtons, .extraMesButtonsHint').removeAttr('style');
@@ -545,8 +516,6 @@ async function switchLabMode() {
         }
      */
     await delay(100);
-    const value = localStorage.getItem(storage_keys.enableLabMode);
-    power_user.enableLabMode = value === null ? false : value == 'true';
     $('body').toggleClass('enableLabMode', power_user.enableLabMode);
     $('#enableLabMode').prop('checked', power_user.enableLabMode);
 
@@ -593,8 +562,6 @@ async function switchLabMode() {
 
 async function switchZenSliders() {
     await delay(100);
-    const value = localStorage.getItem(storage_keys.enableZenSliders);
-    power_user.enableZenSliders = value === null ? false : value == 'true';
     $('body').toggleClass('enableZenSliders', power_user.enableZenSliders);
     $('#enableZenSliders').prop('checked', power_user.enableZenSliders);
 
@@ -1015,8 +982,6 @@ function switchMovingUI() {
     $('.drawer-content.maximized').each(function () {
         $(this).find('.inline-drawer-maximize').trigger('click');
     });
-    const movingUI = localStorage.getItem(storage_keys.movingUI);
-    power_user.movingUI = movingUI === null ? false : movingUI == 'true';
     $('body').toggleClass('movingUI', power_user.movingUI);
     if (power_user.movingUI === true) {
         initMovingUI();
@@ -1083,8 +1048,6 @@ function applyChatDisplay() {
 }
 
 function applyChatWidth(type) {
-    power_user.chat_width = Number(localStorage.getItem(storage_keys.chat_width) ?? 50);
-
     if (type === 'forced') {
         let r = document.documentElement;
         r.style.setProperty('--sheldWidth', `${power_user.chat_width}vw`);
@@ -1161,12 +1124,9 @@ async function applyCustomCSS() {
 }
 
 async function applyBlurStrength() {
-    power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 1);
     document.documentElement.style.setProperty('--blurStrength', power_user.blur_strength);
     $('#blur_strength_counter').val(power_user.blur_strength);
     $('#blur_strength').val(power_user.blur_strength);
-
-
 }
 
 async function applyShadowWidth() {
@@ -1178,8 +1138,6 @@ async function applyShadowWidth() {
 }
 
 async function applyFontScale(type) {
-
-    power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
     //this is to allow forced setting on page load, theme swap, etc
     if (type === 'forced') {
         document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
@@ -1215,7 +1173,6 @@ async function applyTheme(name) {
         {
             key: 'blur_strength',
             action: async () => {
-                localStorage.setItem(storage_keys.blur_strength, power_user.blur_strength);
                 await applyBlurStrength();
             },
         },
@@ -1236,7 +1193,6 @@ async function applyTheme(name) {
         {
             key: 'font_scale',
             action: async () => {
-                localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
                 await applyFontScale('forced');
             },
         },
@@ -1279,22 +1235,19 @@ async function applyTheme(name) {
                 if (!power_user.chat_width) {
                     power_user.chat_width = 50;
                 }
-
-                localStorage.setItem(storage_keys.chat_width, String(power_user.chat_width));
+                saveSettingsDebounced();
                 applyChatWidth('forced');
             },
         },
         {
             key: 'timer_enabled',
             action: async () => {
-                localStorage.setItem(storage_keys.timer_enabled, Boolean(power_user.timer_enabled));
                 switchTimer();
             },
         },
         {
             key: 'timestamps_enabled',
             action: async () => {
-                localStorage.setItem(storage_keys.timestamps_enabled, Boolean(power_user.timestamps_enabled));
                 switchTimestamps();
             },
         },
@@ -1315,35 +1268,30 @@ async function applyTheme(name) {
         {
             key: 'mesIDDisplay_enabled',
             action: async () => {
-                localStorage.setItem(storage_keys.mesIDDisplay_enabled, Boolean(power_user.mesIDDisplay_enabled));
                 switchMesIDDisplay();
             },
         },
         {
             key: 'hideChatAvatars_enabled',
             action: async () => {
-                localStorage.setItem(storage_keys.hideChatAvatars_enabled, Boolean(power_user.hideChatAvatars_enabled));
                 switchHideChatAvatars();
             },
         },
         {
             key: 'expand_message_actions',
             action: async () => {
-                localStorage.setItem(storage_keys.expand_message_actions, Boolean(power_user.expand_message_actions));
                 switchMessageActions();
             },
         },
         {
             key: 'enableZenSliders',
             action: async () => {
-                localStorage.setItem(storage_keys.enableZenSliders, Boolean(power_user.enableZenSliders));
                 switchMessageActions();
             },
         },
         {
             key: 'enableLabMode',
             action: async () => {
-                localStorage.setItem(storage_keys.enableLabMode, Boolean(power_user.enableLabMode));
                 switchMessageActions();
             },
         },
@@ -1517,14 +1465,6 @@ async function loadPowerUserSettings(settings, data) {
     }
 
     // These are still local storage
-    const movingUI = localStorage.getItem(storage_keys.movingUI);
-    const timer = localStorage.getItem(storage_keys.timer_enabled);
-    const timestamps = localStorage.getItem(storage_keys.timestamps_enabled);
-    const mesIDDisplay = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
-    const hideChatAvatars = localStorage.getItem(storage_keys.hideChatAvatars_enabled);
-    const expandMessageActions = localStorage.getItem(storage_keys.expand_message_actions);
-    const enableZenSliders = localStorage.getItem(storage_keys.enableZenSliders);
-    const enableLabMode = localStorage.getItem(storage_keys.enableLabMode);
     const autoLoadChat = localStorage.getItem(storage_keys.auto_load_chat_legacy);
     const autoConnect = localStorage.getItem(storage_keys.auto_connect_legacy);
 
@@ -1538,28 +1478,12 @@ async function loadPowerUserSettings(settings, data) {
         localStorage.removeItem(storage_keys.auto_connect_legacy);
     }
 
-    power_user.movingUI = movingUI === null ? false : movingUI == 'true';
-    power_user.timer_enabled = timer === null ? true : timer == 'true';
-    power_user.timestamps_enabled = timestamps === null ? true : timestamps == 'true';
-    power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == 'true';
-    power_user.hideChatAvatars_enabled = hideChatAvatars === null ? true : hideChatAvatars == 'true';
-    power_user.expand_message_actions = expandMessageActions === null ? true : expandMessageActions == 'true';
-    power_user.enableZenSliders = enableZenSliders === null ? false : enableZenSliders == 'true';
-    power_user.enableLabMode = enableLabMode === null ? false : enableLabMode == 'true';
-    power_user.chat_width = Number(localStorage.getItem(storage_keys.chat_width) ?? 50);
-    power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
-    power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 10);
-
     if (power_user.chat_display === '') {
         power_user.chat_display = chat_styles.DEFAULT;
     }
 
     if (power_user.waifuMode === '') {
         power_user.waifuMode = false;
-    }
-
-    if (power_user.chat_width === '') {
-        power_user.chat_width = 50;
     }
 
     if (power_user.tokenizer === tokenizers.LEGACY) {
@@ -3297,7 +3221,6 @@ $(document).ready(() => {
 
     $('#movingUImode').change(function () {
         power_user.movingUI = $(this).prop('checked');
-        localStorage.setItem(storage_keys.movingUI, power_user.movingUI);
         switchMovingUI();
         saveSettingsDebounced();
     });
@@ -3329,8 +3252,8 @@ $(document).ready(() => {
     $('#chat_width_slider').on('input', function (e, data) {
         const applyMode = data?.forced ? 'forced' : 'normal';
         power_user.chat_width = Number(e.target.value);
-        localStorage.setItem(storage_keys.chat_width, power_user.chat_width);
         applyChatWidth(applyMode);
+        saveSettingsDebounced();
         setHotswapsDebounced();
     });
 
@@ -3360,7 +3283,6 @@ $(document).ready(() => {
         const applyMode = data?.forced ? 'forced' : 'normal';
         power_user.font_scale = Number(e.target.value);
         $('#font_scale_counter').val(power_user.font_scale);
-        localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
         await applyFontScale(applyMode);
         saveSettingsDebounced();
     });
@@ -3368,7 +3290,6 @@ $(document).ready(() => {
     $('input[name="blur_strength"]').on('input', async function (e) {
         power_user.blur_strength = Number(e.target.value);
         $('#blur_strength_counter').val(power_user.blur_strength);
-        localStorage.setItem(storage_keys.blur_strength, power_user.blur_strength);
         await applyBlurStrength();
         saveSettingsDebounced();
     });
@@ -3617,14 +3538,14 @@ $(document).ready(() => {
     $('#messageTimerEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.timer_enabled = value;
-        localStorage.setItem(storage_keys.timer_enabled, Boolean(power_user.timer_enabled));
+        saveSettingsDebounced();
         switchTimer();
     });
 
     $('#messageTimestampsEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.timestamps_enabled = value;
-        localStorage.setItem(storage_keys.timestamps_enabled, Boolean(power_user.timestamps_enabled));
+        saveSettingsDebounced();
         switchTimestamps();
     });
 
@@ -3632,6 +3553,7 @@ $(document).ready(() => {
         const value = !!$(this).prop('checked');
         power_user.timestamp_model_icon = value;
         localStorage.setItem(storage_keys.timestamp_model_icon, Boolean(power_user.timestamp_model_icon));
+        saveSettingsDebounced();
         switchIcons();
     });
 
@@ -3645,7 +3567,7 @@ $(document).ready(() => {
     $('#expandMessageActions').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.expand_message_actions = value;
-        localStorage.setItem(storage_keys.expand_message_actions, Boolean(power_user.expand_message_actions));
+        saveSettingsDebounced();
         switchMessageActions();
     });
 
@@ -3658,7 +3580,6 @@ $(document).ready(() => {
             return;
         }
         power_user.enableZenSliders = value;
-        localStorage.setItem(storage_keys.enableZenSliders, Boolean(power_user.enableZenSliders));
         saveSettingsDebounced();
         switchZenSliders();
     });
@@ -3673,7 +3594,6 @@ $(document).ready(() => {
         }
 
         power_user.enableLabMode = value;
-        localStorage.setItem(storage_keys.enableLabMode, Boolean(power_user.enableLabMode));
         saveSettingsDebounced();
         switchLabMode();
     });
@@ -3681,14 +3601,14 @@ $(document).ready(() => {
     $('#mesIDDisplayEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.mesIDDisplay_enabled = value;
-        localStorage.setItem(storage_keys.mesIDDisplay_enabled, Boolean(power_user.mesIDDisplay_enabled));
+        saveSettingsDebounced();
         switchMesIDDisplay();
     });
 
     $('#hideChatAvatarsEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.hideChatAvatars_enabled = value;
-        localStorage.setItem(storage_keys.hideChatAvatars_enabled, Boolean(power_user.hideChatAvatars_enabled));
+        saveSettingsDebounced();
         switchHideChatAvatars();
     });
 
