@@ -73,6 +73,7 @@ export let world_info_match_whole_words = false;
 export let world_info_use_group_scoring = false;
 export let world_info_character_strategy = world_info_insertion_strategy.character_first;
 export let world_info_budget_cap = 0;
+export let world_info_max_recursion_steps = 0;
 const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), debounce_timeout.relaxed);
 const saveSettingsDebounced = debounce(() => {
     Object.assign(world_info, { globalSelect: selected_world_info });
@@ -710,6 +711,7 @@ export function getWorldInfoSettings() {
         world_info_character_strategy,
         world_info_budget_cap,
         world_info_use_group_scoring,
+        world_info_max_recursion_steps,
     };
 }
 
@@ -796,6 +798,8 @@ export function setWorldInfoSettings(settings, data) {
         world_info_budget_cap = Number(settings.world_info_budget_cap);
     if (settings.world_info_use_group_scoring !== undefined)
         world_info_use_group_scoring = Boolean(settings.world_info_use_group_scoring);
+    if (settings.world_info_max_recursion_steps !== undefined)
+        world_info_max_recursion_steps = Number(settings.world_info_max_recursion_steps);
 
     // Migrate old settings
     if (world_info_budget > 100) {
@@ -843,6 +847,9 @@ export function setWorldInfoSettings(settings, data) {
 
     $('#world_info_budget_cap').val(world_info_budget_cap);
     $('#world_info_budget_cap_counter').val(world_info_budget_cap);
+
+    $('#world_info_max_recursion_steps').val(world_info_max_recursion_steps);
+    $('#world_info_max_recursion_steps_counter').val(world_info_max_recursion_steps);
 
     world_names = data.world_names?.length ? data.world_names : [];
 
@@ -3723,6 +3730,12 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
     console.debug(`[WI] --- SEARCHING ENTRIES (on ${sortedEntries.length} entries) ---`);
 
     while (scanState) {
+        //if world_info_max_recursion_steps is non-zero min activations are disabled, and vice versa
+        if (world_info_max_recursion_steps && world_info_max_recursion_steps <= count) {
+            console.debug('[WI] Search stopped by reaching max recursion steps', world_info_max_recursion_steps);
+            break;
+        }
+
         // Track how many times the loop has run. May be useful for debugging.
         count++;
 
@@ -4762,8 +4775,13 @@ jQuery(() => {
 
     $('#world_info_min_activations').on('input', function () {
         world_info_min_activations = Number($(this).val());
-        $('#world_info_min_activations_counter').val($(this).val());
-        saveSettings();
+        $('#world_info_min_activations_counter').val(world_info_min_activations);
+
+        if (world_info_min_activations !== 0) {
+            $('#world_info_max_recursion_steps').val(0).trigger('input');
+        } else {
+            saveSettings();
+        }
     });
 
     $('#world_info_min_activations_depth_max').on('input', function () {
@@ -4817,6 +4835,16 @@ jQuery(() => {
         world_info_budget_cap = Number($(this).val());
         $('#world_info_budget_cap_counter').val(world_info_budget_cap);
         saveSettings();
+    });
+
+    $('#world_info_max_recursion_steps').on('input', function () {
+        world_info_max_recursion_steps = Number($(this).val());
+        $('#world_info_max_recursion_steps_counter').val(world_info_max_recursion_steps);
+        if (world_info_max_recursion_steps !== 0) {
+            $('#world_info_min_activations').val(0).trigger('input');
+        } else {
+            saveSettings();
+        }
     });
 
     $('#world_button').on('click', async function (event) {
