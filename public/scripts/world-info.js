@@ -3730,11 +3730,10 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
     console.debug(`[WI] --- SEARCHING ENTRIES (on ${sortedEntries.length} entries) ---`);
 
     while (scanState) {
-        //if world_info_max_recursion_depth is non-zero min activations are disabled, and vice versa
         if (world_info_max_recursion_depth && world_info_max_recursion_depth <= count) {
             break;
         }
-
+        
         // Track how many times the loop has run. May be useful for debugging.
         count++;
 
@@ -4774,13 +4773,8 @@ jQuery(() => {
 
     $('#world_info_min_activations').on('input', function () {
         world_info_min_activations = Number($(this).val());
-        $('#world_info_min_activations_counter').val(world_info_min_activations);
-
-        if (world_info_min_activations !== 0) {
-            $('#world_info_max_recursion_depth').val(0).trigger("input");
-        } else {
-            saveSettings();
-        }
+        $('#world_info_min_activations_counter').val($(this).val());
+        saveSettings();
     });
 
     $('#world_info_min_activations_depth_max').on('input', function () {
@@ -4838,12 +4832,8 @@ jQuery(() => {
 
     $('#world_info_max_recursion_depth').on('input', function () {
         world_info_max_recursion_depth = Number($(this).val());
-        $('#world_info_max_recursion_depth_counter').val(world_info_max_recursion_depth);
-        if (world_info_max_recursion_depth !== 0) {
-            $('#world_info_min_activations').val(0).trigger("input");
-        } else {
-            saveSettings();
-        }
+        $('#world_info_max_recursion_depth_counter').val($(this).val());
+        saveSettings();
     });
 
     $('#world_button').on('click', async function (event) {
