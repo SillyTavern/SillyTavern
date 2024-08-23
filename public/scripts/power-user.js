@@ -60,6 +60,7 @@ export {
     power_user,
     send_on_enter_options,
     getContextSettings,
+    applyPowerUserSettings,
 };
 
 export const MAX_CONTEXT_DEFAULT = 8192;
@@ -300,8 +301,6 @@ let movingUIPresets = [];
 export let context_presets = [];
 
 const storage_keys = {
-    fast_ui_mode: 'TavernAI_fast_ui_mode',
-    avatar_style: 'TavernAI_avatar_style',
     chat_display: 'TavernAI_chat_display',
     chat_width: 'chat_width',
     font_scale: 'TavernAI_font_scale',
@@ -323,9 +322,7 @@ const storage_keys = {
 
     waifuMode: 'TavernAI_waifuMode',
     movingUI: 'TavernAI_movingUI',
-    noShadows: 'TavernAI_noShadows',
 
-    hotswap_enabled: 'HotswapEnabled',
     timer_enabled: 'TimerEnabled',
     timestamps_enabled: 'TimestampsEnabled',
     timestamp_model_icon: 'TimestampModelIcon',
@@ -458,8 +455,6 @@ function fixMarkdown(text, forDisplay) {
 }
 
 function switchHotswap() {
-    const value = localStorage.getItem(storage_keys.hotswap_enabled);
-    power_user.hotswap_enabled = value === null ? true : value == 'true';
     $('body').toggleClass('no-hotswap', !power_user.hotswap_enabled);
     $('#hotswapEnabled').prop('checked', power_user.hotswap_enabled);
 }
@@ -971,8 +966,6 @@ async function CreateZenSliders(elmnt) {
     }
 }
 function switchUiMode() {
-    const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
-    power_user.fast_ui_mode = fastUi === null ? true : fastUi == 'true';
     $('body').toggleClass('no-blur', power_user.fast_ui_mode);
     $('#fast_ui_mode').prop('checked', power_user.fast_ui_mode);
     if (power_user.fast_ui_mode) {
@@ -1039,9 +1032,7 @@ function switchMovingUI() {
     }
 }
 
-function noShadows() {
-    const noShadows = localStorage.getItem(storage_keys.noShadows);
-    power_user.noShadows = noShadows === null ? false : noShadows == 'true';
+function applyNoShadows() {
     $('body').toggleClass('noShadows', power_user.noShadows);
     $('#noShadowsmode').prop('checked', power_user.noShadows);
     if (power_user.noShadows) {
@@ -1055,12 +1046,9 @@ function noShadows() {
 }
 
 function applyAvatarStyle() {
-    power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     $('body').toggleClass('big-avatars', power_user.avatar_style === avatar_styles.RECTANGULAR);
     $('body').toggleClass('square-avatars', power_user.avatar_style === avatar_styles.SQUARE);
     $('#avatar_style').val(power_user.avatar_style).prop('selected', true);
-    //$(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
-
 }
 
 function applyChatDisplay() {
@@ -1255,7 +1243,6 @@ async function applyTheme(name) {
         {
             key: 'fast_ui_mode',
             action: async () => {
-                localStorage.setItem(storage_keys.fast_ui_mode, power_user.fast_ui_mode);
                 switchUiMode();
             },
         },
@@ -1276,15 +1263,13 @@ async function applyTheme(name) {
         {
             key: 'avatar_style',
             action: async () => {
-                localStorage.setItem(storage_keys.avatar_style, power_user.avatar_style);
                 applyAvatarStyle();
             },
         },
         {
             key: 'noShadows',
             action: async () => {
-                localStorage.setItem(storage_keys.noShadows, power_user.noShadows);
-                noShadows();
+                applyNoShadows();
             },
         },
         {
@@ -1365,7 +1350,6 @@ async function applyTheme(name) {
         {
             key: 'hotswap_enabled',
             action: async () => {
-                localStorage.setItem(storage_keys.hotswap_enabled, Boolean(power_user.hotswap_enabled));
                 switchHotswap();
             },
         },
@@ -1449,24 +1433,27 @@ async function showDebugMenu() {
     callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, allowVerticalScrolling: true });
 }
 
-switchUiMode();
-applyFontScale('forced');
-applyThemeColor();
-applyChatWidth('forced');
-applyAvatarStyle();
-applyBlurStrength();
-applyShadowWidth();
-applyCustomCSS();
-switchMovingUI();
-noShadows();
-switchHotswap();
-switchTimer();
-switchTimestamps();
-switchIcons();
-switchMesIDDisplay();
-switchHideChatAvatars();
-switchTokenCount();
-switchMessageActions();
+function applyPowerUserSettings() {
+    switchUiMode();
+    applyFontScale('forced');
+    applyThemeColor();
+    applyChatWidth('forced');
+    applyAvatarStyle();
+    applyBlurStrength();
+    applyShadowWidth();
+    applyCustomCSS();
+    switchMovingUI();
+    applyNoShadows();
+    switchHotswap();
+    switchTimer();
+    switchTimestamps();
+    switchIcons();
+    switchMesIDDisplay();
+    switchHideChatAvatars();
+    switchTokenCount();
+    switchMessageActions();
+}
+
 
 function getExampleMessagesBehavior() {
     if (power_user.strip_examples) {
@@ -1530,10 +1517,7 @@ async function loadPowerUserSettings(settings, data) {
     }
 
     // These are still local storage
-    const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
     const movingUI = localStorage.getItem(storage_keys.movingUI);
-    const noShadows = localStorage.getItem(storage_keys.noShadows);
-    const hotswap = localStorage.getItem(storage_keys.hotswap_enabled);
     const timer = localStorage.getItem(storage_keys.timer_enabled);
     const timestamps = localStorage.getItem(storage_keys.timestamps_enabled);
     const mesIDDisplay = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
@@ -1554,10 +1538,7 @@ async function loadPowerUserSettings(settings, data) {
         localStorage.removeItem(storage_keys.auto_connect_legacy);
     }
 
-    power_user.fast_ui_mode = fastUi === null ? true : fastUi == 'true';
     power_user.movingUI = movingUI === null ? false : movingUI == 'true';
-    power_user.noShadows = noShadows === null ? false : noShadows == 'true';
-    power_user.hotswap_enabled = hotswap === null ? true : hotswap == 'true';
     power_user.timer_enabled = timer === null ? true : timer == 'true';
     power_user.timestamps_enabled = timestamps === null ? true : timestamps == 'true';
     power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == 'true';
@@ -1565,8 +1546,6 @@ async function loadPowerUserSettings(settings, data) {
     power_user.expand_message_actions = expandMessageActions === null ? true : expandMessageActions == 'true';
     power_user.enableZenSliders = enableZenSliders === null ? false : enableZenSliders == 'true';
     power_user.enableLabMode = enableLabMode === null ? false : enableLabMode == 'true';
-    power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
-    //power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.chat_width = Number(localStorage.getItem(storage_keys.chat_width) ?? 50);
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 10);
@@ -3299,7 +3278,6 @@ $(document).ready(() => {
     // Settings that go to local storage
     $('#fast_ui_mode').change(function () {
         power_user.fast_ui_mode = $(this).prop('checked');
-        localStorage.setItem(storage_keys.fast_ui_mode, power_user.fast_ui_mode);
         switchUiMode();
         saveSettingsDebounced();
     });
@@ -3326,8 +3304,7 @@ $(document).ready(() => {
 
     $('#noShadowsmode').change(function () {
         power_user.noShadows = $(this).prop('checked');
-        localStorage.setItem(storage_keys.noShadows, power_user.noShadows);
-        noShadows();
+        applyNoShadows();
         saveSettingsDebounced();
     });
 
@@ -3336,7 +3313,6 @@ $(document).ready(() => {
     $('#avatar_style').on('change', function () {
         const value = $(this).find(':selected').val();
         power_user.avatar_style = Number(value);
-        localStorage.setItem(storage_keys.avatar_style, power_user.avatar_style);
         applyAvatarStyle();
         saveSettingsDebounced();
     });
@@ -3719,8 +3695,8 @@ $(document).ready(() => {
     $('#hotswapEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.hotswap_enabled = value;
-        localStorage.setItem(storage_keys.hotswap_enabled, Boolean(power_user.hotswap_enabled));
         switchHotswap();
+        saveSettingsDebounced();
     });
 
     $('#prefer_character_prompt').on('input', function () {
