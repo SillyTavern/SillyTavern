@@ -35,7 +35,7 @@ const tasks = {
         defaultModel: 'Cohee/fooocus_expansion-onnx',
         pipeline: null,
         configField: 'extras.promptExpansionModel',
-        quantized: true,
+        quantized: false,
     },
     'automatic-speech-recognition': {
         defaultModel: 'Xenova/whisper-small',
