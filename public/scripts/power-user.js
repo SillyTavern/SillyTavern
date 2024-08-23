@@ -301,8 +301,6 @@ let movingUIPresets = [];
 export let context_presets = [];
 
 const storage_keys = {
-    chat_display: 'TavernAI_chat_display',
-
     main_text_color: 'TavernAI_main_text_color',
     italics_text_color: 'TavernAI_italics_text_color',
     underline_text_color: 'TavernAI_underline_text_color',
@@ -317,12 +315,6 @@ const storage_keys = {
 
     custom_css: 'TavernAI_custom_css',
 
-    waifuMode: 'TavernAI_waifuMode',
-
-    timestamp_model_icon: 'TimestampModelIcon',
-    message_token_count_enabled: 'MessageTokenCountEnabled',
-    reduced_motion: 'reduced_motion',
-    compact_input_area: 'compact_input_area',
     auto_connect_legacy: 'AutoConnectEnabled',
     auto_load_chat_legacy: 'AutoLoadChatEnabled',
 
@@ -459,15 +451,11 @@ function switchTimestamps() {
 }
 
 function switchIcons() {
-    const value = localStorage.getItem(storage_keys.timestamp_model_icon);
-    power_user.timestamp_model_icon = value === null ? true : value == 'true';
     $('body').toggleClass('no-modelIcons', !power_user.timestamp_model_icon);
     $('#messageModelIconEnabled').prop('checked', power_user.timestamp_model_icon);
 }
 
 function switchTokenCount() {
-    const value = localStorage.getItem(storage_keys.message_token_count_enabled);
-    power_user.message_token_count_enabled = value === null ? false : value == 'true';
     $('body').toggleClass('no-tokenCount', !power_user.message_token_count_enabled);
     $('#messageTokensEnabled').prop('checked', power_user.message_token_count_enabled);
 }
@@ -489,8 +477,6 @@ function switchMessageActions() {
 }
 
 function switchReducedMotion() {
-    const value = localStorage.getItem(storage_keys.reduced_motion);
-    power_user.reduced_motion = value === null ? false : value == 'true';
     jQuery.fx.off = power_user.reduced_motion;
     const overrideDuration = power_user.reduced_motion ? 0 : ANIMATION_DURATION_DEFAULT;
     setAnimationDuration(overrideDuration);
@@ -499,8 +485,6 @@ function switchReducedMotion() {
 }
 
 function switchCompactInputArea() {
-    const value = localStorage.getItem(storage_keys.compact_input_area);
-    power_user.compact_input_area = value === null ? true : value == 'true';
     $('#send_form').toggleClass('compact', power_user.compact_input_area);
     $('#compact_input_area').prop('checked', power_user.compact_input_area);
 }
@@ -1205,14 +1189,12 @@ async function applyTheme(name) {
         {
             key: 'waifuMode',
             action: async () => {
-                localStorage.setItem(storage_keys.waifuMode, power_user.waifuMode);
                 switchWaifuMode();
             },
         },
         {
             key: 'chat_display',
             action: async () => {
-                localStorage.setItem(storage_keys.chat_display, power_user.chat_display);
                 applyChatDisplay();
             },
         },
@@ -1235,7 +1217,6 @@ async function applyTheme(name) {
                 if (!power_user.chat_width) {
                     power_user.chat_width = 50;
                 }
-                saveSettingsDebounced();
                 applyChatWidth('forced');
             },
         },
@@ -1254,14 +1235,12 @@ async function applyTheme(name) {
         {
             key: 'timestamp_model_icon',
             action: async () => {
-                localStorage.setItem(storage_keys.timestamp_model_icon, Boolean(power_user.timestamp_model_icon));
                 switchIcons();
             },
         },
         {
             key: 'message_token_count_enabled',
             action: async () => {
-                localStorage.setItem(storage_keys.message_token_count_enabled, Boolean(power_user.message_token_count_enabled));
                 switchTokenCount();
             },
         },
@@ -1318,7 +1297,6 @@ async function applyTheme(name) {
         {
             key: 'reduced_motion',
             action: async () => {
-                localStorage.setItem(storage_keys.reduced_motion, String(power_user.reduced_motion));
                 $('#reduced_motion').prop('checked', power_user.reduced_motion);
                 switchReducedMotion();
             },
@@ -1326,7 +1304,6 @@ async function applyTheme(name) {
         {
             key: 'compact_input_area',
             action: async () => {
-                localStorage.setItem(storage_keys.compact_input_area, String(power_user.compact_input_area));
                 $('#compact_input_area').prop('checked', power_user.compact_input_area);
                 switchCompactInputArea();
             },
@@ -1484,6 +1461,10 @@ async function loadPowerUserSettings(settings, data) {
 
     if (power_user.waifuMode === '') {
         power_user.waifuMode = false;
+    }
+
+    if (power_user.chat_width === '') {
+        power_user.chat_width = 50;
     }
 
     if (power_user.tokenizer === tokenizers.LEGACY) {
@@ -3243,10 +3224,8 @@ $(document).ready(() => {
     $('#chat_display').on('change', function () {
         const value = $(this).find(':selected').val();
         power_user.chat_display = Number(value);
-        localStorage.setItem(storage_keys.chat_display, power_user.chat_display);
         applyChatDisplay();
         saveSettingsDebounced();
-
     });
 
     $('#chat_width_slider').on('input', function (e, data) {
@@ -3552,7 +3531,6 @@ $(document).ready(() => {
     $('#messageModelIconEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.timestamp_model_icon = value;
-        localStorage.setItem(storage_keys.timestamp_model_icon, Boolean(power_user.timestamp_model_icon));
         saveSettingsDebounced();
         switchIcons();
     });
@@ -3560,7 +3538,7 @@ $(document).ready(() => {
     $('#messageTokensEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.message_token_count_enabled = value;
-        localStorage.setItem(storage_keys.message_token_count_enabled, Boolean(power_user.message_token_count_enabled));
+        saveSettingsDebounced();
         switchTokenCount();
     });
 
@@ -3823,14 +3801,12 @@ $(document).ready(() => {
 
     $('#reduced_motion').on('input', function () {
         power_user.reduced_motion = !!$(this).prop('checked');
-        localStorage.setItem(storage_keys.reduced_motion, String(power_user.reduced_motion));
         switchReducedMotion();
         saveSettingsDebounced();
     });
 
     $('#compact_input_area').on('input', function () {
         power_user.compact_input_area = !!$(this).prop('checked');
-        localStorage.setItem(storage_keys.compact_input_area, String(power_user.compact_input_area));
         switchCompactInputArea();
         saveSettingsDebounced();
     });
