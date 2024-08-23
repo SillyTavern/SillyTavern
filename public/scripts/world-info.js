@@ -3732,6 +3732,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
     while (scanState) {
         //if world_info_max_recursion_steps is non-zero min activations are disabled, and vice versa
         if (world_info_max_recursion_steps && world_info_max_recursion_steps <= count) {
+            console.debug('[WI] Search stopped by reaching max recursion steps', world_info_max_recursion_steps);
             break;
         }
 
@@ -4777,7 +4778,7 @@ jQuery(() => {
         $('#world_info_min_activations_counter').val(world_info_min_activations);
 
         if (world_info_min_activations !== 0) {
-            $('#world_info_max_recursion_steps').val(0).trigger("input");
+            $('#world_info_max_recursion_steps').val(0).trigger('input');
         } else {
             saveSettings();
         }
@@ -4840,7 +4841,7 @@ jQuery(() => {
         world_info_max_recursion_steps = Number($(this).val());
         $('#world_info_max_recursion_steps_counter').val(world_info_max_recursion_steps);
         if (world_info_max_recursion_steps !== 0) {
-            $('#world_info_min_activations').val(0).trigger("input");
+            $('#world_info_min_activations').val(0).trigger('input');
         } else {
             saveSettings();
         }
