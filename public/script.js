@@ -2844,7 +2844,14 @@ function hideStopButton() {
 }
 
 class StreamingProcessor {
-    constructor(type, force_name2, timeStarted, messageAlreadyGenerated) {
+    /**
+     * Creates a new streaming processor.
+     * @param {string} type Generation type
+     * @param {boolean} forceName2 If true, force the use of name2
+     * @param {Date} timeStarted Date when generation was started
+     * @param {string} continueMessage Previous message if the type is 'continue'
+     */
+    constructor(type, forceName2, timeStarted, continueMessage) {
         this.result = '';
         this.messageId = -1;
         this.messageDom = null;
@@ -2854,14 +2861,14 @@ class StreamingProcessor {
         /** @type {HTMLTextAreaElement} */
         this.sendTextarea = document.querySelector('#send_textarea');
         this.type = type;
-        this.force_name2 = force_name2;
+        this.force_name2 = forceName2;
         this.isStopped = false;
         this.isFinished = false;
         this.generator = this.nullStreamingGeneration;
         this.abortController = new AbortController();
         this.firstMessageText = '...';
         this.timeStarted = timeStarted;
-        this.messageAlreadyGenerated = messageAlreadyGenerated;
+        this.continueMessage = type === 'continue' ? continueMessage : '';
         this.swipes = [];
         /** @type {import('./scripts/logprobs.js').TokenLogprobs[]} */
         this.messageLogprobs = [];
@@ -3014,8 +3021,7 @@ class StreamingProcessor {
             await eventSource.emit(event_types.IMPERSONATE_READY, text);
         }
 
-        const continueMsg = this.type === 'continue' ? this.messageAlreadyGenerated : undefined;
-        saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), continueMsg);
+        saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
         await saveChatConditional();
         unblockGeneration();
         generatedPromptCache = '';
@@ -3111,7 +3117,7 @@ class StreamingProcessor {
                 if (logprobs) {
                     this.messageLogprobs.push(...(Array.isArray(logprobs) ? logprobs : [logprobs]));
                 }
-                await sw.tick(() => this.onProgressStreaming(this.messageId, this.messageAlreadyGenerated + text));
+                await sw.tick(() => this.onProgressStreaming(this.messageId, this.continueMessage + text));
             }
             const seconds = (timestamps[timestamps.length - 1] - timestamps[0]) / 1000;
             console.warn(`Stream stats: ${timestamps.length} tokens, ${seconds.toFixed(2)} seconds, rate: ${Number(timestamps.length / seconds).toFixed(2)} TPS`);
@@ -3303,8 +3309,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // OpenAI doesn't need instruct mode. Use OAI main prompt instead.
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == 'impersonate';
-
-    let message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
     if (!(dryRun || type == 'regenerate' || type == 'swipe' || type == 'quiet')) {
         const interruptedByCommand = await processCommands(String($('#send_textarea').val()));
@@ -3744,7 +3748,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     let oaiMessageExamples = [];
 
     if (main_api === 'openai') {
-        message_already_generated = '';
         oaiMessages = setOpenAIMessages(coreChat);
         oaiMessageExamples = setOpenAIMessageExamples(mesExamplesArray);
     }
@@ -3887,7 +3890,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             cyclePrompt += oai_settings.continue_postfix;
             continue_mag += oai_settings.continue_postfix;
         }
-        message_already_generated = continue_mag;
     }
 
     const originalType = type;
@@ -4314,7 +4316,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
 
         if (isStreamingEnabled() && type !== 'quiet') {
-            streamingProcessor = new StreamingProcessor(type, force_name2, generation_started, message_already_generated);
+            streamingProcessor = new StreamingProcessor(type, force_name2, generation_started, continue_mag);
             if (isContinue) {
                 // Save reply does add cycle text to the prompt, so it's not needed here
                 streamingProcessor.firstMessageText = '';
