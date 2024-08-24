@@ -126,7 +126,7 @@ ollama:
   # Controls how long the model will stay loaded into memory following the request
   # * -1: Keep the model loaded indefinitely
   # * 0: Unload the model immediately after the request
-  # * 5m: Keep the model loaded for 5 minutes after the request. Accepts duration strings (e.g. 5h30m40s)
+  # * N (any positive number): Keep the model loaded for N seconds after the request.
   keepAlive: -1
 # -- ANTHROPIC CLAUDE API CONFIGURATION --
 claude:
