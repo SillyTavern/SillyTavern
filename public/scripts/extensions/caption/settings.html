@@ -17,9 +17,10 @@
                 <div class="flex1 flex-container flexFlowColumn flexNoGap">
                     <label for="caption_multimodal_api" data-i18n="API">API</label>
                     <select id="caption_multimodal_api" class="flex1 text_pole">
+                        <option value="zerooneai">01.AI (Yi)</option>
                         <option value="anthropic">Anthropic</option>
                         <option value="custom" data-i18n="Custom (OpenAI-compatible)">Custom (OpenAI-compatible)</option>
-                        <option value="google">Google MakerSuite</option>
+                        <option value="google">Google AI Studio</option>
                         <option value="koboldcpp">KoboldCpp</option>
                         <option value="llamacpp">llama.cpp</option>
                         <option value="ollama">Ollama</option>
@@ -32,16 +33,20 @@
                 <div class="flex1 flex-container flexFlowColumn flexNoGap">
                     <label for="caption_multimodal_model" data-i18n="Model">Model</label>
                     <select id="caption_multimodal_model" class="flex1 text_pole">
+                        <option data-type="zerooneai" value="yi-vision">yi-vision</option>
                         <option data-type="openai" value="gpt-4-vision-preview">gpt-4-vision-preview</option>
                         <option data-type="openai" value="gpt-4-turbo">gpt-4-turbo</option>
                         <option data-type="openai" value="gpt-4o">gpt-4o</option>
                         <option data-type="openai" value="gpt-4o-mini">gpt-4o-mini</option>
+                        <option data-type="openai" value="chatgpt-4o-latest">chatgpt-4o-latest</option>
                         <option data-type="anthropic" value="claude-3-5-sonnet-20240620">claude-3-5-sonnet-20240620</option>
                         <option data-type="anthropic" value="claude-3-opus-20240229">claude-3-opus-20240229</option>
                         <option data-type="anthropic" value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
                         <option data-type="anthropic" value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
                         <option data-type="google" value="gemini-pro-vision">gemini-pro-vision</option>
                         <option data-type="google" value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</option>
+                        <option data-type="google" value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+                        <option data-type="google" value="gemini-1.5-pro-exp-0801">gemini-1.5-pro-exp-0801</option>
                         <option data-type="openrouter" value="openai/gpt-4-vision-preview">openai/gpt-4-vision-preview</option>
                         <option data-type="openrouter" value="openai/gpt-4o">openai/gpt-4o</option>
                         <option data-type="openrouter" value="openai/gpt-4-turbo">openai/gpt-4-turbo</option>

@@ -1,6 +1,7 @@
 export class SlashCommandClosureResult {
     /**@type {boolean}*/ interrupt = false;
     /**@type {string}*/ pipe;
+    /**@type {boolean}*/ isBreak = false;
     /**@type {boolean}*/ isAborted = false;
     /**@type {boolean}*/ isQuietlyAborted = false;
     /**@type {string}*/ abortReason;

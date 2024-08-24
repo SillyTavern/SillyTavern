@@ -72,6 +72,7 @@ export async function loadTogetherAIModels(data) {
         return;
     }
 
+    data.sort((a, b) => a.name.localeCompare(b.name));
     togetherModels = data;
 
     if (!data.find(x => x.name === textgen_settings.togetherai_model)) {
@@ -99,6 +100,7 @@ export async function loadInfermaticAIModels(data) {
         return;
     }
 
+    data.sort((a, b) => a.id.localeCompare(b.id));
     infermaticAIModels = data;
 
     if (!data.find(x => x.id === textgen_settings.infermaticai_model)) {
@@ -151,6 +153,7 @@ export async function loadMancerModels(data) {
         return;
     }
 
+    data.sort((a, b) => a.name.localeCompare(b.name));
     mancerModels = data;
 
     if (!data.find(x => x.id === textgen_settings.mancer_model)) {
@@ -173,6 +176,7 @@ export async function loadOpenRouterModels(data) {
         return;
     }
 
+    data.sort((a, b) => a.name.localeCompare(b.name));
     openRouterModels = data;
 
     if (!data.find(x => x.id === textgen_settings.openrouter_model)) {
@@ -242,6 +246,7 @@ export async function loadFeatherlessModels(data) {
         return;
     }
 
+    data.sort((a, b) => a.id.localeCompare(b.id));
     featherlessModels = data;
 
     if (!data.find(x => x.id === textgen_settings.featherless_model)) {
@@ -262,6 +267,8 @@ function onFeatherlessModelSelect() {
     const modelId = String($('#featherless_model').val());
     textgen_settings.featherless_model = modelId;
     $('#api_button_textgenerationwebui').trigger('click');
+    const model = featherlessModels.find(x => x.id === modelId);
+    setGenerationParamsFromPreset({ max_length: model.context_length });
 }
 
 
@@ -431,6 +438,20 @@ function getAphroditeModelTemplate(option) {
     `));
 }
 
+function getFeatherlessModelTemplate(option) {
+    const model = featherlessModels.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    return $((`
+        <div class="flex-container flexFlowColumn">
+            <div><strong>${DOMPurify.sanitize(model.name)}</strong> | <span>${model.context_length || '???'} tokens</span></div>
+        </div>
+    `));
+}
+
 async function downloadOllamaModel() {
     try {
         const serverUrl = textgen_settings.server_urls[textgen_types.OLLAMA];
@@ -578,6 +599,10 @@ export function getCurrentOpenRouterModelTokenizer() {
             return tokenizers.YI;
         case 'Mistral':
             return tokenizers.MISTRAL;
+        case 'Gemini':
+            return tokenizers.GEMMA;
+        case 'Claude':
+            return tokenizers.CLAUDE;
         default:
             return tokenizers.OPENAI;
     }
@@ -597,7 +622,7 @@ export function getCurrentDreamGenModelTokenizer() {
     }
 }
 
-jQuery(function () {
+export function initTextGenModels() {
     $('#mancer_model').on('change', onMancerModelSelect);
     $('#model_togetherai_select').on('change', onTogetherModelSelect);
     $('#model_infermaticai_select').on('change', onInfermaticAIModelSelect);
@@ -679,6 +704,7 @@ jQuery(function () {
             searchInputPlaceholder: 'Search models...',
             searchInputCssClass: 'text_pole',
             width: '100%',
+            templateResult: getFeatherlessModelTemplate,
         });
         providersSelect.select2({
             sorter: data => data.sort((a, b) => a.text.localeCompare(b.text)),
@@ -686,6 +712,7 @@ jQuery(function () {
             searchInputPlaceholder: 'Search providers...',
             searchInputCssClass: 'text_pole',
             width: '100%',
+            closeOnSelect: false,
         });
         providersSelect.on('select2:select', function (/** @type {any} */ evt) {
             const element = evt.params.data.element;
@@ -696,4 +723,4 @@ jQuery(function () {
             $(this).trigger('change');
         });
     }
-});
+}

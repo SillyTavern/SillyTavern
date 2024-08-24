@@ -21,7 +21,7 @@ import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { isMobile } from './RossAscends-mods.js';
-import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { debounce_timeout } from './constants.js';
 import { INTERACTABLE_CONTROL_CLASS } from './keyboard.js';
 import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -445,7 +445,11 @@ export function getTagKeyForEntity(entityOrKey) {
     }
 
     // Next lets check if its a valid character or character id, so we can swith it to its tag
-    const character = characters.indexOf(x) >= 0 ? x : characters[x];
+    let character;
+    if (!character && characters.indexOf(x) >= 0) character = x; // Check for char object
+    if (!character && !isNaN(parseInt(entityOrKey))) character = characters[x]; // check if its a char id
+    if (!character) character = characters.find(y => y.avatar === x); // check if its a char key
+
     if (character) {
         x = character.avatar;
     }
@@ -708,12 +712,12 @@ const ANTI_TROLL_MAX_TAGS = 15;
  *
  * @param {Character} character - The character
  * @param {object} [options] - Options
- * @param {boolean} [options.forceShow=false] - Whether to force showing the import dialog
+ * @param {tag_import_setting} [options.importSetting=null] - Force a tag import setting
  * @returns {Promise<boolean>} Boolean indicating whether any tag was imported
  */
-async function importTags(character, { forceShow = false } = {}) {
+async function importTags(character, { importSetting = null } = {}) {
     // Gather the tags to import based on the selected setting
-    const tagNamesToImport = await handleTagImport(character, { forceShow });
+    const tagNamesToImport = await handleTagImport(character, { importSetting });
     if (!tagNamesToImport?.length) {
         console.debug('No tags to import');
         return;
@@ -722,7 +726,11 @@ async function importTags(character, { forceShow = false } = {}) {
     const tagsToImport = tagNamesToImport.map(tag => getTag(tag, { createNew: true }));
     const added = addTagsToEntity(tagsToImport, character.avatar);
 
-    toastr.success(`Imported tags:<br />${tagsToImport.map(x => x.name).join(', ')}`, 'Importing Tags', { escapeHtml: false });
+    if (added) {
+        toastr.success(`Imported tags:<br />${tagsToImport.map(x => x.name).join(', ')}`, 'Importing Tags', { escapeHtml: false });
+    } else {
+        toastr.error(`Couldn't import tags:<br />${tagsToImport.map(x => x.name).join(', ')}`, 'Importing Tags', { escapeHtml: false });
+    }
 
     return added;
 }
@@ -732,10 +740,10 @@ async function importTags(character, { forceShow = false } = {}) {
  *
  * @param {Character} character - The character
  * @param {object} [options] - Options
- * @param {boolean} [options.forceShow=false] - Whether to force showing the import dialog
+ * @param {tag_import_setting} [options.importSetting=null] - Force a tag import setting
  * @returns {Promise<string[]>} Array of strings representing the tags to import
  */
-async function handleTagImport(character, { forceShow = false } = {}) {
+async function handleTagImport(character, { importSetting = null } = {}) {
     /** @type {string[]} */
     const importTags = character.tags.map(t => t.trim()).filter(t => t)
         .filter(t => !IMPORT_EXLCUDED_TAGS.includes(t))
@@ -745,9 +753,9 @@ async function handleTagImport(character, { forceShow = false } = {}) {
         .map(newTag);
     const folderTags = getOpenBogusFolders();
 
-    // Choose the setting for this dialog. If from settings, verify the setting really exists, otherwise take "ASK".
-    const setting = forceShow ? tag_import_setting.ASK
-        : Object.values(tag_import_setting).find(setting => setting === power_user.tag_import_setting) ?? tag_import_setting.ASK;
+    // Choose the setting for this dialog. First check override, then saved setting or finally use "ASK".
+    const setting = importSetting ? importSetting :
+        Object.values(tag_import_setting).find(setting => setting === power_user.tag_import_setting) ?? tag_import_setting.ASK;
 
     switch (setting) {
         case tag_import_setting.ALL:
@@ -1436,18 +1444,28 @@ async function onTagRestoreFileSelect(e) {
     const data = await parseJsonFile(file);
 
     if (!data) {
-        toastr.warning('Empty file data', 'Tag restore');
+        toastr.warning('Empty file data', 'Tag Restore');
         console.log('Tag restore: File data empty.');
         return;
     }
 
     if (!data.tags || !data.tag_map || !Array.isArray(data.tags) || typeof data.tag_map !== 'object') {
-        toastr.warning('Invalid file format', 'Tag restore');
+        toastr.warning('Invalid file format', 'Tag Restore');
         console.log('Tag restore: Invalid file format.');
         return;
     }
 
+    // Prompt user if they want to overwrite existing tags
+    let overwrite = false;
+    if (tags.length > 0) {
+        const result = await Popup.show.confirm('Tag Restore', 'You have existing tags. If the backup contains any of those tags, do you want the backup to overwrite their settings (Name, color, folder state, etc)?',
+            { okButton: 'Overwrite', cancelButton: 'Keep Existing' });
+        overwrite = result === POPUP_RESULT.AFFIRMATIVE;
+    }
+
     const warnings = [];
+    /** @type {Map<string, string>} Map import tag ids with existing ids on overwrite */
+    const idToActualTagIdMap = new Map();
 
     // Import tags
     for (const tag of data.tags) {
@@ -1456,9 +1474,27 @@ async function onTagRestoreFileSelect(e) {
             continue;
         }
 
-        if (tags.find(x => x.id === tag.id)) {
-            warnings.push(`Tag with id ${tag.id} already exists.`);
+        // Check against both existing id (direct match) and tag with the same name, which is not allowed.
+        let existingTag = tags.find(x => x.id === tag.id);
+        if (existingTag && !overwrite) {
+            warnings.push(`Tag '${tag.name}' with id ${tag.id} already exists.`);
             continue;
+        }
+        existingTag = getTag(tag.name);
+        if (existingTag && !overwrite) {
+            warnings.push(`Tag with name '${tag.name}' already exists.`);
+            // Remember the tag id, so we can still import the tag map entries for this
+            idToActualTagIdMap.set(tag.id, existingTag.id);
+            continue;
+        }
+
+        if (existingTag) {
+            // On overwrite, we remove and re-add the tag
+            removeFromArray(tags, existingTag);
+            // And remember the ID if it was different, so we can update the tag map accordingly
+            if (existingTag.id !== tag.id) {
+                idToActualTagIdMap.set(existingTag.id, tag.id);
+            }
         }
 
         tags.push(tag);
@@ -1478,30 +1514,39 @@ async function onTagRestoreFileSelect(e) {
         const groupExists = groups.some(x => String(x.id) === String(key));
 
         if (!characterExists && !groupExists) {
-            warnings.push(`Tag map key ${key} does not exist.`);
+            warnings.push(`Tag map key ${key} does not exist as character or group.`);
             continue;
         }
 
         // Get existing tag ids for this key or empty array.
         const existingTagIds = tag_map[key] || [];
-        // Merge existing and new tag ids. Remove duplicates.
-        tag_map[key] = existingTagIds.concat(tagIds).filter(onlyUnique);
+
+        // Merge existing and new tag ids. Replace the ones mapped to a new id. Remove duplicates.
+        const combinedTags = existingTagIds.concat(tagIds)
+            .map(tagId => (idToActualTagIdMap.has(tagId)) ? idToActualTagIdMap.get(tagId) : tagId)
+            .filter(onlyUnique);
+
         // Verify that all tags exist. Remove tags that don't exist.
-        tag_map[key] = tag_map[key].filter(x => tags.some(y => String(y.id) === String(x)));
+        tag_map[key] = combinedTags.filter(tagId => tags.some(y => String(y.id) === String(tagId)));
     }
 
     if (warnings.length) {
-        toastr.success('Tags restored with warnings. Check console for details.');
+        toastr.warning('Tags restored with warnings. Check console or click on this message for details.', 'Tag Restore', {
+            timeOut: toastr.options.timeOut * 2, // Display double the time
+            onclick: () => Popup.show.text('Tag Restore Warnings', `<samp class="justifyLeft">${DOMPurify.sanitize(warnings.join('\n'))}<samp>`, { allowVerticalScrolling: true }),
+        });
         console.warn(`TAG RESTORE REPORT\n====================\n${warnings.join('\n')}`);
     } else {
-        toastr.success('Tags restored successfully.');
+        toastr.success('Tags restored successfully.', 'Tag Restore');
     }
 
     $('#tag_view_restore_input').val('');
     printCharactersDebounced();
     saveSettingsDebounced();
 
-    await onViewTagsListClick();
+    // Reprint the tag management popup, without having it to be opened again
+    const tagContainer = $('#tag_view_list .tag_view_list_tags');
+    printViewTagList(tagContainer);
 }
 
 function onBackupRestoreClick() {
@@ -1558,7 +1603,7 @@ function appendViewTagToList(list, tag, everything) {
 
     const primaryColorPicker = $('<toolcool-color-picker></toolcool-color-picker>')
         .addClass('tag-color')
-        .attr({ id: colorPickerId, color: tag.color || 'rgba(0, 0, 0, 0.3)', 'data-default-color': 'rgba(0, 0, 0, 0.3)' });
+        .attr({ id: colorPickerId, color: tag.color || 'rgba(0, 0, 0, 0.5)', 'data-default-color': 'rgba(0, 0, 0, 0.5)' });
 
     const secondaryColorPicker = $('<toolcool-color-picker></toolcool-color-picker>')
         .addClass('tag-color2')

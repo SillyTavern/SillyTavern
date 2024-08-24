@@ -47,6 +47,10 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.VLLM);
         }
 
+        if (request.body.api === 'zerooneai') {
+            key = readSecret(request.user.directories, SECRET_KEYS.ZEROONEAI);
+        }
+
         if (!key && !request.body.reverse_proxy && ['custom', 'ooba', 'koboldcpp', 'vllm'].includes(request.body.api) === false) {
             console.log('No key found for API', request.body.api);
             return response.sendStatus(400);
@@ -63,7 +67,6 @@ router.post('/caption-image', jsonParser, async (request, response) => {
                     ],
                 },
             ],
-            max_tokens: 500,
             ...bodyParams,
         };
 
@@ -98,6 +101,10 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (request.body.api === 'custom') {
             apiUrl = `${request.body.server_url}/chat/completions`;
+        }
+
+        if (request.body.api === 'zerooneai') {
+            apiUrl = 'https://api.01.ai/v1/chat/completions';
         }
 
         if (request.body.api === 'ooba') {
@@ -274,5 +281,49 @@ router.post('/generate-image', jsonParser, async (request, response) => {
         response.status(500).send('Internal server error');
     }
 });
+
+const custom = express.Router();
+
+custom.post('/generate-voice', jsonParser, async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CUSTOM_OPENAI_TTS);
+        const { input, provider_endpoint, response_format, voice, speed, model } = request.body;
+
+        if (!provider_endpoint) {
+            console.log('No OpenAI-compatible TTS provider endpoint provided');
+            return response.sendStatus(400);
+        }
+
+        const result = await fetch(provider_endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${key ?? ''}`,
+            },
+            body: JSON.stringify({
+                input: input ?? '',
+                response_format: response_format ?? 'mp3',
+                voice: voice ?? 'alloy',
+                speed: speed ?? 1,
+                model: model ?? 'tts-1',
+            }),
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.log('OpenAI request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const buffer = await result.arrayBuffer();
+        response.setHeader('Content-Type', 'audio/mpeg');
+        return response.send(Buffer.from(buffer));
+    } catch (error) {
+        console.error('OpenAI TTS generation failed', error);
+        response.status(500).send('Internal server error');
+    }
+});
+
+router.use('/custom', custom);
 
 module.exports = { router };

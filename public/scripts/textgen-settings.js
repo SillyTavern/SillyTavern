@@ -94,7 +94,7 @@ let DREAMGEN_SERVER = 'https://dreamgen.com';
 let OPENROUTER_SERVER = 'https://openrouter.ai/api';
 let FEATHERLESS_SERVER = 'https://api.featherless.ai/v1';
 
-const SERVER_INPUTS = {
+export const SERVER_INPUTS = {
     [textgen_types.OOBA]: '#textgenerationwebui_api_url_text',
     [textgen_types.VLLM]: '#vllm_api_url_text',
     [textgen_types.APHRODITE]: '#aphrodite_api_url_text',
@@ -326,18 +326,21 @@ async function selectPreset(name) {
 function formatTextGenURL(value) {
     try {
         const noFormatTypes = [MANCER, TOGETHERAI, INFERMATICAI, DREAMGEN, OPENROUTER];
+        const legacyApiTypes = [OOBA, APHRODITE];
         if (noFormatTypes.includes(settings.type)) {
             return value;
         }
 
         const url = new URL(value);
-        if (url.pathname === '/api' && !settings.legacy_api) {
-            toastr.info('Enable Legacy API or start Ooba with the OpenAI extension enabled.', 'Legacy API URL detected. Generation may fail.', { preventDuplicates: true, timeOut: 10000, extendedTimeOut: 20000 });
-            url.pathname = '';
-        }
+        if (legacyApiTypes.includes(settings.type)) {
+            if (url.pathname === '/api' && !settings.legacy_api) {
+                toastr.info('Enable Legacy API or start Ooba with the OpenAI extension enabled.', 'Legacy API URL detected. Generation may fail.', { preventDuplicates: true, timeOut: 10000, extendedTimeOut: 20000 });
+                url.pathname = '';
+            }
 
-        if (!power_user.relaxed_api_urls && settings.legacy_api) {
-            url.pathname = '/api';
+            if (!power_user.relaxed_api_urls && settings.legacy_api) {
+                url.pathname = '/api';
+            }
         }
         return url.toString();
     } catch {
@@ -1061,6 +1064,34 @@ function getLogprobsNumber() {
     return 10;
 }
 
+/**
+ * Replaces {{macro}} in a comma-separated or serialized JSON array string.
+ * @param {string} str Input string
+ * @returns {string} Output string
+ */
+function replaceMacrosInList(str) {
+    if (!str || typeof str !== 'string') {
+        return str;
+    }
+
+    try {
+        const array = JSON.parse(str);
+        if (!Array.isArray(array)) {
+            throw new Error('Not an array');
+        }
+        for (let i = 0; i < array.length; i++) {
+            array[i] = substituteParams(array[i]);
+        }
+        return JSON.stringify(array);
+    } catch {
+        const array = str.split(',');
+        for (let i = 0; i < array.length; i++) {
+            array[i] = substituteParams(array[i]);
+        }
+        return array.join(',');
+    }
+}
+
 export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
     const dynatemp = isDynamicTemperatureSupported();
@@ -1100,7 +1131,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'dry_allowed_length': settings.dry_allowed_length,
         'dry_multiplier': settings.dry_multiplier,
         'dry_base': settings.dry_base,
-        'dry_sequence_breakers': settings.dry_sequence_breakers,
+        'dry_sequence_breakers': replaceMacrosInList(settings.dry_sequence_breakers),
         'dry_penalty_last_n': settings.dry_penalty_last_n,
         'max_tokens_second': settings.max_tokens_second,
         'sampler_priority': settings.type === OOBA ? settings.sampler_priority : undefined,

@@ -12,7 +12,7 @@
                 <select id="vectors_source" class="text_pole">
                     <option value="cohere">Cohere</option>
                     <option value="extras">Extras</option>
-                    <option value="palm">Google MakerSuite</option>
+                    <option value="palm">Google AI Studio</option>
                     <option value="llamacpp">llama.cpp</option>
                     <option value="transformers" data-i18n="Local (Transformers)">Local (Transformers)</option>
                     <option value="mistral">MistralAI</option>
@@ -103,17 +103,13 @@
                 </span>
             </small>
 
-            <div class="flex-container flexFlowColumn" id="nomicai_apiKey">
-                <label for="api_key_nomicai">
+            <div class="flex-container alignItemsCenter" id="nomicai_apiKey">
+                <label for="api_key_nomicai" class="flex1">
                     <span data-i18n="NomicAI API Key">NomicAI API Key</span>
                 </label>
-                <div class="flex-container">
-                    <input id="api_key_nomicai" name="api_key_nomicai" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
-                    <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_nomicai">
-                    </div>
-                </div>
-                <div data-for="api_key_nomicai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
-                    For privacy reasons, your API key will be hidden after you reload the page.
+                <div id="api_key_nomicai" class="menu_button menu_button_icon">
+                    <i class="fa-solid fa-key"></i>
+                    <span data-i18n="Click to set">Click to set</span>
                 </div>
             </div>
 
@@ -378,10 +374,11 @@
                         <select id="vectors_summary_source" class="text_pole">
                             <option value="main" data-i18n="Main API">Main API</option>
                             <option value="extras" data-i18n="Extras API">Extras API</option>
+                            <option value="webllm" data-i18n="WebLLM Extension">WebLLM Extension</option>
                         </select>
 
                         <label for="vectors_summary_prompt" title="Summary Prompt:">Summary Prompt:</label>
-                        <small data-i18n="Only used when Main API is selected.">Only used when Main API is selected.</small>
+                        <small data-i18n="Only used when Main API or WebLLM Extension is selected.">Only used when Main API or WebLLM Extension is selected.</small>
                         <textarea id="vectors_summary_prompt" class="text_pole textarea_compact" rows="6" placeholder="This prompt will be sent to AI to request the summary generation."></textarea>
                     </div>
                 </div>

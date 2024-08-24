@@ -1,4 +1,4 @@
-const { TEXTGEN_TYPES, OPENROUTER_HEADERS } = require('./constants');
+const { TEXTGEN_TYPES, OPENROUTER_HEADERS, FEATHERLESS_HEADERS } = require('./constants');
 const { SECRET_KEYS, readSecret } = require('./endpoints/secrets');
 const { getConfigValue } = require('./util');
 
@@ -154,10 +154,9 @@ function getKoboldCppHeaders(directories) {
  */
 function getFeatherlessHeaders(directories) {
     const apiKey = readSecret(directories, SECRET_KEYS.FEATHERLESS);
+    const baseHeaders = { ...FEATHERLESS_HEADERS };
 
-    return apiKey ? ({
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
+    return apiKey ? Object.assign(baseHeaders, { 'Authorization': `Bearer ${apiKey}` }) : baseHeaders;
 }
 
 /**

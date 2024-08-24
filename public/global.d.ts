@@ -14,6 +14,11 @@ declare var isProbablyReaderable;
 declare var ePub;
 declare var ai;
 
+declare var SillyTavern: {
+    getContext(): any;
+    llm: any;
+};
+
 // Jquery plugins
 interface JQuery {
     nanogallery2(options?: any): JQuery;

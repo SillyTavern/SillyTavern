@@ -59,8 +59,8 @@ async function doTokenCounter() {
             $('#tokenized_chunks_display').text('—');
         }
 
-        resetScrollHeight($('#token_counter_textarea'));
-        resetScrollHeight($('#token_counter_ids'));
+        await resetScrollHeight($('#token_counter_textarea'));
+        await resetScrollHeight($('#token_counter_ids'));
     }, debounce_timeout.relaxed);
     dialog.find('#token_counter_textarea').on('input', () => countDebounced());
 
@@ -134,7 +134,8 @@ jQuery(() => {
         </div>`;
     $('#token_counter_wand_container').append(buttonHtml);
     $('#token_counter').on('click', doTokenCounter);
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'count',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'count',
         callback: async () => String(await doCount()),
         returns: 'number of tokens',
         helpString: 'Counts the number of tokens in the current chat.',

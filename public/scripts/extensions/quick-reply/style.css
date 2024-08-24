@@ -1,3 +1,20 @@
+@keyframes qr--success {
+  0%,
+  100% {
+    color: var(--SmartThemeBodyColor);
+  }
+  25%,
+  75% {
+    color: #51a351;
+  }
+}
+.qr--success {
+  animation-name: qr--success;
+  animation-duration: 3s;
+  animation-timing-function: linear;
+  animation-delay: 0s;
+  animation-iteration-count: 1;
+}
 #qr--bar {
   outline: none;
   margin: 0;
@@ -10,13 +27,15 @@
   max-width: 100%;
   overflow-x: auto;
   order: 1;
-  padding-right: 2.5em;
   position: relative;
 }
 #qr--bar > #qr--popoutTrigger {
   position: absolute;
   right: 0.25em;
   top: 0;
+}
+#qr--bar.popoutVisible {
+  padding-right: 2.5em;
 }
 #qr--popout {
   display: flex;
@@ -41,6 +60,7 @@
 }
 #qr--bar > .qr--buttons,
 #qr--popout > .qr--body > .qr--buttons {
+  --qr--color: transparent;
   margin: 0;
   padding: 0;
   display: flex;
@@ -49,9 +69,43 @@
   gap: 5px;
   width: 100%;
 }
+#qr--bar > .qr--buttons.qr--color,
+#qr--popout > .qr--body > .qr--buttons.qr--color {
+  background-color: var(--qr--color);
+}
+#qr--bar > .qr--buttons.qr--borderColor,
+#qr--popout > .qr--body > .qr--buttons.qr--borderColor {
+  background-color: transparent;
+  border-left: 5px solid var(--qr--color);
+  border-right: 5px solid var(--qr--color);
+}
+#qr--bar > .qr--buttons:has(.qr--buttons.qr--color),
+#qr--popout > .qr--body > .qr--buttons:has(.qr--buttons.qr--color) {
+  margin: 5px;
+}
 #qr--bar > .qr--buttons > .qr--buttons,
 #qr--popout > .qr--body > .qr--buttons > .qr--buttons {
   display: contents;
+}
+#qr--bar > .qr--buttons > .qr--buttons.qr--color .qr--button:before,
+#qr--popout > .qr--body > .qr--buttons > .qr--buttons.qr--color .qr--button:before {
+  content: '';
+  background-color: var(--qr--color);
+  position: absolute;
+  inset: -5px;
+  z-index: -1;
+}
+#qr--bar > .qr--buttons > .qr--buttons.qr--color.qr--borderColor .qr--button:before,
+#qr--popout > .qr--body > .qr--buttons > .qr--buttons.qr--color.qr--borderColor .qr--button:before {
+  display: none;
+}
+#qr--bar > .qr--buttons > .qr--buttons.qr--color.qr--borderColor:before,
+#qr--popout > .qr--body > .qr--buttons > .qr--buttons.qr--color.qr--borderColor:before,
+#qr--bar > .qr--buttons > .qr--buttons.qr--color.qr--borderColor:after,
+#qr--popout > .qr--body > .qr--buttons > .qr--buttons.qr--color.qr--borderColor:after {
+  content: '';
+  width: 5px;
+  background-color: var(--qr--color);
 }
 #qr--bar > .qr--buttons .qr--button,
 #qr--popout > .qr--body > .qr--buttons .qr--button {
@@ -66,11 +120,19 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+  position: relative;
 }
 #qr--bar > .qr--buttons .qr--button:hover,
 #qr--popout > .qr--body > .qr--buttons .qr--button:hover {
-  opacity: 1;
-  filter: brightness(1.2);
+  background-color: #4d4d4d;
+}
+#qr--bar > .qr--buttons .qr--button .qr--hidden,
+#qr--popout > .qr--body > .qr--buttons .qr--button .qr--hidden {
+  display: none;
+}
+#qr--bar > .qr--buttons .qr--button .qr--button-icon,
+#qr--popout > .qr--body > .qr--buttons .qr--button .qr--button-icon {
+  margin: 0 0.5em;
 }
 #qr--bar > .qr--buttons .qr--button > .qr--button-expander,
 #qr--popout > .qr--body > .qr--buttons .qr--button > .qr--button-expander {
@@ -170,36 +232,80 @@
 #qr--settings #qr--set-qrList .qr--set-qrListContents {
   padding: 0 0.5em;
 }
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item {
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemAdder {
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transition: 100ms;
+  margin: -2px 0 -11px 0;
+  position: relative;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemAdder .qr--actions {
+  display: flex;
+  gap: 0.25em;
+  flex: 0 0 auto;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemAdder .qr--actions .qr--action {
+  margin: 0;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemAdder:before,
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemAdder:after {
+  content: "";
+  display: block;
+  flex: 1 1 auto;
+  border: 1px solid;
+  margin: 0 1em;
+  height: 0;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemAdder:hover,
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemAdder:focus-within {
+  opacity: 1;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content {
   display: flex;
   flex-direction: row;
   gap: 0.5em;
   align-items: baseline;
   padding: 0.25em 0;
 }
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(1) {
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content > :nth-child(2) {
   flex: 0 0 auto;
 }
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(2) {
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content > :nth-child(2) {
   flex: 1 1 25%;
 }
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(3) {
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content > :nth-child(3) {
   flex: 0 0 auto;
 }
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(4) {
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content > :nth-child(4) {
   flex: 1 1 75%;
 }
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(5) {
-  flex: 0 0 auto;
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content > :nth-child(5) {
+  flex: 0 1 auto;
+  display: flex;
+  gap: 0.25em;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > .drag-handle {
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content > .drag-handle {
   padding: 0.75em;
 }
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemLabel,
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--action {
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content .qr--set-itemLabelContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content .qr--set-itemLabelContainer .qr--set-itemIcon:not(.fa-solid) {
+  display: none;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content .qr--set-itemLabelContainer .qr--set-itemLabel {
+  min-width: 24px;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content .qr--set-itemLabel,
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content .qr--action {
   margin: 0;
 }
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemMessage {
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--content .qr--set-itemMessage {
   font-size: smaller;
 }
 #qr--settings .qr--set-qrListActions {
@@ -212,12 +318,19 @@
 #qr--qrOptions {
   display: flex;
   flex-direction: column;
+  padding-right: 1px;
 }
 #qr--qrOptions > #qr--ctxEditor .qr--ctxItem {
   display: flex;
   flex-direction: row;
   gap: 0.5em;
   align-items: baseline;
+}
+#qr--qrOptions > #qr--autoExec .checkbox_label {
+  text-wrap: nowrap;
+}
+#qr--qrOptions > #qr--autoExec .checkbox_label .fa-fw {
+  margin-right: 2px;
 }
 @media screen and (max-width: 750px) {
   body .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor {
@@ -238,6 +351,72 @@
 .popup:has(#qr--modalEditor) {
   aspect-ratio: unset;
 }
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) {
+  min-width: unset;
+  min-height: unset;
+  height: auto !important;
+  width: min-content !important;
+  position: absolute;
+  right: 1em;
+  top: 1em;
+  left: unset;
+  bottom: unset;
+  margin: unset;
+  padding: 0;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized)::backdrop {
+  backdrop-filter: unset;
+  background-color: transparent;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-body {
+  flex: 0 0 auto;
+  height: min-content;
+  width: min-content;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content {
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor {
+  max-height: 50vh;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor > #qr--main,
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor > #qr--resizeHandle,
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor > #qr--qrOptions > h3,
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor > #qr--qrOptions > #qr--modal-executeButtons,
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor > #qr--qrOptions > #qr--modal-executeProgress {
+  display: none;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor #qr--qrOptions {
+  width: auto;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-maximize {
+  display: flex;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-minimize {
+  display: none;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) .popup-content > #qr--modalEditor #qr--modal-debugState {
+  padding-top: 0;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting) .popup-controls {
+  display: none;
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting) .qr--highlight {
+  position: absolute;
+  z-index: 50000;
+  pointer-events: none;
+  background-color: rgba(47, 150, 180, 0.5);
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting) .qr--highlight.qr--unresolved {
+  background-color: rgba(255, 255, 0, 0.5);
+}
+.popup:has(#qr--modalEditor):has(.qr--isExecuting) .qr--highlight-secondary {
+  position: absolute;
+  z-index: 50000;
+  pointer-events: none;
+  border: 3px solid red;
+}
 .popup:has(#qr--modalEditor) .popup-content {
   display: flex;
   flex-direction: column;
@@ -248,6 +427,67 @@
   flex-direction: row;
   gap: 1em;
   overflow: hidden;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--main > h3:first-child,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--main > .qr--labels,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--qrOptions > h3:first-child,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--qrOptions > #qr--ctxEditor,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--qrOptions > .qr--ctxEditorActions,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--qrOptions > .qr--ctxEditorActions + h3,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--qrOptions > .qr--ctxEditorActions + h3 + div {
+  display: none;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-message {
+  visibility: hidden;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--modal-debugButtons {
+  display: flex;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize) {
+  cursor: not-allowed;
+  opacity: 0.5;
+  pointer-events: none;
+  transition: 200ms;
+  border-color: transparent;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting.qr--isPaused #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize) {
+  cursor: pointer;
+  opacity: 1;
+  pointer-events: all;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting.qr--isPaused #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize)#qr--modal-resume {
+  animation-name: qr--debugPulse;
+  animation-duration: 1500ms;
+  animation-timing-function: ease-in-out;
+  animation-delay: 0s;
+  animation-iteration-count: infinite;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting.qr--isPaused #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize)#qr--modal-resume {
+  border-color: #51a351;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting.qr--isPaused #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize)#qr--modal-step {
+  border-color: var(--SmartThemeQuoteColor);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting.qr--isPaused #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize)#qr--modal-stepInto {
+  border-color: var(--SmartThemeQuoteColor);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting.qr--isPaused #qr--modal-debugButtons .menu_button:not(#qr--modal-minimize, #qr--modal-maximize)#qr--modal-stepOut {
+  border-color: var(--SmartThemeQuoteColor);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--resizeHandle {
+  width: 6px;
+  background-color: var(--SmartThemeBorderColor);
+  border: 2px solid var(--SmartThemeBlurTintColor);
+  transition: border-color 200ms, background-color 200ms;
+  cursor: w-resize;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--resizeHandle:hover {
+  background-color: var(--SmartThemeQuoteColor);
+  border-color: var(--SmartThemeQuoteColor);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor.qr--isExecuting #qr--qrOptions {
+  width: var(--width, auto);
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main {
   flex: 1 1 auto;
@@ -260,20 +500,114 @@
   display: flex;
   flex-direction: row;
   gap: 0.5em;
+  padding: 1px;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label {
   flex: 1 1 1px;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelText {
-  flex: 1 1 auto;
-}
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelHint {
-  flex: 1 1 auto;
-}
-.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label > input {
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label.qr--fit,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label.qr--fit {
   flex: 0 0 auto;
+  justify-content: center;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--inputGroup,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--inputGroup {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--inputGroup input,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--inputGroup input {
+  flex: 1 1 auto;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--labelText,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--labelText {
+  flex: 1 1 auto;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--labelHint,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--labelHint {
+  flex: 1 1 auto;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label input,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label input {
+  flex: 0 0 auto;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList {
+  background-color: var(--stcdx--bgColor);
+  border: 1px solid var(--SmartThemeBorderColor);
+  backdrop-filter: blur(var(--SmartThemeBlurStrength));
+  border-radius: 10px;
+  font-size: smaller;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  overflow: auto;
+  margin: 0;
+  padding: 0.5em;
+  max-height: 50vh;
+  list-style: none;
+  z-index: 40000;
+  max-width: 100%;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--modal-switcherItem,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--modal-switcherItem {
+  display: flex;
+  gap: 1em;
+  text-align: left;
+  opacity: 0.75;
+  transition: 200ms;
+  cursor: pointer;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--modal-switcherItem:hover,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--modal-switcherItem:hover {
+  opacity: 1;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--modal-switcherItem.qr--current,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--modal-switcherItem.qr--current {
+  opacity: 1;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--modal-switcherItem.qr--current .qr--label,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--modal-switcherItem.qr--current .qr--label,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--modal-switcherItem.qr--current .qr--id,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--modal-switcherItem.qr--current .qr--id {
+  font-weight: bold;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--label,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--label {
+  white-space: nowrap;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--label .menu_button,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--label .menu_button {
+  display: inline-block;
+  height: min-content;
+  width: min-content;
+  margin: 0 0.5em 0 0;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--id,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--id {
+  opacity: 0.5;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--id:before,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--id:before {
+  content: "[";
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--id:after,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--id:after {
+  content: "]";
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > label .qr--modal-switcherList .qr--message,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--labels > .label .qr--modal-switcherList .qr--message {
+  height: 1lh;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.5;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer {
   flex: 1 1 auto;
@@ -283,8 +617,9 @@
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings {
   display: flex;
+  flex-wrap: wrap;
   flex-direction: row;
-  gap: 1em;
+  column-gap: 1em;
   color: var(--grey70);
   font-size: smaller;
   align-items: baseline;
@@ -307,6 +642,11 @@
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message {
   background-color: var(--ac-style-color-background);
   color: var(--ac-style-color-text);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::-webkit-scrollbar,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::-webkit-scrollbar-thumb {
+  visibility: visible;
+  cursor: unset;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder.qr--noSyntax > #qr--modal-message::selection {
   color: unset;
@@ -357,11 +697,15 @@
   font-family: var(--monoFontFamily);
   padding: 0.75em;
   margin: 0;
-  border: none;
   resize: none;
   line-height: 1.2;
   border: 1px solid var(--SmartThemeBorderColor);
   border-radius: 5px;
+  position: relative;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-icon {
+  height: 100%;
+  aspect-ratio: 1 / 1;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons {
   display: flex;
@@ -410,6 +754,46 @@
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeButtons #qr--modal-stop {
   border-color: #d78872;
 }
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons {
+  display: none;
+  gap: 1em;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton {
+  aspect-ratio: 1.25 / 1;
+  width: 2.25em;
+  position: relative;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton:not(.fa-solid) {
+  border-width: 1px;
+  border-style: solid;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton:not(.fa-solid):after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background-color: var(--SmartThemeBodyColor);
+  mask-size: contain;
+  mask-position: center;
+  mask-repeat: no-repeat;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-resume:after {
+  mask-image: url('/img/step-resume.svg');
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-step:after {
+  mask-image: url('/img/step-over.svg');
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-stepInto:after {
+  mask-image: url('/img/step-into.svg');
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-stepOut:after {
+  mask-image: url('/img/step-out.svg');
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugButtons .qr--modal-debugButton#qr--modal-maximize {
+  display: none;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-send_textarea {
+  flex: 0 0 auto;
+}
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeProgress {
   --prog: 0;
   --progColor: #92befc;
@@ -417,6 +801,7 @@
   --progSuccessColor: #51a351;
   --progErrorColor: #bd362f;
   --progAbortedColor: #d78872;
+  flex: 0 0 auto;
   height: 0.5em;
   background-color: var(--black50a);
   position: relative;
@@ -469,12 +854,157 @@
   overflow: auto;
   min-width: 100%;
   width: 0;
+  white-space: pre-wrap;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeResult.qr--hasResult {
   display: block;
 }
 .popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-executeResult:before {
   content: 'Result: ';
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState {
+  display: none;
+  text-align: left;
+  font-size: smaller;
+  font-family: var(--monoFontFamily);
+  color: white;
+  padding: 0.5em 0;
+  overflow: auto;
+  min-width: 100%;
+  width: 0;
+  white-space: pre-wrap;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState.qr--active {
+  display: block;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope {
+  display: grid;
+  grid-template-columns: 0fr 1fr 1fr;
+  column-gap: 0em;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--title {
+  grid-column: 1 / 4;
+  font-weight: bold;
+  font-family: var(--mainFontFamily);
+  background-color: var(--black50a);
+  padding: 0.25em;
+  margin-top: 0.5em;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe {
+  display: contents;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var:nth-child(2n + 1) .qr--key,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro:nth-child(2n + 1) .qr--key,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe:nth-child(2n + 1) .qr--key,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var:nth-child(2n + 1) .qr--val,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro:nth-child(2n + 1) .qr--val,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe:nth-child(2n + 1) .qr--val {
+  background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.25);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var:nth-child(2n + 1) .qr--val:nth-child(2n),
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro:nth-child(2n + 1) .qr--val:nth-child(2n),
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe:nth-child(2n + 1) .qr--val:nth-child(2n) {
+  background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.125);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var:nth-child(2n + 1) .qr--val:hover,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro:nth-child(2n + 1) .qr--val:hover,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe:nth-child(2n + 1) .qr--val:hover {
+  background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.5);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var:nth-child(2n) .qr--val:nth-child(2n),
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro:nth-child(2n) .qr--val:nth-child(2n),
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe:nth-child(2n) .qr--val:nth-child(2n) {
+  background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.0625);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var:nth-child(2n) .qr--val:hover,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro:nth-child(2n) .qr--val:hover,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe:nth-child(2n) .qr--val:hover {
+  background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.5);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var.qr--isHidden .qr--key,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro.qr--isHidden .qr--key,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe.qr--isHidden .qr--key,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var.qr--isHidden .qr--val,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro.qr--isHidden .qr--val,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe.qr--isHidden .qr--val {
+  opacity: 0.5;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var .qr--val,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro .qr--val,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe .qr--val {
+  grid-column: 2 / 4;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var .qr--val.qr--singleCol,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro .qr--val.qr--singleCol,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe .qr--val.qr--singleCol {
+  grid-column: unset;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var .qr--val.qr--simple:before,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro .qr--val.qr--simple:before,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe .qr--val.qr--simple:before,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var .qr--val.qr--simple:after,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro .qr--val.qr--simple:after,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe .qr--val.qr--simple:after {
+  content: '"';
+  color: var(--SmartThemeQuoteColor);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--var .qr--val.qr--unresolved:after,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro .qr--val.qr--unresolved:after,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe .qr--val.qr--unresolved:after {
+  content: '-UNRESOLVED-';
+  font-style: italic;
+  color: var(--SmartThemeQuoteColor);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--key {
+  margin-left: 0.5em;
+  padding-right: 1em;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--key:after {
+  content: ": ";
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe > .qr--key:before,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro > .qr--key:before {
+  content: "{{";
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--pipe > .qr--key:after,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--macro > .qr--key:after {
+  content: "}}: ";
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--scope {
+  display: contents;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--scope .qr--pipe .qr--key,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--scope .qr--scope .qr--pipe .qr--val {
+  opacity: 0.5;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack {
+  display: grid;
+  grid-template-columns: 1fr 0fr;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack .qr--title {
+  grid-column: 1 / 3;
+  font-weight: bold;
+  font-family: var(--mainFontFamily);
+  background-color: var(--black50a);
+  padding: 0.25em;
+  margin-top: 1em;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack .qr--item {
+  display: contents;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack .qr--item:nth-child(2n + 1) .qr--name,
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack .qr--item:nth-child(2n + 1) .qr--source {
+  background-color: rgb(from var(--SmartThemeEmColor) r g b / 0.25);
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack .qr--item .qr--name {
+  margin-left: 0.5em;
+}
+.popup:has(#qr--modalEditor) .popup-content > #qr--modalEditor #qr--modal-debugState .qr--stack .qr--item .qr--source {
+  opacity: 0.5;
+  text-align: right;
+  white-space: nowrap;
 }
 @keyframes qr--progressPulse {
   0%,
@@ -485,9 +1015,63 @@
     background-color: var(--progFlashColor);
   }
 }
+@keyframes qr--debugPulse {
+  0%,
+  100% {
+    border-color: #51a351;
+  }
+  50% {
+    border-color: #92befc;
+  }
+}
 .popup.qr--hide {
   opacity: 0 !important;
 }
 .popup.qr--hide::backdrop {
   opacity: 0 !important;
+}
+.popup.qr--hide::backdrop {
+  opacity: 0 !important;
+}
+.popup:has(.qr--transferModal) .popup-button-ok {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  white-space: pre;
+  font-weight: normal;
+  box-shadow: 0 0 0;
+  transition: 200ms;
+}
+.popup:has(.qr--transferModal) .popup-button-ok:after {
+  content: 'Transfer';
+  height: 0;
+  overflow: hidden;
+  font-weight: bold;
+}
+.popup:has(.qr--transferModal) .qr--copy {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  white-space: pre;
+  font-weight: normal;
+  box-shadow: 0 0 0;
+  transition: 200ms;
+}
+.popup:has(.qr--transferModal) .qr--copy:after {
+  content: 'Copy';
+  height: 0;
+  overflow: hidden;
+  font-weight: bold;
+}
+.popup:has(.qr--transferModal):has(.qr--transferSelect:focus) .popup-button-ok {
+  font-weight: bold;
+  box-shadow: 0 0 10px;
+}
+.popup:has(.qr--transferModal):has(.qr--transferSelect:focus).qr--isCopy .popup-button-ok {
+  font-weight: normal;
+  box-shadow: 0 0 0;
+}
+.popup:has(.qr--transferModal):has(.qr--transferSelect:focus).qr--isCopy .qr--copy {
+  font-weight: bold;
+  box-shadow: 0 0 10px;
 }

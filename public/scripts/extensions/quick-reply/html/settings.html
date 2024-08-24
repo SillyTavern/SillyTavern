@@ -11,6 +11,9 @@
 			<label class="flex-container">
 				<input type="checkbox" id="qr--isCombined"><span data-i18n="Combine Quick Replies">Combine Quick Replies</span>
 			</label>
+            <label class="flex-container">
+                <input type="checkbox" id="qr--showPopoutButton"><span data-i18n="Show Popout Button">Show Popout Button</span>
+            </label>
 
 			<hr>
 
@@ -60,10 +63,20 @@
 					<label class="flex-container" id="qr--injectInputContainer">
 						<input type="checkbox" id="qr--injectInput"> <span><span data-i18n="Inject user input automatically">Inject user input automatically</span> <small><span data-i18n="(if disabled, use ">(if disabled, use</span><code>{{input}}</code> <span data-i18n="macro for manual injection)">macro for manual injection)</span></small></span>
 					</label>
+					<div class="flex-container alignItemsCenter">
+						<toolcool-color-picker id="qr--color"></toolcool-color-picker>
+						<div class="menu_button" id="qr--colorClear">Clear</div>
+						<span data-i18n="Color">Color</span>
+					</div>
+					<label class="flex-container" id="qr--onlyBorderColorContainer">
+						<input type="checkbox" id="qr--onlyBorderColor"> <span data-i18n="Only apply color as accent">Only apply color as accent</span>
+					</label>
 				</div>
 				<div id="qr--set-qrList" class="qr--qrList"></div>
 				<div class="qr--set-qrListActions">
 					<div class="qr--add menu_button menu_button_icon fa-solid fa-plus" id="qr--set-add" title="Add quick reply"></div>
+					<div class="qr--paste menu_button menu_button_icon fa-solid fa-paste" id="qr--set-paste" title="Paste quick reply from clipboard"></div>
+					<div class="qr--import menu_button menu_button_icon fa-solid fa-file-import" id="qr--set-importQr" title="Import quick reply from file"></div>
 				</div>
 			</div>
 		</div>

@@ -26,6 +26,7 @@ export const tokenizers = {
     API_KOBOLD: 10,
     CLAUDE: 11,
     LLAMA3: 12,
+    GEMMA: 13,
     BEST_MATCH: 99,
 };
 
@@ -34,6 +35,7 @@ export const SENTENCEPIECE_TOKENIZERS = [
     tokenizers.MISTRAL,
     tokenizers.YI,
     tokenizers.LLAMA3,
+    tokenizers.GEMMA,
     // uncomment when NovelAI releases Kayra and Clio weights, lol
     //tokenizers.NERD,
     //tokenizers.NERD2,
@@ -91,6 +93,11 @@ const TOKENIZER_URLS = {
         decode: '/api/tokenizers/llama3/decode',
         count: '/api/tokenizers/llama3/encode',
     },
+    [tokenizers.GEMMA]: {
+        encode: '/api/tokenizers/gemma/encode',
+        decode: '/api/tokenizers/gemma/decode',
+        count: '/api/tokenizers/gemma/encode',
+    },
     [tokenizers.API_TEXTGENERATIONWEBUI]: {
         encode: '/api/tokenizers/remote/textgenerationwebui/encode',
         count: '/api/tokenizers/remote/textgenerationwebui/encode',
@@ -141,9 +148,45 @@ async function resetTokenCache() {
 }
 
 /**
+ * @typedef {object} Tokenizer
+ * @property {number} tokenizerId - The id of the tokenizer option
+ * @property {string} tokenizerKey - Internal name/key of the tokenizer
+ * @property {string} tokenizerName - Human-readable detailed name of the tokenizer (as displayed in the UI)
+ */
+
+/**
+ * Gets all tokenizers available to the user.
+ * @returns {Tokenizer[]} Tokenizer info.
+ */
+export function getAvailableTokenizers() {
+    const tokenizerOptions = $('#tokenizer').find('option').toArray();
+    return tokenizerOptions.map(tokenizerOption => ({
+        tokenizerId: Number(tokenizerOption.value),
+        tokenizerKey: Object.entries(tokenizers).find(([_, value]) => value === Number(tokenizerOption.value))[0].toLocaleLowerCase(),
+        tokenizerName: tokenizerOption.text,
+    }))
+}
+
+/**
+ * Selects tokenizer if not already selected.
+ * @param {number} tokenizerId Tokenizer ID.
+ */
+export function selectTokenizer(tokenizerId) {
+    if (tokenizerId !== power_user.tokenizer) {
+        const tokenizer = getAvailableTokenizers().find(tokenizer => tokenizer.tokenizerId === tokenizerId);
+        if (!tokenizer) {
+            console.warn('Failed to find tokenizer with id', tokenizerId);
+            return;
+        }
+        $('#tokenizer').val(tokenizer.tokenizerId).trigger('change');
+        toastr.info(`Tokenizer: "${tokenizer.tokenizerName}" selected`);
+    }
+}
+
+/**
  * Gets the friendly name of the current tokenizer.
  * @param {string} forApi API to get the tokenizer for. Defaults to the main API.
- * @returns { { tokenizerName: string, tokenizerId: number } } Tokenizer info
+ * @returns {Tokenizer} Tokenizer info
  */
 export function getFriendlyTokenizerName(forApi) {
     if (!forApi) {
@@ -178,7 +221,9 @@ export function getFriendlyTokenizerName(forApi) {
         ? tokenizers.OPENAI
         : tokenizerId;
 
-    return { tokenizerName, tokenizerId };
+    const tokenizerKey = Object.entries(tokenizers).find(([_, value]) => value === tokenizerId)[0].toLocaleLowerCase();
+
+    return { tokenizerName, tokenizerKey, tokenizerId };
 }
 
 /**
@@ -231,6 +276,9 @@ export function getTokenizerBestMatch(forApi) {
             }
             if (model.includes('mistral') || model.includes('mixtral')) {
                 return tokenizers.MISTRAL;
+            }
+            if (model.includes('gemma')) {
+                return tokenizers.GEMMA;
             }
         }
 
@@ -441,12 +489,14 @@ export function getTokenizerModel() {
     const turbo0301Tokenizer = 'gpt-3.5-turbo-0301';
     const turboTokenizer = 'gpt-3.5-turbo';
     const gpt4Tokenizer = 'gpt-4';
+    const gpt4oTokenizer = 'gpt-4o';
     const gpt2Tokenizer = 'gpt2';
     const claudeTokenizer = 'claude';
     const llamaTokenizer = 'llama';
     const llama3Tokenizer = 'llama3';
     const mistralTokenizer = 'mistral';
     const yiTokenizer = 'yi';
+    const gemmaTokenizer = 'gemma';
 
     // Assuming no one would use it for different models.. right?
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
@@ -491,6 +541,12 @@ export function getTokenizerModel() {
         else if (model?.architecture?.tokenizer === 'Yi') {
             return yiTokenizer;
         }
+        else if (model?.architecture?.tokenizer === 'Gemini') {
+            return gemmaTokenizer;
+        }
+        else if (oai_settings.openrouter_model.includes('gpt-4o')) {
+            return gpt4oTokenizer;
+        }
         else if (oai_settings.openrouter_model.includes('gpt-4')) {
             return gpt4Tokenizer;
         }
@@ -509,7 +565,7 @@ export function getTokenizerModel() {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
-        return oai_settings.google_model;
+        return gemmaTokenizer;
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
@@ -543,10 +599,22 @@ export function getTokenizerModel() {
         if (oai_settings.groq_model.includes('mistral') || oai_settings.groq_model.includes('mixtral')) {
             return mistralTokenizer;
         }
+        if (oai_settings.groq_model.includes('gemma')) {
+            return gemmaTokenizer;
+        }
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.ZEROONEAI) {
         return yiTokenizer;
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.BLOCKENTROPY)  {
+        if (oai_settings.blockentropy_model.includes('llama3')) {
+            return llama3Tokenizer;
+        }
+        if (oai_settings.blockentropy_model.includes('miqu') || oai_settings.blockentropy_model.includes('mixtral')) {
+            return mistralTokenizer;
+        }
     }
 
     // Default to Turbo 3.5

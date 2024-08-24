@@ -1,5 +1,5 @@
 import { getRequestHeaders } from '../../script.js';
-import { extension_settings } from '../extensions.js';
+import { extension_settings, openThirdPartyExtensionMenu } from '../extensions.js';
 import { oai_settings } from '../openai.js';
 import { SECRET_KEYS, secret_state } from '../secrets.js';
 import { textgen_types, textgenerationwebui_settings } from '../textgen-settings.js';
@@ -136,8 +136,12 @@ function throwIfInvalidModel(useReverseProxy) {
         throw new Error('Anthropic (Claude) API key is not set.');
     }
 
+    if (extension_settings.caption.multimodal_api === 'zerooneai' && !secret_state[SECRET_KEYS.ZEROONEAI]) {
+        throw new Error('01.AI API key is not set.');
+    }
+
     if (extension_settings.caption.multimodal_api === 'google' && !secret_state[SECRET_KEYS.MAKERSUITE] && !useReverseProxy) {
-        throw new Error('MakerSuite API key is not set.');
+        throw new Error('Google AI Studio API key is not set.');
     }
 
     if (extension_settings.caption.multimodal_api === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA]) {
@@ -171,4 +175,87 @@ function throwIfInvalidModel(useReverseProxy) {
     if (extension_settings.caption.multimodal_api === 'custom' && !oai_settings.custom_url) {
         throw new Error('Custom API URL is not set.');
     }
+}
+
+/**
+ * Check if the WebLLM extension is installed and supported.
+ * @returns {boolean} Whether the extension is installed and supported
+ */
+export function isWebLlmSupported() {
+    if (!('gpu' in navigator)) {
+        const warningKey = 'webllm_browser_warning_shown';
+        if (!sessionStorage.getItem(warningKey)) {
+            toastr.error('Your browser does not support the WebGPU API. Please use a different browser.', 'WebLLM', {
+                preventDuplicates: true,
+                timeOut: 0,
+                extendedTimeOut: 0,
+            });
+            sessionStorage.setItem(warningKey, '1');
+        }
+        return false;
+    }
+
+    if (!('llm' in SillyTavern)) {
+        const warningKey = 'webllm_extension_warning_shown';
+        if (!sessionStorage.getItem(warningKey)) {
+            toastr.error('WebLLM extension is not installed. Click here to install it.', 'WebLLM', {
+                timeOut: 0,
+                extendedTimeOut: 0,
+                preventDuplicates: true,
+                onclick: () => openThirdPartyExtensionMenu('https://github.com/SillyTavern/Extension-WebLLM'),
+            });
+            sessionStorage.setItem(warningKey, '1');
+        }
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Generates text in response to a chat prompt using WebLLM.
+ * @param {any[]} messages Messages to use for generating
+ * @param {object} params Additional parameters
+ * @returns {Promise<string>} Generated response
+ */
+export async function generateWebLlmChatPrompt(messages, params = {}) {
+    if (!isWebLlmSupported()) {
+        throw new Error('WebLLM extension is not installed.');
+    }
+
+    console.debug('WebLLM chat completion request:', messages, params);
+    const engine = SillyTavern.llm;
+    const response = await engine.generateChatPrompt(messages, params);
+    console.debug('WebLLM chat completion response:', response);
+    return response;
+}
+
+/**
+ * Counts the number of tokens in the provided text using WebLLM's default model.
+ * @param {string} text Text to count tokens in
+ * @returns {Promise<number>} Number of tokens in the text
+ */
+export async function countWebLlmTokens(text) {
+    if (!isWebLlmSupported()) {
+        throw new Error('WebLLM extension is not installed.');
+    }
+
+    const engine = SillyTavern.llm;
+    const response = await engine.countTokens(text);
+    return response;
+}
+
+/**
+ * Gets the size of the context in the WebLLM's default model.
+ * @returns {Promise<number>} Size of the context in the WebLLM model
+ */
+export async function getWebLlmContextSize() {
+    if (!isWebLlmSupported()) {
+        throw new Error('WebLLM extension is not installed.');
+    }
+
+    const engine = SillyTavern.llm;
+    await engine.loadModel();
+    const model = await engine.getCurrentModelInfo();
+    return model?.context_size;
 }
