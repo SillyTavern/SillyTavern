@@ -301,20 +301,6 @@ let movingUIPresets = [];
 export let context_presets = [];
 
 const storage_keys = {
-    main_text_color: 'TavernAI_main_text_color',
-    italics_text_color: 'TavernAI_italics_text_color',
-    underline_text_color: 'TavernAI_underline_text_color',
-    quote_text_color: 'TavernAI_quote_text_color',
-    blur_tint_color: 'TavernAI_blur_tint_color',
-    chat_tint_color: 'TavernAI_chat_tint_color',
-    user_mes_blur_tint_color: 'TavernAI_user_mes_blur_tint_color',
-    bot_mes_blur_tint_color: 'TavernAI_bot_mes_blur_tint_color',
-    shadow_color: 'TavernAI_shadow_color',
-    shadow_width: 'TavernAI_shadow_width',
-    border_color: 'TavernAI_border_color',
-
-    custom_css: 'TavernAI_custom_css',
-
     auto_connect_legacy: 'AutoConnectEnabled',
     auto_load_chat_legacy: 'AutoLoadChatEnabled',
 
@@ -1093,8 +1079,6 @@ async function applyThemeColor(type) {
 }
 
 async function applyCustomCSS() {
-    power_user.custom_css = String(localStorage.getItem(storage_keys.custom_css) ?? '');
-
     $('#customCSS').val(power_user.custom_css);
     var styleId = 'custom-style';
     var style = document.getElementById(styleId);
@@ -1108,14 +1092,13 @@ async function applyCustomCSS() {
 }
 
 async function applyBlurStrength() {
-    document.documentElement.style.setProperty('--blurStrength', power_user.blur_strength);
+    document.documentElement.style.setProperty('--blurStrength', String(power_user.blur_strength));
     $('#blur_strength_counter').val(power_user.blur_strength);
     $('#blur_strength').val(power_user.blur_strength);
 }
 
 async function applyShadowWidth() {
-    power_user.shadow_width = Number(localStorage.getItem(storage_keys.shadow_width) ?? 2);
-    document.documentElement.style.setProperty('--shadowWidth', power_user.shadow_width);
+    document.documentElement.style.setProperty('--shadowWidth', String(power_user.shadow_width));
     $('#shadow_width_counter').val(power_user.shadow_width);
     $('#shadow_width').val(power_user.shadow_width);
 
@@ -1124,11 +1107,11 @@ async function applyShadowWidth() {
 async function applyFontScale(type) {
     //this is to allow forced setting on page load, theme swap, etc
     if (type === 'forced') {
-        document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
+        document.documentElement.style.setProperty('--fontScale', String(power_user.font_scale));
     } else {
         //this is to prevent the slider from updating page in real time
         $('#font_scale').off('mouseup touchend').on('mouseup touchend', () => {
-            document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
+            document.documentElement.style.setProperty('--fontScale', String(power_user.font_scale));
         });
     }
 
@@ -1163,14 +1146,12 @@ async function applyTheme(name) {
         {
             key: 'custom_css',
             action: async () => {
-                localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
                 await applyCustomCSS();
             },
         },
         {
             key: 'shadow_width',
             action: async () => {
-                localStorage.setItem(storage_keys.shadow_width, power_user.shadow_width);
                 await applyShadowWidth();
             },
         },
@@ -1378,7 +1359,6 @@ function applyPowerUserSettings() {
     switchTokenCount();
     switchMessageActions();
 }
-
 
 function getExampleMessagesBehavior() {
     if (power_user.strip_examples) {
@@ -3180,7 +3160,6 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    // Settings that go to local storage
     $('#fast_ui_mode').change(function () {
         power_user.fast_ui_mode = $(this).prop('checked');
         switchUiMode();
@@ -3195,7 +3174,6 @@ $(document).ready(() => {
 
     $('#customCSS').on('input', () => {
         power_user.custom_css = String($('#customCSS').val());
-        localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
         saveSettingsDebounced();
         applyCustomCSS();
     });
@@ -3276,7 +3254,6 @@ $(document).ready(() => {
     $('input[name="shadow_width"]').on('input', async function (e) {
         power_user.shadow_width = Number(e.target.value);
         $('#shadow_width_counter').val(power_user.shadow_width);
-        localStorage.setItem(storage_keys.shadow_width, power_user.shadow_width);
         await applyShadowWidth();
         saveSettingsDebounced();
     });
