@@ -2147,12 +2147,13 @@ async function generateRawCallback(args, value) {
     }
 }
 
+/**
+ * Callback for the /gen command
+ * @param {object} args Named arguments
+ * @param {string} value Unnamed argument
+ * @returns {Promise<string>} The generated text
+ */
 async function generateCallback(args, value) {
-    if (!value) {
-        console.warn('WARN: No argument provided for /gen command');
-        return;
-    }
-
     // Prevent generate recursion
     $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
     const lock = isTrueBoolean(args?.lock);
