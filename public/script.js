@@ -5345,17 +5345,10 @@ export function cleanUpMessage(getMessage, isImpersonate, isContinue, displayInc
     // Regex uses vars, so add before formatting
     getMessage = getRegexedString(getMessage, isImpersonate ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT);
 
-    if (!displayIncompleteSentences && power_user.trim_sentences) {
-        getMessage = trimToEndSentence(getMessage, power_user.include_newline);
-    }
-
     if (power_user.collapse_newlines) {
         getMessage = collapseNewlines(getMessage);
     }
 
-    if (power_user.trim_spaces) {
-        getMessage = getMessage.trim();
-    }
     // trailing invisible whitespace before every newlines, on a multiline string
     // "trailing whitespace on newlines       \nevery line of the string    \n?sample text" ->
     // "trailing whitespace on newlines\nevery line of the string\nsample text"
@@ -5444,6 +5437,14 @@ export function cleanUpMessage(getMessage, isImpersonate, isContinue, displayInc
     }
 
     if (isImpersonate) {
+        getMessage = getMessage.trim();
+    }
+
+    if (!displayIncompleteSentences && power_user.trim_sentences) {
+        getMessage = trimToEndSentence(getMessage, power_user.include_newline);
+    }
+
+    if (power_user.trim_spaces) {
         getMessage = getMessage.trim();
     }
 
