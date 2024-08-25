@@ -1701,7 +1701,7 @@
     "Proxy Deleted": "Прокси удалена",
     "Could not find proxy with name '${0}'": "Не удалось найти прокси с названием '${0}'",
     "Proxy preset '${0}' not found in proxies array.": "Пресет с названием '${0}' не найден в списке прокси.",
-    "Please wait for the previous request to complete.": "Пожалуйста, дождитесь окончания обработки предыдущего запроса."
+    "Please wait for the previous request to complete.": "Пожалуйста, дождитесь окончания обработки предыдущего запроса.",
     "Start new chat?": "Начать новый чат?",
     "If necessary, you can later restore this chat file from the /backups folder": "При необходимости этот чат можно будет восстановить из папки /backups",
     "Also delete the current chat file": "Также удалить текущий чат",
