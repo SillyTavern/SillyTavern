@@ -84,6 +84,7 @@ import {
     context_presets,
     resetMovableStyles,
     forceCharacterEditorTokenize,
+    applyPowerUserSettings,
 } from './scripts/power-user.js';
 
 import {
@@ -6458,6 +6459,8 @@ export async function getSettings() {
 
         // Load power user settings
         await loadPowerUserSettings(settings, data);
+
+        applyPowerUserSettings();
 
         // Load character tags
         loadTagsSettings(settings);
