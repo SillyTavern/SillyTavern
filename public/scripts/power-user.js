@@ -304,6 +304,7 @@ export let context_presets = [];
 const storage_keys = {
     auto_connect_legacy: 'AutoConnectEnabled',
     auto_load_chat_legacy: 'AutoLoadChatEnabled',
+    hideChatAvatars_legacy: 'hideChatAvatarsEnabled',
 
     storyStringValidationCache: 'StoryStringValidationCache',
 };
@@ -1422,9 +1423,10 @@ async function loadPowerUserSettings(settings, data) {
         context_presets = data.context;
     }
 
-    // These are still local storage
+    // These are still local storage. Delete in 1.12.7
     const autoLoadChat = localStorage.getItem(storage_keys.auto_load_chat_legacy);
     const autoConnect = localStorage.getItem(storage_keys.auto_connect_legacy);
+    const hideChatAvatars = localStorage.getItem(storage_keys.hideChatAvatars_legacy);
 
     if (autoLoadChat) {
         power_user.auto_load_chat = autoLoadChat === 'true';
@@ -1434,6 +1436,11 @@ async function loadPowerUserSettings(settings, data) {
     if (autoConnect) {
         power_user.auto_connect = autoConnect === 'true';
         localStorage.removeItem(storage_keys.auto_connect_legacy);
+    }
+
+    if (hideChatAvatars) {
+        power_user.hideChatAvatars_enabled = hideChatAvatars === 'true';
+        localStorage.removeItem(storage_keys.hideChatAvatars_legacy);
     }
 
     if (power_user.chat_display === '') {
