@@ -1559,11 +1559,11 @@ async function loadPowerUserSettings(settings, data) {
     power_user.movingUI = movingUI === null ? false : movingUI == 'true';
     power_user.noShadows = noShadows === null ? false : noShadows == 'true';
     power_user.hotswap_enabled = hotswap === null ? true : hotswap == 'true';
-    power_user.timer_enabled = timer === null ? true : timer == 'true';
+    power_user.timer_enabled = timer === null ? false : timer == 'true';
     power_user.timestamps_enabled = timestamps === null ? true : timestamps == 'true';
-    power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == 'true';
-    power_user.hideChatAvatars_enabled = hideChatAvatars === null ? true : hideChatAvatars == 'true';
-    power_user.expand_message_actions = expandMessageActions === null ? true : expandMessageActions == 'true';
+    power_user.mesIDDisplay_enabled = mesIDDisplay === null ? false : mesIDDisplay == 'true';
+    power_user.hideChatAvatars_enabled = hideChatAvatars === null ? false : hideChatAvatars == 'true';
+    power_user.expand_message_actions = expandMessageActions === null ? false : expandMessageActions == 'true';
     power_user.enableZenSliders = enableZenSliders === null ? false : enableZenSliders == 'true';
     power_user.enableLabMode = enableLabMode === null ? false : enableLabMode == 'true';
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
