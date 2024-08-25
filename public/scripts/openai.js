@@ -74,6 +74,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashComma
 import { renderTemplateAsync } from './templates.js';
 import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { Popup, POPUP_RESULT } from './popup.js';
+import { t } from './i18n.js';
 
 export {
     openai_messages_count,
@@ -425,7 +426,7 @@ async function validateReverseProxy() {
     const rememberKey = `Proxy_SkipConfirm_${getStringHash(oai_settings.reverse_proxy)}`;
     const skipConfirm = localStorage.getItem(rememberKey) === 'true';
 
-    const confirmation = skipConfirm || await Popup.show.confirm('Connecting To Proxy', `<span>Are you sure you want to connect to the following proxy URL?</span><var>${DOMPurify.sanitize(oai_settings.reverse_proxy)}</var>`);
+    const confirmation = skipConfirm || await Popup.show.confirm(t`Connecting To Proxy`, await renderTemplateAsync('proxyConnectionWarning', {proxyURL: DOMPurify.sanitize(oai_settings.reverse_proxy)}));
 
     if (!confirmation) {
         toastr.error('Update or remove your reverse proxy settings.');
@@ -4673,17 +4674,17 @@ function toggleChatCompletionForms() {
 async function testApiConnection() {
     // Check if the previous request is still in progress
     if (is_send_press) {
-        toastr.info('Please wait for the previous request to complete.');
+        toastr.info(t`Please wait for the previous request to complete.`);
         return;
     }
 
     try {
         const reply = await sendOpenAIRequest('quiet', [{ 'role': 'user', 'content': 'Hi' }]);
         console.log(reply);
-        toastr.success('API connection successful!');
+        toastr.success(t`API connection successful!`);
     }
     catch (err) {
-        toastr.error('Could not get a reply from API. Check your connection settings / API key and try again.');
+        toastr.error(t`Could not get a reply from API. Check your connection settings / API key and try again.`);
     }
 }
 
@@ -4837,7 +4838,7 @@ function onProxyPresetChange() {
     if (selectedPreset) {
         setProxyPreset(selectedPreset.name, selectedPreset.url, selectedPreset.password);
     } else {
-        console.error(`Proxy preset "${value}" not found in proxies array.`);
+        console.error(t`Proxy preset '${value}' not found in proxies array.`);
     }
     saveSettingsDebounced();
 }
@@ -4849,7 +4850,7 @@ $('#save_proxy').on('click', async function () {
 
     setProxyPreset(presetName, reverseProxy, proxyPassword);
     saveSettingsDebounced();
-    toastr.success('Proxy Saved');
+    toastr.success(t`Proxy Saved`);
     if ($('#openai_proxy_preset').val() !== presetName) {
         const option = document.createElement('option');
         option.text = presetName;
@@ -4883,9 +4884,9 @@ $('#delete_proxy').on('click', async function () {
 
         saveSettingsDebounced();
         $('#openai_proxy_preset').val(selected_proxy.name);
-        toastr.success('Proxy Deleted');
+        toastr.success(t`Proxy Deleted`);
     } else {
-        toastr.error(`Could not find proxy with name "${presetName}"`);
+        toastr.error(t`Could not find proxy with name '${presetName}'`);
     }
 });
 
