@@ -307,7 +307,7 @@ async function activateExtensions() {
 
                 if (!isDisabled) {
                     const promise = Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]);
-                    promise
+                    await promise
                         .then(() => activeExtensions.add(name))
                         .catch(err => console.log('Could not activate extension: ' + name, err));
                     promises.push(promise);
