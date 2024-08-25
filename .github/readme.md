@@ -246,7 +246,6 @@ You will need two mandatory directory mappings and a port mapping to allow Silly
 
 ##### Additional Settings
 
-- [TimeZone] - The timezone your instance should use. This is useful for making logs match your local time for easier troubleshooting. Use your TZ Identifier. (https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
 - [DockerNet] - The docker network that the container should be created with a connection to. If you don't know what it is, see the [official Docker documentation](https://docs.docker.com/reference/cli/docker/network/).
 - [version] - On the right-hand side of this GitHub page, you'll see "Packages". Select the "sillytavern" package and you'll see the image versions. The image tag "latest" will keep you up-to-date with the current release. You can also utilize "staging" and "release" tags that point to the nightly images of the respective branches, but this may not be appropriate, if you are utilizing extensions that could be broken, and may need time to update.
 
@@ -255,7 +254,7 @@ You will need two mandatory directory mappings and a port mapping to allow Silly
 1. Open your Command Line
 2. Run the following command
 
-`docker create --name='sillytavern' --net='[DockerNet]' -e TZ="[TimeZone]" -p '8000:8000/tcp' -v '[plugins]':'/home/node/app/plugins':'rw' -v '[config]':'/home/node/app/config':'rw' -v '[data]':'/home/node/app/data':'rw' 'ghcr.io/sillytavern/sillytavern:[version]'`
+`docker create --name='sillytavern' --net='[DockerNet]' -p '8000:8000/tcp' -v '[plugins]':'/home/node/app/plugins':'rw' -v '[config]':'/home/node/app/config':'rw' -v '[data]':'/home/node/app/data':'rw' 'ghcr.io/sillytavern/sillytavern:[version]'`
 
 > Note that 8000 is a default listening port. Don't forget to use an appropriate port if you change it in the config.
 
