@@ -8,7 +8,7 @@ export const markdownUnderscoreExt = () => {
 
         return [{
             type: 'output',
-            regex: new RegExp('(<code>[\\s\\S]*?<\\/code>)|\\b(?<!_)_(?!_)(.*?)(?<!_)_(?!_)\\b', 'g'),
+            regex: new RegExp('(<code(?:\\s+[^>]*)?>[\\s\\S]*?<\\/code>)|\\b(?<!_)_(?!_)(.*?)(?<!_)_(?!_)\\b', 'g'),
             replace: function(match, codeContent, italicContent) {
                 if (codeContent) {
                     // If it's inside <code> tags, return unchanged
