@@ -9,6 +9,7 @@ const { jsonParser } = require('../express-common');
 const { getAllUserHandles, getUserDirectories } = require('../users');
 
 const ENABLE_EXTENSIONS = getConfigValue('enableExtensions', true);
+const ENABLE_EXTENSIONS_AUTO_UPDATE = getConfigValue('enableExtensionsAutoUpdate', true);
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
 
 // 10 minutes
@@ -268,6 +269,7 @@ router.post('/get', jsonParser, (request, response) => {
         instruct,
         context,
         enable_extensions: ENABLE_EXTENSIONS,
+        enable_extensions_auto_update: ENABLE_EXTENSIONS_AUTO_UPDATE,
         enable_accounts: ENABLE_ACCOUNTS,
     });
 });
