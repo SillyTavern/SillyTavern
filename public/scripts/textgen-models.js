@@ -599,6 +599,10 @@ export function getCurrentOpenRouterModelTokenizer() {
             return tokenizers.YI;
         case 'Mistral':
             return tokenizers.MISTRAL;
+        case 'Gemini':
+            return tokenizers.GEMMA;
+        case 'Claude':
+            return tokenizers.CLAUDE;
         default:
             return tokenizers.OPENAI;
     }
@@ -618,7 +622,7 @@ export function getCurrentDreamGenModelTokenizer() {
     }
 }
 
-jQuery(function () {
+export function initTextGenModels() {
     $('#mancer_model').on('change', onMancerModelSelect);
     $('#model_togetherai_select').on('change', onTogetherModelSelect);
     $('#model_infermaticai_select').on('change', onInfermaticAIModelSelect);
@@ -708,6 +712,7 @@ jQuery(function () {
             searchInputPlaceholder: 'Search providers...',
             searchInputCssClass: 'text_pole',
             width: '100%',
+            closeOnSelect: false,
         });
         providersSelect.on('select2:select', function (/** @type {any} */ evt) {
             const element = evt.params.data.element;
@@ -718,4 +723,4 @@ jQuery(function () {
             $(this).trigger('change');
         });
     }
-});
+}

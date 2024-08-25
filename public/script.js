@@ -84,6 +84,7 @@ import {
     context_presets,
     resetMovableStyles,
     forceCharacterEditorTokenize,
+    applyPowerUserSettings,
 } from './scripts/power-user.js';
 
 import {
@@ -156,6 +157,7 @@ import {
     ensureImageFormatSupported,
     flashHighlight,
     isTrueBoolean,
+    toggleDrawer,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -224,7 +226,7 @@ import {
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
+import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels, initTextGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { MacrosParser, evaluateMacros, getLastMessageId } from './scripts/macros.js';
@@ -241,7 +243,7 @@ import { DragAndDropHandler } from './scripts/dragdrop.js';
 import { INTERACTABLE_CONTROL_CLASS, initKeyboard } from './scripts/keyboard.js';
 import { initDynamicStyles } from './scripts/dynamic-styles.js';
 import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/SlashCommandEnumValue.js';
-import { enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
+import { commonEnumProviders, enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
 
 //exporting functions and vars for mods
 export {
@@ -414,6 +416,7 @@ export const event_types = {
     GENERATION_STOPPED: 'generation_stopped',
     GENERATION_ENDED: 'generation_ended',
     EXTENSIONS_FIRST_LOAD: 'extensions_first_load',
+    EXTENSION_SETTINGS_LOADED: 'extension_settings_loaded',
     SETTINGS_LOADED: 'settings_loaded',
     SETTINGS_UPDATED: 'settings_updated',
     GROUP_UPDATED: 'group_updated',
@@ -424,6 +427,8 @@ export const event_types = {
     CHATCOMPLETION_MODEL_CHANGED: 'chatcompletion_model_changed',
     OAI_PRESET_CHANGED_BEFORE: 'oai_preset_changed_before',
     OAI_PRESET_CHANGED_AFTER: 'oai_preset_changed_after',
+    OAI_PRESET_EXPORT_READY: 'oai_preset_export_ready',
+    OAI_PRESET_IMPORT_READY: 'oai_preset_import_ready',
     WORLDINFO_SETTINGS_UPDATED: 'worldinfo_settings_updated',
     WORLDINFO_UPDATED: 'worldinfo_updated',
     CHARACTER_EDITED: 'character_edited',
@@ -456,6 +461,7 @@ export const event_types = {
     LLM_FUNCTION_TOOL_REGISTER: 'llm_function_tool_register',
     LLM_FUNCTION_TOOL_CALL: 'llm_function_tool_call',
     ONLINE_STATUS_CHANGED: 'online_status_changed',
+    IMAGE_SWIPED: 'image_swiped',
 };
 
 export const eventSource = new EventEmitter();
@@ -911,6 +917,7 @@ async function firstLoadInit() {
     await readSecretState();
     initLocales();
     initDefaultSlashCommands();
+    initTextGenModels();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     await getSettings();
@@ -1874,7 +1881,12 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     }
 
     if (Number(messageId) === 0 && !isSystem && !isUser) {
+        const mesBeforeReplace = mes;
+        const chatMessage = chat[messageId];
         mes = substituteParams(mes, undefined, ch_name);
+        if (chatMessage && chatMessage.mes === mesBeforeReplace && chatMessage.extra?.display_text !== mesBeforeReplace) {
+            chatMessage.mes = mes;
+        }
     }
 
     mesForShowdownParse = mes;
@@ -2108,6 +2120,7 @@ export function updateMessageBlock(messageId, message) {
 export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
     // Add image to message
     if (mes.extra?.image) {
+        const container = messageElement.find('.mes_img_container');
         const chatHeight = $('#chat').prop('scrollHeight');
         const image = messageElement.find('.mes_img');
         const text = messageElement.find('.mes_text');
@@ -2123,9 +2136,27 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         });
         image.attr('src', mes.extra?.image);
         image.attr('title', mes.extra?.title || mes.title || '');
-        messageElement.find('.mes_img_container').addClass('img_extra');
+        container.addClass('img_extra');
         image.toggleClass('img_inline', isInline);
         text.toggleClass('displayNone', !isInline);
+
+        const imageSwipes = mes.extra.image_swipes;
+        if (Array.isArray(imageSwipes) && imageSwipes.length > 0) {
+            container.addClass('img_swipes');
+            const counter = container.find('.mes_img_swipe_counter');
+            const currentImage = imageSwipes.indexOf(mes.extra.image) + 1;
+            counter.text(`${currentImage}/${imageSwipes.length}`);
+
+            const swipeLeft = container.find('.mes_img_swipe_left');
+            swipeLeft.off('click').on('click', function () {
+                eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'left' });
+            });
+
+            const swipeRight = container.find('.mes_img_swipe_right');
+            swipeRight.off('click').on('click', function () {
+                eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'right' });
+            });
+        }
     }
 
     // Add file to message
@@ -2492,8 +2523,8 @@ export function getStoppingStrings(isImpersonate, isContinue) {
             result.push(charString);
         }
 
-        // Add other group members as the stopping strings
-        if (selected_group) {
+        // Add group members as stopping strings if generating for a specific group member or user. (Allow slash commands to work around name stopping string restrictions)
+        if (selected_group && (name2 || isImpersonate)) {
             const group = groups.find(x => x.id === selected_group);
 
             if (group && Array.isArray(group.members)) {
@@ -2815,7 +2846,14 @@ function hideStopButton() {
 }
 
 class StreamingProcessor {
-    constructor(type, force_name2, timeStarted, messageAlreadyGenerated) {
+    /**
+     * Creates a new streaming processor.
+     * @param {string} type Generation type
+     * @param {boolean} forceName2 If true, force the use of name2
+     * @param {Date} timeStarted Date when generation was started
+     * @param {string} continueMessage Previous message if the type is 'continue'
+     */
+    constructor(type, forceName2, timeStarted, continueMessage) {
         this.result = '';
         this.messageId = -1;
         this.messageDom = null;
@@ -2825,14 +2863,14 @@ class StreamingProcessor {
         /** @type {HTMLTextAreaElement} */
         this.sendTextarea = document.querySelector('#send_textarea');
         this.type = type;
-        this.force_name2 = force_name2;
+        this.force_name2 = forceName2;
         this.isStopped = false;
         this.isFinished = false;
         this.generator = this.nullStreamingGeneration;
         this.abortController = new AbortController();
         this.firstMessageText = '...';
         this.timeStarted = timeStarted;
-        this.messageAlreadyGenerated = messageAlreadyGenerated;
+        this.continueMessage = type === 'continue' ? continueMessage : '';
         this.swipes = [];
         /** @type {import('./scripts/logprobs.js').TokenLogprobs[]} */
         this.messageLogprobs = [];
@@ -2985,8 +3023,7 @@ class StreamingProcessor {
             await eventSource.emit(event_types.IMPERSONATE_READY, text);
         }
 
-        const continueMsg = this.type === 'continue' ? this.messageAlreadyGenerated : undefined;
-        saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), continueMsg);
+        saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
         await saveChatConditional();
         unblockGeneration();
         generatedPromptCache = '';
@@ -3082,7 +3119,7 @@ class StreamingProcessor {
                 if (logprobs) {
                     this.messageLogprobs.push(...(Array.isArray(logprobs) ? logprobs : [logprobs]));
                 }
-                await sw.tick(() => this.onProgressStreaming(this.messageId, this.messageAlreadyGenerated + text));
+                await sw.tick(() => this.onProgressStreaming(this.messageId, this.continueMessage + text));
             }
             const seconds = (timestamps[timestamps.length - 1] - timestamps[0]) / 1000;
             console.warn(`Stream stats: ${timestamps.length} tokens, ${seconds.toFixed(2)} seconds, rate: ${Number(timestamps.length / seconds).toFixed(2)} TPS`);
@@ -3274,8 +3311,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // OpenAI doesn't need instruct mode. Use OAI main prompt instead.
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == 'impersonate';
-
-    let message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
     if (!(dryRun || type == 'regenerate' || type == 'swipe' || type == 'quiet')) {
         const interruptedByCommand = await processCommands(String($('#send_textarea').val()));
@@ -3715,7 +3750,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     let oaiMessageExamples = [];
 
     if (main_api === 'openai') {
-        message_already_generated = '';
         oaiMessages = setOpenAIMessages(coreChat);
         oaiMessageExamples = setOpenAIMessageExamples(mesExamplesArray);
     }
@@ -3858,7 +3892,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             cyclePrompt += oai_settings.continue_postfix;
             continue_mag += oai_settings.continue_postfix;
         }
-        message_already_generated = continue_mag;
     }
 
     const originalType = type;
@@ -3943,7 +3976,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         // Get instruct mode line
         if (isInstruct && !isContinue) {
-            const name = (quiet_prompt && !quietToLoud) ? (quietName ?? 'System') : (isImpersonate ? name1 : name2);
+            const name = (quiet_prompt && !quietToLoud && !isImpersonate) ? (quietName ?? 'System') : (isImpersonate ? name1 : name2);
             const isQuiet = quiet_prompt && type == 'quiet';
             lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2, isQuiet, quietToLoud);
         }
@@ -4285,7 +4318,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
 
         if (isStreamingEnabled() && type !== 'quiet') {
-            streamingProcessor = new StreamingProcessor(type, force_name2, generation_started, message_already_generated);
+            streamingProcessor = new StreamingProcessor(type, force_name2, generation_started, continue_mag);
             if (isContinue) {
                 // Save reply does add cycle text to the prompt, so it's not needed here
                 streamingProcessor.firstMessageText = '';
@@ -5313,17 +5346,10 @@ export function cleanUpMessage(getMessage, isImpersonate, isContinue, displayInc
     // Regex uses vars, so add before formatting
     getMessage = getRegexedString(getMessage, isImpersonate ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT);
 
-    if (!displayIncompleteSentences && power_user.trim_sentences) {
-        getMessage = trimToEndSentence(getMessage, power_user.include_newline);
-    }
-
     if (power_user.collapse_newlines) {
         getMessage = collapseNewlines(getMessage);
     }
 
-    if (power_user.trim_spaces) {
-        getMessage = getMessage.trim();
-    }
     // trailing invisible whitespace before every newlines, on a multiline string
     // "trailing whitespace on newlines       \nevery line of the string    \n?sample text" ->
     // "trailing whitespace on newlines\nevery line of the string\nsample text"
@@ -5402,14 +5428,24 @@ export function cleanUpMessage(getMessage, isImpersonate, isContinue, displayInc
         getMessage = fixMarkdown(getMessage, false);
     }
 
-    const nameToTrim2 = isImpersonate ? name1 : name2;
+    const nameToTrim2 = isImpersonate
+        ? (!power_user.allow_name1_display ? name1 : '')
+        : (!power_user.allow_name2_display ? name2 : '');
 
-    if (getMessage.startsWith(nameToTrim2 + ':')) {
+    if (nameToTrim2 && getMessage.startsWith(nameToTrim2 + ':')) {
         getMessage = getMessage.replace(nameToTrim2 + ':', '');
         getMessage = getMessage.trimStart();
     }
 
     if (isImpersonate) {
+        getMessage = getMessage.trim();
+    }
+
+    if (!displayIncompleteSentences && power_user.trim_sentences) {
+        getMessage = trimToEndSentence(getMessage, power_user.include_newline);
+    }
+
+    if (power_user.trim_spaces) {
         getMessage = getMessage.trim();
     }
 
@@ -6426,6 +6462,8 @@ export async function getSettings() {
         // Load power user settings
         await loadPowerUserSettings(settings, data);
 
+        applyPowerUserSettings();
+
         // Load character tags
         loadTagsSettings(settings);
 
@@ -6480,9 +6518,10 @@ export async function getSettings() {
         selected_button = settings.selected_button;
 
         if (data.enable_extensions) {
+            const enableAutoUpdate = Boolean(data.enable_extensions_auto_update);
             const isVersionChanged = settings.currentVersion !== currentVersion;
-            await loadExtensionSettings(settings, isVersionChanged);
-            eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+            await loadExtensionSettings(settings, isVersionChanged, enableAutoUpdate);
+            await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
         }
 
         firstRun = !!settings.firstRun;
@@ -8353,6 +8392,12 @@ const CONNECT_API_MAP = {
         button: '#api_button_openai',
         source: chat_completion_sources.OPENAI,
     },
+    // Google alias
+    'google': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.MAKERSUITE,
+    },
     // OpenRouter special naming, to differentiate between chat comp and text comp
     'openrouter': {
         selected: 'openai',
@@ -8365,6 +8410,9 @@ const CONNECT_API_MAP = {
         type: textgen_types.OPENROUTER,
     },
 };
+
+// Collect all unique API names in an array
+export const UNIQUE_APIS = [...new Set(Object.values(CONNECT_API_MAP).map(x => x.selected))];
 
 // Fill connections map from textgen_types and chat_completion_sources
 for (const textGenType of Object.values(textgen_types)) {
@@ -8435,7 +8483,7 @@ async function disableInstructCallback() {
 /**
  * @param {string} text API name
  */
-async function connectAPISlash(_, text) {
+async function connectAPISlash(args, text) {
     if (!text.trim()) {
         for (const [key, config] of Object.entries(CONNECT_API_MAP)) {
             if (config.selected !== main_api) continue;
@@ -8458,12 +8506,15 @@ async function connectAPISlash(_, text) {
 
             return key;
         }
+
+        console.error('FIXME: The current API is not in the API map');
+        return '';
     }
 
     const apiConfig = CONNECT_API_MAP[text.toLowerCase()];
     if (!apiConfig) {
         toastr.error(`Error: ${text} is not a valid API`);
-        return;
+        return '';
     }
 
     $(`#main_api option[value='${apiConfig.selected || text}']`).prop('selected', true);
@@ -8483,14 +8534,18 @@ async function connectAPISlash(_, text) {
         $(apiConfig.button).trigger('click');
     }
 
-    toastr.info(`API set to ${text}, trying to connect..`);
+    const quiet = isTrueBoolean(args?.quiet);
+    const toast = quiet ? jQuery() : toastr.info(`API set to ${text}, trying to connect..`);
 
     try {
         await waitUntilCondition(() => online_status !== 'no_connection', 10000, 100);
         console.log('Connection successful');
     } catch {
-        console.log('Could not connect after 5 seconds, skipping.');
+        console.log('Could not connect after 10 seconds, skipping.');
     }
+
+    toastr.clear(toast);
+    return text;
 }
 
 /**
@@ -8940,9 +8995,6 @@ jQuery(async function () {
         return '';
     }
 
-    // Collect all unique API names in an array
-    const uniqueAPIs = [...new Set(Object.values(CONNECT_API_MAP).map(x => x.selected))];
-
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'dupe',
         callback: duplicateCharacter,
@@ -8951,13 +9003,22 @@ jQuery(async function () {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'api',
         callback: connectAPISlash,
+        returns: 'the current API',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: 'Suppress the toast message on connection',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'API to connect to',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: false,
                 enumList: Object.entries(CONNECT_API_MAP).map(([api, { selected }]) =>
-                    new SlashCommandEnumValue(api, selected, enumTypes.getBasedOnIndex(uniqueAPIs.findIndex(x => x === selected)),
+                    new SlashCommandEnumValue(api, selected, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === selected)),
                         selected[0].toUpperCase() ?? enumIcons.default)),
             }),
         ],
@@ -10615,14 +10676,30 @@ jQuery(async function () {
         }
     });
 
-    $(document).on('click', '#OpenAllWIEntries', function () {
-        $('#world_popup_entries_list').children().find('.down').click();
+    document.addEventListener('click', function (e) {
+        if (!(e.target instanceof HTMLElement)) return;
+        if (e.target.matches('#OpenAllWIEntries')) {
+            document.querySelectorAll('#world_popup_entries_list .inline-drawer').forEach((/** @type {HTMLElement} */ drawer) => {
+                toggleDrawer(drawer, true);
+            });
+        } else if (e.target.matches('#CloseAllWIEntries')) {
+            document.querySelectorAll('#world_popup_entries_list .inline-drawer').forEach((/** @type {HTMLElement} */ drawer) => {
+                toggleDrawer(drawer, false);
+            });
+        }
     });
-    $(document).on('click', '#CloseAllWIEntries', function () {
-        $('#world_popup_entries_list').children().find('.up').click();
-    });
+
     $(document).on('click', '.open_alternate_greetings', openAlternateGreetings);
     /* $('#set_character_world').on('click', openCharacterWorldPopup); */
+
+    $(document).on('focus', 'input.auto-select, textarea.auto-select', function () {
+        if (!power_user.enable_auto_select_input) return;
+        const control = $(this)[0];
+        if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) {
+            control.select();
+            console.debug('Auto-selecting content of input control', control);
+        }
+    });
 
     $(document).keyup(function (e) {
         if (e.key === 'Escape') {
@@ -10707,7 +10784,7 @@ jQuery(async function () {
                 }
             } break;
             case 'import_tags': {
-                await importTags(characters[this_chid], { forceShow: true });
+                await importTags(characters[this_chid], { importSetting: tag_import_setting.ASK });
             } break;
             /*case 'delete_button':
                 popup_type = "del_ch";
@@ -10736,62 +10813,66 @@ jQuery(async function () {
     var isManualInput = false;
     var valueBeforeManualInput;
 
-    $('.range-block-counter input, .neo-range-input').on('click', function () {
+    $(document).on('input', '.range-block-counter input, .neo-range-input', function () {
         valueBeforeManualInput = $(this).val();
         console.log(valueBeforeManualInput);
-    })
-        .on('change', function (e) {
-            e.target.focus();
-            e.target.dispatchEvent(new Event('keyup'));
-        })
-        .on('keydown', function (e) {
-            const masterSelector = '#' + $(this).data('for');
-            const masterElement = $(masterSelector);
-            if (e.key === 'Enter') {
-                let manualInput = Number($(this).val());
-                if (isManualInput) {
-                    //disallow manual inputs outside acceptable range
-                    if (manualInput >= Number($(this).attr('min')) && manualInput <= Number($(this).attr('max'))) {
-                        //if value is ok, assign to slider and update handle text and position
-                        //newSlider.val(manualInput)
-                        //handleSlideEvent.call(newSlider, null, { value: parseFloat(manualInput) }, 'manual');
-                        valueBeforeManualInput = manualInput;
-                        $(masterElement).val($(this).val()).trigger('input', { forced: true });
-                    } else {
-                        //if value not ok, warn and reset to last known valid value
-                        toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`);
-                        console.log(valueBeforeManualInput);
-                        //newSlider.val(valueBeforeManualInput)
-                        $(this).val(valueBeforeManualInput);
-                    }
-                }
-            }
-        })
-        .on('keyup', function () {
-            valueBeforeManualInput = $(this).val();
-            console.log(valueBeforeManualInput);
-            isManualInput = true;
-        })
-        //trigger slider changes when user clicks away
-        .on('mouseup blur', function () {
-            const masterSelector = '#' + $(this).data('for');
-            const masterElement = $(masterSelector);
+    });
+
+    $(document).on('change', '.range-block-counter input, .neo-range-input', function (e) {
+        e.target.focus();
+        e.target.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+    });
+
+    $(document).on('keydown', '.range-block-counter input, .neo-range-input', function (e) {
+        const masterSelector = '#' + $(this).data('for');
+        const masterElement = $(masterSelector);
+        if (e.key === 'Enter') {
             let manualInput = Number($(this).val());
             if (isManualInput) {
-                //if value is between correct range for the slider
+                //disallow manual inputs outside acceptable range
                 if (manualInput >= Number($(this).attr('min')) && manualInput <= Number($(this).attr('max'))) {
+                    //if value is ok, assign to slider and update handle text and position
+                    //newSlider.val(manualInput)
+                    //handleSlideEvent.call(newSlider, null, { value: parseFloat(manualInput) }, 'manual');
                     valueBeforeManualInput = manualInput;
-                    //set the slider value to input value
                     $(masterElement).val($(this).val()).trigger('input', { forced: true });
                 } else {
                     //if value not ok, warn and reset to last known valid value
                     toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`);
                     console.log(valueBeforeManualInput);
+                    //newSlider.val(valueBeforeManualInput)
                     $(this).val(valueBeforeManualInput);
                 }
             }
-            isManualInput = false;
-        });
+        }
+    });
+
+    $(document).on('keyup', '.range-block-counter input, .neo-range-input', function () {
+        valueBeforeManualInput = $(this).val();
+        console.log(valueBeforeManualInput);
+        isManualInput = true;
+    });
+
+    //trigger slider changes when user clicks away
+    $(document).on('mouseup blur', '.range-block-counter input, .neo-range-input', function () {
+        const masterSelector = '#' + $(this).data('for');
+        const masterElement = $(masterSelector);
+        let manualInput = Number($(this).val());
+        if (isManualInput) {
+            //if value is between correct range for the slider
+            if (manualInput >= Number($(this).attr('min')) && manualInput <= Number($(this).attr('max'))) {
+                valueBeforeManualInput = manualInput;
+                //set the slider value to input value
+                $(masterElement).val($(this).val()).trigger('input', { forced: true });
+            } else {
+                //if value not ok, warn and reset to last known valid value
+                toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`);
+                console.log(valueBeforeManualInput);
+                $(this).val(valueBeforeManualInput);
+            }
+        }
+        isManualInput = false;
+    });
 
     $('.user_stats_button').on('click', function () {
         userStatsHandler();

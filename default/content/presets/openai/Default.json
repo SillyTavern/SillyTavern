@@ -22,7 +22,7 @@
     "count_penalty": 0,
     "top_p": 1,
     "top_k": 0,
-    "top_a": 1,
+    "top_a": 0,
     "min_p": 0,
     "repetition_penalty": 1,
     "openai_max_context": 4095,

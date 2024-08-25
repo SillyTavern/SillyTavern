@@ -28,7 +28,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
                     ],
                 },
             ],
-            max_tokens: 800,
+            max_tokens: 4096,
         };
 
         console.log('Multimodal captioning request', body);

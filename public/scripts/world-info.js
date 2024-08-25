@@ -17,6 +17,7 @@ import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCom
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from './popup.js';
 import { StructuredCloneMap } from './util/StructuredCloneMap.js';
+import { renderTemplateAsync } from './templates.js';
 
 export const world_info_insertion_strategy = {
     evenly: 0,
@@ -72,6 +73,7 @@ export let world_info_match_whole_words = false;
 export let world_info_use_group_scoring = false;
 export let world_info_character_strategy = world_info_insertion_strategy.character_first;
 export let world_info_budget_cap = 0;
+export let world_info_max_recursion_steps = 0;
 const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), debounce_timeout.relaxed);
 const saveSettingsDebounced = debounce(() => {
     Object.assign(world_info, { globalSelect: selected_world_info });
@@ -709,6 +711,7 @@ export function getWorldInfoSettings() {
         world_info_character_strategy,
         world_info_budget_cap,
         world_info_use_group_scoring,
+        world_info_max_recursion_steps,
     };
 }
 
@@ -795,6 +798,8 @@ export function setWorldInfoSettings(settings, data) {
         world_info_budget_cap = Number(settings.world_info_budget_cap);
     if (settings.world_info_use_group_scoring !== undefined)
         world_info_use_group_scoring = Boolean(settings.world_info_use_group_scoring);
+    if (settings.world_info_max_recursion_steps !== undefined)
+        world_info_max_recursion_steps = Number(settings.world_info_max_recursion_steps);
 
     // Migrate old settings
     if (world_info_budget > 100) {
@@ -842,6 +847,9 @@ export function setWorldInfoSettings(settings, data) {
 
     $('#world_info_budget_cap').val(world_info_budget_cap);
     $('#world_info_budget_cap_counter').val(world_info_budget_cap);
+
+    $('#world_info_max_recursion_steps').val(world_info_max_recursion_steps);
+    $('#world_info_max_recursion_steps_counter').val(world_info_max_recursion_steps);
 
     world_names = data.world_names?.length ? data.world_names : [];
 
@@ -1854,28 +1862,9 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
             worldEntriesList.find('*').off();
             worldEntriesList.empty();
 
-            const keywordHeaders = `
-            <div id="WIEntryHeaderTitlesPC" class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding:0 4.5em;">
-            <small class="flex1">
-            Title/Memo
-        </small>
-                <small style="width: calc(3.5em + 15px)">
-                    Status
-                </small>
-                <small style="width: calc(3.5em + 30px)">
-                    Position
-                </small>
-                <small style="width: calc(3.5em + 20px)">
-                    Depth
-                </small>
-                <small style="width: calc(3.5em + 20px)">
-                    Order
-                </small>
-                <small style="width: calc(3.5em + 15px)">
-                    Trigger %
-                </small>
-            </div>`;
-            const blocks = page.map(entry => getWorldEntry(name, data, entry)).filter(x => x);
+            const keywordHeaders = await renderTemplateAsync('worldInfoKeywordHeaders');
+            const blocksPromises = page.map(async (entry) => await getWorldEntry(name, data, entry)).filter(x => x);
+            const blocks = await Promise.all(blocksPromises);
             const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
             if (!isCustomOrder) {
                 blocks.forEach(block => {
@@ -2275,7 +2264,7 @@ export function parseRegexFromString(input) {
     }
 }
 
-function getWorldEntry(name, data, entry) {
+async function getWorldEntry(name, data, entry) {
     if (!data.entries[entry.uid]) {
         return;
     }
@@ -2317,6 +2306,9 @@ function getWorldEntry(name, data, entry) {
         }
 
         if (isFancyInput) {
+            // First initialize existing values as options, before initializing select2, to speed up performance
+            select2ModifyOptions(input, entry[entryPropName], { select: true, changeEventArgs: { skipReset: true, noSave: true } });
+
             input.select2({
                 ajax: dynamicSelect2DataViaAjax(() => worldEntryKeyOptionsCache),
                 tags: true,
@@ -2358,8 +2350,6 @@ function getWorldEntry(name, data, entry) {
                 input.next('span.select2-container').find('textarea')
                     .val(key).trigger('input');
             }, { openDrawer: true });
-
-            select2ModifyOptions(input, entry[entryPropName], { select: true, changeEventArgs: { skipReset: true, noSave: true } });
         }
         else {
             // Compatibility with mobile devices. On mobile we need a text input field, not a select option control, so we need its own event handlers
@@ -2476,7 +2466,7 @@ function getWorldEntry(name, data, entry) {
     if (!isMobile()) {
         $(characterFilter).select2({
             width: '100%',
-            placeholder: 'All characters will pull from this entry.',
+            placeholder: 'Tie this entry to specific characters or characters with specific tags',
             allowClear: true,
             closeOnSelect: false,
         });
@@ -2876,21 +2866,7 @@ function getWorldEntry(name, data, entry) {
     //add UID above content box (less important doesn't need to be always visible)
     template.find('.world_entry_form_uid_value').text(`(UID: ${entry.uid})`);
 
-    // disable
-    /*
-    const disableInput = template.find('input[name="disable"]');
-    disableInput.data("uid", entry.uid);
-    disableInput.on("input", async function () {
-        const uid = $(this).data("uid");
-        const value = $(this).prop("checked");
-        data.entries[uid].disable = value;
-        setOriginalDataValue(data, uid, "enabled", !data.entries[uid].disable);
-        await saveWorldInfo(name, data);
-    });
-    disableInput.prop("checked", entry.disable).trigger("input");
-    */
-
-    //new tri-state selector for constant/normal/disabled
+    //new tri-state selector for constant/normal/vectorized
     const entryStateSelector = template.find('select[name="entryStateSelector"]');
     entryStateSelector.data('uid', entry.uid);
     entryStateSelector.on('click', function (event) {
@@ -2903,49 +2879,43 @@ function getWorldEntry(name, data, entry) {
         switch (value) {
             case 'constant':
                 data.entries[uid].constant = true;
-                data.entries[uid].disable = false;
                 data.entries[uid].vectorized = false;
-                setWIOriginalDataValue(data, uid, 'enabled', true);
                 setWIOriginalDataValue(data, uid, 'constant', true);
                 setWIOriginalDataValue(data, uid, 'extensions.vectorized', false);
-                template.removeClass('disabledWIEntry');
                 break;
             case 'normal':
                 data.entries[uid].constant = false;
-                data.entries[uid].disable = false;
                 data.entries[uid].vectorized = false;
-                setWIOriginalDataValue(data, uid, 'enabled', true);
                 setWIOriginalDataValue(data, uid, 'constant', false);
                 setWIOriginalDataValue(data, uid, 'extensions.vectorized', false);
-                template.removeClass('disabledWIEntry');
                 break;
             case 'vectorized':
                 data.entries[uid].constant = false;
-                data.entries[uid].disable = false;
                 data.entries[uid].vectorized = true;
-                setWIOriginalDataValue(data, uid, 'enabled', true);
                 setWIOriginalDataValue(data, uid, 'constant', false);
                 setWIOriginalDataValue(data, uid, 'extensions.vectorized', true);
-                template.removeClass('disabledWIEntry');
-                break;
-            case 'disabled':
-                data.entries[uid].constant = false;
-                data.entries[uid].disable = true;
-                data.entries[uid].vectorized = false;
-                setWIOriginalDataValue(data, uid, 'enabled', false);
-                setWIOriginalDataValue(data, uid, 'constant', false);
-                setWIOriginalDataValue(data, uid, 'extensions.vectorized', false);
-                template.addClass('disabledWIEntry');
                 break;
         }
         await saveWorldInfo(name, data);
 
     });
 
+    const entryKillSwitch = template.find('div[name="entryKillSwitch"]');
+    entryKillSwitch.data('uid', entry.uid);
+    entryKillSwitch.on('click', async function (event) {
+        const uid = entry.uid;
+        data.entries[uid].disable = !data.entries[uid].disable;
+        const isActive = !data.entries[uid].disable;
+        setWIOriginalDataValue(data, uid, 'enabled', isActive);
+        template.toggleClass('disabledWIEntry', !isActive);
+        entryKillSwitch.toggleClass('fa-toggle-off', !isActive);
+        entryKillSwitch.toggleClass('fa-toggle-on', isActive);
+        await saveWorldInfo(name, data);
+
+    });
+
     const entryState = function () {
-        if (entry.disable === true) {
-            return 'disabled';
-        } else if (entry.constant === true) {
+        if (entry.constant === true) {
             return 'constant';
         } else if (entry.vectorized === true) {
             return 'vectorized';
@@ -2953,6 +2923,12 @@ function getWorldEntry(name, data, entry) {
             return 'normal';
         }
     };
+
+    const isActive = !entry.disable;
+    template.toggleClass('disabledWIEntry', !isActive);
+    entryKillSwitch.toggleClass('fa-toggle-off', !isActive);
+    entryKillSwitch.toggleClass('fa-toggle-on', isActive);
+
     template
         .find(`select[name="entryStateSelector"] option[value=${entryState()}]`)
         .prop('selected', true)
@@ -3754,6 +3730,12 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
     console.debug(`[WI] --- SEARCHING ENTRIES (on ${sortedEntries.length} entries) ---`);
 
     while (scanState) {
+        //if world_info_max_recursion_steps is non-zero min activations are disabled, and vice versa
+        if (world_info_max_recursion_steps && world_info_max_recursion_steps <= count) {
+            console.debug('[WI] Search stopped by reaching max recursion steps', world_info_max_recursion_steps);
+            break;
+        }
+
         // Track how many times the loop has run. May be useful for debugging.
         count++;
 
@@ -4793,8 +4775,13 @@ jQuery(() => {
 
     $('#world_info_min_activations').on('input', function () {
         world_info_min_activations = Number($(this).val());
-        $('#world_info_min_activations_counter').val($(this).val());
-        saveSettings();
+        $('#world_info_min_activations_counter').val(world_info_min_activations);
+
+        if (world_info_min_activations !== 0) {
+            $('#world_info_max_recursion_steps').val(0).trigger('input');
+        } else {
+            saveSettings();
+        }
     });
 
     $('#world_info_min_activations_depth_max').on('input', function () {
@@ -4848,6 +4835,16 @@ jQuery(() => {
         world_info_budget_cap = Number($(this).val());
         $('#world_info_budget_cap_counter').val(world_info_budget_cap);
         saveSettings();
+    });
+
+    $('#world_info_max_recursion_steps').on('input', function () {
+        world_info_max_recursion_steps = Number($(this).val());
+        $('#world_info_max_recursion_steps_counter').val(world_info_max_recursion_steps);
+        if (world_info_max_recursion_steps !== 0) {
+            $('#world_info_min_activations').val(0).trigger('input');
+        } else {
+            saveSettings();
+        }
     });
 
     $('#world_button').on('click', async function (event) {

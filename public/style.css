@@ -3515,6 +3515,8 @@ grammarly-extension {
 
 .drag-handle {
     cursor: grab;
+    /* Make the drag handle not selectable in most browsers */
+    user-select: none;
 }
 
 #form_rename_chat {
@@ -4577,6 +4579,7 @@ a {
     image-rendering: -webkit-optimize-contrast;
 }
 
+.mes_img_swipes,
 .mes_img_controls {
     position: absolute;
     top: 0.1em;
@@ -4586,9 +4589,16 @@ a {
     opacity: 0;
     flex-direction: row;
     justify-content: space-between;
+    align-items: center;
     padding: 1em;
 }
 
+.mes_img_swipes {
+    top: unset;
+    bottom: 0.1rem;
+}
+
+.mes_img_swipes .right_menu_button,
 .mes_img_controls .right_menu_button {
     filter: brightness(90%);
     text-shadow: 1px 1px var(--SmartThemeShadowColor) !important;
@@ -4597,16 +4607,20 @@ a {
     width: 1.25em;
 }
 
+.mes_img_swipes .right_menu_button::before,
 .mes_img_controls .right_menu_button::before {
     /* Fix weird alignment with this font-awesome icons on focus */
     position: relative;
     top: 0.6125em;
 }
 
+.mes_img_swipes .right_menu_button:hover,
 .mes_img_controls .right_menu_button:hover {
     filter: brightness(150%);
 }
 
+.mes_img_container:hover .mes_img_swipes,
+.mes_img_container:focus-within .mes_img_swipes,
 .mes_img_container:hover .mes_img_controls,
 .mes_img_container:focus-within .mes_img_controls {
     opacity: 1;
@@ -4618,6 +4632,17 @@ a {
 
 body:not(.caption) .mes_img_caption {
     display: none;
+}
+
+.mes_img_container:not(.img_swipes) .mes_img_swipes,
+body:not(.sd) .mes_img_swipes {
+    display: none;
+}
+
+.mes_img_swipe_counter {
+    font-weight: 600;
+    filter: drop-shadow(2px 4px 6px black);
+    cursor: default;
 }
 
 .img_enlarged_holder {

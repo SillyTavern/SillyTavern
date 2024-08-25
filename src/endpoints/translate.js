@@ -1,6 +1,7 @@
 const fetch = require('node-fetch').default;
 const https = require('https');
 const express = require('express');
+const iconv = require('iconv-lite');
 const { readSecret, SECRET_KEYS } = require('./secrets');
 const { getConfigValue, uuidv4 } = require('../util');
 const { jsonParser } = require('../express-common');
@@ -80,16 +81,18 @@ router.post('/google', jsonParser, async (request, response) => {
         const url = generateRequestUrl(text, { to: lang });
 
         https.get(url, (resp) => {
-            let data = '';
+            const data = [];
 
             resp.on('data', (chunk) => {
-                data += chunk;
+                data.push(chunk);
             });
 
             resp.on('end', () => {
                 try {
-                    const result = normaliseResponse(JSON.parse(data));
+                    const decodedData = iconv.decode(Buffer.concat(data), 'utf-8');
+                    const result = normaliseResponse(JSON.parse(decodedData));
                     console.log('Translated text: ' + result.text);
+                    response.setHeader('Content-Type', 'text/plain; charset=utf-8');
                     return response.send(result.text);
                 } catch (error) {
                     console.log('Translation error', error);

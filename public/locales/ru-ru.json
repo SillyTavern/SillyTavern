@@ -722,7 +722,7 @@
     "Proxy Server URL": "Адрес прокси-сервера",
     "MistralAI Model": "Модель MistralAI",
     "MistralAI API Key": "Ключ от API MistralAI",
-    "MakerSuite API Key": "Ключ от API MakerSuite",
+    "Google AI Studio API Key": "Ключ от API Google AI Studio",
     "Google Model": "Модель Google",
     "Cohere API Key": "Ключ от API Cohere",
     "Cohere Model": "Модель Cohere",

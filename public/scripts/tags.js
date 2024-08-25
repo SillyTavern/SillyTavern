@@ -445,7 +445,11 @@ export function getTagKeyForEntity(entityOrKey) {
     }
 
     // Next lets check if its a valid character or character id, so we can swith it to its tag
-    const character = characters.indexOf(x) >= 0 ? x : characters[x];
+    let character;
+    if (!character && characters.indexOf(x) >= 0) character = x; // Check for char object
+    if (!character && !isNaN(parseInt(entityOrKey))) character = characters[x]; // check if its a char id
+    if (!character) character = characters.find(y => y.avatar === x); // check if its a char key
+
     if (character) {
         x = character.avatar;
     }
@@ -708,12 +712,12 @@ const ANTI_TROLL_MAX_TAGS = 15;
  *
  * @param {Character} character - The character
  * @param {object} [options] - Options
- * @param {boolean} [options.forceShow=false] - Whether to force showing the import dialog
+ * @param {tag_import_setting} [options.importSetting=null] - Force a tag import setting
  * @returns {Promise<boolean>} Boolean indicating whether any tag was imported
  */
-async function importTags(character, { forceShow = false } = {}) {
+async function importTags(character, { importSetting = null } = {}) {
     // Gather the tags to import based on the selected setting
-    const tagNamesToImport = await handleTagImport(character, { forceShow });
+    const tagNamesToImport = await handleTagImport(character, { importSetting });
     if (!tagNamesToImport?.length) {
         console.debug('No tags to import');
         return;
@@ -722,7 +726,11 @@ async function importTags(character, { forceShow = false } = {}) {
     const tagsToImport = tagNamesToImport.map(tag => getTag(tag, { createNew: true }));
     const added = addTagsToEntity(tagsToImport, character.avatar);
 
-    toastr.success(`Imported tags:<br />${tagsToImport.map(x => x.name).join(', ')}`, 'Importing Tags', { escapeHtml: false });
+    if (added) {
+        toastr.success(`Imported tags:<br />${tagsToImport.map(x => x.name).join(', ')}`, 'Importing Tags', { escapeHtml: false });
+    } else {
+        toastr.error(`Couldn't import tags:<br />${tagsToImport.map(x => x.name).join(', ')}`, 'Importing Tags', { escapeHtml: false });
+    }
 
     return added;
 }
@@ -732,10 +740,10 @@ async function importTags(character, { forceShow = false } = {}) {
  *
  * @param {Character} character - The character
  * @param {object} [options] - Options
- * @param {boolean} [options.forceShow=false] - Whether to force showing the import dialog
+ * @param {tag_import_setting} [options.importSetting=null] - Force a tag import setting
  * @returns {Promise<string[]>} Array of strings representing the tags to import
  */
-async function handleTagImport(character, { forceShow = false } = {}) {
+async function handleTagImport(character, { importSetting = null } = {}) {
     /** @type {string[]} */
     const importTags = character.tags.map(t => t.trim()).filter(t => t)
         .filter(t => !IMPORT_EXLCUDED_TAGS.includes(t))
@@ -745,9 +753,9 @@ async function handleTagImport(character, { forceShow = false } = {}) {
         .map(newTag);
     const folderTags = getOpenBogusFolders();
 
-    // Choose the setting for this dialog. If from settings, verify the setting really exists, otherwise take "ASK".
-    const setting = forceShow ? tag_import_setting.ASK
-        : Object.values(tag_import_setting).find(setting => setting === power_user.tag_import_setting) ?? tag_import_setting.ASK;
+    // Choose the setting for this dialog. First check override, then saved setting or finally use "ASK".
+    const setting = importSetting ? importSetting :
+        Object.values(tag_import_setting).find(setting => setting === power_user.tag_import_setting) ?? tag_import_setting.ASK;
 
     switch (setting) {
         case tag_import_setting.ALL:

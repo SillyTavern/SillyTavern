@@ -9,6 +9,7 @@ import { SystemTtsProvider } from './system.js';
 import { NovelTtsProvider } from './novel.js';
 import { power_user } from '../../power-user.js';
 import { OpenAITtsProvider } from './openai.js';
+import { OpenAICompatibleTtsProvider } from './openai-compatible.js';
 import { XTTSTtsProvider } from './xtts.js';
 import { VITSTtsProvider } from './vits.js';
 import { GSVITtsProvider } from './gsvi.js';
@@ -82,20 +83,21 @@ export function getPreviewString(lang) {
 }
 
 const ttsProviders = {
-    ElevenLabs: ElevenLabsTtsProvider,
-    Silero: SileroTtsProvider,
-    XTTSv2: XTTSTtsProvider,
-    VITS: VITSTtsProvider,
-    GSVI: GSVITtsProvider,
-    SBVits2: SBVits2TtsProvider,
-    System: SystemTtsProvider,
+    AllTalk: AllTalkTtsProvider,
+    Azure: AzureTtsProvider,
     Coqui: CoquiTtsProvider,
     Edge: EdgeTtsProvider,
+    ElevenLabs: ElevenLabsTtsProvider,
+    GSVI: GSVITtsProvider,
     Novel: NovelTtsProvider,
     OpenAI: OpenAITtsProvider,
-    AllTalk: AllTalkTtsProvider,
+    'OpenAI Compatible': OpenAICompatibleTtsProvider,
+    SBVits2: SBVits2TtsProvider,
+    Silero: SileroTtsProvider,
     SpeechT5: SpeechT5TtsProvider,
-    Azure: AzureTtsProvider,
+    System: SystemTtsProvider,
+    VITS: VITSTtsProvider,
+    XTTSv2: XTTSTtsProvider,
 };
 let ttsProvider;
 let ttsProviderName;
@@ -752,6 +754,11 @@ async function onMessageEvent(messageId, lastCharIndex) {
     // clone message object, as things go haywire if message object is altered below (it's passed by reference)
     const message = structuredClone(context.chat[messageId]);
     const hashNew = getStringHash(message?.mes ?? '');
+
+    // Ignore prompt-hidden messages
+    if (message.is_system) {
+        return;
+    }
 
     // if no new messages, or same message, or same message hash, do nothing
     if (hashNew === lastMessageHash) {

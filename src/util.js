@@ -382,14 +382,31 @@ function removeOldBackups(directory, prefix) {
     }
 }
 
-function getImages(path) {
+/**
+ * Get a list of images in a directory.
+ * @param {string} directoryPath Path to the directory containing the images
+ * @param {'name' | 'date'} sortBy Sort images by name or date
+ * @returns {string[]} List of image file names
+ */
+function getImages(directoryPath, sortBy = 'name') {
+    function getSortFunction() {
+        switch (sortBy) {
+            case 'name':
+                return Intl.Collator().compare;
+            case 'date':
+                return (a, b) => fs.statSync(path.join(directoryPath, a)).mtimeMs - fs.statSync(path.join(directoryPath, b)).mtimeMs;
+            default:
+                return (_a, _b) => 0;
+        }
+    }
+
     return fs
-        .readdirSync(path)
+        .readdirSync(directoryPath)
         .filter(file => {
             const type = mime.lookup(file);
             return type && type.startsWith('image/');
         })
-        .sort(Intl.Collator().compare);
+        .sort(getSortFunction());
 }
 
 /**
@@ -610,6 +627,25 @@ class Cache {
     }
 }
 
+/**
+ * Removes color formatting from a text string.
+ * @param {string} text Text with color formatting
+ * @returns {string} Text without color formatting
+ */
+function removeColorFormatting(text) {
+    // ANSI escape codes for colors are usually in the format \x1b[<codes>m
+    return text.replace(/\x1b\[\d{1,2}(;\d{1,2})*m/g, '');
+}
+
+/**
+ * Gets a separator string repeated n times.
+ * @param {number} n Number of times to repeat the separator
+ * @returns {string} Separator string
+ */
+function getSeparator(n) {
+    return '='.repeat(n);
+}
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -637,4 +673,6 @@ module.exports = {
     trimV1,
     Cache,
     makeHttp2Request,
+    removeColorFormatting,
+    getSeparator,
 };

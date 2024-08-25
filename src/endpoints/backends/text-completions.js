@@ -5,7 +5,7 @@ const Readable = require('stream').Readable;
 
 const { jsonParser } = require('../../express-common');
 const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS, INFERMATICAI_KEYS, OPENROUTER_KEYS, VLLM_KEYS, DREAMGEN_KEYS, FEATHERLESS_KEYS } = require('../../constants');
-const { forwardFetchResponse, trimV1 } = require('../../util');
+const { forwardFetchResponse, trimV1, getConfigValue } = require('../../util');
 const { setAdditionalHeaders } = require('../../additional-headers');
 
 const router = express.Router();
@@ -325,11 +325,12 @@ router.post('/generate', jsonParser, async function (request, response) {
         }
 
         if (request.body.api_type === TEXTGEN_TYPES.OLLAMA) {
+            const keepAlive = getConfigValue('ollama.keepAlive', -1);
             args.body = JSON.stringify({
                 model: request.body.model,
                 prompt: request.body.prompt,
                 stream: request.body.stream ?? false,
-                keep_alive: -1,
+                keep_alive: keepAlive,
                 raw: true,
                 options: _.pickBy(request.body, (_, key) => OLLAMA_KEYS.includes(key)),
             });

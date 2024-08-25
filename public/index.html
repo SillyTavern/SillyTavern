@@ -383,7 +383,7 @@
                                         Max Response Length (tokens)
                                     </div>
                                     <div class="wide100p">
-                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="50" max="8000">
+                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="16384">
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,custom">
@@ -1823,10 +1823,16 @@
                                     </div>
                                     <div data-newbie-hidden class="range-block" data-source="claude">
                                         <div class="wide100p">
-                                            <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
-                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact autoSetHeight" name="assistant_prefill" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
-                                            <span id="claude_assistant_impersonation_text" data-i18n="Assistant Impersonation Prefill">Assistant Impersonation Prefill</span>
-                                            <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact autoSetHeight" name="assistant_impersonation" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <div class="flex-container alignItemsCenter">
+                                                <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
+                                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="claude_assistant_prefill" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                                            </div>
+                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill" rows="6" maxlength="100000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <div class="flex-container alignItemsCenter">
+                                                <span id="claude_assistant_impersonation_text" data-i18n="Assistant Impersonation Prefill">Assistant Impersonation Prefill</span>
+                                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="claude_assistant_impersonation" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                                            </div>
+                                            <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact" name="assistant_impersonation" rows="6" maxlength="100000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
                                         <label for="claude_use_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="claude_use_sysprompt" type="checkbox" />
@@ -2427,10 +2433,11 @@
                             <optgroup>
                                 <option value="01ai">01.AI (Yi)</option>
                                 <option value="ai21">AI21</option>
+                                <option value="blockentropy">Block Entropy</option>
                                 <option value="claude">Claude</option>
                                 <option value="cohere">Cohere</option>
                                 <option value="groq">Groq</option>
-                                <option value="makersuite">Google MakerSuite</option>
+                                <option value="makersuite">Google AI Studio</option>
                                 <option value="mistralai">MistralAI</option>
                                 <option value="openrouter">OpenRouter</option>
                                 <option value="perplexity">Perplexity</option>
@@ -2570,7 +2577,9 @@
                                     </optgroup>
                                     <optgroup label="GPT-4o">
                                         <option value="gpt-4o">gpt-4o</option>
+                                        <option value="gpt-4o-2024-08-06">gpt-4o-2024-08-06</option>
                                         <option value="gpt-4o-2024-05-13">gpt-4o-2024-05-13</option>
+                                        <option value="chatgpt-4o-latest">chatgpt-4o-latest</option>
                                     </optgroup>
                                     <optgroup label="gpt-4o-mini">
                                         <option value="gpt-4o-mini">gpt-4o-mini</option>
@@ -2791,7 +2800,7 @@
                             </div>
                         </form>
                         <form id="makersuite_form" data-source="makersuite" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <h4 data-i18n="MakerSuite API Key">MakerSuite API Key</h4>
+                            <h4 data-i18n="Google AI Studio API Key">Google AI Studio API Key</h4>
                             <div class="flex-container">
                                 <input id="api_key_makersuite" name="api_key_makersuite" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_makersuite"></div>
@@ -2899,10 +2908,13 @@
                             </div>
                             <h4 data-i18n="Perplexity Model">Perplexity Model</h4>
                             <select id="model_perplexity_select">
-                                <optgroup label="Perplexity Models">
+                                <optgroup label="Perplexity Sonar Models">
                                     <option value="llama-3.1-sonar-small-128k-online">llama-3.1-sonar-small-128k-online</option>
-                                    <option value="llama-3.1-sonar-small-128k-chat">llama-3.1-sonar-small-128k-chat</option>
                                     <option value="llama-3.1-sonar-large-128k-online">llama-3.1-sonar-large-128k-online</option>
+                                    <option value="llama-3.1-sonar-huge-128k-online">llama-3.1-sonar-huge-128k-online</option>
+                                </optgroup>
+                                <optgroup label="Perplexity Chat Models">
+                                    <option value="llama-3.1-sonar-small-128k-chat">llama-3.1-sonar-small-128k-chat</option>
                                     <option value="llama-3.1-sonar-large-128k-chat">llama-3.1-sonar-large-128k-chat</option>
                                 </optgroup>
                                 <optgroup label="Open-Source Models">
@@ -2949,6 +2961,20 @@
                                         <option value="command-nightly">command-nightly</option>
                                     </optgroup>
                                 </select>
+                            </div>
+                        </form>
+                        <form id="blockentropy_form" data-source="blockentropy">
+                            <h4 data-i18n="Block Entropy API Key">Block Entropy API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_blockentropy" name="api_key_blockentropy" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_blockentropy"></div>
+                            </div>
+                            <div data-for="api_key_blockentropy" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <h4 data-i18n="Select a Model">Select a Model</h4>
+                            <div class="flex-container">
+                                <select id="model_blockentropy_select" class="text_pole"></select>
                             </div>
                         </form>
                         <form id="custom_form" data-source="custom">
@@ -3485,6 +3511,7 @@
                                             <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" title="Scan chronologically until reached min entries or token budget." data-i18n="[title]Scan chronologically until reached min entries or token budget.">
                                                 <small>
                                                     <span data-i18n="Min Activations">Min Activations</span>
+                                                    <div class="fa-solid fa-triangle-exclamation opacity50p" data-i18n="[title](disabled when max recursion steps are used)" title="(disabled when max recursion steps are used)"></div>
                                                 </small>
                                                 <input class="neo-range-slider" type="range" id="world_info_min_activations" name="world_info_min_activations" min="0" max="100" step="1">
                                                 <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_min_activations" id="world_info_min_activations_counter">
@@ -3497,6 +3524,14 @@
                                                 </small>
                                                 <input class="neo-range-slider" type="range" id="world_info_min_activations_depth_max" name="volume" min="0" max="100" step="1">
                                                 <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_min_activations_depth_max" id="world_info_min_activations_depth_max_counter">
+                                            </div>
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" title="Cap the number of entry activation recursions" data-i18n="[title]Cap the number of entry activation recursions">
+                                                <small>
+                                                    <span data-i18n="Max Recursion Steps">Max Recursion Steps</span>
+                                                    <div class="fa-solid fa-triangle-exclamation opacity50p" data-i18n="[title]0 = unlimited, 1 = scans once and doesn't recurse, 2 = scans once and recurses once, etc\n(disabled when min activations are used)" title="0 = unlimited, 1 = scans once and doesn't recurse, 2 = scans once and recurses once, etc&#10;(disabled when min activations are used)"></div>
+                                                </small>
+                                                <input class="neo-range-slider" type="range" id="world_info_max_recursion_steps" name="world_info_max_recursion_steps" min="0" max="10" step="1">
+                                                <input class="neo-range-input" type="number" min="0" max="10" step="1" data-for="world_info_max_recursion_steps" id="world_info_max_recursion_steps_counter">
                                             </div>
 
                                             <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink flexBasis48p">
@@ -3761,8 +3796,8 @@
                                         <span data-i18n="Font Scale">Font Scale</span>
                                         <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Font size" title="Font size"></div>
                                     </small>
-                                    <input class="neo-range-slider" type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.01">
-                                    <input class="neo-range-input" type="number" min="0.8" max="1.2" step="0.01" data-for="font_scale" id="font_scale_counter">
+                                    <input class="neo-range-slider" type="range" id="font_scale" name="font_scale" min="0.5" max="1.5" step="0.01">
+                                    <input class="neo-range-input" type="number" min="0.5" max="1.5" step="0.01" data-for="font_scale" id="font_scale_counter">
                                 </div>
 
                                 <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
@@ -3960,6 +3995,10 @@
                             <label data-newbie-hidden class="checkbox_label" for="world_import_dialog" title="Ask to import the World Info/Lorebook for every new character with embedded lorebook. If unchecked, a brief message will be shown instead." data-i18n="[title]Ask to import the World Info/Lorebook for every new character with embedded lorebook. If unchecked, a brief message will be shown instead">
                                 <input id="world_import_dialog" type="checkbox" />
                                 <small data-i18n="Lorebook Import Dialog">Lorebook Import Dialog</small>
+                            </label>
+                            <label data-newbie-hidden class="checkbox_label" for="enable_auto_select_input" title="Enable auto-select of input text in some text fields when clicking/selecting them. Applies to popup input textboxes, and possible other custom input fields." data-i18n="[title]Enable auto-select of input text in some text fields when clicking/selecting them. Applies to popup input textboxes, and possible other custom input fields.">
+                                <input id="enable_auto_select_input" type="checkbox" />
+                                <small data-i18n="Auto-select Input Text">Auto-select Input Text</small>
                             </label>
                             <label class="checkbox_label" for="restore_user_input" title="Restore unsaved user input on page refresh." data-i18n="[title]Restore unsaved user input on page refresh">
                                 <input id="restore_user_input" type="checkbox" />
@@ -4565,7 +4604,7 @@
                                             <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
                                             <input type="hidden" id="fav_checkbox" name="fav" />
                                             <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions" data-i18n="[title]Advanced Definition"></div>
-                                            <div id="world_button" class="menu_button fa-solid fa-globe" title="Character Lore" data-i18n="[title]Character Lore"></div>
+                                            <div id="world_button" class="menu_button fa-solid fa-globe" title="Character Lore&#10;&#10;Click to load&#10;Shift-click to open 'Link to World Info' popup" data-i18n="[title]world_button_title"></div>
                                             <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore" data-i18n="[title]Chat Lore"></div>
                                             <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download" data-i18n="[title]Export and Download"></div>
                                             <!-- <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div> -->

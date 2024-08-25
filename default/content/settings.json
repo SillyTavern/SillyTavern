@@ -142,6 +142,7 @@
         "timestamps_enabled": true,
         "timestamp_model_icon": true,
         "mesIDDisplay_enabled": false,
+        "hideChatAvatars_enabled": false,
         "max_context_unlocked": false,
         "prefer_character_prompt": true,
         "prefer_character_jailbreak": true,
