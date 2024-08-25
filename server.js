@@ -817,7 +817,7 @@ function createHttpsServer(url) {
             }, app);
         server.on('error', reject);
         server.on('listening', resolve);
-        server.listen(url.port, url.hostname);
+        server.listen(url.port || 443, url.hostname);
     });
 }
 
@@ -832,7 +832,7 @@ function createHttpServer(url) {
         const server = http.createServer(app);
         server.on('error', reject);
         server.on('listening', resolve);
-        server.listen(url.port, url.hostname);
+        server.listen(url.port || 80, url.hostname);
     });
 }
 
