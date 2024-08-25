@@ -3503,36 +3503,36 @@ $(document).ready(() => {
     $('#messageTimerEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.timer_enabled = value;
-        saveSettingsDebounced();
         switchTimer();
+        saveSettingsDebounced();
     });
 
     $('#messageTimestampsEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.timestamps_enabled = value;
-        saveSettingsDebounced();
         switchTimestamps();
+        saveSettingsDebounced();
     });
 
     $('#messageModelIconEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.timestamp_model_icon = value;
-        saveSettingsDebounced();
         switchIcons();
+        saveSettingsDebounced();
     });
 
     $('#messageTokensEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.message_token_count_enabled = value;
-        saveSettingsDebounced();
         switchTokenCount();
+        saveSettingsDebounced();
     });
 
     $('#expandMessageActions').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.expand_message_actions = value;
-        saveSettingsDebounced();
         switchMessageActions();
+        saveSettingsDebounced();
     });
 
     $('#enableZenSliders').on('input', function () {
@@ -3544,8 +3544,8 @@ $(document).ready(() => {
             return;
         }
         power_user.enableZenSliders = value;
-        saveSettingsDebounced();
         switchZenSliders();
+        saveSettingsDebounced();
     });
 
     $('#enableLabMode').on('input', function () {
@@ -3558,22 +3558,22 @@ $(document).ready(() => {
         }
 
         power_user.enableLabMode = value;
-        saveSettingsDebounced();
         switchLabMode();
+        saveSettingsDebounced();
     });
 
     $('#mesIDDisplayEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.mesIDDisplay_enabled = value;
-        saveSettingsDebounced();
         switchMesIDDisplay();
+        saveSettingsDebounced();
     });
 
     $('#hideChatAvatarsEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.hideChatAvatars_enabled = value;
-        saveSettingsDebounced();
         switchHideChatAvatars();
+        saveSettingsDebounced();
     });
 
     $('#hotswapEnabled').on('input', function () {
@@ -3688,8 +3688,8 @@ $(document).ready(() => {
     $('#ui_mode_select').on('change', function () {
         const value = $(this).find(':selected').val();
         power_user.ui_mode = Number(value);
-        saveSettingsDebounced();
         switchSimpleMode();
+        saveSettingsDebounced();
     });
 
     $('#bogus_folders').on('input', function () {
