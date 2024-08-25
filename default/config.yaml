@@ -90,9 +90,11 @@ whitelistImportDomains:
 ##   headers:
 ##     User-Agent: "Googlebot/2.1 (+http://www.google.com/bot.html)"
 requestOverrides: []
-# -- PLUGIN CONFIGURATION --
+# -- EXTENSIONS CONFIGURATION --
 # Enable UI extensions
 enableExtensions: true
+# Automatically update extensions when a release version changes
+enableExtensionsAutoUpdate: true
 # Extension settings
 extras:
   # Disables automatic model download from HuggingFace

@@ -416,6 +416,7 @@ export const event_types = {
     GENERATION_STOPPED: 'generation_stopped',
     GENERATION_ENDED: 'generation_ended',
     EXTENSIONS_FIRST_LOAD: 'extensions_first_load',
+    EXTENSION_SETTINGS_LOADED: 'extension_settings_loaded',
     SETTINGS_LOADED: 'settings_loaded',
     SETTINGS_UPDATED: 'settings_updated',
     GROUP_UPDATED: 'group_updated',
@@ -6517,9 +6518,10 @@ export async function getSettings() {
         selected_button = settings.selected_button;
 
         if (data.enable_extensions) {
+            const enableAutoUpdate = Boolean(data.enable_extensions_auto_update);
             const isVersionChanged = settings.currentVersion !== currentVersion;
-            await loadExtensionSettings(settings, isVersionChanged);
-            eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+            await loadExtensionSettings(settings, isVersionChanged, enableAutoUpdate);
+            await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
         }
 
         firstRun = !!settings.firstRun;
