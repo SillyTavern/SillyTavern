@@ -401,9 +401,8 @@ function convertAI21Messages(messages, charName = '', userName = '') {
 
     messages.splice(0, i);
 
-    // Check if the first message in the array is of type user, if not, interject with humanMsgFix or a blank message.
-    // Also prevents erroring out if the messages array is empty.
-    if (messages.length === 0 || (messages.length > 0 && messages[0].role !== 'user')) {
+    // Prevent erroring out if the messages array is empty.
+    if (messages.length === 0) {
         messages.unshift({
             role: 'user',
             content: '[Start a new chat]',
