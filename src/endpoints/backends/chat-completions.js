@@ -48,32 +48,22 @@ function postProcessPrompt(messages, type, charName, userName) {
  */
 async function parseCohereStream(jsonStream, request, response) {
     try {
-        let partialData = '';
         jsonStream.body.on('data', (data) => {
-            const chunk = data.toString();
-            partialData += chunk;
-            while (true) {
-                let json;
-                try {
-                    json = JSON.parse(partialData);
-                } catch (e) {
-                    break;
-                }
+            try {
+                const json = JSON.parse(data.toString());
                 if (json.message) {
                     const message = json.message || 'Unknown error';
                     const chunk = { error: { message: message } };
                     response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-                    partialData = '';
-                    break;
                 } else if (json.event_type === 'text-generation') {
                     const text = json.text || '';
                     const chunk = { choices: [{ text }] };
                     response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-                    partialData = '';
                 } else {
-                    partialData = '';
-                    break;
+                    return;
                 }
+            } catch (e) {
+                // ignore
             }
         });
 
@@ -437,7 +427,7 @@ async function sendAI21Request(request, response) {
 
     console.log('AI21 request:', body);
 
-    try{
+    try {
         const generateResponse = await fetch(API_AI21 + '/chat/completions', options);
         if (request.body.stream) {
             forwardFetchResponse(generateResponse, response);
