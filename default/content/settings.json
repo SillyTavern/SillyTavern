@@ -196,7 +196,15 @@
         "enableLabMode": false,
         "enableZenSliders": false,
         "ui_mode": 1,
-        "forbid_external_media": true
+        "forbid_external_media": true,
+        "stscript": {
+            "parser": {
+                "flags": {
+                    "1": true,
+                    "2": true
+                }
+            }
+        }
     },
     "extension_settings": {
         "apiUrl": "http://localhost:5100",
