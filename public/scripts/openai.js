@@ -246,7 +246,7 @@ const default_settings = {
     openai_model: 'gpt-4-turbo',
     claude_model: 'claude-3-5-sonnet-20240620',
     google_model: 'gemini-1.5-pro',
-    ai21_model: 'jamba-1.5-mini',
+    ai21_model: 'jamba-1.5-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
     perplexity_model: 'llama-3.1-70b-instruct',
@@ -324,7 +324,7 @@ const oai_settings = {
     openai_model: 'gpt-4-turbo',
     claude_model: 'claude-3-5-sonnet-20240620',
     google_model: 'gemini-1.5-pro',
-    ai21_model: 'jamba-1.5-mini',
+    ai21_model: 'jamba-1.5-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
     perplexity_model: 'llama-3.1-70b-instruct',
@@ -3041,7 +3041,7 @@ function loadOpenAISettings(data, settings) {
     }
 
     if (oai_settings.ai21_model.startsWith('j2-')) {
-        oai_settings.ai21_model = 'jamba-1.5-mini';
+        oai_settings.ai21_model = 'jamba-1.5-large';
     }
 
     if (settings.wrap_in_quotes !== undefined) oai_settings.wrap_in_quotes = !!settings.wrap_in_quotes;
@@ -3979,6 +3979,10 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_ai21_select')) {
+        if (value.startsWith('j2-')) {
+            value = 'jamba-1.5-large';
+        }
+
         console.log('AI21 model changed to', value);
         oai_settings.ai21_model = value;
     }

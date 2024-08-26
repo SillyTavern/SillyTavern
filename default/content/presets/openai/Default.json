@@ -8,7 +8,7 @@
     "openrouter_force_instruct": false,
     "openrouter_group_models": false,
     "openrouter_sort_models": "alphabetically",
-    "ai21_model": "jamba-1.5-mini",
+    "ai21_model": "jamba-1.5-large",
     "mistralai_model": "mistral-large-latest",
     "custom_model": "",
     "custom_url": "",
