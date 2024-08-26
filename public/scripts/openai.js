@@ -3979,8 +3979,9 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_ai21_select')) {
-        if (value.startsWith('j2-')) {
+        if (value === '' || value.startsWith('j2-')) {
             value = 'jamba-1.5-large';
+            $('#model_ai21_select').val(value);
         }
 
         console.log('AI21 model changed to', value);
