@@ -34,8 +34,9 @@ function getConfig() {
         CACHED_CONFIG = config;
         return config;
     } catch (error) {
-        console.warn('Failed to read config.yaml');
-        return {};
+        console.error(color.red('FATAL: Failed to read config.yaml. Please check the file for syntax errors.'));
+        console.error(error.message);
+        process.exit(1);
     }
 }
 
