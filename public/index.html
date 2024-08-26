@@ -436,7 +436,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom,cohere,perplexity,groq">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,custom,cohere,perplexity,groq">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -449,7 +449,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom,cohere,perplexity,groq">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,custom,cohere,perplexity,groq">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -462,20 +462,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="ai21">
-                                    <div class="range-block-title" data-i18n="Count Penalty">
-                                        Count Penalty
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="count_pen" name="volume" min="0" max="1" step="0.01">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.01" data-for="count_pen" id="count_pen_counter">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div data-newbie-hidden class="range-block" data-source="claude,openrouter,ai21,makersuite,cohere,perplexity">
+                                <div data-newbie-hidden class="range-block" data-source="claude,openrouter,makersuite,cohere,perplexity">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
@@ -1791,22 +1778,6 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="ai21">
-                                        <label for="use_ai21_tokenizer" title="Use AI21 Tokenizer" data-i18n="[title]Use AI21 Tokenizer" class="checkbox_label widthFreeExpand">
-                                            <input id="use_ai21_tokenizer" type="checkbox" /><span data-i18n="Use AI21 Tokenizer">Use AI21 Tokenizer</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.">Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.</span>
-                                        </div>
-                                    </div>
-                                    <div class="range-block" data-source="makersuite">
-                                        <label for="use_google_tokenizer" title="Use Google Tokenizer" data-i18n="[title]Use Google Tokenizer" class="checkbox_label widthFreeExpand">
-                                            <input id="use_google_tokenizer" type="checkbox" /><span data-i18n="Use Google Tokenizer">Use Google Tokenizer</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.">Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.</span>
-                                        </div>
-                                    </div>
                                     <div class="range-block" data-source="makersuite">
                                         <label for="use_makersuite_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="use_makersuite_sysprompt" type="checkbox" />
@@ -2791,10 +2762,12 @@
                             <div>
                                 <h4 data-i18n="AI21 Model">AI21 Model</h4>
                                 <select id="model_ai21_select">
-                                    <optgroup label="Latest">
-                                        <option value="j2-ultra">j2-ultra</option>
-                                        <option value="j2-mid">j2-mid</option>
-                                        <option value="j2-light">j2-light</option>
+                                    <optgroup label="Jamba 1.5">
+                                        <option value="jamba-1.5-mini">jamba-1.5-mini</option>
+                                        <option value="jamba-1.5-large">jamba-1.5-large</option>
+                                    </optgroup>
+                                    <optgroup label="Jamba-Instruct (Deprecated)">
+                                        <option value="jamba-instruct-preview">jamba-instruct-preview</option>
                                     </optgroup>
                                 </select>
                             </div>
@@ -3450,6 +3423,7 @@
                                 <option value="3">Llama 1/2</option>
                                 <option value="12">Llama 3</option>
                                 <option value="13">Gemma / Gemini</option>
+                                <option value="14">Jamba</option>
                                 <option value="4">NerdStash (NovelAI Clio)</option>
                                 <option value="5">NerdStash v2 (NovelAI Kayra)</option>
                                 <option value="7">Mistral</option>
