@@ -299,8 +299,8 @@ const color = {
  * @returns {string} A UUIDv4 string
  */
 function uuidv4() {
-    if ('randomUUID' in crypto) {
-        return crypto.randomUUID();
+    if ('crypto' in global && 'randomUUID' in global.crypto) {
+        return global.crypto.randomUUID();
     }
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0;
