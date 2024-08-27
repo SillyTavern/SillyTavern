@@ -1,6 +1,5 @@
 const express = require('express');
 const fetch = require('node-fetch').default;
-const Readable = require('stream').Readable;
 
 const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY, OPENROUTER_HEADERS } = require('../../constants');
@@ -213,7 +212,7 @@ async function sendScaleRequest(request, response) {
 
         if (!generateResponse.ok) {
             console.log(`Scale API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
-            return response.status(generateResponse.status).send({ error: true });
+            return response.status(500).send({ error: true });
         }
 
         const generateResponseJson = await generateResponse.json();
@@ -422,15 +421,17 @@ async function sendAI21Request(request, response) {
             forwardFetchResponse(generateResponse, response);
         } else {
             if (!generateResponse.ok) {
-                console.log(`AI21 API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
-                return response.status(500).send({ error: true });
+                const errorText = await generateResponse.text();
+                console.log(`AI21 API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
             console.log('AI21 response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
     } catch (error) {
-        console.log('Error communicating with MistralAI API: ', error);
+        console.log('Error communicating with AI21 API: ', error);
         if (!response.headersSent) {
             response.send({ error: true });
         } else {
@@ -495,10 +496,10 @@ async function sendMistralAIRequest(request, response) {
             forwardFetchResponse(generateResponse, response);
         } else {
             if (!generateResponse.ok) {
-                console.log(`MistralAI API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
-                // a 401 unauthorized response breaks the frontend auth, so return a 500 instead. prob a better way of dealing with this.
-                // 401s are already handled by the streaming processor and dont pop up an error toast, that should probably be fixed too.
-                return response.status(generateResponse.status === 401 ? 500 : generateResponse.status).send({ error: true });
+                const errorText = await generateResponse.text();
+                console.log(`MistralAI API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
             console.log('MistralAI response:', generateResponseJson);
@@ -595,7 +596,7 @@ async function sendCohereRequest(request, response) {
                 const errorText = await generateResponse.text();
                 console.log(`Cohere API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
                 const errorJson = tryParse(errorText) ?? { error: true };
-                return response.status(generateResponse.status === 401 ? 500 : generateResponse.status).send(errorJson);
+                return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
             console.log('Cohere response:', generateResponseJson);
