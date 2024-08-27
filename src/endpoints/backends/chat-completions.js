@@ -6,6 +6,7 @@ const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY, OPENROUTER_HEADERS } = require('../../constants');
 const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
 const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages, convertMistralMessages, convertCohereTools, convertAI21Messages } = require('../../prompt-converters');
+const CohereStream = require('../../cohere-stream');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
 const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sentencepieceTokenizers, TEXT_COMPLETION_MODELS } = require('../tokenizers');
@@ -41,42 +42,30 @@ function postProcessPrompt(messages, type, charName, userName) {
 /**
  * Ollama strikes back. Special boy #2's steaming routine.
  * Wrap this abomination into proper SSE stream, again.
- * @param {import('node-fetch').Response} jsonStream JSON stream
+ * @param {Response} jsonStream JSON stream
  * @param {import('express').Request} request Express request
  * @param {import('express').Response} response Express response
  * @returns {Promise<any>} Nothing valuable
  */
 async function parseCohereStream(jsonStream, request, response) {
     try {
-        jsonStream.body.on('data', (data) => {
-            try {
-                const json = JSON.parse(data.toString());
-                if (json.message) {
-                    const message = json.message || 'Unknown error';
-                    const chunk = { error: { message: message } };
-                    response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-                } else if (json.event_type === 'text-generation') {
-                    const text = json.text || '';
-                    const chunk = { choices: [{ text }] };
-                    response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-                } else {
-                    return;
-                }
-            } catch (e) {
-                // ignore
+        const stream = new CohereStream({ stream: jsonStream.body, eventShape: { type: 'json', messageTerminator: '\n' } });
+
+        for await (const json of stream.iterMessages()) {
+            if (json.message) {
+                const message = json.message || 'Unknown error';
+                const chunk = { error: { message: message } };
+                response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+            } else if (json.event_type === 'text-generation') {
+                const text = json.text || '';
+                const chunk = { choices: [{ text }] };
+                response.write(`data: ${JSON.stringify(chunk)}\n\n`);
             }
-        });
+        }
 
-        request.socket.on('close', function () {
-            if (jsonStream.body instanceof Readable) jsonStream.body.destroy();
-            response.end();
-        });
-
-        jsonStream.body.on('end', () => {
-            console.log('Streaming request finished');
-            response.write('data: [DONE]\n\n');
-            response.end();
-        });
+        console.log('Streaming request finished');
+        response.write('data: [DONE]\n\n');
+        response.end();
     } catch (error) {
         console.log('Error forwarding streaming response:', error);
         if (!response.headersSent) {
@@ -598,15 +587,15 @@ async function sendCohereRequest(request, response) {
         const apiUrl = API_COHERE + '/chat';
 
         if (request.body.stream) {
-            const stream = await fetch(apiUrl, config);
+            const stream = await global.fetch(apiUrl, config);
             parseCohereStream(stream, request, response);
         } else {
             const generateResponse = await fetch(apiUrl, config);
             if (!generateResponse.ok) {
-                console.log(`Cohere API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
-                // a 401 unauthorized response breaks the frontend auth, so return a 500 instead. prob a better way of dealing with this.
-                // 401s are already handled by the streaming processor and dont pop up an error toast, that should probably be fixed too.
-                return response.status(generateResponse.status === 401 ? 500 : generateResponse.status).send({ error: true });
+                const errorText = await generateResponse.text();
+                console.log(`Cohere API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(generateResponse.status === 401 ? 500 : generateResponse.status).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
             console.log('Cohere response:', generateResponseJson);
