@@ -74,16 +74,17 @@ Or get in touch with the developers directly:
 
 ## Extensions
 
-SillyTavern has extensibility support, with some additional AI modules hosted via [SillyTavern Extras API](https://github.com/SillyTavern/SillyTavern-extras)
+SillyTavern supports client-side extensions; for example, some include:
 
 * Author's Note / Character Bias
 * Character emotional expressions (sprites)
 * Auto-Summary of the chat history
-* Sending images to chat, and the AI interpreting the content
 * Stable Diffusion image generation (5 chat-related presets plus 'free mode')
 * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
 
-A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/).
+If you want to use the richer legacy extensions, the deprecated [SillyTavern Extras API](https://github.com/SillyTavern/SillyTavern-extras) is still hosted online, but unfortunately due to being deprecated it is no longer supported, and you may encounter issues.
+
+A list of included and optional extensions as well as some tutorials on how to use or create them can be found in the [Docs](https://docs.sillytavern.app/).
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
