@@ -1,6 +1,6 @@
-showdown.subParser('makehtml.unhashHTMLSpans', function (text, options, globals) {
+showdown.subParser('unhashHTMLSpans', function (text, options, globals) {
     'use strict';
-    text = globals.converter._dispatch('makehtml.unhashHTMLSpans.before', text, options, globals).getText();
+    text = globals.converter._dispatch('unhashHTMLSpans.before', text, options, globals);
 
     for (var i = 0; i < globals.gHtmlSpans.length; ++i) {
         var repText = globals.gHtmlSpans[i],
@@ -19,6 +19,6 @@ showdown.subParser('makehtml.unhashHTMLSpans', function (text, options, globals)
         text = text.replace('¨C' + i + 'C', repText);
     }
 
-    text = globals.converter._dispatch('makehtml.unhashHTMLSpans.after', text, options, globals).getText();
+    text = globals.converter._dispatch('unhashHTMLSpans.after', text, options, globals);
     return text;
 });
