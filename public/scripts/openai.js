@@ -1372,6 +1372,11 @@ function tryParseStreamingError(response, decoded) {
             toastr.error(data.error.message || response.statusText, 'Chat Completion API');
             throw new Error(data);
         }
+
+        if (data.message) {
+            toastr.error(data.message, 'Chat Completion API');
+            throw new Error(data);
+        }
     }
     catch {
         // No JSON. Do nothing.
@@ -4322,6 +4327,16 @@ async function onModelChange() {
 
         oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.COHERE) {
+        oai_settings.pres_pen_openai = Math.min(Math.max(0, oai_settings.pres_pen_openai), 1);
+        $('#pres_pen_openai').attr('max', 1).attr('min', 0).val(oai_settings.pres_pen_openai).trigger('input');
+        oai_settings.freq_pen_openai = Math.min(Math.max(0, oai_settings.freq_pen_openai), 1);
+        $('#freq_pen_openai').attr('max', 1).attr('min', 0).val(oai_settings.freq_pen_openai).trigger('input');
+    } else {
+        $('#pres_pen_openai').attr('max', 2).attr('min', 0).val(oai_settings.pres_pen_openai).trigger('input');
+        $('#freq_pen_openai').attr('max', 2).attr('min', 0).val(oai_settings.freq_pen_openai).trigger('input');
     }
 
     $('#openai_max_context_counter').attr('max', Number($('#openai_max_context').attr('max')));
