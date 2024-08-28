@@ -426,7 +426,7 @@ async function validateReverseProxy() {
     const rememberKey = `Proxy_SkipConfirm_${getStringHash(oai_settings.reverse_proxy)}`;
     const skipConfirm = localStorage.getItem(rememberKey) === 'true';
 
-    const confirmation = skipConfirm || await Popup.show.confirm(t`Connecting To Proxy`, await renderTemplateAsync('proxyConnectionWarning', {proxyURL: DOMPurify.sanitize(oai_settings.reverse_proxy)}));
+    const confirmation = skipConfirm || await Popup.show.confirm(t`Connecting To Proxy`, await renderTemplateAsync('proxyConnectionWarning', { proxyURL: DOMPurify.sanitize(oai_settings.reverse_proxy) }));
 
     if (!confirmation) {
         toastr.error('Update or remove your reverse proxy settings.');
