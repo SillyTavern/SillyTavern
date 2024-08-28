@@ -1126,7 +1126,6 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
         { role: 'system', content: charDescription, identifier: 'charDescription' },
         { role: 'system', content: charPersonalityText, identifier: 'charPersonality' },
         { role: 'system', content: scenarioText, identifier: 'scenario' },
-        { role: 'system', content: personaDescription, identifier: 'personaDescription' },
         // Unordered prompts without marker
         { role: 'system', content: impersonationPrompt, identifier: 'impersonate' },
         { role: 'system', content: quietPrompt, identifier: 'quietPrompt' },
