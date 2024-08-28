@@ -5080,7 +5080,7 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
         }
 
         navigator.clipboard.writeText(rawPromptValues);
-        toastr.info('Copied!');
+        toastr.info(t`Copied!`);
     });
 
     popup.dlg.querySelector('#showRawPrompt').addEventListener('click', function () {
