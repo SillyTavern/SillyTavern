@@ -2705,7 +2705,7 @@ function addPersonaDescriptionExtensionPrompt() {
     const INJECT_TAG = 'PERSONA_DESCRIPTION';
     setExtensionPrompt(INJECT_TAG, '', extension_prompt_types.IN_PROMPT, 0);
 
-    if (!power_user.persona_description) {
+    if (!power_user.persona_description || power_user.persona_description_position === persona_description_positions.NONE) {
         return;
     }
 
@@ -3726,7 +3726,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     const storyStringParams = {
         description: description,
         personality: personality,
-        persona: persona,
+        persona: power_user.persona_description_position == persona_description_positions.IN_PROMPT ? persona : '',
         scenario: scenario,
         system: isInstruct ? system : '',
         char: name2,
@@ -4302,7 +4302,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             padding: power_user.token_padding,
             main_api: main_api,
             instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && system ? system : power_user.instruct.system_prompt) : '',
-            userPersona: (power_user.persona_description || ''),
+            userPersona: (power_user.persona_description_position == persona_description_positions.IN_PROMPT ? (persona || '') : ''),
         };
 
         //console.log(additionalPromptStuff);
