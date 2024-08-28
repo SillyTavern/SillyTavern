@@ -2192,7 +2192,7 @@ export function addCopyToCodeBlocks(messageElement) {
             codeBlocks.get(i).appendChild(copyButton);
             copyButton.addEventListener('pointerup', function (event) {
                 navigator.clipboard.writeText(codeBlocks.get(i).innerText);
-                toastr.info('Copied!', '', { timeOut: 2000 });
+                toastr.info(t`Copied!`, '', { timeOut: 2000 });
             });
         }
     }
@@ -5080,7 +5080,7 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
         }
 
         navigator.clipboard.writeText(rawPromptValues);
-        toastr.info('Copied!');
+        toastr.info(t`Copied!`);
     });
 
     popup.dlg.querySelector('#showRawPrompt').addEventListener('click', function () {
@@ -6310,7 +6310,7 @@ export function setUserName(value) {
     console.log(`User name changed to ${name1}`);
     $('#your_name').val(name1);
     if (power_user.persona_show_notifications) {
-        toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
+        toastr.success(t`Your messages will now be sent as ${name1}`, t`Current persona updated`);
     }
     saveSettingsDebounced();
 }
@@ -9532,11 +9532,7 @@ jQuery(async function () {
         const oldFileNameFull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
         const oldFileName = oldFileNameFull.replace('.jsonl', '');
 
-        const popupText = `<h3>Enter the new name for the chat:<h3>
-        <small>!!Using an existing filename will produce an error!!<br>
-        This will break the link between checkpoint chats.<br>
-        No need to add '.jsonl' at the end.<br>
-        </small>`;
+        const popupText = await renderTemplateAsync('chatRename');
         const newName = await callPopup(popupText, 'input', oldFileName);
 
         if (!newName || newName == oldFileName) {
@@ -9744,12 +9740,7 @@ jQuery(async function () {
         else if (id == 'option_start_new_chat') {
             if ((selected_group || this_chid !== undefined) && !is_send_press) {
                 let deleteCurrentChat = false;
-                const result = await Popup.show.confirm('Start new chat?', `
-                    <label for="del_chat_checkbox" class="checkbox_label justifyCenter"
-                    title="If necessary, you can later restore this chat file from the /backups folder">
-                        <input type="checkbox" id="del_chat_checkbox" />
-                        <small>Also delete the current chat file</small>
-                    </label>`, {
+                const result = await Popup.show.confirm(t`Start new chat?`, await renderTemplateAsync('newChatConfirm'), {
                     onClose: () => deleteCurrentChat = !!$('#del_chat_checkbox').prop('checked'),
                 });
                 if (!result) {
@@ -10261,10 +10252,10 @@ jQuery(async function () {
 
         let deleteOnlySwipe = false;
         if (power_user.confirm_message_delete && fromSlashCommand !== true) {
-            const result = await callGenericPopup('Are you sure you want to delete this message?', POPUP_TYPE.CONFIRM, null, {
-                okButton: canDeleteSwipe ? 'Delete Swipe' : 'Delete Message',
+            const result = await callGenericPopup(t`Are you sure you want to delete this message?`, POPUP_TYPE.CONFIRM, null, {
+                okButton: canDeleteSwipe ? t`Delete Swipe` : t`Delete Message`,
                 cancelButton: 'Cancel',
-                customButtons: canDeleteSwipe ? ['Delete Message'] : null,
+                customButtons: canDeleteSwipe ? [t`Delete Message`] : null,
             });
             if (!result) {
                 return;
