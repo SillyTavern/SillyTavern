@@ -113,7 +113,7 @@ class CharacterContextMenu {
      * @returns {Promise<void>}
      */
     static delete = async (characterKey, deleteChats = false) => {
-        await deleteCharacter(characterKey, { deleteChats: deleteChats, refreshCharacters: false });
+        await deleteCharacter(characterKey, { deleteChats: deleteChats });
     };
 
     static #getCharacter = (characterId) => characters[characterId] ?? null;
@@ -848,7 +848,6 @@ class BulkEditOverlay {
                 toastr.info('We\'re deleting your characters, please wait...', 'Working on it');
                 const avatarList = characterIds.map(id => characters[id]?.avatar).filter(a => a);
                 return CharacterContextMenu.delete(avatarList, deleteChats)
-                    .then(() => getCharacters())
                     .then(() => this.browseState())
                     .finally(() => hideLoader());
             });

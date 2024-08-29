@@ -8837,7 +8837,7 @@ export async function handleDeleteCharacter(this_chid, delete_chats) {
         return;
     }
 
-    await deleteCharacter(characters[this_chid].avatar, { deleteChats: delete_chats, refreshCharacters: true });
+    await deleteCharacter(characters[this_chid].avatar, { deleteChats: delete_chats });
 }
 
 /**
@@ -8846,10 +8846,9 @@ export async function handleDeleteCharacter(this_chid, delete_chats) {
  * @param {string|string[]} characterKey - The key (avatar) of the character to be deleted
  * @param {Object} [options] - Optional parameters for the deletion
  * @param {boolean} [options.deleteChats=true] - Whether to delete associated chats or not
- * @param {boolean} [options.refreshCharacters=true] - Whether to refresh the characters list after deletion
  * @return {Promise<void>} - A promise that resolves when the character is successfully deleted
  */
-export async function deleteCharacter(characterKey, { deleteChats = true, refreshCharacters = true } = {}) {
+export async function deleteCharacter(characterKey, { deleteChats = true } = {}) {
     if (!Array.isArray(characterKey)) {
         characterKey = [characterKey];
     }
@@ -8890,7 +8889,7 @@ export async function deleteCharacter(characterKey, { deleteChats = true, refres
         await eventSource.emit(event_types.CHARACTER_DELETED, { id: chid, character: character });
     }
 
-    await removeCharacterFromUI(refreshCharacters);
+    await removeCharacterFromUI();
 }
 
 /**
@@ -8899,10 +8898,8 @@ export async function deleteCharacter(characterKey, { deleteChats = true, refres
  * character ID, resetting characters array and chat metadata, deselecting character's tab
  * panel, removing character name from navigation tabs, clearing chat, fetching updated list of characters.
  * It also ensures to save the settings after all the operations.
- *
- * @param {boolean} reloadCharacters - Whether the character list should be refreshed after deletion.
  */
-async function removeCharacterFromUI(reloadCharacters = true) {
+async function removeCharacterFromUI() {
     await clearChat();
     $('#character_cross').click();
     this_chid = undefined;
@@ -8912,7 +8909,7 @@ async function removeCharacterFromUI(reloadCharacters = true) {
     chat_metadata = {};
     $(document.getElementById('rm_button_selected_ch')).children('h2').text('');
     this_chid = undefined;
-    if (reloadCharacters) await getCharacters();
+    await getCharacters();
     await printMessages();
     saveSettingsDebounced();
 }
@@ -9486,7 +9483,7 @@ jQuery(async function () {
             return;
         }
 
-        await deleteCharacter(characters[this_chid].avatar, { deleteChats: deleteChats, refreshCharacters: true });
+        await deleteCharacter(characters[this_chid].avatar, { deleteChats: deleteChats });
     });
 
     //////// OPTIMIZED ALL CHAR CREATION/EDITING TEXTAREA LISTENERS ///////////////
