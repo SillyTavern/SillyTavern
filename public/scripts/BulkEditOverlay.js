@@ -108,14 +108,12 @@ class CharacterContextMenu {
      * Delete one or more characters,
      * opens a popup.
      *
-     * @param {number} characterId
+     * @param {string|string[]} characterKey
      * @param {boolean} [deleteChats]
      * @returns {Promise<void>}
      */
-    static delete = async (characterId, deleteChats = false) => {
-        const character = CharacterContextMenu.#getCharacter(characterId);
-
-        await deleteCharacter(character.avatar, { deleteChats: deleteChats });
+    static delete = async (characterKey, deleteChats = false) => {
+        await deleteCharacter(characterKey, { deleteChats: deleteChats, refreshCharacters: false });
     };
 
     static #getCharacter = (characterId) => characters[characterId] ?? null;
@@ -344,7 +342,7 @@ class BulkTagPopupHandler {
         const mutualTags = this.getMutualTags();
 
         for (const characterId of this.characterIds) {
-            for(const tag of mutualTags) {
+            for (const tag of mutualTags) {
                 removeTagFromMap(tag.id, characterId);
             }
         }
@@ -848,7 +846,8 @@ class BulkEditOverlay {
 
                 showLoader();
                 toastr.info('We\'re deleting your characters, please wait...', 'Working on it');
-                return Promise.allSettled(characterIds.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
+                const avatarList = characterIds.map(id => characters[id]?.avatar).filter(a => a);
+                return CharacterContextMenu.delete(avatarList, deleteChats)
                     .then(() => getCharacters())
                     .then(() => this.browseState())
                     .finally(() => hideLoader());
