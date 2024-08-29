@@ -11,7 +11,7 @@ import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCom
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
-import { isFalseBoolean } from './utils.js';
+import { isFalseBoolean, convertValueType } from './utils.js';
 
 /** @typedef {import('./slash-commands/SlashCommandParser.js').NamedArguments} NamedArguments */
 /** @typedef {import('./slash-commands/SlashCommand.js').UnnamedArguments} UnnamedArguments */
@@ -51,6 +51,7 @@ function setLocalVariable(name, value, args = {}) {
 
     if (args.index !== undefined) {
         try {
+            value = convertValueType(value, args.type);
             let localVariable = JSON.parse(chat_metadata.variables[name] ?? 'null');
             const numIndex = Number(args.index);
             if (Number.isNaN(numIndex)) {
@@ -100,6 +101,7 @@ function getGlobalVariable(name, args = {}) {
 function setGlobalVariable(name, value, args = {}) {
     if (args.index !== undefined) {
         try {
+            value = convertValueType(value, args.type);
             let globalVariable = JSON.parse(extension_settings.variables.global[name] ?? 'null');
             const numIndex = Number(args.index);
             if (Number.isNaN(numIndex)) {
@@ -667,23 +669,28 @@ function parseNumericSeries(value, scope = null) {
 }
 
 function performOperation(value, operation, singleOperand = false, scope = null) {
-    if (!value) {
-        return 0;
+    function getResult() {
+        if (!value) {
+            return 0;
+        }
+
+        const array = parseNumericSeries(value, scope);
+
+        if (array.length === 0) {
+            return 0;
+        }
+
+        const result = singleOperand ? operation(array[0]) : operation(array);
+
+        if (isNaN(result) || !isFinite(result)) {
+            return 0;
+        }
+
+        return result;
     }
 
-    const array = parseNumericSeries(value, scope);
-
-    if (array.length === 0) {
-        return 0;
-    }
-
-    const result = singleOperand ? operation(array[0]) : operation(array);
-
-    if (isNaN(result) || !isFinite(result)) {
-        return 0;
-    }
-
-    return result;
+    const result = getResult();
+    return String(result);
 }
 
 function addValuesCallback(args, value) {
@@ -836,7 +843,7 @@ function varCallback(args, value) {
         if (typeof key != 'string') throw new Error('Key must be a string');
         if (args._hasUnnamedArgument) {
             const val = typeof value[0] == 'string' ? value.join(' ') : value[0];
-            args._scope.setVariable(key, val, args.index);
+            args._scope.setVariable(key, val, args.index, args.type);
             return val;
         } else {
             return args._scope.getVariable(key, args.index);
@@ -846,7 +853,7 @@ function varCallback(args, value) {
     if (typeof key != 'string') throw new Error('Key must be a string');
     if (value.length > 0) {
         const val = typeof value[0] == 'string' ? value.join(' ') : value[0];
-        args._scope.setVariable(key, val, args.index);
+        args._scope.setVariable(key, val, args.index, args.type);
         return val;
     } else {
         return args._scope.getVariable(key, args.index);
@@ -901,6 +908,14 @@ export function registerVariableCommands() {
             new SlashCommandNamedArgument(
                 'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
             ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'type',
+                description: 'type of the value when used with index',
+                forceEnum: true,
+                enumProvider: commonEnumProviders.types,
+                isRequired: false,
+                defaultValue: 'string',
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -910,12 +925,16 @@ export function registerVariableCommands() {
         helpString: `
             <div>
                 Set a local variable value and pass it down the pipe. The <code>index</code> argument is optional.
+                To perform a type conversion when using <code>index</code>, use the <code>type</code> argument.
             </div>
             <div>
                 <strong>Example:</strong>
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/setvar key=color green</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/setvar key=colors index=3 type=string blue</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1015,6 +1034,14 @@ export function registerVariableCommands() {
             new SlashCommandNamedArgument(
                 'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
             ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'type',
+                description: 'type of the value when used with index',
+                forceEnum: true,
+                enumProvider: commonEnumProviders.types,
+                isRequired: false,
+                defaultValue: 'string',
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -1024,12 +1051,16 @@ export function registerVariableCommands() {
         helpString: `
             <div>
                 Set a global variable value and pass it down the pipe. The <code>index</code> argument is optional.
+                To perform a type conversion when using <code>index</code>, use the <code>type</code> argument.
             </div>
             <div>
                 <strong>Example:</strong>
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/setglobalvar key=color green</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/setglobalvar key=colors index=3 type=string blue</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1247,16 +1278,16 @@ export function registerVariableCommands() {
             }),
             new SlashCommandNamedArgument(
                 'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, [
-                    new SlashCommandEnumValue('gt', 'a > b'),
-                    new SlashCommandEnumValue('gte', 'a >= b'),
-                    new SlashCommandEnumValue('lt', 'a < b'),
-                    new SlashCommandEnumValue('lte', 'a <= b'),
-                    new SlashCommandEnumValue('eq', 'a == b'),
-                    new SlashCommandEnumValue('neq', 'a !== b'),
-                    new SlashCommandEnumValue('not', '!a'),
-                    new SlashCommandEnumValue('in', 'a includes b'),
-                    new SlashCommandEnumValue('nin', 'a not includes b'),
-                ],
+                new SlashCommandEnumValue('gt', 'a > b'),
+                new SlashCommandEnumValue('gte', 'a >= b'),
+                new SlashCommandEnumValue('lt', 'a < b'),
+                new SlashCommandEnumValue('lte', 'a <= b'),
+                new SlashCommandEnumValue('eq', 'a == b'),
+                new SlashCommandEnumValue('neq', 'a !== b'),
+                new SlashCommandEnumValue('not', '!a'),
+                new SlashCommandEnumValue('in', 'a includes b'),
+                new SlashCommandEnumValue('nin', 'a not includes b'),
+            ],
             ),
             new SlashCommandNamedArgument(
                 'else', 'command to execute if not true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], false,
@@ -1325,16 +1356,16 @@ export function registerVariableCommands() {
             }),
             new SlashCommandNamedArgument(
                 'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, [
-                    new SlashCommandEnumValue('gt', 'a > b'),
-                    new SlashCommandEnumValue('gte', 'a >= b'),
-                    new SlashCommandEnumValue('lt', 'a < b'),
-                    new SlashCommandEnumValue('lte', 'a <= b'),
-                    new SlashCommandEnumValue('eq', 'a == b'),
-                    new SlashCommandEnumValue('neq', 'a !== b'),
-                    new SlashCommandEnumValue('not', '!a'),
-                    new SlashCommandEnumValue('in', 'a includes b'),
-                    new SlashCommandEnumValue('nin', 'a not includes b'),
-                ],
+                new SlashCommandEnumValue('gt', 'a > b'),
+                new SlashCommandEnumValue('gte', 'a >= b'),
+                new SlashCommandEnumValue('lt', 'a < b'),
+                new SlashCommandEnumValue('lte', 'a <= b'),
+                new SlashCommandEnumValue('eq', 'a == b'),
+                new SlashCommandEnumValue('neq', 'a !== b'),
+                new SlashCommandEnumValue('not', '!a'),
+                new SlashCommandEnumValue('in', 'a includes b'),
+                new SlashCommandEnumValue('nin', 'a not includes b'),
+            ],
             ),
             new SlashCommandNamedArgument(
                 'guard', 'disable loop iteration limit', [ARGUMENT_TYPE.STRING], false, false, null, commonEnumProviders.boolean('onOff')(),
@@ -2030,6 +2061,14 @@ export function registerVariableCommands() {
                 false, // isRequired
                 false, // acceptsMultiple
             ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'type',
+                description: 'type of the value when used with index',
+                forceEnum: true,
+                enumProvider: commonEnumProviders.types,
+                isRequired: false,
+                defaultValue: 'string',
+            }),
         ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({

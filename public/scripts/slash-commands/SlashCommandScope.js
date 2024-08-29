@@ -1,4 +1,5 @@
 import { SlashCommandClosure } from './SlashCommandClosure.js';
+import { convertValueType } from '../utils.js';
 
 export class SlashCommandScope {
     /**@type {string[]}*/ variableNames = [];
@@ -55,7 +56,8 @@ export class SlashCommandScope {
         if (this.existsVariableInScope(key)) throw new SlashCommandScopeVariableExistsError(`Variable named "${key}" already exists.`);
         this.variables[key] = value;
     }
-    setVariable(key, value, index = null) {
+    setVariable(key, value, index = null, type = null) {
+        value = convertValueType(value, type);
         if (this.existsVariableInScope(key)) {
             if (index !== null && index !== undefined) {
                 let v = this.variables[key];
