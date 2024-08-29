@@ -3760,7 +3760,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     let examplesString = '';
-    let chatString = '';
+    let chatString = addChatsPreamble(addChatsSeparator(''));
     let cyclePrompt = '';
 
     async function getMessagesTokenCount() {
@@ -4028,12 +4028,13 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     async function checkPromptSize() {
         console.debug('---checking Prompt size');
         setPromptString();
+        const jointMessages = mesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
         const prompt = [
             beforeScenarioAnchor,
             storyString,
             afterScenarioAnchor,
             mesExmString,
-            mesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join(''),
+            addChatsPreamble(addChatsSeparator(jointMessages)),
             '\n',
             generatedPromptCache,
             quiet_prompt,
