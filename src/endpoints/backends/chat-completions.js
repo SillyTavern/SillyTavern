@@ -570,6 +570,7 @@ async function sendCohereRequest(request, response) {
             documents: [],
             tools: tools,
             search_queries_only: false,
+            safety_mode: 'NONE',
         };
 
         console.log('Cohere request:', requestBody);
