@@ -230,7 +230,9 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
             editorHtml.find('input[name="substitute_regex"]').prop('checked', existingScript.substituteRegex ?? false);
             editorHtml.find('input[name="min_depth"]').val(existingScript.minDepth ?? '');
             editorHtml.find('input[name="max_depth"]').val(existingScript.maxDepth ?? '');
-            editorHtml.find('input[name="automation_id"]').val(existingScript.automationId || '');
+            const automationIdInput = editorHtml.find('input[name="automation_id"]');
+            automationIdInput.val(existingScript.automationId || '');
+            createAutomationIdAutocomplete(automationIdInput);
 
             existingScript.placement.forEach((element) => {
                 editorHtml
@@ -250,6 +252,8 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
         editorHtml
             .find('input[name="replace_position"][value="1"]')
             .prop('checked', true);
+
+        createAutomationIdAutocomplete(editorHtml.find('input[name="automation_id"]'));
     }
 
     editorHtml.find('#regex_test_mode_toggle').on('click', function () {
@@ -460,6 +464,44 @@ async function checkEmbeddedRegexScripts() {
     }
 
     loadRegexScripts();
+}
+
+/**
+ * Create an autocomplete.
+ * @param {JQuery<HTMLElement>} control - Input element to attach the autocomplete to
+ */
+function createAutomationIdAutocomplete(control) {
+    const handleSelect = (event, ui) => {
+        // Prevent default autocomplete select, so we can manually set the value
+        event.preventDefault();
+        $(control).val(ui.item.value).trigger('input').trigger('blur');
+    };
+
+    $(control).autocomplete({
+        minLength: 0,
+        source: function (request, response) {
+            const ids = new Set();
+
+            if ('quickReplyApi' in window) {
+                // @ts-ignore
+                for (const automationId of window['quickReplyApi'].listAutomationIds()) {
+                    ids.add(String(automationId));
+                }
+            }
+
+            const haystack = Array.from(ids);
+            haystack.sort((a, b) => a.localeCompare(b));
+            const needle = request.term.toLowerCase();
+            const result = haystack.filter(x => x.toLowerCase().includes(needle));
+
+            response(result);
+        },
+        select: handleSelect,
+    });
+
+    $(control).on('focus click', function () {
+        $(control).autocomplete('search', $(control).val());
+    });
 }
 
 // Workaround for loading in sequence with other extensions

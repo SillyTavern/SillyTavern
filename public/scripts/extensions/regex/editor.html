@@ -112,11 +112,11 @@
                 </div>
                 <div class="flex-container wide100p marginTop5">
                     <div class="flex1 flex-container flexNoGap">
-                        <small data-i18n="[title]ext_regex_automation_id_desc" title="When the regex is matched, execute the Quick Reply that has this Automation ID attached. Matches and capturing groups will be passed as scoped variables, e.g. &lcub;lcub;var::match&rcub;&rcub;, &lcub;lcub;var::$1&rcub;&rcub;, etc.">
+                        <small data-i18n="[title]ext_regex_automation_id_desc" title="When the regex is matched, execute Quick Replies that have the same Automation ID. Arguments: &lcub;&lcub;arg::scriptName&rcub;&rcub;, &lcub;&lcub;arg::replacement&rcub;&rcub;, &lcub;&lcub;arg::match&rcub;&rcub;, &lcub;&lcub;arg::$1&rcub;&rcub;, etc.">
                             <span data-i18n="Automation ID">Automation ID</span>
                             <span class="fa-solid fa-circle-question note-link-span"></span>
                         </small>
-                        <input name="automation_id" class="text_pole textarea_compact" />
+                        <input name="automation_id" class="text_pole textarea_compact" placeholder="( None )" data-i18n="[placeholder]ext_regex_automation_id_placeholder" />
                     </div>
                 </div>
             </div>

@@ -266,3 +266,8 @@ const onNewChat = async () => {
     await autoExec.handleNewChat();
 };
 eventSource.on(event_types.CHAT_CREATED, (...args) => executeIfReadyElseQueue(onNewChat, args));
+
+const onRegexMatch = async (script) => {
+    await autoExec.handleRegexMatch(script);
+};
+eventSource.on(event_types.REGEX_SCRIPT_MATCHED, (...args) => executeIfReadyElseQueue(onRegexMatch, args));

@@ -24,11 +24,11 @@ export class AutoExecuteHandler {
 
 
 
-    async performAutoExecute(/**@type {QuickReply[]}*/qrList) {
+    async performAutoExecute(/**@type {QuickReply[]}*/qrList, args = {}) {
         for (const qr of qrList) {
             this.preventAutoExecuteStack.push(qr.preventAutoExecute);
             try {
-                await qr.execute({ isAutoExecute:true });
+                await qr.execute({ isAutoExecute:true, ...args });
             } catch (ex) {
                 warn(ex);
             } finally {
@@ -106,5 +106,34 @@ export class AutoExecuteHandler {
         ];
 
         await this.performAutoExecute(qrList);
+    }
+
+    /**
+     * @typedef {object} RegexScriptEventArg
+     * @property {string} automationId The automation ID
+     * @property {string} scriptName The name of the script
+     * @property {string[]} matches Regex matches
+     * @property {string} replacement The replacement string
+     * @param {RegexScriptEventArg} script The script that was matched
+     */
+    async handleRegexMatch(script) {
+        if (!this.checkExecute() || !script?.automationId) return;
+        const qrList = [
+            ...this.settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.automationId && qr.automationId === script.automationId)).flat(),
+            ...(this.settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.automationId && qr.automationId === script.automationId))?.flat() ?? []),
+        ];
+
+        const args = {};
+        args['scriptName'] = script.scriptName;
+        args['automationId'] = script.automationId;
+        args['replacement'] = script.replacement;
+        if (Array.isArray(script.matches) && script.matches.length > 0) {
+            args['match'] = script.matches[0];
+            script.matches.forEach((match, idx) => {
+                args[`$${idx}`] = match;
+            });
+        }
+
+        await this.performAutoExecute(qrList, args);
     }
 }

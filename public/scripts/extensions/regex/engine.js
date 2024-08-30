@@ -132,17 +132,20 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
             return filteredMatch;
         });
 
+        // Substitute parameters in the replacement string
+        const replacement = substituteParams(replaceWithGroups);
+
         // Emit the event
         if (regexScript.automationId) {
             eventSource.emitAndWait(event_types.REGEX_SCRIPT_MATCHED, {
                 scriptName: regexScript.scriptName,
                 automationId: regexScript.automationId,
                 matches: args,
+                replacement: replacement,
             });
         }
 
-        // Substitute at the end
-        return substituteParams(replaceWithGroups);
+        return replacement;
     });
 
     return newString;
