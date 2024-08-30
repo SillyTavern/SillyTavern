@@ -570,8 +570,12 @@ async function sendCohereRequest(request, response) {
             documents: [],
             tools: tools,
             search_queries_only: false,
-            safety_mode: 'NONE',
         };
+
+        const canDoSafetyMode = String(request.body.model).endsWith('08-2024');
+        if (canDoSafetyMode) {
+            requestBody.safety_mode = 'NONE';
+        }
 
         console.log('Cohere request:', requestBody);
 
