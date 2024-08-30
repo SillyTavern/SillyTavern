@@ -158,6 +158,7 @@ import {
     flashHighlight,
     isTrueBoolean,
     toggleDrawer,
+    uuidv4,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -2858,6 +2859,7 @@ class StreamingProcessor {
      * @param {string} continueMessage Previous message if the type is 'continue'
      */
     constructor(type, forceName2, timeStarted, continueMessage) {
+        this.streamId = uuidv4();
         this.result = '';
         this.messageId = -1;
         this.messageDom = null;

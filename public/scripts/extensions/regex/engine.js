@@ -1,4 +1,4 @@
-import { characters, event_types, eventSource, substituteParams, this_chid } from '../../../script.js';
+import { characters, event_types, eventSource, streamingProcessor, substituteParams, this_chid } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 import { regexFromString } from '../../utils.js';
 export {
@@ -6,6 +6,9 @@ export {
     getRegexedString,
     runRegexScript,
 };
+
+/** @type {Map<string, string[]>} */
+const REGEX_RUNS = new Map();
 
 /**
  * @enum {number} Where the regex script should be applied
@@ -136,7 +139,7 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
         const replacement = substituteParams(replaceWithGroups);
 
         // Emit the event
-        if (regexScript.automationId) {
+        if (regexScript.automationId && shouldRunOnStream(regexScript)) {
             eventSource.emitAndWait(event_types.REGEX_SCRIPT_MATCHED, {
                 scriptName: regexScript.scriptName,
                 automationId: regexScript.automationId,
@@ -149,6 +152,35 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
     });
 
     return newString;
+}
+
+/**
+ * Determines if the regex script should run on the current stream.
+ * @param {import('./index.js').RegexScript} regexScript The regex script to check
+ * @returns {boolean} True if the script should run, false otherwise
+ */
+function shouldRunOnStream(regexScript) {
+    // If there is no streaming processor, always run the script
+    // Assuming only one stream can run at a time, so we can clear previous runs
+    if (!streamingProcessor) {
+        REGEX_RUNS.clear();
+        return true;
+    }
+    // If streaming is active, but the request is not from the streaming processor, always run the script
+    const isFromStreaming = new Error().stack.includes(`${streamingProcessor.constructor.name}.${streamingProcessor.onProgressStreaming.name}`);
+    if (!isFromStreaming) {
+        return true;
+    }
+    // Run only once per stream ID
+    const streamId = streamingProcessor.streamId;
+    const scriptKey = `${regexScript.automationId}-${regexScript.scriptName}`;
+    const scriptRuns = REGEX_RUNS.get(streamId) ?? [];
+    const shouldRun = !scriptRuns.includes(scriptKey);
+    if (shouldRun) {
+        scriptRuns.push(scriptKey);
+        REGEX_RUNS.set(streamId, scriptRuns);
+    }
+    return shouldRun;
 }
 
 /**
