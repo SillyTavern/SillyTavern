@@ -3763,7 +3763,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     let examplesString = '';
-    let chatString = '';
+    let chatString = addChatsPreamble(addChatsSeparator(''));
     let cyclePrompt = '';
 
     async function getMessagesTokenCount() {
@@ -3772,10 +3772,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             storyString,
             afterScenarioAnchor,
             examplesString,
-            chatString,
-            quiet_prompt,
-            cyclePrompt,
             userAlignmentMessage,
+            chatString,
+            modifyLastPromptLine(''),
+            cyclePrompt,
         ].join('').replace(/\r/gm, '');
         return getTokenCountAsync(encodeString, power_user.token_padding);
     }
@@ -3806,8 +3806,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
 
         tokenCount += await getTokenCountAsync(item.replace(/\r/gm, ''));
-        chatString = item + chatString;
         if (tokenCount < this_max_context) {
+            chatString = chatString + item;
             arrMes[index] = item;
             lastAddedIndex = Math.max(lastAddedIndex, index);
         } else {
@@ -3833,8 +3833,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
 
         tokenCount += await getTokenCountAsync(item.replace(/\r/gm, ''));
-        chatString = item + chatString;
         if (tokenCount < this_max_context) {
+            chatString = chatString + item;
             arrMes[i] = item;
             lastAddedIndex = Math.max(lastAddedIndex, i);
         } else {
@@ -4031,15 +4031,16 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     async function checkPromptSize() {
         console.debug('---checking Prompt size');
         setPromptString();
+        const jointMessages = mesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
         const prompt = [
             beforeScenarioAnchor,
             storyString,
             afterScenarioAnchor,
             mesExmString,
-            mesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join(''),
+            addChatsPreamble(addChatsSeparator(jointMessages)),
             '\n',
+            modifyLastPromptLine(''),
             generatedPromptCache,
-            quiet_prompt,
         ].join('').replace(/\r/gm, '');
         let thisPromptContextSize = await getTokenCountAsync(prompt, power_user.token_padding);
 
