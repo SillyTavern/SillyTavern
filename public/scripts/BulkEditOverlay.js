@@ -597,8 +597,7 @@ class BulkEditOverlay {
 
             this.container.removeEventListener('mouseup', cancelHold);
             this.container.removeEventListener('touchend', cancelHold);
-        },
-            BulkEditOverlay.longPressDelay);
+        }, BulkEditOverlay.longPressDelay);
     };
 
     handleLongPressEnd = (event) => {
@@ -845,11 +844,14 @@ class BulkEditOverlay {
                 const deleteChats = document.getElementById('del_char_checkbox').checked ?? false;
 
                 showLoader();
-                toastr.info('We\'re deleting your characters, please wait...', 'Working on it');
+                const toast = toastr.info('We\'re deleting your characters, please wait...', 'Working on it');
                 const avatarList = characterIds.map(id => characters[id]?.avatar).filter(a => a);
                 return CharacterContextMenu.delete(avatarList, deleteChats)
                     .then(() => this.browseState())
-                    .finally(() => hideLoader());
+                    .finally(() => {
+                        toastr.clear(toast);
+                        hideLoader();
+                    });
             });
 
         // At this moment the popup is already changed in the dom, but not yet closed/resolved. We build the avatar list here
