@@ -17,7 +17,8 @@ import { regex_placement, runRegexScript } from './engine.js';
  * @property {string} replaceString - The replace string
  * @property {string[]} trimStrings - The trim strings
  * @property {string?} findRegex - The find regex
- * @property {string?} substituteRegex - The substitute regex
+ * @property {boolean?} substituteRegex - The substitute regex
+ * @property {string?} automationId - The automation ID
  */
 
 /**
@@ -189,8 +190,8 @@ async function loadRegexScripts() {
         $(container).append(scriptHtml);
     }
 
-    extension_settings?.regex?.forEach((script, index, array) => renderScript('#saved_regex_scripts', script, false, index, array));
-    characters[this_chid]?.data?.extensions?.regex_scripts?.forEach((script, index, array) => renderScript('#saved_scoped_scripts', script, true, index, array));
+    extension_settings?.regex?.forEach((script, index) => renderScript('#saved_regex_scripts', script, false, index));
+    characters[this_chid]?.data?.extensions?.regex_scripts?.forEach((script, index) => renderScript('#saved_scoped_scripts', script, true, index));
 
     const isAllowed = extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar);
     $('#regex_scoped_toggle').prop('checked', isAllowed);
@@ -229,6 +230,7 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
             editorHtml.find('input[name="substitute_regex"]').prop('checked', existingScript.substituteRegex ?? false);
             editorHtml.find('input[name="min_depth"]').val(existingScript.minDepth ?? '');
             editorHtml.find('input[name="max_depth"]').val(existingScript.maxDepth ?? '');
+            editorHtml.find('input[name="automation_id"]').val(existingScript.automationId || '');
 
             existingScript.placement.forEach((element) => {
                 editorHtml
@@ -262,11 +264,13 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
 
         const testScript = {
             id: uuidv4(),
-            scriptName: editorHtml.find('.regex_script_name').val(),
-            findRegex: editorHtml.find('.find_regex').val(),
-            replaceString: editorHtml.find('.regex_replace_string').val(),
+            scriptName: String(editorHtml.find('.regex_script_name').val()),
+            findRegex: String(editorHtml.find('.find_regex').val()),
+            replaceString: String(editorHtml.find('.regex_replace_string').val()),
             trimStrings: String(editorHtml.find('.regex_trim_strings').val()).split('\n').filter((e) => e.length !== 0) || [],
-            substituteRegex: editorHtml.find('input[name="substitute_regex"]').prop('checked'),
+            substituteRegex: !!editorHtml.find('input[name="substitute_regex"]').prop('checked'),
+            automationId: String(editorHtml.find('input[name="automation_id"]').val()),
+            disabled: false,
         };
         const rawTestString = String(editorHtml.find('#regex_test_input').val());
         const result = runRegexScript(testScript, rawTestString);
@@ -282,12 +286,12 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
             scriptName: String(editorHtml.find('.regex_script_name').val()),
             findRegex: String(editorHtml.find('.find_regex').val()),
             replaceString: String(editorHtml.find('.regex_replace_string').val()),
-            trimStrings: editorHtml.find('.regex_trim_strings').val().split('\n').filter((e) => e.length !== 0) || [],
+            trimStrings: String(editorHtml.find('.regex_trim_strings').val()).split('\n').filter((e) => e.length !== 0) || [],
             placement:
                 editorHtml
                     .find('input[name="replace_position"]')
                     .filter(':checked')
-                    .map(function () { return parseInt($(this).val()); })
+                    .map(function () { return Number($(this).val()); })
                     .get()
                     .filter((e) => !isNaN(e)) || [],
             disabled: editorHtml.find('input[name="disabled"]').prop('checked'),
@@ -297,6 +301,7 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
             substituteRegex: editorHtml.find('input[name="substitute_regex"]').prop('checked'),
             minDepth: parseInt(String(editorHtml.find('input[name="min_depth"]').val())),
             maxDepth: parseInt(String(editorHtml.find('input[name="max_depth"]').val())),
+            automationId: String(editorHtml.find('input[name="automation_id"]').val()),
         };
 
         saveRegexScript(newRegexScript, existingScriptIndex, isScoped);

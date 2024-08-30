@@ -1,4 +1,4 @@
-import { characters, substituteParams, this_chid } from '../../../script.js';
+import { characters, event_types, eventSource, substituteParams, this_chid } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 import { regexFromString } from '../../utils.js';
 export {
@@ -131,6 +131,15 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
 
             return filteredMatch;
         });
+
+        // Emit the event
+        if (regexScript.automationId) {
+            eventSource.emitAndWait(event_types.REGEX_SCRIPT_MATCHED, {
+                scriptName: regexScript.scriptName,
+                automationId: regexScript.automationId,
+                matches: args,
+            });
+        }
 
         // Substitute at the end
         return substituteParams(replaceWithGroups);

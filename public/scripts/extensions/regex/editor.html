@@ -110,6 +110,15 @@
                         <input name="max_depth" class="text_pole textarea_compact" type="number" min="0" max="999" data-i18n="[placeholder]ext_regex_min_depth_placeholder" placeholder="Unlimited" />
                     </div>
                 </div>
+                <div class="flex-container wide100p marginTop5">
+                    <div class="flex1 flex-container flexNoGap">
+                        <small data-i18n="[title]ext_regex_automation_id_desc" title="When the regex is matched, execute the Quick Reply that has this Automation ID attached. Matches and capturing groups will be passed as scoped variables, e.g. &lcub;lcub;var::match&rcub;&rcub;, &lcub;lcub;var::$1&rcub;&rcub;, etc.">
+                            <span data-i18n="Automation ID">Automation ID</span>
+                            <span class="fa-solid fa-circle-question note-link-span"></span>
+                        </small>
+                        <input name="automation_id" class="text_pole textarea_compact" />
+                    </div>
+                </div>
             </div>
             <div class="flex1 wi-enter-footer-text flex-container flexFlowColumn flexNoGap alignitemsstart">
                 <small data-i18n="ext_regex_other_options">Other Options</small>
