@@ -8857,7 +8857,7 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
     for (const key of characterKey) {
         const character = characters.find(x => x.avatar == key);
         if (!character) {
-            toastr.warning(`Character ${key} not found. Cannot be deleted.`);
+            toastr.warning(`Character ${key} not found. Skipping deletion.`);
             continue;
         }
 
@@ -8874,7 +8874,8 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to delete character: ${response.status} ${response.statusText}`);
+            toastr.error(`${response.status} ${response.statusText}`, 'Failed to delete character');
+            continue;
         }
 
         delete tag_map[character.avatar];
