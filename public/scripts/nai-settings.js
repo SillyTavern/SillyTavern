@@ -78,6 +78,19 @@ export function getKayraMaxContextTokens() {
     return null;
 }
 
+export function getKayraMaxResponseTokens() {
+    switch (novel_data?.tier) {
+        case 1:
+            return 100;
+        case 2:
+            return 100;
+        case 3:
+            return 150;
+    }
+
+    return maximum_output_length;
+}
+
 export function getNovelTier() {
     return nai_tiers[novel_data?.tier] ?? 'no_connection';
 }
@@ -438,12 +451,14 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
         console.log(finalPrompt);
     }
 
+    const adjustedMaxLength = nai_settings.model_novel.includes('kayra') ? getKayraMaxResponseTokens() : maximum_output_length;
+
     return {
         'input': finalPrompt,
         'model': nai_settings.model_novel,
         'use_string': true,
         'temperature': Number(nai_settings.temperature),
-        'max_length': maxLength < maximum_output_length ? maxLength : maximum_output_length,
+        'max_length': maxLength < adjustedMaxLength ? maxLength : adjustedMaxLength,
         'min_length': Number(nai_settings.min_length),
         'tail_free_sampling': Number(nai_settings.tail_free_sampling),
         'repetition_penalty': Number(nai_settings.repetition_penalty),

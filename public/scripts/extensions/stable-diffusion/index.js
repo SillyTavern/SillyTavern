@@ -52,6 +52,7 @@ const sources = {
     pollinations: 'pollinations',
     stability: 'stability',
     blockentropy: 'blockentropy',
+    huggingface: 'huggingface',
 };
 
 const initiators = {
@@ -454,6 +455,7 @@ async function loadSettings() {
     $('#sd_command_visible').prop('checked', extension_settings.sd.command_visible);
     $('#sd_interactive_visible').prop('checked', extension_settings.sd.interactive_visible);
     $('#sd_stability_style_preset').val(extension_settings.sd.stability_style_preset);
+    $('#sd_huggingface_model_id').val(extension_settings.sd.huggingface_model_id);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -1091,6 +1093,11 @@ function onComfyUrlInput() {
     saveSettingsDebounced();
 }
 
+function onHFModelInput() {
+    extension_settings.sd.huggingface_model_id = $('#sd_huggingface_model_id').val();
+    saveSettingsDebounced();
+}
+
 function onComfyWorkflowChange() {
     extension_settings.sd.comfy_workflow = $('#sd_comfy_workflow').find(':selected').val();
     saveSettingsDebounced();
@@ -1235,7 +1242,16 @@ async function onModelChange() {
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
     saveSettingsDebounced();
 
-    const cloudSources = [sources.horde, sources.novel, sources.openai, sources.togetherai, sources.pollinations, sources.stability, sources.blockentropy];
+    const cloudSources = [
+        sources.horde,
+        sources.novel,
+        sources.openai,
+        sources.togetherai,
+        sources.pollinations,
+        sources.stability,
+        sources.blockentropy,
+        sources.huggingface,
+    ];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
         return;
@@ -1450,6 +1466,9 @@ async function loadSamplers() {
         case sources.blockentropy:
             samplers = ['N/A'];
             break;
+        case sources.huggingface:
+            samplers = ['N/A'];
+            break;
     }
 
     for (const sampler of samplers) {
@@ -1638,6 +1657,9 @@ async function loadModels() {
             break;
         case sources.blockentropy:
             models = await loadBlockEntropyModels();
+            break;
+        case sources.huggingface:
+            models = [{ value: '', text: '<Enter Model ID above>' }];
             break;
     }
 
@@ -1986,6 +2008,9 @@ async function loadSchedulers() {
         case sources.blockentropy:
             schedulers = ['N/A'];
             break;
+        case sources.huggingface:
+            schedulers = ['N/A'];
+            break;
     }
 
     for (const scheduler of schedulers) {
@@ -2063,6 +2088,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.blockentropy:
+            vaes = ['N/A'];
+            break;
+        case sources.huggingface:
             vaes = ['N/A'];
             break;
     }
@@ -2595,6 +2623,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                 break;
             case sources.blockentropy:
                 result = await generateBlockEntropyImage(prefixedPrompt, negativePrompt, signal);
+                break;
+            case sources.huggingface:
+                result = await generateHuggingFaceImage(prefixedPrompt, signal);
                 break;
         }
 
@@ -3229,6 +3260,34 @@ async function generateComfyImage(prompt, negativePrompt, signal) {
     return { format: 'png', data: await promptResult.text() };
 }
 
+
+/**
+ * Generates an image in Hugging Face Inference API using the provided prompt and configuration settings (model selected).
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateHuggingFaceImage(prompt, signal) {
+    const result = await fetch('/api/sd/huggingface/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify({
+            model: extension_settings.sd.huggingface_model_id,
+            prompt: prompt,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'jpg', data: data.image };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+
 async function onComfyOpenWorkflowEditorClick() {
     let workflow = await (await fetch('/api/sd/comfy/workflow', {
         method: 'POST',
@@ -3508,6 +3567,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.STABILITY];
         case sources.blockentropy:
             return secret_state[SECRET_KEYS.BLOCKENTROPY];
+        case sources.huggingface:
+            return secret_state[SECRET_KEYS.HUGGINGFACE];
     }
 }
 
@@ -3848,6 +3909,7 @@ jQuery(async () => {
     $('#sd_swap_dimensions').on('click', onSwapDimensionsClick);
     $('#sd_stability_key').on('click', onStabilityKeyClick);
     $('#sd_stability_style_preset').on('change', onStabilityStylePresetChange);
+    $('#sd_huggingface_model_id').on('input', onHFModelInput);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($('#sd_prompt_prefix'));

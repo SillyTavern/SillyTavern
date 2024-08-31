@@ -141,7 +141,7 @@ function throwIfInvalidModel(useReverseProxy) {
     }
 
     if (extension_settings.caption.multimodal_api === 'google' && !secret_state[SECRET_KEYS.MAKERSUITE] && !useReverseProxy) {
-        throw new Error('MakerSuite API key is not set.');
+        throw new Error('Google AI Studio API key is not set.');
     }
 
     if (extension_settings.caption.multimodal_api === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA]) {

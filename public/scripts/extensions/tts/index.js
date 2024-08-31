@@ -421,7 +421,7 @@ function completeTtsJob() {
 async function tts(text, voiceId, char) {
     async function processResponse(response) {
         // RVC injection
-        if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
+        if (typeof window['rvcVoiceConversion'] === 'function' && extension_settings.rvc.enabled)
             response = await window['rvcVoiceConversion'](response, char, text);
 
         await addAudioJob(response, char);
@@ -754,6 +754,11 @@ async function onMessageEvent(messageId, lastCharIndex) {
     // clone message object, as things go haywire if message object is altered below (it's passed by reference)
     const message = structuredClone(context.chat[messageId]);
     const hashNew = getStringHash(message?.mes ?? '');
+
+    // Ignore prompt-hidden messages
+    if (message.is_system) {
+        return;
+    }
 
     // if no new messages, or same message, or same message hash, do nothing
     if (hashNew === lastMessageHash) {

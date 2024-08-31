@@ -21,6 +21,7 @@ const defaultUrl = 'http://localhost:5100';
 let saveMetadataTimeout = null;
 
 let requiresReload = false;
+let stateChanged = false;
 
 export function saveMetadataDebounced() {
     const context = getContext();
@@ -238,6 +239,7 @@ function onEnableExtensionClick() {
 
 async function enableExtension(name, reload = true) {
     extension_settings.disabledExtensions = extension_settings.disabledExtensions.filter(x => x !== name);
+    stateChanged = true;
     await saveSettings();
     if (reload) {
         location.reload();
@@ -248,6 +250,7 @@ async function enableExtension(name, reload = true) {
 
 async function disableExtension(name, reload = true) {
     extension_settings.disabledExtensions.push(name);
+    stateChanged = true;
     await saveSettings();
     if (reload) {
         location.reload();
@@ -304,7 +307,7 @@ async function activateExtensions() {
 
                 if (!isDisabled) {
                     const promise = Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]);
-                    promise
+                    await promise
                         .then(() => activeExtensions.add(name))
                         .catch(err => console.log('Could not activate extension: ' + name, err));
                     promises.push(promise);
@@ -657,7 +660,29 @@ async function showExtensionsDetails() {
             await oldPopup.complete(POPUP_RESULT.CANCELLED);
         }
 
-        const popup = new Popup(html, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, customButtons: [updateAllButton], allowVerticalScrolling: true });
+        let waitingForSave = false;
+
+        const popup = new Popup(html, POPUP_TYPE.TEXT, '', {
+            okButton: 'Close',
+            wide: true,
+            large: true,
+            customButtons: [updateAllButton],
+            allowVerticalScrolling: true,
+            onClosing: async () => {
+                if (waitingForSave) {
+                    return false;
+                }
+                if (stateChanged) {
+                    waitingForSave = true;
+                    const toast = toastr.info('The page will be reloaded shortly...', 'Extensions state changed');
+                    await saveSettings();
+                    toastr.clear(toast);
+                    waitingForSave = false;
+                    requiresReload = true;
+                }
+                return true;
+            },
+        });
         popupPromise = popup.show();
     } catch (error) {
         toastr.error('Error loading extensions. See browser console for details.');
@@ -797,16 +822,17 @@ export async function installExtension(url) {
     const response = await request.json();
     toastr.success(`Extension "${response.display_name}" by ${response.author} (version ${response.version}) has been installed successfully!`, 'Extension installation successful');
     console.debug(`Extension "${response.display_name}" has been installed successfully at ${response.extensionPath}`);
-    await loadExtensionSettings({}, false);
-    eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+    await loadExtensionSettings({}, false, false);
+    await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
 }
 
 /**
  * Loads extension settings from the app settings.
  * @param {object} settings App Settings
  * @param {boolean} versionChanged Is this a version change?
+ * @param {boolean} enableAutoUpdate Enable auto-update
  */
-async function loadExtensionSettings(settings, versionChanged) {
+async function loadExtensionSettings(settings, versionChanged, enableAutoUpdate) {
     if (settings.extension_settings) {
         Object.assign(extension_settings, settings.extension_settings);
     }
@@ -817,11 +843,11 @@ async function loadExtensionSettings(settings, versionChanged) {
     $('#extensions_notify_updates').prop('checked', extension_settings.notifyUpdates);
 
     // Activate offline extensions
-    eventSource.emit(event_types.EXTENSIONS_FIRST_LOAD);
+    await eventSource.emit(event_types.EXTENSIONS_FIRST_LOAD);
     extensionNames = await discoverExtensions();
     manifests = await getManifests(extensionNames);
 
-    if (versionChanged) {
+    if (versionChanged && enableAutoUpdate) {
         await autoUpdateExtensions(false);
     }
 
