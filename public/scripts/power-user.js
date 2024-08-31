@@ -639,7 +639,6 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'dry_base_textgenerationwebui') {
         decimals = 2;
     }
-
     if (sliderID == 'eta_cutoff_textgenerationwebui' ||
         sliderID == 'epsilon_cutoff_textgenerationwebui') {
         numSteps = 50;
