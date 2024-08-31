@@ -80,7 +80,6 @@ const OOBA_DEFAULT_ORDER = [
     'top_a',
     'min_p',
     'mirostat',
-    'xtc',
 ];
 const BIAS_KEY = '#textgenerationwebui_api-settings';
 
@@ -1163,8 +1162,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'api_server': getTextGenServer(),
         'legacy_api': settings.legacy_api && (settings.type === OOBA || settings.type === APHRODITE),
         'sampler_order': settings.type === textgen_types.KOBOLDCPP ? settings.sampler_order : undefined,
-        'xtc_threshold': settings.type === OOBA ? settings.xtc_threshold : undefined,
-        'xtc_probability': settings.type === OOBA ? settings.xtc_probability : undefined,
+        'xtc_threshold': settings.xtc_threshold,
+        'xtc_probability': settings.xtc_probability,
     };
     const nonAphroditeParams = {
         'rep_pen': settings.rep_pen,
