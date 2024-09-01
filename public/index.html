@@ -5,7 +5,7 @@
     <title>SillyTavern</title>
     <base href="/">
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, viewport-fit=cover, initial-scale=1, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, viewport-fit=cover, initial-scale=1, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="darkreader-lock">
     <meta name="robots" content="noindex, nofollow" />
@@ -1278,6 +1278,28 @@
                                             </div>
                                         </div>
                                     </div>
+
+                                    <div data-newbie-hidden data-tg-type="koboldcpp" id="xtc_block" class="wide100p">
+                                        <h4 class="wide100p textAlignCenter">
+                                            <label data-i18n="Exclude Top Choices (XTC)">Exclude Top Choices (XTC)</label>
+                                            <a href="https://github.com/oobabooga/text-generation-webui/pull/6335" target="_blank">
+                                                <div class=" fa-solid fa-circle-info opacity50p"></div>
+                                            </a>
+                                        </h4>
+                                        <div class="flex-container flexFlowRow gap10px flexShrink">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                                <small data-i18n="Threshold">Threshold</small>
+                                                <input class="neo-range-slider" type="range" id="xtc_threshold_textgenerationwebui" name="volume" min="0" max="0.5" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="0" max="0.5" step="0.01" data-for="xtc_threshold_textgenerationwebui" id="xtc_threshold_counter_textgenerationwebui">
+                                            </div>
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                                <small data-i18n="Probability">Probability</small>
+                                                <input class="neo-range-slider" type="range" id="xtc_probability_textgenerationwebui" name="volume" min="0" max="1" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="xtc_probability_textgenerationwebui" id="xtc_probability_counter_textgenerationwebui">
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <!-- Enable for llama.cpp when the PR is merged: https://github.com/ggerganov/llama.cpp/pull/6839 -->
                                     <div data-newbie-hidden data-tg-type="ooba, koboldcpp" id="dryBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" title="DRY penalizes tokens that would extend the end of the input into a sequence that has previously occurred in the input. Set multiplier to 0 to disable." data-i18n="[title]DRY_Repetition_Penalty_desc">
@@ -1823,7 +1845,7 @@
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
                                             </div>
-                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" rows="4" maxlength="10000" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user'."></textarea>
+                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" rows="4" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user'."></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -2931,6 +2953,8 @@
                                         <option value="command">command</option>
                                         <option value="command-r">command-r</option>
                                         <option value="command-r-plus">command-r-plus</option>
+                                        <option value="command-r-08-2024">command-r-08-2024</option>
+                                        <option value="command-r-plus-08-2024">command-r-plus-08-2024</option>
                                     </optgroup>
                                     <optgroup label="Nightly">
                                         <option value="command-light-nightly">command-light-nightly</option>

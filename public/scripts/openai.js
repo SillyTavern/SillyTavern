@@ -133,7 +133,7 @@ const max_2mil = 2000 * 1000;
 const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const claude_100k_max = 99000;
-const unlocked_max = max_200k;
+const unlocked_max = max_2mil;
 const oai_max_temp = 2.0;
 const claude_max_temp = 1.0;
 const openrouter_website_model = 'OR_Website';
@@ -4191,7 +4191,7 @@ async function onModelChange() {
         else if (['command-light-nightly', 'command-nightly'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_8k);
         }
-        else if (['command-r', 'command-r-plus'].includes(oai_settings.cohere_model)) {
+        else if (oai_settings.cohere_model.includes('command-r')) {
             $('#openai_max_context').attr('max', max_128k);
         }
         else if (['c4ai-aya-23'].includes(oai_settings.cohere_model)) {
