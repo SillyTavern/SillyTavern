@@ -909,8 +909,8 @@ export function registerVariableCommands() {
                 'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
             ),
             SlashCommandNamedArgument.fromProps({
-                name: 'type',
-                description: 'type of the value when used with index',
+                name: 'cast',
+                description: 'change the type of the value when used with index',
                 forceEnum: true,
                 enumProvider: commonEnumProviders.types,
                 isRequired: false,
@@ -925,7 +925,7 @@ export function registerVariableCommands() {
         helpString: `
             <div>
                 Set a local variable value and pass it down the pipe. The <code>index</code> argument is optional.
-                To perform a type conversion when using <code>index</code>, use the <code>type</code> argument.
+                To convert the value to a specific JSON type when using <code>index</code>, use the <code>case</code> argument.
             </div>
             <div>
                 <strong>Example:</strong>
@@ -1035,8 +1035,8 @@ export function registerVariableCommands() {
                 'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
             ),
             SlashCommandNamedArgument.fromProps({
-                name: 'type',
-                description: 'type of the value when used with index',
+                name: 'cast',
+                description: 'change the type of the value when used with index',
                 forceEnum: true,
                 enumProvider: commonEnumProviders.types,
                 isRequired: false,
@@ -1051,7 +1051,7 @@ export function registerVariableCommands() {
         helpString: `
             <div>
                 Set a global variable value and pass it down the pipe. The <code>index</code> argument is optional.
-                To perform a type conversion when using <code>index</code>, use the <code>type</code> argument.
+                To convert the value to a specific JSON type when using <code>index</code>, use the <code>cast</code> argument.
             </div>
             <div>
                 <strong>Example:</strong>
@@ -2062,8 +2062,8 @@ export function registerVariableCommands() {
                 false, // acceptsMultiple
             ),
             SlashCommandNamedArgument.fromProps({
-                name: 'type',
-                description: 'type of the value when used with index',
+                name: 'cast',
+                description: 'change the type of the value when used with index',
                 forceEnum: true,
                 enumProvider: commonEnumProviders.types,
                 isRequired: false,
@@ -2088,7 +2088,8 @@ export function registerVariableCommands() {
         splitUnnamedArgumentCount: 1,
         helpString: `
             <div>
-                Get or set a variable.
+                Get or set a variable. Use <code>index</code> to access elements of a list or dictionary.
+                To convert the value to a specific JSON type when using with <code>index</code>, use the <code>cast</code> argument.
             </div>
             <div>
                 <strong>Examples:</strong>
