@@ -7454,6 +7454,53 @@ export function hideSwipeButtons() {
     $('#chat').find('.swipe_left').css('display', 'none');
 }
 
+/**
+ * Deletes a swipe from the chat.
+ *
+ * @param {number?} swipeId - The ID of the swipe to delete. If not provided, the current swipe will be deleted.
+ * @returns {Promise<number>|undefined} - The ID of the new swipe after deletion.
+ */
+export async function deleteSwipe(swipeId = null) {
+    if (swipeId && (isNaN(swipeId) || swipeId < 0)) {
+        toastr.warning('Invalid swipe ID: ' + swipeId);
+        return;
+    }
+
+    const lastMessage = chat[chat.length - 1];
+    if (!lastMessage || !Array.isArray(lastMessage.swipes) || !lastMessage.swipes.length) {
+        toastr.warning('No messages to delete swipes from.');
+        return;
+    }
+
+    if (lastMessage.swipes.length <= 1) {
+        toastr.warning('Can\'t delete the last swipe.');
+        return;
+    }
+
+    swipeId = swipeId ?? lastMessage.swipe_id;
+
+    if (swipeId < 0 || swipeId >= lastMessage.swipes.length) {
+        toastr.warning(`Invalid swipe ID: ${swipeId + 1}`);
+        return;
+    }
+
+    lastMessage.swipes.splice(swipeId, 1);
+
+    if (Array.isArray(lastMessage.swipe_info) && lastMessage.swipe_info.length) {
+        lastMessage.swipe_info.splice(swipeId, 1);
+    }
+
+    // Select the next swip, or the one before if it was the last one
+    const newSwipeId = Math.min(swipeId, lastMessage.swipes.length - 1);
+    lastMessage.swipe_id = newSwipeId;
+    lastMessage.mes = lastMessage.swipes[newSwipeId];
+
+    await saveChatConditional();
+    await reloadCurrentChat();
+
+    return newSwipeId;
+}
+
 export async function saveMetadata() {
     if (selected_group) {
         await editGroup(selected_group, true, false);
@@ -10277,19 +10324,12 @@ jQuery(async function () {
         if (deleteOnlySwipe) {
             const message = chat[this_edit_mes_id];
             const swipe_id = message.swipe_id;
-            message.swipes.splice(swipe_id, 1);
-            if (Array.isArray(message.swipe_info) && message.swipe_info.length) {
-                message.swipe_info.splice(swipe_id, 1);
-            }
-            if (swipe_id > 0) {
-                $('.swipe_left:last').click();
-            } else {
-                $('.swipe_right:last').click();
-            }
-        } else {
-            chat.splice(this_edit_mes_id, 1);
-            messageElement.remove();
+            await deleteSwipe(swipe_id);
+            return;
         }
+
+        chat.splice(this_edit_mes_id, 1);
+        messageElement.remove();
 
         let startFromZero = Number(this_edit_mes_id) === 0;
 
