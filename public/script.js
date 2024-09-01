@@ -7462,7 +7462,7 @@ export function hideSwipeButtons() {
  */
 export async function deleteSwipe(swipeId = null) {
     if (swipeId && (isNaN(swipeId) || swipeId < 0)) {
-        toastr.warning('Invalid swipe ID: ' + swipeId);
+        toastr.warning(`Invalid swipe ID: ${swipeId + 1}`);
         return;
     }
 
