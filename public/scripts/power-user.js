@@ -1613,7 +1613,7 @@ async function loadPowerUserSettings(settings, data) {
     switchReducedMotion();
     switchCompactInputArea();
     reloadMarkdownProcessor(power_user.render_formulas);
-    loadInstructMode(data);
+    await loadInstructMode(data);
     await loadContextSettings();
     loadMaxContextUnlocked();
     switchWaifuMode();
@@ -1767,7 +1767,7 @@ async function loadContextSettings() {
 
         // If the setting already exists, no need to duplicate it
         // TODO: Maybe check the power_user object for the setting instead of a flag?
-        $element.on('input keyUp', async function () {
+        $element.on('input keyup', async function () {
             const value = control.isCheckbox ? !!$(this).prop('checked') : $(this)[0].innerText;
             if (control.isGlobalSetting) {
                 power_user[control.property] = value;
