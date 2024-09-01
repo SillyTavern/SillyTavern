@@ -296,7 +296,7 @@ export async function favsToHotswap() {
 
     //helpful instruction message if no characters are favorited
     if (favs.length == 0) {
-        container.html(`<small><span><i class="fa-solid fa-star"></i>${DOMPurify.sanitize(container.attr('no_favs'))}</span></small>`);
+        container.html(`<small><span><i class="fa-solid fa-star"></i>&nbsp;${DOMPurify.sanitize(container.attr('no_favs'))}</span></small>`);
         return;
     }
 

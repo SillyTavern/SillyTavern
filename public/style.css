@@ -1602,6 +1602,7 @@ body[data-stscript-style] .hljs.language-stscript {
     .hljs-pipe {
         color: var(--ac-style-color-punctuation);
     }
+
     .hljs-pipebreak {
         color: var(--ac-style-color-type);
     }
@@ -1695,6 +1696,7 @@ body[data-stscript-style] .hljs.language-stscript {
             background-color: var(--ac-color-selectedBackground);
             color: var(--ac-color-selectedText);
         }
+
         &.selected.not-selectable>* {
             background-color: var(--ac-color-notSelectableBackground);
             color: var(--ac-color-notSelectableText);
@@ -1776,11 +1778,13 @@ body[data-stscript-style] .hljs.language-stscript {
         padding: 0.25em 0.25em 0.5em 0.25em;
         border-bottom: 1px solid var(--ac-color-border);
 
-        > .head {
+        >.head {
             display: flex;
             gap: 0.5em;
         }
-        > .head > .name, > .name {
+
+        >.head>.name,
+        >.name {
             flex: 1 1 auto;
             font-weight: bold;
             color: var(--ac-color-text);
@@ -1790,20 +1794,25 @@ body[data-stscript-style] .hljs.language-stscript {
                 text-decoration: 1px dotted underline;
             }
         }
-        > .head > .source {
+
+        >.head>.source {
             padding: 0 0.5em;
             cursor: help;
             display: flex;
             align-items: center;
             gap: 0.5em;
+
             &.isThirdParty.isExtension {
                 color: #F89406;
             }
+
             &.isCore {
                 color: transparent;
+
                 &.isExtension {
                     color: #51A351;
                 }
+
                 &:after {
                     content: '';
                     order: -1;
@@ -2605,7 +2614,8 @@ select option:not(:checked) {
     color: var(--golden) !important;
 }
 
-.world_set {
+.world_set,
+.toggleEnabled {
     color: var(--active) !important;
 }
 
@@ -5398,6 +5408,7 @@ body:not(.movingUI) .drawer-content.maximized {
 .popup:has(.faPicker) {
     /* Fix height for fa picker popup, otherwise search is making it resize weirdly */
     height: 70%;
+
     .popup-content {
         display: flex;
         flex-direction: column;
@@ -5407,7 +5418,8 @@ body:not(.movingUI) .drawer-content.maximized {
 .faPicker-container {
     display: flex;
     flex-direction: column;
-    overflow: hidden;;
+    overflow: hidden;
+    ;
 }
 
 .faQuery-container {
@@ -5417,26 +5429,31 @@ body:not(.movingUI) .drawer-content.maximized {
 .faPicker {
     flex: 1 1 auto;
     overflow: auto;
-	gap: 1em;
+    gap: 1em;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(3.5em, 1fr));
 
-	.menu_button {
-		aspect-ratio: 1 / 1;
-		font-size: 2em;
-		height: 1lh;
-		line-height: 1.2;
-		padding: 0.25em;
-		width: unset;
-		box-sizing: content-box;
+    .menu_button {
+        aspect-ratio: 1 / 1;
+        font-size: 2em;
+        height: 1lh;
+        line-height: 1.2;
+        padding: 0.25em;
+        width: unset;
+        box-sizing: content-box;
+
         &.hidden {
             display: none;
         }
-	}
+    }
 }
 
 .faPicker:not(:has(:not(.hidden)))::after {
     content: 'No icons found';
     color: var(--SmartThemeBodyColor);
     opacity: 0.7;
+}
+
+#advanced-formatting-button div[contenteditable] {
+    overflow-wrap: anywhere;
 }
