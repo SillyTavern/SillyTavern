@@ -609,11 +609,10 @@ jQuery(() => {
     $('#instruct_system_same_as_user').on('input', function () {
         const state = !!$(this).prop('checked');
         if (state) {
-            const tempHeightForDisabled = $('#instruct_system_sequence').css('height');
             $('#instruct_system_sequence_block').addClass('disabled');
             $('#instruct_system_suffix_block').addClass('disabled');
-            $('#instruct_system_sequence').css('height', tempHeightForDisabled);
-            $('#instruct_system_suffix').css('height', tempHeightForDisabled);
+            $('#instruct_system_sequence').css('height', 'auto');
+            $('#instruct_system_suffix').css('height', 'auto');
             $('#instruct_system_sequence').prop('contenteditable', false);
             $('#instruct_system_suffix').prop('contenteditable', false);
         } else {
