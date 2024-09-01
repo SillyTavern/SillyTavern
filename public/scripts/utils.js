@@ -79,7 +79,8 @@ export function convertValueType(value, type) {
                 if (Array.isArray(parsedArray)) {
                     return parsedArray;
                 }
-                throw new Error('Value is not an array.');
+                // The value is not an array
+                return [];
             } catch {
                 return [];
             }
@@ -92,7 +93,8 @@ export function convertValueType(value, type) {
                 if (typeof parsedObject === 'object') {
                     return parsedObject;
                 }
-                throw new Error('Value is not an object.');
+                // The value is not an object
+                return {};
             } catch {
                 return {};
             }
