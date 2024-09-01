@@ -11,6 +11,7 @@ import {
     comment_avatar,
     deactivateSendButtons,
     default_avatar,
+    deleteSwipe,
     eventSource,
     event_types,
     extension_prompt_roles,
@@ -2309,37 +2310,10 @@ async function addSwipeCallback(args, value) {
 }
 
 async function deleteSwipeCallback(_, arg) {
-    const lastMessage = chat[chat.length - 1];
+    // Take the provided argument. Null if none provided, which will target the current swipe.
+    const swipeId = arg && !isNaN(Number(arg)) ? (Number(arg) - 1) : null;
 
-    if (!lastMessage || !Array.isArray(lastMessage.swipes) || !lastMessage.swipes.length) {
-        toastr.warning('No messages to delete swipes from.');
-        return '';
-    }
-
-    if (lastMessage.swipes.length <= 1) {
-        toastr.warning('Can\'t delete the last swipe.');
-        return '';
-    }
-
-    const swipeId = arg && !isNaN(Number(arg)) ? (Number(arg) - 1) : lastMessage.swipe_id;
-
-    if (swipeId < 0 || swipeId >= lastMessage.swipes.length) {
-        toastr.warning(`Invalid swipe ID: ${swipeId + 1}`);
-        return '';
-    }
-
-    lastMessage.swipes.splice(swipeId, 1);
-
-    if (Array.isArray(lastMessage.swipe_info) && lastMessage.swipe_info.length) {
-        lastMessage.swipe_info.splice(swipeId, 1);
-    }
-
-    const newSwipeId = Math.min(swipeId, lastMessage.swipes.length - 1);
-    lastMessage.swipe_id = newSwipeId;
-    lastMessage.mes = lastMessage.swipes[newSwipeId];
-
-    await saveChatConditional();
-    await reloadCurrentChat();
+    const newSwipeId = await deleteSwipe(swipeId);
 
     return String(newSwipeId);
 }
