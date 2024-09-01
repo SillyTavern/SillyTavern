@@ -553,7 +553,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="inline-drawer wide100p">
+                                <div class="inline-drawer wide100p">
                                     <div class="inline-drawer-toggle inline-drawer-header">
                                         <b data-i18n="Utility Prompts">Utility Prompts</b>
                                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -3077,10 +3077,10 @@
                                 <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode." data-i18n="[title]Auto-select this preset for Instruct Mode"></i>
                                 <i data-newbie-hidden data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                 <i data-newbie-hidden data-preset-manager-new="context" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
-                                <i data-newbie-hidden data-preset-manager-import="context" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                <i data-newbie-hidden data-preset-manager-export="context" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
+                                <i data-preset-manager-import="context" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                <i data-preset-manager-export="context" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
                                 <i data-newbie-hidden data-preset-manager-restore="context" class="menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
-                                <i data-newbie-hidden id="context_delete_preset" data-preset-manager-delete="context" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                <i id="context_delete_preset" data-preset-manager-delete="context" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                             </div>
                             <div class="flex-container">
                                 <select id="context_presets" data-preset-manager-for="context" class="flex1 text_pole"></select>
@@ -3220,10 +3220,10 @@
                                 <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection." data-i18n="[title]Auto-select this preset on API connection"></i>
                                 <i data-newbie-hidden data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                 <i data-newbie-hidden data-preset-manager-new="instruct" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
-                                <i data-newbie-hidden data-preset-manager-import="instruct" class=" menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                <i data-newbie-hidden data-preset-manager-export="instruct" class=" menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
+                                <i data-preset-manager-import="instruct" class=" menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                <i data-preset-manager-export="instruct" class=" menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
                                 <i data-newbie-hidden data-preset-manager-restore="instruct" class=" menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
-                                <i data-newbie-hidden data-preset-manager-delete="instruct" class=" menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                <i data-preset-manager-delete="instruct" class=" menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                             </div>
 
                             <div class="flex-container">
@@ -3235,7 +3235,7 @@
                                 </small>
                             </label>
                             <div data-newbie-hidden>
-                                <input type="text" contenteditable="true" id="instruct_activation_regex" class="text_pole textarea_compact autoSetHeight" maxlength="5000" rows="1" placeholder="e.g. /llama(-)?[3|3.1]/i"></input>
+                                <input type="text" id="instruct_activation_regex" class="text_pole textarea_compact autoSetHeight" maxlength="5000" rows="1" placeholder="e.g. /llama(-)?[3|3.1]/i"></input>
                             </div>
                             <div data-newbie-hidden>
                                 <label>
@@ -3335,9 +3335,9 @@
                         </div>
                     </div>
                     <div id="InstructSequencesColumn" class="flex-container flexNoGap flexFlowColumn flex1">
-                        <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn">
+                        <div data-newbie-hidden class="wide100p flexFlowColumn">
                             <h4 class="standoutHeader title_restorable">
-                                <b><span data-i18n="Instruct Mode Sequences">Instruct Sequences</span><small>(Saves to Template)</small></b>
+                                <b><span data-i18n="Instruct Mode Sequences">Instruct Sequences</span>&nbsp;<small>(Saves to Template)</small></b>
                             </h4>
                             <div class="flex-container">
                                 <div class="flexAuto" title="Inserted before a System prompt." data-i18n="[title]Inserted before a System prompt.">
