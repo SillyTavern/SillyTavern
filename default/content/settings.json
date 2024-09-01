@@ -196,7 +196,15 @@
         "enableLabMode": false,
         "enableZenSliders": false,
         "ui_mode": 1,
-        "forbid_external_media": true
+        "forbid_external_media": true,
+        "stscript": {
+            "parser": {
+                "flags": {
+                    "1": true,
+                    "2": true
+                }
+            }
+        }
     },
     "extension_settings": {
         "apiUrl": "http://localhost:5100",
@@ -452,7 +460,6 @@
         "temp_openai": 1.0,
         "freq_pen_openai": 0,
         "pres_pen_openai": 0,
-        "count_pen": 0,
         "top_p_openai": 1,
         "top_k_openai": 0,
         "stream_openai": true,
@@ -614,7 +621,7 @@
         "wi_format": "{0}",
         "openai_model": "gpt-4-turbo",
         "claude_model": "claude-3-5-sonnet-20240620",
-        "ai21_model": "j2-ultra",
+        "ai21_model": "jamba-1.5-large",
         "windowai_model": "",
         "openrouter_model": "OR_Website",
         "jailbreak_system": true,
@@ -625,7 +632,6 @@
         "show_external_models": false,
         "proxy_password": "",
         "assistant_prefill": "",
-        "assistant_impersonation": "",
-        "use_ai21_tokenizer": false
+        "assistant_impersonation": ""
     }
 }

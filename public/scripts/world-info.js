@@ -4777,8 +4777,10 @@ jQuery(() => {
         world_info_min_activations = Number($(this).val());
         $('#world_info_min_activations_counter').val(world_info_min_activations);
 
-        if (world_info_min_activations !== 0) {
+        if (world_info_min_activations !== 0 && world_info_max_recursion_steps !== 0) {
             $('#world_info_max_recursion_steps').val(0).trigger('input');
+            flashHighlight($('#world_info_max_recursion_steps').parent()); // flash the other control to show it has changed
+            console.info('[WI] Max recursion steps set to 0, as min activations is set to', world_info_min_activations);
         } else {
             saveSettings();
         }
@@ -4840,8 +4842,10 @@ jQuery(() => {
     $('#world_info_max_recursion_steps').on('input', function () {
         world_info_max_recursion_steps = Number($(this).val());
         $('#world_info_max_recursion_steps_counter').val(world_info_max_recursion_steps);
-        if (world_info_max_recursion_steps !== 0) {
+        if (world_info_max_recursion_steps !== 0 && world_info_min_activations !== 0) {
             $('#world_info_min_activations').val(0).trigger('input');
+            flashHighlight($('#world_info_min_activations').parent()); // flash the other control to show it has changed
+            console.info('[WI] Min activations set to 0, as max recursion steps is set to', world_info_max_recursion_steps);
         } else {
             saveSettings();
         }

@@ -188,6 +188,8 @@ const settings = {
     custom_model: '',
     bypass_status_check: false,
     openrouter_allow_fallbacks: true,
+    xtc_threshold: 0.1,
+    xtc_probability: 0,
 };
 
 export let textgenerationwebui_banned_in_macros = [];
@@ -263,6 +265,8 @@ export const setting_names = [
     'custom_model',
     'bypass_status_check',
     'openrouter_allow_fallbacks',
+    'xtc_threshold',
+    'xtc_probability',
 ];
 
 const DYNATEMP_BLOCK = document.getElementById('dynatemp_block_ooba');
@@ -718,6 +722,8 @@ jQuery(function () {
             'dry_multiplier_textgenerationwebui': 0,
             'dry_base_textgenerationwebui': 1.75,
             'dry_penalty_last_n_textgenerationwebui': 0,
+            'xtc_threshold_textgenerationwebui': 0.1,
+            'xtc_probability_textgenerationwebui': 0,
         };
 
         for (const [id, value] of Object.entries(inputs)) {
@@ -1156,6 +1162,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'api_server': getTextGenServer(),
         'legacy_api': settings.legacy_api && (settings.type === OOBA || settings.type === APHRODITE),
         'sampler_order': settings.type === textgen_types.KOBOLDCPP ? settings.sampler_order : undefined,
+        'xtc_threshold': settings.xtc_threshold,
+        'xtc_probability': settings.xtc_probability,
     };
     const nonAphroditeParams = {
         'rep_pen': settings.rep_pen,

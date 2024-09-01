@@ -5,7 +5,7 @@
     <title>SillyTavern</title>
     <base href="/">
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, viewport-fit=cover, initial-scale=1, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, viewport-fit=cover, initial-scale=1, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="darkreader-lock">
     <meta name="robots" content="noindex, nofollow" />
@@ -436,7 +436,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom,cohere,perplexity,groq">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,custom,cohere,perplexity,groq">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -449,7 +449,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom,cohere,perplexity,groq">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,custom,cohere,perplexity,groq">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -462,20 +462,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="ai21">
-                                    <div class="range-block-title" data-i18n="Count Penalty">
-                                        Count Penalty
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="count_pen" name="volume" min="0" max="1" step="0.01">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.01" data-for="count_pen" id="count_pen_counter">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div data-newbie-hidden class="range-block" data-source="claude,openrouter,ai21,makersuite,cohere,perplexity">
+                                <div data-newbie-hidden class="range-block" data-source="claude,openrouter,makersuite,cohere,perplexity">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
@@ -1291,6 +1278,28 @@
                                             </div>
                                         </div>
                                     </div>
+
+                                    <div data-newbie-hidden data-tg-type="koboldcpp" id="xtc_block" class="wide100p">
+                                        <h4 class="wide100p textAlignCenter">
+                                            <label data-i18n="Exclude Top Choices (XTC)">Exclude Top Choices (XTC)</label>
+                                            <a href="https://github.com/oobabooga/text-generation-webui/pull/6335" target="_blank">
+                                                <div class=" fa-solid fa-circle-info opacity50p"></div>
+                                            </a>
+                                        </h4>
+                                        <div class="flex-container flexFlowRow gap10px flexShrink">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                                <small data-i18n="Threshold">Threshold</small>
+                                                <input class="neo-range-slider" type="range" id="xtc_threshold_textgenerationwebui" name="volume" min="0" max="0.5" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="0" max="0.5" step="0.01" data-for="xtc_threshold_textgenerationwebui" id="xtc_threshold_counter_textgenerationwebui">
+                                            </div>
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                                <small data-i18n="Probability">Probability</small>
+                                                <input class="neo-range-slider" type="range" id="xtc_probability_textgenerationwebui" name="volume" min="0" max="1" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="xtc_probability_textgenerationwebui" id="xtc_probability_counter_textgenerationwebui">
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <!-- Enable for llama.cpp when the PR is merged: https://github.com/ggerganov/llama.cpp/pull/6839 -->
                                     <div data-newbie-hidden data-tg-type="ooba, koboldcpp" id="dryBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" title="DRY penalizes tokens that would extend the end of the input into a sequence that has previously occurred in the input. Set multiplier to 0 to disable." data-i18n="[title]DRY_Repetition_Penalty_desc">
@@ -1484,11 +1493,11 @@
                                     <div id="banned_tokens_block_ooba" data-newbie-hidden class="wide100p">
                                         <hr data-newbie-hidden class="width100p">
                                         <h4 class="range-block-title justifyCenter">
-                                            <span data-i18n="Banned Tokens">Banned Tokens</span>
-                                            <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]LLaMA / Mistral / Yi models only" title="LLaMA / Mistral / Yi models only. Make sure to select an appropriate tokenizer first.&#13;Sequences you don't want to appear in the output.&#13;One per line. Text or [token ids].&#13;Most tokens have a leading space. Use token counter if unsure."></div>
+                                            <span data-i18n="Banned Tokens">Banned Tokens/Strings</span>
+                                            <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]LLaMA / Mistral / Yi models only" title="Enter sequences you don't want to appear in the output.&#13;Unquoted text will be tokenized in the back end and banned as tokens.&#13;[token ids] will be banned as-is.&#13;Most tokens have a leading space. Use token counter (with the correct tokenizer selected first!) if you are unsure.&#13;Enclose text in double quotes to ban the entire string as a set.&#13;Quoted Strings and [Token ids] must be on their own line."></div>
                                         </h4>
                                         <div class="wide100p">
-                                            <textarea id="banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="banned_tokens_textgenerationwebui" rows="3" data-i18n="[placeholder]Example: some text [42, 69, 1337]" placeholder="Example:&#10;some text&#10;[42, 69, 1337]"></textarea>
+                                            <textarea id="banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="banned_tokens_textgenerationwebui" rows="3" data-i18n="[placeholder]Example: some text [42, 69, 1337]" placeholder='some text as tokens&#10;[420, 69, 1337]&#10;"Some verbatim string"'></textarea>
                                         </div>
                                     </div>
                                     <div class="range-block wide100p">
@@ -1791,22 +1800,6 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="ai21">
-                                        <label for="use_ai21_tokenizer" title="Use AI21 Tokenizer" data-i18n="[title]Use AI21 Tokenizer" class="checkbox_label widthFreeExpand">
-                                            <input id="use_ai21_tokenizer" type="checkbox" /><span data-i18n="Use AI21 Tokenizer">Use AI21 Tokenizer</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.">Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.</span>
-                                        </div>
-                                    </div>
-                                    <div class="range-block" data-source="makersuite">
-                                        <label for="use_google_tokenizer" title="Use Google Tokenizer" data-i18n="[title]Use Google Tokenizer" class="checkbox_label widthFreeExpand">
-                                            <input id="use_google_tokenizer" type="checkbox" /><span data-i18n="Use Google Tokenizer">Use Google Tokenizer</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.">Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.</span>
-                                        </div>
-                                    </div>
                                     <div class="range-block" data-source="makersuite">
                                         <label for="use_makersuite_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="use_makersuite_sysprompt" type="checkbox" />
@@ -1852,7 +1845,7 @@
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
                                             </div>
-                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" rows="4" maxlength="10000" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user'."></textarea>
+                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" rows="4" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user'."></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -2791,10 +2784,12 @@
                             <div>
                                 <h4 data-i18n="AI21 Model">AI21 Model</h4>
                                 <select id="model_ai21_select">
-                                    <optgroup label="Latest">
-                                        <option value="j2-ultra">j2-ultra</option>
-                                        <option value="j2-mid">j2-mid</option>
-                                        <option value="j2-light">j2-light</option>
+                                    <optgroup label="Jamba 1.5">
+                                        <option value="jamba-1.5-mini">jamba-1.5-mini</option>
+                                        <option value="jamba-1.5-large">jamba-1.5-large</option>
+                                    </optgroup>
+                                    <optgroup label="Jamba-Instruct (Deprecated)">
+                                        <option value="jamba-instruct-preview">jamba-instruct-preview</option>
                                     </optgroup>
                                 </select>
                             </div>
@@ -2824,8 +2819,11 @@
                                     </optgroup>
                                     <optgroup label="Subversions">
                                         <option value="gemini-1.5-pro-exp-0801">Gemini 1.5 Pro Experiment 2024-08-01</option>
+                                        <option value="gemini-1.5-pro-exp-0827">Gemini 1.5 Pro Experiment 2024-08-27</option>
                                         <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro [latest]</option>
                                         <option value="gemini-1.5-pro-001">Gemini 1.5 Pro [001]</option>
+                                        <option value="gemini-1.5-flash-exp-0827">Gemini 1.5 Flash Experiment 2024-08-27</option>
+                                        <option value="gemini-1.5-flash-8b-exp-0827">Gemini 1.5 Flash 8B Experiment 2024-08-27</option>
                                         <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash [latest]</option>
                                         <option value="gemini-1.5-flash-001">Gemini 1.5 Flash [001]</option>
                                         <option value="gemini-1.0-pro-latest">Gemini 1.0 Pro [latest]</option>
@@ -2955,6 +2953,8 @@
                                         <option value="command">command</option>
                                         <option value="command-r">command-r</option>
                                         <option value="command-r-plus">command-r-plus</option>
+                                        <option value="command-r-08-2024">command-r-08-2024</option>
+                                        <option value="command-r-plus-08-2024">command-r-plus-08-2024</option>
                                     </optgroup>
                                     <optgroup label="Nightly">
                                         <option value="command-light-nightly">command-light-nightly</option>
@@ -4012,7 +4012,7 @@
                                     <input id="movingUImode" type="checkbox" />
                                     <small data-i18n="Movable UI Panels">MovingUI&nbsp;<i class="fa-solid fa-desktop"></i></small>
                                 </label>
-                                <div data-newbie-hidden id="movingUIreset" title="Reset MovingUI panel sizes/locations." class="menu_button margin0" data-i18n="[title]Reset MovingUI panel sizes/locations."><i class=" fa-solid fa-recycle margin-r5"></i> Reset</div>
+                                <div data-newbie-hidden id="movingUIreset" title="Reset MovingUI panel sizes/locations." class="menu_button margin0" data-i18n="[title]Reset MovingUI panel sizes/locations."><i class=" fa-solid fa-recycle margin-r5"></i> <span data-i18n="mui_reset">Reset</span></div>
                             </div>
                             <div data-newbie-hidden id="MovingUI-presets-block" class="flex-container alignitemscenter">
                                 <div class="flex-container alignItemsFlexEnd">
@@ -4503,6 +4503,7 @@
                                 <div data-newbie-hidden>
                                     <label for="persona_description_position" data-i18n="Position:">Position:</label>
                                     <select id="persona_description_position">
+                                        <option value="9" data-i18n="None (disabled)">None (disabled)</option>
                                         <option value="0" data-i18n="In Story String / Prompt Manager">In Story String / Prompt Manager</option>
                                         <option value="2" data-i18n="Top of Author's Note">Top of Author's Note</option>
                                         <option value="3" data-i18n="Bottom of Author's Note">Bottom of Author's Note</option>
@@ -6488,6 +6489,7 @@
     <script src="lib/jquery-cookie-1.4.1.min.js"></script>
     <script src="lib/jquery.ui.touch-punch.min.js"></script>
     <script src="lib/showdown.min.js"></script>
+    <script src="lib/showdown-patch.js"></script>
     <script src="lib/showdown-katex.min.js"></script>
     <script src="lib/popper.js"></script>
     <script src="lib/purify.min.js"></script>

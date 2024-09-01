@@ -110,27 +110,27 @@ router.post('/google', jsonParser, async (request, response) => {
 });
 
 router.post('/yandex', jsonParser, async (request, response) => {
-    const chunks = request.body.chunks;
-    const lang = request.body.lang;
-
-    if (!chunks || !lang) {
-        return response.sendStatus(400);
-    }
-
-    // reconstruct original text to log
-    let inputText = '';
-
-    const params = new URLSearchParams();
-    for (const chunk of chunks) {
-        params.append('text', chunk);
-        inputText += chunk;
-    }
-    params.append('lang', lang);
-    const ucid = uuidv4().replaceAll('-', '');
-
-    console.log('Input text: ' + inputText);
-
     try {
+        const chunks = request.body.chunks;
+        const lang = request.body.lang;
+
+        if (!chunks || !lang) {
+            return response.sendStatus(400);
+        }
+
+        // reconstruct original text to log
+        let inputText = '';
+
+        const params = new URLSearchParams();
+        for (const chunk of chunks) {
+            params.append('text', chunk);
+            inputText += chunk;
+        }
+        params.append('lang', lang);
+        const ucid = uuidv4().replaceAll('-', '');
+
+        console.log('Input text: ' + inputText);
+
         const result = await fetch(`https://translate.yandex.net/api/v1/tr.json/translate?ucid=${ucid}&srv=android&format=text`, {
             method: 'POST',
             body: params,

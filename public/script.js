@@ -488,14 +488,6 @@ let default_user_name = 'User';
 export let name1 = default_user_name;
 export let name2 = 'SillyTavern System';
 export let chat = [];
-let safetychat = [
-    {
-        name: systemUserName,
-        is_user: false,
-        create_date: 0,
-        mes: 'You deleted a character/chat and arrived back here for safety reasons! Pick another character!',
-    },
-];
 let chatSaveTimeout;
 let importFlashTimeout;
 export let isChatSaving = false;
@@ -593,6 +585,17 @@ export const extension_prompt_roles = {
 };
 
 export const MAX_INJECTION_DEPTH = 1000;
+
+const SAFETY_CHAT = [
+    {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_system: true,
+        is_user: false,
+        create_date: 0,
+        mes: 'You deleted a character/chat and arrived back here for safety reasons! Pick another character!',
+    },
+];
 
 export let system_messages = {};
 
@@ -2192,7 +2195,7 @@ export function addCopyToCodeBlocks(messageElement) {
             codeBlocks.get(i).appendChild(copyButton);
             copyButton.addEventListener('pointerup', function (event) {
                 navigator.clipboard.writeText(codeBlocks.get(i).innerText);
-                toastr.info('Copied!', '', { timeOut: 2000 });
+                toastr.info(t`Copied!`, '', { timeOut: 2000 });
             });
         }
     }
@@ -2705,7 +2708,7 @@ function addPersonaDescriptionExtensionPrompt() {
     const INJECT_TAG = 'PERSONA_DESCRIPTION';
     setExtensionPrompt(INJECT_TAG, '', extension_prompt_types.IN_PROMPT, 0);
 
-    if (!power_user.persona_description) {
+    if (!power_user.persona_description || power_user.persona_description_position === persona_description_positions.NONE) {
         return;
     }
 
@@ -2826,7 +2829,7 @@ export function getCharacterCardFields() {
 }
 
 export function isStreamingEnabled() {
-    const noStreamSources = [chat_completion_sources.SCALE, chat_completion_sources.AI21];
+    const noStreamSources = [chat_completion_sources.SCALE];
     return ((main_api == 'openai' && oai_settings.stream_openai && !noStreamSources.includes(oai_settings.chat_completion_source) && !(oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE && oai_settings.google_model.includes('bison')))
         || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_flags.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
@@ -3726,7 +3729,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     const storyStringParams = {
         description: description,
         personality: personality,
-        persona: persona,
+        persona: power_user.persona_description_position == persona_description_positions.IN_PROMPT ? persona : '',
         scenario: scenario,
         system: isInstruct ? system : '',
         char: name2,
@@ -3760,7 +3763,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     let examplesString = '';
-    let chatString = '';
+    let chatString = addChatsPreamble(addChatsSeparator(''));
     let cyclePrompt = '';
 
     async function getMessagesTokenCount() {
@@ -3769,10 +3772,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             storyString,
             afterScenarioAnchor,
             examplesString,
-            chatString,
-            quiet_prompt,
-            cyclePrompt,
             userAlignmentMessage,
+            chatString,
+            modifyLastPromptLine(''),
+            cyclePrompt,
         ].join('').replace(/\r/gm, '');
         return getTokenCountAsync(encodeString, power_user.token_padding);
     }
@@ -3803,8 +3806,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
 
         tokenCount += await getTokenCountAsync(item.replace(/\r/gm, ''));
-        chatString = item + chatString;
         if (tokenCount < this_max_context) {
+            chatString = chatString + item;
             arrMes[index] = item;
             lastAddedIndex = Math.max(lastAddedIndex, index);
         } else {
@@ -3830,8 +3833,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
 
         tokenCount += await getTokenCountAsync(item.replace(/\r/gm, ''));
-        chatString = item + chatString;
         if (tokenCount < this_max_context) {
+            chatString = chatString + item;
             arrMes[i] = item;
             lastAddedIndex = Math.max(lastAddedIndex, i);
         } else {
@@ -4028,15 +4031,16 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     async function checkPromptSize() {
         console.debug('---checking Prompt size');
         setPromptString();
+        const jointMessages = mesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
         const prompt = [
             beforeScenarioAnchor,
             storyString,
             afterScenarioAnchor,
             mesExmString,
-            mesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join(''),
+            addChatsPreamble(addChatsSeparator(jointMessages)),
             '\n',
+            modifyLastPromptLine(''),
             generatedPromptCache,
-            quiet_prompt,
         ].join('').replace(/\r/gm, '');
         let thisPromptContextSize = await getTokenCountAsync(prompt, power_user.token_padding);
 
@@ -4302,7 +4306,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             padding: power_user.token_padding,
             main_api: main_api,
             instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && system ? system : power_user.instruct.system_prompt) : '',
-            userPersona: (power_user.persona_description || ''),
+            userPersona: (power_user.persona_description_position == persona_description_positions.IN_PROMPT ? (persona || '') : ''),
         };
 
         //console.log(additionalPromptStuff);
@@ -5080,7 +5084,7 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
         }
 
         navigator.clipboard.writeText(rawPromptValues);
-        toastr.info('Copied!');
+        toastr.info(t`Copied!`);
     });
 
     popup.dlg.querySelector('#showRawPrompt').addEventListener('click', function () {
@@ -5679,7 +5683,7 @@ export function resetChatState() {
     // replaces deleted charcter name with system user since it will be displayed next.
     name2 = systemUserName;
     // sets up system user to tell user about having deleted a character
-    chat = [...safetychat];
+    chat.splice(0, chat.length, ...SAFETY_CHAT);
     // resets chat metadata
     chat_metadata = {};
     // resets the characters array, forcing getcharacters to reset
@@ -6310,7 +6314,7 @@ export function setUserName(value) {
     console.log(`User name changed to ${name1}`);
     $('#your_name').val(name1);
     if (power_user.persona_show_notifications) {
-        toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
+        toastr.success(t`Your messages will now be sent as ${name1}`, t`Current persona updated`);
     }
     saveSettingsDebounced();
 }
@@ -8840,72 +8844,74 @@ export async function handleDeleteCharacter(this_chid, delete_chats) {
 /**
  * Deletes a character completely, including associated chats if specified
  *
- * @param {string} characterKey - The key (avatar) of the character to be deleted
+ * @param {string|string[]} characterKey - The key (avatar) of the character to be deleted
  * @param {Object} [options] - Optional parameters for the deletion
  * @param {boolean} [options.deleteChats=true] - Whether to delete associated chats or not
  * @return {Promise<void>} - A promise that resolves when the character is successfully deleted
  */
 export async function deleteCharacter(characterKey, { deleteChats = true } = {}) {
-    const character = characters.find(x => x.avatar == characterKey);
-    if (!character) {
-        toastr.warning(`Character ${characterKey} not found. Cannot be deleted.`);
-        return;
+    if (!Array.isArray(characterKey)) {
+        characterKey = [characterKey];
     }
 
-    const chid = characters.indexOf(character);
-    const pastChats = await getPastCharacterChats(chid);
-
-    const msg = { avatar_url: character.avatar, delete_chats: deleteChats };
-
-    const response = await fetch('/api/characters/delete', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify(msg),
-        cache: 'no-cache',
-    });
-
-    if (!response.ok) {
-        throw new Error(`Failed to delete character: ${response.status} ${response.statusText}`);
-    }
-
-    await removeCharacterFromUI(character.name, character.avatar);
-
-    if (deleteChats) {
-        for (const chat of pastChats) {
-            const name = chat.file_name.replace('.jsonl', '');
-            await eventSource.emit(event_types.CHAT_DELETED, name);
+    for (const key of characterKey) {
+        const character = characters.find(x => x.avatar == key);
+        if (!character) {
+            toastr.warning(`Character ${key} not found. Skipping deletion.`);
+            continue;
         }
+
+        const chid = characters.indexOf(character);
+        const pastChats = await getPastCharacterChats(chid);
+
+        const msg = { avatar_url: character.avatar, delete_chats: deleteChats };
+
+        const response = await fetch('/api/characters/delete', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(msg),
+            cache: 'no-cache',
+        });
+
+        if (!response.ok) {
+            toastr.error(`${response.status} ${response.statusText}`, 'Failed to delete character');
+            continue;
+        }
+
+        delete tag_map[character.avatar];
+        select_rm_info('char_delete', character.name);
+
+        if (deleteChats) {
+            for (const chat of pastChats) {
+                const name = chat.file_name.replace('.jsonl', '');
+                await eventSource.emit(event_types.CHAT_DELETED, name);
+            }
+        }
+
+        await eventSource.emit(event_types.CHARACTER_DELETED, { id: chid, character: character });
     }
 
-    eventSource.emit(event_types.CHARACTER_DELETED, { id: this_chid, character: characters[this_chid] });
+    await removeCharacterFromUI();
 }
 
 /**
  * Function to delete a character from UI after character deletion API success.
  * It manages necessary UI changes such as closing advanced editing popup, unsetting
  * character ID, resetting characters array and chat metadata, deselecting character's tab
- * panel, removing character name from navigation tabs, clearing chat, removing character's
- * avatar from tag_map, fetching updated list of characters and updating the 'deleted
- * character' message.
+ * panel, removing character name from navigation tabs, clearing chat, fetching updated list of characters.
  * It also ensures to save the settings after all the operations.
- *
- * @param {string} name - The name of the character to be deleted.
- * @param {string} avatar - The avatar URL of the character to be deleted.
- * @param {boolean} reloadCharacters - Whether the character list should be refreshed after deletion.
  */
-async function removeCharacterFromUI(name, avatar, reloadCharacters = true) {
+async function removeCharacterFromUI() {
     await clearChat();
     $('#character_cross').click();
     this_chid = undefined;
     characters.length = 0;
     name2 = systemUserName;
-    chat = [...safetychat];
+    chat.splice(0, chat.length, ...SAFETY_CHAT);
     chat_metadata = {};
     $(document.getElementById('rm_button_selected_ch')).children('h2').text('');
     this_chid = undefined;
-    delete tag_map[avatar];
-    if (reloadCharacters) await getCharacters();
-    select_rm_info('char_delete', name);
+    await getCharacters();
     await printMessages();
     saveSettingsDebounced();
 }
@@ -9532,11 +9538,7 @@ jQuery(async function () {
         const oldFileNameFull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
         const oldFileName = oldFileNameFull.replace('.jsonl', '');
 
-        const popupText = `<h3>Enter the new name for the chat:<h3>
-        <small>!!Using an existing filename will produce an error!!<br>
-        This will break the link between checkpoint chats.<br>
-        No need to add '.jsonl' at the end.<br>
-        </small>`;
+        const popupText = await renderTemplateAsync('chatRename');
         const newName = await callPopup(popupText, 'input', oldFileName);
 
         if (!newName || newName == oldFileName) {
@@ -9744,12 +9746,7 @@ jQuery(async function () {
         else if (id == 'option_start_new_chat') {
             if ((selected_group || this_chid !== undefined) && !is_send_press) {
                 let deleteCurrentChat = false;
-                const result = await Popup.show.confirm('Start new chat?', `
-                    <label for="del_chat_checkbox" class="checkbox_label justifyCenter"
-                    title="If necessary, you can later restore this chat file from the /backups folder">
-                        <input type="checkbox" id="del_chat_checkbox" />
-                        <small>Also delete the current chat file</small>
-                    </label>`, {
+                const result = await Popup.show.confirm(t`Start new chat?`, await renderTemplateAsync('newChatConfirm'), {
                     onClose: () => deleteCurrentChat = !!$('#del_chat_checkbox').prop('checked'),
                 });
                 if (!result) {
@@ -10261,10 +10258,10 @@ jQuery(async function () {
 
         let deleteOnlySwipe = false;
         if (power_user.confirm_message_delete && fromSlashCommand !== true) {
-            const result = await callGenericPopup('Are you sure you want to delete this message?', POPUP_TYPE.CONFIRM, null, {
-                okButton: canDeleteSwipe ? 'Delete Swipe' : 'Delete Message',
+            const result = await callGenericPopup(t`Are you sure you want to delete this message?`, POPUP_TYPE.CONFIRM, null, {
+                okButton: canDeleteSwipe ? t`Delete Swipe` : t`Delete Message`,
                 cancelButton: 'Cancel',
-                customButtons: canDeleteSwipe ? ['Delete Message'] : null,
+                customButtons: canDeleteSwipe ? [t`Delete Message`] : null,
             });
             if (!result) {
                 return;

@@ -107,6 +107,7 @@ export const persona_description_positions = {
     TOP_AN: 2,
     BOTTOM_AN: 3,
     AT_DEPTH: 4,
+    NONE: 9,
 };
 
 let power_user = {
