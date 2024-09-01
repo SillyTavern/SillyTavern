@@ -4,8 +4,8 @@
     "api_server": "http://127.0.0.1:5000/api",
     "preset_settings": "RecoveredRuins",
     "user_avatar": "user-default.png",
-    "amount_gen": 250,
-    "max_context": 2048,
+    "amount_gen": 350,
+    "max_context": 8192,
     "main_api": "koboldhorde",
     "world_info_settings": {
         "world_info": {
