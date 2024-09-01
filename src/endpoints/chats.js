@@ -145,7 +145,9 @@ router.post('/save', jsonParser, function (request, response) {
         const chatData = request.body.chat;
         const jsonlData = chatData.map(JSON.stringify).join('\n');
         const fileName = `${sanitize(String(request.body.file_name))}.jsonl`;
-        const filePath = path.join(request.user.directories.chats, directoryName, fileName);
+        const directoryPath = path.join(request.user.directories.chats, directoryName);
+        if(!fs.existsSync(directoryPath)) fs.mkdirSync(directoryPath, { recursive: true });
+        const filePath = path.join(directoryPath, fileName);
         writeFileAtomicSync(filePath, jsonlData, 'utf8');
         backupChat(request.user.directories.backups, directoryName, jsonlData);
         return response.send({ result: 'ok' });
