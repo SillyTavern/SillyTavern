@@ -1761,7 +1761,7 @@ async function loadContextSettings() {
         if (control.isCheckbox) {
             $element.prop('checked', power_user.context[control.property]);
         } else {
-            $element.text(power_user.context[control.property]);
+            $element[0].innerText = power_user.context[control.property];
         }
         console.log(`Setting ${$element.prop('id')} to ${power_user.context[control.property]}`);
 
