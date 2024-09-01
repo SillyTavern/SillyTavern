@@ -3229,12 +3229,6 @@
                             <div class="flex-container">
                                 <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1 text_pole"></select>
                             </div>
-                            <div data-newbie-hidden>
-                                <label>
-                                    <small data-i18n="System Prompt">System Prompt</small>
-                                </label>
-                                <div contenteditable="true" id="instruct_system_prompt" class="text_pole textarea_compact autoSetHeight" rows="1"></div>
-                            </div>
                             <label data-newbie-hidden>
                                 <small data-i18n="Activation Regex">
                                     Activation Regex <span class="fa-solid fa-circle-question" title="When connecting to an API or choosing a model, automatically activate this Instruct Mode template if the model name matches the provided regular expression."></span>
@@ -3243,6 +3237,13 @@
                             <div data-newbie-hidden>
                                 <input type="text" contenteditable="true" id="instruct_activation_regex" class="text_pole textarea_compact autoSetHeight" maxlength="5000" rows="1" placeholder="e.g. /llama(-)?[3|3.1]/i"></input>
                             </div>
+                            <div data-newbie-hidden>
+                                <label>
+                                    <small data-i18n="System Prompt">System Prompt</small>
+                                </label>
+                                <div contenteditable="true" id="instruct_system_prompt" class="text_pole textarea_compact autoSetHeight" rows="1"></div>
+                            </div>
+
                             <div data-newbie-hidden>
                                 <label for="instruct_wrap" class="checkbox_label">
                                     <input id="instruct_wrap" type="checkbox" />
@@ -3334,7 +3335,7 @@
                     <div id="InstructSequencesColumn" class="flex-container flexNoGap flexFlowColumn flex1">
                         <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn">
                             <h4 class="standoutHeader title_restorable">
-                                <b><span data-i18n="Instruct Mode Sequences">Instruct Sequences</span></b>
+                                <b><span data-i18n="Instruct Mode Sequences">Instruct Sequences</span><small>(Saves to Template)</small></b>
                             </h4>
                             <div class="flex-container">
                                 <div class="flexAuto" title="Inserted before a System prompt." data-i18n="[title]Inserted before a System prompt.">
