@@ -45,9 +45,7 @@ export function convertValueType(value, type) {
         return value;
     }
 
-    type = type.trim().toLowerCase();
-
-    switch (type) {
+    switch (type.trim().toLowerCase()) {
         case 'string':
         case 'str':
             return String(value);
