@@ -2412,7 +2412,6 @@ input[type="file"] {
 }
 
 #rm_print_characters_block .text_block {
-    height: 100%;
     width: 100%;
     opacity: 0.5;
     margin: 0 auto 1px auto;
