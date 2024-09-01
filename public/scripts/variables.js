@@ -2098,6 +2098,9 @@ export function registerVariableCommands() {
                     <li>
                         <pre><code class="language-stscript">/let x foo | /var key=x foo bar | /var x | /echo</code></pre>
                     </li>
+                    <li>
+                        <pre><code class="language-stscript">/let x {} | /var index=cool as=number x 1337 | /echo {{var::x}}</code></pre>
+                    </li>
                 </ul>
             </div>
         `,
