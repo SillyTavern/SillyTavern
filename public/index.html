@@ -3196,7 +3196,7 @@
 
                     </div>
                     <div id="InstructSettingsColumn" class="flex-container flexNoGap flexFlowColumn flex1">
-                        <div name="instructSettingsBlock">
+                        <div id="instructSettingsBlock">
                             <h4 class="standoutHeader title_restorable justifySpaceBetween">
                                 <div class="flex-container">
                                     <span data-i18n="Instruct Mode">Instruct Mode</span>
@@ -3206,12 +3206,12 @@
                                 </div>
                                 <div class="flex-container">
                                     <label for="instruct_enabled" class="checkbox_label flex1">
-                                        <input id="instruct_enabled" type="checkbox" />
-                                        <small data-i18n="Enabled"><i class="fa-solid fa-power-off"></i></small>
+                                        <input id="instruct_enabled" type="checkbox" style="display:none;" />
+                                        <small data-i18n="Enabled"><i class="fa-solid fa-power-off menu_button margin0"></i></small>
                                     </label>
                                     <label for="instruct_bind_to_context" class="checkbox_label flex1" title="If enabled, Context templates will be automatically selected based on selected Instruct template name or by preference." data-i18n="[title]instruct_bind_to_context">
-                                        <input id="instruct_bind_to_context" type="checkbox" />
-                                        <small data-i18n="Bind to Context"><i class="fa-solid fa-link"></i></small>
+                                        <input id="instruct_bind_to_context" type="checkbox" style="display:none;" />
+                                        <small data-i18n="Bind to Context"><i class="fa-solid fa-link menu_button margin0" title="If enabled, Context templates will be automatically selected based on selected Instruct template name or by preference."></i></small>
                                     </label>
                                 </div>
                             </h4>
@@ -3266,41 +3266,43 @@
                                     <small data-i18n="Force for Groups and Personas">Force for Groups and Personas</small>
                                 </label>
                             </div>
-                            <hr>
-                            <div name="tokenizerSettingsBlock">
-                                <div data-newbie-hidden name="tokenizerSelectorBlock">
-                                    <h4 class="standoutHeader"><span data-i18n="Tokenizer">Tokenizer</span>
-                                        <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#tokenizer" class="notes-link" target="_blank">
+                        </div>
+                        <hr>
+                        <div name="tokenizerSettingsBlock">
+                            <div data-newbie-hidden name="tokenizerSelectorBlock">
+                                <h4 class="standoutHeader"><span data-i18n="Tokenizer">Tokenizer</span>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#tokenizer" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </h4>
+                                <select id="tokenizer">
+                                    <option value="99">Best match (recommended)</option>
+                                    <option value="0">None / Estimated</option>
+                                    <option value="1">GPT-2</option>
+                                    <!-- Option #2 was a legacy GPT-2/3 tokenizer -->
+                                    <option value="3">Llama 1/2</option>
+                                    <option value="12">Llama 3</option>
+                                    <option value="4">NerdStash (NovelAI Clio)</option>
+                                    <option value="5">NerdStash v2 (NovelAI Kayra)</option>
+                                    <option value="7">Mistral</option>
+                                    <option value="8">Yi</option>
+                                    <option value="11">Claude 1/2</option>
+                                    <option value="6">API (WebUI / koboldcpp)</option>
+                                </select>
+                            </div>
+                            <div class="range-block flex-container flexnowrap" data-newbie-hidden name="tokenPaddingBlock">
+                                <div class="range-block-title justifyLeft">
+                                    <small data-i18n="Token Padding" class="flex-container">Token Padding
+                                        <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#token-padding" class="notes-link" target="_blank">
                                             <span class="fa-solid fa-circle-question note-link-span"></span>
                                         </a>
-                                    </h4>
-                                    <select id="tokenizer">
-                                        <option value="99">Best match (recommended)</option>
-                                        <option value="0">None / Estimated</option>
-                                        <option value="1">GPT-2</option>
-                                        <!-- Option #2 was a legacy GPT-2/3 tokenizer -->
-                                        <option value="3">Llama 1/2</option>
-                                        <option value="12">Llama 3</option>
-                                        <option value="4">NerdStash (NovelAI Clio)</option>
-                                        <option value="5">NerdStash v2 (NovelAI Kayra)</option>
-                                        <option value="7">Mistral</option>
-                                        <option value="8">Yi</option>
-                                        <option value="11">Claude 1/2</option>
-                                        <option value="6">API (WebUI / koboldcpp)</option>
-                                    </select>
+                                    </small>
                                 </div>
-                                <div class="range-block flex-container flexnowrap" data-newbie-hidden name="tokenPaddingBlock">
-                                    <div class="range-block-title justifyLeft">
-                                        <small data-i18n="Token Padding" class="flex-container">Token Padding
-                                            <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#token-padding" class="notes-link" target="_blank">
-                                                <span class="fa-solid fa-circle-question note-link-span"></span>
-                                            </a>
-                                        </small>
-                                    </div>
-                                    <input id="token_padding" class="text_pole textarea_compact" type="number" min="-2048" max="2048" />
-                                </div>
+                                <input id="token_padding" class="text_pole textarea_compact" type="number" min="-2048" max="2048" />
                             </div>
-
+                        </div>
+                        <div>
+                            <h4 class="standoutHeader">Misc.</h4>
                             <div>
                                 <small>
                                     <span data-i18n="Non-markdown strings">

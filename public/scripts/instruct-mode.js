@@ -87,8 +87,16 @@ export async function loadInstructMode(data) {
 
     if (power_user.instruct.enabled) {
         $('#instruct_enabled').parent().find('i').addClass('toggleEnabled');
+        $('#instructSettingsBlock, #InstructSequencesColumn').removeClass('disabled');
     } else {
         $('#instruct_enabled').parent().find('i').removeClass('toggleEnabled');
+        $('#instructSettingsBlock, #InstructSequencesColumn').addClass('disabled');
+    }
+
+    if (power_user.instruct.bind_to_context) {
+        $('#instruct_bind_to_context').parent().find('i').addClass('toggleEnabled');
+    } else {
+        $('#instruct_bind_to_context').parent().find('i').removeClass('toggleEnabled');
     }
 
     controls.forEach(control => {
@@ -639,8 +647,12 @@ jQuery(() => {
         //color toggle for the main switch
         if (power_user.instruct.enabled) {
             $('#instruct_enabled').parent().find('i').addClass('toggleEnabled');
+            $('#instructSettingsBlock, #InstructSequencesColumn')
+                .removeClass('disabled');
         } else {
             $('#instruct_enabled').parent().find('i').removeClass('toggleEnabled');
+            $('#instructSettingsBlock, #InstructSequencesColumn')
+                .addClass('disabled');
         }
 
         if (!power_user.instruct.bind_to_context) {
@@ -653,6 +665,14 @@ jQuery(() => {
         } else {
             // When instruct mode gets disabled, select default context preset
             selectContextPreset(power_user.default_context);
+        }
+    });
+
+    $('#instruct_bind_to_context').on('change', function () {
+        if (power_user.instruct.bind_to_context) {
+            $('#instruct_bind_to_context').parent().find('i').addClass('toggleEnabled');
+        } else {
+            $('#instruct_bind_to_context').parent().find('i').removeClass('toggleEnabled');
         }
     });
 
