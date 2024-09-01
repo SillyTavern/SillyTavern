@@ -1776,11 +1776,6 @@ async function loadContextSettings() {
             }
 
             saveSettingsDebounced();
-            /*
-            if (!control.isCheckbox) {
-                await resetScrollHeight($element);
-            }
-            */
         });
     });
 
