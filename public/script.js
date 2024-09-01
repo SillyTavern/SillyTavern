@@ -1,4 +1,4 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter } from './scripts/RossAscends-mods.js';
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter, addSafariPatch } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -916,6 +916,7 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
+    addSafariPatch();
     await getClientVersion();
     await readSecretState();
     initLocales();
@@ -6322,7 +6323,7 @@ export function setUserName(value) {
 
 async function doOnboarding(avatarId) {
     const template = $('#onboarding_template .onboarding');
-    let userName = await callGenericPopup(template, POPUP_TYPE.INPUT, currentUser?.name || name1, { rows: 2, wide: true, large: true });
+    let userName = await callGenericPopup(template, POPUP_TYPE.INPUT, currentUser?.name || name1, { rows: 2, wider: true, cancelButton: false });
 
     if (userName) {
         userName = String(userName).replace('\n', ' ');
