@@ -75,11 +75,6 @@ const defaultStoryString = '{{#if system}}{{system}}\n{{/if}}{{#if description}}
 const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
 
-export const ui_mode = {
-    SIMPLE: 0,
-    POWER: 1,
-};
-
 const avatar_styles = {
     ROUND: 0,
     RECTANGULAR: 1,
@@ -132,7 +127,6 @@ let power_user = {
     smooth_streaming: false,
     smooth_streaming_speed: 50,
 
-    ui_mode: ui_mode.POWER,
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
@@ -330,12 +324,6 @@ let browser_has_focus = true;
 const debug_functions = [];
 
 const setHotswapsDebounced = debounce(favsToHotswap);
-
-export function switchSimpleMode() {
-    $('[data-newbie-hidden]').each(function () {
-        $(this).toggleClass('displayNone', power_user.ui_mode === ui_mode.SIMPLE);
-    });
-}
 
 function playMessageSound() {
     if (!power_user.play_message_sound) {
@@ -1481,7 +1469,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#auto_swipe_minimum_length').val(power_user.auto_swipe_minimum_length);
     $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(', '));
     $('#auto_swipe_blacklist_threshold').val(power_user.auto_swipe_blacklist_threshold);
-    $('#custom_stopping_strings').val(power_user.custom_stopping_strings);
+    $('#custom_stopping_strings').text(power_user.custom_stopping_strings);
     $('#custom_stopping_strings_macro').prop('checked', power_user.custom_stopping_strings_macro);
     $('#fuzzy_search_checkbox').prop('checked', power_user.fuzzy_search);
     $('#persona_show_notifications').prop('checked', power_user.persona_show_notifications);
@@ -1511,7 +1499,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#waifuMode').prop('checked', power_user.waifuMode);
     $('#movingUImode').prop('checked', power_user.movingUI);
     $('#noShadowsmode').prop('checked', power_user.noShadows);
-    $('#start_reply_with').val(power_user.user_prompt_bias);
+    $('#start_reply_with').text(power_user.user_prompt_bias);
     $('#chat-show-reply-prefix-checkbox').prop('checked', power_user.show_user_prompt_bias);
     $('#auto_continue_enabled').prop('checked', power_user.auto_continue.enabled);
     $('#auto_continue_allow_chat_completions').prop('checked', power_user.auto_continue.allow_chat_completions);
@@ -1586,7 +1574,6 @@ async function loadPowerUserSettings(settings, data) {
     $('#bot-mes-blur-tint-color-picker').attr('color', power_user.bot_mes_blur_tint_color);
     $('#shadow-color-picker').attr('color', power_user.shadow_color);
     $('#border-color-picker').attr('color', power_user.border_color);
-    $('#ui_mode_select').val(power_user.ui_mode).find(`option[value="${power_user.ui_mode}"]`).attr('selected', true);
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
     $('#auto-connect-checkbox').prop('checked', power_user.auto_connect);
     $('#auto-load-chat-checkbox').prop('checked', power_user.auto_load_chat);
@@ -1613,14 +1600,13 @@ async function loadPowerUserSettings(settings, data) {
     switchReducedMotion();
     switchCompactInputArea();
     reloadMarkdownProcessor(power_user.render_formulas);
-    loadInstructMode(data);
+    await loadInstructMode(data);
     await loadContextSettings();
     loadMaxContextUnlocked();
     switchWaifuMode();
     switchSpoilerMode();
     loadMovingUIState();
     loadCharListState();
-    switchSimpleMode();
 }
 
 async function loadCharListState() {
@@ -1761,13 +1747,14 @@ async function loadContextSettings() {
         if (control.isCheckbox) {
             $element.prop('checked', power_user.context[control.property]);
         } else {
-            $element.val(power_user.context[control.property]);
+            $element[0].innerText = power_user.context[control.property];
         }
+        console.log(`Setting ${$element.prop('id')} to ${power_user.context[control.property]}`);
 
         // If the setting already exists, no need to duplicate it
         // TODO: Maybe check the power_user object for the setting instead of a flag?
-        $element.on('input', async function () {
-            const value = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+        $element.on('input keyup', async function () {
+            const value = control.isCheckbox ? !!$(this).prop('checked') : $(this)[0].innerText;
             if (control.isGlobalSetting) {
                 power_user[control.property] = value;
             } else {
@@ -1775,9 +1762,6 @@ async function loadContextSettings() {
             }
 
             saveSettingsDebounced();
-            if (!control.isCheckbox) {
-                await resetScrollHeight($element);
-            }
         });
     });
 
@@ -1791,7 +1775,7 @@ async function loadContextSettings() {
     });
 
     $('#context_presets').on('change', function () {
-        const name = String($(this).find(':selected').val());
+        const name = String($(this).find(':selected').text());
         const preset = context_presets.find(x => x.name === name);
 
         if (!preset) {
@@ -1816,9 +1800,8 @@ async function loadContextSettings() {
                         .prop('checked', control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
                         .trigger('input');
                 } else {
-                    $element
-                        .val(control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
-                        .trigger('input');
+                    $element[0].innerText = (control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
+                    $element.trigger('input');
                 }
             }
         });
@@ -3120,7 +3103,7 @@ $(document).ready(() => {
     });
 
     $('#start_reply_with').on('input', function () {
-        power_user.user_prompt_bias = String($(this).val());
+        power_user.user_prompt_bias = String($(this)[0].innerText);
         saveSettingsDebounced();
     });
 
@@ -3652,7 +3635,7 @@ $(document).ready(() => {
     });
 
     $('#custom_stopping_strings').on('input', function () {
-        power_user.custom_stopping_strings = String($(this).val());
+        power_user.custom_stopping_strings = String($(this)[0].innerText).trim();
         saveSettingsDebounced();
     });
 
@@ -3684,13 +3667,6 @@ $(document).ready(() => {
 
     $('#debug_menu').on('click', function () {
         showDebugMenu();
-    });
-
-    $('#ui_mode_select').on('change', function () {
-        const value = $(this).find(':selected').val();
-        power_user.ui_mode = Number(value);
-        switchSimpleMode();
-        saveSettingsDebounced();
     });
 
     $('#bogus_folders').on('input', function () {

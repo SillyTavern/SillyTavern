@@ -1,4 +1,4 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter } from './scripts/RossAscends-mods.js';
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter, addSafariPatch } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -78,8 +78,6 @@ import {
     renderStoryString,
     sortEntitiesList,
     registerDebugFunction,
-    ui_mode,
-    switchSimpleMode,
     flushEphemeralStoppingStrings,
     context_presets,
     resetMovableStyles,
@@ -454,7 +452,9 @@ export const event_types = {
     // TODO: Naming convention is inconsistent with other events
     CHARACTER_DELETED: 'characterDeleted',
     CHARACTER_DUPLICATED: 'character_duplicated',
-    SMOOTH_STREAM_TOKEN_RECEIVED: 'smooth_stream_token_received',
+    /** @deprecated The event is aliased to STREAM_TOKEN_RECEIVED. */
+    SMOOTH_STREAM_TOKEN_RECEIVED: 'stream_token_received',
+    STREAM_TOKEN_RECEIVED: 'stream_token_received',
     FILE_ATTACHMENT_DELETED: 'file_attachment_deleted',
     WORLDINFO_FORCE_ACTIVATE: 'worldinfo_force_activate',
     OPEN_CHARACTER_LIBRARY: 'open_character_library',
@@ -928,6 +928,7 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
+    addSafariPatch();
     await getClientVersion();
     await readSecretState();
     initLocales();
@@ -3126,6 +3127,7 @@ class StreamingProcessor {
                 if (logprobs) {
                     this.messageLogprobs.push(...(Array.isArray(logprobs) ? logprobs : [logprobs]));
                 }
+                await eventSource.emit(event_types.STREAM_TOKEN_RECEIVED, text);
                 await sw.tick(() => this.onProgressStreaming(this.messageId, this.continueMessage + text));
             }
             const seconds = (timestamps[timestamps.length - 1] - timestamps[0]) / 1000;
@@ -6324,15 +6326,11 @@ export function setUserName(value) {
 }
 
 async function doOnboarding(avatarId) {
-    let simpleUiMode = false;
     const template = $('#onboarding_template .onboarding');
-    template.find('input[name="enable_simple_mode"]').on('input', function () {
-        simpleUiMode = $(this).is(':checked');
-    });
-    let userName = await callGenericPopup(template, POPUP_TYPE.INPUT, currentUser?.name || name1, { rows: 2, wide: true, large: true });
+    let userName = await callGenericPopup(template, POPUP_TYPE.INPUT, currentUser?.name || name1, { rows: 2, wider: true, cancelButton: false });
 
     if (userName) {
-        userName = userName.replace('\n', ' ');
+        userName = String(userName).replace('\n', ' ');
         setUserName(userName);
         console.log(`Binding persona ${avatarId} to name ${userName}`);
         power_user.personas[avatarId] = userName;
@@ -6340,12 +6338,6 @@ async function doOnboarding(avatarId) {
             description: '',
             position: persona_description_positions.IN_PROMPT,
         };
-    }
-
-    if (simpleUiMode) {
-        power_user.ui_mode = ui_mode.SIMPLE;
-        $('#ui_mode_select').val(power_user.ui_mode);
-        switchSimpleMode();
     }
 }
 
@@ -7466,6 +7458,53 @@ export function hideSwipeButtons() {
     $('#chat').find('.swipe_left').css('display', 'none');
 }
 
+/**
+ * Deletes a swipe from the chat.
+ *
+ * @param {number?} swipeId - The ID of the swipe to delete. If not provided, the current swipe will be deleted.
+ * @returns {Promise<number>|undefined} - The ID of the new swipe after deletion.
+ */
+export async function deleteSwipe(swipeId = null) {
+    if (swipeId && (isNaN(swipeId) || swipeId < 0)) {
+        toastr.warning(`Invalid swipe ID: ${swipeId + 1}`);
+        return;
+    }
+
+    const lastMessage = chat[chat.length - 1];
+    if (!lastMessage || !Array.isArray(lastMessage.swipes) || !lastMessage.swipes.length) {
+        toastr.warning('No messages to delete swipes from.');
+        return;
+    }
+
+    if (lastMessage.swipes.length <= 1) {
+        toastr.warning('Can\'t delete the last swipe.');
+        return;
+    }
+
+    swipeId = swipeId ?? lastMessage.swipe_id;
+
+    if (swipeId < 0 || swipeId >= lastMessage.swipes.length) {
+        toastr.warning(`Invalid swipe ID: ${swipeId + 1}`);
+        return;
+    }
+
+    lastMessage.swipes.splice(swipeId, 1);
+
+    if (Array.isArray(lastMessage.swipe_info) && lastMessage.swipe_info.length) {
+        lastMessage.swipe_info.splice(swipeId, 1);
+    }
+
+    // Select the next swip, or the one before if it was the last one
+    const newSwipeId = Math.min(swipeId, lastMessage.swipes.length - 1);
+    lastMessage.swipe_id = newSwipeId;
+    lastMessage.mes = lastMessage.swipes[newSwipeId];
+
+    await saveChatConditional();
+    await reloadCurrentChat();
+
+    return newSwipeId;
+}
+
 export async function saveMetadata() {
     if (selected_group) {
         await editGroup(selected_group, true, false);
@@ -8009,7 +8048,7 @@ window['SillyTavern'].getContext = function () {
         registerHelper: () => { },
         registerMacro: MacrosParser.registerMacro.bind(MacrosParser),
         unregisterMacro: MacrosParser.unregisterMacro.bind(MacrosParser),
-        registedDebugFunction: registerDebugFunction,
+        registerDebugFunction: registerDebugFunction,
         /** @deprecated Use renderExtensionTemplateAsync instead. */
         renderExtensionTemplate: renderExtensionTemplate,
         renderExtensionTemplateAsync: renderExtensionTemplateAsync,
@@ -8943,6 +8982,12 @@ function addDebugFunctions() {
         await saveChatConditional();
         await reloadCurrentChat();
     };
+
+    registerDebugFunction('forceOnboarding', 'Force onboarding', 'Forces the onboarding process to restart.', async () => {
+        firstRun = true;
+        await saveSettings();
+        location.reload();
+    });
 
     registerDebugFunction('backfillTokenCounts', 'Backfill token counters',
         `Recalculates token counts of all messages in the current chat to refresh the counters.
@@ -10153,7 +10198,7 @@ jQuery(async function () {
         }
     });
 
-    $(document).on('click', '.mes_edit_cancel', function () {
+    $(document).on('click', '.mes_edit_cancel', async function () {
         let text = chat[this_edit_mes_id]['mes'];
 
         $(this).closest('.mes_block').find('.mes_text').empty();
@@ -10171,6 +10216,8 @@ jQuery(async function () {
             ));
         appendMediaToMessage(chat[this_edit_mes_id], $(this).closest('.mes'));
         addCopyToCodeBlocks($(this).closest('.mes'));
+
+        await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
         this_edit_mes_id = undefined;
     });
 
@@ -10282,19 +10329,12 @@ jQuery(async function () {
         if (deleteOnlySwipe) {
             const message = chat[this_edit_mes_id];
             const swipe_id = message.swipe_id;
-            message.swipes.splice(swipe_id, 1);
-            if (Array.isArray(message.swipe_info) && message.swipe_info.length) {
-                message.swipe_info.splice(swipe_id, 1);
-            }
-            if (swipe_id > 0) {
-                $('.swipe_left:last').click();
-            } else {
-                $('.swipe_right:last').click();
-            }
-        } else {
-            chat.splice(this_edit_mes_id, 1);
-            messageElement.remove();
+            await deleteSwipe(swipe_id);
+            return;
         }
+
+        chat.splice(this_edit_mes_id, 1);
+        messageElement.remove();
 
         let startFromZero = Number(this_edit_mes_id) === 0;
 

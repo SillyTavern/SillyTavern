@@ -281,6 +281,7 @@ export class Popup {
             case POPUP_TYPE.INPUT: {
                 this.mainInput.style.display = 'block';
                 if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-save');
+                if (cancelButton === false) this.cancelButton.style.display = 'none';
                 break;
             }
             case POPUP_TYPE.DISPLAY: {
