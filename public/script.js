@@ -10151,7 +10151,7 @@ jQuery(async function () {
         }
     });
 
-    $(document).on('click', '.mes_edit_cancel', function () {
+    $(document).on('click', '.mes_edit_cancel', async function () {
         let text = chat[this_edit_mes_id]['mes'];
 
         $(this).closest('.mes_block').find('.mes_text').empty();
@@ -10169,6 +10169,8 @@ jQuery(async function () {
             ));
         appendMediaToMessage(chat[this_edit_mes_id], $(this).closest('.mes'));
         addCopyToCodeBlocks($(this).closest('.mes'));
+
+        await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
         this_edit_mes_id = undefined;
     });
 
