@@ -5453,3 +5453,7 @@ body:not(.movingUI) .drawer-content.maximized {
     color: var(--SmartThemeBodyColor);
     opacity: 0.7;
 }
+
+#advanced-formatting-button div[contenteditable="true"] {
+    overflow-wrap: anywhere;
+}
