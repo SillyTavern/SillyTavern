@@ -57,7 +57,6 @@ export class SlashCommandScope {
         this.variables[key] = value;
     }
     setVariable(key, value, index = null, type = null) {
-        value = convertValueType(value, type);
         if (this.existsVariableInScope(key)) {
             if (index !== null && index !== undefined) {
                 let v = this.variables[key];
@@ -65,13 +64,13 @@ export class SlashCommandScope {
                     v = JSON.parse(v);
                     const numIndex = Number(index);
                     if (Number.isNaN(numIndex)) {
-                        v[index] = value;
+                        v[index] = convertValueType(value, type);
                     } else {
-                        v[numIndex] = value;
+                        v[numIndex] = convertValueType(value, type);
                     }
                     v = JSON.stringify(v);
                 } catch {
-                    v[index] = value;
+                    v[index] = convertValueType(value, type);
                 }
                 this.variables[key] = v;
             } else {
@@ -80,7 +79,7 @@ export class SlashCommandScope {
             return value;
         }
         if (this.parent) {
-            return this.parent.setVariable(key, value, index);
+            return this.parent.setVariable(key, value, index, type);
         }
         throw new SlashCommandScopeVariableNotFoundError(`No such variable: "${key}"`);
     }

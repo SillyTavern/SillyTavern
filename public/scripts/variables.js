@@ -51,19 +51,18 @@ function setLocalVariable(name, value, args = {}) {
 
     if (args.index !== undefined) {
         try {
-            value = convertValueType(value, args.type);
             let localVariable = JSON.parse(chat_metadata.variables[name] ?? 'null');
             const numIndex = Number(args.index);
             if (Number.isNaN(numIndex)) {
                 if (localVariable === null) {
                     localVariable = {};
                 }
-                localVariable[args.index] = value;
+                localVariable[args.index] = convertValueType(value, args.type);
             } else {
                 if (localVariable === null) {
                     localVariable = [];
                 }
-                localVariable[numIndex] = value;
+                localVariable[numIndex] = convertValueType(value, args.type);
             }
             chat_metadata.variables[name] = JSON.stringify(localVariable);
         } catch {
@@ -101,19 +100,18 @@ function getGlobalVariable(name, args = {}) {
 function setGlobalVariable(name, value, args = {}) {
     if (args.index !== undefined) {
         try {
-            value = convertValueType(value, args.type);
             let globalVariable = JSON.parse(extension_settings.variables.global[name] ?? 'null');
             const numIndex = Number(args.index);
             if (Number.isNaN(numIndex)) {
                 if (globalVariable === null) {
                     globalVariable = {};
                 }
-                globalVariable[args.index] = value;
+                globalVariable[args.index] = convertValueType(value, args.type);
             } else {
                 if (globalVariable === null) {
                     globalVariable = [];
                 }
-                globalVariable[numIndex] = value;
+                globalVariable[numIndex] = convertValueType(value, args.type);
             }
             extension_settings.variables.global[name] = JSON.stringify(globalVariable);
         } catch {
