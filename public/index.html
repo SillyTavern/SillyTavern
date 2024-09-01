@@ -3441,12 +3441,14 @@
             </div>
             <div id="WorldInfo" class="drawer-content closedDrawer">
                 <div id="WorldInfoheader" class="fa-solid fa-grip drag-grabber"></div>
-                <div id="WI_panel_pin_div" class="flex-container alignitemscenter gap10px" title="Locked = World Editor will stay open" data-i18n="[title]Locked = World Editor will stay open">
-                    <input type="checkbox" id="WI_panel_pin">
-                    <label for="WI_panel_pin">
-                        <div class="unchecked fa-solid fa-unlock "></div>
-                        <div class="checked fa-solid fa-lock "></div>
-                    </label>
+                <div class="flex-container alignitemscenter gap10px">
+                    <div id="WI_panel_pin_div" title="Locked = World Editor will stay open" data-i18n="[title]Locked = World Editor will stay open">
+                        <input type="checkbox" id="WI_panel_pin">
+                        <label for="WI_panel_pin">
+                            <div class="unchecked fa-solid fa-unlock "></div>
+                            <div class="checked fa-solid fa-lock "></div>
+                        </label>
+                    </div>
                     <h3 class="margin0">
                         <span data-i18n="Worlds/Lorebooks">Worlds/Lorebooks</span>
                         <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/" class="notes-link" target="_blank">
