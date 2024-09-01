@@ -484,9 +484,10 @@ const promptStorage = new localforage.createInstance({ name: 'SillyTavern_Prompt
 export let itemizedPrompts = [];
 
 export const systemUserName = 'SillyTavern System';
+export const neutralCharacterName = 'Assistant';
 let default_user_name = 'User';
 export let name1 = default_user_name;
-export let name2 = 'SillyTavern System';
+export let name2 = systemUserName;
 export let chat = [];
 let chatSaveTimeout;
 let importFlashTimeout;
@@ -563,6 +564,7 @@ export const system_message_types = {
     FORMATTING: 'formatting',
     HOTKEYS: 'hotkeys',
     MACROS: 'macros',
+    WELCOME_PROMPT: 'welcome_prompt',
 };
 
 /**
@@ -679,6 +681,16 @@ async function getSystemMessages() {
             is_user: false,
             is_system: true,
             mes: 'Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>',
+        },
+        welcome_prompt: {
+            name: neutralCharacterName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            mes: await renderTemplateAsync('welcomePrompt'),
+            extra: {
+                isSmallSys: true,
+            },
         },
     };
 }
@@ -923,6 +935,7 @@ async function firstLoadInit() {
     initTextGenModels();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
+    sendSystemMessage(system_message_types.WELCOME_PROMPT);
     await getSettings();
     initKeyboard();
     initDynamicStyles();
@@ -1945,9 +1958,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
         mes = mes.replaceAll('<', '&lt;').replaceAll('>', '&gt;');
     }
 
-    if (this_chid === undefined && !selected_group) {
-        mes = mes.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-    } else if (!isSystem) {
+    if (!isSystem) {
         // Save double quotes in tags as a special character to prevent them from being encoded
         if (!power_user.encode_tags) {
             mes = mes.replace(/<([^>]+)>/g, function (_, contents) {
@@ -1985,13 +1996,6 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
             return match.replace(/&amp;/g, '&');
         });
     }
-
-    /*
-    // Hides bias from empty messages send with slash commands
-    if (isSystem) {
-        mes = mes.replace(/\{\{[\s\S]*?\}\}/gm, "");
-    }
-    */
 
     if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
         mes = mes.replace(new RegExp(`(^|\n)${escapeRegex(ch_name)}:`, 'g'), '$1');
@@ -3398,14 +3402,14 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         quiet_prompt = main_api == 'novel' && !quietToLoud ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
     }
 
-    const isChatValid = online_status !== 'no_connection' && this_chid !== undefined;
+    const isChatValid = online_status !== 'no_connection';
+    if (this_chid === undefined) {
+        setCharacterName(neutralCharacterName);
+    }
 
     // We can't do anything because we're not in a chat right now. (Unless it's a dry run, in which case we need to
     // assemble the prompt so we can count its tokens regardless of whether a chat is active.)
     if (!dryRun && !isChatValid) {
-        if (this_chid === undefined) {
-            toastr.warning('Сharacter is not selected');
-        }
         is_send_press = false;
         return Promise.resolve();
     }
@@ -3491,9 +3495,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             setExtensionPrompt('DEPTH_PROMPT_' + index, value.text, extension_prompt_types.IN_CHAT, value.depth, extension_settings.note.allowWIScan, role);
         });
     } else {
-        const depthPromptText = baseChatReplace(characters[this_chid].data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
-        const depthPromptDepth = characters[this_chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
-        const depthPromptRole = getExtensionPromptRoleByName(characters[this_chid].data?.extensions?.depth_prompt?.role ?? depth_prompt_role_default);
+        const depthPromptText = baseChatReplace(characters[this_chid]?.data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
+        const depthPromptDepth = characters[this_chid]?.data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
+        const depthPromptRole = getExtensionPromptRoleByName(characters[this_chid]?.data?.extensions?.depth_prompt?.role ?? depth_prompt_role_default);
         setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth, extension_settings.note.allowWIScan, depthPromptRole);
     }
 
@@ -6673,7 +6677,7 @@ function updateMessage(div) {
 function openMessageDelete(fromSlashCommand) {
     closeMessageEditor();
     hideSwipeButtons();
-    if (fromSlashCommand || (this_chid != undefined && !is_send_press) || (selected_group && !is_group_generating)) {
+    if (fromSlashCommand || (!is_send_press) || (selected_group && !is_group_generating)) {
         $('#dialogue_del_mes').css('display', 'block');
         $('#send_form').css('display', 'none');
         $('.del_checkbox').each(function () {
@@ -9805,6 +9809,7 @@ jQuery(async function () {
                 $('#rm_button_selected_ch').children('h2').text('');
                 select_rm_characters();
                 sendSystemMessage(system_message_types.WELCOME);
+                sendSystemMessage(system_message_types.WELCOME_PROMPT);
                 eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
                 await getClientVersion();
             } else {
