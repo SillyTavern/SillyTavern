@@ -57,12 +57,12 @@ function setLocalVariable(name, value, args = {}) {
                 if (localVariable === null) {
                     localVariable = {};
                 }
-                localVariable[args.index] = convertValueType(value, args.type);
+                localVariable[args.index] = convertValueType(value, args.as);
             } else {
                 if (localVariable === null) {
                     localVariable = [];
                 }
-                localVariable[numIndex] = convertValueType(value, args.type);
+                localVariable[numIndex] = convertValueType(value, args.as);
             }
             chat_metadata.variables[name] = JSON.stringify(localVariable);
         } catch {
@@ -106,12 +106,12 @@ function setGlobalVariable(name, value, args = {}) {
                 if (globalVariable === null) {
                     globalVariable = {};
                 }
-                globalVariable[args.index] = convertValueType(value, args.type);
+                globalVariable[args.index] = convertValueType(value, args.as);
             } else {
                 if (globalVariable === null) {
                     globalVariable = [];
                 }
-                globalVariable[numIndex] = convertValueType(value, args.type);
+                globalVariable[numIndex] = convertValueType(value, args.as);
             }
             extension_settings.variables.global[name] = JSON.stringify(globalVariable);
         } catch {
@@ -841,7 +841,7 @@ function varCallback(args, value) {
         if (typeof key != 'string') throw new Error('Key must be a string');
         if (args._hasUnnamedArgument) {
             const val = typeof value[0] == 'string' ? value.join(' ') : value[0];
-            args._scope.setVariable(key, val, args.index, args.type);
+            args._scope.setVariable(key, val, args.index, args.as);
             return val;
         } else {
             return args._scope.getVariable(key, args.index);
@@ -851,7 +851,7 @@ function varCallback(args, value) {
     if (typeof key != 'string') throw new Error('Key must be a string');
     if (value.length > 0) {
         const val = typeof value[0] == 'string' ? value.join(' ') : value[0];
-        args._scope.setVariable(key, val, args.index, args.type);
+        args._scope.setVariable(key, val, args.index, args.as);
         return val;
     } else {
         return args._scope.getVariable(key, args.index);
