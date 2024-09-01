@@ -2086,7 +2086,7 @@ export function registerVariableCommands() {
         splitUnnamedArgumentCount: 1,
         helpString: `
             <div>
-                Get or set a variable. Use <code>index</code> to access elements of a list or dictionary.
+                Get or set a variable. Use <code>index</code> to access elements of a JSON-serialized list or dictionary.
                 To convert the value to a specific JSON type when using with <code>index</code>, use the <code>as</code> argument.
             </div>
             <div>
