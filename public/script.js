@@ -8931,6 +8931,12 @@ function addDebugFunctions() {
         await reloadCurrentChat();
     };
 
+    registerDebugFunction('forceOnboarding', 'Force onboarding', 'Forces the onboarding process to restart.', async () => {
+        firstRun = true;
+        await saveSettings();
+        location.reload();
+    });
+
     registerDebugFunction('backfillTokenCounts', 'Backfill token counters',
         `Recalculates token counts of all messages in the current chat to refresh the counters.
         Useful when you switch between models that have different tokenizers.
