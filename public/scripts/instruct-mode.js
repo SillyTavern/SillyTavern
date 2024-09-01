@@ -7,7 +7,7 @@ import {
     power_user,
     context_presets,
 } from './power-user.js';
-import { regexFromString, resetScrollHeight } from './utils.js';
+import { regexFromString } from './utils.js';
 
 /**
  * @type {any[]} Instruct mode presets.
@@ -78,12 +78,16 @@ function migrateInstructModeSettings(settings) {
  * Loads instruct mode settings from the given data object.
  * @param {object} data Settings data object.
  */
-export function loadInstructMode(data) {
+export async function loadInstructMode(data) {
     if (data.instruct !== undefined) {
         instruct_presets = data.instruct;
     }
 
     migrateInstructModeSettings(power_user.instruct);
+
+    $('#instruct_enabled').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.enabled);
+    $('#instructSettingsBlock, #InstructSequencesColumn').toggleClass('disabled', !power_user.instruct.enabled);
+    $('#instruct_bind_to_context').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.bind_to_context);
 
     controls.forEach(control => {
         const $element = $(`#${control.id}`);
@@ -91,21 +95,21 @@ export function loadInstructMode(data) {
         if (control.isCheckbox) {
             $element.prop('checked', power_user.instruct[control.property]);
         } else {
-            $element.val(power_user.instruct[control.property]);
+            $element[0].innerText = (power_user.instruct[control.property]);
         }
 
         $element.on('input', async function () {
-            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this)[0].innerText;
             saveSettingsDebounced();
-            if (!control.isCheckbox) {
-                await resetScrollHeight($element);
-            }
         });
 
         if (control.trigger) {
             $element.trigger('input');
         }
     });
+
+    $('#instruct_system_sequence').css('height', 'auto');
+    $('#instruct_system_suffix').css('height', 'auto');
 
     instruct_presets.forEach((preset) => {
         const name = preset.name;
@@ -604,11 +608,29 @@ jQuery(() => {
 
     $('#instruct_system_same_as_user').on('input', function () {
         const state = !!$(this).prop('checked');
-        $('#instruct_system_sequence').prop('disabled', state);
-        $('#instruct_system_suffix').prop('disabled', state);
+        if (state) {
+            $('#instruct_system_sequence_block').addClass('disabled');
+            $('#instruct_system_suffix_block').addClass('disabled');
+            $('#instruct_system_sequence').css('height', 'auto');
+            $('#instruct_system_suffix').css('height', 'auto');
+            $('#instruct_system_sequence').prop('contenteditable', false);
+            $('#instruct_system_suffix').prop('contenteditable', false);
+        } else {
+            $('#instruct_system_sequence_block').removeClass('disabled');
+            $('#instruct_system_suffix_block').removeClass('disabled');
+            $('#instruct_system_sequence').css('height', '');
+            $('#instruct_system_suffix').css('height', '');
+            $('#instruct_system_sequence').prop('contenteditable', true);
+            $('#instruct_system_suffix').prop('contenteditable', true);
+        }
+
     });
 
     $('#instruct_enabled').on('change', function () {
+        //color toggle for the main switch
+        $('#instruct_enabled').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.enabled);
+        $('#instructSettingsBlock, #InstructSequencesColumn').toggleClass('disabled', !power_user.instruct.enabled);
+
         if (!power_user.instruct.bind_to_context) {
             return;
         }
@@ -620,6 +642,10 @@ jQuery(() => {
             // When instruct mode gets disabled, select default context preset
             selectContextPreset(power_user.default_context);
         }
+    });
+
+    $('#instruct_bind_to_context').on('change', function () {
+        $('#instruct_bind_to_context').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.bind_to_context);
     });
 
     $('#instruct_presets').on('change', function () {
@@ -641,7 +667,8 @@ jQuery(() => {
                 if (control.isCheckbox) {
                     $element.prop('checked', power_user.instruct[control.property]).trigger('input');
                 } else {
-                    $element.val(power_user.instruct[control.property]).trigger('input');
+                    $element[0].innerText = (power_user.instruct[control.property]);
+                    $element.trigger('input');
                 }
             }
         });

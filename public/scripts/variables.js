@@ -11,7 +11,7 @@ import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCom
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
-import { isFalseBoolean } from './utils.js';
+import { isFalseBoolean, convertValueType } from './utils.js';
 
 /** @typedef {import('./slash-commands/SlashCommandParser.js').NamedArguments} NamedArguments */
 /** @typedef {import('./slash-commands/SlashCommand.js').UnnamedArguments} UnnamedArguments */
@@ -57,12 +57,12 @@ function setLocalVariable(name, value, args = {}) {
                 if (localVariable === null) {
                     localVariable = {};
                 }
-                localVariable[args.index] = value;
+                localVariable[args.index] = convertValueType(value, args.as);
             } else {
                 if (localVariable === null) {
                     localVariable = [];
                 }
-                localVariable[numIndex] = value;
+                localVariable[numIndex] = convertValueType(value, args.as);
             }
             chat_metadata.variables[name] = JSON.stringify(localVariable);
         } catch {
@@ -106,12 +106,12 @@ function setGlobalVariable(name, value, args = {}) {
                 if (globalVariable === null) {
                     globalVariable = {};
                 }
-                globalVariable[args.index] = value;
+                globalVariable[args.index] = convertValueType(value, args.as);
             } else {
                 if (globalVariable === null) {
                     globalVariable = [];
                 }
-                globalVariable[numIndex] = value;
+                globalVariable[numIndex] = convertValueType(value, args.as);
             }
             extension_settings.variables.global[name] = JSON.stringify(globalVariable);
         } catch {
@@ -667,23 +667,28 @@ function parseNumericSeries(value, scope = null) {
 }
 
 function performOperation(value, operation, singleOperand = false, scope = null) {
-    if (!value) {
-        return 0;
+    function getResult() {
+        if (!value) {
+            return 0;
+        }
+
+        const array = parseNumericSeries(value, scope);
+
+        if (array.length === 0) {
+            return 0;
+        }
+
+        const result = singleOperand ? operation(array[0]) : operation(array);
+
+        if (isNaN(result) || !isFinite(result)) {
+            return 0;
+        }
+
+        return result;
     }
 
-    const array = parseNumericSeries(value, scope);
-
-    if (array.length === 0) {
-        return 0;
-    }
-
-    const result = singleOperand ? operation(array[0]) : operation(array);
-
-    if (isNaN(result) || !isFinite(result)) {
-        return 0;
-    }
-
-    return result;
+    const result = getResult();
+    return String(result);
 }
 
 function addValuesCallback(args, value) {
@@ -836,7 +841,7 @@ function varCallback(args, value) {
         if (typeof key != 'string') throw new Error('Key must be a string');
         if (args._hasUnnamedArgument) {
             const val = typeof value[0] == 'string' ? value.join(' ') : value[0];
-            args._scope.setVariable(key, val, args.index);
+            args._scope.setVariable(key, val, args.index, args.as);
             return val;
         } else {
             return args._scope.getVariable(key, args.index);
@@ -846,7 +851,7 @@ function varCallback(args, value) {
     if (typeof key != 'string') throw new Error('Key must be a string');
     if (value.length > 0) {
         const val = typeof value[0] == 'string' ? value.join(' ') : value[0];
-        args._scope.setVariable(key, val, args.index);
+        args._scope.setVariable(key, val, args.index, args.as);
         return val;
     } else {
         return args._scope.getVariable(key, args.index);
@@ -901,6 +906,14 @@ export function registerVariableCommands() {
             new SlashCommandNamedArgument(
                 'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
             ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'as',
+                description: 'change the type of the value when used with index',
+                forceEnum: true,
+                enumProvider: commonEnumProviders.types,
+                isRequired: false,
+                defaultValue: 'string',
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -910,12 +923,16 @@ export function registerVariableCommands() {
         helpString: `
             <div>
                 Set a local variable value and pass it down the pipe. The <code>index</code> argument is optional.
+                To convert the value to a specific JSON type when using <code>index</code>, use the <code>as</code> argument.
             </div>
             <div>
                 <strong>Example:</strong>
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/setvar key=color green</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/setvar key=ages index=John as=number 21</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1015,6 +1032,14 @@ export function registerVariableCommands() {
             new SlashCommandNamedArgument(
                 'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
             ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'as',
+                description: 'change the type of the value when used with index',
+                forceEnum: true,
+                enumProvider: commonEnumProviders.types,
+                isRequired: false,
+                defaultValue: 'string',
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -1024,12 +1049,16 @@ export function registerVariableCommands() {
         helpString: `
             <div>
                 Set a global variable value and pass it down the pipe. The <code>index</code> argument is optional.
+                To convert the value to a specific JSON type when using <code>index</code>, use the <code>as</code> argument.
             </div>
             <div>
                 <strong>Example:</strong>
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/setglobalvar key=color green</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/setglobalvar key=ages index=John as=number 21</code></pre>
                     </li>
                 </ul>
             </div>
@@ -2030,6 +2059,14 @@ export function registerVariableCommands() {
                 false, // isRequired
                 false, // acceptsMultiple
             ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'as',
+                description: 'change the type of the value when used with index',
+                forceEnum: true,
+                enumProvider: commonEnumProviders.types,
+                isRequired: false,
+                defaultValue: 'string',
+            }),
         ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -2049,7 +2086,8 @@ export function registerVariableCommands() {
         splitUnnamedArgumentCount: 1,
         helpString: `
             <div>
-                Get or set a variable.
+                Get or set a variable. Use <code>index</code> to access elements of a JSON-serialized list or dictionary.
+                To convert the value to a specific JSON type when using with <code>index</code>, use the <code>as</code> argument.
             </div>
             <div>
                 <strong>Examples:</strong>
@@ -2059,6 +2097,9 @@ export function registerVariableCommands() {
                     </li>
                     <li>
                         <pre><code class="language-stscript">/let x foo | /var key=x foo bar | /var x | /echo</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/let x {} | /var index=cool as=number x 1337 | /echo {{var::x}}</code></pre>
                     </li>
                 </ul>
             </div>
