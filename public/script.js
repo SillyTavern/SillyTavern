@@ -454,7 +454,9 @@ export const event_types = {
     // TODO: Naming convention is inconsistent with other events
     CHARACTER_DELETED: 'characterDeleted',
     CHARACTER_DUPLICATED: 'character_duplicated',
-    SMOOTH_STREAM_TOKEN_RECEIVED: 'smooth_stream_token_received',
+    /** @deprecated The event is aliased to STREAM_TOKEN_RECEIVED. */
+    SMOOTH_STREAM_TOKEN_RECEIVED: 'stream_token_received',
+    STREAM_TOKEN_RECEIVED: 'stream_token_received',
     FILE_ATTACHMENT_DELETED: 'file_attachment_deleted',
     WORLDINFO_FORCE_ACTIVATE: 'worldinfo_force_activate',
     OPEN_CHARACTER_LIBRARY: 'open_character_library',
@@ -3122,6 +3124,7 @@ class StreamingProcessor {
                 if (logprobs) {
                     this.messageLogprobs.push(...(Array.isArray(logprobs) ? logprobs : [logprobs]));
                 }
+                await eventSource.emit(event_types.STREAM_TOKEN_RECEIVED, text);
                 await sw.tick(() => this.onProgressStreaming(this.messageId, this.continueMessage + text));
             }
             const seconds = (timestamps[timestamps.length - 1] - timestamps[0]) / 1000;
