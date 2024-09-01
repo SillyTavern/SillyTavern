@@ -75,11 +75,6 @@ const defaultStoryString = '{{#if system}}{{system}}\n{{/if}}{{#if description}}
 const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
 
-export const ui_mode = {
-    SIMPLE: 0,
-    POWER: 1,
-};
-
 const avatar_styles = {
     ROUND: 0,
     RECTANGULAR: 1,
@@ -132,7 +127,6 @@ let power_user = {
     smooth_streaming: false,
     smooth_streaming_speed: 50,
 
-    ui_mode: ui_mode.POWER,
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
@@ -330,12 +324,6 @@ let browser_has_focus = true;
 const debug_functions = [];
 
 const setHotswapsDebounced = debounce(favsToHotswap);
-
-export function switchSimpleMode() {
-    $('[data-newbie-hidden]').each(function () {
-        $(this).toggleClass('displayNone', power_user.ui_mode === ui_mode.SIMPLE);
-    });
-}
 
 function playMessageSound() {
     if (!power_user.play_message_sound) {
@@ -1586,7 +1574,6 @@ async function loadPowerUserSettings(settings, data) {
     $('#bot-mes-blur-tint-color-picker').attr('color', power_user.bot_mes_blur_tint_color);
     $('#shadow-color-picker').attr('color', power_user.shadow_color);
     $('#border-color-picker').attr('color', power_user.border_color);
-    $('#ui_mode_select').val(power_user.ui_mode).find(`option[value="${power_user.ui_mode}"]`).attr('selected', true);
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
     $('#auto-connect-checkbox').prop('checked', power_user.auto_connect);
     $('#auto-load-chat-checkbox').prop('checked', power_user.auto_load_chat);
@@ -1620,7 +1607,6 @@ async function loadPowerUserSettings(settings, data) {
     switchSpoilerMode();
     loadMovingUIState();
     loadCharListState();
-    switchSimpleMode();
 }
 
 async function loadCharListState() {
@@ -3684,13 +3670,6 @@ $(document).ready(() => {
 
     $('#debug_menu').on('click', function () {
         showDebugMenu();
-    });
-
-    $('#ui_mode_select').on('change', function () {
-        const value = $(this).find(':selected').val();
-        power_user.ui_mode = Number(value);
-        switchSimpleMode();
-        saveSettingsDebounced();
     });
 
     $('#bogus_folders').on('input', function () {

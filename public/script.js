@@ -78,8 +78,6 @@ import {
     renderStoryString,
     sortEntitiesList,
     registerDebugFunction,
-    ui_mode,
-    switchSimpleMode,
     flushEphemeralStoppingStrings,
     context_presets,
     resetMovableStyles,
@@ -6320,15 +6318,11 @@ export function setUserName(value) {
 }
 
 async function doOnboarding(avatarId) {
-    let simpleUiMode = false;
     const template = $('#onboarding_template .onboarding');
-    template.find('input[name="enable_simple_mode"]').on('input', function () {
-        simpleUiMode = $(this).is(':checked');
-    });
     let userName = await callGenericPopup(template, POPUP_TYPE.INPUT, currentUser?.name || name1, { rows: 2, wide: true, large: true });
 
     if (userName) {
-        userName = userName.replace('\n', ' ');
+        userName = String(userName).replace('\n', ' ');
         setUserName(userName);
         console.log(`Binding persona ${avatarId} to name ${userName}`);
         power_user.personas[avatarId] = userName;
@@ -6336,12 +6330,6 @@ async function doOnboarding(avatarId) {
             description: '',
             position: persona_description_positions.IN_PROMPT,
         };
-    }
-
-    if (simpleUiMode) {
-        power_user.ui_mode = ui_mode.SIMPLE;
-        $('#ui_mode_select').val(power_user.ui_mode);
-        switchSimpleMode();
     }
 }
 
