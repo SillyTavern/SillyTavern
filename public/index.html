@@ -1488,7 +1488,7 @@
                                     </div>
                                     <div data-tg-type="mancer, ooba, koboldcpp, vllm, aphrodite, llamacpp, ollama, infermaticai, huggingface" data-newbie-hidden class="flex-container flexFlowColumn alignitemscenter flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Seed" class="textAlignCenter">Seed</small>
-                                        <input type="number" id="seed_textgenerationwebui" class="text_pole textAlignCenter" min="-1" value="-1" maxlength="100" />
+                                        <input type="number" id="seed_textgenerationwebui" class="text_pole textAlignCenter" min="-1" value="-1" />
                                     </div>
                                     <div id="banned_tokens_block_ooba" data-newbie-hidden class="wide100p">
                                         <hr data-newbie-hidden class="width100p">
@@ -1820,12 +1820,12 @@
                                                 <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
                                                 <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="claude_assistant_prefill" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                             </div>
-                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill" rows="6" maxlength="100000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill" rows="6" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                             <div class="flex-container alignItemsCenter">
                                                 <span id="claude_assistant_impersonation_text" data-i18n="Assistant Impersonation Prefill">Assistant Impersonation Prefill</span>
                                                 <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="claude_assistant_impersonation" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                             </div>
-                                            <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact" name="assistant_impersonation" rows="6" maxlength="100000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact" name="assistant_impersonation" rows="6" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
                                         <label for="claude_use_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="claude_use_sysprompt" type="checkbox" />
@@ -1951,7 +1951,7 @@
                                         <a id="horde_kudos" href="javascript:void(0);">View my Kudos</a>
                                     </div> -->
                                 <div class="flex-container">
-                                    <input id="horde_api_key" name="horde_api_key" class="text_pole flex1" maxlength="500" type="text" placeholder="0000000000" autocomplete="off">
+                                    <input id="horde_api_key" name="horde_api_key" class="text_pole flex1" type="text" placeholder="0000000000" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_horde"></div>
                                 </div>
                                 <div data-for="horde_api_key" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -1978,7 +1978,7 @@
                             <div id="kobold_api_block">
                                 <h4 data-i18n="API url">API url</h4>
                                 <small data-i18n="Example: http://127.0.0.1:5000/api ">Example: http://127.0.0.1:5000/api </small>
-                                <input id="api_url_text" name="api_url" class="text_pole" placeholder="http://127.0.0.1:5000/api" maxlength="500" value="" autocomplete="off" data-server-history="kobold">
+                                <input id="api_url_text" name="api_url" class="text_pole" placeholder="http://127.0.0.1:5000/api" value="" autocomplete="off" data-server-history="kobold">
                                 <div id="koboldcpp_hint" class="neutral_warning displayNone">
                                     KoboldCpp works better when you select the Text Completion API and then KoboldCpp as a type!
                                 </div>
@@ -2006,7 +2006,7 @@
                                 </ol>
                             </span>
                             <div class="flex-container">
-                                <input id="api_key_novel" name="api_key_novel" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                <input id="api_key_novel" name="api_key_novel" class="text_pole flex1 wide100p" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_novel">
                                 </div>
                             </div>
@@ -2056,7 +2056,7 @@
                             <div data-tg-type="togetherai" class="flex-container flexFlowColumn">
                                 <h4 data-i18n="TogetherAI API Key">TogetherAI API Key</h4>
                                 <div class="flex-container">
-                                    <input id="api_key_togetherai" name="api_key_togetherai" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                    <input id="api_key_togetherai" name="api_key_togetherai" class="text_pole flex1" value="" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_togetherai"></div>
                                 </div>
                                 <div data-for="api_key_togetherai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -2080,7 +2080,7 @@
                                     <a href="https://openrouter.ai/account" target="_blank" data-i18n="View Remaining Credits">View Remaining Credits</a>
                                 </div>
                                 <div class="flex-container">
-                                    <input id="api_key_openrouter-tg" name="api_key_openrouter" class="text_pole flex1 api_key_openrouter" maxlength="500" value="" type="text" autocomplete="off">
+                                    <input id="api_key_openrouter-tg" name="api_key_openrouter" class="text_pole flex1 api_key_openrouter" value="" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_openrouter"></div>
                                 </div>
                                 <div data-for="api_key_openrouter" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -2107,7 +2107,7 @@
                             <div data-tg-type="infermaticai" class="flex-container flexFlowColumn">
                                 <h4 data-i18n="InfermaticAI API Key">InfermaticAI API Key</h4>
                                 <div class="flex-container">
-                                    <input id="api_key_infermaticai" name="api_key_infermaticai" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                    <input id="api_key_infermaticai" name="api_key_infermaticai" class="text_pole flex1" value="" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_infermaticai"></div>
                                 </div>
                                 <div data-for="api_key_infermaticai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -2130,7 +2130,7 @@
                                     </a>
                                 </h4>
                                 <div class="flex-container">
-                                    <input id="api_key_dreamgen" name="api_key_dreamgen" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                    <input id="api_key_dreamgen" name="api_key_dreamgen" class="text_pole flex1" value="" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_dreamgen"></div>
                                 </div>
                                 <div data-for="api_key_dreamgen" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -2155,7 +2155,7 @@
                                     </a>
                                 </h4>
                                 <div class="flex-container">
-                                    <input id="api_key_mancer" name="api_key_mancer" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <input id="api_key_mancer" name="api_key_mancer" class="text_pole flex1 wide100p" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mancer">
                                     </div>
                                 </div>
@@ -2185,7 +2185,7 @@
                                 </div>
                                 <h4 data-i18n="API key (optional)">API key (optional)</h4>
                                 <div class="flex-container">
-                                    <input id="api_key_ooba" name="api_key_ooba" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <input id="api_key_ooba" name="api_key_ooba" class="text_pole flex1 wide100p" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_ooba">
                                     </div>
                                 </div>
@@ -2195,9 +2195,9 @@
                                 <div class="flex1">
                                     <h4 data-i18n="Server url">Server URL</h4>
                                     <small data-i18n="Example: 127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
-                                    <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_blocking">
+                                    <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" value="" autocomplete="off" data-server-history="ooba_blocking">
                                 </div>
-                                <input id="custom_model_textgenerationwebui" class="text_pole wide100p" maxlength="500" placeholder="Custom model (optional)" data-i18n="[placeholder]Custom model (optional)" type="text">
+                                <input id="custom_model_textgenerationwebui" class="text_pole wide100p" placeholder="Custom model (optional)" data-i18n="[placeholder]Custom model (optional)" type="text">
                             </div>
                             <div data-tg-type="featherless" class="flex-container flexFlowColumn">
                                 <div class="flex-container flexFlowColumn">
@@ -2207,7 +2207,7 @@
                                 </div>
                                 <h4 data-i18n="API key (optional)">API key</h4>
                                 <div class="flex-container">
-                                    <input id="api_key_featherless" name="api_key_featherless" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <input id="api_key_featherless" name="api_key_featherless" class="text_pole flex1 wide100p" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_featherless">
                                     </div>
                                 </div>
@@ -2228,7 +2228,7 @@
                                 </div>
                                 <h4 data-i18n="vLLM API key">vLLM API key</h4>
                                 <div class="flex-container">
-                                    <input id="api_key_vllm" name="api_key_vllm" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <input id="api_key_vllm" name="api_key_vllm" class="text_pole flex1 wide100p" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_vllm">
                                     </div>
                                 </div>
@@ -2238,7 +2238,7 @@
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
                                     <small data-i18n="Example: 127.0.0.1:8000">Example: http://127.0.0.1:8000</small>
-                                    <input id="vllm_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="vllm">
+                                    <input id="vllm_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-server-history="vllm">
                                 </div>
                                 <div>
                                     <h4 data-i18n="vLLM Model">vLLM Model</h4>
@@ -2252,7 +2252,7 @@
                             <div data-tg-type="huggingface">
                                 <h4 data-i18n="HuggingFace Token">HuggingFace Token</h4>
                                 <div class="flex-container">
-                                    <input id="api_key_huggingface" name="api_key_huggingface" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <input id="api_key_huggingface" name="api_key_huggingface" class="text_pole flex1 wide100p" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_huggingface">
                                     </div>
                                 </div>
@@ -2262,7 +2262,7 @@
                                 <div class="flex1">
                                     <h4 data-i18n="Endpoint URL">Endpoint URL</h4>
                                     <small data-i18n="Example: https://****.endpoints.huggingface.cloud">Example: https://****.endpoints.huggingface.cloud</small>
-                                    <input id="huggingface_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="huggingface">
+                                    <input id="huggingface_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-server-history="huggingface">
                                 </div>
                             </div>
 
@@ -2274,7 +2274,7 @@
                                 </div>
                                 <h4 data-i18n="Aphrodite API key">Aphrodite API key</h4>
                                 <div class="flex-container">
-                                    <input id="api_key_aphrodite" name="api_key_aphrodite" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <input id="api_key_aphrodite" name="api_key_aphrodite" class="text_pole flex1 wide100p" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_aphrodite">
                                     </div>
                                 </div>
@@ -2284,7 +2284,7 @@
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
                                     <small data-i18n="Example: 127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
-                                    <input id="aphrodite_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="aphrodite">
+                                    <input id="aphrodite_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-server-history="aphrodite">
                                 </div>
                                 <div>
                                     <h4 data-i18n="Aphrodite Model">Aphrodite Model</h4>
@@ -2303,7 +2303,7 @@
                                 </div>
                                 <h4 data-i18n="API key (optional)">API key (optional)</h4>
                                 <div class="flex-container">
-                                    <input id="api_key_llamacpp" name="api_key_llamacpp" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <input id="api_key_llamacpp" name="api_key_llamacpp" class="text_pole flex1 wide100p" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_llamacpp">
                                     </div>
                                 </div>
@@ -2313,7 +2313,7 @@
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
                                     <small data-i18n="Example: 127.0.0.1:8080">Example: http://127.0.0.1:8080</small>
-                                    <input id="llamacpp_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="llamacpp">
+                                    <input id="llamacpp_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-server-history="llamacpp">
                                 </div>
                             </div>
                             <div data-tg-type="ollama">
@@ -2325,7 +2325,7 @@
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
                                     <small data-i18n="Example: 127.0.0.1:11434">Example: http://127.0.0.1:11434</small>
-                                    <input id="ollama_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ollama">
+                                    <input id="ollama_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-server-history="ollama">
                                 </div>
                                 <div class="flex1">
                                     <h4>
@@ -2351,7 +2351,7 @@
                                 </div>
                                 <h4 data-i18n="Tabby API key">Tabby API key</h4>
                                 <div class="flex-container">
-                                    <input id="api_key_tabby" name="api_key_tabby" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <input id="api_key_tabby" name="api_key_tabby" class="text_pole flex1 wide100p" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_tabby">
                                     </div>
                                 </div>
@@ -2361,7 +2361,7 @@
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
                                     <small data-i18n="Example: 127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
-                                    <input id="tabby_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="tabby">
+                                    <input id="tabby_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-server-history="tabby">
                                 </div>
                                 <div class="flex1">
                                     <h4>
@@ -2382,7 +2382,7 @@
                                 </div>
                                 <h4 data-i18n="koboldcpp API key (optional)">koboldcpp API key (optional)</h4>
                                 <div class="flex-container">
-                                    <input id="api_key_koboldcpp" name="api_key_koboldcpp" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <input id="api_key_koboldcpp" name="api_key_koboldcpp" class="text_pole flex1 wide100p" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_koboldcpp">
                                     </div>
                                 </div>
@@ -2392,7 +2392,7 @@
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
                                     <small data-i18n="Example: 127.0.0.1:5001">Example: http://127.0.0.1:5001</small>
-                                    <input id="koboldcpp_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="koboldcpp">
+                                    <input id="koboldcpp_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-server-history="koboldcpp">
                                 </div>
                             </div>
                             <div class="flex-container">
@@ -2467,7 +2467,7 @@
                                     </span>
                                 </div>
                                 <div class="wide100p">
-                                    <input id="openai_reverse_proxy_name" type="text" class="text_pole" placeholder="..." maxlength="100" />
+                                    <input id="openai_reverse_proxy_name" type="text" class="text_pole" placeholder="..." />
                                 </div>
                                 <div class="range-block-title justifyLeft" data-i18n="Proxy Server URL">
                                     Proxy Server URL
@@ -2478,7 +2478,7 @@
                                     </span>
                                 </div>
                                 <div class="wide100p">
-                                    <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="5000" />
+                                    <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" />
                                     <small class="reverse_proxy_warning">
                                         <span data-i18n="Doesn't work? Try adding">Doesn't work? Try adding</span> <code>/v1</code> <span data-i18n="at the end!">at the end!</span>
                                     </small>
@@ -2492,7 +2492,7 @@
                                     </span>
                                 </div>
                                 <div class="flex-container width100p">
-                                    <input id="openai_proxy_password" type="password" class="text_pole flex1" placeholder="" maxlength="5000" form="openai_form" autocomplete="off" />
+                                    <input id="openai_proxy_password" type="password" class="text_pole flex1" placeholder="" form="openai_form" autocomplete="off" />
                                     <div id="openai_proxy_password_show" title="Peek a password" data-i18n="[title]Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
                                 </div>
                             </div>
@@ -2533,7 +2533,7 @@
                                 </ol>
                             </span>
                             <div class="flex-container">
-                                <input id="api_key_openai" name="api_key_openai" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <input id="api_key_openai" name="api_key_openai" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_openai"></div>
                             </div>
                             <div id="ReverseProxyWarningMessage2" class="reverse_proxy_warning">
@@ -2618,7 +2618,7 @@
                                 </b>
                             </div>
                             <div class="flex-container">
-                                <input id="api_key_claude" name="api_key_claude" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <input id="api_key_claude" name="api_key_claude" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_claude"></div>
                             </div>
                             <div data-for="api_key_claude" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -2670,7 +2670,7 @@
                                 <a href="https://openrouter.ai/account" target="_blank" data-i18n="View Remaining Credits">View Remaining Credits</a>
                             </div>
                             <div class="flex-container">
-                                <input id="api_key_openrouter" name="api_key_openrouter" class="text_pole flex1 api_key_openrouter" maxlength="500" value="" type="text" autocomplete="off">
+                                <input id="api_key_openrouter" name="api_key_openrouter" class="text_pole flex1 api_key_openrouter" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_openrouter"></div>
                             </div>
                             <div data-for="api_key_openrouter" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -2746,19 +2746,19 @@
                             <div id="normal_scale_form">
                                 <h4 data-i18n="Scale API Key">Scale API Key</h4>
                                 <div class="flex-container">
-                                    <input id="api_key_scale" name="api_key_scale" class="text_pole flex1" maxlength="500" value="" autocomplete="off">
+                                    <input id="api_key_scale" name="api_key_scale" class="text_pole flex1" value="" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_scale"></div>
                                 </div>
                                 <div data-for="api_key_scale" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
                                     For privacy reasons, your API key will be hidden after you reload the page.
                                 </div>
                                 <h4>Scale API URL</h4>
-                                <input id="api_url_scale" name="api_url_scale" class="text_pole" maxlength="500" value="" autocomplete="off" placeholder="https://dashboard.scale.com/spellbook/api/v2/deploy/xxxxxxx">
+                                <input id="api_url_scale" name="api_url_scale" class="text_pole" value="" autocomplete="off" placeholder="https://dashboard.scale.com/spellbook/api/v2/deploy/xxxxxxx">
                             </div>
                             <div id="alt_scale_form">
                                 <h4>Scale Cookie (_jwt)</h4>
                                 <div class="flex-container">
-                                    <input id="scale_cookie" name="scale_cookie" class="text_pole flex1" maxlength="500" value="" autocomplete="off">
+                                    <input id="scale_cookie" name="scale_cookie" class="text_pole flex1" value="" autocomplete="off">
                                     <div title="Clear your cookie" data-i18n="[title]Clear your cookie" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="scale_cookie"></div>
                                 </div>
                                 <div data-for="scale_cookie" class="neutral_warning">
@@ -2775,7 +2775,7 @@
                         <form id="ai21_form" data-source="ai21" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4 data-i18n="AI21 API Key">AI21 API Key</h4>
                             <div class="flex-container">
-                                <input id="api_key_ai21" name="api_key_ai21" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <input id="api_key_ai21" name="api_key_ai21" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_ai21"></div>
                             </div>
                             <div data-for="api_key_ai21" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -2797,7 +2797,7 @@
                         <form id="makersuite_form" data-source="makersuite" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4 data-i18n="Google AI Studio API Key">Google AI Studio API Key</h4>
                             <div class="flex-container">
-                                <input id="api_key_makersuite" name="api_key_makersuite" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <input id="api_key_makersuite" name="api_key_makersuite" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_makersuite"></div>
                             </div>
                             <div data-for="api_key_makersuite" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -2836,7 +2836,7 @@
                         <form id="mistralai_form" data-source="mistralai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4 data-i18n="MistralAI API Key">MistralAI API Key</h4>
                             <div class="flex-container">
-                                <input id="api_key_mistralai" name="api_key_mistralai" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <input id="api_key_mistralai" name="api_key_mistralai" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mistralai"></div>
                             </div>
                             <div data-for="api_key_mistralai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -2875,7 +2875,7 @@
                         <div id="groq_form" data-source="groq">
                             <h4 data-i18n="Groq API Key">Groq API Key</h4>
                             <div class="flex-container">
-                                <input id="api_key_groq" name="api_key_groq" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <input id="api_key_groq" name="api_key_groq" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_groq"></div>
                             </div>
                             <div data-for="api_key_groq" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -2898,7 +2898,7 @@
                         <div id="perplexity_form" data-source="perplexity">
                             <h4 data-i18n="Perplexity API Key">Perplexity API Key</h4>
                             <div class="flex-container">
-                                <input id="api_key_perplexity" name="api_key_perplexity" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <input id="api_key_perplexity" name="api_key_perplexity" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_perplexity"></div>
                             </div>
                             <div data-for="api_key_perplexity" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -2938,7 +2938,7 @@
                         <form id="cohere_form" data-source="cohere" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4 data-i18n="Cohere API Key">Cohere API Key</h4>
                             <div class="flex-container">
-                                <input id="api_key_cohere" name="api_key_cohere" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <input id="api_key_cohere" name="api_key_cohere" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_cohere"></div>
                             </div>
                             <div data-for="api_key_cohere" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -2966,7 +2966,7 @@
                         <form id="blockentropy_form" data-source="blockentropy">
                             <h4 data-i18n="Block Entropy API Key">Block Entropy API Key</h4>
                             <div class="flex-container">
-                                <input id="api_key_blockentropy" name="api_key_blockentropy" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <input id="api_key_blockentropy" name="api_key_blockentropy" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_blockentropy"></div>
                             </div>
                             <div data-for="api_key_blockentropy" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -2980,7 +2980,7 @@
                         <form id="custom_form" data-source="custom">
                             <h4 data-i18n="Custom Endpoint (Base URL)">Custom Endpoint (Base URL)</h4>
                             <div class="flex-container">
-                                <input id="custom_api_url_text" class="text_pole wide100p" maxlength="5000" value="" autocomplete="off" data-i18n="[placeholder]Example: http://localhost:1234/v1" placeholder="Example: http://localhost:1234/v1">
+                                <input id="custom_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-i18n="[placeholder]Example: http://localhost:1234/v1" placeholder="Example: http://localhost:1234/v1">
                             </div>
                             <div>
                                 <small>
@@ -2992,7 +2992,7 @@
                                 <small data-i18n="(Optional)">(Optional)</small>
                             </h4>
                             <div class="flex-container">
-                                <input id="api_key_custom" name="api_key_custom" class="text_pole flex1" maxlength="5000" value="" type="text" autocomplete="off">
+                                <input id="api_key_custom" name="api_key_custom" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_custom"></div>
                             </div>
                             <div data-for="api_key_custom" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -3000,7 +3000,7 @@
                             </div>
                             <h4 data-i18n="Enter a Model ID">Enter a Model ID</h4>
                             <div class="flex-container">
-                                <input list="model_custom_select_fill" id="custom_model_id" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-i18n="[placeholder]Example: gpt-3.5-turbo" placeholder="Example: gpt-3.5-turbo">
+                                <input list="model_custom_select_fill" id="custom_model_id" class="text_pole wide100p" value="" autocomplete="off" data-i18n="[placeholder]Example: gpt-3.5-turbo" placeholder="Example: gpt-3.5-turbo">
                                 <datalist id="model_custom_select_fill" class="text_pole model_custom_select"></datalist>
                             </div>
                             <h4 data-i18n="Available Models">Available Models</h4>
@@ -3020,7 +3020,7 @@
                                 </a>
                             </h4>
                             <div class="flex-container">
-                                <input id="api_key_01ai" name="api_key_01ai" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <input id="api_key_01ai" name="api_key_01ai" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_01ai"></div>
                             </div>
                             <div data-for="api_key_01ai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
@@ -4190,7 +4190,7 @@
                                         <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole" title="If the generated message is shorter than this, trigger an auto-swipe." data-i18n="[title]If the generated message is shorter than this, trigger an auto-swipe">
                                         <small data-i18n="Blacklisted words">Blacklisted words</small>
                                         <div class="auto_swipe">
-                                            <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" data-i18n="[placeholder]words you dont want generated separated by comma ','" placeholder="words you don't want generated separated by comma ','" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="3"></textarea>
+                                            <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" data-i18n="[placeholder]words you dont want generated separated by comma ','" placeholder="words you don't want generated separated by comma ','" class="text_pole textarea_compact" value="" autocomplete="off" rows="3"></textarea>
                                             <small data-i18n="Blacklisted word count to swipe">Blacklisted word count to swipe</small>
                                             <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole" title="Minimum number of blacklisted words detected to trigger an auto-swipe." data-i18n="[title]Minimum number of blacklisted words detected to trigger an auto-swipe">
                                         </div>
@@ -4426,8 +4426,8 @@
                         </div>
                     </div>
                     <div class="alignitemsflexstart flex-container wide100p">
-                        <input id="extensions_url" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]Extras API URL" placeholder="Extras API URL">
-                        <input id="extensions_api_key" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]Extras API key (optional)" placeholder="Extras API key (optional)">
+                        <input id="extensions_url" type="text" class="flex1 heightFitContent text_pole widthNatural" data-i18n="[placeholder]Extras API URL" placeholder="Extras API URL">
+                        <input id="extensions_api_key" type="text" class="flex1 heightFitContent text_pole widthNatural" data-i18n="[placeholder]Extras API key (optional)" placeholder="Extras API key (optional)">
                         <div class="extensions_url_block">
                             <div id="extensions_connect" class="menu_button" data-i18n="Connect">Connect</div>
                         </div>
@@ -4471,7 +4471,7 @@
                                     <i class="fa-solid fa-person-circle-question fa-fw"></i>
                                     <div data-i18n="Create">Create</div>
                                 </div>
-                                <input id="persona_search_bar" class="text_pole width100p flex1 margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100">
+                                <input id="persona_search_bar" class="text_pole width100p flex1 margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search...">
                                 <select id="persona_sort_order" class="margin0">
                                     <option value="search" data-i18n="Search" hidden>Search</option>
                                     <option value="asc">A-Z</option>
@@ -4491,7 +4491,7 @@
                         <div class="flex1">
                             <h4 data-i18n="Name">Name</h4>
                             <div class="change_name">
-                                <input id="your_name" name="your_name" data-i18n="[placeholder]Enter your name" placeholder="Enter your name" class="text_pole wide100p" maxlength="100" value="" autocomplete="off">
+                                <input id="your_name" name="your_name" data-i18n="[placeholder]Enter your name" placeholder="Enter your name" class="text_pole wide100p" value="" autocomplete="off">
                                 <div id="your_name_button" class="menu_button fa-solid fa-check" title="Click to set a new User Name" data-i18n="[title]Click to set a new User Name">
                                 </div>
                                 <div id="lock_user_name" class="menu_button fa-solid fa-unlock" title="Click to lock your selected persona to the current chat. Click again to remove the lock." data-i18n="[title]Click to lock your selected persona to the current chat. Click again to remove the lock.">
@@ -4501,7 +4501,7 @@
                             </div>
                             <div>
                                 <h4 data-i18n="Persona Description">Persona Description</h4>
-                                <textarea id="persona_description" name="persona_description" data-i18n="[placeholder]Example: [{{user}} is a 28-year-old Romanian cat girl.]" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="50000" value="" autocomplete="off" rows="8"></textarea>
+                                <textarea id="persona_description" name="persona_description" data-i18n="[placeholder]Example: [{{user}} is a 28-year-old Romanian cat girl.]" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" value="" autocomplete="off" rows="8"></textarea>
                                 <div class="extension_token_counter">
                                     <span data-i18n="Tokens persona description">Tokens</span>: <span id="persona_description_token_count">0</span>
                                 </div>
@@ -4595,7 +4595,7 @@
                     <form id="form_create" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                         <div id="avatar-and-name-block">
                             <div id="name_div">
-                                <input id="character_name_pole" name="ch_name" class="text_pole" data-i18n="[placeholder]Name this character" placeholder="Name this character" maxlength="100" value="" autocomplete="off">
+                                <input id="character_name_pole" name="ch_name" class="text_pole" data-i18n="[placeholder]Name this character" placeholder="Name this character" value="" autocomplete="off">
                                 <div class="extension_token_counter">
                                     <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="character_name_pole" data-token-permanent="true">counting...</span>
                                 </div>
@@ -4666,7 +4666,7 @@
                                 </div>
                                 <div id="tags_div">
                                     <div class="tag_controls">
-                                        <input id="tagInput" class="text_pole textarea_compact tag_input wide100p margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="50" />
+                                        <input id="tagInput" class="text_pole textarea_compact tag_input wide100p margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" />
                                         <div class="tags_view menu_button fa-solid fa-tags" title="View all tags" data-i18n="[title]View all tags"></div>
                                     </div>
                                     <div id="tagList" class="tags"></div>
@@ -4751,12 +4751,12 @@
                         <div class="inline-drawer-content">
                             <div id="group-metadata-controls" class="marginTopBot5">
                                 <div class="flex-container wide100p">
-                                    <input id="rm_group_chat_name" class="text_pole flex1" type="text" name="chat_name" data-i18n="[placeholder]Chat Name (Optional)" placeholder="Chat Name (Optional)" maxlength="200" />
+                                    <input id="rm_group_chat_name" class="text_pole flex1" type="text" name="chat_name" data-i18n="[placeholder]Chat Name (Optional)" placeholder="Chat Name (Optional)" />
                                     <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore" data-i18n="[title]Chat Lore"></div>
                                 </div>
                                 <div id="group_tags_div" class="wide100p">
                                     <div class="tag_controls">
-                                        <input id="groupTagInput" class="text_pole textarea_compact tag_input flex1 margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="50" />
+                                        <input id="groupTagInput" class="text_pole textarea_compact tag_input flex1 margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" />
                                         <div class="tags_view menu_button fa-solid fa-tags margin0" title="View all tags" data-i18n="[title]View all tags"></div>
                                     </div>
                                     <div id="groupTagList" class="tags paddingTopBot5"></div>
@@ -4798,7 +4798,7 @@
                                                 <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]When 'Join character cards' is selected, all respective fields of the characters are being joined together.This means that in the story string for example all character descriptions will be joined to one big text.If you want those fields to be separated, you can define a prefix or suffix here.This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)" title="When 'Join character cards' is selected, all respective fields of the characters are being joined together.&#13;This means that in the story string for example all character descriptions will be joined to one big text.&#13;If you want those fields to be separated, you can define a prefix or suffix here.&#13;&#13;This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)">
                                                 </div>
                                             </label>
-                                            <textarea id="rm_group_generation_mode_join_prefix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                            <textarea id="rm_group_generation_mode_join_prefix" class="text_pole wide100p textarea_compact autoSetHeight" placeholder="&mdash;" rows="1"></textarea>
                                         </div>
                                         <div class="flex1 flexGap5" title="Inserted after each part of the joined fields." data-i18n="[title]Inserted after each part of the joined fields.">
                                             <label for="rm_group_generation_mode_join_suffix" class="flexnowrap width100p whitespacenowrap">
@@ -4806,7 +4806,7 @@
                                                 <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]When 'Join character cards' is selected, all respective fields of the characters are being joined together.This means that in the story string for example all character descriptions will be joined to one big text.If you want those fields to be separated, you can define a prefix or suffix here.This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)" title="When 'Join character cards' is selected, all respective fields of the characters are being joined together.&#13;This means that in the story string for example all character descriptions will be joined to one big text.&#13;If you want those fields to be separated, you can define a prefix or suffix here.&#13;&#13;This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)">
                                                 </div>
                                             </label>
-                                            <textarea id="rm_group_generation_mode_join_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                            <textarea id="rm_group_generation_mode_join_suffix" class="text_pole wide100p textarea_compact autoSetHeight" placeholder="&mdash;" rows="1"></textarea>
                                         </div>
                                     </div>
                                     <div id="GroupFavDelOkBack" class="flex-container flexGap5 spaceEvenly flex1">
@@ -4861,7 +4861,7 @@
                         <div class="inline-drawer-content">
                             <div name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
                                 <div id="rm_group_add_members_header">
-                                    <input id="rm_group_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="200" />
+                                    <input id="rm_group_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
                                 </div>
                                 <div class="rm_tag_controls">
                                     <div class="tags rm_tag_filter"></div>
@@ -4875,7 +4875,7 @@
                 <div id="rm_character_import" class="right_menu" style="display: none;">
                     <form id="form_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                         <input multiple type="file" id="character_import_file" accept=".json, image/png, .yaml, .yml, .charx" name="avatar">
-                        <input id="character_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
+                        <input id="character_import_file_type" name="file_type" class="text_pole" value="" autocomplete="off">
                     </form>
                     <input type="file" id="character_replace_file" accept=".json, image/png, .yaml, .yml, .charx" name="replace_avatar" hidden>
                 </div>
@@ -4886,7 +4886,7 @@
                             <div id="character_import_button" title="Import Character from File" data-i18n="[title]Import Character from File" class="menu_button fa-solid fa-file-import faSmallFontSquareFix"></div>
                             <div id="external_import_button" title="Import content from external URL" data-i18n="[title]Import content from external URL" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
                             <div id="rm_button_group_chats" title="Create New Chat Group" data-i18n="[title]Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
-                            <input id="character_search_bar" class="text_pole width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100" />
+                            <input id="character_search_bar" class="text_pole width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
                             <select id="character_sort_order" title="Characters sorting order" data-i18n="[title]Characters sorting order">
                                 <option data-field="search" data-order="desc" data-i18n="Search" hidden>Search</option>
                                 <option data-field="name" data-order="asc" data-i18n="A-Z">A-Z</option>
@@ -5029,14 +5029,14 @@
                     <small data-i18n="Insert {{original}} into either box to include the respective default prompt from system settings.">Insert {{original}} into either box to include the respective default prompt from system settings.</small>
                     <div>
                         <h4 data-i18n="Main Prompt">Main Prompt</h4>
-                        <textarea id="system_prompt_textarea" name="system_prompt" data-i18n="[placeholder]Any contents here will replace the default Main Prompt used for this character. (v2 spec: system_prompt)" placeholder="Any contents here will replace the default Main Prompt used for this character.&#10;(v2 spec: system_prompt)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="50000"></textarea>
+                        <textarea id="system_prompt_textarea" name="system_prompt" data-i18n="[placeholder]Any contents here will replace the default Main Prompt used for this character. (v2 spec: system_prompt)" placeholder="Any contents here will replace the default Main Prompt used for this character.&#10;(v2 spec: system_prompt)" form="form_create" class="text_pole" autocomplete="off" rows="3"></textarea>
                         <div class="extension_token_counter">
                             <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="system_prompt_textarea">counting...</span>
                         </div>
                     </div>
                     <div>
                         <h4 data-i18n="Post-History Instructions">Post-History Instructions</h4>
-                        <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Post-History Instructions used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Post-History Instructions used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="50000"></textarea>
+                        <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Post-History Instructions used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Post-History Instructions used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3"></textarea>
                         <div class="extension_token_counter">
                             <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="post_history_instructions_textarea">counting...</span>
                         </div>
@@ -5057,21 +5057,21 @@
                     <div class="flex-container flexnowrap">
                         <div class="flex1">
                             <h4 data-i18n="Created by">Created by</h4>
-                            <textarea id="creator_textarea" name="creator" data-i18n="[placeholder](Botmaker's name / Contact Info)" placeholder="(Botmaker's name / Contact info)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="5000"></textarea>
+                            <textarea id="creator_textarea" name="creator" data-i18n="[placeholder](Botmaker's name / Contact Info)" placeholder="(Botmaker's name / Contact info)" form="form_create" class="text_pole" autocomplete="off" rows="2"></textarea>
                         </div>
                         <div class="flex1">
                             <h4 data-i18n="Character Version">Character Version</h4>
-                            <textarea id="character_version_textarea" name="character_version" data-i18n="[placeholder](If you want to track character versions)" placeholder="(If you want to track character versions)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="500"></textarea>
+                            <textarea id="character_version_textarea" name="character_version" data-i18n="[placeholder](If you want to track character versions)" placeholder="(If you want to track character versions)" form="form_create" class="text_pole" autocomplete="off" rows="2"></textarea>
                         </div>
                     </div>
                     <div class="flex-container flexnowrap">
                         <div class="flex1">
                             <h4 class="flex-box" data-i18n="Creator's Notes">Creator's Notes<i class="editor_maximize fa-solid fa-maximize" data-for="creator_notes_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i></h4>
-                            <textarea id="creator_notes_textarea" name="creator_notes" data-i18n="[placeholder](Describe the bot, give use tips, or list the chat models it has been tested on. This will be displayed in the character list.)" placeholder="(Describe the bot, give use tips, or list the chat models it has been tested on. This will be displayed in the character list.)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="20000"></textarea>
+                            <textarea id="creator_notes_textarea" name="creator_notes" data-i18n="[placeholder](Describe the bot, give use tips, or list the chat models it has been tested on. This will be displayed in the character list.)" placeholder="(Describe the bot, give use tips, or list the chat models it has been tested on. This will be displayed in the character list.)" form="form_create" class="text_pole" autocomplete="off" rows="4"></textarea>
                         </div>
                         <div class="flex1">
                             <h4 data-i18n="Tags to Embed">Tags to Embed</h4>
-                            <textarea id="tags_textarea" name="tags" data-i18n="[placeholder](Write a comma-separated list of tags)" placeholder="(Write a comma-separated list of tags)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="5000"></textarea>
+                            <textarea id="tags_textarea" name="tags" data-i18n="[placeholder](Write a comma-separated list of tags)" placeholder="(Write a comma-separated list of tags)" form="form_create" class="text_pole" autocomplete="off" rows="4"></textarea>
                         </div>
                     </div>
                 </div>
@@ -5082,7 +5082,7 @@
                     <span data-i18n="Personality summary">Personality summary</span>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#personality-summary" class="notes-link" target="_blank"><span class="fa-solid fa-circle-question note-link-span"></span></a>
                 </h4>
-                <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="50000"></textarea>
+                <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="4"></textarea>
                 <div class="extension_token_counter">
                     <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="personality_textarea" data-token-permanent="true">counting...</span>
                 </div>
@@ -5094,7 +5094,7 @@
                         <span class="fa-solid fa-circle-question note-link-span"></span>
                     </a>
                 </h4>
-                <textarea id="scenario_pole" name="scenario" data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" maxlength="50000" value="" autocomplete="off" form="form_create" rows="4"></textarea>
+                <textarea id="scenario_pole" name="scenario" data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" value="" autocomplete="off" form="form_create" rows="4"></textarea>
                 <div class="extension_token_counter">
                     <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="scenario_pole" data-token-permanent="true">counting...</span>
                 </div>
@@ -5106,7 +5106,7 @@
                             Character's Note
                         </span>
                     </h4>
-                    <textarea id="depth_prompt_prompt" name="depth_prompt_prompt" class="text_pole" rows="5" maxlength="50000" autocomplete="off" form="form_create" data-i18n="[placeholder](Text to be inserted in-chat @ designated depth and role)" placeholder="(Text to be inserted in-chat @ designated depth and role)"></textarea>
+                    <textarea id="depth_prompt_prompt" name="depth_prompt_prompt" class="text_pole" rows="5" autocomplete="off" form="form_create" data-i18n="[placeholder](Text to be inserted in-chat @ designated depth and role)" placeholder="(Text to be inserted in-chat @ designated depth and role)"></textarea>
                 </div>
                 <div>
                     <h4>
@@ -5148,7 +5148,7 @@
                     <h4><span data-i18n="Examples of dialogue">Examples of dialogue</span></h4>
                     <h5 data-i18n="Important to set the character's writing style.">Important to set the character's writing style. <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#examples-of-dialogue" class="notes-link" target="_blank"><span class="fa-solid fa-circle-question note-link-span"></span></a></h5>
                 </div>
-                <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" data-i18n="[placeholder](Examples of chat dialog. Begin each example with START on a new line.)" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" maxlength="50000" rows="6"></textarea>
+                <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" data-i18n="[placeholder](Examples of chat dialog. Begin each example with START on a new line.)" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" rows="6"></textarea>
                 <div class="extension_token_counter">
                     <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="mes_example_textarea">counting...</span>
                 </div>
@@ -5192,9 +5192,9 @@
                     <div id="select_chat_import"> <!-- import chat popup header -->
                         <form id="form_import_chat" action="javascript:void(null);" method="post" enctype="multipart/form-data" style="display: none;">
                             <input type="file" id="chat_import_file" accept=".json, .jsonl" name="avatar">
-                            <input id="chat_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
-                            <input id="chat_import_avatar_url" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
-                            <input id="chat_import_character_name" name="character_name" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
+                            <input id="chat_import_file_type" name="file_type" class="text_pole" value="" autocomplete="off" style="display: none;">
+                            <input id="chat_import_avatar_url" name="avatar_url" class="text_pole" value="" autocomplete="off" style="display: none;">
+                            <input id="chat_import_character_name" name="character_name" class="text_pole" value="" autocomplete="off" style="display: none;">
                         </form>
                     </div>
                     <div id="selectChatPopupHeaderText" class="TxtLrgBoldCenter">
@@ -5333,7 +5333,7 @@
                                 <div class="flex-container alignitemscenter wide100p">
                                     <div class="WIEntryTitleAndStatus flex-container flex1 alignitemscenter">
                                         <div class="flex-container flex1">
-                                            <textarea class="text_pole" rows="1" name="comment" maxlength="5000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
+                                            <textarea class="text_pole" rows="1" name="comment" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
                                         </div>
                                         <!-- <span class="world_entry_form_position_value"></span> -->
                                         <select data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal🔗 Vectorized❌ Disabled" title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;🔗 Vectorized&#13;❌ Disabled" name="entryStateSelector" class="text_pole widthNatural margin0">
@@ -5405,7 +5405,7 @@
                                         </small>
                                         <small class="textAlignCenter" data-i18n="Primary Keywords">Primary Keywords</small>
                                         <select class="keyprimaryselect keyselect select2_multi_sameline" name="key" data-i18n="[placeholder]Keywords or Regexes" placeholder="Keywords or Regexes" multiple="multiple"></select>
-                                        <textarea class="text_pole keyprimarytextpole mobile" name="key" rows="1" data-i18n="[placeholder]Comma separated list" placeholder="Comma separated list" maxlength="2000" style="display: none;"></textarea>
+                                        <textarea class="text_pole keyprimarytextpole mobile" name="key" rows="1" data-i18n="[placeholder]Comma separated list" placeholder="Comma separated list" style="display: none;"></textarea>
                                         <button type="button" class="switch_input_type_icon" tabindex="-1" title="Switch to plaintext mode" data-i18n="[title]Switch to plaintext mode" data-icon-on="✨" data-icon-off="⌨️" data-tooltip-on="Switch to fancy mode" data-tooltip-off="Switch to plaintext mode">
                                             ⌨️
                                         </button>
@@ -5427,7 +5427,7 @@
                                         </small>
                                         <small class="textAlignCenter" data-i18n="Optional Filter">Optional Filter</small>
                                         <select class="keysecondaryselect keyselect select2_multi_sameline" name="keysecondary" data-i18n="[placeholder]Keywords or Regexes (ignored if empty)" placeholder="Keywords or Regexes (ignored if empty)" multiple="multiple"></select>
-                                        <textarea class="text_pole keysecondarytextpole mobile" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated list (ignored if empty)" placeholder="Comma separated list (ignored if empty)" maxlength="2000" style="display: none;"></textarea>
+                                        <textarea class="text_pole keysecondarytextpole mobile" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated list (ignored if empty)" placeholder="Comma separated list (ignored if empty)" style="display: none;"></textarea>
                                         <button type="button" class="switch_input_type_icon" tabindex="-1" title="Switch to plaintext mode" data-i18n="[title]Switch to plaintext mode" data-icon-on="✨" data-icon-off="⌨️" data-tooltip-on="Switch to fancy mode" data-tooltip-off="Switch to plaintext mode">
                                             ⌨️
                                         </button>
@@ -6011,7 +6011,7 @@
                     <strong><span data-i18n="Alternate Greeting #">Alternate Greeting #</span><span class="greeting_index"></span></strong>
                     <div class="menu_button fa-solid fa-trash-alt delete_alternate_greeting"></div>
                 </div>
-                <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="50000" value="" autocomplete="off" rows="16"></textarea>
+                <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" value="" autocomplete="off" rows="16"></textarea>
             </div>
         </div>
 
@@ -6049,7 +6049,7 @@
                             <b data-i18n="Unique to this chat">Unique to this chat</b>.<br>
                             <span data-i18n="Checkpoints inherit the Note from their parent, and can be changed individually after that.">Checkpoints inherit the Note from their parent, and can be changed individually after that.</span><br>
                         </small>
-                        <textarea id="extension_floating_prompt" class="text_pole textarea_compact" rows="8" maxlength="50000"></textarea>
+                        <textarea id="extension_floating_prompt" class="text_pole textarea_compact" rows="8"></textarea>
                         <div class="extension_token_counter">
                             <span data-i18n="extension_token_counter">Tokens:</span> <span id="extension_floating_prompt_token_counter">0</span>
                         </div>
@@ -6106,7 +6106,7 @@
                     <div class="inline-drawer-content">
                         <small data-i18n="Will be automatically added as the author's note for this character. Will be used in groups, but can't be modified when a group chat is open.">Will be automatically added as the author's note for this character. Will be used in groups, but
                             can't be modified when a group chat is open.</small>
-                        <textarea id="extension_floating_chara" class="text_pole textarea_compact" rows="8" maxlength="50000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_chara" class="text_pole textarea_compact" rows="8" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             <span data-i18n="extension_token_counter">Tokens:</span> <span id="extension_floating_chara_token_counter">0</span>
                         </div>
@@ -6138,7 +6138,7 @@
                     </div>
                     <div class="inline-drawer-content">
                         <small data-i18n="Will be automatically added as the Author's Note for all new chats.">Will be automatically added as the Author's Note for all new chats.</small>
-                        <textarea id="extension_floating_default" class="text_pole textarea_compact" rows="8" maxlength="50000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_default" class="text_pole textarea_compact" rows="8" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             <span data-i18n="extension_token_counter">Tokens:</span> <span id="extension_floating_default_token_counter">0</span>
                         </div>
