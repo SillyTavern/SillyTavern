@@ -3226,8 +3226,9 @@
                                 <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1 text_pole"></select>
                             </div>
                             <label>
-                                <small data-i18n="Activation Regex">
-                                    Activation Regex <span class="fa-solid fa-circle-question" title="When connecting to an API or choosing a model, automatically activate this Instruct Mode template if the model name matches the provided regular expression."></span>
+                                <small>
+                                    <span data-i18n="Activation Regex">Activation Regex</span>
+                                    <span class="fa-solid fa-circle-question" title="When connecting to an API or choosing a model, automatically activate this Instruct Mode template if the model name matches the provided regular expression."></span>
                                 </small>
                             </label>
                             <div>
@@ -4009,9 +4010,15 @@
                             <div class="flex-container alignItemsCenter">
                                 <label id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label" title="Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile." data-i18n="[title]Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile">
                                     <input id="movingUImode" type="checkbox" />
-                                    <small data-i18n="Movable UI Panels">MovingUI&nbsp;<i class="fa-solid fa-desktop"></i></small>
+                                    <small>
+                                        <span data-i18n="Movable UI Panels">MovingUI</span>
+                                        <i class="fa-solid fa-desktop"></i>
+                                    </small>
                                 </label>
-                                <div id="movingUIreset" title="Reset MovingUI panel sizes/locations." class="menu_button margin0" data-i18n="[title]Reset MovingUI panel sizes/locations."><i class=" fa-solid fa-recycle margin-r5"></i> <span data-i18n="mui_reset">Reset</span></div>
+                                <div id="movingUIreset" title="Reset MovingUI panel sizes/locations." class="menu_button margin0" data-i18n="[title]Reset MovingUI panel sizes/locations.">
+                                    <i class=" fa-solid fa-recycle margin-r5"></i>
+                                    <span data-i18n="mui_reset">Reset</span>
+                                </div>
                             </div>
                             <div id="MovingUI-presets-block" class="flex-container alignitemscenter">
                                 <div class="flex-container alignItemsFlexEnd">
@@ -4980,7 +4987,7 @@
                     <div class="popup-crop-wrap">
                         <img class="popup-crop-image" src="">
                     </div>
-                    <textarea class="popup-input text_pole result-control" rows="1" data-result="1" data-result-event="submit"></textarea>
+                    <textarea class="popup-input text_pole result-control auto-select" rows="1" data-result="1" data-result-event="submit"></textarea>
                     <div class="popup-inputs"></div>
                     <div class="popup-controls">
                         <div class="popup-button-ok menu_button result-control" data-result="1" data-i18n="Delete">Delete</div>
@@ -5291,10 +5298,11 @@
             <div class="world_entry">
                 <form class="world_entry_form  wi-card-entry">
                     <div class="inline-drawer wide100p">
-                        <div class="inline-drawer-toggle inline-drawer-header gap5px padding0">
+                        <div class="inline-drawer-header gap5px padding0">
                             <span class="drag-handle">&#9776;</span>
                             <div class="gap5px world_entry_thin_controls wide100p alignitemscenter">
-                                <div class="fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                                <div class="inline-drawer-toggle fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                                <div class="fa-solid fa-toggle-on killSwitch" name="entryKillSwitch" title="Toggle entry's active state."></div>
                                 <div class="flex-container alignitemscenter wide100p">
                                     <div class="WIEntryTitleAndStatus flex-container flex1 alignitemscenter">
                                         <div class="flex-container flex1">
@@ -5305,7 +5313,6 @@
                                             <option value="constant" title="Constant" data-i18n="[title]WI_Entry_Status_Constant">🔵</option>
                                             <option value="normal" title="Normal" data-i18n="[title]WI_Entry_Status_Normal">🟢</option>
                                             <option value="vectorized" title="Vectorized" data-i18n="[title]WI_Entry_Status_Vectorized">🔗</option>
-                                            <option value="disabled" title="Disabled" data-i18n="[title]WI_Entry_Status_Disabled">❌</option>
                                         </select>
                                     </div>
                                     <div class="WIEnteryHeaderControls flex-container">
@@ -5554,13 +5561,16 @@
                             <div class="flex-container wide100p flexGap10">
                                 <div class="flex4 flex-container flexFlowColumn flexNoGap">
                                     <div class="flex-container justifySpaceBetween">
-                                        <small for="characterFilter" data-i18n="Filter to Character(s)">
-                                            Filter to Character(s)
+                                        <small for="characterFilter" data-i18n="Filter to Characters or Tags">
+                                            Filter to Characters or Tags
                                         </small>
                                         <label class="checkbox_label flexNoGap margin-r5" for="character_exclusion">
                                             <input type="checkbox" name="character_exclusion" />
                                             <span>
-                                                <small data-i18n="Character Exclusion">Character Exclusion</small>
+                                                <small title="Switch the Character/Tags filter around to exclude the listed characters and tags from matching for this entry" data-i18n="[title]Switch the Character/Tags filter around to exclude the listed characters and tags from matching for this entry">
+                                                    <span data-i18n="Exclude">Exclude</span>
+                                                    <div class="fa-solid fa-circle-info opacity50p"></div>
+                                                </small>
                                             </span>
                                         </label>
                                     </div>
