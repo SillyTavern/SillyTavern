@@ -78,7 +78,7 @@ function migrateInstructModeSettings(settings) {
  * Loads instruct mode settings from the given data object.
  * @param {object} data Settings data object.
  */
-export function loadInstructMode(data) {
+export async function loadInstructMode(data) {
     if (data.instruct !== undefined) {
         instruct_presets = data.instruct;
     }
@@ -104,16 +104,19 @@ export function loadInstructMode(data) {
             power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this)[0].innerText;
             saveSettingsDebounced();
             /*
-            if (!control.isCheckbox) {
-                await resetScrollHeight($element);
-            }
-             */
+                        if (!control.isCheckbox) {
+                            await resetScrollHeight($element);
+                        }
+            */
         });
 
         if (control.trigger) {
             $element.trigger('input');
         }
     });
+
+    $('#instruct_system_sequence').css('height', 'auto');
+    $('#instruct_system_suffix').css('height', 'auto');
 
     instruct_presets.forEach((preset) => {
         const name = preset.name;
@@ -625,7 +628,7 @@ jQuery(() => {
             $('#instruct_system_sequence_block').removeClass('disabled');
             $('#instruct_system_suffix_block').removeClass('disabled');
             $('#instruct_system_sequence').css('height', '');
-            $('#instruct_system_sequence').css('height', '');
+            $('#instruct_system_suffix').css('height', '');
             $('#instruct_system_sequence').prop('contenteditable', true);
             $('#instruct_system_suffix').prop('contenteditable', true);
         }
