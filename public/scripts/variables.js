@@ -932,7 +932,7 @@ export function registerVariableCommands() {
                         <pre><code class="language-stscript">/setvar key=color green</code></pre>
                     </li>
                     <li>
-                        <pre><code class="language-stscript">/setvar key=colors index=3 as=string blue</code></pre>
+                        <pre><code class="language-stscript">/setvar key=ages index=John as=number 21</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1058,7 +1058,7 @@ export function registerVariableCommands() {
                         <pre><code class="language-stscript">/setglobalvar key=color green</code></pre>
                     </li>
                     <li>
-                        <pre><code class="language-stscript">/setglobalvar key=colors index=3 as=string blue</code></pre>
+                        <pre><code class="language-stscript">/setglobalvar key=ages index=John as=number 21</code></pre>
                     </li>
                 </ul>
             </div>
