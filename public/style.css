@@ -5454,6 +5454,6 @@ body:not(.movingUI) .drawer-content.maximized {
     opacity: 0.7;
 }
 
-#advanced-formatting-button div[contenteditable="true"] {
+#advanced-formatting-button div[contenteditable] {
     overflow-wrap: anywhere;
 }
