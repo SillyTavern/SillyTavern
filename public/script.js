@@ -7996,7 +7996,7 @@ window['SillyTavern'].getContext = function () {
         registerHelper: () => { },
         registerMacro: MacrosParser.registerMacro.bind(MacrosParser),
         unregisterMacro: MacrosParser.unregisterMacro.bind(MacrosParser),
-        registedDebugFunction: registerDebugFunction,
+        registerDebugFunction: registerDebugFunction,
         /** @deprecated Use renderExtensionTemplateAsync instead. */
         renderExtensionTemplate: renderExtensionTemplate,
         renderExtensionTemplateAsync: renderExtensionTemplateAsync,
