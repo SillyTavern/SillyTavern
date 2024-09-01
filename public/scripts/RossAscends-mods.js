@@ -711,6 +711,18 @@ export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea, deboun
 
 // ---------------------------------------------------
 
+export function addSafariPatch() {
+    const userAgent = getParsedUA();
+    console.debug('User Agent', userAgent);
+    const isMobileSafari = /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isDesktopSafari = userAgent?.browser?.name === 'Safari' && userAgent?.platform?.type === 'desktop';
+    const isIOS = userAgent?.os?.name === 'iOS';
+
+    if (isIOS || isMobileSafari || isDesktopSafari) {
+        document.body.classList.add('safari');
+    }
+}
+
 export function initRossMods() {
     // initial status check
     setTimeout(() => {
@@ -723,16 +735,6 @@ export function initRossMods() {
 
     if (power_user.auto_connect) {
         RA_autoconnect();
-    }
-
-    const userAgent = getParsedUA();
-    console.debug('User Agent', userAgent);
-    const isMobileSafari = /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isDesktopSafari = userAgent?.browser?.name === 'Safari' && userAgent?.platform?.type === 'desktop';
-    const isIOS = userAgent?.os?.name === 'iOS';
-
-    if (isIOS || isMobileSafari || isDesktopSafari) {
-        document.body.classList.add('safari');
     }
 
     $('#main_api').change(function () {
