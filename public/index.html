@@ -3071,8 +3071,7 @@
                                 </div>
 
                             </h4>
-                            <div class="flex-container">
-
+                            <div class="flex-container justifyCenter">
                                 <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
                                 <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode." data-i18n="[title]Auto-select this preset for Instruct Mode"></i>
                                 <i data-newbie-hidden data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
@@ -3176,9 +3175,10 @@
                                     </a>
                                 </h4>
                                 <div>
-
-                                    <small data-i18n="JSON serialized array of strings">JSON serialized array of strings <i class="fa-solid fa-question-circle" title="e.g: [&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></i></small>
-
+                                    <small>
+                                        <span data-i18n="JSON serialized array of strings">JSON serialized array of strings</span>
+                                        <i class="fa-solid fa-question-circle opacity50p" title="e.g: [&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></i>
+                                    </small>
                                 </div>
                                 <div>
                                     <div contenteditable="true" id="custom_stopping_strings" rows="2" class="text_pole textarea_compact monospace" placeholder="[&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></div>
@@ -3215,7 +3215,7 @@
                                     </label>
                                 </div>
                             </h4>
-                            <div class="flex-container margin0">
+                            <div class="flex-container margin0 justifyCenter">
                                 <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
                                 <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection." data-i18n="[title]Auto-select this preset on API connection"></i>
                                 <i data-newbie-hidden data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
