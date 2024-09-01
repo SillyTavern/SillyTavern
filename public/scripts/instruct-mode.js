@@ -7,7 +7,7 @@ import {
     power_user,
     context_presets,
 } from './power-user.js';
-import { regexFromString, resetScrollHeight } from './utils.js';
+import { regexFromString } from './utils.js';
 
 /**
  * @type {any[]} Instruct mode presets.
@@ -85,19 +85,9 @@ export async function loadInstructMode(data) {
 
     migrateInstructModeSettings(power_user.instruct);
 
-    if (power_user.instruct.enabled) {
-        $('#instruct_enabled').parent().find('i').addClass('toggleEnabled');
-        $('#instructSettingsBlock, #InstructSequencesColumn').removeClass('disabled');
-    } else {
-        $('#instruct_enabled').parent().find('i').removeClass('toggleEnabled');
-        $('#instructSettingsBlock, #InstructSequencesColumn').addClass('disabled');
-    }
-
-    if (power_user.instruct.bind_to_context) {
-        $('#instruct_bind_to_context').parent().find('i').addClass('toggleEnabled');
-    } else {
-        $('#instruct_bind_to_context').parent().find('i').removeClass('toggleEnabled');
-    }
+    $('#instruct_enabled').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.enabled);
+    $('#instructSettingsBlock, #InstructSequencesColumn').toggleClass('disabled', !power_user.instruct.enabled);
+    $('#instruct_bind_to_context').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.bind_to_context);
 
     controls.forEach(control => {
         const $element = $(`#${control.id}`);
@@ -111,11 +101,6 @@ export async function loadInstructMode(data) {
         $element.on('input', async function () {
             power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this)[0].innerText;
             saveSettingsDebounced();
-            /*
-                        if (!control.isCheckbox) {
-                            await resetScrollHeight($element);
-                        }
-            */
         });
 
         if (control.trigger) {
@@ -623,13 +608,12 @@ jQuery(() => {
 
     $('#instruct_system_same_as_user').on('input', function () {
         const state = !!$(this).prop('checked');
-        if (state == true) {
-            let tempHeightForDisabled = $('#instruct_system_sequence').css('height');
+        if (state) {
+            const tempHeightForDisabled = $('#instruct_system_sequence').css('height');
             $('#instruct_system_sequence_block').addClass('disabled');
             $('#instruct_system_suffix_block').addClass('disabled');
             $('#instruct_system_sequence').css('height', tempHeightForDisabled);
             $('#instruct_system_suffix').css('height', tempHeightForDisabled);
-
             $('#instruct_system_sequence').prop('contenteditable', false);
             $('#instruct_system_suffix').prop('contenteditable', false);
         } else {
@@ -669,11 +653,7 @@ jQuery(() => {
     });
 
     $('#instruct_bind_to_context').on('change', function () {
-        if (power_user.instruct.bind_to_context) {
-            $('#instruct_bind_to_context').parent().find('i').addClass('toggleEnabled');
-        } else {
-            $('#instruct_bind_to_context').parent().find('i').removeClass('toggleEnabled');
-        }
+        $('#instruct_bind_to_context').parent().find('i').toggleClass('toggleEnabled', !!power_user.instruct.bind_to_context);
     });
 
     $('#instruct_presets').on('change', function () {
