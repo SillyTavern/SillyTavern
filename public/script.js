@@ -565,6 +565,7 @@ export const system_message_types = {
     HOTKEYS: 'hotkeys',
     MACROS: 'macros',
     WELCOME_PROMPT: 'welcome_prompt',
+    ASSISTANT_NOTE: 'assistant_note',
 };
 
 /**
@@ -688,6 +689,16 @@ async function getSystemMessages() {
             is_user: false,
             is_system: true,
             mes: await renderTemplateAsync('welcomePrompt'),
+            extra: {
+                isSmallSys: true,
+            },
+        },
+        assistant_note: {
+            name: neutralCharacterName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            mes: await renderTemplateAsync('assistantNote'),
             extra: {
                 isSmallSys: true,
             },
@@ -1862,7 +1873,7 @@ export async function reloadCurrentChat() {
 /**
  * Send the message currently typed into the chat box.
  */
-export function sendTextareaMessage() {
+export async function sendTextareaMessage() {
     if (is_send_press) return;
     if (isExecutingCommandsFromChatInput) return;
 
@@ -1878,6 +1889,10 @@ export function sendTextareaMessage() {
         !chat[chat.length - 1]['is_system']
     ) {
         generateType = 'continue';
+    }
+
+    if (textareaText && !selected_group && this_chid === undefined) {
+        await openAssistantChat();
     }
 
     Generate(generateType);
@@ -3404,14 +3419,11 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         quiet_prompt = main_api == 'novel' && !quietToLoud ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
     }
 
-    const isChatValid = online_status !== 'no_connection';
-    if (this_chid === undefined) {
-        setCharacterName(neutralCharacterName);
-    }
+    const hasBackendConnection = online_status !== 'no_connection';
 
     // We can't do anything because we're not in a chat right now. (Unless it's a dry run, in which case we need to
     // assemble the prompt so we can count its tokens regardless of whether a chat is active.)
-    if (!dryRun && !isChatValid) {
+    if (!dryRun && !hasBackendConnection) {
         is_send_press = false;
         return Promise.resolve();
     }
@@ -8959,6 +8971,15 @@ async function removeCharacterFromUI() {
     saveSettingsDebounced();
 }
 
+async function openAssistantChat() {
+    await clearChat();
+    chat.splice(0, chat.length);
+    chat_metadata = {};
+    setCharacterName(neutralCharacterName);
+    sendSystemMessage(system_message_types.ASSISTANT_NOTE);
+    await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+}
+
 function doTogglePanels() {
     $('#option_settings').trigger('click');
     return '';
@@ -9803,6 +9824,9 @@ jQuery(async function () {
                 }
 
                 await doNewChat({ deleteCurrentChat: deleteCurrentChat });
+            }
+            if (!selected_group && this_chid === undefined && !is_send_press) {
+                await openAssistantChat();
             }
         }
 
