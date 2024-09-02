@@ -4574,7 +4574,6 @@ a {
     border-radius: 10px;
     max-width: 100%;
     max-height: 40vh;
-    max-height: 40dvh;
     image-rendering: -webkit-optimize-contrast;
 }
 
