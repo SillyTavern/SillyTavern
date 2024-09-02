@@ -1891,8 +1891,8 @@ export async function sendTextareaMessage() {
         generateType = 'continue';
     }
 
-    if (textareaText && !selected_group && this_chid === undefined) {
-        await openAssistantChat();
+    if (textareaText && !selected_group && this_chid === undefined && name2 !== neutralCharacterName) {
+        await newAssistantChat();
     }
 
     Generate(generateType);
@@ -8971,7 +8971,7 @@ async function removeCharacterFromUI() {
     saveSettingsDebounced();
 }
 
-async function openAssistantChat() {
+async function newAssistantChat() {
     await clearChat();
     chat.splice(0, chat.length);
     chat_metadata = {};
@@ -9826,7 +9826,7 @@ jQuery(async function () {
                 await doNewChat({ deleteCurrentChat: deleteCurrentChat });
             }
             if (!selected_group && this_chid === undefined && !is_send_press) {
-                await openAssistantChat();
+                await newAssistantChat();
             }
         }
 
