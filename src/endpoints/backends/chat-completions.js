@@ -538,7 +538,8 @@ async function sendCohereRequest(request, response) {
         const connectors = [];
         const tools = [];
 
-        if (request.body.websearch) {
+        const canDoWebSearch = !String(request.body.model).includes('c4ai-aya');
+        if (request.body.websearch && canDoWebSearch) {
             connectors.push({
                 id: 'web-search',
             });
