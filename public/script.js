@@ -8977,7 +8977,6 @@ async function newAssistantChat() {
     chat_metadata = {};
     setCharacterName(neutralCharacterName);
     sendSystemMessage(system_message_types.ASSISTANT_NOTE);
-    await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 }
 
 function doTogglePanels() {
