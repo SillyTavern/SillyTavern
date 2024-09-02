@@ -485,7 +485,6 @@ export let itemizedPrompts = [];
 
 export const systemUserName = 'SillyTavern System';
 export const neutralCharacterName = 'Assistant';
-export const neutralCharacterAvatar = 'ST_your_ai_assistant.png';
 let default_user_name = 'User';
 export let name1 = default_user_name;
 export let name2 = systemUserName;
@@ -566,7 +565,6 @@ export const system_message_types = {
     HOTKEYS: 'hotkeys',
     MACROS: 'macros',
     WELCOME_PROMPT: 'welcome_prompt',
-    PAST_CHAT_HINT: 'past_chat_hint',
 };
 
 /**
@@ -690,16 +688,6 @@ async function getSystemMessages() {
             is_user: false,
             is_system: true,
             mes: await renderTemplateAsync('welcomePrompt'),
-            extra: {
-                isSmallSys: true,
-            },
-        },
-        past_chat_hint: {
-            name: neutralCharacterName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            mes: await renderTemplateAsync('pastChatHint'),
             extra: {
                 isSmallSys: true,
             },
@@ -1710,13 +1698,13 @@ async function delChat(chatfile) {
         headers: getRequestHeaders(),
         body: JSON.stringify({
             chatfile: chatfile,
-            avatar_url: characters[this_chid]?.avatar ?? neutralCharacterAvatar,
+            avatar_url: characters[this_chid].avatar,
         }),
     });
     if (response.ok === true) {
         // choose another chat if current was deleted
         const name = chatfile.replace('.jsonl', '');
-        if (name === characters[this_chid]?.chat || name === chat_metadata?.chat_name) {
+        if (name === characters[this_chid].chat) {
             chat_metadata = {};
             await replaceCurrentChat();
         }
@@ -1731,20 +1719,15 @@ export async function replaceCurrentChat() {
     const chatsResponse = await fetch('/api/characters/chats', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ avatar_url: characters[this_chid]?.avatar ?? neutralCharacterAvatar }),
+        body: JSON.stringify({ avatar_url: characters[this_chid].avatar }),
     });
 
     if (chatsResponse.ok) {
         const chats = Object.values(await chatsResponse.json());
         chats.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
 
-        // Create a new chat for assistant
-        if (this_chid === undefined && name2 === neutralCharacterName) {
-            await openAssistantChat();
-        }
-
         // pick existing chat
-        else if (chats.length && typeof chats[0] === 'object') {
+        if (chats.length && typeof chats[0] === 'object') {
             characters[this_chid].chat = chats[0].file_name.replace('.jsonl', '');
             $('#selected_chat_pole').val(characters[this_chid].chat);
             saveCharacterDebounced();
@@ -1862,7 +1845,7 @@ export async function reloadCurrentChat() {
     if (selected_group) {
         await getGroupChat(selected_group, true);
     }
-    else if (this_chid !== undefined || (this_chid === undefined && name2 === neutralCharacterName)) {
+    else if (this_chid !== undefined) {
         await getChat();
     }
     else {
@@ -1879,7 +1862,7 @@ export async function reloadCurrentChat() {
 /**
  * Send the message currently typed into the chat box.
  */
-export async function sendTextareaMessage() {
+export function sendTextareaMessage() {
     if (is_send_press) return;
     if (isExecutingCommandsFromChatInput) return;
 
@@ -1895,10 +1878,6 @@ export async function sendTextareaMessage() {
         !chat[chat.length - 1]['is_system']
     ) {
         generateType = 'continue';
-    }
-
-    if (textareaText && this_chid === undefined) {
-        await openAssistantChat();
     }
 
     Generate(generateType);
@@ -5932,45 +5911,52 @@ export function saveChatDebounced() {
 
 export async function saveChat(chat_name, withMetadata, mesId) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
-    let fileName = chat_name ?? characters[this_chid]?.chat ?? chat_metadata?.chat_name;
+    let file_name = chat_name ?? characters[this_chid]?.chat;
 
-    if (!fileName) {
+    if (!file_name) {
         console.warn('saveChat called without chat_name and no chat file found');
         return;
     }
 
-    if (characters[this_chid]) {
-        characters[this_chid]['date_last_chat'] = Date.now();
-    }
-
+    characters[this_chid]['date_last_chat'] = Date.now();
     chat.forEach(function (item, i) {
         if (item['is_group']) {
             toastr.error('Trying to save group chat with regular saveChat function. Aborting to prevent corruption.');
             throw new Error('Group chat saved from saveChat');
         }
+        /*
+        if (item.is_user) {
+            //var str = item.mes.replace(`${name1}:`, `${name1}:`);
+            //chat[i].mes = str;
+            //chat[i].name = name1;
+        } else if (i !== chat.length - 1 && chat[i].swipe_id !== undefined) {
+            //  delete chat[i].swipes;
+            //  delete chat[i].swipe_id;
+        }
+        */
     });
 
-    const trimmedChat = (mesId !== undefined && mesId >= 0 && mesId < chat.length)
+    const trimmed_chat = (mesId !== undefined && mesId >= 0 && mesId < chat.length)
         ? chat.slice(0, parseInt(mesId) + 1)
         : chat;
 
-    const saveChat = [
+    var save_chat = [
         {
             user_name: name1,
             character_name: name2,
             create_date: chat_create_date,
             chat_metadata: metadata,
         },
-        ...trimmedChat,
+        ...trimmed_chat,
     ];
     return jQuery.ajax({
         type: 'POST',
         url: '/api/chats/save',
         data: JSON.stringify({
-            ch_name: characters[this_chid]?.name ?? neutralCharacterName,
-            avatar_url: characters[this_chid]?.avatar ?? neutralCharacterAvatar,
-            file_name: fileName,
-            chat: saveChat,
+            ch_name: characters[this_chid].name,
+            file_name: file_name,
+            chat: save_chat,
+            avatar_url: characters[this_chid].avatar,
         }),
         beforeSend: function () {
 
@@ -6105,9 +6091,9 @@ export async function getChat() {
             type: 'POST',
             url: '/api/chats/get',
             data: JSON.stringify({
-                ch_name: characters[this_chid]?.name ?? neutralCharacterName,
-                file_name: characters[this_chid]?.chat ?? chat_metadata?.chat_name,
-                avatar_url: characters[this_chid]?.avatar ?? neutralCharacterAvatar,
+                ch_name: characters[this_chid].name,
+                file_name: characters[this_chid].chat,
+                avatar_url: characters[this_chid].avatar,
             }),
             dataType: 'json',
             contentType: 'application/json',
@@ -6138,7 +6124,7 @@ export async function getChat() {
 }
 
 async function getChatResult() {
-    name2 = characters[this_chid]?.name ?? neutralCharacterName;
+    name2 = characters[this_chid].name;
     let freshChat = false;
     if (chat.length === 0) {
         const message = getFirstMessage();
@@ -6164,7 +6150,7 @@ async function getChatResult() {
 }
 
 function getFirstMessage() {
-    const firstMes = characters[this_chid]?.first_mes || '';
+    const firstMes = characters[this_chid].first_mes || '';
     const alternateGreetings = characters[this_chid]?.data?.alternate_greetings;
 
     const message = {
@@ -6194,13 +6180,9 @@ function getFirstMessage() {
 
 export async function openCharacterChat(file_name) {
     await clearChat();
+    characters[this_chid]['chat'] = file_name;
     chat.length = 0;
     chat_metadata = {};
-    if (characters[this_chid]) {
-        characters[this_chid]['chat'] = file_name;
-    } else {
-        chat_metadata['chat_name'] = file_name;
-    }
     await getChat();
     $('#selected_chat_pole').val(file_name);
     await createOrEditCharacter(new CustomEvent('newChat'));
@@ -6774,9 +6756,9 @@ export async function getChatsFromFiles(data, isGroupChat) {
                 const requestBody = isGroupChat
                     ? JSON.stringify({ id: file_name })
                     : JSON.stringify({
-                        ch_name: characters[context.characterId]?.name ?? neutralCharacterName,
+                        ch_name: characters[context.characterId].name,
                         file_name: file_name.replace('.jsonl', ''),
-                        avatar_url: characters[context.characterId]?.avatar ?? neutralCharacterAvatar,
+                        avatar_url: characters[context.characterId].avatar,
                     });
 
                 const chatResponse = await fetch(endpoint, {
@@ -6824,17 +6806,11 @@ export async function getChatsFromFiles(data, isGroupChat) {
  */
 export async function getPastCharacterChats(characterId = null) {
     characterId = characterId ?? this_chid;
-    let avatar = characters[characterId]?.avatar;
-
-    if (!avatar && this_chid === undefined && name2 === neutralCharacterName) {
-        avatar = neutralCharacterAvatar;
-    }
-
-    if (!avatar) return [];
+    if (!characters[characterId]) return [];
 
     const response = await fetch('/api/characters/chats', {
         method: 'POST',
-        body: JSON.stringify({ avatar_url: avatar }),
+        body: JSON.stringify({ avatar_url: characters[characterId].avatar }),
         headers: getRequestHeaders(),
     });
 
@@ -6855,15 +6831,6 @@ export async function getPastCharacterChats(characterId = null) {
  * Helper for `displayPastChats`, to make the same info consistently available for other functions
  */
 function getCurrentChatDetails() {
-    if (this_chid === undefined && name2 === neutralCharacterName) {
-        return {
-            sessionName: chat_metadata['chat_name'],
-            group: null,
-            characterName: neutralCharacterName,
-            avatarImgURL: neutralCharacterAvatar,
-        };
-    }
-
     if (!characters[this_chid] && !selected_group) {
         return { sessionName: '', group: null, characterName: '', avatarImgURL: '' };
     }
@@ -7122,10 +7089,6 @@ export function select_rm_info(type, charId, previousCharId = null) {
 }
 
 export function select_selected_character(chid) {
-    if (chid === undefined) {
-        return;
-    }
-
     //character select
     //console.log('select_selected_character() -- starting with input of -- ' + chid + ' (name:' + characters[chid].name + ')');
     select_rm_create();
@@ -7966,10 +7929,6 @@ async function createOrEditCharacter(e) {
             toastr.error('Name is required');
         }
     } else {
-        if (this_chid === undefined) {
-            return;
-        }
-
         let url = '/api/characters/edit';
 
         if (crop_data != undefined) {
@@ -8803,23 +8762,7 @@ export async function doNewChat({ deleteCurrentChat = false } = {}) {
         await createOrEditCharacter(new CustomEvent('newChat'));
         if (deleteCurrentChat) await delChat(chat_file_for_del + '.jsonl');
     }
-}
 
-async function openAssistantChat() {
-    resetSelectedGroup();
-    setCharacterId(undefined);
-    setCharacterName(neutralCharacterName);
-    setActiveCharacter(null);
-    setActiveGroup(null);
-    await clearChat();
-    chat.splice(0, chat.length);
-    this_edit_mes_id = undefined;
-    chat_metadata = { chat_name: humanizedDateTime() };
-    selected_button = 'characters';
-    $('#rm_button_selected_ch').children('h2').text('');
-    select_rm_characters();
-    sendSystemMessage(system_message_types.PAST_CHAT_HINT);
-    await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 }
 
 async function doDeleteChat() {
@@ -8857,7 +8800,7 @@ async function doRenameChat(_, chatName) {
 export async function renameChat(oldFileName, newName) {
     const body = {
         is_group: !!selected_group,
-        avatar_url: characters[this_chid]?.avatar ?? neutralCharacterAvatar,
+        avatar_url: characters[this_chid]?.avatar,
         original_file: `${oldFileName}.jsonl`,
         renamed_file: `${newName}.jsonl`,
     };
@@ -8884,7 +8827,7 @@ export async function renameChat(oldFileName, newName) {
             await renameGroupChat(selected_group, oldFileName, newName);
         }
         else {
-            if (characters[this_chid]?.chat == oldFileName) {
+            if (characters[this_chid].chat == oldFileName) {
                 characters[this_chid].chat = newName;
                 $('#selected_chat_pole').val(characters[this_chid].chat);
                 await createOrEditCharacter();
@@ -8892,8 +8835,7 @@ export async function renameChat(oldFileName, newName) {
         }
 
         await reloadCurrentChat();
-    } catch (error) {
-        console.log('Error renaming chat:', error);
+    } catch {
         hideLoader();
         await delay(500);
         await callPopup('An error has occurred. Chat was not renamed.', 'text');
@@ -9670,7 +9612,7 @@ jQuery(async function () {
         const filename = filenamefull.replace('.jsonl', '');
         const body = {
             is_group: !!selected_group,
-            avatar_url: characters[this_chid]?.avatar ?? neutralCharacterAvatar,
+            avatar_url: characters[this_chid]?.avatar,
             file: `${filename}.jsonl`,
             exportfilename: `${filename}.${format}`,
             format: format,
@@ -9833,12 +9775,7 @@ jQuery(async function () {
         });
 
         if (id == 'option_select_chat') {
-            if ((selected_group && !is_group_generating) || (!is_send_press) || fromSlashCommand) {
-                // Must be in assistant mode to view chats.
-                if (this_chid === undefined && name2 !== neutralCharacterName) {
-                    return;
-                }
-
+            if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press) || fromSlashCommand) {
                 await displayPastChats();
                 //this is just to avoid the shadow for past chat view when using /delchat
                 //however, the dialog popup still gets one..
@@ -9856,7 +9793,7 @@ jQuery(async function () {
         }
 
         else if (id == 'option_start_new_chat') {
-            if ((selected_group || this_chid !== undefined || name2 === neutralCharacterName) && !is_send_press) {
+            if ((selected_group || this_chid !== undefined) && !is_send_press) {
                 let deleteCurrentChat = false;
                 const result = await Popup.show.confirm(t`Start new chat?`, await renderTemplateAsync('newChatConfirm'), {
                     onClose: () => deleteCurrentChat = !!$('#del_chat_checkbox').prop('checked'),
@@ -9918,7 +9855,7 @@ jQuery(async function () {
                 select_rm_characters();
                 sendSystemMessage(system_message_types.WELCOME);
                 sendSystemMessage(system_message_types.WELCOME_PROMPT);
-                await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+                eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
                 await getClientVersion();
             } else {
                 toastr.info('Please stop the message generation first.');
@@ -9949,11 +9886,6 @@ jQuery(async function () {
             }
             //}
         }
-
-        else if (id === 'option_ai_assistant') {
-            await openAssistantChat();
-        }
-
         hideMenu();
     });
 
