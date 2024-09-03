@@ -10697,7 +10697,7 @@ jQuery(async function () {
             });
         }
 
-        const avatarSrc = isDataURL(thumbURL) ? thumbURL : charsPath + targetAvatarImg;
+        const avatarSrc = (isDataURL(thumbURL) || /^\/img\/(.+)/.test(thumbURL)) ? thumbURL : charsPath + targetAvatarImg;
         if ($(`.zoomed_avatar[forChar="${charname}"]`).length) {
             console.debug('removing container as it already existed');
             $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
