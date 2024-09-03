@@ -4758,6 +4758,8 @@ body:not(.sd) .mes_img_swipes {
 
 #customCSS {
     flex: 1 1 auto;
+    min-height: 20vh;
+    min-height: 20dvh;
 }
 
 #ui_language_select {
@@ -5455,4 +5457,8 @@ body:not(.movingUI) .drawer-content.maximized {
 
 #advanced-formatting-button div[contenteditable] {
     overflow-wrap: anywhere;
+    max-height: 50vh;
+    max-height: 50dvh;
+    resize: vertical;
+    overflow: auto;
 }
