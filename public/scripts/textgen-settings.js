@@ -148,7 +148,7 @@ const settings = {
     preset: 'Default',
     add_bos_token: true,
     stopping_strings: [],
-    truncation_length: 2048,
+    //truncation_length: 2048,
     ban_eos_token: false,
     skip_special_tokens: true,
     streaming: false,
