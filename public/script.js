@@ -1929,7 +1929,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     }
 
     // Let hidden messages have markdown
-    if (isSystem && ch_name !== systemUserName) {
+    if (isSystem && ![systemUserName, neutralCharacterName].includes(ch_name)) {
         isSystem = false;
     }
 
@@ -10081,7 +10081,7 @@ jQuery(async function () {
     }
     else {
         $(document).on('pointerup', '.mes_copy', function () {
-            if (this_chid !== undefined || selected_group) {
+            if (this_chid !== undefined || selected_group || name2 === neutralCharacterName) {
                 try {
                     const messageId = $(this).closest('.mes').attr('mesid');
                     const text = chat[messageId]['mes'];
