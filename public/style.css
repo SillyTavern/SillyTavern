@@ -4388,18 +4388,6 @@ body.big-avatars .missing-avatar {
     text-align: center;
 }
 
-#UI-Theme-Block,
-#UI-Customization,
-#power-user-options-block,
-#ContextSettings,
-#InstructSettingsColumn,
-#InstructSequencesColumn {
-    flex-basis: 250px;
-}
-
-
-
-
 .userSettingsInnerExpandable {
     border: 1px solid;
     border-color: var(--SmartThemeBorderColor);
