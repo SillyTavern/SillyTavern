@@ -156,7 +156,7 @@ export function selectInstructPreset(preset) {
     // If instruct preset is not already selected, select it
     if (preset !== power_user.instruct.preset) {
         $('#instruct_presets').val(preset).trigger('change');
-        toastr.info(`Instruct Mode: preset "${preset}" auto-selected`);
+        toastr.info(`Instruct Mode: template "${preset}" auto-selected`);
     }
 
     // If instruct mode is disabled, enable it
@@ -596,11 +596,11 @@ jQuery(() => {
         if (power_user.instruct.preset === power_user.default_instruct) {
             power_user.default_instruct = null;
             $(this).removeClass('default');
-            toastr.info('Default instruct preset cleared');
+            toastr.info('Default instruct template cleared');
         } else {
             power_user.default_instruct = power_user.instruct.preset;
             $(this).addClass('default');
-            toastr.info(`Default instruct preset set to ${power_user.default_instruct}`);
+            toastr.info(`Default instruct template set to ${power_user.default_instruct}`);
         }
 
         saveSettingsDebounced();

@@ -3073,15 +3073,15 @@
                             </h4>
                             <div class="flex-container justifyCenter">
                                 <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
-                                <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode." data-i18n="[title]Auto-select this preset for Instruct Mode"></i>
-                                <i data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                <i data-preset-manager-new="context" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
-                                <i data-preset-manager-import="context" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                <i data-preset-manager-export="context" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
-                                <i data-preset-manager-restore="context" class="menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
-                                <i id="context_delete_preset" data-preset-manager-delete="context" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this template for Instruct Mode." data-i18n="[title]Auto-select this template for Instruct Mode"></i>
+                                <i data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current template" data-i18n="[title]Update current template"></i>
+                                <i data-preset-manager-new="context" class="menu_button fa-solid fa-file-circle-plus" title="Save template as" data-i18n="[title]Save template as"></i>
+                                <i data-preset-manager-import="context" class="menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
+                                <i data-preset-manager-export="context" class="menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
+                                <i data-preset-manager-restore="context" class="menu_button fa-solid fa-recycle" title="Restore current template" data-i18n="[title]Restore current template"></i>
+                                <i id="context_delete_preset" data-preset-manager-delete="context" class="menu_button fa-solid fa-trash-can" title="Delete the template" data-i18n="[title]Delete the template"></i>
                             </div>
-                            <div class="flex-container">
+                            <div class="flex-container" title="Select your current Context Template" data-i18n="[title]Select your current Context Template">
                                 <select id="context_presets" data-preset-manager-for="context" class="flex1 text_pole"></select>
                             </div>
                             <div>
@@ -3196,7 +3196,7 @@
                         <div id="instructSettingsBlock">
                             <h4 class="standoutHeader title_restorable justifySpaceBetween">
                                 <div class="flex-container">
-                                    <span data-i18n="Instruct Mode">Instruct Mode</span>
+                                    <span data-i18n="Instruct Template">Instruct Template</span>
                                     <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
                                         <span class="fa-solid fa-circle-question note-link-span"></span>
                                     </a>
@@ -3214,22 +3214,22 @@
                             </h4>
                             <div class="flex-container margin0 justifyCenter">
                                 <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
-                                <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection." data-i18n="[title]Auto-select this preset on API connection"></i>
-                                <i data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                <i data-preset-manager-new="instruct" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
-                                <i data-preset-manager-import="instruct" class=" menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                <i data-preset-manager-export="instruct" class=" menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
-                                <i data-preset-manager-restore="instruct" class=" menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
-                                <i data-preset-manager-delete="instruct" class=" menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this template on API connection." data-i18n="[title]Auto-select this template on API connection"></i>
+                                <i data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current template" data-i18n="[title]Update current template"></i>
+                                <i data-preset-manager-new="instruct" class="menu_button fa-solid fa-file-circle-plus" title="Save template as" data-i18n="[title]Save template as"></i>
+                                <i data-preset-manager-import="instruct" class=" menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
+                                <i data-preset-manager-export="instruct" class=" menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
+                                <i data-preset-manager-restore="instruct" class=" menu_button fa-solid fa-recycle" title="Restore current template" data-i18n="[title]Restore current template"></i>
+                                <i data-preset-manager-delete="instruct" class=" menu_button fa-solid fa-trash-can" title="Delete template" data-i18n="[title]Delete template"></i>
                             </div>
 
-                            <div class="flex-container">
+                            <div class="flex-container" title="Select your current Instruct Template" data-i18n="[title]Select your current Instruct Template">
                                 <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1 text_pole"></select>
                             </div>
                             <label>
                                 <small>
                                     <span data-i18n="Activation Regex">Activation Regex</span>
-                                    <span class="fa-solid fa-circle-question" title="When connecting to an API or choosing a model, automatically activate this Instruct Mode template if the model name matches the provided regular expression."></span>
+                                    <span class="fa-solid fa-circle-question" title="When connecting to an API or choosing a model, automatically activate this Instruct Template if the model name matches the provided regular expression."></span>
                                 </small>
                             </label>
                             <div>
