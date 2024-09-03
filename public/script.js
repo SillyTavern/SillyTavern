@@ -8511,7 +8511,7 @@ async function selectContextCallback(_, name) {
     const result = fuse.search(name);
 
     if (result.length === 0) {
-        toastr.warning(`Context preset "${name}" not found`);
+        toastr.warning(`Context template "${name}" not found`);
         return '';
     }
 
@@ -8530,7 +8530,7 @@ async function selectInstructCallback(_, name) {
     const result = fuse.search(name);
 
     if (result.length === 0) {
-        toastr.warning(`Instruct preset "${name}" not found`);
+        toastr.warning(`Instruct template "${name}" not found`);
         return '';
     }
 
@@ -9054,8 +9054,8 @@ API: ${getSettingsContents.main_api}
 API Type: ${getSettingsContents[getSettingsContents.main_api + '_settings'].type}
 API server: ${getSettingsContents.api_server}
 Model: ${getContextContents.onlineStatus}
-Context Preset: ${power_user.context.preset}
-Instruct Preset: ${power_user.instruct.preset}
+Context Template: ${power_user.context.preset}
+Instruct Template: ${power_user.instruct.preset}
 API Settings: ${JSON.stringify(getSettingsContents[getSettingsContents.main_api + '_settings'], null, 2)}
 \`\`\`
     `;
@@ -9193,17 +9193,17 @@ jQuery(async function () {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'instruct',
         callback: selectInstructCallback,
-        returns: 'current preset',
+        returns: 'current template',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'instruct preset name',
+                description: 'instruct template name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumProvider: () => instruct_presets.map(preset => new SlashCommandEnumValue(preset.name, null, enumTypes.enum, enumIcons.preset)),
             }),
         ],
         helpString: `
             <div>
-                Selects instruct mode preset by name. Gets the current instruct if no name is provided.
+                Selects instruct mode template by name. Gets the current instruct template if no name is provided.
             </div>
             <div>
                 <strong>Example:</strong>
@@ -9231,7 +9231,7 @@ jQuery(async function () {
         returns: 'template name',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'context preset name',
+                description: 'context template name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumProvider: () => context_presets.map(preset => new SlashCommandEnumValue(preset.name, null, enumTypes.enum, enumIcons.preset)),
             }),
