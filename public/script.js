@@ -484,7 +484,7 @@ const promptStorage = new localforage.createInstance({ name: 'SillyTavern_Prompt
 export let itemizedPrompts = [];
 
 export const systemUserName = 'SillyTavern System';
-export const neutralCharacterName = 'SillyTavern Assistant';
+export const neutralCharacterName = 'Assistant';
 let default_user_name = 'User';
 export let name1 = default_user_name;
 export let name2 = systemUserName;
@@ -684,7 +684,7 @@ async function getSystemMessages() {
             mes: 'Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>',
         },
         welcome_prompt: {
-            name: neutralCharacterName,
+            name: systemUserName,
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
@@ -694,7 +694,7 @@ async function getSystemMessages() {
             },
         },
         assistant_note: {
-            name: neutralCharacterName,
+            name: systemUserName,
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
@@ -1929,7 +1929,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     }
 
     // Let hidden messages have markdown
-    if (isSystem && ![systemUserName, neutralCharacterName].includes(ch_name)) {
+    if (isSystem && ch_name !== systemUserName) {
         isSystem = false;
     }
 
