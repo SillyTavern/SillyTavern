@@ -484,9 +484,10 @@ const promptStorage = new localforage.createInstance({ name: 'SillyTavern_Prompt
 export let itemizedPrompts = [];
 
 export const systemUserName = 'SillyTavern System';
+export const neutralCharacterName = 'Assistant';
 let default_user_name = 'User';
 export let name1 = default_user_name;
-export let name2 = 'SillyTavern System';
+export let name2 = systemUserName;
 export let chat = [];
 let chatSaveTimeout;
 let importFlashTimeout;
@@ -563,6 +564,8 @@ export const system_message_types = {
     FORMATTING: 'formatting',
     HOTKEYS: 'hotkeys',
     MACROS: 'macros',
+    WELCOME_PROMPT: 'welcome_prompt',
+    ASSISTANT_NOTE: 'assistant_note',
 };
 
 /**
@@ -679,6 +682,26 @@ async function getSystemMessages() {
             is_user: false,
             is_system: true,
             mes: 'Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>',
+        },
+        welcome_prompt: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            mes: await renderTemplateAsync('welcomePrompt'),
+            extra: {
+                isSmallSys: true,
+            },
+        },
+        assistant_note: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            mes: await renderTemplateAsync('assistantNote'),
+            extra: {
+                isSmallSys: true,
+            },
         },
     };
 }
@@ -924,6 +947,7 @@ async function firstLoadInit() {
     initTextGenModels();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
+    sendSystemMessage(system_message_types.WELCOME_PROMPT);
     await getSettings();
     initKeyboard();
     initDynamicStyles();
@@ -1849,7 +1873,7 @@ export async function reloadCurrentChat() {
 /**
  * Send the message currently typed into the chat box.
  */
-export function sendTextareaMessage() {
+export async function sendTextareaMessage() {
     if (is_send_press) return;
     if (isExecutingCommandsFromChatInput) return;
 
@@ -1865,6 +1889,10 @@ export function sendTextareaMessage() {
         !chat[chat.length - 1]['is_system']
     ) {
         generateType = 'continue';
+    }
+
+    if (textareaText && !selected_group && this_chid === undefined && name2 !== neutralCharacterName) {
+        await newAssistantChat();
     }
 
     Generate(generateType);
@@ -1946,9 +1974,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
         mes = mes.replaceAll('<', '&lt;').replaceAll('>', '&gt;');
     }
 
-    if (this_chid === undefined && !selected_group) {
-        mes = mes.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-    } else if (!isSystem) {
+    if (!isSystem) {
         // Save double quotes in tags as a special character to prevent them from being encoded
         if (!power_user.encode_tags) {
             mes = mes.replace(/<([^>]+)>/g, function (_, contents) {
@@ -1986,13 +2012,6 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
             return match.replace(/&amp;/g, '&');
         });
     }
-
-    /*
-    // Hides bias from empty messages send with slash commands
-    if (isSystem) {
-        mes = mes.replace(/\{\{[\s\S]*?\}\}/gm, "");
-    }
-    */
 
     if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
         mes = mes.replace(new RegExp(`(^|\n)${escapeRegex(ch_name)}:`, 'g'), '$1');
@@ -3400,14 +3419,11 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         quiet_prompt = main_api == 'novel' && !quietToLoud ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
     }
 
-    const isChatValid = online_status !== 'no_connection' && this_chid !== undefined;
+    const hasBackendConnection = online_status !== 'no_connection';
 
     // We can't do anything because we're not in a chat right now. (Unless it's a dry run, in which case we need to
     // assemble the prompt so we can count its tokens regardless of whether a chat is active.)
-    if (!dryRun && !isChatValid) {
-        if (this_chid === undefined) {
-            toastr.warning('Сharacter is not selected');
-        }
+    if (!dryRun && !hasBackendConnection) {
         is_send_press = false;
         return Promise.resolve();
     }
@@ -3493,9 +3509,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             setExtensionPrompt('DEPTH_PROMPT_' + index, value.text, extension_prompt_types.IN_CHAT, value.depth, extension_settings.note.allowWIScan, role);
         });
     } else {
-        const depthPromptText = baseChatReplace(characters[this_chid].data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
-        const depthPromptDepth = characters[this_chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
-        const depthPromptRole = getExtensionPromptRoleByName(characters[this_chid].data?.extensions?.depth_prompt?.role ?? depth_prompt_role_default);
+        const depthPromptText = baseChatReplace(characters[this_chid]?.data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
+        const depthPromptDepth = characters[this_chid]?.data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
+        const depthPromptRole = getExtensionPromptRoleByName(characters[this_chid]?.data?.extensions?.depth_prompt?.role ?? depth_prompt_role_default);
         setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth, extension_settings.note.allowWIScan, depthPromptRole);
     }
 
@@ -5905,11 +5921,16 @@ export function saveChatDebounced() {
     }, 1000);
 }
 
-export async function saveChat(chat_name, withMetadata, mesId) {
+export async function saveChat(chatName, withMetadata, mesId) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
-    let file_name = chat_name ?? characters[this_chid]?.chat;
+    const fileName = chatName ?? characters[this_chid]?.chat;
 
-    if (!file_name) {
+    if (!fileName && name2 === neutralCharacterName) {
+        // TODO: Do something for a temporary chat with no character.
+        return;
+    }
+
+    if (!fileName) {
         console.warn('saveChat called without chat_name and no chat file found');
         return;
     }
@@ -5950,7 +5971,7 @@ export async function saveChat(chat_name, withMetadata, mesId) {
         url: '/api/chats/save',
         data: JSON.stringify({
             ch_name: characters[this_chid].name,
-            file_name: file_name,
+            file_name: fileName,
             chat: save_chat,
             avatar_url: characters[this_chid].avatar,
         }),
@@ -6665,7 +6686,7 @@ function updateMessage(div) {
 function openMessageDelete(fromSlashCommand) {
     closeMessageEditor();
     hideSwipeButtons();
-    if (fromSlashCommand || (this_chid != undefined && !is_send_press) || (selected_group && !is_group_generating)) {
+    if (fromSlashCommand || (!is_send_press) || (selected_group && !is_group_generating)) {
         $('#dialogue_del_mes').css('display', 'block');
         $('#send_form').css('display', 'none');
         $('.del_checkbox').each(function () {
@@ -8218,6 +8239,11 @@ function swipe_left() {      // when we swipe left..but no generation.
  * @returns {Promise<string>} Branch file name
  */
 async function branchChat(mesId) {
+    if (this_chid === undefined && !selected_group) {
+        toastr.info('No character selected.', 'Branch creation aborted');
+        return;
+    }
+
     const fileName = await createBranch(mesId);
     await saveItemizedPrompts(fileName);
 
@@ -8953,6 +8979,14 @@ async function removeCharacterFromUI() {
     await getCharacters();
     await printMessages();
     saveSettingsDebounced();
+}
+
+async function newAssistantChat() {
+    await clearChat();
+    chat.splice(0, chat.length);
+    chat_metadata = {};
+    setCharacterName(neutralCharacterName);
+    sendSystemMessage(system_message_types.ASSISTANT_NOTE);
 }
 
 function doTogglePanels() {
@@ -9800,6 +9834,9 @@ jQuery(async function () {
 
                 await doNewChat({ deleteCurrentChat: deleteCurrentChat });
             }
+            if (!selected_group && this_chid === undefined && !is_send_press) {
+                await newAssistantChat();
+            }
         }
 
         else if (id == 'option_regenerate') {
@@ -9850,6 +9887,7 @@ jQuery(async function () {
                 $('#rm_button_selected_ch').children('h2').text('');
                 select_rm_characters();
                 sendSystemMessage(system_message_types.WELCOME);
+                sendSystemMessage(system_message_types.WELCOME_PROMPT);
                 eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
                 await getClientVersion();
             } else {
@@ -10048,7 +10086,7 @@ jQuery(async function () {
     }
     else {
         $(document).on('pointerup', '.mes_copy', function () {
-            if (this_chid !== undefined || selected_group) {
+            if (this_chid !== undefined || selected_group || name2 === neutralCharacterName) {
                 try {
                     const messageId = $(this).closest('.mes').attr('mesid');
                     const text = chat[messageId]['mes'];
@@ -10072,7 +10110,7 @@ jQuery(async function () {
     //********************
     //***Message Editor***
     $(document).on('click', '.mes_edit', async function () {
-        if (this_chid !== undefined || selected_group) {
+        if (this_chid !== undefined || selected_group || name2 === neutralCharacterName) {
             // Previously system messages we're allowed to be edited
             /*const message = $(this).closest(".mes");
 
@@ -10664,7 +10702,7 @@ jQuery(async function () {
             });
         }
 
-        const avatarSrc = isDataURL(thumbURL) ? thumbURL : charsPath + targetAvatarImg;
+        const avatarSrc = (isDataURL(thumbURL) || /^\/?img\/(?:.+)/.test(thumbURL)) ? thumbURL : charsPath + targetAvatarImg;
         if ($(`.zoomed_avatar[forChar="${charname}"]`).length) {
             console.debug('removing container as it already existed');
             $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {

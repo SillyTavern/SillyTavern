@@ -125,8 +125,6 @@ function getConverter(type) {
  * @returns {Promise<void>}
  */
 export async function hideChatMessageRange(start, end, unhide) {
-    if (!getCurrentChatId()) return;
-
     if (isNaN(start)) return;
     if (!end) end = start;
     const hide = !unhide;
