@@ -4135,9 +4135,9 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
  * @param {WorldInfoBuffer} buffer The buffer to use for scoring
  * @param {(entry: WIScanEntry) => void} removeEntry The function to remove an entry
  * @param {number} scanState The current scan state
- * @param {WorldInfoTimedEffects} timedEffects The timed effects to use
+ * @param {Map<string, boolean>} hasStickyMap The sticky entries map
  */
-function filterGroupsByScoring(groups, buffer, removeEntry, scanState, timedEffects) {
+function filterGroupsByScoring(groups, buffer, removeEntry, scanState, hasStickyMap) {
     for (const [key, group] of Object.entries(groups)) {
         // Group scoring is disabled both globally and for the group entries
         if (!world_info_use_group_scoring && !group.some(x => x.useGroupScoring)) {
@@ -4146,7 +4146,7 @@ function filterGroupsByScoring(groups, buffer, removeEntry, scanState, timedEffe
         }
 
         // If the group has any sticky entries, the rest are already removed by the timed effects filter
-        const hasAnySticky = group.some(x => timedEffects.isEffectActive('sticky', x));
+        const hasAnySticky = hasStickyMap.get(key);
         if (hasAnySticky) {
             console.debug(`[WI] Skipping group scoring check, group '${key}' has sticky entries`);
             continue;
@@ -4180,9 +4180,15 @@ function filterGroupsByScoring(groups, buffer, removeEntry, scanState, timedEffe
  * @param {Record<string, WIScanEntry[]>} groups The groups to filter
  * @param {WorldInfoTimedEffects} timedEffects The timed effects to use
  * @param {(entry: WIScanEntry) => void} removeEntry The function to remove an entry
+ * @returns {Map<string, boolean>} If any sticky entries were found
  */
 function filterGroupsByTimedEffects(groups, timedEffects, removeEntry) {
+    /** @type {Map<string, boolean>} */
+    const hasStickyMap = new Map();
+
     for (const [key, group] of Object.entries(groups)) {
+        hasStickyMap.set(key, false);
+
         // If the group has any sticky entries, leave only the sticky entries
         const stickyEntries = group.filter(x => timedEffects.isEffectActive('sticky', x));
         if (stickyEntries.length) {
@@ -4194,6 +4200,8 @@ function filterGroupsByTimedEffects(groups, timedEffects, removeEntry) {
                 console.debug(`[WI] Entry ${entry.uid}`, `removed as a non-sticky loser from inclusion group '${key}'`, entry);
                 removeEntry(entry);
             }
+
+            hasStickyMap.set(key, true);
         }
 
         // It should not be possible for an entry on cooldown/delay to event get into the grouping phase but @Wolfsblvt told me to leave it here.
@@ -4213,6 +4221,8 @@ function filterGroupsByTimedEffects(groups, timedEffects, removeEntry) {
             }
         }
     }
+
+    return hasStickyMap;
 }
 
 /**
@@ -4253,14 +4263,14 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanSt
         }
     }
 
-    filterGroupsByTimedEffects(grouped, timedEffects, removeEntry);
-    filterGroupsByScoring(grouped, buffer, removeEntry, scanState, timedEffects);
+    const hasStickyMap = filterGroupsByTimedEffects(grouped, timedEffects, removeEntry);
+    filterGroupsByScoring(grouped, buffer, removeEntry, scanState, hasStickyMap);
 
     for (const [key, group] of Object.entries(grouped)) {
         console.debug(`[WI] Checking inclusion group '${key}' with ${group.length} entries`, group);
 
         // If the group has any sticky entries, the rest are already removed by the timed effects filter
-        const hasAnySticky = group.some(x => timedEffects.isEffectActive('sticky', x));
+        const hasAnySticky = hasStickyMap.get(key);
         if (hasAnySticky) {
             console.debug(`[WI] Skipping inclusion group check, group '${key}' has sticky entries`);
             continue;
