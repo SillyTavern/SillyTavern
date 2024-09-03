@@ -5921,11 +5921,16 @@ export function saveChatDebounced() {
     }, 1000);
 }
 
-export async function saveChat(chat_name, withMetadata, mesId) {
+export async function saveChat(chatName, withMetadata, mesId) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
-    let file_name = chat_name ?? characters[this_chid]?.chat;
+    const fileName = chatName ?? characters[this_chid]?.chat;
 
-    if (!file_name) {
+    if (!fileName && name2 === neutralCharacterName) {
+        // TODO: Do something for a temporary chat with no character.
+        return;
+    }
+
+    if (!fileName) {
         console.warn('saveChat called without chat_name and no chat file found');
         return;
     }
@@ -5966,7 +5971,7 @@ export async function saveChat(chat_name, withMetadata, mesId) {
         url: '/api/chats/save',
         data: JSON.stringify({
             ch_name: characters[this_chid].name,
-            file_name: file_name,
+            file_name: fileName,
             chat: save_chat,
             avatar_url: characters[this_chid].avatar,
         }),
