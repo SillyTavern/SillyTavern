@@ -5455,4 +5455,8 @@ body:not(.movingUI) .drawer-content.maximized {
 
 #advanced-formatting-button div[contenteditable] {
     overflow-wrap: anywhere;
+    max-height: 50vh;
+    max-height: 50dvh;
+    resize: vertical;
+    overflow: auto;
 }
