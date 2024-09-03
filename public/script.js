@@ -8234,6 +8234,11 @@ function swipe_left() {      // when we swipe left..but no generation.
  * @returns {Promise<string>} Branch file name
  */
 async function branchChat(mesId) {
+    if (this_chid === undefined && !selected_group) {
+        toastr.info('No character selected.', 'Branch creation aborted');
+        return;
+    }
+
     const fileName = await createBranch(mesId);
     await saveItemizedPrompts(fileName);
 
@@ -10100,7 +10105,7 @@ jQuery(async function () {
     //********************
     //***Message Editor***
     $(document).on('click', '.mes_edit', async function () {
-        if (this_chid !== undefined || selected_group) {
+        if (this_chid !== undefined || selected_group || name2 === neutralCharacterName) {
             // Previously system messages we're allowed to be edited
             /*const message = $(this).closest(".mes");
 

@@ -168,6 +168,11 @@ export async function createBranch(mesId) {
 }
 
 async function createNewBookmark(mesId) {
+    if (this_chid === undefined && !selected_group) {
+        toastr.info('No character selected.', 'Checkpoint creation aborted');
+        return;
+    }
+
     if (!chat.length) {
         toastr.warning('The chat is empty.', 'Checkpoint creation failed');
         return;
