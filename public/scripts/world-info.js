@@ -4135,12 +4135,20 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
  * @param {WorldInfoBuffer} buffer The buffer to use for scoring
  * @param {(entry: WIScanEntry) => void} removeEntry The function to remove an entry
  * @param {number} scanState The current scan state
+ * @param {WorldInfoTimedEffects} timedEffects The timed effects to use
  */
-function filterGroupsByScoring(groups, buffer, removeEntry, scanState) {
+function filterGroupsByScoring(groups, buffer, removeEntry, scanState, timedEffects) {
     for (const [key, group] of Object.entries(groups)) {
         // Group scoring is disabled both globally and for the group entries
         if (!world_info_use_group_scoring && !group.some(x => x.useGroupScoring)) {
             console.debug(`[WI] Skipping group scoring for group '${key}'`);
+            continue;
+        }
+
+        // If the group has any sticky entries, the rest are already removed by the timed effects filter
+        const hasAnySticky = group.some(x => timedEffects.isEffectActive('sticky', x));
+        if (hasAnySticky) {
+            console.debug(`[WI] Skipping group scoring check, group '${key}' has sticky entries`);
             continue;
         }
 
@@ -4246,7 +4254,7 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanSt
     }
 
     filterGroupsByTimedEffects(grouped, timedEffects, removeEntry);
-    filterGroupsByScoring(grouped, buffer, removeEntry, scanState);
+    filterGroupsByScoring(grouped, buffer, removeEntry, scanState, timedEffects);
 
     for (const [key, group] of Object.entries(grouped)) {
         console.debug(`[WI] Checking inclusion group '${key}' with ${group.length} entries`, group);
