@@ -896,8 +896,7 @@ export function initRossMods() {
 
     restoreUserInput();
 
-    //Regenerate if user swipes on the last mesage in chat
-
+    // Swipe gestures (see: https://www.npmjs.com/package/swiped-events)
     document.addEventListener('swiped-left', function (e) {
         if (power_user.gestures === false) {
             return;
@@ -905,7 +904,7 @@ export function initRossMods() {
         if (Popup.util.isPopupOpen()) {
             return;
         }
-        if ($('.mes_edit_buttons, .drawer-content, #character_popup, #dialogue_popup, #WorldInfo, #right-nav-panel, #left-nav-panel, #select_chat_popup, #floatingPrompt').is(':visible')) {
+        if (!$(e.target).closest('#sheld').length) {
             return;
         }
         var SwipeButR = $('.swipe_right:last');
@@ -923,7 +922,7 @@ export function initRossMods() {
         if (Popup.util.isPopupOpen()) {
             return;
         }
-        if ($('.mes_edit_buttons, .drawer-content, #character_popup, #dialogue_popup, #WorldInfo, #right-nav-panel, #left-nav-panel, #select_chat_popup, #floatingPrompt').is(':visible')) {
+        if (!$(e.target).closest('#sheld').length) {
             return;
         }
         var SwipeButL = $('.swipe_left:last');
