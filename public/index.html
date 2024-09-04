@@ -3085,8 +3085,9 @@
                                 <select id="context_presets" data-preset-manager-for="context" class="flex1 text_pole"></select>
                             </div>
                             <div>
-                                <label for="context_story_string">
+                                <label for="context_story_string" class="flex-container">
                                     <small data-i18n="Story String">Story String</small>
+                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="context_story_string" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                 </label>
                                 <div contenteditable="true" id="context_story_string" class="text_pole textarea_compact"></div>
                                 <div class="flex-container">
@@ -3236,8 +3237,9 @@
                                 <input type="text" id="instruct_activation_regex" class="text_pole textarea_compact" placeholder="e.g. /llama(-)?[3|3.1]/i"></input>
                             </div>
                             <div>
-                                <label>
+                                <label for="instruct_system_prompt" class="flex-container">
                                     <small data-i18n="System Prompt">System Prompt</small>
+                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="instruct_system_prompt" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                 </label>
                                 <div contenteditable="true" id="instruct_system_prompt" class="text_pole textarea_compact"></div>
                             </div>
@@ -3685,7 +3687,7 @@
                     </div>
                 </div>
                 <div id="user-settings-block-content" class="flex-container spaceEvenly">
-                    <div name="UserSettingsFirstColumn" id="UI-Theme-Block" class="flex-container flexFlowColumn wide100p">
+                    <div name="UserSettingsFirstColumn" id="UI-Theme-Block" class="flex-container flexFlowColumn wide100p flex1">
                         <div id="UI-presets-block" class="flex-container flexFlowColumn">
                             <h4 class="title_restorable">
                                 <span data-i18n="UI Theme">UI Theme</span>
@@ -3902,7 +3904,7 @@
 
                         </div>
                     </div>
-                    <div name="UserSettingsSecondColumn" id="UI-Customization" class="flex-container flexFlowColumn wide100p flexNoGap">
+                    <div name="UserSettingsSecondColumn" id="UI-Customization" class="flex-container flexFlowColumn wide100p flexNoGap flex1">
                         <div name="CharacterHandlingToggles">
                             <h4 data-i18n="Character Handling">
                                 Character Handling
@@ -4044,7 +4046,7 @@
                             </div>
                         </div>
                     </div>
-                    <div name="UserSettingsThirdColumn" id="power-user-options-block" class="flex-container wide100p">
+                    <div name="UserSettingsThirdColumn" id="power-user-options-block" class="flex-container wide100p flex1">
                         <div id="power-user-option-checkboxes">
 
                             <div name="ChatMessageHandlingToggles">

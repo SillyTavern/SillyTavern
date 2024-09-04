@@ -902,6 +902,9 @@ export function initRossMods() {
         if (power_user.gestures === false) {
             return;
         }
+        if (Popup.util.isPopupOpen()) {
+            return;
+        }
         if ($('.mes_edit_buttons, .drawer-content, #character_popup, #dialogue_popup, #WorldInfo, #right-nav-panel, #left-nav-panel, #select_chat_popup, #floatingPrompt').is(':visible')) {
             return;
         }
@@ -915,6 +918,9 @@ export function initRossMods() {
     });
     document.addEventListener('swiped-right', function (e) {
         if (power_user.gestures === false) {
+            return;
+        }
+        if (Popup.util.isPopupOpen()) {
             return;
         }
         if ($('.mes_edit_buttons, .drawer-content, #character_popup, #dialogue_popup, #WorldInfo, #right-nav-panel, #left-nav-panel, #select_chat_popup, #floatingPrompt').is(':visible')) {

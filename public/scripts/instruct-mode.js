@@ -611,15 +611,11 @@ jQuery(() => {
         if (state) {
             $('#instruct_system_sequence_block').addClass('disabled');
             $('#instruct_system_suffix_block').addClass('disabled');
-            $('#instruct_system_sequence').css('height', 'auto');
-            $('#instruct_system_suffix').css('height', 'auto');
             $('#instruct_system_sequence').prop('contenteditable', false);
             $('#instruct_system_suffix').prop('contenteditable', false);
         } else {
             $('#instruct_system_sequence_block').removeClass('disabled');
             $('#instruct_system_suffix_block').removeClass('disabled');
-            $('#instruct_system_sequence').css('height', '');
-            $('#instruct_system_suffix').css('height', '');
             $('#instruct_system_sequence').prop('contenteditable', true);
             $('#instruct_system_suffix').prop('contenteditable', true);
         }

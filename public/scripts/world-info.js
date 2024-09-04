@@ -2334,7 +2334,7 @@ async function getWorldEntry(name, data, entry) {
             input.on('select2:unselect', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data], { remove: true }));
 
             select2ChoiceClickSubscribe(input, target => {
-                const key = $(target).text();
+                const key = $(target.closest('.regex-highlight')).text();
                 console.debug('Editing WI key', key);
 
                 // Remove the current key from the actual selection

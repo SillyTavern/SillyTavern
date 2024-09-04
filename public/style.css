@@ -4388,7 +4388,6 @@ body.big-avatars .missing-avatar {
     text-align: center;
 }
 
-
 .userSettingsInnerExpandable {
     border: 1px solid;
     border-color: var(--SmartThemeBorderColor);
@@ -5461,4 +5460,5 @@ body:not(.movingUI) .drawer-content.maximized {
     max-height: 50dvh;
     resize: vertical;
     overflow: auto;
+    min-height: 1.8em;
 }

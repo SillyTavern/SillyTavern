@@ -2818,21 +2818,22 @@ export function baseChatReplace(value, name1, name2) {
  */
 export function getCharacterCardFields() {
     const result = { system: '', mesExamples: '', description: '', personality: '', persona: '', scenario: '', jailbreak: '', version: '' };
+    result.persona = baseChatReplace(power_user.persona_description?.trim(), name1, name2);
+
     const character = characters[this_chid];
 
     if (!character) {
         return result;
     }
 
-    const scenarioText = chat_metadata['scenario'] || characters[this_chid]?.scenario;
-    result.description = baseChatReplace(characters[this_chid].description?.trim(), name1, name2);
-    result.personality = baseChatReplace(characters[this_chid].personality?.trim(), name1, name2);
+    const scenarioText = chat_metadata['scenario'] || character.scenario || '';
+    result.description = baseChatReplace(character.description?.trim(), name1, name2);
+    result.personality = baseChatReplace(character.personality?.trim(), name1, name2);
     result.scenario = baseChatReplace(scenarioText.trim(), name1, name2);
-    result.mesExamples = baseChatReplace(characters[this_chid].mes_example?.trim(), name1, name2);
-    result.persona = baseChatReplace(power_user.persona_description?.trim(), name1, name2);
-    result.system = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
-    result.jailbreak = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
-    result.version = characters[this_chid].data?.character_version ?? '';
+    result.mesExamples = baseChatReplace(character.mes_example?.trim(), name1, name2);
+    result.system = power_user.prefer_character_prompt ? baseChatReplace(character.data?.system_prompt?.trim(), name1, name2) : '';
+    result.jailbreak = power_user.prefer_character_jailbreak ? baseChatReplace(character.data?.post_history_instructions?.trim(), name1, name2) : '';
+    result.version = character.data?.character_version ?? '';
 
     if (selected_group) {
         const groupCards = getGroupCharacterCards(selected_group, Number(this_chid));
@@ -9180,6 +9181,27 @@ jQuery(async function () {
         helpString: 'Closes the current chat.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'tempchat',
+        callback: () => {
+            return new Promise((resolve, reject) => {
+                const eventCallback = async (chatId) => {
+                    if (chatId) {
+                        return reject('Not in a temporary chat');
+                    }
+                    await newAssistantChat();
+                    return resolve('');
+                };
+                eventSource.once(event_types.CHAT_CHANGED, eventCallback);
+                doCloseChat();
+                setTimeout(() => {
+                    reject('Failed to open temporary chat');
+                    eventSource.removeListener(event_types.CHAT_CHANGED, eventCallback);
+                }, debounce_timeout.relaxed);
+            });
+        },
+        helpString: 'Opens a temporary chat with Assistant.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'panels',
         callback: doTogglePanels,
         aliases: ['togglepanels'],
@@ -9888,8 +9910,8 @@ jQuery(async function () {
                 select_rm_characters();
                 sendSystemMessage(system_message_types.WELCOME);
                 sendSystemMessage(system_message_types.WELCOME_PROMPT);
-                eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
                 await getClientVersion();
+                await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
             } else {
                 toastr.info('Please stop the message generation first.');
             }
