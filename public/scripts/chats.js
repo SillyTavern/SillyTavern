@@ -1416,6 +1416,7 @@ jQuery(function () {
     $(document).on('click', '.editor_maximize', function () {
         const broId = $(this).attr('data-for');
         const bro = $(`#${broId}`);
+        const contentEditable = bro.is('[contenteditable]');
         const withTab = $(this).attr('data-tab');
 
         if (!bro.length) {
@@ -1427,11 +1428,16 @@ jQuery(function () {
         wrapper.classList.add('height100p', 'wide100p', 'flex-container');
         wrapper.classList.add('flexFlowColumn', 'justifyCenter', 'alignitemscenter');
         const textarea = document.createElement('textarea');
-        textarea.value = String(bro.val());
+        textarea.value = String(contentEditable ? bro[0].innerText : bro.val());
         textarea.classList.add('height100p', 'wide100p', 'maximized_textarea');
         bro.hasClass('monospace') && textarea.classList.add('monospace');
         textarea.addEventListener('input', function () {
-            bro.val(textarea.value).trigger('input');
+            if (contentEditable) {
+                bro[0].innerText = textarea.value;
+                bro.trigger('input');
+            } else {
+                bro.val(textarea.value).trigger('input');
+            }
         });
         wrapper.appendChild(textarea);
 
