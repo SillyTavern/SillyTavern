@@ -938,7 +938,7 @@ async function classifyCallback(/** @type {{api: string?, prompt: string?}} */ {
         return '';
     }
 
-    const label = getExpressionLabel(text, expressionApi, { customPrompt: prompt });
+    const label = await getExpressionLabel(text, expressionApi, { customPrompt: prompt });
     console.debug(`Classification result for "${text}": ${label}`);
     return label;
 }
