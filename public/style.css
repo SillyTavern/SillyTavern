@@ -5460,4 +5460,5 @@ body:not(.movingUI) .drawer-content.maximized {
     max-height: 50dvh;
     resize: vertical;
     overflow: auto;
+    min-height: 1.8em;
 }
