@@ -9181,7 +9181,7 @@ jQuery(async function () {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'tempchat',
-        callback: async () => {
+        callback: () => {
             return new Promise((resolve, reject) => {
                 const eventCallback = async (chatId) => {
                     if (chatId) {
