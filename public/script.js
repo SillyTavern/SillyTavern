@@ -9180,6 +9180,27 @@ jQuery(async function () {
         helpString: 'Closes the current chat.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'tempchat',
+        callback: async () => {
+            return new Promise((resolve, reject) => {
+                const eventCallback = async (chatId) => {
+                    if (chatId) {
+                        return reject('Not in a temporary chat');
+                    }
+                    await newAssistantChat();
+                    return resolve('');
+                };
+                eventSource.once(event_types.CHAT_CHANGED, eventCallback);
+                doCloseChat();
+                setTimeout(() => {
+                    reject('Failed to open temporary chat');
+                    eventSource.removeListener(event_types.CHAT_CHANGED, eventCallback);
+                }, debounce_timeout.relaxed);
+            });
+        },
+        helpString: 'Opens a temporary chat with Assistant.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'panels',
         callback: doTogglePanels,
         aliases: ['togglepanels'],
@@ -9888,8 +9909,8 @@ jQuery(async function () {
                 select_rm_characters();
                 sendSystemMessage(system_message_types.WELCOME);
                 sendSystemMessage(system_message_types.WELCOME_PROMPT);
-                eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
                 await getClientVersion();
+                await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
             } else {
                 toastr.info('Please stop the message generation first.');
             }
