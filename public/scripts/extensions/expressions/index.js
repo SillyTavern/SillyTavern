@@ -1354,7 +1354,7 @@ function getCachedExpressions() {
     return [...expressionsList, ...extension_settings.expressions.custom].filter(onlyUnique);
 }
 
-async function getExpressionsList() {
+export async function getExpressionsList() {
     // Return cached list if available
     if (Array.isArray(expressionsList)) {
         return getCachedExpressions();
@@ -2085,7 +2085,7 @@ function migrateSettings() {
             }),
         ],
         helpString: 'Force sets the sprite for the current character.',
-        returns: 'label',
+        returns: 'the currently set sprite label after setting it.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'spriteoverride',
@@ -2101,7 +2101,7 @@ function migrateSettings() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'lastsprite',
         callback: (_, value) => lastExpression[String(value).trim()] ?? '',
-        returns: 'sprite',
+        returns: 'the last set sprite / expression for the named character.',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'character name',
@@ -2117,7 +2117,14 @@ function migrateSettings() {
         callback: toggleTalkingHeadCommand,
         aliases: ['talkinghead'],
         helpString: 'Character Expressions: toggles <i>Image Type - talkinghead (extras)</i> on/off.',
-        returns: ARGUMENT_TYPE.BOOLEAN,
+        returns: 'the current state of the <i>Image Type - talkinghead (extras)</i> on/off.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'classify-expressions',
+        aliases: ['expressions'],
+        callback: async () => (await getExpressionsList()).join(', '),
+        returns: 'The comma-separated list of available expressions, including custom expressions.',
+        helpString: 'Returns a list of available expressions, including custom expressions.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'classify',
