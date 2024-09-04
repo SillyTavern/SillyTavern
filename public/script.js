@@ -6480,6 +6480,7 @@ export async function getSettings() {
         // Load power user settings
         await loadPowerUserSettings(settings, data);
 
+        // Apply theme toggles from power user settings
         applyPowerUserSettings();
 
         // Load character tags

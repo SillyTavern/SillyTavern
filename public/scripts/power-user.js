@@ -1027,7 +1027,7 @@ function applyChatWidth(type) {
     $('#chat_width_slider_counter').val(power_user.chat_width);
 }
 
-async function applyThemeColor(type) {
+function applyThemeColor(type) {
     if (type === 'main') {
         document.documentElement.style.setProperty('--SmartThemeBodyColor', power_user.main_text_color);
         const color = power_user.main_text_color.split('(')[1].split(')')[0].split(',');
@@ -1068,7 +1068,7 @@ async function applyThemeColor(type) {
     }
 }
 
-async function applyCustomCSS() {
+function applyCustomCSS() {
     $('#customCSS').val(power_user.custom_css);
     var styleId = 'custom-style';
     var style = document.getElementById(styleId);
@@ -1081,20 +1081,20 @@ async function applyCustomCSS() {
     style.innerHTML = power_user.custom_css;
 }
 
-async function applyBlurStrength() {
+function applyBlurStrength() {
     document.documentElement.style.setProperty('--blurStrength', String(power_user.blur_strength));
     $('#blur_strength_counter').val(power_user.blur_strength);
     $('#blur_strength').val(power_user.blur_strength);
 }
 
-async function applyShadowWidth() {
+function applyShadowWidth() {
     document.documentElement.style.setProperty('--shadowWidth', String(power_user.shadow_width));
     $('#shadow_width_counter').val(power_user.shadow_width);
     $('#shadow_width').val(power_user.shadow_width);
 
 }
 
-async function applyFontScale(type) {
+function applyFontScale(type) {
     //this is to allow forced setting on page load, theme swap, etc
     if (type === 'forced') {
         document.documentElement.style.setProperty('--fontScale', String(power_user.font_scale));
@@ -1109,7 +1109,7 @@ async function applyFontScale(type) {
     $('#font_scale').val(power_user.font_scale);
 }
 
-async function applyTheme(name) {
+function applyTheme(name) {
     const theme = themes.find(x => x.name == name);
 
     if (!theme) {
@@ -1129,61 +1129,61 @@ async function applyTheme(name) {
         { key: 'border_color', selector: '#border-color-picker', type: 'border' },
         {
             key: 'blur_strength',
-            action: async () => {
-                await applyBlurStrength();
+            action: () => {
+                applyBlurStrength();
             },
         },
         {
             key: 'custom_css',
-            action: async () => {
-                await applyCustomCSS();
+            action: () => {
+                applyCustomCSS();
             },
         },
         {
             key: 'shadow_width',
-            action: async () => {
-                await applyShadowWidth();
+            action: () => {
+                applyShadowWidth();
             },
         },
         {
             key: 'font_scale',
-            action: async () => {
-                await applyFontScale('forced');
+            action: () => {
+                applyFontScale('forced');
             },
         },
         {
             key: 'fast_ui_mode',
-            action: async () => {
+            action: () => {
                 switchUiMode();
             },
         },
         {
             key: 'waifuMode',
-            action: async () => {
+            action: () => {
                 switchWaifuMode();
             },
         },
         {
             key: 'chat_display',
-            action: async () => {
+            action: () => {
                 applyChatDisplay();
             },
         },
         {
             key: 'avatar_style',
-            action: async () => {
+            action: () => {
                 applyAvatarStyle();
             },
         },
         {
             key: 'noShadows',
-            action: async () => {
+            action: () => {
                 applyNoShadows();
             },
         },
         {
             key: 'chat_width',
-            action: async () => {
+            action: () => {
                 // If chat width is not set, set it to 50
                 if (!power_user.chat_width) {
                     power_user.chat_width = 50;
@@ -1193,88 +1193,88 @@ async function applyTheme(name) {
         },
         {
             key: 'timer_enabled',
-            action: async () => {
+            action: () => {
                 switchTimer();
             },
         },
         {
             key: 'timestamps_enabled',
-            action: async () => {
+            action: () => {
                 switchTimestamps();
             },
         },
         {
             key: 'timestamp_model_icon',
-            action: async () => {
+            action: () => {
                 switchIcons();
             },
         },
         {
             key: 'message_token_count_enabled',
-            action: async () => {
+            action: () => {
                 switchTokenCount();
             },
         },
         {
             key: 'mesIDDisplay_enabled',
-            action: async () => {
+            action: () => {
                 switchMesIDDisplay();
             },
         },
         {
             key: 'hideChatAvatars_enabled',
-            action: async () => {
+            action: () => {
                 switchHideChatAvatars();
             },
         },
         {
             key: 'expand_message_actions',
-            action: async () => {
+            action: () => {
                 switchMessageActions();
             },
         },
         {
             key: 'enableZenSliders',
-            action: async () => {
+            action: () => {
                 switchMessageActions();
             },
         },
         {
             key: 'enableLabMode',
-            action: async () => {
+            action: () => {
                 switchMessageActions();
             },
         },
         {
             key: 'hotswap_enabled',
-            action: async () => {
+            action: () => {
                 switchHotswap();
             },
         },
         {
             key: 'bogus_folders',
-            action: async () => {
+            action: () => {
                 $('#bogus_folders').prop('checked', power_user.bogus_folders);
                 printCharactersDebounced();
             },
         },
         {
             key: 'zoomed_avatar_magnification',
-            action: async () => {
+            action: () => {
                 $('#zoomed_avatar_magnification').prop('checked', power_user.zoomed_avatar_magnification);
                 printCharactersDebounced();
             },
         },
         {
             key: 'reduced_motion',
-            action: async () => {
+            action: () => {
                 $('#reduced_motion').prop('checked', power_user.reduced_motion);
                 switchReducedMotion();
             },
         },
         {
             key: 'compact_input_area',
-            action: async () => {
+            action: () => {
                 $('#compact_input_area').prop('checked', power_user.compact_input_area);
                 switchCompactInputArea();
             },
@@ -1285,8 +1285,8 @@ async function applyTheme(name) {
         if (theme[key] !== undefined) {
             power_user[key] = theme[key];
             if (selector) $(selector).attr('color', power_user[key]);
-            if (type) await applyThemeColor(type);
-            if (action) await action();
+            if (type) applyThemeColor(type);
+            if (action) action();
         } else {
             if (selector) { $(selector).attr('color', 'rgba(0,0,0,0)'); }
             console.debug(`Empty theme key: ${key}`);
@@ -1793,7 +1793,7 @@ async function loadContextSettings() {
                         .prop('checked', control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
                         .trigger('input');
                 } else {
-                    $element[0].innerText = (control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
+                    $element[0].innerText = (control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property]);
                     $element.trigger('input');
                 }
             }
@@ -2156,7 +2156,7 @@ async function deleteTheme() {
         power_user.theme = themes[0]?.name;
         saveSettingsDebounced();
         if (power_user.theme) {
-            await applyTheme(power_user.theme);
+            applyTheme(power_user.theme);
         }
         toastr.success('Theme deleted.');
     }
@@ -3226,21 +3226,21 @@ $(document).ready(() => {
         const applyMode = data?.forced ? 'forced' : 'normal';
         power_user.font_scale = Number(e.target.value);
         $('#font_scale_counter').val(power_user.font_scale);
-        await applyFontScale(applyMode);
+        applyFontScale(applyMode);
         saveSettingsDebounced();
     });
 
     $('input[name="blur_strength"]').on('input', async function (e) {
         power_user.blur_strength = Number(e.target.value);
         $('#blur_strength_counter').val(power_user.blur_strength);
-        await applyBlurStrength();
+        applyBlurStrength();
         saveSettingsDebounced();
     });
 
     $('input[name="shadow_width"]').on('input', async function (e) {
         power_user.shadow_width = Number(e.target.value);
         $('#shadow_width_counter').val(power_user.shadow_width);
-        await applyShadowWidth();
+        applyShadowWidth();
         saveSettingsDebounced();
     });
 
