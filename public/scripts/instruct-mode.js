@@ -7,7 +7,7 @@ import {
     power_user,
     context_presets,
 } from './power-user.js';
-import { regexFromString } from './utils.js';
+import { regexFromString, resetScrollHeight } from './utils.js';
 
 /**
  * @type {any[]} Instruct mode presets.
@@ -95,11 +95,14 @@ export async function loadInstructMode(data) {
         if (control.isCheckbox) {
             $element.prop('checked', power_user.instruct[control.property]);
         } else {
-            $element[0].innerText = (power_user.instruct[control.property]);
+            $element.val(power_user.instruct[control.property]);
         }
 
         $element.on('input', async function () {
-            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this)[0].innerText;
+            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+            if (!CSS.supports('field-sizing', 'content')) {
+                await resetScrollHeight($(this));
+            }
             saveSettingsDebounced();
         });
 
@@ -107,9 +110,6 @@ export async function loadInstructMode(data) {
             $element.trigger('input');
         }
     });
-
-    $('#instruct_system_sequence').css('height', 'auto');
-    $('#instruct_system_suffix').css('height', 'auto');
 
     instruct_presets.forEach((preset) => {
         const name = preset.name;
@@ -611,13 +611,13 @@ jQuery(() => {
         if (state) {
             $('#instruct_system_sequence_block').addClass('disabled');
             $('#instruct_system_suffix_block').addClass('disabled');
-            $('#instruct_system_sequence').prop('contenteditable', false);
-            $('#instruct_system_suffix').prop('contenteditable', false);
+            $('#instruct_system_sequence').prop('readOnly', true);
+            $('#instruct_system_suffix').prop('readOnly', true);
         } else {
             $('#instruct_system_sequence_block').removeClass('disabled');
             $('#instruct_system_suffix_block').removeClass('disabled');
-            $('#instruct_system_sequence').prop('contenteditable', true);
-            $('#instruct_system_suffix').prop('contenteditable', true);
+            $('#instruct_system_sequence').prop('readOnly', false);
+            $('#instruct_system_suffix').prop('readOnly', false);
         }
 
     });
@@ -663,7 +663,7 @@ jQuery(() => {
                 if (control.isCheckbox) {
                     $element.prop('checked', power_user.instruct[control.property]).trigger('input');
                 } else {
-                    $element[0].innerText = (power_user.instruct[control.property]);
+                    $element.val(power_user.instruct[control.property]);
                     $element.trigger('input');
                 }
             }

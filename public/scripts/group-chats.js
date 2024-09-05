@@ -1491,9 +1491,11 @@ function select_group_chats(groupId, skipAnimation) {
     }
 
     // Toggle textbox sizes, as input events have not fired here
-    $('#rm_group_chats_block .autoSetHeight').each(element => {
-        resetScrollHeight(element);
-    });
+    if (!CSS.supports('field-sizing', 'content')) {
+        $('#rm_group_chats_block .autoSetHeight').each(element => {
+            resetScrollHeight(element);
+        });
+    }
 
     eventSource.emit('groupSelected', { detail: { id: openGroupId, group: group } });
 }
@@ -1964,9 +1966,11 @@ function doCurMemberListPopout() {
 }
 
 jQuery(() => {
-    $(document).on('input', '#rm_group_chats_block .autoSetHeight', function () {
-        resetScrollHeight($(this));
-    });
+    if (!CSS.supports('field-sizing', 'content')) {
+        $(document).on('input', '#rm_group_chats_block .autoSetHeight', function () {
+            resetScrollHeight($(this));
+        });
+    }
 
     $(document).on('click', '.group_select', function () {
         const groupId = $(this).attr('chid') || $(this).attr('grid') || $(this).data('id');

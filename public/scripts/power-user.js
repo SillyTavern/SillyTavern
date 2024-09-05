@@ -1740,20 +1740,23 @@ async function loadContextSettings() {
         if (control.isCheckbox) {
             $element.prop('checked', power_user.context[control.property]);
         } else {
-            $element[0].innerText = power_user.context[control.property];
+            $element.val(power_user.context[control.property]);
         }
         console.log(`Setting ${$element.prop('id')} to ${power_user.context[control.property]}`);
 
         // If the setting already exists, no need to duplicate it
         // TODO: Maybe check the power_user object for the setting instead of a flag?
-        $element.on('input keyup', async function () {
-            const value = control.isCheckbox ? !!$(this).prop('checked') : $(this)[0].innerText;
+        $element.on('input', async function () {
+            const value = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
             if (control.isGlobalSetting) {
                 power_user[control.property] = value;
             } else {
                 power_user.context[control.property] = value;
             }
-
+            console.log(`Setting ${$element.prop('id')} to ${value}`);
+            if (!CSS.supports('field-sizing', 'content')) {
+                await resetScrollHeight($(this));
+            }
             saveSettingsDebounced();
         });
     });
@@ -1793,7 +1796,7 @@ async function loadContextSettings() {
                         .prop('checked', control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
                         .trigger('input');
                 } else {
-                    $element[0].innerText = (control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property]);
+                    $element.val(control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property]);
                     $element.trigger('input');
                 }
             }
@@ -3096,7 +3099,7 @@ $(document).ready(() => {
     });
 
     $('#start_reply_with').on('input', function () {
-        power_user.user_prompt_bias = String($(this)[0].innerText);
+        power_user.user_prompt_bias = String($(this).val());
         saveSettingsDebounced();
     });
 
@@ -3628,7 +3631,7 @@ $(document).ready(() => {
     });
 
     $('#custom_stopping_strings').on('input', function () {
-        power_user.custom_stopping_strings = String($(this)[0].innerText).trim();
+        power_user.custom_stopping_strings = String($(this).val()).trim();
         saveSettingsDebounced();
     });
 
