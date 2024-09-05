@@ -2122,7 +2122,26 @@ function migrateSettings() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'classify-expressions',
         aliases: ['expressions'],
-        callback: async () => (await getExpressionsList()).join(', '),
+        callback: async (args) => {
+            const list = await getExpressionsList();
+            switch (String(args.format).toLowerCase()) {
+                case 'json':
+                    return JSON.stringify(list);
+                default:
+                    return list.join(', ');
+            }
+        },
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'format',
+                description: 'The format to return the list in: comma-separated plain text or JSON array. Default is plain text.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumList: [
+                    new SlashCommandEnumValue('plain', null, enumTypes.enum, ', '),
+                    new SlashCommandEnumValue('json', null, enumTypes.enum, '[]'),
+                ],
+            }),
+        ],
         returns: 'The comma-separated list of available expressions, including custom expressions.',
         helpString: 'Returns a list of available expressions, including custom expressions.',
     }));
