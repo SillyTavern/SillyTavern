@@ -3099,7 +3099,7 @@ $(document).ready(() => {
     });
 
     $('#start_reply_with').on('input', function () {
-        power_user.user_prompt_bias = String($(this).val);
+        power_user.user_prompt_bias = String($(this).val());
         saveSettingsDebounced();
     });
 
@@ -3631,7 +3631,7 @@ $(document).ready(() => {
     });
 
     $('#custom_stopping_strings').on('input', function () {
-        power_user.custom_stopping_strings = String($(this).val).trim();
+        power_user.custom_stopping_strings = String($(this).val()).trim();
         saveSettingsDebounced();
     });
 

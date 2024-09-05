@@ -99,7 +99,7 @@ export async function loadInstructMode(data) {
         }
 
         $element.on('input', async function () {
-            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val;
+            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
             if (!CSS.supports('field-sizing', 'content')) {
                 await resetScrollHeight($(this));
             }
