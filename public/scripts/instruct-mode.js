@@ -111,9 +111,6 @@ export async function loadInstructMode(data) {
         }
     });
 
-    $('#instruct_system_sequence').css('height', 'auto');
-    $('#instruct_system_suffix').css('height', 'auto');
-
     instruct_presets.forEach((preset) => {
         const name = preset.name;
         const option = document.createElement('option');
