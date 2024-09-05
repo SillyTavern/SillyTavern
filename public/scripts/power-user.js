@@ -105,9 +105,6 @@ export const persona_description_positions = {
     NONE: 9,
 };
 
-const chromeUaIdx = navigator.userAgent.lastIndexOf('Chrome/');
-const chromeVersion = navigator.userAgent.substring(chromeUaIdx + 7, navigator.userAgent.indexOf('.', chromeUaIdx));
-
 let power_user = {
     tokenizer: tokenizers.BEST_MATCH,
     token_padding: 64,
@@ -1757,7 +1754,7 @@ async function loadContextSettings() {
                 power_user.context[control.property] = value;
             }
             console.log(`Setting ${$element.prop('id')} to ${value}`);
-            if (chromeUaIdx == -1 || Number(chromeVersion) < 123) {
+            if (!CSS.supports('field-sizing', 'content')) {
                 await resetScrollHeight($(this));
             }
             saveSettingsDebounced();

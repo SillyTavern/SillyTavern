@@ -2027,11 +2027,8 @@ export function toggleDrawer(drawer, expand = true) {
         content.style.display = 'none';
     }
 
-    const chromeUaIdx = navigator.userAgent.lastIndexOf('Chrome/');
-    const chromeVersion = navigator.userAgent.substring(chromeUaIdx + 7, navigator.userAgent.indexOf('.', chromeUaIdx));
-
     // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
-    if (chromeUaIdx == -1 || Number(chromeVersion) < 123) {
+    if (!CSS.supports('field-sizing', 'content')) {
         content.querySelectorAll('textarea.autoSetHeight').forEach(resetScrollHeight);
     }
 }

@@ -5281,9 +5281,11 @@ $(document).ready(async function () {
         saveSettingsDebounced();
     });
 
-    $(document).on('input', '#openai_settings .autoSetHeight', function () {
-        resetScrollHeight($(this));
-    });
+    if (!CSS.supports('field-sizing', 'content')) {
+        $(document).on('input', '#openai_settings .autoSetHeight', function () {
+            resetScrollHeight($(this));
+        });
+    }
 
     if (!isMobile()) {
         $('#model_openrouter_select').select2({

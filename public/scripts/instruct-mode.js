@@ -42,9 +42,6 @@ const controls = [
     { id: 'instruct_system_same_as_user', property: 'system_same_as_user', isCheckbox: true, trigger: true },
 ];
 
-const chromeUaIdx = navigator.userAgent.lastIndexOf('Chrome/');
-const chromeVersion = navigator.userAgent.substring(chromeUaIdx + 7, navigator.userAgent.indexOf('.', chromeUaIdx));
-
 /**
  * Migrates instruct mode settings into the evergreen format.
  * @param {object} settings Instruct mode settings.
@@ -103,7 +100,7 @@ export async function loadInstructMode(data) {
 
         $element.on('input', async function () {
             power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val;
-            if (chromeUaIdx == -1 || Number(chromeVersion) < 123) {
+            if (!CSS.supports('field-sizing', 'content')) {
                 await resetScrollHeight($(this));
             }
             saveSettingsDebounced();

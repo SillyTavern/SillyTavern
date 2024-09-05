@@ -10577,9 +10577,6 @@ jQuery(async function () {
         stopScriptExecution();
     });
 
-    const chromeUaIdx = navigator.userAgent.lastIndexOf('Chrome/');
-    const chromeVersion = navigator.userAgent.substring(chromeUaIdx + 7, navigator.userAgent.indexOf('.', chromeUaIdx));
-
     $('.drawer-toggle').on('click', function () {
         var icon = $(this).find('.drawer-icon');
         var drawer = $(this).parent().find('.drawer-content');
@@ -10619,8 +10616,7 @@ jQuery(async function () {
             }
 
             // Set the height of "autoSetHeight" textareas within the drawer to their scroll height
-
-            if (chromeUaIdx == -1 || Number(chromeVersion) < 123) {
+            if (!CSS.supports('field-sizing', 'content')) {
                 $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(async function () {
                     await resetScrollHeight($(this));
                     return;
@@ -10697,7 +10693,7 @@ jQuery(async function () {
         $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
 
         // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
-        if (chromeUaIdx == -1 || Number(chromeVersion) < 123) {
+        if (!CSS.supports('field-sizing', 'content')) {
             $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(async function () {
                 await resetScrollHeight($(this));
                 return;
