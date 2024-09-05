@@ -1966,11 +1966,11 @@ function doCurMemberListPopout() {
 }
 
 jQuery(() => {
-    $(document).on('input', '#rm_group_chats_block .autoSetHeight', function () {
-        if (!CSS.supports('field-sizing', 'content')) {
+    if (!CSS.supports('field-sizing', 'content')) {
+        $(document).on('input', '#rm_group_chats_block .autoSetHeight', function () {
             resetScrollHeight($(this));
-        }
-    });
+        });
+    }
 
     $(document).on('click', '.group_select', function () {
         const groupId = $(this).attr('chid') || $(this).attr('grid') || $(this).data('id');
