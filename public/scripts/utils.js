@@ -2103,6 +2103,7 @@ export async function showFontAwesomePicker(customList = null) {
     return null;
 }
 
+const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
 /**
  * Retrieves the content of a textarea or contenteditable element, accounting
  * for browser quirks around line breaks and whitespace. Plain text only.
@@ -2111,11 +2112,13 @@ export async function showFontAwesomePicker(customList = null) {
  */
 export function getTextInputContent(element) {
 
-    // Don't try to use innerText on contentEditables, there are horrible bugs in Firefox
     const isTextarea = element instanceof HTMLTextAreaElement;
     if (isTextarea) {
         return element.value;
-    } else if (element.isContentEditable) {
+    } else if (element.isContentEditable && !isFirefox) {
+        return element.innerText;
+    } else {
+        // Don't try to use innerText on contentEditables on Firefox, it is very broken
         const clean = DOMPurify.sanitize(element.innerHTML, { ALLOWED_TAGS: ['br', 'p', 'div'] });
         const div = document.createElement('div');
         div.innerHTML = clean;

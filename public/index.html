@@ -3353,7 +3353,7 @@
                                         <small data-i18n="System Prompt Prefix">System Prompt Prefix</small>
                                     </label>
                                     <div>
-                                        <div contenteditable="true" id="instruct_system_sequence_prefix" class="text_pole textarea_compact"></div>
+                                        <textarea rows="2" id="instruct_system_sequence_prefix" class="text_pole textarea_compact"></textarea>
                                     </div>
                                 </div>
                                 <div class="flexAuto" title="Inserted after a System prompt." data-i18n="[title]Inserted after a System prompt.">
@@ -3361,38 +3361,38 @@
                                         <small data-i18n="System Prompt Suffix">System Prompt Suffix</small>
                                     </label>
                                     <div>
-                                        <div contenteditable="true" id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact"></div>
+                                        <textarea rows="2" id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact"></textarea>
                                     </div>
                                 </div>
                             </div>
                             <div class="flex-container">
                                 <div class="flexAuto" title="Inserted before a User message and as a last prompt line when impersonating." data-i18n="[title]Inserted before a User message and as a last prompt line when impersonating.">
                                     <small data-i18n="User Prefix">User Message Prefix</small>
-                                    <div contenteditable="true" id="instruct_input_sequence" class="text_pole textarea_compact"></div>
+                                    <textarea rows="2" id="instruct_input_sequence" class="text_pole textarea_compact"></textarea>
                                 </div>
                                 <div class="flexAuto" title="Inserted after a User message." data-i18n="[title]Inserted after a User message.">
                                     <small data-i18n="User Suffix">User Message Suffix</small>
-                                    <div contenteditable="true" id="instruct_input_suffix" class="text_pole wide100p textarea_compact"></div>
+                                    <textarea rows="2" id="instruct_input_suffix" class="text_pole wide100p textarea_compact"></textarea>
                                 </div>
                             </div>
                             <div class="flex-container">
                                 <div class="flexAuto" title="Inserted before an Assistant message and as a last prompt line when generating an AI reply." data-i18n="[title]Inserted before an Assistant message and as a last prompt line when generating an AI reply.">
                                     <small data-i18n="Assistant Prefix">Assistant Message Prefix</small>
-                                    <div contenteditable="true" id="instruct_output_sequence" class="text_pole wide100p textarea_compact"></div>
+                                    <textarea rows="2" id="instruct_output_sequence" class="text_pole wide100p textarea_compact"></textarea>
                                 </div>
                                 <div class="flexAuto" title="Inserted after an Assistant message." data-i18n="[title]Inserted after an Assistant message.">
                                     <small data-i18n="Assistant Suffix">Assistant Message Suffix</small>
-                                    <div contenteditable="true" id="instruct_output_suffix" class="text_pole wide100p textarea_compact"></div>
+                                    <textarea rows="2" id="instruct_output_suffix" class="text_pole wide100p textarea_compact"></textarea>
                                 </div>
                             </div>
                             <div class="flex-container">
                                 <div class="flexAuto" id="instruct_system_sequence_block" title="Inserted before a System (added by slash commands or extensions) message." data-i18n="[title]Inserted before a System (added by slash commands or extensions) message.">
                                     <small data-i18n="System Prefix">System Message Prefix</small>
-                                    <div contenteditable="true" id="instruct_system_sequence" class="text_pole textarea_compact"></div>
+                                    <textarea rows="2" id="instruct_system_sequence" class="text_pole textarea_compact"></textarea>
                                 </div>
                                 <div class="flexAuto" id="instruct_system_suffix_block" title="Inserted after a System message." data-i18n="[title]Inserted after a System message.">
                                     <small data-i18n="System Suffix">System Message Suffix</small>
-                                    <div contenteditable="true" id="instruct_system_suffix" class="text_pole wide100p textarea_compact"></div>
+                                    <textarea rows="2" id="instruct_system_suffix" class="text_pole wide100p textarea_compact"></textarea>
                                 </div>
                             </div>
                             <div class="flexBasis100p" title="If enabled, System Sequences will be the same as User Sequences." data-i18n="[title]If enabled, System Sequences will be the same as User Sequences.">
@@ -3408,37 +3408,37 @@
                             <div class="flex-container">
                                 <div class="flexAuto" title="Inserted before the first Assistant's message." data-i18n="[title]Inserted before the first Assistant's message.">
                                     <small data-i18n="First Assistant Prefix">First Assistant Prefix</small>
-                                    <div contenteditable="true" id="instruct_first_output_sequence" class="text_pole textarea_compact"></div>
+                                    <textarea rows="2" id="instruct_first_output_sequence" class="text_pole textarea_compact"></textarea>
                                 </div>
                                 <div class="flexAuto" title="Inserted before the last Assistant's message or as a last prompt line when generating an AI reply (except a neutral/system role)." data-i18n="[title]instruct_last_output_sequence">
                                     <small data-i18n="Last Assistant Prefix">Last Assistant Prefix</small>
-                                    <div contenteditable="true" id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact"></div>
+                                    <textarea rows="2" id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact"></textarea>
                                 </div>
                             </div>
                             <div class="flex-container">
                                 <div class="flexAuto" title="Inserted before the first User's message." data-i18n="[title]Inserted before the first User's message.">
                                     <small data-i18n="First User Prefix">First User Prefix</small>
-                                    <div contenteditable="true" id="instruct_first_input_sequence" class="text_pole textarea_compact"></div>
+                                    <textarea rows="2" id="instruct_first_input_sequence" class="text_pole textarea_compact"></textarea>
                                 </div>
                                 <div class="flexAuto" title="Inserted before the last User's message." data-i18n="[title]instruct_last_input_sequence">
                                     <small data-i18n="Last User Prefix">Last User Prefix</small>
-                                    <div contenteditable="true" id="instruct_last_input_sequence" class="text_pole wide100p textarea_compact"></div>
+                                    <textarea rows="2" id="instruct_last_input_sequence" class="text_pole wide100p textarea_compact"></textarea>
                                 </div>
                             </div>
                             <div class="flex-container">
                                 <div class="flexAuto" title="Will be inserted as a last prompt line when using system/neutral generation." data-i18n="[title]Will be inserted as a last prompt line when using system/neutral generation.">
                                     <small data-i18n="System Instruction Prefix">System Instruction Prefix</small>
-                                    <div contenteditable="true" id="instruct_last_system_sequence" class="text_pole textarea_compact"></div>
+                                    <textarea rows="2" id="instruct_last_system_sequence" class="text_pole textarea_compact"></textarea>
                                 </div>
                                 <div class="flexAuto" title="If a stop sequence is generated, everything past it will be removed from the output (inclusive)." data-i18n="[title]If a stop sequence is generated, everything past it will be removed from the output (inclusive).">
                                     <small data-i18n="Stop Sequence">Stop Sequence</small>
-                                    <div contenteditable="true" id="instruct_stop_sequence" class="text_pole textarea_compact"></div>
+                                    <textarea rows="2" id="instruct_stop_sequence" class="text_pole textarea_compact"></textarea>
                                 </div>
                             </div>
                             <div class="flex-container">
                                 <div class="flexAuto" title="Will be inserted at the start of the chat history if it doesn't start with a User message." data-i18n="[title]Will be inserted at the start of the chat history if it doesn't start with a User message.">
                                     <small data-i18n="User Filler Message">User Filler Message</small>
-                                    <div contenteditable="true" id="instruct_user_alignment_message" class="text_pole textarea_compact"></div>
+                                    <textarea rows="2" id="instruct_user_alignment_message" class="text_pole textarea_compact"></textarea>
                                 </div>
                             </div>
                         </div>

@@ -95,7 +95,8 @@ export async function loadInstructMode(data) {
         if (control.isCheckbox) {
             $element.prop('checked', power_user.instruct[control.property]);
         } else {
-            $element[0].innerText = (power_user.instruct[control.property]);
+            const setter = $element[0] instanceof HTMLTextAreaElement ? 'val' : 'text';
+            $element[setter](power_user.instruct[control.property]);
         }
 
         $element.on('input', async function () {
@@ -663,8 +664,8 @@ jQuery(() => {
                 if (control.isCheckbox) {
                     $element.prop('checked', power_user.instruct[control.property]).trigger('input');
                 } else {
-                    $element[0].innerText = (power_user.instruct[control.property]);
-                    $element.trigger('input');
+                    const setter = $element[0] instanceof HTMLTextAreaElement ? 'val' : 'text';
+                    $element[setter](power_user.instruct[control.property]).trigger('input');
                 }
             }
         });

@@ -3628,7 +3628,7 @@ $(document).ready(() => {
     });
 
     $('#custom_stopping_strings').on('input', function () {
-        power_user.custom_stopping_strings = getTextInputContent($(this)[0]).trim(); // b48d905 added that trim, not sure if it's still wanted after this fix
+        power_user.custom_stopping_strings = getTextInputContent($(this)[0]).trim();
         saveSettingsDebounced();
     });
 
