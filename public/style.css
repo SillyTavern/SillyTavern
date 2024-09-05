@@ -5461,4 +5461,9 @@ body:not(.movingUI) .drawer-content.maximized {
     resize: vertical;
     overflow: auto;
     min-height: 1.8em;
+    white-space: preserve-breaks;
+}
+
+div[contenteditable] br {
+    display: revert;
 }
