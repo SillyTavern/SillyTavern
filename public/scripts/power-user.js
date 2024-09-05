@@ -40,7 +40,10 @@ import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
-import { countOccurrences, debounce, delay, download, getFileText, getStringHash, isOdd, isTrueBoolean, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import {
+    countOccurrences, debounce, delay, download, getFileText, getStringHash, isOdd, isTrueBoolean, onlyUnique, resetScrollHeight,
+    shuffle, sortMoments, stringToRange, timestampToMoment, getTextInputContent
+} from './utils.js';
 import { FILTER_TYPES } from './filters.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -1746,8 +1749,8 @@ async function loadContextSettings() {
 
         // If the setting already exists, no need to duplicate it
         // TODO: Maybe check the power_user object for the setting instead of a flag?
-        $element.on('input keyup', async function () {
-            const value = control.isCheckbox ? !!$(this).prop('checked') : $(this)[0].innerText;
+        $element.on('input', async function () {
+            const value = control.isCheckbox ? !!$(this).prop('checked') : getTextInputContent($(this)[0]);
             if (control.isGlobalSetting) {
                 power_user[control.property] = value;
             } else {
@@ -3096,7 +3099,7 @@ $(document).ready(() => {
     });
 
     $('#start_reply_with').on('input', function () {
-        power_user.user_prompt_bias = String($(this)[0].innerText);
+        power_user.user_prompt_bias = getTextInputContent($(this)[0]);
         saveSettingsDebounced();
     });
 
@@ -3628,7 +3631,7 @@ $(document).ready(() => {
     });
 
     $('#custom_stopping_strings').on('input', function () {
-        power_user.custom_stopping_strings = String($(this)[0].innerText).trim();
+        power_user.custom_stopping_strings = getTextInputContent($(this)[0]).trim();
         saveSettingsDebounced();
     });
 

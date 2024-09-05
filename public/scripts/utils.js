@@ -2102,3 +2102,77 @@ export async function showFontAwesomePicker(customList = null) {
     }
     return null;
 }
+
+
+/**
+ * Retrieves the content of a textarea or contenteditable element, accounting
+ * for browser quirks around line breaks and whitespace. Plain text only.
+ * @param {HTMLElement} element The textarea or contenteditable element.
+ * @returns {string} The content of the element.
+ */
+export function getTextInputContent(element) {
+    // Don't try to use innerText on contentEditables, there are horrible bugs in Firefox
+
+    const isTextarea = element instanceof HTMLTextAreaElement;
+    if (isTextarea) {
+        return element.value;
+
+    } else if (element.isContentEditable) {
+        const clean = DOMPurify.sanitize(element.innerHTML, { ALLOWED_TAGS: ['br', 'p', 'div'] });
+        const div = document.createElement('div');
+        div.innerHTML = clean;
+        let depth = 0;
+        let textNodeCount = 0;
+        let elementNodeCount = 0;
+        let linebreakCount = 0;
+        let isSoloTopLevelBR = false;
+        function renderPlainText(node) {
+            let result = '';
+            if (node.nodeType === Node.TEXT_NODE) { //this only catches plaintext in the top level node ($element[0])
+                console.log('saw plaintext in top level div, adding text:', node.textContent);
+                result += node.textContent;
+                textNodeCount++;
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                if (node.nodeName === 'BR' && depth === 0) { // only add line breaks at the top level
+                    console.log('saw <br> in top level div, adding newline');
+                    result += '\n';
+                    linebreakCount++;
+                    if (!node.nextSibling) {
+                        isSoloTopLevelBR = true; //this only exists as auto generation from firefox when the div would be otherwise empty
+                    }
+                } else if (['P', 'DIV'].includes(node.nodeName)) { //<div> can include either text OR <br>
+                    depth++;
+                    if (node.textContent !== '') { //check for text inside divs
+                        console.log('saw text div, adding text:', node.textContent);
+                        result += node.textContent;
+                        if (node.nextSibling && //if it's not the last node
+                            node.nextSibling?.firstChild?.nodeName !== 'BR' && // and next node is not a div containing a BR
+                            node.nextSibling.nodeName !== 'BR') { //and the next node is not a plain BR
+                            console.log('saw div below, first child is:', node.nextSibling.firstChild.nodeName, 'adding newline');
+                            result += '\n';
+                            linebreakCount++;
+                        }
+                        textNodeCount++;
+                    } else if (
+                        node.firstChild.nodeName === 'BR') {
+                        console.log('saw br inside nested div; adding newline');
+                        result += '\n';
+                        linebreakCount++;
+                    }
+                    depth--;
+                }
+                elementNodeCount++;
+            }
+            return result;
+        }
+        let finalresult = Array.from(div.childNodes).map(renderPlainText).join('');
+        if (isSoloTopLevelBR) {
+            console.log('saw solo top level BR only, returning empty string');
+            finalresult = '';
+            element.innerHTML = '';
+        }
+
+        console.log('textNodeCount', textNodeCount, 'elementNodeCount', elementNodeCount, 'linebreakCount', linebreakCount);
+        return finalresult;
+    }
+}
