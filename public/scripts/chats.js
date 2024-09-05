@@ -32,6 +32,7 @@ import {
     humanFileSize,
     saveBase64AsFile,
     extractTextFromOffice,
+    getTextInputContent,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
@@ -1428,7 +1429,7 @@ jQuery(function () {
         wrapper.classList.add('height100p', 'wide100p', 'flex-container');
         wrapper.classList.add('flexFlowColumn', 'justifyCenter', 'alignitemscenter');
         const textarea = document.createElement('textarea');
-        textarea.value = String(contentEditable ? bro[0].innerText : bro.val());
+        textarea.value = getTextInputContent(bro[0]);
         textarea.classList.add('height100p', 'wide100p', 'maximized_textarea');
         bro.hasClass('monospace') && textarea.classList.add('monospace');
         textarea.addEventListener('input', function () {

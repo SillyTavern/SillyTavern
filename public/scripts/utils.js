@@ -2102,3 +2102,41 @@ export async function showFontAwesomePicker(customList = null) {
     }
     return null;
 }
+
+/**
+ * Retrieves the content of a textarea or contenteditable element, accounting
+ * for browser quirks around line breaks and whitespace. Plain text only.
+ * @param {HTMLElement} element The textarea or contenteditable element.
+ * @returns {string} The content of the element.
+ */
+export function getTextInputContent(element) {
+
+    // Don't try to use innerText on contentEditables, there are horrible bugs in Firefox
+    const isTextarea = element instanceof HTMLTextAreaElement;
+    if (isTextarea) {
+        return element.value;
+    } else if (element.isContentEditable) {
+        const clean = DOMPurify.sanitize(element.innerHTML, { ALLOWED_TAGS: ['br', 'p', 'div'] });
+        const div = document.createElement('div');
+        div.innerHTML = clean;
+
+        let depth = 0;
+        function renderPlainText(node) {
+            let result = '';
+            if (node.nodeType === Node.TEXT_NODE) {
+                result += node.textContent;
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                if (node.nodeName === 'BR' && depth === 0) { // only add line breaks at the top level
+                    result += '\n';
+                } else if (['P', 'DIV'].includes(node.nodeName)) {
+                    depth++;
+                    result += Array.from(node.childNodes).map(renderPlainText).join('') + '\n';
+                    depth--;
+                }
+            }
+            return result;
+        }
+
+        return Array.from(div.childNodes).map(renderPlainText).join('');
+    }
+}

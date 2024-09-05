@@ -7,7 +7,7 @@ import {
     power_user,
     context_presets,
 } from './power-user.js';
-import { regexFromString } from './utils.js';
+import { getTextInputContent, regexFromString } from './utils.js';
 
 /**
  * @type {any[]} Instruct mode presets.
@@ -99,7 +99,7 @@ export async function loadInstructMode(data) {
         }
 
         $element.on('input', async function () {
-            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this)[0].innerText;
+            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : getTextInputContent($(this)[0]);
             saveSettingsDebounced();
         });
 
