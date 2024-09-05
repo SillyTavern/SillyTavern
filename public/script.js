@@ -8879,9 +8879,8 @@ const isPwaMode = window.navigator.standalone;
 if (isPwaMode) { $('body').addClass('PWA'); }
 
 function doCharListDisplaySwitch() {
-    console.debug('toggling body charListGrid state');
-    $('body').toggleClass('charListGrid');
-    power_user.charListGrid = $('body').hasClass('charListGrid') ? true : false;
+    power_user.charListGrid = !power_user.charListGrid;
+    document.body.classList.toggle('charListGrid', power_user.charListGrid);
     saveSettingsDebounced();
 }
 
