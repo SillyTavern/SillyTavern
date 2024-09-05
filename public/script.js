@@ -6480,6 +6480,7 @@ export async function getSettings() {
         // Load power user settings
         await loadPowerUserSettings(settings, data);
 
+        // Apply theme toggles from power user settings
         applyPowerUserSettings();
 
         // Load character tags
@@ -10615,10 +10616,12 @@ jQuery(async function () {
             }
 
             // Set the height of "autoSetHeight" textareas within the drawer to their scroll height
-            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(async function () {
-                await resetScrollHeight($(this));
-                return;
-            });
+            if (!CSS.supports('field-sizing', 'content')) {
+                $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(async function () {
+                    await resetScrollHeight($(this));
+                    return;
+                });
+            }
 
         } else if (drawerWasOpenAlready) { //to close manually
             icon.toggleClass('closedIcon openIcon');
@@ -10690,10 +10693,12 @@ jQuery(async function () {
         $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
 
         // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
-        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(async function () {
-            await resetScrollHeight($(this));
-            return;
-        });
+        if (!CSS.supports('field-sizing', 'content')) {
+            $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(async function () {
+                await resetScrollHeight($(this));
+                return;
+            });
+        }
     });
 
     $(document).on('click', '.inline-drawer-maximize', function () {

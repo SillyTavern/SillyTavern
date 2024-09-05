@@ -1176,6 +1176,7 @@ textarea {
 textarea.autoSetHeight {
     max-height: 50vh;
     max-height: 50dvh;
+    field-sizing: content;
 }
 
 input,
@@ -5454,11 +5455,6 @@ body:not(.movingUI) .drawer-content.maximized {
     opacity: 0.7;
 }
 
-#advanced-formatting-button div[contenteditable] {
+#AdvancedFormatting .autoSetHeight {
     overflow-wrap: anywhere;
-    max-height: 50vh;
-    max-height: 50dvh;
-    resize: vertical;
-    overflow: auto;
-    min-height: 1.8em;
 }

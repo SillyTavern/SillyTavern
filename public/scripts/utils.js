@@ -2028,7 +2028,9 @@ export function toggleDrawer(drawer, expand = true) {
     }
 
     // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
-    content.querySelectorAll('textarea.autoSetHeight').forEach(resetScrollHeight);
+    if (!CSS.supports('field-sizing', 'content')) {
+        content.querySelectorAll('textarea.autoSetHeight').forEach(resetScrollHeight);
+    }
 }
 
 export async function fetchFaFile(name) {

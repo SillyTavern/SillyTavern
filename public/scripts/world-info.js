@@ -2334,7 +2334,7 @@ async function getWorldEntry(name, data, entry) {
             input.on('select2:unselect', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data], { remove: true }));
 
             select2ChoiceClickSubscribe(input, target => {
-                const key = $(target.closest('.regex-highlight')).text();
+                const key = $(target.closest('.regex-highlight, .item')).text();
                 console.debug('Editing WI key', key);
 
                 // Remove the current key from the actual selection
@@ -3813,12 +3813,12 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             }
 
             // Only use checks for recursion flags if the scan step was activated by recursion
-            if (scanState !== scan_state.RECURSION && entry.delayUntilRecursion) {
+            if (scanState !== scan_state.RECURSION && entry.delayUntilRecursion && !isSticky) {
                 log('suppressed by delay until recursion');
                 continue;
             }
 
-            if (scanState === scan_state.RECURSION && world_info_recursive && entry.excludeRecursion) {
+            if (scanState === scan_state.RECURSION && world_info_recursive && entry.excludeRecursion && !isSticky) {
                 log('suppressed by exclude recursion');
                 continue;
             }
