@@ -3813,12 +3813,12 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             }
 
             // Only use checks for recursion flags if the scan step was activated by recursion
-            if (scanState !== scan_state.RECURSION && entry.delayUntilRecursion) {
+            if (scanState !== scan_state.RECURSION && entry.delayUntilRecursion && !isSticky) {
                 log('suppressed by delay until recursion');
                 continue;
             }
 
-            if (scanState === scan_state.RECURSION && world_info_recursive && entry.excludeRecursion) {
+            if (scanState === scan_state.RECURSION && world_info_recursive && entry.excludeRecursion && !isSticky) {
                 log('suppressed by exclude recursion');
                 continue;
             }
