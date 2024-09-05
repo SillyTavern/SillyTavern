@@ -2027,8 +2027,13 @@ export function toggleDrawer(drawer, expand = true) {
         content.style.display = 'none';
     }
 
+    const chromeUaIdx = navigator.userAgent.lastIndexOf('Chrome/');
+    const chromeVersion = navigator.userAgent.substring(chromeUaIdx + 7, navigator.userAgent.indexOf('.', chromeUaIdx));
+
     // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
-    content.querySelectorAll('textarea.autoSetHeight').forEach(resetScrollHeight);
+    if (chromeUaIdx == -1 || Number(chromeVersion) < 123) {
+        content.querySelectorAll('textarea.autoSetHeight').forEach(resetScrollHeight);
+    }
 }
 
 export async function fetchFaFile(name) {

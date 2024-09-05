@@ -7,7 +7,7 @@ import {
     power_user,
     context_presets,
 } from './power-user.js';
-import { regexFromString } from './utils.js';
+import { regexFromString, resetScrollHeight } from './utils.js';
 
 /**
  * @type {any[]} Instruct mode presets.
@@ -41,6 +41,9 @@ const controls = [
     { id: 'instruct_skip_examples', property: 'skip_examples', isCheckbox: true },
     { id: 'instruct_system_same_as_user', property: 'system_same_as_user', isCheckbox: true, trigger: true },
 ];
+
+const chromeUaIdx = navigator.userAgent.lastIndexOf('Chrome/');
+const chromeVersion = navigator.userAgent.substring(chromeUaIdx + 7, navigator.userAgent.indexOf('.', chromeUaIdx));
 
 /**
  * Migrates instruct mode settings into the evergreen format.
@@ -95,11 +98,14 @@ export async function loadInstructMode(data) {
         if (control.isCheckbox) {
             $element.prop('checked', power_user.instruct[control.property]);
         } else {
-            $element[0].innerText = (power_user.instruct[control.property]);
+            $element.val(power_user.instruct[control.property]);
         }
 
         $element.on('input', async function () {
-            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this)[0].innerText;
+            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val;
+            if (chromeUaIdx == -1 || Number(chromeVersion) < 123) {
+                await resetScrollHeight($(this));
+            }
             saveSettingsDebounced();
         });
 
@@ -663,7 +669,7 @@ jQuery(() => {
                 if (control.isCheckbox) {
                     $element.prop('checked', power_user.instruct[control.property]).trigger('input');
                 } else {
-                    $element[0].innerText = (power_user.instruct[control.property]);
+                    $element.val(power_user.instruct[control.property]);
                     $element.trigger('input');
                 }
             }

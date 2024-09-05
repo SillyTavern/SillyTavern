@@ -1176,6 +1176,7 @@ textarea {
 textarea.autoSetHeight {
     max-height: 50vh;
     max-height: 50dvh;
+    field-sizing: content;
 }
 
 input,
