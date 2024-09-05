@@ -614,13 +614,13 @@ jQuery(() => {
         if (state) {
             $('#instruct_system_sequence_block').addClass('disabled');
             $('#instruct_system_suffix_block').addClass('disabled');
-            $('#instruct_system_sequence').prop('contenteditable', false);
-            $('#instruct_system_suffix').prop('contenteditable', false);
+            $('#instruct_system_sequence').prop('readOnly', true);
+            $('#instruct_system_suffix').prop('readOnly', true);
         } else {
             $('#instruct_system_sequence_block').removeClass('disabled');
             $('#instruct_system_suffix_block').removeClass('disabled');
-            $('#instruct_system_sequence').prop('contenteditable', true);
-            $('#instruct_system_suffix').prop('contenteditable', true);
+            $('#instruct_system_sequence').prop('readOnly', false);
+            $('#instruct_system_suffix').prop('readOnly', false);
         }
 
     });
