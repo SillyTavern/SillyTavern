@@ -1,3 +1,6 @@
+> [!IMPORTANT]  
+> ここに掲載されている情報は、古かったり不完全であったりする可能性があります。最新の情報は英語版をご利用ください。
+
 [English](readme.md) | [中文](readme-zh_cn.md) | 日本語 | [Русский](readme-ru_ru.md)
 
 ![SillyTavern-Banner](https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4)

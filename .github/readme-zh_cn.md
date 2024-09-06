@@ -1,3 +1,6 @@
+> [!IMPORTANT]  
+> 这里的信息可能已经过时或不完整，仅供您参考。请使用英文版本获取最新信息。
+
 [English](readme.md) | 中文 | [日本語](readme-ja_jp.md) | [Русский](readme-ru_ru.md)
 
 ![image](https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4)
