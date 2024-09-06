@@ -1308,7 +1308,7 @@ export function initDefaultSlashCommands() {
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'result',
-                description: 'if enabled, returns the popup result (as an integer) instead of the popup text. Resolves to 1 for OK and 0/null for cancel or exiting out.',
+                description: 'if enabled, returns the popup result (as an integer) instead of the popup text. Resolves to 1 for OK and 0 cancel button, empty string for exiting out.',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
                 enumList: commonEnumProviders.boolean('trueFalse')(),
                 defaultValue: 'false',
@@ -1938,7 +1938,7 @@ async function popupCallback(args, value) {
         cancelButton: args?.cancelButton !== undefined && typeof args?.cancelButton === 'string' ? args.cancelButton : null,
     };
     const result = await Popup.show.text(safeHeader, safeBody, popupOptions);
-    return String(requestedResult ? result : value);
+    return String(requestedResult ? result ?? '' : value);
 }
 
 async function getMessagesCallback(args, value) {
