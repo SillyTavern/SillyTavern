@@ -1,0 +1,9 @@
+#connection_profile_details>summary {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+#connection_profile_details ul {
+    margin: 5px 0;
+}
