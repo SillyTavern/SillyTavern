@@ -2240,7 +2240,11 @@ async function echoCallback(args, value) {
         options.onHidden = () => resolveToastDismissal(value);
     }
     if (args.onClick) {
-        options.onclick = () => args.onClick.execute();
+        if (args.onClick instanceof SlashCommandClosure) {
+            options.onclick = () => args.onClick.execute();
+        } else {
+            toastr.warning('Invalid onClick provided for /echo command. This is not a closure');
+        }
     }
 
     let toast;
