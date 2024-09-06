@@ -106,6 +106,7 @@ export const persona_description_positions = {
 };
 
 let power_user = {
+    charListGrid: false,
     tokenizer: tokenizers.BEST_MATCH,
     token_padding: 64,
     collapse_newlines: false,
@@ -1602,18 +1603,8 @@ async function loadPowerUserSettings(settings, data) {
     loadCharListState();
 }
 
-async function loadCharListState() {
-    if (document.querySelector('.character_select') !== null) {
-        console.debug('setting charlist state to...');
-        if (power_user.charListGrid === true) {
-            console.debug('..to grid');
-            $('#charListGridToggle').trigger('click');
-        } else { console.debug('..to list'); }
-    } else {
-        console.debug('charlist not ready yet');
-        await delay(100);
-        loadCharListState();
-    }
+function loadCharListState() {
+    document.body.classList.toggle('charListGrid', power_user.charListGrid);
 }
 
 function loadMovingUIState() {
