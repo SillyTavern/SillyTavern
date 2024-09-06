@@ -826,19 +826,19 @@ export function initDefaultSlashCommands() {
         ],
         helpString: `
         <div>
-            Echoes the provided text to a toast message. Useful for pipes debugging.
+            Echoes the provided text to a toast message. Can be used to display informational messages or for pipes debugging.
         </div>
         <div>
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/echo title="My Message" severity=info This is an info message</code></pre>
+                    <pre><code>/echo title="My Message" severity=warning This is a warning message</code></pre>
                 </li>
                 <li>
-                    <pre><code>/echo title="My Message" color=black This message is purple</code></pre>
+                    <pre><code>/echo color=purple This message is purple</code></pre>
                 </li>
                 <li>
-                    <pre><code>/echo onClick={: /echo escapeHtml=false color=transparent cssClass=wider_dialogue_popup <img src="/img/five.png" /> :} timeout=5000 Clicking on this message within 10 seconds will open the image.</code></pre>
+                    <pre><code>/echo onClick={: /echo escapeHtml=false color=transparent cssClass=wider_dialogue_popup &lt;img src="/img/five.png" /&gt; :} timeout=5000 Clicking on this message within 5 seconds will open the image.</code></pre>
                 </li>
             </ul>
         </div>
