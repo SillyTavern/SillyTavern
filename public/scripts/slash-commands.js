@@ -2227,7 +2227,7 @@ async function echoCallback(args, value) {
     // Make sure that the value is a string
     value = String(value);
 
-    const title = args.title ? args.title : undefined;
+    let title = args.title ? args.title : undefined;
     const severity = args.severity ? args.severity : 'info';
 
     /** @type {ToastrOptions} */
@@ -2259,6 +2259,7 @@ async function echoCallback(args, value) {
 
     // If we allow HTML, we need to sanitize it to prevent security risks
     if (!options.escapeHtml) {
+        if (title) title = DOMPurify.sanitize(title, { FORBID_TAGS: ['style'] });
         value = DOMPurify.sanitize(value, { FORBID_TAGS: ['style'] });
     }
 
