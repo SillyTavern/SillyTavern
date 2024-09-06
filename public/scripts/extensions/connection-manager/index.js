@@ -2,6 +2,7 @@ import { main_api, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { executeSlashCommandsWithOptions } from '../../slash-commands.js';
+import { uuidv4 } from '../../utils.js';
 
 const MODULE_NAME = 'connection-manager';
 
@@ -96,7 +97,7 @@ async function readProfileFromCommands(mode, profile, cleanUp = false) {
  */
 async function createConnectionProfile() {
     const mode = main_api === 'openai' ? 'cc' : 'tc';
-    const id = 'profile-' + Math.random().toString(36).substring(2);
+    const id = uuidv4();
     const profile = {
         id,
         mode,
