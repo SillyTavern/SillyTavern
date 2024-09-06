@@ -772,11 +772,6 @@ export function initDefaultSlashCommands() {
                 ],
             }),
             SlashCommandNamedArgument.fromProps({
-                name: 'cssClass',
-                description: 'additional css class to add to the toast message (e.g. for custom styling)',
-                typeList: [ARGUMENT_TYPE.STRING],
-            }),
-            SlashCommandNamedArgument.fromProps({
                 name: 'timeout',
                 description: 'time in milliseconds to display the toast message. Set this and \'extendedTimeout\' to 0 to show indefinitely until dismissed.',
                 typeList: [ARGUMENT_TYPE.NUMBER],
@@ -802,6 +797,15 @@ export function initDefaultSlashCommands() {
                 defaultValue: 'false',
                 enumList: commonEnumProviders.boolean('trueFalse')(),
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'cssClass',
+                description: 'additional css class to add to the toast message (e.g. for custom styling)',
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'color',
+                description: 'custom CSS color of the toast message. Accepts all valid CSS color values (e.g. \'red\', \'#FF0000\', \'rgb(255, 0, 0)\').<br />>Can be more customizable with the \'cssClass\' argument and custom classes.',
+            })
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -2186,7 +2190,7 @@ async function generateCallback(args, value) {
 
 /**
  *
- * @param {{title?: string, severity?: string, cssClass?: string, timeout?: string, extendedTimeout?: string, preventDuplicates?: string, awaitDismissal?: string}} args - named arguments from the slash command
+ * @param {{title?: string, severity?: string, timeout?: string, extendedTimeout?: string, preventDuplicates?: string, awaitDismissal?: string, cssClass?: string, color?: string}} args - named arguments from the slash command
  * @param {string} value - The string to echo (unnamed argument from the slash command)
  * @returns {Promise<string>} The text that was echoed
  */
@@ -2226,20 +2230,25 @@ async function echoCallback(args, value) {
         options.toastClass = args.cssClass;
     }
 
+    let toast;
     switch (severity) {
         case 'error':
-            toastr.error(value, title, options);
+            toast = toastr.error(value, title, options);
             break;
         case 'warning':
-            toastr.warning(value, title, options);
+            toast = toastr.warning(value, title, options);
             break;
         case 'success':
-            toastr.success(value, title, options);
+            toast = toastr.success(value, title, options);
             break;
         case 'info':
         default:
-            toastr.info(value, title, options);
+            toast = toastr.info(value, title, options);
             break;
+    }
+
+    if (args.color) {
+        toast.css('background-color', args.color);
     }
 
     if (awaitDismissal) {
