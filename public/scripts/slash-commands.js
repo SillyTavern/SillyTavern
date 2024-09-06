@@ -799,7 +799,7 @@ export function initDefaultSlashCommands() {
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'cssClass',
-                description: 'additional css class to add to the toast message (e.g. for custom styling)',
+                description: 'additional CSS class to add to the toast message (e.g. for custom styling)',
                 typeList: [ARGUMENT_TYPE.STRING],
             }),
             SlashCommandNamedArgument.fromProps({
