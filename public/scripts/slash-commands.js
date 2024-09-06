@@ -1274,6 +1274,12 @@ export function initDefaultSlashCommands() {
                 'wide', 'show wide popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
             ),
             new SlashCommandNamedArgument(
+                'wider', 'show wider popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
+            ),
+            new SlashCommandNamedArgument(
+                'transparent', 'show transparent popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
+            ),
+            new SlashCommandNamedArgument(
                 'okButton', 'text for the OK button', [ARGUMENT_TYPE.STRING], false,
             ),
         ],
@@ -1883,9 +1889,12 @@ async function buttonsCallback(args, text) {
 
 async function popupCallback(args, value) {
     const safeValue = DOMPurify.sanitize(value || '');
+    /** @type {import('./popup.js').PopupOptions} */
     const popupOptions = {
         large: isTrueBoolean(args?.large),
         wide: isTrueBoolean(args?.wide),
+        wider: isTrueBoolean(args?.wider),
+        transparent: isTrueBoolean(args?.transparent),
         okButton: args?.okButton !== undefined && typeof args?.okButton === 'string' ? args.okButton : 'Ok',
     };
     await delay(1);
