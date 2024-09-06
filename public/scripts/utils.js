@@ -2039,7 +2039,10 @@ export async function fetchFaFile(name) {
     document.head.append(style);
     const sheet = style.sheet;
     style.remove();
-    return [...sheet.cssRules].filter(it => it.style?.content).map(it => it.selectorText.split('::').shift().slice(1));
+    return [...sheet.cssRules]
+        .filter(rule => rule.style?.content)
+        .map(rule => rule.selectorText.split(/,\s*/).map(selector=>selector.split('::').shift().slice(1)))
+    ;
 }
 export async function fetchFa() {
     return [...new Set((await Promise.all([
@@ -2065,7 +2068,7 @@ export async function showFontAwesomePicker(customList = null) {
                 qry.placeholder = 'Filter icons';
                 qry.autofocus = true;
                 const qryDebounced = debounce(() => {
-                    const result = faList.filter(it => it.includes(qry.value));
+                    const result = faList.filter(fa => fa.find(className=>className.includes(qry.value.toLowerCase())));
                     for (const fa of faList) {
                         if (!result.includes(fa)) {
                             fas[fa].classList.add('hidden');
@@ -2086,10 +2089,10 @@ export async function showFontAwesomePicker(customList = null) {
                     fas[fa] = opt;
                     opt.classList.add('menu_button');
                     opt.classList.add('fa-solid');
-                    opt.classList.add(fa);
-                    opt.title = fa.slice(3);
+                    opt.classList.add(fa[0]);
+                    opt.title = fa.map(it=>it.slice(3)).join(', ');
                     opt.dataset.result = POPUP_RESULT.AFFIRMATIVE.toString();
-                    opt.addEventListener('click', () => value = fa);
+                    opt.addEventListener('click', () => value = fa[0]);
                     grid.append(opt);
                 }
             }

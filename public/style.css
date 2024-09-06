@@ -5453,6 +5453,7 @@ body:not(.movingUI) .drawer-content.maximized {
     content: 'No icons found';
     color: var(--SmartThemeBodyColor);
     opacity: 0.7;
+    width: max-content;
 }
 
 #AdvancedFormatting .autoSetHeight {
