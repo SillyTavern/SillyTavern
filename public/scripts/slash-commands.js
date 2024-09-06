@@ -813,6 +813,11 @@ export function initDefaultSlashCommands() {
                 defaultValue: 'true',
                 enumList: commonEnumProviders.boolean('trueFalse')(),
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'onClick',
+                description: 'a closure to call when the toast is clicked. This executed closure receives scope as provided in the script. Careful about possible side effects when manipulating variables and more.',
+                typeList: [ARGUMENT_TYPE.CLOSURE],
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -2197,7 +2202,7 @@ async function generateCallback(args, value) {
 
 /**
  *
- * @param {{title?: string, severity?: string, timeout?: string, extendedTimeout?: string, preventDuplicates?: string, awaitDismissal?: string, cssClass?: string, color?: string, escapeHtml?: string}} args - named arguments from the slash command
+ * @param {{title?: string, severity?: string, timeout?: string, extendedTimeout?: string, preventDuplicates?: string, awaitDismissal?: string, cssClass?: string, color?: string, escapeHtml?: string, onClick?: SlashCommandClosure}} args - named arguments from the slash command
  * @param {string} value - The string to echo (unnamed argument from the slash command)
  * @returns {Promise<string>} The text that was echoed
  */
@@ -2233,6 +2238,9 @@ async function echoCallback(args, value) {
 
     if (awaitDismissal) {
         options.onHidden = () => resolveToastDismissal(value);
+    }
+    if (args.onClick) {
+        options.onclick = () => args.onClick.execute();
     }
 
     let toast;
