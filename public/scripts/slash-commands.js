@@ -2251,6 +2251,11 @@ async function echoCallback(args, value) {
         }
     }
 
+    // If we allow HTML, we need to sanitize it to prevent security risks
+    if (!options.escapeHtml) {
+        value = DOMPurify.sanitize(value, { FORBID_TAGS: ['style'] });
+    }
+
     let toast;
     switch (severity) {
         case 'error':
