@@ -185,16 +185,10 @@ async function applyConnectionProfile(profile) {
 
 /**
  * Updates the selected connection profile.
+ * @param {ConnectionProfile} profile Connection profile
  * @returns {Promise<void>}
  */
-async function updateConnectionProfile() {
-    const selectedProfile = extension_settings.connectionManager.selectedProfile;
-    const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
-    if (!profile) {
-        console.log('No profile selected');
-        return;
-    }
-
+async function updateConnectionProfile(profile) {
     profile.mode = main_api === 'openai' ? 'cc' : 'tc';
     await readProfileFromCommands(profile.mode, profile, true);
 }
@@ -308,7 +302,13 @@ async function renderDetailsContent(details, detailsContent) {
 
     const updateButton = document.getElementById('update_connection_profile');
     updateButton.addEventListener('click', async () => {
-        await updateConnectionProfile();
+        const selectedProfile = extension_settings.connectionManager.selectedProfile;
+        const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
+        if (!profile) {
+            console.log('No profile selected');
+            return;
+        }
+        await updateConnectionProfile(profile);
         await renderDetailsContent(details, detailsContent);
         saveSettingsDebounced();
         toastr.success('Connection profile updated', '', { timeOut: 1500 });
