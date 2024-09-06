@@ -110,7 +110,7 @@ async function createConnectionProfile() {
     const name = await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName, { rows: 2 });
 
     if (!name) {
-        return;
+        return null;
     }
 
     profile.name = name;
@@ -296,6 +296,9 @@ async function renderDetailsContent(details, detailsContent) {
     const createButton = document.getElementById('create_connection_profile');
     createButton.addEventListener('click', async () => {
         const profile = await createConnectionProfile();
+        if (!profile) {
+            return;
+        }
         extension_settings.connectionManager.profiles.push(profile);
         extension_settings.connectionManager.selectedProfile = profile.id;
         saveSettingsDebounced();
