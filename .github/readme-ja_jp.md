@@ -76,9 +76,8 @@ Tavern は単なるフロントエンドのUIであり、必要なハードウ�
 
 ## 拡張機能
 
-SillyTavern は拡張できるようになっており、[SillyTavern Extras API](https://github.com/SillyTavern/SillyTavern-extras) でいくつかの追加AIモジュールをホストしています
+SillyTavern は拡張できるようになっており。
 
-* 作者ノート/キャラクターバイアス
 * キャラクターの感情表現（スプライト）
 * チャット履歴の自動サマリー
 * チャットに画像を送り、AI が内容を解釈する

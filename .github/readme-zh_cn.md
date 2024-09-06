@@ -73,9 +73,8 @@ SillyTavern 本身并无用处，因为它只是一个用户聊天界面。你�
 
 ## 扩展
 
-SillyTavern 支持扩展服务，一些额外的人工智能模块可通过 [SillyTavern Extras API](https://github.com/SillyTavern/SillyTavern-extras) 提供。
+SillyTavern 支持扩展服务。
 
-* 作者注释/角色偏见
 * 角色情绪识别
 * 聊天记录自动摘要
 * 在聊天窗口发送图片，并由人工智能解释图片内容
