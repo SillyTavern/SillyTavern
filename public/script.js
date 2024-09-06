@@ -8522,7 +8522,7 @@ async function selectContextCallback(_, name) {
     return foundName;
 }
 
-async function selectInstructCallback(_, name) {
+async function selectInstructCallback(args, name) {
     if (!name) {
         return power_user.instruct.preset;
     }
@@ -8536,8 +8536,9 @@ async function selectInstructCallback(_, name) {
         return '';
     }
 
+    const quiet = isTrueBoolean(args?.quiet);
     const foundName = result[0].item;
-    selectInstructPreset(foundName);
+    selectInstructPreset(foundName, quiet);
     return foundName;
 }
 
@@ -9216,6 +9217,15 @@ jQuery(async function () {
         name: 'instruct',
         callback: selectInstructCallback,
         returns: 'current template',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: 'Suppress the toast message on template change',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'instruct template name',

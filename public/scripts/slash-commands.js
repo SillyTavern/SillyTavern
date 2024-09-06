@@ -1477,6 +1477,15 @@ export function initDefaultSlashCommands() {
         name: 'model',
         callback: modelCallback,
         returns: 'current model',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: 'suppress the toast message on model change',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'model name',
@@ -3382,11 +3391,11 @@ function getModelOptions() {
 
 /**
  * Sets a model for the current API.
- * @param {object} _ Unused
+ * @param {object} args Named arguments
  * @param {string} model New model name
  * @returns {string} New or existing model name
  */
-function modelCallback(_, model) {
+function modelCallback(args, model) {
     const { control: modelSelectControl, options } = getModelOptions();
 
     // If no model was found, the reason was already logged, we just return here
@@ -3426,7 +3435,8 @@ function modelCallback(_, model) {
     if (newSelectedOption) {
         modelSelectControl.value = newSelectedOption.value;
         $(modelSelectControl).trigger('change');
-        toastr.success(`Model set to "${newSelectedOption.text}"`);
+        const quiet = isTrueBoolean(args?.quiet);
+        !quiet && toastr.success(`Model set to "${newSelectedOption.text}"`);
         return newSelectedOption.value;
     } else {
         toastr.warning(`No model found with name "${model}"`);
