@@ -2241,7 +2241,11 @@ async function echoCallback(args, value) {
     }
     if (args.onClick) {
         if (args.onClick instanceof SlashCommandClosure) {
-            options.onclick = () => args.onClick.execute();
+            options.onclick = async () => {
+                // Execute the slash command directly, with its internal scope and everything. Clear progress at the end if the main script is already done.
+                await args.onClick.execute();
+                await clearCommandProgress();
+            };
         } else {
             toastr.warning('Invalid onClick provided for /echo command. This is not a closure');
         }
