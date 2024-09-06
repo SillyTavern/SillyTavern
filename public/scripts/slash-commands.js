@@ -1908,7 +1908,9 @@ async function buttonsCallback(args, text) {
 }
 
 async function popupCallback(args, value) {
-    const safeValue = DOMPurify.sanitize(value || '');
+    const safeBody = DOMPurify.sanitize(value || '');
+    const safeHeader = args?.header && typeof args?.header === 'string' ? DOMPurify.sanitize(args.header) : null;
+
     /** @type {import('./popup.js').PopupOptions} */
     const popupOptions = {
         large: isTrueBoolean(args?.large),
@@ -1918,7 +1920,7 @@ async function popupCallback(args, value) {
         okButton: args?.okButton !== undefined && typeof args?.okButton === 'string' ? args.okButton : 'Ok',
         cancelButton: args?.cancelButton !== undefined && typeof args?.cancelButton === 'string' ? args.cancelButton : null,
     };
-    await callGenericPopup(safeValue, POPUP_TYPE.TEXT, '', popupOptions);
+    await Popup.show.text(safeHeader, safeBody, popupOptions);
     return String(value);
 }
 
