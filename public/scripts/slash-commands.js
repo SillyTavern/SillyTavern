@@ -1267,21 +1267,41 @@ export function initDefaultSlashCommands() {
         callback: popupCallback,
         returns: 'popup text',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'large', 'show large popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
-            ),
-            new SlashCommandNamedArgument(
-                'wide', 'show wide popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
-            ),
-            new SlashCommandNamedArgument(
-                'wider', 'show wider popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
-            ),
-            new SlashCommandNamedArgument(
-                'transparent', 'show transparent popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
-            ),
-            new SlashCommandNamedArgument(
-                'okButton', 'text for the OK button', [ARGUMENT_TYPE.STRING], false,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'large',
+                description: 'show large popup',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('onOff')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'wide',
+                description: 'show wide popup',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('onOff')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'wider',
+                description: 'show wider popup',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('onOff')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'transparent',
+                description: 'show transparent popup',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('onOff')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'okButton',
+                description: 'text for the OK button',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'OK',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'cancelButton',
+                description: 'text for the Cancel button',
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -1297,7 +1317,7 @@ export function initDefaultSlashCommands() {
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/popup large=on wide=on okButton="Submit" Enter some text:</code></pre>
+                    <pre><code>/popup large=on wide=on okButton="Confirm" Please confirm this action.</code></pre>
                 </li>
             </ul>
         </div>
@@ -1896,10 +1916,9 @@ async function popupCallback(args, value) {
         wider: isTrueBoolean(args?.wider),
         transparent: isTrueBoolean(args?.transparent),
         okButton: args?.okButton !== undefined && typeof args?.okButton === 'string' ? args.okButton : 'Ok',
+        cancelButton: args?.cancelButton !== undefined && typeof args?.cancelButton === 'string' ? args.cancelButton : null,
     };
-    await delay(1);
     await callGenericPopup(safeValue, POPUP_TYPE.TEXT, '', popupOptions);
-    await delay(1);
     return String(value);
 }
 
