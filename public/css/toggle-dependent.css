@@ -28,8 +28,8 @@ body.hideChatAvatars .mesAvatarWrapper .avatar {
     display: none !important;
 }
 
-body.hideChatAvatars .last_mes {
-    padding-bottom: 40px !important;
+body.hideChatAvatars .last_mes:not(.smallSysMes) {
+    padding-bottom: 20px !important;
 }
 
 body.square-avatars .avatar,
