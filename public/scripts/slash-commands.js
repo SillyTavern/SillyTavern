@@ -805,7 +805,14 @@ export function initDefaultSlashCommands() {
             SlashCommandNamedArgument.fromProps({
                 name: 'color',
                 description: 'custom CSS color of the toast message. Accepts all valid CSS color values (e.g. \'red\', \'#FF0000\', \'rgb(255, 0, 0)\').<br />>Can be more customizable with the \'cssClass\' argument and custom classes.',
-            })
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'escapeHtml',
+                description: 'whether to escape HTML in the toast message.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -2190,7 +2197,7 @@ async function generateCallback(args, value) {
 
 /**
  *
- * @param {{title?: string, severity?: string, timeout?: string, extendedTimeout?: string, preventDuplicates?: string, awaitDismissal?: string, cssClass?: string, color?: string}} args - named arguments from the slash command
+ * @param {{title?: string, severity?: string, timeout?: string, extendedTimeout?: string, preventDuplicates?: string, awaitDismissal?: string, cssClass?: string, color?: string, escapeHtml?: string}} args - named arguments from the slash command
  * @param {string} value - The string to echo (unnamed argument from the slash command)
  * @returns {Promise<string>} The text that was echoed
  */
@@ -2217,6 +2224,8 @@ async function echoCallback(args, value) {
     if (args.timeout && !isNaN(parseInt(args.timeout))) options.timeOut = parseInt(args.timeout);
     if (args.extendedTimeout && !isNaN(parseInt(args.extendedTimeout))) options.extendedTimeOut = parseInt(args.extendedTimeout);
     if (isTrueBoolean(args.preventDuplicates)) options.preventDuplicates = true;
+    if (args.cssClass) options.toastClass = args.cssClass;
+    if (args.escapeHtml !== undefined) options.escapeHtml = isTrueBoolean(args.escapeHtml);
 
     // Prepare possible await handling
     let awaitDismissal = isTrueBoolean(args.awaitDismissal);
@@ -2224,10 +2233,6 @@ async function echoCallback(args, value) {
 
     if (awaitDismissal) {
         options.onHidden = () => resolveToastDismissal(value);
-    }
-
-    if (args.cssClass) {
-        options.toastClass = args.cssClass;
     }
 
     let toast;
