@@ -834,6 +834,12 @@ export function initDefaultSlashCommands() {
                 <li>
                     <pre><code>/echo title="My Message" severity=info This is an info message</code></pre>
                 </li>
+                <li>
+                    <pre><code>/echo title="My Message" color=black This message is purple</code></pre>
+                </li>
+                <li>
+                    <pre><code>/echo onClick={: /echo escapeHtml=false color=transparent cssClass=wider_dialogue_popup <img src="/img/five.png" /> :} timeout=5000 Clicking on this message within 10 seconds will open the image.</code></pre>
+                </li>
             </ul>
         </div>
     `,
