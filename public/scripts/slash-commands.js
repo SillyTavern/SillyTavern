@@ -797,6 +797,27 @@ export function initDefaultSlashCommands() {
                 defaultValue: 'false',
                 enumList: commonEnumProviders.boolean('trueFalse')(),
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'cssClass',
+                description: 'additional CSS class to add to the toast message (e.g. for custom styling)',
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'color',
+                description: 'custom CSS color of the toast message. Accepts all valid CSS color values (e.g. \'red\', \'#FF0000\', \'rgb(255, 0, 0)\').<br />>Can be more customizable with the \'cssClass\' argument and custom classes.',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'escapeHtml',
+                description: 'whether to escape HTML in the toast message.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'onClick',
+                description: 'a closure to call when the toast is clicked. This executed closure receives scope as provided in the script. Careful about possible side effects when manipulating variables and more.',
+                typeList: [ARGUMENT_TYPE.CLOSURE],
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -805,13 +826,19 @@ export function initDefaultSlashCommands() {
         ],
         helpString: `
         <div>
-            Echoes the provided text to a toast message. Useful for pipes debugging.
+            Echoes the provided text to a toast message. Can be used to display informational messages or for pipes debugging.
         </div>
         <div>
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/echo title="My Message" severity=info This is an info message</code></pre>
+                    <pre><code>/echo title="My Message" severity=warning This is a warning message</code></pre>
+                </li>
+                <li>
+                    <pre><code>/echo color=purple This message is purple</code></pre>
+                </li>
+                <li>
+                    <pre><code>/echo onClick={: /echo escapeHtml=false color=transparent cssClass=wider_dialogue_popup &lt;img src="/img/five.png" /&gt; :} timeout=5000 Clicking on this message within 5 seconds will open the image.</code></pre>
                 </li>
             </ul>
         </div>
@@ -2181,7 +2208,7 @@ async function generateCallback(args, value) {
 
 /**
  *
- * @param {{title?: string, severity?: string, timeout?: string, extendedTimeout?: string, preventDuplicates?: string, awaitDismissal?: string}} args - named arguments from the slash command
+ * @param {{title?: string, severity?: string, timeout?: string, extendedTimeout?: string, preventDuplicates?: string, awaitDismissal?: string, cssClass?: string, color?: string, escapeHtml?: string, onClick?: SlashCommandClosure}} args - named arguments from the slash command
  * @param {string} value - The string to echo (unnamed argument from the slash command)
  * @returns {Promise<string>} The text that was echoed
  */
@@ -2200,7 +2227,7 @@ async function echoCallback(args, value) {
     // Make sure that the value is a string
     value = String(value);
 
-    const title = args.title ? args.title : undefined;
+    let title = args.title ? args.title : undefined;
     const severity = args.severity ? args.severity : 'info';
 
     /** @type {ToastrOptions} */
@@ -2208,6 +2235,8 @@ async function echoCallback(args, value) {
     if (args.timeout && !isNaN(parseInt(args.timeout))) options.timeOut = parseInt(args.timeout);
     if (args.extendedTimeout && !isNaN(parseInt(args.extendedTimeout))) options.extendedTimeOut = parseInt(args.extendedTimeout);
     if (isTrueBoolean(args.preventDuplicates)) options.preventDuplicates = true;
+    if (args.cssClass) options.toastClass = args.cssClass;
+    if (args.escapeHtml !== undefined) options.escapeHtml = isTrueBoolean(args.escapeHtml);
 
     // Prepare possible await handling
     let awaitDismissal = isTrueBoolean(args.awaitDismissal);
@@ -2216,21 +2245,43 @@ async function echoCallback(args, value) {
     if (awaitDismissal) {
         options.onHidden = () => resolveToastDismissal(value);
     }
+    if (args.onClick) {
+        if (args.onClick instanceof SlashCommandClosure) {
+            options.onclick = async () => {
+                // Execute the slash command directly, with its internal scope and everything. Clear progress handler so it doesn't interfere with command execution progress.
+                args.onClick.onProgress = null;
+                await args.onClick.execute();
+            };
+        } else {
+            toastr.warning('Invalid onClick provided for /echo command. This is not a closure');
+        }
+    }
 
+    // If we allow HTML, we need to sanitize it to prevent security risks
+    if (!options.escapeHtml) {
+        if (title) title = DOMPurify.sanitize(title, { FORBID_TAGS: ['style'] });
+        value = DOMPurify.sanitize(value, { FORBID_TAGS: ['style'] });
+    }
+
+    let toast;
     switch (severity) {
         case 'error':
-            toastr.error(value, title, options);
+            toast = toastr.error(value, title, options);
             break;
         case 'warning':
-            toastr.warning(value, title, options);
+            toast = toastr.warning(value, title, options);
             break;
         case 'success':
-            toastr.success(value, title, options);
+            toast = toastr.success(value, title, options);
             break;
         case 'info':
         default:
-            toastr.info(value, title, options);
+            toast = toastr.info(value, title, options);
             break;
+    }
+
+    if (args.color) {
+        toast.css('background-color', args.color);
     }
 
     if (awaitDismissal) {
