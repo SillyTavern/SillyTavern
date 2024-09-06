@@ -1916,17 +1916,26 @@
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <div id="kobold_horde_block">
                                 <ul>
-                                    <li data-i18n="Avoid sending sensitive information to the Horde.">
-                                        Avoid sending sensitive information to the Horde.
-                                        <a target="_blank" href="https://docs.sillytavern.app/usage/api-connections/horde/" data-i18n="Review the Privacy statement">Review the Privacy statement</a>
+                                    <li>
+                                        <a target="_blank" href="https://aihorde.net/" data-i18n="KoboldAI Horde Website">
+                                            KoboldAI Horde Website
+                                        </a>
                                     </li>
                                     <li>
-                                        <a target="_blank" href="https://horde.koboldai.net/register" data-i18n="Register a Horde account for faster queue times">Register a Horde
-                                            account for faster queue times</a>
+                                        <span data-i18n="Avoid sending sensitive information to the Horde.">Avoid sending sensitive information to the Horde.</span>
+                                        <a target="_blank" href="https://docs.sillytavern.app/usage/api-connections/horde/" data-i18n="Review the Privacy statement">
+                                            Review the Privacy statement
+                                        </a>
                                     </li>
                                     <li>
-                                        <a target="_blank" href="https://github.com/Haidra-Org/horde-worker-reGen?tab=readme-ov-file#ai-horde-worker-regen" data-i18n="Learn how to contribute your idle GPU cycles to the Horde">Learn
-                                            how to contribute your idle GPU cycles to the Horde</a>
+                                        <a target="_blank" href="https://aihorde.net/register" data-i18n="Register a Horde account for faster queue times">
+                                            Register a Horde account for faster queue times
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a target="_blank" href="https://github.com/Haidra-Org/horde-worker-reGen?tab=readme-ov-file#ai-horde-worker-regen" data-i18n="Learn how to contribute your idle GPU cycles to the Horde">
+                                            Learn how to contribute your idle GPU cycles to the Horde
+                                        </a>
                                     </li>
                                 </ul>
                                 <label for="horde_auto_adjust_context_length" class="checkbox_label">
@@ -1944,12 +1953,9 @@
                                 <small id="adjustedHordeParams">Context: --, Response: --</small>
                                 <h4 data-i18n="API key">API key</h4>
                                 <small>
-                                    <span data-i18n="Get it here:">Get it here: </span> <a target="_blank" href="https://horde.koboldai.net/register" data-i18n="Register">Register</a> (<a id="horde_kudos" href="javascript:void(0);" data-i18n="View my Kudos">View my Kudos</a>)<br>
+                                    <span data-i18n="Get it here:">Get it here: </span> <a target="_blank" href="https://aihorde.net/register" data-i18n="Register">Register</a> (<a id="horde_kudos" href="javascript:void(0);" data-i18n="View my Kudos">View my Kudos</a>)<br>
                                     <span data-i18n="Enter">Enter </span> <span class="monospace">0000000000</span> <span data-i18n="to use anonymous mode.">to use anonymous mode. </span>
                                 </small>
-                                <!-- <div>
-                                        <a id="horde_kudos" href="javascript:void(0);">View my Kudos</a>
-                                    </div> -->
                                 <div class="flex-container">
                                     <input id="horde_api_key" name="horde_api_key" class="text_pole flex1" type="text" placeholder="0000000000" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_horde"></div>
