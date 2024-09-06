@@ -133,7 +133,8 @@ async function deleteConnectionProfile() {
         return;
     }
 
-    const confirm = await Popup.show.confirm('Are you sure you want to delete the selected profile?', null);
+    const name = extension_settings.connectionManager.profiles[index].name;
+    const confirm = await Popup.show.confirm('Are you sure you want to delete the selected profile?', name);
 
     if (!confirm) {
         return;
