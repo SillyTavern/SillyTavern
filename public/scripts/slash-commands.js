@@ -1271,29 +1271,29 @@ export function initDefaultSlashCommands() {
                 name: 'large',
                 description: 'show large popup',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
-                enumList: commonEnumProviders.boolean('onOff')(),
-                defaultValue: 'off',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'false',
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'wide',
                 description: 'show wide popup',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
-                enumList: commonEnumProviders.boolean('onOff')(),
-                defaultValue: 'off',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'false',
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'wider',
                 description: 'show wider popup',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
-                enumList: commonEnumProviders.boolean('onOff')(),
-                defaultValue: 'off',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'false',
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'transparent',
                 description: 'show transparent popup',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
-                enumList: commonEnumProviders.boolean('onOff')(),
-                defaultValue: 'off',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'false',
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'okButton',
@@ -1310,14 +1310,16 @@ export function initDefaultSlashCommands() {
                 name: 'result',
                 description: 'if enabled, returns the popup result (as an integer) instead of the popup text. Resolves to 1 for OK and 0/null for cancel or exiting out.',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
-                enumList: commonEnumProviders.boolean('onOff')(),
-                defaultValue: 'off',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'false',
             }),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'text', [ARGUMENT_TYPE.STRING], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'popup text',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+            }),
         ],
         helpString: `
         <div>
@@ -1329,6 +1331,9 @@ export function initDefaultSlashCommands() {
             <ul>
                 <li>
                     <pre><code>/popup large=on wide=on okButton="Confirm" Please confirm this action.</code></pre>
+                </li>
+                <li>
+                    <pre><code>/popup okButton="Left" cancelButton="Right" result=true Do you want to go left or right? | /echo 0 means right, 1 means left. Choice: {{pipe}}</code></pre>
                 </li>
             </ul>
         </div>
