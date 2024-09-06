@@ -8543,12 +8543,12 @@ async function selectInstructCallback(args, name) {
 }
 
 async function enableInstructCallback() {
-    $('#instruct_enabled').prop('checked', true).trigger('change');
+    $('#instruct_enabled').prop('checked', true).trigger('input').trigger('change');
     return '';
 }
 
 async function disableInstructCallback() {
-    $('#instruct_enabled').prop('checked', false).trigger('change');
+    $('#instruct_enabled').prop('checked', false).trigger('input').trigger('change');
     return '';
 }
 
