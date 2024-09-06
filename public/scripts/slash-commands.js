@@ -1272,24 +1272,28 @@ export function initDefaultSlashCommands() {
                 description: 'show large popup',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
                 enumList: commonEnumProviders.boolean('onOff')(),
+                defaultValue: 'off',
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'wide',
                 description: 'show wide popup',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
                 enumList: commonEnumProviders.boolean('onOff')(),
+                defaultValue: 'off',
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'wider',
                 description: 'show wider popup',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
                 enumList: commonEnumProviders.boolean('onOff')(),
+                defaultValue: 'off',
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'transparent',
                 description: 'show transparent popup',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
                 enumList: commonEnumProviders.boolean('onOff')(),
+                defaultValue: 'off',
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'okButton',
@@ -1301,6 +1305,13 @@ export function initDefaultSlashCommands() {
                 name: 'cancelButton',
                 description: 'text for the Cancel button',
                 typeList: [ARGUMENT_TYPE.STRING],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'result',
+                description: 'if enabled, returns the popup result (as an integer) instead of the popup text. Resolves to 1 for OK and 0/null for cancel or exiting out.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('onOff')(),
+                defaultValue: 'off',
             }),
         ],
         unnamedArgumentList: [
@@ -1910,6 +1921,7 @@ async function buttonsCallback(args, text) {
 async function popupCallback(args, value) {
     const safeBody = DOMPurify.sanitize(value || '');
     const safeHeader = args?.header && typeof args?.header === 'string' ? DOMPurify.sanitize(args.header) : null;
+    const requestedResult = isTrueBoolean(args?.result);
 
     /** @type {import('./popup.js').PopupOptions} */
     const popupOptions = {
@@ -1920,8 +1932,8 @@ async function popupCallback(args, value) {
         okButton: args?.okButton !== undefined && typeof args?.okButton === 'string' ? args.okButton : 'Ok',
         cancelButton: args?.cancelButton !== undefined && typeof args?.cancelButton === 'string' ? args.cancelButton : null,
     };
-    await Popup.show.text(safeHeader, safeBody, popupOptions);
-    return String(value);
+    const result = await Popup.show.text(safeHeader, safeBody, popupOptions);
+    return String(requestedResult ? result : value);
 }
 
 async function getMessagesCallback(args, value) {
