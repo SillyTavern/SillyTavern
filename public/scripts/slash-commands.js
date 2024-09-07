@@ -1532,7 +1532,7 @@ export function initDefaultSlashCommands() {
             SlashCommandArgument.fromProps({
                 description: 'model name',
                 typeList: [ARGUMENT_TYPE.STRING],
-                enumProvider: () => getModelOptions()?.options.map(option => new SlashCommandEnumValue(option.value, option.value !== option.text ? option.text : null)),
+                enumProvider: () => getModelOptions(true)?.options?.map(option => new SlashCommandEnumValue(option.value, option.value !== option.text ? option.text : null)) ?? [],
             }),
         ],
         helpString: 'Sets the model for the current API. Gets the current model name if no argument is provided.',
@@ -3383,10 +3383,12 @@ function setBackgroundCallback(_, bg) {
 
 /**
  * Retrieves the available model options based on the currently selected main API and its subtype
+ * @param {boolean} quiet - Whether to suppress toasts
  *
  * @returns {{control: HTMLSelectElement, options: HTMLOptionElement[]}?} An array of objects representing the available model options, or null if not supported
  */
-function getModelOptions() {
+function getModelOptions(quiet) {
+    const nullResult = { control: null, options: null };
     const modelSelectMap = [
         { id: 'model_togetherai_select', api: 'textgenerationwebui', type: textgen_types.TOGETHERAI },
         { id: 'openrouter_model', api: 'textgenerationwebui', type: textgen_types.OPENROUTER },
@@ -3420,7 +3422,7 @@ function getModelOptions() {
             case 'openai':
                 return oai_settings.chat_completion_source;
             default:
-                return null;
+                return nullResult;
         }
     }
 
@@ -3428,15 +3430,15 @@ function getModelOptions() {
     const modelSelectItem = modelSelectMap.find(x => x.api == main_api && x.type == apiSubType)?.id;
 
     if (!modelSelectItem) {
-        toastr.info('Setting a model for your API is not supported or not implemented yet.');
-        return null;
+        !quiet && toastr.info('Setting a model for your API is not supported or not implemented yet.');
+        return nullResult;
     }
 
     const modelSelectControl = document.getElementById(modelSelectItem);
 
     if (!(modelSelectControl instanceof HTMLSelectElement)) {
-        toastr.error(`Model select control not found: ${main_api}[${apiSubType}]`);
-        return null;
+        !quiet && toastr.error(`Model select control not found: ${main_api}[${apiSubType}]`);
+        return nullResult;
     }
 
     const options = Array.from(modelSelectControl.options);
@@ -3450,7 +3452,8 @@ function getModelOptions() {
  * @returns {string} New or existing model name
  */
 function modelCallback(args, model) {
-    const { control: modelSelectControl, options } = getModelOptions();
+    const quiet = isTrueBoolean(args?.quiet);
+    const { control: modelSelectControl, options } = getModelOptions(quiet);
 
     // If no model was found, the reason was already logged, we just return here
     if (options === null) {
@@ -3458,7 +3461,7 @@ function modelCallback(args, model) {
     }
 
     if (!options.length) {
-        toastr.warning('No model options found. Check your API settings.');
+        !quiet && toastr.warning('No model options found. Check your API settings.');
         return '';
     }
 
@@ -3489,11 +3492,10 @@ function modelCallback(args, model) {
     if (newSelectedOption) {
         modelSelectControl.value = newSelectedOption.value;
         $(modelSelectControl).trigger('change');
-        const quiet = isTrueBoolean(args?.quiet);
         !quiet && toastr.success(`Model set to "${newSelectedOption.text}"`);
         return newSelectedOption.value;
     } else {
-        toastr.warning(`No model found with name "${model}"`);
+        !quiet && toastr.warning(`No model found with name "${model}"`);
         return '';
     }
 }
