@@ -354,6 +354,13 @@ async function renderDetailsContent(detailsContent) {
     const profiles = document.getElementById('connection_profiles');
     renderConnectionProfiles(profiles);
 
+    function toggleProfileSpecificButtons() {
+        const profileId = extension_settings.connectionManager.selectedProfile;
+        const profileSpecificButtons = ['update_connection_profile', 'reload_connection_profile', 'delete_connection_profile'];
+        profileSpecificButtons.forEach(id => document.getElementById(id).classList.toggle('disabled', !profileId));
+    }
+    toggleProfileSpecificButtons();
+
     profiles.addEventListener('change', async function () {
         const selectedProfile = profiles.selectedOptions[0];
         if (!selectedProfile) {
@@ -366,6 +373,8 @@ async function renderDetailsContent(detailsContent) {
         extension_settings.connectionManager.selectedProfile = profileId;
         saveSettingsDebounced();
         await renderDetailsContent(detailsContent);
+
+        toggleProfileSpecificButtons();
 
         // None option selected
         if (!profileId) {
