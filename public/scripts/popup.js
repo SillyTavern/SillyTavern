@@ -92,7 +92,7 @@ const showPopupHelper = {
      * @param {string?} header - The header text for the popup.
      * @param {string?} text - The main text for the popup.
      * @param {PopupOptions} [popupOptions={}] - Options for the popup.
-     * @return {Promise<POPUP_RESULT>} A Promise that resolves with the result of the user's interaction.
+     * @return {Promise<POPUP_RESULT?>} A Promise that resolves with the result of the user's interaction.
      */
     confirm: async (header, text, popupOptions = {}) => {
         const content = PopupUtils.BuildTextWithHeader(header, text);
@@ -107,7 +107,7 @@ const showPopupHelper = {
      * @param {string?} header - The header text for the popup.
      * @param {string?} text - The main text for the popup.
      * @param {PopupOptions} [popupOptions={}] - Options for the popup.
-     * @return {Promise<POPUP_RESULT>} A Promise that resolves with the result of the user's interaction.
+     * @return {Promise<POPUP_RESULT?>} A Promise that resolves with the result of the user's interaction.
      */
     text: async (header, text, popupOptions = {}) => {
         const content = PopupUtils.BuildTextWithHeader(header, text);

@@ -1267,20 +1267,59 @@ export function initDefaultSlashCommands() {
         callback: popupCallback,
         returns: 'popup text',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'large', 'show large popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
-            ),
-            new SlashCommandNamedArgument(
-                'wide', 'show wide popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, commonEnumProviders.boolean('onOff')(),
-            ),
-            new SlashCommandNamedArgument(
-                'okButton', 'text for the OK button', [ARGUMENT_TYPE.STRING], false,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'large',
+                description: 'show large popup',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'false',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'wide',
+                description: 'show wide popup',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'false',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'wider',
+                description: 'show wider popup',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'false',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'transparent',
+                description: 'show transparent popup',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'false',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'okButton',
+                description: 'text for the OK button',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'OK',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'cancelButton',
+                description: 'text for the Cancel button',
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'result',
+                description: 'if enabled, returns the popup result (as an integer) instead of the popup text. Resolves to 1 for OK and 0 cancel button, empty string for exiting out.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'false',
+            }),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'text', [ARGUMENT_TYPE.STRING], true,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'popup text',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+            }),
         ],
         helpString: `
         <div>
@@ -1291,7 +1330,10 @@ export function initDefaultSlashCommands() {
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/popup large=on wide=on okButton="Submit" Enter some text:</code></pre>
+                    <pre><code>/popup large=on wide=on okButton="Confirm" Please confirm this action.</code></pre>
+                </li>
+                <li>
+                    <pre><code>/popup okButton="Left" cancelButton="Right" result=true Do you want to go left or right? | /echo 0 means right, 1 means left. Choice: {{pipe}}</code></pre>
                 </li>
             </ul>
         </div>
@@ -1572,6 +1614,13 @@ export function initDefaultSlashCommands() {
                 description: 'Whether to auto-connect to the API after setting the URL',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
                 defaultValue: 'true',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: 'suppress the toast message on API change',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
                 enumList: commonEnumProviders.boolean('trueFalse')(),
             }),
         ],
@@ -1882,16 +1931,21 @@ async function buttonsCallback(args, text) {
 }
 
 async function popupCallback(args, value) {
-    const safeValue = DOMPurify.sanitize(value || '');
+    const safeBody = DOMPurify.sanitize(value || '');
+    const safeHeader = args?.header && typeof args?.header === 'string' ? DOMPurify.sanitize(args.header) : null;
+    const requestedResult = isTrueBoolean(args?.result);
+
+    /** @type {import('./popup.js').PopupOptions} */
     const popupOptions = {
         large: isTrueBoolean(args?.large),
         wide: isTrueBoolean(args?.wide),
+        wider: isTrueBoolean(args?.wider),
+        transparent: isTrueBoolean(args?.transparent),
         okButton: args?.okButton !== undefined && typeof args?.okButton === 'string' ? args.okButton : 'Ok',
+        cancelButton: args?.cancelButton !== undefined && typeof args?.cancelButton === 'string' ? args.cancelButton : null,
     };
-    await delay(1);
-    await callGenericPopup(safeValue, POPUP_TYPE.TEXT, '', popupOptions);
-    await delay(1);
-    return String(value);
+    const result = await Popup.show.text(safeHeader, safeBody, popupOptions);
+    return String(requestedResult ? result ?? '' : value);
 }
 
 async function getMessagesCallback(args, value) {
@@ -3530,10 +3584,12 @@ function setPromptEntryCallback(args, targetState) {
  * @param {object} args - named args
  * @param {string?} [args.api=null] - the API name to set/get the URL for
  * @param {string?} [args.connect=true] - whether to connect to the API after setting
+ * @param {string?} [args.quiet=false] - whether to suppress toasts
  * @param {string} url - the API URL to set
  * @returns {Promise<string>}
  */
-async function setApiUrlCallback({ api = null, connect = 'true' }, url) {
+async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false' }, url) {
+    const isQuiet = isTrueBoolean(quiet);
     const autoConnect = isTrueBoolean(connect);
 
     // Special handling for Chat Completion Custom OpenAI compatible, that one can also support API url handling
@@ -3582,22 +3638,26 @@ async function setApiUrlCallback({ api = null, connect = 'true' }, url) {
 
     // Do some checks and get the api type we are targeting with this command
     if (api && !Object.values(textgen_types).includes(api)) {
-        toastr.warning(`API '${api}' is not a valid text_gen API.`);
+        !isQuiet && toastr.warning(`API '${api}' is not a valid text_gen API.`);
         return '';
     }
     if (!api && !Object.values(textgen_types).includes(textgenerationwebui_settings.type)) {
-        toastr.warning(`API '${textgenerationwebui_settings.type}' is not a valid text_gen API.`);
+        !isQuiet && toastr.warning(`API '${textgenerationwebui_settings.type}' is not a valid text_gen API.`);
+        return '';
+    }
+    if (!api && main_api !== 'textgenerationwebui') {
+        !isQuiet && toastr.warning(`API type '${main_api}' does not support setting the server URL.`);
         return '';
     }
     if (api && url && autoConnect && api !== textgenerationwebui_settings.type) {
-        toastr.warning(`API '${api}' is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.`);
+        !isQuiet && toastr.warning(`API '${api}' is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.`);
         return '';
     }
     const type = api || textgenerationwebui_settings.type;
 
     const inputSelector = SERVER_INPUTS[type];
     if (!inputSelector) {
-        toastr.warning(`API '${type}' does not have a server url input.`);
+        !isQuiet && toastr.warning(`API '${type}' does not have a server url input.`);
         return '';
     }
 
