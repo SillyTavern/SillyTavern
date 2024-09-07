@@ -10082,7 +10082,7 @@ jQuery(async function () {
     });
 
     $('#main_api').change(function () {
-        cancelStatusCheck("Canceled because main api changed");
+        cancelStatusCheck('Canceled because main api changed');
         changeMainAPI();
         saveSettingsDebounced();
     });

@@ -67,7 +67,7 @@ class ConnectionManagerSpinner {
     constructor() {
         // @ts-ignore
         this.spinnerElement = document.getElementById('connection_profile_spinner');
-        this.abortController =  new AbortController();
+        this.abortController = new AbortController();
     }
 
     start() {
@@ -318,21 +318,21 @@ function renderConnectionProfiles(profiles) {
 
 /**
  * Renders the content of the details element.
- * @param {HTMLDetailsElement} details Details element
  * @param {HTMLElement} detailsContent Content element of the details
  */
-async function renderDetailsContent(details, detailsContent) {
+async function renderDetailsContent(detailsContent) {
     detailsContent.innerHTML = '';
-    if (details.open) {
-        const selectedProfile = extension_settings.connectionManager.selectedProfile;
-        const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
-        if (profile) {
-            const profileForDisplay = makeFancyProfile(profile);
-            const template = await renderExtensionTemplateAsync(MODULE_NAME, 'view', { profile: profileForDisplay });
-            detailsContent.innerHTML = template;
-        } else {
-            detailsContent.textContent = 'No profile selected';
-        }
+    if (detailsContent.classList.contains('hidden')) {
+        return;
+    }
+    const selectedProfile = extension_settings.connectionManager.selectedProfile;
+    const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
+    if (profile) {
+        const profileForDisplay = makeFancyProfile(profile);
+        const template = await renderExtensionTemplateAsync(MODULE_NAME, 'view', { profile: profileForDisplay });
+        detailsContent.innerHTML = template;
+    } else {
+        detailsContent.textContent = 'No profile selected';
     }
 }
 
@@ -365,7 +365,7 @@ async function renderDetailsContent(details, detailsContent) {
         const profileId = selectedProfile.value;
         extension_settings.connectionManager.selectedProfile = profileId;
         saveSettingsDebounced();
-        await renderDetailsContent(details, detailsContent);
+        await renderDetailsContent(detailsContent);
 
         // None option selected
         if (!profileId) {
@@ -393,7 +393,7 @@ async function renderDetailsContent(details, detailsContent) {
             return;
         }
         await applyConnectionProfile(profile);
-        await renderDetailsContent(details, detailsContent);
+        await renderDetailsContent(detailsContent);
         await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
         toastr.success('Connection profile reloaded', '', { timeOut: 1500 });
     });
@@ -408,7 +408,7 @@ async function renderDetailsContent(details, detailsContent) {
         extension_settings.connectionManager.selectedProfile = profile.id;
         saveSettingsDebounced();
         renderConnectionProfiles(profiles);
-        await renderDetailsContent(details, detailsContent);
+        await renderDetailsContent(detailsContent);
         await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
     });
 
@@ -421,7 +421,7 @@ async function renderDetailsContent(details, detailsContent) {
             return;
         }
         await updateConnectionProfile(profile);
-        await renderDetailsContent(details, detailsContent);
+        await renderDetailsContent(detailsContent);
         saveSettingsDebounced();
         await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
         toastr.success('Connection profile updated', '', { timeOut: 1500 });
@@ -431,15 +431,18 @@ async function renderDetailsContent(details, detailsContent) {
     deleteButton.addEventListener('click', async () => {
         await deleteConnectionProfile();
         renderConnectionProfiles(profiles);
-        await renderDetailsContent(details, detailsContent);
+        await renderDetailsContent(detailsContent);
         await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, NONE);
     });
 
-    /** @type {HTMLDetailsElement} */
-    // @ts-ignore
-    const details = document.getElementById('connection_profile_details');
+    /** @type {HTMLElement} */
+    const viewDetails = document.getElementById('view_connection_profile');
     const detailsContent = document.getElementById('connection_profile_details_content');
-    details.addEventListener('toggle', () => renderDetailsContent(details, detailsContent));
+    viewDetails.addEventListener('click', async () => {
+        viewDetails.classList.toggle('active');
+        detailsContent.classList.toggle('hidden');
+        await renderDetailsContent(detailsContent);
+    });
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'profile',
@@ -529,7 +532,7 @@ async function renderDetailsContent(details, detailsContent) {
             extension_settings.connectionManager.selectedProfile = profile.id;
             saveSettingsDebounced();
             renderConnectionProfiles(profiles);
-            await renderDetailsContent(details, detailsContent);
+            await renderDetailsContent(detailsContent);
             return profile.name;
         },
     }));
@@ -545,7 +548,7 @@ async function renderDetailsContent(details, detailsContent) {
                 return '';
             }
             await updateConnectionProfile(profile);
-            await renderDetailsContent(details, detailsContent);
+            await renderDetailsContent(detailsContent);
             saveSettingsDebounced();
             return profile.name;
         },
