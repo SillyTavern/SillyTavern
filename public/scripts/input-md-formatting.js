@@ -53,8 +53,21 @@ export function initInputMarkdown() {
 
             if (selectedTextandPossibleFormatting === charsToAdd + selectedText + charsToAdd) {
                 // If the selected text is already formatted, remove the formatting
+
+                let expandedStart = start - charsToAdd.length;
+                let expandedEnd = end + charsToAdd.length;
+
+                // Ensure expanded range is within the bounds of the text
+                if (expandedStart < 0) expandedStart = 0;
+                if (expandedEnd > textarea.value.length) expandedEnd = textarea.value.length;
+
+                // Select the expanded range
+                textarea.setSelectionRange(expandedStart, expandedEnd);
+
+                // Replace the expanded selection with the original selected text
+                document.execCommand('insertText', false, selectedText);
+                // Adjust cursor position
                 cursorShift = -charsToAdd.length;
-                textarea.setRangeText(selectedText, start - possiblePreviousFormattingMargin, end + possiblePreviousFormattingMargin, 'end');
             } else {
                 // Add formatting to the selected text
                 let possibleAddedSpace = '';
@@ -63,11 +76,14 @@ export function initInputMarkdown() {
                     selectedText = selectedText.substring(0, selectedText.length - 1);
                     end--; // Adjust the end index since we removed the space
                 }
-                textarea.setRangeText(charsToAdd + selectedText + charsToAdd + possibleAddedSpace, start, end, 'end');
+                // To add the formatting, we need to select the text first
+                textarea.focus();
+                document.execCommand('insertText', false, charsToAdd + selectedText + charsToAdd + possibleAddedSpace);
             }
         } else {
             // No text is selected, insert the characters at the cursor position
-            textarea.setRangeText(charsToAdd + charsToAdd, start, start, 'end');
+            textarea.focus();
+            document.execCommand('insertText', false, charsToAdd + charsToAdd);
         }
 
         // Manually trigger the 'input' event to make undo/redo work
