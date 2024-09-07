@@ -647,6 +647,20 @@ function getSeparator(n) {
     return '='.repeat(n);
 }
 
+/**
+ * Checks if the string is a valid URL.
+ * @param {string} url String to check
+ * @returns {boolean} If the URL is valid
+ */
+function isValidUrl(url) {
+    try {
+        new URL(url);
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -676,4 +690,5 @@ module.exports = {
     makeHttp2Request,
     removeColorFormatting,
     getSeparator,
+    isValidUrl,
 };

@@ -590,6 +590,9 @@ function calculateOpenRouterCost() {
 export function getCurrentOpenRouterModelTokenizer() {
     const modelId = textgen_settings.openrouter_model;
     const model = openRouterModels.find(x => x.id === modelId);
+    if (modelId?.includes('jamba')) {
+        return tokenizers.JAMBA;
+    }
     switch (model?.architecture?.tokenizer) {
         case 'Llama2':
             return tokenizers.LLAMA;
@@ -603,6 +606,10 @@ export function getCurrentOpenRouterModelTokenizer() {
             return tokenizers.GEMMA;
         case 'Claude':
             return tokenizers.CLAUDE;
+        case 'Cohere':
+            return tokenizers.COMMAND_R;
+        case 'Qwen':
+            return tokenizers.QWEN2;
         default:
             return tokenizers.OPENAI;
     }
