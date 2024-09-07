@@ -182,6 +182,10 @@ body.movingUI ::-webkit-scrollbar-thumb:vertical {
     min-width: 40px;
 }
 
+::-webkit-scrollbar-corner {
+    background-color: transparent;
+}
+
 table.responsiveTable {
     width: 100%;
     margin: 10px 0;
@@ -4673,10 +4677,6 @@ body:not(.sd) .mes_img_swipes {
     padding: 10px;
     height: 100%;
     width: 100%;
-}
-
-.img_enlarged_holder::-webkit-scrollbar-corner {
-    background-color: transparent;
 }
 
 .img_enlarged_container pre code {
