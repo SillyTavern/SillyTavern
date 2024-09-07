@@ -49,6 +49,48 @@ const FANCY_NAMES = {
     'tokenizer': 'Tokenizer',
 };
 
+/**
+ * A wrapper for the connection manager spinner.
+ */
+class ConnectionManagerSpinner {
+    /**
+     * @type {AbortController[]}
+     */
+    static abortControllers = [];
+
+    /** @type {HTMLElement} */
+    spinnerElement;
+
+    /** @type {AbortController} */
+    abortController = new AbortController();
+
+    constructor() {
+        // @ts-ignore
+        this.spinnerElement = document.getElementById('connection_profile_spinner');
+        this.abortController =  new AbortController();
+    }
+
+    start() {
+        ConnectionManagerSpinner.abortControllers.push(this.abortController);
+        this.spinnerElement.classList.remove('hidden');
+    }
+
+    stop() {
+        this.spinnerElement.classList.add('hidden');
+    }
+
+    isAborted() {
+        return this.abortController.signal.aborted;
+    }
+
+    static abort() {
+        for (const controller of ConnectionManagerSpinner.abortControllers) {
+            controller.abort();
+        }
+        ConnectionManagerSpinner.abortControllers = [];
+    }
+}
+
 /** @type {() => SlashCommandEnumValue[]} */
 const profilesProvider = () => [
     new SlashCommandEnumValue(NONE),
@@ -214,10 +256,19 @@ async function applyConnectionProfile(profile) {
         return;
     }
 
+    // Abort any ongoing profile application
+    ConnectionManagerSpinner.abort();
+
     const mode = profile.mode;
     const commands = mode === 'cc' ? CC_COMMANDS : TC_COMMANDS;
+    const spinner = new ConnectionManagerSpinner();
+    spinner.start();
 
     for (const command of commands) {
+        if (spinner.isAborted()) {
+            throw new Error('Profile application aborted');
+        }
+
         const argument = profile[command];
         if (!argument) {
             continue;
@@ -226,9 +277,11 @@ async function applyConnectionProfile(profile) {
         try {
             await executeSlashCommandsWithOptions(commandText, { handleParserErrors: false, handleExecutionErrors: false });
         } catch (error) {
-            console.warn(`Failed to execute command: ${commandText}`, error);
+            console.error(`Failed to execute command: ${commandText}`, error);
         }
     }
+
+    spinner.stop();
 }
 
 /**
