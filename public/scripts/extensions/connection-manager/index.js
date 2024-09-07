@@ -52,7 +52,7 @@ const FANCY_NAMES = {
 /** @type {() => SlashCommandEnumValue[]} */
 const profilesProvider = () => [
     new SlashCommandEnumValue(NONE, NONE),
-    ...extension_settings.connectionManager.profiles.map(p => new SlashCommandEnumValue(p.name, p.name, enumTypes.name, enumIcons.server)),
+    ...extension_settings.connectionManager.profiles.map(p => new SlashCommandEnumValue(p.name, null, enumTypes.name, enumIcons.server)),
 ];
 
 /**
@@ -309,6 +309,11 @@ async function renderDetailsContent(details, detailsContent) {
         saveSettingsDebounced();
         await renderDetailsContent(details, detailsContent);
 
+        // None option selected
+        if (!profileId) {
+            return;
+        }
+
         const profile = extension_settings.connectionManager.profiles.find(p => p.id === profileId);
 
         if (!profile) {
@@ -455,11 +460,13 @@ async function renderDetailsContent(details, detailsContent) {
             const selectedProfile = extension_settings.connectionManager.selectedProfile;
             const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
             if (!profile) {
+                toastr.warning('No profile selected.');
                 return '';
             }
             await updateConnectionProfile(profile);
             await renderDetailsContent(details, detailsContent);
             saveSettingsDebounced();
+            return profile.name;
         },
     }));
 
