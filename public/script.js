@@ -242,6 +242,7 @@ import { INTERACTABLE_CONTROL_CLASS, initKeyboard } from './scripts/keyboard.js'
 import { initDynamicStyles } from './scripts/dynamic-styles.js';
 import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
+import { AbortReason } from './scripts/util/AbortReason.js';
 
 //exporting functions and vars for mods
 export {
@@ -462,6 +463,7 @@ export const event_types = {
     LLM_FUNCTION_TOOL_CALL: 'llm_function_tool_call',
     ONLINE_STATUS_CHANGED: 'online_status_changed',
     IMAGE_SWIPED: 'image_swiped',
+    CONNECTION_PROFILE_LOADED: 'connection_profile_loaded',
 };
 
 export const eventSource = new EventEmitter();
@@ -977,8 +979,8 @@ async function fixViewport() {
     document.body.style.position = '';
 }
 
-function cancelStatusCheck() {
-    abortStatusCheck?.abort();
+function cancelStatusCheck(reason = 'Manually cancelled status check') {
+    abortStatusCheck?.abort(new AbortReason(reason));
     abortStatusCheck = new AbortController();
     setOnlineStatus('no_connection');
 }
@@ -1228,7 +1230,12 @@ async function getStatusTextgen() {
             toastr.error(data.response, 'API Error', { timeOut: 5000, preventDuplicates: true });
         }
     } catch (err) {
-        console.error('Error getting status', err);
+        if (err instanceof AbortReason) {
+            console.info('Status check aborted.', err.reason);
+        } else {
+            console.error('Error getting status', err);
+
+        }
         setOnlineStatus('no_connection');
     }
 
@@ -8519,7 +8526,7 @@ async function selectContextCallback(args, name) {
     }
 
     const foundName = result[0].item;
-    selectContextPreset(foundName, quiet);
+    selectContextPreset(foundName, { quiet: quiet });
     return foundName;
 }
 
@@ -8539,7 +8546,7 @@ async function selectInstructCallback(args, name) {
     }
 
     const foundName = result[0].item;
-    selectInstructPreset(foundName, quiet);
+    selectInstructPreset(foundName, { quiet: quiet });
     return foundName;
 }
 
@@ -9316,7 +9323,7 @@ jQuery(async function () {
         $('#groupCurrentMemberListToggle .inline-drawer-icon').trigger('click');
     }, 200);
 
-    $(document).on('click', '.api_loading', cancelStatusCheck);
+    $(document).on('click', '.api_loading', () => cancelStatusCheck('Canceled because connecting was manually canceled'));
 
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
     let S_TAPreviouslyFocused = false;
@@ -10075,7 +10082,7 @@ jQuery(async function () {
     });
 
     $('#main_api').change(function () {
-        cancelStatusCheck();
+        cancelStatusCheck('Canceled because main api changed');
         changeMainAPI();
         saveSettingsDebounced();
     });
