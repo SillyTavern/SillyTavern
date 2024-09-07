@@ -59,11 +59,9 @@ async function getExistingChatNames() {
 
 async function getBookmarkName() {
     const chatNames = await getExistingChatNames();
-    const popupText = `<h3>Enter the checkpoint name:<h3>
-    <small>Leave empty to auto-generate.</small>`;
-    let name = await callPopup(popupText, 'input');
 
-    if (name === false) {
+    let name = await Popup.show.input('Create Checkpoint', '<span class="margin-right-10px">Enter Checkpoint Name:</span><small>(Leave empty to auto-generate)</small>');
+    if (name === null) {
         return null;
     }
     else if (name === '') {
@@ -190,16 +188,13 @@ async function createNewBookmark(mesId) {
     }
 
     if (lastMes.extra.bookmark_link) {
-        const confirm = await callPopup('Checkpoint for the last message already exists. Would you like to replace it?', 'confirm');
-
+        const confirm = await Popup.show.confirm('Replace Checkpoint', 'Checkpoint for the last message already exists.<br />Would you like to replace it?');
         if (!confirm) {
             return;
         }
     }
 
-    await delay(250);
     let name = await getBookmarkName();
-
     if (!name) {
         return;
     }
