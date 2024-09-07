@@ -147,11 +147,16 @@ async function createConnectionProfile(forceName = null) {
 
     const profileForDisplay = makeFancyProfile(profile);
     const template = await renderExtensionTemplateAsync(MODULE_NAME, 'profile', { profile: profileForDisplay });
-    const checkName = (n) => extension_settings.connectionManager.profiles.some(p => p.name === n);
-    const suggestedName = getUniqueName(collapseSpaces(`${profile.api ?? ''} ${profile.model ?? ''} - ${profile.preset ?? ''}`), checkName);
+    const isNameTaken = (n) => extension_settings.connectionManager.profiles.some(p => p.name === n);
+    const suggestedName = getUniqueName(collapseSpaces(`${profile.api ?? ''} ${profile.model ?? ''} - ${profile.preset ?? ''}`), isNameTaken);
     const name = forceName ?? await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName, { rows: 2 });
 
     if (!name) {
+        return null;
+    }
+
+    if (isNameTaken(name)) {
+        toastr.error('A profile with the same name already exists.');
         return null;
     }
 
