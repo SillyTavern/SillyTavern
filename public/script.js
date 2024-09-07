@@ -2102,6 +2102,7 @@ function getMessageFromTemplate({
     tokenCount && mes.find('.tokenCounterDisplay').text(`${tokenCount}t`);
     title && mes.attr('title', title);
     timerValue && mes.find('.mes_timer').attr('title', timerTitle).text(timerValue);
+    bookmarkLink && mes.find('.mes_bookmark').attr('title', `Checkpoint\n${bookmarkLink}\n\n${mes.find('.mes_bookmark').data('tooltip')}`);
 
     if (power_user.timestamp_model_icon && extra?.api) {
         insertSVGIcon(mes, extra);
