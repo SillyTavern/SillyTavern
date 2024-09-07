@@ -2,83 +2,85 @@ export function initInputMarkdown() {
 
     $('.mdHotkeys').on('keydown', function (e) {
 
-        //early return on only control or no control
+        // Ensure that the element is a textarea
+        let textarea = this;
+        if (!(textarea instanceof HTMLTextAreaElement)) {
+            return;
+        }
+
+        // Early return on only control or no control
         if (e.key === 'Control' || !e.ctrlKey) {
             return;
         }
+
         let charsToAdd = '';
         let possiblePreviousFormattingMargin = 1;
-        //ctrl+B to add markdown bold (double asterisks)
-        if (e.ctrlKey && e.code === 'KeyB') {
-            charsToAdd = '**';
-            possiblePreviousFormattingMargin = 2;
-        }
-        //ctrl+I for markdown italics (single asterisk)
-        if (e.ctrlKey && e.code === 'KeyI') { charsToAdd = '*'; }
-        //ctrl+U for markdown underline (two underscores)
-        if (e.ctrlKey && e.code === 'KeyU') {
-            e.preventDefault(); //needed for ctrl+u which opens 'view page source' in chrome, but other problems could exist in other browsers
-            charsToAdd = '__';
-            possiblePreviousFormattingMargin = 2;
-        }
-        //ctrl+shift+backquote for markdown strikethrough (two tildes)
-        if (e.ctrlKey && e.shiftKey && e.code === 'Backquote') {
-            charsToAdd = '~~';
-            possiblePreviousFormattingMargin = 2;
-        }
-        //ctrl+backquote for markdown inline code (two backticks)
-        if (e.ctrlKey && e.code === 'Backquote') {
-            e.preventDefault(); //needed for ctrl+` which 'swaps to previous tab' on chrome
-            charsToAdd = '``';
-        }
 
-        if (charsToAdd !== '') {
-            console.log('Chars to add: ', charsToAdd);
+        switch (true) {
+            case e.ctrlKey && e.shiftKey && e.code === 'Backquote':
+                charsToAdd = '~~';
+                possiblePreviousFormattingMargin = 2;
+                break;
+            case e.ctrlKey && e.code === 'KeyB':
+                charsToAdd = '**';
+                possiblePreviousFormattingMargin = 2;
+                break;
+            case e.ctrlKey && e.code === 'KeyI':
+                charsToAdd = '*';
+                break;
+            case e.ctrlKey && e.code === 'KeyU':
+                e.preventDefault(); // Prevent Ctrl+U from opening 'view page source'
+                charsToAdd = '__';
+                possiblePreviousFormattingMargin = 2;
+                break;
+            case e.ctrlKey && e.code === 'Backquote':
+                e.preventDefault(); // Prevent Ctrl+` from switching tabs in Chrome
+                charsToAdd = '``';
+                break;
+            default:
+                return; // Early return if no key matches
         }
 
         let selectedText = '';
-        let start = $(this).prop('selectionStart');
-        let end = $(this).prop('selectionEnd');
-        let textareaFullValue = String($(this).val());
-        let newFullValue = '';
+        let start = textarea.selectionStart;
+        let end = textarea.selectionEnd;
         let isTextSelected = (start !== end);
         let cursorShift = charsToAdd.length;
 
-        if (isTextSelected) { //if text selected surround it with the appropriate characters
-            selectedText = String(textareaFullValue.substring(start, end));
+        if (isTextSelected) {
+            selectedText = textarea.value.substring(start, end);
+            let selectedTextandPossibleFormatting = textarea.value.substring(start - possiblePreviousFormattingMargin, end + possiblePreviousFormattingMargin).trim();
 
-            let selectedTextandPossibleFormatting = String(textareaFullValue.substring(start - possiblePreviousFormattingMargin, end + possiblePreviousFormattingMargin)).trim();
             if (selectedTextandPossibleFormatting === charsToAdd + selectedText + charsToAdd) {
-                //if the selected text is already formatted, remove the formatting
+                // If the selected text is already formatted, remove the formatting
                 cursorShift = -charsToAdd.length;
-                newFullValue = textareaFullValue.substring(0, start - possiblePreviousFormattingMargin) + selectedText + textareaFullValue.substring(end + possiblePreviousFormattingMargin);
+                textarea.setRangeText(selectedText, start - possiblePreviousFormattingMargin, end + possiblePreviousFormattingMargin, 'end');
             } else {
-                //adding formatting to selected text
+                // Add formatting to the selected text
                 let possibleAddedSpace = '';
                 if (selectedText.endsWith(' ')) {
                     possibleAddedSpace = ' ';
                     selectedText = selectedText.substring(0, selectedText.length - 1);
-                    end--;
+                    end--; // Adjust the end index since we removed the space
                 }
-                //if the selected text is not formatted, add the formatting
-                newFullValue = textareaFullValue.substring(0, start) + charsToAdd + selectedText + charsToAdd + possibleAddedSpace + textareaFullValue.substring(end);
+                textarea.setRangeText(charsToAdd + selectedText + charsToAdd + possibleAddedSpace, start, end, 'end');
             }
         } else {
-            //if there is no selected, add the characters at the cursor position
-            newFullValue = textareaFullValue.substring(0, $(this).prop('selectionStart')) + charsToAdd + charsToAdd + textareaFullValue.substring($(this).prop('selectionStart'));
+            // No text is selected, insert the characters at the cursor position
+            textarea.setRangeText(charsToAdd + charsToAdd, start, start, 'end');
         }
 
-        $(this).val(newFullValue);
+        // Manually trigger the 'input' event to make undo/redo work
+        let event = new Event('input', { bubbles: true });
+        textarea.dispatchEvent(event); // This notifies the browser of a change, allowing undo/redo to function.
 
-        //set the cursor position
+        // Update the cursor position
         if (isTextSelected) {
-            $(this).prop('selectionStart', start + cursorShift);
-            $(this).prop('selectionEnd', start + cursorShift + selectedText.length);
+            textarea.selectionStart = start + cursorShift;
+            textarea.selectionEnd = start + cursorShift + selectedText.length;
         } else {
-            $(this).prop('selectionStart', start + cursorShift);
-            $(this).prop('selectionEnd', start + cursorShift);
+            textarea.selectionStart = start + cursorShift;
+            textarea.selectionEnd = start + cursorShift;
         }
-
     });
 }
-
