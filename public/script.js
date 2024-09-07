@@ -10563,7 +10563,14 @@ jQuery(async function () {
         await duplicateCharacter();
     });
 
-    $(document).on('click', '.select_chat_block, .bookmark_link, .mes_bookmark', async function () {
+    $(document).on('click', '.select_chat_block, .bookmark_link, .mes_bookmark', async function (e) {
+        // If shift is held down, we are not following the bookmark, but creating a new one
+        if (e.shiftKey) {
+            var selectedMesId = $(this).closest('.mes').attr('mesid');
+            createNewBookmark(selectedMesId);
+            return;
+        }
+
         let file_name = $(this).hasClass('mes_bookmark')
             ? $(this).closest('.mes').attr('bookmark_link')
             : $(this).attr('file_name').replace('.jsonl', '');
