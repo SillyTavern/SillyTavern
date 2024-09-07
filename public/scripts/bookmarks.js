@@ -24,6 +24,7 @@ import {
     saveGroupBookmarkChat,
     selected_group,
 } from './group-chats.js';
+import { hideLoader, showLoader } from './loader.js';
 import { Popup } from './popup.js';
 import { createTagMapFromList } from './tags.js';
 
@@ -212,11 +213,21 @@ async function createNewBookmark(mesId) {
     lastMes.extra['bookmark_link'] = name;
 
     const mes = $(`.mes[mesid="${mesId}"]`);
-    mes.attr('bookmark_link', name);
-    mes.find('.mes_bookmark').attr('title', `Checkpoint${name}\n\n${(mes.find('.mes_bookmark')).data('tooltip')}`);
+    updateBookmarkDisplay(mes, name);
 
     await saveChatConditional();
     toastr.success('Click the flag icon next to the message to open the checkpoint chat.', 'Checkpoint created', { timeOut: 10000 });
+}
+
+
+/**
+ * Updates the display of the bookmark on a chat message.
+ * @param {JQuery<HTMLElement>} mes - The message element
+ * @param {string?} [newBookmarkLink=null] - The new bookmark link (optional)
+ */
+export function updateBookmarkDisplay(mes, newBookmarkLink = null) {
+    newBookmarkLink && mes.attr('bookmark_link', newBookmarkLink);
+    mes.find('.mes_bookmark').attr('title', `Checkpoint\n${mes.attr('bookmark_link')}\n\n${mes.find('.mes_bookmark').data('tooltip')}`);
 }
 
 async function backToMainChat() {
@@ -349,8 +360,76 @@ async function convertSoloToGroupChat() {
     toastr.success('The chat has been successfully converted!');
 }
 
+/**
+ * Creates a new branch from the message with the given ID
+ * @param {number} mesId Message ID
+ * @returns {Promise<string>} Branch file name
+ */
+async function branchChat(mesId) {
+    if (this_chid === undefined && !selected_group) {
+        toastr.info('No character selected.', 'Branch creation aborted');
+        return;
+    }
+
+    const fileName = await createBranch(mesId);
+    await saveItemizedPrompts(fileName);
+
+    if (selected_group) {
+        await openGroupChat(selected_group, fileName);
+    } else {
+        await openCharacterChat(fileName);
+    }
+
+    return fileName;
+}
+
 jQuery(function () {
     $('#option_new_bookmark').on('click', saveBookmarkMenu);
     $('#option_back_to_main').on('click', backToMainChat);
     $('#option_convert_to_group').on('click', convertSoloToGroupChat);
+
+    $(document).on('click', '.select_chat_block, .bookmark_link, .mes_bookmark', async function (e) {
+        // If shift is held down, we are not following the bookmark, but creating a new one
+        if (e.shiftKey) {
+            var selectedMesId = $(this).closest('.mes').attr('mesid');
+            createNewBookmark(selectedMesId);
+            return;
+        }
+
+        let file_name = $(this).hasClass('mes_bookmark')
+            ? $(this).closest('.mes').attr('bookmark_link')
+            : $(this).attr('file_name').replace('.jsonl', '');
+
+        if (!file_name) {
+            return;
+        }
+
+        try {
+            showLoader();
+            if (selected_group) {
+                await openGroupChat(selected_group, file_name);
+            } else {
+                await openCharacterChat(file_name);
+            }
+        } finally {
+            hideLoader();
+        }
+
+        $('#shadow_select_chat_popup').css('display', 'none');
+        $('#load_select_chat_div').css('display', 'block');
+    });
+
+    $(document).on('click', '.mes_create_bookmark', async function () {
+        var selected_mes_id = $(this).closest('.mes').attr('mesid');
+        if (selected_mes_id !== undefined) {
+            createNewBookmark(selected_mes_id);
+        }
+    });
+
+    $(document).on('click', '.mes_create_branch', async function () {
+        var selected_mes_id = $(this).closest('.mes').attr('mesid');
+        if (selected_mes_id !== undefined) {
+            branchChat(Number(selected_mes_id));
+        }
+    });
 });

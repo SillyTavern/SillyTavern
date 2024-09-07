@@ -117,9 +117,8 @@ import {
 } from './scripts/nai-settings.js';
 
 import {
-    createNewBookmark,
     showBookmarksButtons,
-    createBranch,
+    updateBookmarkDisplay,
 } from './scripts/bookmarks.js';
 
 import {
@@ -2102,7 +2101,7 @@ function getMessageFromTemplate({
     tokenCount && mes.find('.tokenCounterDisplay').text(`${tokenCount}t`);
     title && mes.attr('title', title);
     timerValue && mes.find('.mes_timer').attr('title', timerTitle).text(timerValue);
-    bookmarkLink && mes.find('.mes_bookmark').attr('title', `Checkpoint\n${bookmarkLink}\n\n${mes.find('.mes_bookmark').data('tooltip')}`);
+    bookmarkLink && updateBookmarkDisplay(mes);
 
     if (power_user.timestamp_model_icon && extra?.api) {
         insertSVGIcon(mes, extra);
@@ -8220,29 +8219,6 @@ function swipe_left() {      // when we swipe left..but no generation.
     }
 }
 
-/**
- * Creates a new branch from the message with the given ID
- * @param {number} mesId Message ID
- * @returns {Promise<string>} Branch file name
- */
-async function branchChat(mesId) {
-    if (this_chid === undefined && !selected_group) {
-        toastr.info('No character selected.', 'Branch creation aborted');
-        return;
-    }
-
-    const fileName = await createBranch(mesId);
-    await saveItemizedPrompts(fileName);
-
-    if (selected_group) {
-        await openGroupChat(selected_group, fileName);
-    } else {
-        await openCharacterChat(fileName);
-    }
-
-    return fileName;
-}
-
 // when we click swipe right button
 const swipe_right = () => {
     if (chat.length - 1 === Number(this_edit_mes_id)) {
@@ -10546,51 +10522,6 @@ jQuery(async function () {
 
     $('#dupe_button').click(async function () {
         await duplicateCharacter();
-    });
-
-    $(document).on('click', '.select_chat_block, .bookmark_link, .mes_bookmark', async function (e) {
-        // If shift is held down, we are not following the bookmark, but creating a new one
-        if (e.shiftKey) {
-            var selectedMesId = $(this).closest('.mes').attr('mesid');
-            createNewBookmark(selectedMesId);
-            return;
-        }
-
-        let file_name = $(this).hasClass('mes_bookmark')
-            ? $(this).closest('.mes').attr('bookmark_link')
-            : $(this).attr('file_name').replace('.jsonl', '');
-
-        if (!file_name) {
-            return;
-        }
-
-        try {
-            showLoader();
-            if (selected_group) {
-                await openGroupChat(selected_group, file_name);
-            } else {
-                await openCharacterChat(file_name);
-            }
-        } finally {
-            hideLoader();
-        }
-
-        $('#shadow_select_chat_popup').css('display', 'none');
-        $('#load_select_chat_div').css('display', 'block');
-    });
-
-    $(document).on('click', '.mes_create_bookmark', async function () {
-        var selected_mes_id = $(this).closest('.mes').attr('mesid');
-        if (selected_mes_id !== undefined) {
-            createNewBookmark(selected_mes_id);
-        }
-    });
-
-    $(document).on('click', '.mes_create_branch', async function () {
-        var selected_mes_id = $(this).closest('.mes').attr('mesid');
-        if (selected_mes_id !== undefined) {
-            branchChat(Number(selected_mes_id));
-        }
     });
 
     $(document).on('click', '.mes_stop', function () {
