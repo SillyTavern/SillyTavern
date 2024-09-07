@@ -2,9 +2,15 @@ import { main_api, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { executeSlashCommandsWithOptions } from '../../slash-commands.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { SlashCommandArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { uuidv4 } from '../../utils.js';
 
 const MODULE_NAME = 'connection-manager';
+const NONE = '<None>';
 
 const DEFAULT_SETTINGS = {
     profiles: [],
@@ -42,6 +48,12 @@ const FANCY_NAMES = {
     'context': 'Context Template',
     'tokenizer': 'Tokenizer',
 };
+
+/** @type {() => SlashCommandEnumValue[]} */
+const profilesProvider = () => [
+    new SlashCommandEnumValue(NONE, NONE),
+    ...extension_settings.connectionManager.profiles.map(p => new SlashCommandEnumValue(p.name, p.name, enumTypes.name, enumIcons.server)),
+];
 
 /**
  * @typedef {Object} ConnectionProfile
@@ -209,7 +221,7 @@ function renderConnectionProfiles(profiles) {
     const noneOption = document.createElement('option');
 
     noneOption.value = '';
-    noneOption.textContent = '<None>';
+    noneOption.textContent = NONE;
     noneOption.selected = !extension_settings.connectionManager.selectedProfile;
     profiles.appendChild(noneOption);
 
@@ -333,4 +345,54 @@ async function renderDetailsContent(details, detailsContent) {
     const details = document.getElementById('connection_profile_details');
     const detailsContent = document.getElementById('connection_profile_details_content');
     details.addEventListener('toggle', () => renderDetailsContent(details, detailsContent));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'profile',
+        helpString: 'Switch to a connection profile or return the name of the current profile in no argument is provided. Use <code>&lt;None&gt;</code> to switch to no profile.',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Name of the connection profile',
+                enumProvider: profilesProvider,
+                isRequired: false,
+            }),
+        ],
+        callback: async (_args, value) => {
+            if (!value || typeof value !== 'string') {
+                const selectedProfile = extension_settings.connectionManager.selectedProfile;
+                const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
+                if (!profile) {
+                    return NONE;
+                }
+                return profile.name;
+            }
+
+            if (value === NONE) {
+                profiles.selectedIndex = 0;
+                profiles.dispatchEvent(new Event('change'));
+                return NONE;
+            }
+
+            // Try to find exact match
+            const profile = extension_settings.connectionManager.profiles.find(p => p.name === value);
+
+            if (profile) {
+                profiles.selectedIndex = Array.from(profiles.options).findIndex(o => o.value === profile.id);
+                profiles.dispatchEvent(new Event('change'));
+                return profile.name;
+            }
+
+            // Try to find fuzzy match
+            const fuse = new Fuse(extension_settings.connectionManager.profiles, { keys: ['name'] });
+            const results = fuse.search(value);
+
+            if (results.length === 0) {
+                return '';
+            }
+
+            const bestMatch = results[0];
+            profiles.value = bestMatch.item.id;
+            profiles.dispatchEvent(new Event('change'));
+            return bestMatch.item.name;
+        },
+    }));
 })();
