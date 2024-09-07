@@ -75,6 +75,31 @@ const collapseSpaces = (s) => s.replace(/\s+/g, ' ').trim();
 const makeUnique = (s, f, i) => { if (!f(s)) { return s; } else { while (f(`${s} (${i})`)) { i++; } return `${s} (${i})`; } };
 
 /**
+ * Finds the best match for the search value.
+ * @param {string} value Search value
+ * @returns {ConnectionProfile|null} Best match or null
+ */
+function findProfileByName(value) {
+    // Try to find exact match
+    const profile = extension_settings.connectionManager.profiles.find(p => p.name === value);
+
+    if (profile) {
+        return profile;
+    }
+
+    // Try to find fuzzy match
+    const fuse = new Fuse(extension_settings.connectionManager.profiles, { keys: ['name'] });
+    const results = fuse.search(value);
+
+    if (results.length === 0) {
+        return null;
+    }
+
+    const bestMatch = results[0];
+    return bestMatch.item;
+}
+
+/**
  * Reads the connection profile from the commands.
  * @param {string} mode Mode of the connection profile
  * @param {ConnectionProfile} profile Connection profile
@@ -374,27 +399,16 @@ async function renderDetailsContent(details, detailsContent) {
                 return NONE;
             }
 
-            // Try to find exact match
-            const profile = extension_settings.connectionManager.profiles.find(p => p.name === value);
+            const profile = findProfileByName(value);
 
-            if (profile) {
-                profiles.selectedIndex = Array.from(profiles.options).findIndex(o => o.value === profile.id);
-                profiles.dispatchEvent(new Event('change'));
-                return profile.name;
-            }
-
-            // Try to find fuzzy match
-            const fuse = new Fuse(extension_settings.connectionManager.profiles, { keys: ['name'] });
-            const results = fuse.search(value);
-
-            if (results.length === 0) {
+            if (!profile) {
                 return '';
             }
 
-            const bestMatch = results[0];
-            profiles.value = bestMatch.item.id;
+            profiles.selectedIndex = Array.from(profiles.options).findIndex(o => o.value === profile.id);
             profiles.dispatchEvent(new Event('change'));
-            return bestMatch.item.name;
+
+            return profiles.name;
         },
     }));
 
@@ -446,6 +460,35 @@ async function renderDetailsContent(details, detailsContent) {
             await updateConnectionProfile(profile);
             await renderDetailsContent(details, detailsContent);
             saveSettingsDebounced();
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'profile-get',
+        helpString: 'Get the details of the connection profile. Returns the selected profile if no argument is provided.',
+        returns: 'object of the selected profile',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Name of the connection profile',
+                enumProvider: profilesProvider,
+                isRequired: false,
+            }),
+        ],
+        callback: async (_args, value) => {
+            if (!value || typeof value !== 'string') {
+                const selectedProfile = extension_settings.connectionManager.selectedProfile;
+                const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
+                if (!profile) {
+                    return '';
+                }
+                return JSON.stringify(profile);
+            }
+
+            const profile = findProfileByName(value);
+            if (!profile) {
+                return '';
+            }
+            return JSON.stringify(profile);
         },
     }));
 })();
