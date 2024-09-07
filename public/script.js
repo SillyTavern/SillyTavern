@@ -462,6 +462,7 @@ export const event_types = {
     LLM_FUNCTION_TOOL_CALL: 'llm_function_tool_call',
     ONLINE_STATUS_CHANGED: 'online_status_changed',
     IMAGE_SWIPED: 'image_swiped',
+    CONNECTION_PROFILE_LOADED: 'connection_profile_loaded',
 };
 
 export const eventSource = new EventEmitter();

@@ -1,13 +1,13 @@
-import { main_api, saveSettingsDebounced } from '../../../script.js';
+import { event_types, eventSource, main_api, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { executeSlashCommandsWithOptions } from '../../slash-commands.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument } from '../../slash-commands/SlashCommandArgument.js';
-import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
-import { collapseSpaces, getUniqueName, uuidv4 } from '../../utils.js';
+import { collapseSpaces, getUniqueName, isFalseBoolean, uuidv4 } from '../../utils.js';
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
@@ -51,7 +51,7 @@ const FANCY_NAMES = {
 
 /** @type {() => SlashCommandEnumValue[]} */
 const profilesProvider = () => [
-    new SlashCommandEnumValue(NONE, NONE),
+    new SlashCommandEnumValue(NONE),
     ...extension_settings.connectionManager.profiles.map(p => new SlashCommandEnumValue(p.name, null, enumTypes.name, enumIcons.server)),
 ];
 
@@ -155,7 +155,7 @@ async function createConnectionProfile(forceName = null) {
         return null;
     }
 
-    if (isNameTaken(name)) {
+    if (isNameTaken(name) || name === NONE) {
         toastr.error('A profile with the same name already exists.');
         return null;
     }
@@ -304,6 +304,8 @@ async function renderDetailsContent(details, detailsContent) {
     profiles.addEventListener('change', async function () {
         const selectedProfile = profiles.selectedOptions[0];
         if (!selectedProfile) {
+            // Safety net for preventing the command getting stuck
+            await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, NONE);
             return;
         }
 
@@ -314,6 +316,7 @@ async function renderDetailsContent(details, detailsContent) {
 
         // None option selected
         if (!profileId) {
+            await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, NONE);
             return;
         }
 
@@ -325,6 +328,7 @@ async function renderDetailsContent(details, detailsContent) {
         }
 
         await applyConnectionProfile(profile);
+        await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
     });
 
     const reloadButton = document.getElementById('reload_connection_profile');
@@ -337,6 +341,7 @@ async function renderDetailsContent(details, detailsContent) {
         }
         await applyConnectionProfile(profile);
         await renderDetailsContent(details, detailsContent);
+        await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
         toastr.success('Connection profile reloaded', '', { timeOut: 1500 });
     });
 
@@ -351,6 +356,7 @@ async function renderDetailsContent(details, detailsContent) {
         saveSettingsDebounced();
         renderConnectionProfiles(profiles);
         await renderDetailsContent(details, detailsContent);
+        await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
     });
 
     const updateButton = document.getElementById('update_connection_profile');
@@ -364,6 +370,7 @@ async function renderDetailsContent(details, detailsContent) {
         await updateConnectionProfile(profile);
         await renderDetailsContent(details, detailsContent);
         saveSettingsDebounced();
+        await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
         toastr.success('Connection profile updated', '', { timeOut: 1500 });
     });
 
@@ -372,6 +379,7 @@ async function renderDetailsContent(details, detailsContent) {
         await deleteConnectionProfile();
         renderConnectionProfiles(profiles);
         await renderDetailsContent(details, detailsContent);
+        await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, NONE);
     });
 
     /** @type {HTMLDetailsElement} */
@@ -391,7 +399,17 @@ async function renderDetailsContent(details, detailsContent) {
                 isRequired: false,
             }),
         ],
-        callback: async (_args, value) => {
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'await',
+                description: 'Wait for the connection profile to be applied before returning.',
+                isRequired: false,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        callback: async (args, value) => {
             if (!value || typeof value !== 'string') {
                 const selectedProfile = extension_settings.connectionManager.selectedProfile;
                 const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
@@ -413,8 +431,15 @@ async function renderDetailsContent(details, detailsContent) {
                 return '';
             }
 
+            const shouldAwait = !isFalseBoolean(String(args?.await));
+            const awaitPromise = new Promise((resolve) => eventSource.once(event_types.CONNECTION_PROFILE_LOADED, resolve));
+
             profiles.selectedIndex = Array.from(profiles.options).findIndex(o => o.value === profile.id);
             profiles.dispatchEvent(new Event('change'));
+
+            if (shouldAwait) {
+                await awaitPromise;
+            }
 
             return profile.name;
         },
