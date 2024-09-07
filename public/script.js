@@ -8503,22 +8503,23 @@ for (const chatCompletionSource of Object.values(chat_completion_sources)) {
     };
 }
 
-async function selectContextCallback(_, name) {
+async function selectContextCallback(args, name) {
     if (!name) {
         return power_user.context.preset;
     }
 
+    const quiet = isTrueBoolean(args?.quiet);
     const contextNames = context_presets.map(preset => preset.name);
     const fuse = new Fuse(contextNames);
     const result = fuse.search(name);
 
     if (result.length === 0) {
-        toastr.warning(`Context template "${name}" not found`);
+        !quiet && toastr.warning(`Context template "${name}" not found`);
         return '';
     }
 
     const foundName = result[0].item;
-    selectContextPreset(foundName);
+    selectContextPreset(foundName, quiet);
     return foundName;
 }
 
@@ -8527,16 +8528,16 @@ async function selectInstructCallback(args, name) {
         return power_user.instruct.preset;
     }
 
+    const quiet = isTrueBoolean(args?.quiet);
     const instructNames = instruct_presets.map(preset => preset.name);
     const fuse = new Fuse(instructNames);
     const result = fuse.search(name);
 
     if (result.length === 0) {
-        toastr.warning(`Instruct template "${name}" not found`);
+        !quiet && toastr.warning(`Instruct template "${name}" not found`);
         return '';
     }
 
-    const quiet = isTrueBoolean(args?.quiet);
     const foundName = result[0].item;
     selectInstructPreset(foundName, quiet);
     return foundName;
@@ -9282,6 +9283,15 @@ jQuery(async function () {
         name: 'context',
         callback: selectContextCallback,
         returns: 'template name',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: 'Suppress the toast message on template change',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'context template name',
