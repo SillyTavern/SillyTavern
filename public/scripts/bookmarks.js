@@ -6,7 +6,6 @@ import {
     this_chid,
     openCharacterChat,
     chat_metadata,
-    callPopup,
     getRequestHeaders,
     getThumbnailUrl,
     getCharacters,
@@ -29,14 +28,8 @@ import { Popup } from './popup.js';
 import { createTagMapFromList } from './tags.js';
 
 import {
-    delay,
     getUniqueName,
 } from './utils.js';
-
-export {
-    createNewBookmark,
-    showBookmarksButtons,
-};
 
 const bookmarkNameToken = 'Checkpoint #';
 
@@ -95,7 +88,7 @@ function getMainChatName() {
     return null;
 }
 
-function showBookmarksButtons() {
+export function showBookmarksButtons() {
     try {
         if (selected_group) {
             $('#option_convert_to_group').hide();
@@ -130,10 +123,10 @@ async function saveBookmarkMenu() {
         return;
     }
 
-    return createNewBookmark(chat.length - 1);
+    return await createNewBookmark(chat.length - 1);
 }
 
-export async function createBranch(mesId) {
+async function createBranch(mesId) {
     if (!chat.length) {
         toastr.warning('The chat is empty.', 'Branch creation failed');
         return;
@@ -166,7 +159,7 @@ export async function createBranch(mesId) {
     return name;
 }
 
-async function createNewBookmark(mesId) {
+export async function createNewBookmark(mesId) {
     if (this_chid === undefined && !selected_group) {
         toastr.info('No character selected.', 'Checkpoint creation aborted');
         return;
@@ -243,7 +236,7 @@ async function backToMainChat() {
     }
 }
 
-async function convertSoloToGroupChat() {
+export async function convertSoloToGroupChat() {
     if (selected_group) {
         console.log('Already in group. No need for conversion');
         return;
@@ -270,6 +263,7 @@ async function convertSoloToGroupChat() {
     const activationStrategy = group_activation_strategy.NATURAL;
     const allowSelfResponses = false;
     const favChecked = character.fav || character.fav == 'true';
+    /** @type {any} */
     const metadata = Object.assign({}, chat_metadata);
     delete metadata.main_chat;
 
@@ -365,7 +359,7 @@ async function convertSoloToGroupChat() {
  * @param {number} mesId Message ID
  * @returns {Promise<string>} Branch file name
  */
-async function branchChat(mesId) {
+export async function branchChat(mesId) {
     if (this_chid === undefined && !selected_group) {
         toastr.info('No character selected.', 'Branch creation aborted');
         return;
@@ -392,7 +386,7 @@ jQuery(function () {
         // If shift is held down, we are not following the bookmark, but creating a new one
         if (e.shiftKey) {
             var selectedMesId = $(this).closest('.mes').attr('mesid');
-            createNewBookmark(selectedMesId);
+            await createNewBookmark(selectedMesId);
             return;
         }
 
@@ -412,7 +406,7 @@ jQuery(function () {
                 await openCharacterChat(file_name);
             }
         } finally {
-            hideLoader();
+            await hideLoader();
         }
 
         $('#shadow_select_chat_popup').css('display', 'none');
@@ -422,14 +416,14 @@ jQuery(function () {
     $(document).on('click', '.mes_create_bookmark', async function () {
         var selected_mes_id = $(this).closest('.mes').attr('mesid');
         if (selected_mes_id !== undefined) {
-            createNewBookmark(selected_mes_id);
+            await createNewBookmark(selected_mes_id);
         }
     });
 
     $(document).on('click', '.mes_create_branch', async function () {
         var selected_mes_id = $(this).closest('.mes').attr('mesid');
         if (selected_mes_id !== undefined) {
-            branchChat(Number(selected_mes_id));
+            await branchChat(Number(selected_mes_id));
         }
     });
 });
