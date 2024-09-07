@@ -7,7 +7,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument } from '../../slash-commands/SlashC
 import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
-import { uuidv4 } from '../../utils.js';
+import { collapseSpaces, getUniqueName, uuidv4 } from '../../utils.js';
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
@@ -71,8 +71,6 @@ const profilesProvider = () => [
  */
 
 const escapeArgument = (a) => a.replace(/"/g, '\\"').replace(/\|/g, '\\|');
-const collapseSpaces = (s) => s.replace(/\s+/g, ' ').trim();
-const makeUnique = (s, f, i) => { if (!f(s)) { return s; } else { while (f(`${s} (${i})`)) { i++; } return `${s} (${i})`; } };
 
 /**
  * Finds the best match for the search value.
@@ -150,7 +148,7 @@ async function createConnectionProfile(forceName = null) {
     const profileForDisplay = makeFancyProfile(profile);
     const template = await renderExtensionTemplateAsync(MODULE_NAME, 'profile', { profile: profileForDisplay });
     const checkName = (n) => extension_settings.connectionManager.profiles.some(p => p.name === n);
-    const suggestedName = makeUnique(collapseSpaces(`${profile.api ?? ''} ${profile.model ?? ''} - ${profile.preset ?? ''}`), checkName, 1);
+    const suggestedName = getUniqueName(collapseSpaces(`${profile.api ?? ''} ${profile.model ?? ''} - ${profile.preset ?? ''}`), checkName);
     const name = forceName ?? await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName, { rows: 2 });
 
     if (!name) {
