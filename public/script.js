@@ -242,6 +242,7 @@ import { INTERACTABLE_CONTROL_CLASS, initKeyboard } from './scripts/keyboard.js'
 import { initDynamicStyles } from './scripts/dynamic-styles.js';
 import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
+import { initInputMarkdown } from './scripts/input-md-formatting.js';
 
 //exporting functions and vars for mods
 export {
@@ -965,6 +966,7 @@ async function firstLoadInit() {
     initStats();
     initCfg();
     initLogprobs();
+    initInputMarkdown();
     doDailyExtensionUpdatesCheck();
     await hideLoader();
     await fixViewport();
