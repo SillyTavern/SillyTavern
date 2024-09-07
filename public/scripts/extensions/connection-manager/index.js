@@ -14,6 +14,7 @@ const DEFAULT_SETTINGS = {
 const COMMON_COMMANDS = [
     'api',
     'preset',
+    'api-url',
     'model',
 ];
 
@@ -32,6 +33,7 @@ const TC_COMMANDS = [
 
 const FANCY_NAMES = {
     'api': 'API',
+    'api-url': 'Server URL',
     'preset': 'Settings Preset',
     'model': 'Model',
     'proxy': 'Proxy Preset',
@@ -57,6 +59,8 @@ const FANCY_NAMES = {
  */
 
 const escapeArgument = (a) => a.replace(/"/g, '\\"').replace(/\|/g, '\\|');
+const collapseSpaces = (s) => s.replace(/\s+/g, ' ').trim();
+const makeUnique = (s, f, i) => { if (!f(s)) { return s; } else { while (f(`${s} (${i})`)) { i++; } return `${s} (${i})`; } };
 
 /**
  * Reads the connection profile from the commands.
@@ -107,7 +111,8 @@ async function createConnectionProfile() {
 
     const profileForDisplay = makeFancyProfile(profile);
     const template = await renderExtensionTemplateAsync(MODULE_NAME, 'profile', { profile: profileForDisplay });
-    const suggestedName = `${profile.api} ${profile.model} - ${profile.preset}`;
+    const checkName = (n) => extension_settings.connectionManager.profiles.some(p => p.name === n);
+    const suggestedName = makeUnique(collapseSpaces(`${profile.api ?? ''} ${profile.model ?? ''} - ${profile.preset ?? ''}`), checkName, 1);
     const name = await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName, { rows: 2 });
 
     if (!name) {
