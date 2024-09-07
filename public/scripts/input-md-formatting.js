@@ -2,14 +2,17 @@ export function initInputMarkdown() {
 
     $('textarea').on('keydown', function (e) {
         if (!e.ctrlKey) { return; }
-        e.preventDefault(); //needed for ctrl+u which opens 'view page source' in chrome, but other problems could exist in other browsers
+
         let charsToAdd = '';
         //ctrl+B to add markdown bold (double asterisks)
         if (e.ctrlKey && e.key === 'b') { charsToAdd = '**'; }
         //ctrl+I for markdown italics (single asterisk)
         if (e.ctrlKey && e.key == 'i') { charsToAdd = '*'; }
         //ctrl+U for markdown underline (two underscores)
-        if (e.ctrlKey && e.key == 'u') { charsToAdd = '__'; }
+        if (e.ctrlKey && e.key == 'u') {
+            e.preventDefault(); //needed for ctrl+u which opens 'view page source' in chrome, but other problems could exist in other browsers
+            charsToAdd = '__';
+        }
         //ctrl+Backspace for markdown strikethrough (two tildes)
         if (e.ctrlKey && e.key === 'Backspace') { charsToAdd = '~~'; }
 
