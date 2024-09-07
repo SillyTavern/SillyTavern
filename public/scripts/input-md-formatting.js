@@ -1,20 +1,29 @@
 export function initInputMarkdown() {
 
-    $('textarea').on('keydown', function (e) {
+    $('.mdHotkeys').on('keydown', function (e) {
         if (!e.ctrlKey) { return; }
-
+        console.warn('saw ctrl keydown');
         let charsToAdd = '';
         //ctrl+B to add markdown bold (double asterisks)
-        if (e.ctrlKey && e.key === 'b') { charsToAdd = '**'; }
+        if (e.ctrlKey && e.code === 'KeyB') { charsToAdd = '**'; }
         //ctrl+I for markdown italics (single asterisk)
-        if (e.ctrlKey && e.key == 'i') { charsToAdd = '*'; }
+        if (e.ctrlKey && e.code === 'KeyI') { charsToAdd = '*'; }
         //ctrl+U for markdown underline (two underscores)
-        if (e.ctrlKey && e.key == 'u') {
+        if (e.ctrlKey && e.code === 'KeyU') {
             e.preventDefault(); //needed for ctrl+u which opens 'view page source' in chrome, but other problems could exist in other browsers
             charsToAdd = '__';
         }
-        //ctrl+Backspace for markdown strikethrough (two tildes)
-        if (e.ctrlKey && e.key === 'Backspace') { charsToAdd = '~~'; }
+        //ctrl+shift+backquote for markdown strikethrough (two tildes)
+        if (e.ctrlKey && e.shiftKey && e.code === 'Backquote') { charsToAdd = '~~'; }
+        //ctrl+backquote for markdown inline code (two backticks)
+        if (e.ctrlKey && e.code === 'Backquote') {
+            e.preventDefault(); //needed for ctrl+` which 'swaps to previous tab' on chrome
+            charsToAdd = '``';
+        }
+
+        if (charsToAdd !== '') {
+            console.log('Chars to add: ', charsToAdd);
+        }
 
         let selectedText = '';
         let start = $(this).prop('selectionStart');
