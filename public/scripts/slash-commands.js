@@ -2299,7 +2299,7 @@ async function echoCallback(args, value) {
     if (args.extendedTimeout && !isNaN(parseInt(args.extendedTimeout))) options.extendedTimeOut = parseInt(args.extendedTimeout);
     if (isTrueBoolean(args.preventDuplicates)) options.preventDuplicates = true;
     if (args.cssClass) options.toastClass = args.cssClass;
-    if (args.escapeHtml !== undefined) options.escapeHtml = isTrueBoolean(args.escapeHtml);
+    options.escapeHtml = args.escapeHtml !== undefined ? isTrueBoolean(args.escapeHtml) : true;
 
     // Prepare possible await handling
     let awaitDismissal = isTrueBoolean(args.awaitDismissal);
