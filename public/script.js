@@ -8526,7 +8526,7 @@ async function selectContextCallback(args, name) {
     }
 
     const foundName = result[0].item;
-    selectContextPreset(foundName, quiet);
+    selectContextPreset(foundName, { quiet: quiet });
     return foundName;
 }
 
@@ -8546,7 +8546,7 @@ async function selectInstructCallback(args, name) {
     }
 
     const foundName = result[0].item;
-    selectInstructPreset(foundName, quiet);
+    selectInstructPreset(foundName, { quiet: quiet });
     return foundName;
 }
 
