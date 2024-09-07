@@ -1616,6 +1616,13 @@ export function initDefaultSlashCommands() {
                 defaultValue: 'true',
                 enumList: commonEnumProviders.boolean('trueFalse')(),
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: 'suppress the toast message on API change',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
         ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -3577,10 +3584,12 @@ function setPromptEntryCallback(args, targetState) {
  * @param {object} args - named args
  * @param {string?} [args.api=null] - the API name to set/get the URL for
  * @param {string?} [args.connect=true] - whether to connect to the API after setting
+ * @param {string?} [args.quiet=false] - whether to suppress toasts
  * @param {string} url - the API URL to set
  * @returns {Promise<string>}
  */
-async function setApiUrlCallback({ api = null, connect = 'true' }, url) {
+async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false' }, url) {
+    const isQuiet = isTrueBoolean(quiet);
     const autoConnect = isTrueBoolean(connect);
 
     // Special handling for Chat Completion Custom OpenAI compatible, that one can also support API url handling
@@ -3629,22 +3638,26 @@ async function setApiUrlCallback({ api = null, connect = 'true' }, url) {
 
     // Do some checks and get the api type we are targeting with this command
     if (api && !Object.values(textgen_types).includes(api)) {
-        toastr.warning(`API '${api}' is not a valid text_gen API.`);
+        !isQuiet && toastr.warning(`API '${api}' is not a valid text_gen API.`);
         return '';
     }
     if (!api && !Object.values(textgen_types).includes(textgenerationwebui_settings.type)) {
-        toastr.warning(`API '${textgenerationwebui_settings.type}' is not a valid text_gen API.`);
+        !isQuiet && toastr.warning(`API '${textgenerationwebui_settings.type}' is not a valid text_gen API.`);
+        return '';
+    }
+    if (!api && main_api !== 'textgenerationwebui') {
+        !isQuiet && toastr.warning(`API type '${main_api}' does not support setting the server URL.`);
         return '';
     }
     if (api && url && autoConnect && api !== textgenerationwebui_settings.type) {
-        toastr.warning(`API '${api}' is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.`);
+        !isQuiet && toastr.warning(`API '${api}' is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.`);
         return '';
     }
     const type = api || textgenerationwebui_settings.type;
 
     const inputSelector = SERVER_INPUTS[type];
     if (!inputSelector) {
-        toastr.warning(`API '${type}' does not have a server url input.`);
+        !isQuiet && toastr.warning(`API '${type}' does not have a server url input.`);
         return '';
     }
 
