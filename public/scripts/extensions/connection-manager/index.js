@@ -3,7 +3,7 @@ import { extension_settings, renderExtensionTemplateAsync } from '../../extensio
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
 import { executeSlashCommandsWithOptions } from '../../slash-commands.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
-import { SlashCommandArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -109,9 +109,10 @@ async function readProfileFromCommands(mode, profile, cleanUp = false) {
 
 /**
  * Creates a new connection profile.
+ * @param {string} [forceName] Name of the connection profile
  * @returns {Promise<ConnectionProfile>} Created connection profile
  */
-async function createConnectionProfile() {
+async function createConnectionProfile(forceName = null) {
     const mode = main_api === 'openai' ? 'cc' : 'tc';
     const id = uuidv4();
     const profile = {
@@ -125,7 +126,7 @@ async function createConnectionProfile() {
     const template = await renderExtensionTemplateAsync(MODULE_NAME, 'profile', { profile: profileForDisplay });
     const checkName = (n) => extension_settings.connectionManager.profiles.some(p => p.name === n);
     const suggestedName = makeUnique(collapseSpaces(`${profile.api ?? ''} ${profile.model ?? ''} - ${profile.preset ?? ''}`), checkName, 1);
-    const name = await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName, { rows: 2 });
+    const name = forceName ?? await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName, { rows: 2 });
 
     if (!name) {
         return null;
@@ -349,6 +350,7 @@ async function renderDetailsContent(details, detailsContent) {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'profile',
         helpString: 'Switch to a connection profile or return the name of the current profile in no argument is provided. Use <code>&lt;None&gt;</code> to switch to no profile.',
+        returns: 'name of the profile',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'Name of the connection profile',
@@ -393,6 +395,57 @@ async function renderDetailsContent(details, detailsContent) {
             profiles.value = bestMatch.item.id;
             profiles.dispatchEvent(new Event('change'));
             return bestMatch.item.name;
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'profile-list',
+        helpString: 'List all connection profile names.',
+        returns: 'list of profile names',
+        callback: () => JSON.stringify(extension_settings.connectionManager.profiles.map(p => p.name)),
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'profile-create',
+        returns: 'name of the new profile',
+        helpString: 'Create a new connection profile using the current settings.',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'name of the new connection profile',
+                isRequired: true,
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+        ],
+        callback: async (_args, name) => {
+            if (!name || typeof name !== 'string') {
+                toastr.warning('Please provide a name for the new connection profile.');
+                return '';
+            }
+            const profile = await createConnectionProfile(name);
+            if (!profile) {
+                return '';
+            }
+            extension_settings.connectionManager.profiles.push(profile);
+            extension_settings.connectionManager.selectedProfile = profile.id;
+            saveSettingsDebounced();
+            renderConnectionProfiles(profiles);
+            await renderDetailsContent(details, detailsContent);
+            return profile.name;
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'profile-update',
+        helpString: 'Update the selected connection profile.',
+        callback: async () => {
+            const selectedProfile = extension_settings.connectionManager.selectedProfile;
+            const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
+            if (!profile) {
+                return '';
+            }
+            await updateConnectionProfile(profile);
+            await renderDetailsContent(details, detailsContent);
+            saveSettingsDebounced();
         },
     }));
 })();
