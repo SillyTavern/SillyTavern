@@ -408,7 +408,7 @@ async function renderDetailsContent(details, detailsContent) {
             profiles.selectedIndex = Array.from(profiles.options).findIndex(o => o.value === profile.id);
             profiles.dispatchEvent(new Event('change'));
 
-            return profiles.name;
+            return profile.name;
         },
     }));
 
