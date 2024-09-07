@@ -724,7 +724,7 @@ function onChatChanged() {
 }
 
 async function adjustElementScrollHeight() {
-    if (!$('.sd_settings').is(':visible')) {
+    if (CSS.supports('field-sizing', 'content') || !$('.sd_settings').is(':visible')) {
         return;
     }
 
@@ -737,17 +737,19 @@ async function adjustElementScrollHeight() {
 async function onCharacterPromptInput() {
     const key = getCharaFilename(this_chid);
     extension_settings.sd.character_prompts[key] = $('#sd_character_prompt').val();
-    await resetScrollHeight($(this));
     saveSettingsDebounced();
     writePromptFieldsDebounced(this_chid);
+    if (CSS.supports('field-sizing', 'content')) return;
+    await resetScrollHeight($(this));
 }
 
 async function onCharacterNegativePromptInput() {
     const key = getCharaFilename(this_chid);
     extension_settings.sd.character_negative_prompts[key] = $('#sd_character_negative_prompt').val();
-    await resetScrollHeight($(this));
     saveSettingsDebounced();
     writePromptFieldsDebounced(this_chid);
+    if (CSS.supports('field-sizing', 'content')) return;
+    await resetScrollHeight($(this));
 }
 
 function getCharacterPrefix() {
@@ -856,14 +858,16 @@ function onStepsInput() {
 
 async function onPromptPrefixInput() {
     extension_settings.sd.prompt_prefix = $('#sd_prompt_prefix').val();
-    await resetScrollHeight($(this));
     saveSettingsDebounced();
+    if (CSS.supports('field-sizing', 'content')) return;
+    await resetScrollHeight($(this));
 }
 
 async function onNegativePromptInput() {
     extension_settings.sd.negative_prompt = $('#sd_negative_prompt').val();
-    await resetScrollHeight($(this));
     saveSettingsDebounced();
+    if (CSS.supports('field-sizing', 'content')) return;
+    await resetScrollHeight($(this));
 }
 
 function onSamplerChange() {
@@ -3911,12 +3915,14 @@ jQuery(async () => {
     $('#sd_stability_style_preset').on('change', onStabilityStylePresetChange);
     $('#sd_huggingface_model_id').on('input', onHFModelInput);
 
-    $('.sd_settings .inline-drawer-toggle').on('click', function () {
-        initScrollHeight($('#sd_prompt_prefix'));
-        initScrollHeight($('#sd_negative_prompt'));
-        initScrollHeight($('#sd_character_prompt'));
-        initScrollHeight($('#sd_character_negative_prompt'));
-    });
+    if (!CSS.supports('field-sizing', 'content')) {
+        $('.sd_settings .inline-drawer-toggle').on('click', function () {
+            initScrollHeight($('#sd_prompt_prefix'));
+            initScrollHeight($('#sd_negative_prompt'));
+            initScrollHeight($('#sd_character_prompt'));
+            initScrollHeight($('#sd_character_negative_prompt'));
+        });
+    }
 
     for (const [key, value] of Object.entries(resolutionOptions)) {
         const option = document.createElement('option');
