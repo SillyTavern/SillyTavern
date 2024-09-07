@@ -218,7 +218,7 @@ async function createNewBookmark(mesId) {
     $(`.mes[mesid="${mesId}"]`).attr('bookmark_link', name);
 
     await saveChatConditional();
-    toastr.success('Click the flag icon in the last message to open the checkpoint chat.', 'Checkpoint created', { timeOut: 10000 });
+    toastr.success('Click the flag icon next to the message to open the checkpoint chat.', 'Checkpoint created', { timeOut: 10000 });
 }
 
 async function backToMainChat() {
