@@ -185,7 +185,7 @@ class CosyVoiceProvider {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(params), // 将参数对象转换为 JSON 字符串
+                body: JSON.stringify(params), // Convert parameter objects to JSON strings
             },
         );
         if (!response.ok) {
