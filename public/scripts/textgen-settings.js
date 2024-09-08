@@ -180,6 +180,7 @@ const settings = {
     vllm_model: '',
     aphrodite_model: '',
     dreamgen_model: 'opus-v1-xl/text',
+    tabby_model: '',
     legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
     logit_bias: [],
@@ -1047,6 +1048,11 @@ export function getTextGenModel() {
             return settings.featherless_model;
         case HUGGINGFACE:
             return 'tgi';
+        case TABBY:
+            if (settings.tabby_model) {
+                return settings.tabby_model;
+            }
+            break;
         default:
             return undefined;
     }

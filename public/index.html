@@ -2335,8 +2335,7 @@
                                 </div>
                                 <div class="flex1">
                                     <h4>
-                                        <span data-i18n="Ollama Model">Ollama Model
-                                    </h4>
+                                        <span data-i18n="Ollama Model">Ollama Model</span>
                                     </h4>
                                     <select id="ollama_model">
                                         <option data-i18n="-- Connect to the API --">
@@ -2373,7 +2372,19 @@
                                     <h4>
                                         <span data-i18n="Tabby Model">Tabby Model</span>
                                     </h4>
-                                    </h4>
+                                    <select id="tabby_model">
+                                        <option data-i18n="-- Connect to the API --">
+                                            -- Connect to the API --
+                                        </option>
+                                    </select>
+                                    <small>
+                                        <i class="fa-solid fa-lightbulb"></i>
+                                        &nbsp;
+                                        <code>inline_model_loading: true</code>
+                                        <span data-i18n="must be set in Tabby's config.yml to switch models.">
+                                            must be set in Tabby's config.yml to switch models.
+                                        </span>
+                                    </small>
                                     <div id="tabby_download_model" class="menu_button menu_button_icon">
                                         <i class="fa-solid fa-download"></i>
                                         <span data-i18n="Download">Download</span>
