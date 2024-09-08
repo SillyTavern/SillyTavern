@@ -52,6 +52,8 @@ class CosyVoiceProvider {
 
         <label for="tts_endpoint">Provider Endpoint:</label>
         <input id="tts_endpoint" type="text" class="text_pole" maxlength="250" height="300" value="${this.defaultSettings.provider_endpoint}"/>
+        <span>Windows users Use <a target="_blank" href="https://github.com/v3ucn/CosyVoice_For_Windows">CosyVoice_For_Windows</a>.</span><br/>
+        <span>Macos Users Use <a target="_blank" href="https://github.com/v3ucn/CosyVoice_for_MacOs">CosyVoice_for_MacOs</a>.</span><br/>
         <br/>
 
         `;
