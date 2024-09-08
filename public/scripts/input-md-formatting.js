@@ -12,7 +12,6 @@ export function initInputMarkdown() {
         if (e.key === 'Control' || !e.ctrlKey) {
             return;
         }
-        console.warn('ctrl?', e.ctrlKey, 'key', e.key, 'code', e.code);
         let charsToAdd = '';
         let possiblePreviousFormattingMargin = 1;
 
@@ -120,7 +119,6 @@ export function initInputMarkdown() {
 
 
             } else { //caret is not inside a word, so just add the formatting
-                console.warn('no caret in middle of a word');
                 textarea.focus();
                 textarea.setSelectionRange(start, end);
                 selectedText = textarea.value.substring(start, end);
