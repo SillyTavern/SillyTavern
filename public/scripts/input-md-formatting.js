@@ -35,7 +35,7 @@ export function initInputMarkdown() {
                 break;
             case e.ctrlKey && e.code === 'Backquote':
                 e.preventDefault(); // Prevent Ctrl+` from switching tabs in Chrome
-                charsToAdd = '``';
+                charsToAdd = '`';
                 break;
             default:
                 return; // Early return if no key matches
