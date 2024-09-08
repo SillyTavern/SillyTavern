@@ -3477,8 +3477,17 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     //PRE FORMATING STRING
     //*********************************
 
+    // These generation types should not attach pending files to the chat
+    const noAttachTypes = [
+        'regenerate',
+        'swipe',
+        'impersonate',
+        'quiet',
+        'continue',
+        'ask_command',
+    ];
     //for normal messages sent from user..
-    if ((textareaText != '' || hasPendingFileAttachment()) && !automatic_trigger && type !== 'quiet' && !dryRun) {
+    if ((textareaText != '' || (hasPendingFileAttachment() && !noAttachTypes.includes(type))) && !automatic_trigger && type !== 'quiet' && !dryRun) {
         // If user message contains no text other than bias - send as a system message
         if (messageBias && !removeMacros(textareaText)) {
             sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
