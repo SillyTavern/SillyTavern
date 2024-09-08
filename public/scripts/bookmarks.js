@@ -24,7 +24,12 @@ import {
     selected_group,
 } from './group-chats.js';
 import { hideLoader, showLoader } from './loader.js';
+import { getLastMessageId } from './macros.js';
 import { Popup } from './popup.js';
+import { SlashCommand } from './slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
+import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { createTagMapFromList } from './tags.js';
 
 import {
@@ -51,10 +56,10 @@ async function getExistingChatNames() {
     }
 }
 
-async function getBookmarkName() {
+async function getBookmarkName({ forceName = null } = {}) {
     const chatNames = await getExistingChatNames();
 
-    let name = await Popup.show.input('Create Checkpoint', '<span class="margin-right-10px">Enter Checkpoint Name:</span><small>(Leave empty to auto-generate)</small>');
+    let name = forceName || await Popup.show.input('Create Checkpoint', '<span class="margin-right-10px">Enter Checkpoint Name:</span><small>(Leave empty to auto-generate)</small>');
     if (name === null) {
         return null;
     }
@@ -159,20 +164,26 @@ async function createBranch(mesId) {
     return name;
 }
 
-export async function createNewBookmark(mesId) {
+/**
+ * Creates a new bookmark for a message.
+ *
+ * @param {number} mesId - The ID of the message.
+ * @param {Object} [options={}] - Optional parameters.
+ * @param {string?} [options.forceName=null] - The name to force for the bookmark.
+ * @returns {Promise<string?>} - A promise that resolves to the bookmark name when the bookmark is created.
+ */
+export async function createNewBookmark(mesId, { forceName = null } = {}) {
     if (this_chid === undefined && !selected_group) {
-        toastr.info('No character selected.', 'Checkpoint creation aborted');
-        return;
+        toastr.info('No character selected.', 'Create Checkpoint');
+        return null;
     }
-
     if (!chat.length) {
-        toastr.warning('The chat is empty.', 'Checkpoint creation failed');
-        return;
+        toastr.warning('The chat is empty.', 'Create Checkpoint');
+        return null;
     }
-
-    if (mesId < 0 || mesId >= chat.length) {
-        toastr.warning('Invalid message ID.', 'Checkpoint creation failed');
-        return;
+    if (!chat[mesId]) {
+        toastr.warning('Invalid message ID.', 'Create Checkpoint');
+        return null;
     }
 
     const lastMes = chat[mesId];
@@ -181,16 +192,16 @@ export async function createNewBookmark(mesId) {
         lastMes.extra = {};
     }
 
-    if (lastMes.extra.bookmark_link) {
+    if (lastMes.extra.bookmark_link && !forceName) {
         const confirm = await Popup.show.confirm('Replace Checkpoint', 'Checkpoint for the last message already exists.<br />Would you like to replace it?');
         if (!confirm) {
-            return;
+            return null;
         }
     }
 
-    let name = await getBookmarkName();
+    let name = await getBookmarkName({ forceName: forceName });
     if (!name) {
-        return;
+        return null;
     }
 
     const mainChat = selected_group ? groups?.find(x => x.id == selected_group)?.chat_id : characters[this_chid].chat;
@@ -209,7 +220,8 @@ export async function createNewBookmark(mesId) {
     updateBookmarkDisplay(mes, name);
 
     await saveChatConditional();
-    toastr.success('Click the flag icon next to the message to open the checkpoint chat.', 'Checkpoint created', { timeOut: 10000 });
+    toastr.success('Click the flag icon next to the message to open the checkpoint chat.', 'Create Checkpoint', { timeOut: 10000 });
+    return name;
 }
 
 
@@ -233,7 +245,10 @@ async function backToMainChat() {
         } else {
             await openCharacterChat(mainChatName);
         }
+        return mainChatName;
     }
+
+    return null;
 }
 
 export async function convertSoloToGroupChat() {
@@ -357,12 +372,12 @@ export async function convertSoloToGroupChat() {
 /**
  * Creates a new branch from the message with the given ID
  * @param {number} mesId Message ID
- * @returns {Promise<string>} Branch file name
+ * @returns {Promise<string?>} Branch file name
  */
 export async function branchChat(mesId) {
     if (this_chid === undefined && !selected_group) {
-        toastr.info('No character selected.', 'Branch creation aborted');
-        return;
+        toastr.info('No character selected.', 'Create Branch');
+        return null;
     }
 
     const fileName = await createBranch(mesId);
@@ -377,7 +392,243 @@ export async function branchChat(mesId) {
     return fileName;
 }
 
-jQuery(function () {
+function registerBookmarksSlashCommands() {
+    /**
+     * Validates a message ID. (Is a number, exists as a message)
+     *
+     * @param {number} mesId - The message ID to validate.
+     * @param {string} context - The context of the slash command. Will be used as the title of any toasts.
+     * @returns {boolean} - Returns true if the message ID is valid, otherwise false.
+     */
+    function validateMessageId(mesId, context) {
+        if (isNaN(mesId)) {
+            toastr.warning('Invalid message ID was provided', context);
+            return false;
+        }
+        if (!chat[mesId]) {
+            toastr.warning(`Message for id ${mesId} not found`, context);
+            return false;
+        }
+        return true;
+    }
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'branch-create',
+        returns: 'Name of the new branch',
+        callback: async (args, text) => {
+            const mesId = Number(args.mesId ?? text ?? getLastMessageId());
+            if (!validateMessageId(mesId, 'Create Branch')) return '';
+
+            const branchName = await branchChat(mesId);
+            return branchName ?? '';
+        },
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'mes',
+                description: 'Message ID',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                enumProvider: commonEnumProviders.messages(),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Message ID',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                enumProvider: commonEnumProviders.messages(),
+            }),
+        ],
+        helpString: `
+        <div>
+            Create a new branch from the selected message. If no message id is provided, will use the last message.
+        </div>
+        <div>
+            Creating a branch will automatically choose a name for the branch.<br />
+            After creating the branch, the branch chat will be automatically opened.
+        </div>
+        <div>
+            Use Checkpoints and <code>/checkpoint-create</code> instead if you do not want to jump to the new chat.
+        </div>`,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'checkpoint-create',
+        returns: 'Name of the new checkpoint',
+        callback: async (args, text) => {
+            const mesId = Number(args.mesId ?? getLastMessageId());
+            if (!validateMessageId(mesId, 'Create Checkpoint')) return '';
+
+            if (!text || typeof text !== 'string') {
+                toastr.warning('Checkpoint name must be provided', 'Create Checkpoint');
+                return '';
+            }
+
+            const checkPointName = await createNewBookmark(mesId, { forceName: text });
+            return checkPointName ?? '';
+        },
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'mes',
+                description: 'Message ID',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                enumProvider: commonEnumProviders.messages(),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Checkpoint name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+            }),
+        ],
+        helpString: `
+        <div>
+            Create a new checkpoint for the selected message with the provided name. If no message id is provided, will use the last message.
+        </div>
+        <div>
+            A created checkpoint will be permanently linked with the message.<br />
+            If a checkpoint already exists, the link to it will be overwritten.<br />
+            After creating the checkpoint, the checkpoint chat can be opened with the checkpoint flag,
+            using the <code>/go</code> command with the checkpoint name or the <code>/checkpoint-go</code> command on the message.
+        </div>
+        <div>
+            Use Branches and <code>/branch-create</code> instead if you do want to jump to the new chat.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/checkpoint-create mes={{lastCharMessage}} Checkpoint for char reply | /setvar key=rememberCheckpoint {{pipe}}</code></pre>
+                    Will create a new checkpoint to the latest message of the current character, and save it as a local variable for future use.
+                </li>
+            </ul>
+        </div>`,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'checkpoint-go',
+        returns: 'Name of the checkpoint',
+        callback: async (args, text) => {
+            const mesId = Number(args.mesId ?? text ?? getLastMessageId());
+            if (!validateMessageId(mesId, 'Open Checkpoint')) return '';
+
+            const checkPointName = chat[mesId].extra?.bookmark_link;
+            if (!checkPointName) {
+                toastr.warning('No checkpoint is linked to the selected message', 'Open Checkpoint');
+                return '';
+            }
+
+            if (selected_group) {
+                await openGroupChat(selected_group, checkPointName);
+            } else {
+                await openCharacterChat(checkPointName);
+            }
+
+            return checkPointName;
+        },
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'mes',
+                description: 'Message ID',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                enumProvider: commonEnumProviders.messages(),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Message ID',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                enumProvider: commonEnumProviders.messages(),
+            }),
+        ],
+        helpString: `
+        <div>
+            Open the checkpoint linked to the selected message. If no message id is provided, will use the last message.
+        </div>
+        <div>
+            Use <code>/checkpoint-get</code> if you want to make sure that the selected message has a checkpoint.
+        </div>`,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'checkpoint-exit',
+        returns: 'The name of the chat exited to. Returns null if not in a checkpoint chat.',
+        callback: async () => {
+            const mainChat = await backToMainChat();
+            return mainChat ?? '';
+        },
+        helpString: 'Exit the checkpoint chat.<br />If not in a checkpoint chat, returns null.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'checkpoint-parent',
+        returns: 'Name of the parent chat for this checkpoint',
+        callback: async () => {
+            const mainChatName = getMainChatName();
+            return mainChatName ?? '';
+        },
+        helpString: 'Get the name of the parent chat for this checkpoint. If not in a checkpoint chat, returns null.',
+    }))
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'checkpoint-get',
+        returns: 'Name of the chat',
+        callback: async (args, text) => {
+            const mesId = Number(args.mesId ?? text ?? getLastMessageId());
+            if (!validateMessageId(mesId, 'Get Checkpoint')) return '';
+
+            const checkPointName = chat[mesId].extra?.bookmark_link;
+            return checkPointName ?? '';
+        },
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'mes',
+                description: 'Message ID',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                enumProvider: commonEnumProviders.messages(),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Message ID',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                enumProvider: commonEnumProviders.messages(),
+            }),
+        ],
+        helpString: `
+        <div>
+            Get the name of the checkpoint linked to the selected message. If no message id is provided, will use the last message.<br />
+            If no checkpoint is linked, the result will be empty.
+        </div>`,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'checkpoint-list',
+        returns: 'JSON array of all existing checkpoints in this chat, as an array',
+        /** @param {{links?: string}} args @returns {Promise<string>} */
+        callback: async (args, _) => {
+            const result = [];
+            for (const mesId in chat) {
+                if (chat[mesId].extra?.bookmark_link) {
+                    result.push(args.links ? chat[mesId].extra.bookmark_link : Number(mesId));
+                }
+            }
+            return JSON.stringify(result);
+        },
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'links',
+                description: 'Get a list of all links / chat names of the checkpoints, instead of the message ids',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'false',
+            }),
+        ],
+        helpString: `
+        <div>
+            List all existing checkpoints in this chat.
+        </div>
+        <div>
+            Returns a list of all message ids that have a checkpoint, or all checkpoint links if <code>links</code> is set to <code>true</code>.<br />
+            The value will be a JSON array.
+        </div>`,
+    }));
+}
+
+export function initBookmarks() {
     $('#option_new_bookmark').on('click', saveBookmarkMenu);
     $('#option_back_to_main').on('click', backToMainChat);
     $('#option_convert_to_group').on('click', convertSoloToGroupChat);
@@ -386,7 +637,7 @@ jQuery(function () {
         // If shift is held down, we are not following the bookmark, but creating a new one
         if (e.shiftKey) {
             var selectedMesId = $(this).closest('.mes').attr('mesid');
-            await createNewBookmark(selectedMesId);
+            await createNewBookmark(Number(selectedMesId));
             return;
         }
 
@@ -416,7 +667,7 @@ jQuery(function () {
     $(document).on('click', '.mes_create_bookmark', async function () {
         var selected_mes_id = $(this).closest('.mes').attr('mesid');
         if (selected_mes_id !== undefined) {
-            await createNewBookmark(selected_mes_id);
+            await createNewBookmark(Number(selected_mes_id));
         }
     });
 
@@ -426,4 +677,6 @@ jQuery(function () {
             await branchChat(Number(selected_mes_id));
         }
     });
-});
+
+    registerBookmarksSlashCommands();
+}

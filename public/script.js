@@ -117,6 +117,7 @@ import {
 } from './scripts/nai-settings.js';
 
 import {
+    initBookmarks,
     showBookmarksButtons,
     updateBookmarkDisplay,
 } from './scripts/bookmarks.js';
@@ -936,6 +937,7 @@ async function firstLoadInit() {
     initDynamicStyles();
     initTags();
     initOpenai();
+    initBookmarks();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
