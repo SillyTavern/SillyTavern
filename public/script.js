@@ -1889,6 +1889,7 @@ export async function sendTextareaMessage() {
     // message was sent from a character (not the user or the system).
     const textareaText = String($('#send_textarea').val());
     if (power_user.continue_on_send &&
+        !hasPendingFileAttachment() &&
         !textareaText &&
         !selected_group &&
         chat.length &&
