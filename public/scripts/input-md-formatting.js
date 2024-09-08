@@ -12,7 +12,7 @@ export function initInputMarkdown() {
         if (e.key === 'Control' || !e.ctrlKey) {
             return;
         }
-
+        console.warn('ctrl?', e.ctrlKey, 'key', e.key, 'code', e.code);
         let charsToAdd = '';
         let possiblePreviousFormattingMargin = 1;
 
@@ -30,11 +30,11 @@ export function initInputMarkdown() {
                 break;
             case e.ctrlKey && e.code === 'KeyU':
                 e.preventDefault(); // Prevent Ctrl+U from opening 'view page source'
+                e.stopPropagation();
                 charsToAdd = '__';
                 possiblePreviousFormattingMargin = 2;
                 break;
-            case e.ctrlKey && e.code === 'Backquote':
-                e.preventDefault(); // Prevent Ctrl+` from switching tabs in Chrome
+            case e.ctrlKey && e.code === 'KeyK':
                 charsToAdd = '`';
                 break;
             default:
