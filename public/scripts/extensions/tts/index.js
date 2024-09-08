@@ -4,6 +4,7 @@ import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique } from '.
 import { EdgeTtsProvider } from './edge.js';
 import { ElevenLabsTtsProvider } from './elevenlabs.js';
 import { SileroTtsProvider } from './silerotts.js';
+import { GptSovitsV2Provider } from './gpt-sovits-v2.js';
 import { CoquiTtsProvider } from './coqui.js';
 import { SystemTtsProvider } from './system.js';
 import { NovelTtsProvider } from './novel.js';
@@ -89,6 +90,7 @@ const ttsProviders = {
     Edge: EdgeTtsProvider,
     ElevenLabs: ElevenLabsTtsProvider,
     GSVI: GSVITtsProvider,
+    GptSovitsV2: GptSovitsV2Provider,
     Novel: NovelTtsProvider,
     OpenAI: OpenAITtsProvider,
     'OpenAI Compatible': OpenAICompatibleTtsProvider,
