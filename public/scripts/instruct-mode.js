@@ -130,19 +130,20 @@ function highlightDefaultPreset() {
 /**
  * Select context template if not already selected.
  * @param {string} preset Preset name.
+ * @param {boolean} quiet Suppress info message.
  */
-export function selectContextPreset(preset) {
+export function selectContextPreset(preset, quiet) {
     // If context template is not already selected, select it
     if (preset !== power_user.context.preset) {
         $('#context_presets').val(preset).trigger('change');
-        toastr.info(`Context Template: preset "${preset}" auto-selected`);
+        !quiet && toastr.info(`Context Template: preset "${preset}" auto-selected`);
     }
 
     // If instruct mode is disabled, enable it, except for default context template
     if (!power_user.instruct.enabled && preset !== power_user.default_context) {
         power_user.instruct.enabled = true;
         $('#instruct_enabled').prop('checked', true).trigger('change');
-        toastr.info('Instruct Mode enabled');
+        !quiet && toastr.info('Instruct Mode enabled');
     }
 
     saveSettingsDebounced();
@@ -151,19 +152,20 @@ export function selectContextPreset(preset) {
 /**
  * Select instruct preset if not already selected.
  * @param {string} preset Preset name.
+ * @param {boolean} quiet Suppress info message.
  */
-export function selectInstructPreset(preset) {
+export function selectInstructPreset(preset, quiet) {
     // If instruct preset is not already selected, select it
     if (preset !== power_user.instruct.preset) {
         $('#instruct_presets').val(preset).trigger('change');
-        toastr.info(`Instruct Mode: template "${preset}" auto-selected`);
+        !quiet && toastr.info(`Instruct Mode: template "${preset}" auto-selected`);
     }
 
     // If instruct mode is disabled, enable it
     if (!power_user.instruct.enabled) {
         power_user.instruct.enabled = true;
         $('#instruct_enabled').prop('checked', true).trigger('change');
-        toastr.info('Instruct Mode enabled');
+        !quiet && toastr.info('Instruct Mode enabled');
     }
 
     saveSettingsDebounced();

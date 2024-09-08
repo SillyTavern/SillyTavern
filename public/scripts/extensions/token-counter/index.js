@@ -59,8 +59,10 @@ async function doTokenCounter() {
             $('#tokenized_chunks_display').text('—');
         }
 
-        await resetScrollHeight($('#token_counter_textarea'));
-        await resetScrollHeight($('#token_counter_ids'));
+        if (!CSS.supports('field-sizing', 'content')) {
+            await resetScrollHeight($('#token_counter_textarea'));
+            await resetScrollHeight($('#token_counter_ids'));
+        }
     }, debounce_timeout.relaxed);
     dialog.find('#token_counter_textarea').on('input', () => countDebounced());
 

@@ -1301,7 +1301,7 @@
                                     </div>
 
                                     <!-- Enable for llama.cpp when the PR is merged: https://github.com/ggerganov/llama.cpp/pull/6839 -->
-                                    <div data-tg-type="ooba, koboldcpp" id="dryBlock" class="wide100p">
+                                    <div data-tg-type="ooba, koboldcpp, tabby" id="dryBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" title="DRY penalizes tokens that would extend the end of the input into a sequence that has previously occurred in the input. Set multiplier to 0 to disable." data-i18n="[title]DRY_Repetition_Penalty_desc">
                                             <label data-i18n="DRY Repetition Penalty">DRY Repetition Penalty</label>
                                             <a href="https://github.com/oobabooga/text-generation-webui/pull/5677" target="_blank">
@@ -1324,7 +1324,7 @@
                                                 <input class="neo-range-slider" type="range" id="dry_allowed_length_textgenerationwebui" min="1" max="20" step="1" />
                                                 <input class="neo-range-input" type="number" min="1" max="20" step="1" data-for="dry_allowed_length_textgenerationwebui" id="dry_allowed_length_counter_textgenerationwebui">
                                             </div>
-                                            <div class="alignItemsCenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-tg-type="llamacpp, koboldcpp">
+                                            <div class="alignItemsCenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-tg-type="llamacpp, koboldcpp, tabby">
                                                 <small data-i18n="Penalty Range">Penalty Range</small>
                                                 <input class="neo-range-slider" type="range" id="dry_penalty_last_n_textgenerationwebui" min="0" max="8192" step="1" />
                                                 <input class="neo-range-input" type="number" min="0" max="8192" step="1" data-for="dry_penalty_last_n_textgenerationwebui" id="dry_penalty_last_n_counter_textgenerationwebui">
@@ -1448,7 +1448,7 @@
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative" title="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative."></div>
                                                 </label>
                                             </label>
-                                            <label data-tg-type="ooba, llamacpp, tabby" class="checkbox_label  flexGrow flexShrink" for="ban_eos_token_textgenerationwebui">
+                                            <label data-tg-type="ooba, llamacpp, tabby, koboldcpp" class="checkbox_label  flexGrow flexShrink" for="ban_eos_token_textgenerationwebui">
                                                 <input type="checkbox" id="ban_eos_token_textgenerationwebui" />
                                                 <label>
                                                     <small data-i18n="Ban EOS Token">Ban EOS Token</small>
@@ -1820,12 +1820,12 @@
                                                 <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
                                                 <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="claude_assistant_prefill" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                             </div>
-                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill" rows="6" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact autoSetHeight" name="assistant_prefill" rows="2" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                             <div class="flex-container alignItemsCenter">
                                                 <span id="claude_assistant_impersonation_text" data-i18n="Assistant Impersonation Prefill">Assistant Impersonation Prefill</span>
                                                 <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="claude_assistant_impersonation" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                             </div>
-                                            <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact" name="assistant_impersonation" rows="6" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact autoSetHeight" name="assistant_impersonation" rows="2" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
                                         <label for="claude_use_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="claude_use_sysprompt" type="checkbox" />
@@ -1845,7 +1845,7 @@
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
                                             </div>
-                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" rows="4" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user'."></textarea>
+                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact autoSetHeight" rows="2" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user'."></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -1916,17 +1916,26 @@
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <div id="kobold_horde_block">
                                 <ul>
-                                    <li data-i18n="Avoid sending sensitive information to the Horde.">
-                                        Avoid sending sensitive information to the Horde.
-                                        <a target="_blank" href="https://docs.sillytavern.app/usage/api-connections/horde/" data-i18n="Review the Privacy statement">Review the Privacy statement</a>
+                                    <li>
+                                        <a target="_blank" href="https://aihorde.net/" data-i18n="KoboldAI Horde Website">
+                                            KoboldAI Horde Website
+                                        </a>
                                     </li>
                                     <li>
-                                        <a target="_blank" href="https://horde.koboldai.net/register" data-i18n="Register a Horde account for faster queue times">Register a Horde
-                                            account for faster queue times</a>
+                                        <span data-i18n="Avoid sending sensitive information to the Horde.">Avoid sending sensitive information to the Horde.</span>
+                                        <a target="_blank" href="https://docs.sillytavern.app/usage/api-connections/horde/" data-i18n="Review the Privacy statement">
+                                            Review the Privacy statement
+                                        </a>
                                     </li>
                                     <li>
-                                        <a target="_blank" href="https://github.com/Haidra-Org/horde-worker-reGen?tab=readme-ov-file#ai-horde-worker-regen" data-i18n="Learn how to contribute your idle GPU cycles to the Horde">Learn
-                                            how to contribute your idle GPU cycles to the Horde</a>
+                                        <a target="_blank" href="https://aihorde.net/register" data-i18n="Register a Horde account for faster queue times">
+                                            Register a Horde account for faster queue times
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a target="_blank" href="https://github.com/Haidra-Org/horde-worker-reGen?tab=readme-ov-file#ai-horde-worker-regen" data-i18n="Learn how to contribute your idle GPU cycles to the Horde">
+                                            Learn how to contribute your idle GPU cycles to the Horde
+                                        </a>
                                     </li>
                                 </ul>
                                 <label for="horde_auto_adjust_context_length" class="checkbox_label">
@@ -1944,12 +1953,9 @@
                                 <small id="adjustedHordeParams">Context: --, Response: --</small>
                                 <h4 data-i18n="API key">API key</h4>
                                 <small>
-                                    <span data-i18n="Get it here:">Get it here: </span> <a target="_blank" href="https://horde.koboldai.net/register" data-i18n="Register">Register</a> (<a id="horde_kudos" href="javascript:void(0);" data-i18n="View my Kudos">View my Kudos</a>)<br>
+                                    <span data-i18n="Get it here:">Get it here: </span> <a target="_blank" href="https://aihorde.net/register" data-i18n="Register">Register</a> (<a id="horde_kudos" href="javascript:void(0);" data-i18n="View my Kudos">View my Kudos</a>)<br>
                                     <span data-i18n="Enter">Enter </span> <span class="monospace">0000000000</span> <span data-i18n="to use anonymous mode.">to use anonymous mode. </span>
                                 </small>
-                                <!-- <div>
-                                        <a id="horde_kudos" href="javascript:void(0);">View my Kudos</a>
-                                    </div> -->
                                 <div class="flex-container">
                                     <input id="horde_api_key" name="horde_api_key" class="text_pole flex1" type="text" placeholder="0000000000" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_horde"></div>
@@ -4333,7 +4339,10 @@
             </div>
             <div id="Backgrounds" class="drawer-content closedDrawer">
                 <div class="flex-container">
-                    <div class="flex-container wide100p">
+                    <div class="flex-container alignItemsBaseline wide100p">
+                        <h3 class="margin0 flex2" data-i18n="Background Image">
+                            Background Image
+                        </h3>
                         <input id="bg-filter" data-i18n="[placeholder]Filter" placeholder="Filter" class="text_pole flex1" type="search" />
                         <div id="auto_background" class="menu_button menu_button_icon" data-i18n="[title]Automatically select a background based on the chat context" title="Automatically select a background based on the chat context.">
                             <i class="fa-solid fa-wand-magic"></i>
