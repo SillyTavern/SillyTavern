@@ -2485,7 +2485,7 @@ class Message {
      * Get the token cost of an image.
      * @param {string} dataUrl Data URL of the image.
      * @param {string} quality String representing the quality of the image. Can be 'low', 'auto', or 'high'.
-     * @returns
+     * @returns {Promise<number>} The token cost of the image.
      */
     async getImageTokenCost(dataUrl, quality) {
         if (quality === 'low') {
