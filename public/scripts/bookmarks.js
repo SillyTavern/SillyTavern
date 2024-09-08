@@ -131,7 +131,8 @@ async function saveBookmarkMenu() {
     return await createNewBookmark(chat.length - 1);
 }
 
-async function createBranch(mesId) {
+// Export is used by Timelines extension. Do not remove.
+export async function createBranch(mesId) {
     if (!chat.length) {
         toastr.warning('The chat is empty.', 'Branch creation failed');
         return;
