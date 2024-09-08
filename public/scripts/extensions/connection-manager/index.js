@@ -175,7 +175,7 @@ async function readProfileFromCommands(mode, profile, cleanUp = false) {
                 continue;
             }
         } catch (error) {
-            console.warn(`Failed to execute command: ${command}`, error);
+            console.error(`Failed to execute command: ${command}`, error);
         }
     }
 
