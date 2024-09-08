@@ -95,6 +95,9 @@ requestOverrides: []
 enableExtensions: true
 # Automatically update extensions when a release version changes
 enableExtensionsAutoUpdate: true
+# Additional model tokenizers can be downloaded on demand.
+# Disabling will fallback to another locally available tokenizer.
+enableDownloadableTokenizers: true
 # Extension settings
 extras:
   # Disables automatic model download from HuggingFace

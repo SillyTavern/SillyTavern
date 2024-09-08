@@ -2455,8 +2455,13 @@ class Message {
             { type: 'image_url', image_url: { 'url': image, 'detail': quality } },
         ];
 
-        const tokens = await this.getImageTokenCost(image, quality);
-        this.tokens += tokens;
+        try {
+            const tokens = await this.getImageTokenCost(image, quality);
+            this.tokens += tokens;
+        } catch (error) {
+            this.tokens += Message.tokensPerImage;
+            console.error('Failed to get image token cost', error);
+        }
     }
 
     async getImageTokenCost(dataUrl, quality) {
