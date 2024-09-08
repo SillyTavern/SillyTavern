@@ -44,13 +44,14 @@ export function initInputMarkdown() {
         let selectedText = '';
         let start = textarea.selectionStart;
         let end = textarea.selectionEnd;
+        let beforeCaret = textarea.value.substring(start - 1, start);
+        let afterCaret = textarea.value.substring(end, end + 1);
         let isTextSelected = (start !== end);
         let cursorShift = charsToAdd.length;
+        let selectedTextandPossibleFormatting = textarea.value.substring(start - possiblePreviousFormattingMargin, end + possiblePreviousFormattingMargin).trim();
 
-        if (isTextSelected) {
+        if (isTextSelected) { //if text is selected
             selectedText = textarea.value.substring(start, end);
-            let selectedTextandPossibleFormatting = textarea.value.substring(start - possiblePreviousFormattingMargin, end + possiblePreviousFormattingMargin).trim();
-
             if (selectedTextandPossibleFormatting === charsToAdd + selectedText + charsToAdd) {
                 // If the selected text is already formatted, remove the formatting
 
@@ -80,10 +81,51 @@ export function initInputMarkdown() {
                 textarea.focus();
                 document.execCommand('insertText', false, charsToAdd + selectedText + charsToAdd + possibleAddedSpace);
             }
-        } else {
-            // No text is selected, insert the characters at the cursor position
-            textarea.focus();
-            document.execCommand('insertText', false, charsToAdd + charsToAdd);
+        } else {// No text is selected
+            //check 1 character before and after the cursor for non-space characters
+
+            if (beforeCaret !== ' ' && afterCaret !== ' ' && afterCaret !== '' && beforeCaret !== '') { //look for caret in the middle of a word
+                //expand the selection range until the next space on both sides
+                let midCaretExpandedStart = start - 1;
+                let midCaretExpandedEnd = end + 1;
+                while (midCaretExpandedStart > 0 && textarea.value.substring(midCaretExpandedStart - 1, midCaretExpandedStart) !== ' ') {
+                    midCaretExpandedStart--;
+                }
+                while (midCaretExpandedEnd < textarea.value.length && textarea.value.substring(midCaretExpandedEnd, midCaretExpandedEnd + 1) !== ' ') {
+                    midCaretExpandedEnd++;
+                }
+                //make a selection of the discovered word
+                textarea.setSelectionRange(midCaretExpandedStart, midCaretExpandedEnd);
+                //set variables for comparison
+                let discoveredWordWithPossibleFormatting = textarea.value.substring(midCaretExpandedStart, midCaretExpandedEnd).trim();
+                let discoveredWord = '';
+
+                if (discoveredWordWithPossibleFormatting.endsWith(charsToAdd) && discoveredWordWithPossibleFormatting.startsWith(charsToAdd)) {
+                    discoveredWord = textarea.value.substring(midCaretExpandedStart + charsToAdd.length, midCaretExpandedEnd - charsToAdd.length).trim();
+                } else {
+                    discoveredWord = textarea.value.substring(midCaretExpandedStart, midCaretExpandedEnd).trim();
+                }
+
+                if (charsToAdd + discoveredWord + charsToAdd === discoveredWordWithPossibleFormatting) {
+
+                    // Replace the expanded selection with the original discovered word
+                    textarea.focus();
+                    document.execCommand('insertText', false, discoveredWord);
+                    // Adjust cursor position
+                    cursorShift = -charsToAdd.length;
+                } else { //format did not previously exist, so add it
+                    textarea.focus();
+                    document.execCommand('insertText', false, charsToAdd + discoveredWord + charsToAdd);
+                }
+
+
+            } else { //caret is not inside a word, so just add the formatting
+                console.warn('no caret in middle of a word');
+                textarea.focus();
+                textarea.setSelectionRange(start, end);
+                selectedText = textarea.value.substring(start, end);
+                document.execCommand('insertText', false, charsToAdd + selectedText + charsToAdd);
+            }
         }
 
         // Manually trigger the 'input' event to make undo/redo work
