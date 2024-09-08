@@ -10747,7 +10747,11 @@ jQuery(async function () {
         var icon = $(this).find('.inline-drawer-icon');
         icon.toggleClass('down up');
         icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');
-        $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
+        $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle({
+            complete: () => {
+                $(this).css('height', '');
+            },
+        });
 
         // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
         if (!CSS.supports('field-sizing', 'content')) {
