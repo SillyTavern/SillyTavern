@@ -3102,6 +3102,12 @@ class StreamingProcessor {
         this.hideMessageButtons(this.messageId);
         generatedPromptCache = '';
         unblockGeneration();
+
+        const noEmitTypes = ['swipe', 'impersonate', 'continue'];
+        if (!noEmitTypes.includes(this.type)) {
+            eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId);
+            eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, this.messageId);
+        }
     }
 
     setFirstSwipe(messageId) {
