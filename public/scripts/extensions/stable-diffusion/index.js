@@ -1698,6 +1698,18 @@ async function loadPollinationsModels() {
             text: 'FLUX.1 [schnell]',
         },
         {
+            value: 'flux-realism',
+            text: 'FLUX Realism',
+        },
+        {
+            value: 'flux-anime',
+            text: 'FLUX Anime',
+        },
+        {
+            value: 'flux-3d',
+            text: 'FLUX 3D',
+        },
+        {
             value: 'turbo',
             text: 'SDXL Turbo',
         },

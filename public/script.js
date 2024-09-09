@@ -3415,7 +3415,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             .filter((index) => index !== undefined && index !== null);
 
         if (memberIds.length > 0) {
-            setCharacterId(memberIds[0]);
+            if (menu_type != 'character_edit') setCharacterId(memberIds[0]);
             setCharacterName('');
         } else {
             console.log('No enabled members found');
@@ -4944,7 +4944,7 @@ async function duplicateCharacter() {
     return '';
 }
 
-export async function itemizedParams(itemizedPrompts, thisPromptSet) {
+export async function itemizedParams(itemizedPrompts, thisPromptSet, incomingMesId) {
     const params = {
         charDescriptionTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].charDescription),
         charPersonalityTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].charPersonality),
@@ -4963,7 +4963,19 @@ export async function itemizedParams(itemizedPrompts, thisPromptSet) {
         chatInjects: await getTokenCountAsync(itemizedPrompts[thisPromptSet].chatInjects),
         chatVectorsStringTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].chatVectorsString),
         dataBankVectorsStringTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].dataBankVectorsString),
+        modelUsed: chat[incomingMesId]?.extra?.model,
+        apiUsed: chat[incomingMesId]?.extra?.api,
     };
+
+    const getFriendlyName = (value) => $(`#rm_api_block select option[value="${value}"]`).first().text() || value;
+
+    if (params.apiUsed) {
+        params.apiUsed = getFriendlyName(params.apiUsed);
+    }
+
+    if (params.this_main_api) {
+        params.mainApiFriendlyName = getFriendlyName(params.this_main_api);
+    }
 
     if (params.chatInjects) {
         params.ActualChatHistoryTokens = params.ActualChatHistoryTokens - params.chatInjects;
@@ -5079,7 +5091,7 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
         return null;
     }
 
-    const params = await itemizedParams(itemizedPrompts, thisPromptSet);
+    const params = await itemizedParams(itemizedPrompts, thisPromptSet, incomingMesId);
     const flatten = (rawPrompt) => Array.isArray(rawPrompt) ? rawPrompt.map(x => x.content).join('\n') : rawPrompt;
 
     const template = params.this_main_api == 'openai'
