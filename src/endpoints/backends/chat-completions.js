@@ -146,7 +146,6 @@ async function sendClaudeRequest(request, response) {
                 'Content-Type': 'application/json',
                 'anthropic-version': '2023-06-01',
                 'x-api-key': apiKey,
-                'Authorization': `Bearer ${apiKey}`, // Fix auth compatibility for some claude reverse-proxies
                 ...additionalHeaders,
             },
             timeout: 0,
