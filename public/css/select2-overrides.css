@@ -15,8 +15,13 @@
     z-index: 40000;
 }
 
-.select2-selection__clear {
+.select2-container .select2-selection .select2-selection__clear {
     color: var(--SmartThemeBodyColor);
+    font-size: 24px;
+    padding: 0;
+    position: absolute;
+    right: 5px;
+    top: 0;
 }
 
 .select2-container .select2-search__field {
