@@ -3103,7 +3103,8 @@ class StreamingProcessor {
         generatedPromptCache = '';
         unblockGeneration();
 
-        if (this.type !== 'swipe' && this.type !== 'impersonate') {
+        const noEmitTypes = ['swipe', 'impersonate', 'continue'];
+        if (!noEmitTypes.includes(this.type)) {
             eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId);
             eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, this.messageId);
         }
