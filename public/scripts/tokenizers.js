@@ -28,6 +28,8 @@ export const tokenizers = {
     LLAMA3: 12,
     GEMMA: 13,
     JAMBA: 14,
+    QWEN2: 15,
+    COMMAND_R: 16,
     BEST_MATCH: 99,
 };
 
@@ -104,6 +106,16 @@ const TOKENIZER_URLS = {
         encode: '/api/tokenizers/jamba/encode',
         decode: '/api/tokenizers/jamba/decode',
         count: '/api/tokenizers/jamba/encode',
+    },
+    [tokenizers.QWEN2]: {
+        encode: '/api/tokenizers/qwen2/encode',
+        decode: '/api/tokenizers/qwen2/decode',
+        count: '/api/tokenizers/qwen2/encode',
+    },
+    [tokenizers.COMMAND_R]: {
+        encode: '/api/tokenizers/command-r/encode',
+        decode: '/api/tokenizers/command-r/decode',
+        count: '/api/tokenizers/command-r/encode',
     },
     [tokenizers.API_TEXTGENERATIONWEBUI]: {
         encode: '/api/tokenizers/remote/textgenerationwebui/encode',
@@ -292,6 +304,12 @@ export function getTokenizerBestMatch(forApi) {
             }
             if (model.includes('jamba')) {
                 return tokenizers.JAMBA;
+            }
+            if (model.includes('command-r')) {
+                return tokenizers.COMMAND_R;
+            }
+            if (model.includes('qwen2')) {
+                return tokenizers.QWEN2;
             }
         }
 
@@ -511,6 +529,8 @@ export function getTokenizerModel() {
     const yiTokenizer = 'yi';
     const gemmaTokenizer = 'gemma';
     const jambaTokenizer = 'jamba';
+    const qwen2Tokenizer = 'qwen2';
+    const commandRTokenizer = 'command-r';
 
     // Assuming no one would use it for different models.. right?
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
@@ -558,6 +578,12 @@ export function getTokenizerModel() {
         else if (model?.architecture?.tokenizer === 'Gemini') {
             return gemmaTokenizer;
         }
+        else if (model?.architecture?.tokenizer === 'Qwen') {
+            return qwen2Tokenizer;
+        }
+        else if (model?.architecture?.tokenizer === 'Cohere') {
+            return commandRTokenizer;
+        }
         else if (oai_settings.openrouter_model.includes('gpt-4o')) {
             return gpt4oTokenizer;
         }
@@ -579,6 +605,10 @@ export function getTokenizerModel() {
         else if (oai_settings.openrouter_model.includes('jamba')) {
             return jambaTokenizer;
         }
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
+        return commandRTokenizer;
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {

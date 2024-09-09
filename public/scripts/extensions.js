@@ -123,6 +123,11 @@ const extension_settings = {
         /** @type {string[]} */
         custom: [],
     },
+    connectionManager: {
+        selectedProfile: '',
+        /** @type {import('./extensions/connection-manager/index.js').ConnectionProfile[]} */
+        profiles: [],
+    },
     dice: {},
     /** @type {import('./char-data.js').RegexScriptData[]} */
     regex: [],

@@ -1485,7 +1485,22 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'listinjects',
         callback: listInjectsCallback,
-        helpString: 'Lists all script injections for the current chat.',
+        helpString: 'Lists all script injections for the current chat. Displays injects in a popup by default. Use the <code>format</code> argument to change the output format.',
+        returns: 'JSON object of script injections',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'format',
+                description: 'output format',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                forceEnum: true,
+                enumList: [
+                    new SlashCommandEnumValue('popup', 'Show injects in a popup.', enumTypes.enum, enumIcons.default),
+                    new SlashCommandEnumValue('chat', 'Post a system message to the chat.', enumTypes.enum, enumIcons.default),
+                    new SlashCommandEnumValue('none', 'Just return the injects as a JSON object.', enumTypes.enum, enumIcons.default),
+                ],
+            }),
+        ],
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'flushinject',
@@ -1743,10 +1758,11 @@ function injectCallback(args, value) {
     return '';
 }
 
-function listInjectsCallback() {
+async function listInjectsCallback(args) {
+    const type = String(args?.format).toLowerCase().trim();
     if (!chat_metadata.script_injects || !Object.keys(chat_metadata.script_injects).length) {
-        toastr.info('No script injections for the current chat');
-        return '';
+        type !== 'none' && toastr.info('No script injections for the current chat');
+        return JSON.stringify({});
     }
 
     const injects = Object.entries(chat_metadata.script_injects)
@@ -1761,7 +1777,19 @@ function listInjectsCallback() {
     const messageText = `### Script injections:\n${injects}`;
     const htmlMessage = DOMPurify.sanitize(converter.makeHtml(messageText));
 
-    sendSystemMessage(system_message_types.GENERIC, htmlMessage);
+    switch (type) {
+        case 'none':
+            break;
+        case 'chat':
+            sendSystemMessage(system_message_types.GENERIC, htmlMessage);
+            break;
+        case 'popup':
+        default:
+            await callGenericPopup(htmlMessage, POPUP_TYPE.TEXT);
+            break;
+    }
+
+    return JSON.stringify(chat_metadata.script_injects);
 }
 
 /**
