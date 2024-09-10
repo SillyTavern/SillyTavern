@@ -24,6 +24,7 @@ import {
     main_api,
     name1,
     name2,
+    neutralCharacterName,
     reloadCurrentChat,
     removeMacros,
     renameCharacter,
@@ -3129,7 +3130,10 @@ export async function sendMessageAs(args, text) {
     const character = characters.find(x => x.avatar === name) ?? characters.find(x => x.name === name);
     let force_avatar, original_avatar;
 
-    if (this_chid !== undefined && characters[this_chid] === character) {
+    const chatCharacter = this_chid !== null ? characters[this_chid] : null;
+    const isNeutralCharacter = !chatCharacter && name2 === neutralCharacterName;
+
+    if (chatCharacter === character || isNeutralCharacter) {
         // If the targeted character is the currently selected one in a solo chat, we don't need to force any avatars
     }
     else if (character && character.avatar !== 'none') {
