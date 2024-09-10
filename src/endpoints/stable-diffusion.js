@@ -844,7 +844,6 @@ pollinations.post('/generate', jsonParser, async (request, response) => {
             negative_prompt: String(request.body.negative_prompt),
             seed: String(request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 10_000_000)),
             enhance: String(request.body.enhance ?? false),
-            refine: String(request.body.refine ?? false),
             width: String(request.body.width ?? 1024),
             height: String(request.body.height ?? 1024),
             nologo: String(true),
