@@ -3220,6 +3220,10 @@ export function duplicateWorldInfoEntry(data, uid) {
     const entry = createWorldInfoEntry(data.name, data);
     Object.assign(entry, originalData);
 
+    // Update Display indexs
+    data.entries.filter(x => x.displayIndex > entry.displayIndex).forEach(x => x.displayIndex++);
+    entry.displayIndex++;
+
     return entry;
 }
 
