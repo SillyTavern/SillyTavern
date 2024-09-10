@@ -3470,7 +3470,7 @@ function getModelOptions(quiet) {
         return nullResult;
     }
 
-    const options = Array.from(modelSelectControl.options);
+    const options = Array.from(modelSelectControl.options).filter(x => x.value);
     return { control: modelSelectControl, options };
 }
 
