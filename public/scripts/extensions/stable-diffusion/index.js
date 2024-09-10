@@ -1692,28 +1692,17 @@ async function loadStabilityModels() {
 }
 
 async function loadPollinationsModels() {
-    return [
-        {
-            value: 'flux',
-            text: 'FLUX.1 [schnell]',
-        },
-        {
-            value: 'flux-realism',
-            text: 'FLUX Realism',
-        },
-        {
-            value: 'flux-anime',
-            text: 'FLUX Anime',
-        },
-        {
-            value: 'flux-3d',
-            text: 'FLUX 3D',
-        },
-        {
-            value: 'turbo',
-            text: 'SDXL Turbo',
-        },
-    ];
+    const result = await fetch('/api/sd/pollinations/models', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return data;
+    }
+
+    return [];
 }
 
 async function loadTogetherAIModels() {
