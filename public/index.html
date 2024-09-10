@@ -65,7 +65,7 @@
         <!-- background selection menu -->
         <div id="ai-config-button" class="drawer">
             <div class="drawer-toggle drawer-header">
-                <div id="leftNavDrawerIcon" class="drawer-icon fa-solid fa-sliders  closedIcon" title="AI Response Configuration" data-i18n="[title]AI Response Configuration"></div>
+                <div id="leftNavDrawerIcon" class="drawer-icon fa-solid fa-sliders fa-fw closedIcon" title="AI Response Configuration" data-i18n="[title]AI Response Configuration"></div>
             </div>
             <div id="left-nav-panel" class="drawer-content fillLeft closedDrawer">
                 <div id="left-nav-panelheader" class="fa-solid fa-grip drag-grabber"></div>
@@ -1898,18 +1898,18 @@
         </div>
         <div id="sys-settings-button" class="drawer">
             <div class="drawer-toggle drawer-header">
-                <div id="API-status-top" class="drawer-icon fa-solid fa-plug-circle-exclamation  closedIcon" title="API Connections" data-i18n="[title]API Connections;[no_connection_text]api_no_connection" no_connection_text="No connection..."></div>
+                <div id="API-status-top" class="drawer-icon fa-solid fa-plug-circle-exclamation fa-fw closedIcon" title="API Connections" data-i18n="[title]API Connections;[no_connection_text]api_no_connection" no_connection_text="No connection..."></div>
             </div>
             <div id="rm_api_block" class="drawer-content closedDrawer">
                 <h3 class="margin0" id="title_api">API</h3>
                 <div class="flex-container flexFlowColumn">
                     <div id="main-API-selector-block">
                         <select id="main_api">
-                            <option value="textgenerationwebui"><span data-i18n="Text Completion">Text Completion</span></option>
-                            <option value="openai"><span data-i18n="Chat Completion">Chat Completion</span></option>
-                            <option value="novel"><span data-i18n="NovelAI">NovelAI</span></option>
-                            <option value="koboldhorde"><span data-i18n="KoboldAI Horde">KoboldAI Horde</span></option>
-                            <option value="kobold"><span data-i18n="KoboldAI">KoboldAI Classic</span></option>
+                            <option value="textgenerationwebui" data-i18n="Text Completion">Text Completion</option>
+                            <option value="openai" data-i18n="Chat Completion">Chat Completion</option>
+                            <option value="novel" data-i18n="NovelAI">NovelAI</option>
+                            <option value="koboldhorde" data-i18n="KoboldAI Horde">KoboldAI Horde</option>
+                            <option value="kobold" data-i18n="KoboldAI">KoboldAI Classic</option>
                         </select>
                     </div>
                     <div id="kobold_horde" style="position: relative;"> <!-- shows the kobold settings -->
@@ -2071,7 +2071,7 @@
                                 <div>
                                     <h4 data-i18n="TogetherAI Model">TogetherAI Model</h4>
                                     <select id="model_togetherai_select">
-                                        <option data-i18n="-- Connect to the API --">
+                                        <option value="" data-i18n="-- Connect to the API --">
                                             -- Connect to the API --
                                         </option>
                                     </select>
@@ -2095,7 +2095,7 @@
                                 <div>
                                     <h4 data-i18n="OpenRouter Model">OpenRouter Model</h4>
                                     <select id="openrouter_model">
-                                        <option data-i18n="-- Connect to the API --">
+                                        <option value="" data-i18n="-- Connect to the API --">
                                             -- Connect to the API --
                                         </option>
                                     </select>
@@ -2122,7 +2122,7 @@
                                 <div>
                                     <h4 data-i18n="InfermaticAI Model">InfermaticAI Model</h4>
                                     <select id="model_infermaticai_select">
-                                        <option>
+                                        <option value="" data-i18n="-- Connect to the API --">
                                             -- Connect to the API --
                                         </option>
                                     </select>
@@ -2145,7 +2145,7 @@
                                 <div>
                                     <h4 data-i18n="DreamGen Model">DreamGen Model</h4>
                                     <select id="model_dreamgen_select">
-                                        <option>
+                                        <option value="" data-i18n="-- Connect to the API --">
                                             -- Connect to the API --
                                         </option>
                                     </select>
@@ -2171,7 +2171,7 @@
                                 <div class="flex1">
                                     <h4 data-i18n="Mancer Model">Mancer Model</h4>
                                     <select id="mancer_model">
-                                        <option data-i18n="-- Connect to the API --">
+                                        <option value="" data-i18n="-- Connect to the API --">
                                             -- Connect to the API --
                                         </option>
                                     </select>
@@ -2221,7 +2221,7 @@
                                     For privacy reasons, your API key will be hidden after you reload the page.
                                 </div>
                                 <select id="featherless_model">
-                                    <option data-i18n="-- Connect to the API --">
+                                    <option value="" data-i18n="-- Connect to the API --">
                                         -- Connect to the API --
                                     </option>
                                 </select>
@@ -2249,7 +2249,7 @@
                                 <div>
                                     <h4 data-i18n="vLLM Model">vLLM Model</h4>
                                     <select id="vllm_model">
-                                        <option data-i18n="-- Connect to the API --">
+                                        <option value="" data-i18n="-- Connect to the API --">
                                             -- Connect to the API --
                                         </option>
                                     </select>
@@ -2295,7 +2295,7 @@
                                 <div>
                                     <h4 data-i18n="Aphrodite Model">Aphrodite Model</h4>
                                     <select id="aphrodite_model">
-                                        <option data-i18n="-- Connect to the API --">
+                                        <option value="" data-i18n="-- Connect to the API --">
                                             -- Connect to the API --
                                         </option>
                                     </select>
@@ -2335,11 +2335,10 @@
                                 </div>
                                 <div class="flex1">
                                     <h4>
-                                        <span data-i18n="Ollama Model">Ollama Model
-                                    </h4>
+                                        <span data-i18n="Ollama Model">Ollama Model</span>
                                     </h4>
                                     <select id="ollama_model">
-                                        <option data-i18n="-- Connect to the API --">
+                                        <option value="" data-i18n="-- Connect to the API --">
                                             -- Connect to the API --
                                         </option>
                                     </select>
@@ -2373,7 +2372,27 @@
                                     <h4>
                                         <span data-i18n="Tabby Model">Tabby Model</span>
                                     </h4>
-                                    </h4>
+                                    <b>
+                                        EXPERIMENTAL FEATURE. USE AT YOUR OWN RISK. DON'T ASK FOR SUPPORT ON THIS.
+                                    </b>
+                                    <select id="tabby_model">
+                                        <option value="" data-i18n="-- Connect to the API --">
+                                            -- Connect to the API --
+                                        </option>
+                                    </select>
+                                    <div class="marginTopBot5">
+                                        <small>
+                                            <i class="fa-solid fa-lightbulb"></i>
+                                            &nbsp;
+                                            <code>inline_model_loading: True</code>
+                                            <span data-i18n="must be set in Tabby's config.yml to switch models.">
+                                                must be set in Tabby's config.yml to switch models.
+                                            </span>
+                                            <b data-i18n="Use an admin API key.">
+                                                Use an admin API key.
+                                            </b>
+                                        </small>
+                                    </div>
                                     <div id="tabby_download_model" class="menu_button menu_button_icon">
                                         <i class="fa-solid fa-download"></i>
                                         <span data-i18n="Download">Download</span>
@@ -2685,7 +2704,7 @@
                             <div>
                                 <h4 data-i18n="OpenRouter Model">OpenRouter Model</h4>
                                 <select id="model_openrouter_select">
-                                    <option data-i18n="-- Connect to the API --">-- Connect to the API --</option>
+                                    <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
                                 </select>
                             </div>
                             <label for="openrouter_use_fallback" class="checkbox_label marginTopBot5" data-i18n="[title]Allow fallback routes Description" title="Automatically chooses an alternative model if the chosen model can't serve your request.">
@@ -3060,7 +3079,7 @@
         </div>
         <div id="advanced-formatting-button" class="drawer">
             <div class="drawer-toggle">
-                <div class="drawer-icon fa-solid fa-font  closedIcon" title="AI Response Formatting" data-i18n="[title]AI Response Formatting"></div>
+                <div class="drawer-icon fa-solid fa-font fa-fw closedIcon" title="AI Response Formatting" data-i18n="[title]AI Response Formatting"></div>
             </div>
             <div id="AdvancedFormatting" class="drawer-content">
                 <h3 class="margin0" data-i18n="Advanced Formatting">
@@ -3240,7 +3259,7 @@
                                 </small>
                             </label>
                             <div>
-                                <input type="text" id="instruct_activation_regex" class="text_pole textarea_compact" placeholder="e.g. /llama(-)?[3|3.1]/i"></input>
+                                <input type="text" id="instruct_activation_regex" class="text_pole textarea_compact" placeholder="e.g. /llama(-)?[3|3.1]/i">
                             </div>
                             <div>
                                 <label for="instruct_system_prompt" class="flex-container">
@@ -3456,7 +3475,7 @@
         </div>
         <div id="WI-SP-button" class="drawer">
             <div class="drawer-toggle drawer-header">
-                <div id="WIDrawerIcon" class="drawer-icon fa-solid fa-book-atlas closedIcon " title="World Info" data-i18n="[title]World Info"></div>
+                <div id="WIDrawerIcon" class="drawer-icon fa-solid fa-book-atlas fa-fw closedIcon " title="World Info" data-i18n="[title]World Info"></div>
             </div>
             <div id="WorldInfo" class="drawer-content closedDrawer">
                 <div id="WorldInfoheader" class="fa-solid fa-grip drag-grabber"></div>
@@ -3657,7 +3676,7 @@
         </div>
         <div id="user-settings-button" class="drawer">
             <div class="drawer-toggle">
-                <div class="drawer-icon fa-solid fa-user-cog closedIcon" title="User Settings" data-i18n="[title]User Settings"></div>
+                <div class="drawer-icon fa-solid fa-user-cog fa-fw closedIcon" title="User Settings" data-i18n="[title]User Settings"></div>
             </div>
             <div id="user-settings-block" class="drawer-content closedDrawer">
                 <div class="flex-container flexFlowColumn">
@@ -3726,7 +3745,7 @@
                         <div name="themeElements" class="flex-container flexFlowColumn flexNoGap">
                             <!-- <h4><span data-i18n="UI Colors">Theme Settings</span></h4> -->
                             <div name="AvatarAndChatDisplay" class="flex-container flexFlowColumn">
-                                <div class="flex-container">
+                                <div class="flex-container alignItemsBaseline">
                                     <span data-i18n="Avatar Style">Avatars:</span>
                                     <select id="avatar_style" class="widthNatural flex1 margin0">
                                         <option value="0" data-i18n="Circle">Circle</option>
@@ -3734,10 +3753,10 @@
                                         <option value="1" data-i18n="Rectangle">Rectangle</option>
                                     </select>
                                 </div>
-                                <div class="flex-container">
+                                <div class="flex-container alignItemsBaseline">
                                     <span data-i18n="Chat Style:">Chat Style:</span><br>
                                     <select id="chat_display" class="widthNatural flex1 margin0">
-                                        <option value="0" data-i18n="Flat">Flat</span>
+                                        <option value="0" data-i18n="Flat">Flat</option>
                                         <option value="1" data-i18n="Bubbles">Bubbles</option>
                                         <option value="2" data-i18n="Document">Document</option>
                                     </select>
@@ -4337,7 +4356,7 @@
         </div>
         <div id="logo_block" class="drawer">
             <div id="site_logo" class="drawer-toggle drawer-header" title="Change Background Image" data-i18n="[title]Change Background Image">
-                <div class="drawer-icon fa-solid fa-panorama  closedIcon"></div>
+                <div class="drawer-icon fa-solid fa-panorama fa-fw closedIcon"></div>
             </div>
             <div id="Backgrounds" class="drawer-content closedDrawer">
                 <div class="flex-container">
@@ -4375,7 +4394,7 @@
         </div>
         <div id="extensions-settings-button" class="drawer">
             <div class="drawer-toggle">
-                <div class="drawer-icon fa-solid fa-cubes  closedIcon" title="Extensions" data-i18n="[title]Extensions"></div>
+                <div class="drawer-icon fa-solid fa-cubes fa-fw closedIcon" title="Extensions" data-i18n="[title]Extensions"></div>
             </div>
             <div id="rm_extensions_block" class="drawer-content closedDrawer">
                 <div class="extensions_block flex-container">
@@ -4448,7 +4467,7 @@
         </div>
         <div id="persona-management-button" class="drawer">
             <div class="drawer-toggle">
-                <div class="drawer-icon fa-solid fa-face-smile closedIcon" title="Persona Management" data-i18n="[title]Persona Management"></div>
+                <div class="drawer-icon fa-solid fa-face-smile fa-fw closedIcon" title="Persona Management" data-i18n="[title]Persona Management"></div>
             </div>
             <div class="drawer-content closedDrawer">
                 <div class="flex-container wide100p alignitemscenter spaceBetween flexNoGap">
@@ -4556,7 +4575,7 @@
         </div>
         <div id="rightNavHolder" class="drawer">
             <div id="unimportantYes" class="drawer-toggle drawer-header">
-                <div id="rightNavDrawerIcon" class="drawer-icon fa-solid fa-address-card  closedIcon" title="Character Management" data-i18n="[title]Character Management">
+                <div id="rightNavDrawerIcon" class="drawer-icon fa-solid fa-address-card fa-fw closedIcon" title="Character Management" data-i18n="[title]Character Management">
                 </div>
             </div>
             <nav id="right-nav-panel" class="drawer-content closedDrawer fillRight">
@@ -5586,8 +5605,8 @@
                                     </div>
                                     <div class="range-block-range">
                                         <select name="characterFilter" class="select2_multi_sameline" multiple>
-                                            <option value="">
-                                                <span data-i18n="-- Characters not found --">-- Characters not found --</span>
+                                            <option value="" data-i18n="-- Characters not found --">
+                                                -- Characters not found --
                                             </option>
                                         </select>
                                     </div>
@@ -5644,7 +5663,6 @@
                 <input class="openai_logit_bias_text text_pole" data-i18n="[placeholder]Text or token ids" placeholder="Text or [token ids]" />
                 <input class="openai_logit_bias_value text_pole" type="number" min="-100" value="0" max="100" />
                 <i class="menu_button fa-solid fa-xmark openai_logit_bias_remove"></i>
-                </form>
             </div>
         </div>
         <div id="logit_bias_template" class="template_element">

@@ -1745,7 +1745,7 @@ async function loadContextSettings() {
                 power_user.context[control.property] = value;
             }
             console.log(`Setting ${$element.prop('id')} to ${value}`);
-            if (!CSS.supports('field-sizing', 'content')) {
+            if (!CSS.supports('field-sizing', 'content') && $(this).is('textarea')) {
                 await resetScrollHeight($(this));
             }
             saveSettingsDebounced();

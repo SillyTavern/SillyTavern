@@ -224,7 +224,7 @@ import {
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels, initTextGenModels } from './scripts/textgen-models.js';
+import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels, initTextGenModels, loadTabbyModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { MacrosParser, evaluateMacros, getLastMessageId } from './scripts/macros.js';
@@ -1216,6 +1216,9 @@ async function getStatusTextgen() {
         } else if (textgen_settings.type === FEATHERLESS) {
             loadFeatherlessModels(data?.data);
             setOnlineStatus(textgen_settings.featherless_model);
+        } else if (textgen_settings.type === TABBY) {
+            loadTabbyModels(data?.data);
+            setOnlineStatus(textgen_settings.tabby_model || data?.result);
         } else {
             setOnlineStatus(data?.result);
         }
@@ -1891,6 +1894,7 @@ export async function sendTextareaMessage() {
     // message was sent from a character (not the user or the system).
     const textareaText = String($('#send_textarea').val());
     if (power_user.continue_on_send &&
+        !hasPendingFileAttachment() &&
         !textareaText &&
         !selected_group &&
         chat.length &&
@@ -3103,6 +3107,12 @@ class StreamingProcessor {
         this.hideMessageButtons(this.messageId);
         generatedPromptCache = '';
         unblockGeneration();
+
+        const noEmitTypes = ['swipe', 'impersonate', 'continue'];
+        if (!noEmitTypes.includes(this.type)) {
+            eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId);
+            eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, this.messageId);
+        }
     }
 
     setFirstSwipe(messageId) {
@@ -3333,7 +3343,7 @@ function removeLastMessage() {
  */
 export async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops, quietName } = {}, dryRun = false) {
     console.log('Generate entered');
-    eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops }, dryRun);
+    await eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops }, dryRun);
     setGenerationProgress(0);
     generation_started = new Date();
 
@@ -3413,7 +3423,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             .filter((index) => index !== undefined && index !== null);
 
         if (memberIds.length > 0) {
-            setCharacterId(memberIds[0]);
+            if (menu_type != 'character_edit') setCharacterId(memberIds[0]);
             setCharacterName('');
         } else {
             console.log('No enabled members found');
@@ -3479,8 +3489,17 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     //PRE FORMATING STRING
     //*********************************
 
+    // These generation types should not attach pending files to the chat
+    const noAttachTypes = [
+        'regenerate',
+        'swipe',
+        'impersonate',
+        'quiet',
+        'continue',
+        'ask_command',
+    ];
     //for normal messages sent from user..
-    if ((textareaText != '' || hasPendingFileAttachment()) && !automatic_trigger && type !== 'quiet' && !dryRun) {
+    if ((textareaText != '' || (hasPendingFileAttachment() && !noAttachTypes.includes(type))) && !automatic_trigger && type !== 'quiet' && !dryRun) {
         // If user message contains no text other than bias - send as a system message
         if (messageBias && !removeMacros(textareaText)) {
             sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
@@ -4933,7 +4952,7 @@ async function duplicateCharacter() {
     return '';
 }
 
-export async function itemizedParams(itemizedPrompts, thisPromptSet) {
+export async function itemizedParams(itemizedPrompts, thisPromptSet, incomingMesId) {
     const params = {
         charDescriptionTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].charDescription),
         charPersonalityTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].charPersonality),
@@ -4952,7 +4971,19 @@ export async function itemizedParams(itemizedPrompts, thisPromptSet) {
         chatInjects: await getTokenCountAsync(itemizedPrompts[thisPromptSet].chatInjects),
         chatVectorsStringTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].chatVectorsString),
         dataBankVectorsStringTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].dataBankVectorsString),
+        modelUsed: chat[incomingMesId]?.extra?.model,
+        apiUsed: chat[incomingMesId]?.extra?.api,
     };
+
+    const getFriendlyName = (value) => $(`#rm_api_block select option[value="${value}"]`).first().text() || value;
+
+    if (params.apiUsed) {
+        params.apiUsed = getFriendlyName(params.apiUsed);
+    }
+
+    if (params.this_main_api) {
+        params.mainApiFriendlyName = getFriendlyName(params.this_main_api);
+    }
 
     if (params.chatInjects) {
         params.ActualChatHistoryTokens = params.ActualChatHistoryTokens - params.chatInjects;
@@ -5068,7 +5099,7 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
         return null;
     }
 
-    const params = await itemizedParams(itemizedPrompts, thisPromptSet);
+    const params = await itemizedParams(itemizedPrompts, thisPromptSet, incomingMesId);
     const flatten = (rawPrompt) => Array.isArray(rawPrompt) ? rawPrompt.map(x => x.content).join('\n') : rawPrompt;
 
     const template = params.this_main_api == 'openai'
@@ -8534,7 +8565,7 @@ async function selectContextCallback(args, name) {
 
 async function selectInstructCallback(args, name) {
     if (!name) {
-        return power_user.instruct.preset;
+        return power_user.instruct.enabled || isTrueBoolean(args?.forceGet) ? power_user.instruct.preset : '';
     }
 
     const quiet = isTrueBoolean(args?.quiet);
@@ -9235,6 +9266,13 @@ jQuery(async function () {
                 defaultValue: 'false',
                 enumList: commonEnumProviders.boolean('trueFalse')(),
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'forceGet',
+                description: 'Force getting a name even if instruct mode is disabled',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
         ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -9245,7 +9283,8 @@ jQuery(async function () {
         ],
         helpString: `
             <div>
-                Selects instruct mode template by name. Gets the current instruct template if no name is provided.
+                Selects instruct mode template by name. Enables instruct mode if not already enabled.
+                Gets the current instruct template if no name is provided and instruct mode is enabled or <code>forceGet=true</code> is passed.
             </div>
             <div>
                 <strong>Example:</strong>
@@ -10739,7 +10778,11 @@ jQuery(async function () {
         var icon = $(this).find('.inline-drawer-icon');
         icon.toggleClass('down up');
         icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');
-        $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
+        $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle({
+            complete: () => {
+                $(this).css('height', '');
+            },
+        });
 
         // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
         if (!CSS.supports('field-sizing', 'content')) {
