@@ -8563,7 +8563,7 @@ async function selectContextCallback(args, name) {
 
 async function selectInstructCallback(args, name) {
     if (!name) {
-        return power_user.instruct.preset;
+        return power_user.instruct.enabled ? power_user.instruct.preset : '';
     }
 
     const quiet = isTrueBoolean(args?.quiet);
@@ -9274,7 +9274,7 @@ jQuery(async function () {
         ],
         helpString: `
             <div>
-                Selects instruct mode template by name. Gets the current instruct template if no name is provided.
+                Selects instruct mode template by name. Gets the current instruct template if no name is provided and instruct mode is enabled.
             </div>
             <div>
                 <strong>Example:</strong>
