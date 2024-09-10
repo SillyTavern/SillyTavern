@@ -3222,7 +3222,7 @@ export function duplicateWorldInfoEntry(data, uid) {
 
     // Update Display indexs
     data.entries.filter(x => x.displayIndex > entry.displayIndex).forEach(x => {
-        x.displayIndex++
+        x.displayIndex++;
         setWIOriginalDataValue(data, x.uid, 'extensions.display_index', x.displayIndex);
     });
     entry.displayIndex++;
