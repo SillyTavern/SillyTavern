@@ -1,6 +1,5 @@
 export function initInputMarkdown() {
-
-    $('.mdHotkeys').on('keydown', function (e) {
+    $(document).on('keydown', 'textarea.mdHotkeys', function (e) {
 
         // Ensure that the element is a textarea
         let textarea = this;
