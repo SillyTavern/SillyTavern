@@ -3129,7 +3129,10 @@ export async function sendMessageAs(args, text) {
     const character = characters.find(x => x.avatar === name) ?? characters.find(x => x.name === name);
     let force_avatar, original_avatar;
 
-    if (character && character.avatar !== 'none') {
+    if (characters[this_chid] === character) {
+        // If the targeted character is the currently selected one in a solo chat, we don't need to force any avatars
+    }
+    else if (character && character.avatar !== 'none') {
         force_avatar = getThumbnailUrl('avatar', character.avatar);
         original_avatar = character.avatar;
     }
