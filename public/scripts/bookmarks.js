@@ -57,10 +57,10 @@ async function getExistingChatNames() {
     }
 }
 
-async function getBookmarkName({ forceName = null } = {}) {
+async function getBookmarkName({ isReplace = false, forceName = null } = {}) {
     const chatNames = await getExistingChatNames();
 
-    const body = await renderTemplateAsync('createCheckpoint');
+    const body = await renderTemplateAsync('createCheckpoint', { isReplace: isReplace });
     let name = forceName || await Popup.show.input('Create Checkpoint', body);
     if (name === null) {
         return null;
@@ -195,14 +195,9 @@ export async function createNewBookmark(mesId, { forceName = null } = {}) {
         lastMes.extra = {};
     }
 
-    if (lastMes.extra.bookmark_link && !forceName) {
-        const confirm = await Popup.show.confirm('Replace Checkpoint', 'Checkpoint for the last message already exists.<br />Would you like to replace it?');
-        if (!confirm) {
-            return null;
-        }
-    }
+    const isReplace = lastMes.extra.bookmark_link;
 
-    let name = await getBookmarkName({ forceName: forceName });
+    let name = await getBookmarkName({ isReplace: isReplace, forceName: forceName });
     if (!name) {
         return null;
     }
