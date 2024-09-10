@@ -8563,7 +8563,7 @@ async function selectContextCallback(args, name) {
 
 async function selectInstructCallback(args, name) {
     if (!name) {
-        return power_user.instruct.enabled ? power_user.instruct.preset : '';
+        return power_user.instruct.enabled || isTrueBoolean(args?.forceGet) ? power_user.instruct.preset : '';
     }
 
     const quiet = isTrueBoolean(args?.quiet);
@@ -9264,6 +9264,13 @@ jQuery(async function () {
                 defaultValue: 'false',
                 enumList: commonEnumProviders.boolean('trueFalse')(),
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'forceGet',
+                description: 'Force getting a name even if instruct mode is disabled',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
         ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -9274,7 +9281,8 @@ jQuery(async function () {
         ],
         helpString: `
             <div>
-                Selects instruct mode template by name. Gets the current instruct template if no name is provided and instruct mode is enabled.
+                Selects instruct mode template by name. Enables instruct mode if not already enabled.
+                Gets the current instruct template if no name is provided and instruct mode is enabled or <code>forceGet=true</code> is passed.
             </div>
             <div>
                 <strong>Example:</strong>
