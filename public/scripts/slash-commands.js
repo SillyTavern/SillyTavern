@@ -3131,7 +3131,7 @@ export async function sendMessageAs(args, text) {
     let force_avatar, original_avatar;
 
     const chatCharacter = this_chid !== null ? characters[this_chid] : null;
-    const isNeutralCharacter = !chatCharacter && name2 === neutralCharacterName;
+    const isNeutralCharacter = !chatCharacter && name2 === neutralCharacterName && name === neutralCharacterName;
 
     if (chatCharacter === character || isNeutralCharacter) {
         // If the targeted character is the currently selected one in a solo chat, we don't need to force any avatars
