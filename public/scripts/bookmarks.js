@@ -31,6 +31,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { createTagMapFromList } from './tags.js';
+import { renderTemplateAsync } from './templates.js';
 
 import {
     getUniqueName,
@@ -59,7 +60,8 @@ async function getExistingChatNames() {
 async function getBookmarkName({ forceName = null } = {}) {
     const chatNames = await getExistingChatNames();
 
-    let name = forceName || await Popup.show.input('Create Checkpoint', '<span class="margin-right-10px">Enter Checkpoint Name:</span><small>(Leave empty to auto-generate)</small>');
+    const body = await renderTemplateAsync('createCheckpoint');
+    let name = forceName || await Popup.show.input('Create Checkpoint', body);
     if (name === null) {
         return null;
     }
@@ -233,7 +235,8 @@ export async function createNewBookmark(mesId, { forceName = null } = {}) {
  */
 export function updateBookmarkDisplay(mes, newBookmarkLink = null) {
     newBookmarkLink && mes.attr('bookmark_link', newBookmarkLink);
-    mes.find('.mes_bookmark').attr('title', `Checkpoint\n${mes.attr('bookmark_link')}\n\n${mes.find('.mes_bookmark').data('tooltip')}`);
+    const bookmarkFlag = mes.find('.mes_bookmark');
+    bookmarkFlag.attr('title', `Checkpoint\n${mes.attr('bookmark_link')}\n\n${bookmarkFlag.data('tooltip')}`);
 }
 
 async function backToMainChat() {
@@ -423,14 +426,6 @@ function registerBookmarksSlashCommands() {
             const branchName = await branchChat(mesId);
             return branchName ?? '';
         },
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'mes',
-                description: 'Message ID',
-                typeList: [ARGUMENT_TYPE.NUMBER],
-                enumProvider: commonEnumProviders.messages(),
-            }),
-        ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'Message ID',
@@ -524,14 +519,6 @@ function registerBookmarksSlashCommands() {
 
             return checkPointName;
         },
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'mes',
-                description: 'Message ID',
-                typeList: [ARGUMENT_TYPE.NUMBER],
-                enumProvider: commonEnumProviders.messages(),
-            }),
-        ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'Message ID',
@@ -549,12 +536,12 @@ function registerBookmarksSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'checkpoint-exit',
-        returns: 'The name of the chat exited to. Returns null if not in a checkpoint chat.',
+        returns: 'The name of the chat exited to. Returns an empty string if not in a checkpoint chat.',
         callback: async () => {
             const mainChat = await backToMainChat();
             return mainChat ?? '';
         },
-        helpString: 'Exit the checkpoint chat.<br />If not in a checkpoint chat, returns null.',
+        helpString: 'Exit the checkpoint chat.<br />If not in a checkpoint chat, returns empty string.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'checkpoint-parent',
@@ -563,8 +550,8 @@ function registerBookmarksSlashCommands() {
             const mainChatName = getMainChatName();
             return mainChatName ?? '';
         },
-        helpString: 'Get the name of the parent chat for this checkpoint. If not in a checkpoint chat, returns null.',
-    }))
+        helpString: 'Get the name of the parent chat for this checkpoint.<br />If not in a checkpoint chat, returns empty string.',
+    }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'checkpoint-get',
         returns: 'Name of the chat',
@@ -575,14 +562,6 @@ function registerBookmarksSlashCommands() {
             const checkPointName = chat[mesId].extra?.bookmark_link;
             return checkPointName ?? '';
         },
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'mes',
-                description: 'Message ID',
-                typeList: [ARGUMENT_TYPE.NUMBER],
-                enumProvider: commonEnumProviders.messages(),
-            }),
-        ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'Message ID',
@@ -601,12 +580,9 @@ function registerBookmarksSlashCommands() {
         returns: 'JSON array of all existing checkpoints in this chat, as an array',
         /** @param {{links?: string}} args @returns {Promise<string>} */
         callback: async (args, _) => {
-            const result = [];
-            for (const mesId in chat) {
-                if (chat[mesId].extra?.bookmark_link) {
-                    result.push(args.links ? chat[mesId].extra.bookmark_link : Number(mesId));
-                }
-            }
+            const result = Object.entries(chat)
+                .filter(([_, message]) => message.extra?.bookmark_link)
+                .map(([mesId, message]) => args.links ? message.extra.bookmark_link : Number(mesId));
             return JSON.stringify(result);
         },
         namedArgumentList: [
@@ -634,7 +610,7 @@ export function initBookmarks() {
     $('#option_back_to_main').on('click', backToMainChat);
     $('#option_convert_to_group').on('click', convertSoloToGroupChat);
 
-    $(document).on('click', '.select_chat_block, .bookmark_link, .mes_bookmark', async function (e) {
+    $(document).on('click', '.select_chat_block, .mes_bookmark', async function (e) {
         // If shift is held down, we are not following the bookmark, but creating a new one
         if (e.shiftKey) {
             var selectedMesId = $(this).closest('.mes').attr('mesid');
