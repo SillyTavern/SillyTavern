@@ -3130,7 +3130,7 @@ export async function sendMessageAs(args, text) {
     const character = characters.find(x => x.avatar === name) ?? characters.find(x => x.name === name);
     let force_avatar, original_avatar;
 
-    const chatCharacter = this_chid !== null ? characters[this_chid] : null;
+    const chatCharacter = this_chid !== undefined ? characters[this_chid] : null;
     const isNeutralCharacter = !chatCharacter && name2 === neutralCharacterName && name === neutralCharacterName;
 
     if (chatCharacter === character || isNeutralCharacter) {
