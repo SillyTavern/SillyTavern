@@ -1745,7 +1745,7 @@ async function loadContextSettings() {
                 power_user.context[control.property] = value;
             }
             console.log(`Setting ${$element.prop('id')} to ${value}`);
-            if (!CSS.supports('field-sizing', 'content')) {
+            if (!CSS.supports('field-sizing', 'content') && $(this).is('textarea')) {
                 await resetScrollHeight($(this));
             }
             saveSettingsDebounced();
@@ -1798,7 +1798,7 @@ async function loadContextSettings() {
             for (const instruct_preset of instruct_presets) {
                 // If instruct preset matches the context template
                 if (instruct_preset.name === name) {
-                    selectInstructPreset(instruct_preset.name);
+                    selectInstructPreset(instruct_preset.name, { isAuto: true });
                     break;
                 }
             }

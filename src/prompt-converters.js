@@ -335,10 +335,12 @@ function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '
                 if (part.type === 'text') {
                     parts.push({ text: part.text });
                 } else if (part.type === 'image_url' && isMultimodal) {
+                    const mimeType = part.image_url.url.split(';')[0].split(':')[1];
+                    const base64Data = part.image_url.url.split(',')[1];
                     parts.push({
                         inlineData: {
-                            mimeType: 'image/png',
-                            data: part.image_url.url,
+                            mimeType: mimeType,
+                            data: base64Data,
                         },
                     });
                     hasImage = true;

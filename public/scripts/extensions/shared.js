@@ -20,7 +20,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
 
     throwIfInvalidModel(useReverseProxy);
 
-    const noPrefix = ['google', 'ollama', 'llamacpp'].includes(extension_settings.caption.multimodal_api);
+    const noPrefix = ['ollama', 'llamacpp'].includes(extension_settings.caption.multimodal_api);
 
     if (noPrefix && base64Img.startsWith('data:image/')) {
         base64Img = base64Img.split(',')[1];
@@ -28,7 +28,6 @@ export async function getMultimodalCaption(base64Img, prompt) {
 
     // OpenRouter has a payload limit of ~2MB. Google is 4MB, but we love democracy.
     // Ooba requires all images to be JPEGs. Koboldcpp just asked nicely.
-    const isGoogle = extension_settings.caption.multimodal_api === 'google';
     const isOllama = extension_settings.caption.multimodal_api === 'ollama';
     const isLlamaCpp = extension_settings.caption.multimodal_api === 'llamacpp';
     const isCustom = extension_settings.caption.multimodal_api === 'custom';
@@ -40,10 +39,6 @@ export async function getMultimodalCaption(base64Img, prompt) {
     if ((['google', 'openrouter'].includes(extension_settings.caption.multimodal_api) && base64Bytes > compressionLimit) || isOoba || isKoboldCpp) {
         const maxSide = 1024;
         base64Img = await createThumbnail(base64Img, maxSide, maxSide, 'image/jpeg');
-
-        if (isGoogle) {
-            base64Img = base64Img.split(',')[1];
-        }
     }
 
     const proxyUrl = useReverseProxy ? oai_settings.reverse_proxy : '';

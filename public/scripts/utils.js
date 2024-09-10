@@ -1436,6 +1436,15 @@ export function uuidv4() {
     });
 }
 
+/**
+ * Collapses multiple spaces in a strings into one.
+ * @param {string} s String to process
+ * @returns {string} String with collapsed spaces
+ */
+export function collapseSpaces(s) {
+    return s.replace(/\s+/g, ' ').trim();
+}
+
 function postProcessText(text, collapse = true) {
     // Remove carriage returns
     text = text.replace(/\r/g, '');
@@ -2041,7 +2050,7 @@ export async function fetchFaFile(name) {
     style.remove();
     return [...sheet.cssRules]
         .filter(rule => rule.style?.content)
-        .map(rule => rule.selectorText.split(/,\s*/).map(selector=>selector.split('::').shift().slice(1)))
+        .map(rule => rule.selectorText.split(/,\s*/).map(selector => selector.split('::').shift().slice(1)))
     ;
 }
 export async function fetchFa() {
@@ -2068,7 +2077,7 @@ export async function showFontAwesomePicker(customList = null) {
                 qry.placeholder = 'Filter icons';
                 qry.autofocus = true;
                 const qryDebounced = debounce(() => {
-                    const result = faList.filter(fa => fa.find(className=>className.includes(qry.value.toLowerCase())));
+                    const result = faList.filter(fa => fa.find(className => className.includes(qry.value.toLowerCase())));
                     for (const fa of faList) {
                         if (!result.includes(fa)) {
                             fas[fa].classList.add('hidden');
@@ -2090,7 +2099,7 @@ export async function showFontAwesomePicker(customList = null) {
                     opt.classList.add('menu_button');
                     opt.classList.add('fa-solid');
                     opt.classList.add(fa[0]);
-                    opt.title = fa.map(it=>it.slice(3)).join(', ');
+                    opt.title = fa.map(it => it.slice(3)).join(', ');
                     opt.dataset.result = POPUP_RESULT.AFFIRMATIVE.toString();
                     opt.addEventListener('click', () => value = fa[0]);
                     grid.append(opt);
