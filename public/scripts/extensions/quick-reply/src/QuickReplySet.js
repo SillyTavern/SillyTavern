@@ -1,9 +1,10 @@
 import { getRequestHeaders, substituteParams } from '../../../../script.js';
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
-import { executeSlashCommands, executeSlashCommandsOnChatInput, executeSlashCommandsWithOptions } from '../../../slash-commands.js';
+import { executeSlashCommandsOnChatInput, executeSlashCommandsWithOptions } from '../../../slash-commands.js';
+
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
-import { debounceAsync, log, warn } from '../index.js';
+import { debounceAsync, warn } from '../index.js';
 import { QuickReply } from './QuickReply.js';
 
 export class QuickReplySet {
@@ -21,7 +22,7 @@ export class QuickReplySet {
      * @param {string} name - name of the QuickReplySet
      */
     static get(name) {
-        return this.list.find(it=>it.name == name);
+        return this.list.find(it => it.name == name);
     }
 
 
@@ -48,11 +49,11 @@ export class QuickReplySet {
 
 
     constructor() {
-        this.save = debounceAsync(()=>this.performSave(), 200);
+        this.save = debounceAsync(() => this.performSave(), 200);
     }
 
     init() {
-        this.qrList.forEach(qr=>this.hookQuickReply(qr));
+        this.qrList.forEach(qr => this.hookQuickReply(qr));
     }
 
 
@@ -69,7 +70,7 @@ export class QuickReplySet {
                 this.dom = root;
                 root.classList.add('qr--buttons');
                 this.updateColor();
-                this.qrList.filter(qr=>!qr.isHidden).forEach(qr=>{
+                this.qrList.filter(qr => !qr.isHidden).forEach(qr => {
                     root.append(qr.render());
                 });
             }
@@ -79,7 +80,7 @@ export class QuickReplySet {
     rerender() {
         if (!this.dom) return;
         this.dom.innerHTML = '';
-        this.qrList.filter(qr=>!qr.isHidden).forEach(qr=>{
+        this.qrList.filter(qr => !qr.isHidden).forEach(qr => {
             this.dom.append(qr.render());
         });
     }
@@ -107,7 +108,7 @@ export class QuickReplySet {
         if (!this.settingsDom) {
             this.settingsDom = document.createElement('div'); {
                 this.settingsDom.classList.add('qr--set-qrListContents');
-                this.qrList.forEach((qr,idx)=>{
+                this.qrList.forEach((qr, idx) => {
                     this.renderSettingsItem(qr, idx);
                 });
             }
@@ -152,12 +153,12 @@ export class QuickReplySet {
      */
     async executeWithOptions(qr, options = {}) {
         options = Object.assign({
-            message:null,
-            isAutoExecute:false,
-            isEditor:false,
-            isRun:false,
-            scope:null,
-            executionOptions:{},
+            message: null,
+            isAutoExecute: false,
+            isEditor: false,
+            isRun: false,
+            scope: null,
+            executionOptions: {},
         }, options);
         const execOptions = options.executionOptions;
         /**@type {HTMLTextAreaElement}*/
@@ -224,9 +225,9 @@ export class QuickReplySet {
 
 
     addQuickReply(data = {}) {
-        const id = Math.max(this.idIndex, this.qrList.reduce((max,qr)=>Math.max(max,qr.id),0)) + 1;
+        const id = Math.max(this.idIndex, this.qrList.reduce((max, qr) => Math.max(max, qr.id), 0)) + 1;
         data.id =
-        this.idIndex = id + 1;
+            this.idIndex = id + 1;
         const qr = QuickReply.from(data);
         this.qrList.push(qr);
         this.hookQuickReply(qr);
@@ -271,11 +272,11 @@ export class QuickReplySet {
      * @param {QuickReply} qr
      */
     hookQuickReply(qr) {
-        qr.onDebug = ()=>this.debug(qr);
-        qr.onExecute = (_, options)=>this.executeWithOptions(qr, options);
-        qr.onDelete = ()=>this.removeQuickReply(qr);
-        qr.onUpdate = ()=>this.save();
-        qr.onInsertBefore = (qrJson)=>{
+        qr.onDebug = () => this.debug(qr);
+        qr.onExecute = (_, options) => this.executeWithOptions(qr, options);
+        qr.onDelete = () => this.removeQuickReply(qr);
+        qr.onUpdate = () => this.save();
+        qr.onInsertBefore = (qrJson) => {
             this.addQuickReplyFromText(qrJson);
             const newQr = this.qrList.pop();
             this.qrList.splice(this.qrList.indexOf(qr), 0, newQr);
@@ -284,7 +285,7 @@ export class QuickReplySet {
             }
             this.save();
         };
-        qr.onTransfer = async()=>{
+        qr.onTransfer = async () => {
             /**@type {HTMLSelectElement} */
             let sel;
             let isCopy = false;
@@ -315,13 +316,13 @@ export class QuickReplySet {
                             sel.append(opt);
                         }
                     }
-                    sel.addEventListener('keyup', (evt)=>{
+                    sel.addEventListener('keyup', (evt) => {
                         if (evt.key == 'Shift') {
                             (dlg.dom ?? dlg.dlg).classList.remove('qr--isCopy');
                             return;
                         }
                     });
-                    sel.addEventListener('keydown', (evt)=>{
+                    sel.addEventListener('keydown', (evt) => {
                         if (evt.key == 'Shift') {
                             (dlg.dom ?? dlg.dlg).classList.add('qr--isCopy');
                             return;
@@ -342,12 +343,12 @@ export class QuickReplySet {
                     dom.append(hintP);
                 }
             }
-            const dlg = new Popup(dom, POPUP_TYPE.CONFIRM, null, { okButton:'Transfer', cancelButton:'Cancel' });
+            const dlg = new Popup(dom, POPUP_TYPE.CONFIRM, null, { okButton: 'Transfer', cancelButton: 'Cancel' });
             const copyBtn = document.createElement('div'); {
                 copyBtn.classList.add('qr--copy');
                 copyBtn.classList.add('menu_button');
                 copyBtn.textContent = 'Copy';
-                copyBtn.addEventListener('click', ()=>{
+                copyBtn.addEventListener('click', () => {
                     isCopy = true;
                     dlg.completeAffirmative();
                 });
@@ -357,7 +358,7 @@ export class QuickReplySet {
             sel.focus();
             await prom;
             if (dlg.result == POPUP_RESULT.AFFIRMATIVE) {
-                const qrs = QuickReplySet.list.find(it=>it.name == sel.value);
+                const qrs = QuickReplySet.list.find(it => it.name == sel.value);
                 qrs.addQuickReply(qr.toJSON());
                 if (!isCopy) {
                     qr.delete();

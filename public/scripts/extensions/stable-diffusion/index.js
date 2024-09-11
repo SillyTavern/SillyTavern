@@ -1,8 +1,6 @@
 import {
     saveSettingsDebounced,
     systemUserName,
-    hideSwipeButtons,
-    showSwipeButtons,
     getRequestHeaders,
     event_types,
     eventSource,

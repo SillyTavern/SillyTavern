@@ -18,7 +18,8 @@ import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgu
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
 import { MacroAutoCompleteOption } from '../autocomplete/MacroAutoCompleteOption.js';
 import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
-import { SlashCommandDebugController } from './SlashCommandDebugController.js';
+/** @typedef {import('./SlashCommandDebugController.js').SlashCommandDebugController} SlashCommandDebugController */
+
 import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
 import { SlashCommandBreak } from './SlashCommandBreak.js';
 
@@ -58,7 +59,7 @@ export class SlashCommandParser {
     static addCommandObject(command) {
         const reserved = ['/', '#', ':', 'parser-flag', 'breakpoint'];
         for (const start of reserved) {
-            if (command.name.toLowerCase().startsWith(start) || (command.aliases ?? []).find(a=>a.toLowerCase().startsWith(start))) {
+            if (command.name.toLowerCase().startsWith(start) || (command.aliases ?? []).find(a => a.toLowerCase().startsWith(start))) {
                 throw new Error(`Illegal Name. Slash command name cannot begin with "${start}".`);
             }
         }
@@ -73,15 +74,15 @@ export class SlashCommandParser {
             console.trace('WARN: Duplicate slash command registered!', [command.name, ...command.aliases]);
         }
 
-        const stack = new Error().stack.split('\n').map(it=>it.trim());
-        command.isExtension = stack.find(it=>it.includes('/scripts/extensions/')) != null;
-        command.isThirdParty = stack.find(it=>it.includes('/scripts/extensions/third-party/')) != null;
+        const stack = new Error().stack.split('\n').map(it => it.trim());
+        command.isExtension = stack.find(it => it.includes('/scripts/extensions/')) != null;
+        command.isThirdParty = stack.find(it => it.includes('/scripts/extensions/third-party/')) != null;
         if (command.isThirdParty) {
-            command.source = stack.find(it=>it.includes('/scripts/extensions/third-party/')).replace(/^.*?\/scripts\/extensions\/third-party\/([^/]+)\/.*$/, '$1');
+            command.source = stack.find(it => it.includes('/scripts/extensions/third-party/')).replace(/^.*?\/scripts\/extensions\/third-party\/([^/]+)\/.*$/, '$1');
         } else if (command.isExtension) {
-            command.source = stack.find(it=>it.includes('/scripts/extensions/')).replace(/^.*?\/scripts\/extensions\/([^/]+)\/.*$/, '$1');
+            command.source = stack.find(it => it.includes('/scripts/extensions/')).replace(/^.*?\/scripts\/extensions\/([^/]+)\/.*$/, '$1');
         } else {
-            const idx = stack.findLastIndex(it=>it.includes('at SlashCommandParser.')) + 1;
+            const idx = stack.findLastIndex(it => it.includes('at SlashCommandParser.')) + 1;
             command.source = stack[idx].replace(/^.*?\/((?:scripts\/)?(?:[^/]+)\.js).*$/, '$1');
         }
 
@@ -141,13 +142,14 @@ export class SlashCommandParser {
             const help = {};
             help[PARSER_FLAG.REPLACE_GETVAR] = 'Replace all {{getvar::}} and {{getglobalvar::}} macros with scoped variables to avoid double macro substitution.';
             help[PARSER_FLAG.STRICT_ESCAPING] = 'Allows to escape all delimiters with backslash, and allows escaping of backslashes.';
-            SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({ name: 'parser-flag',
+            SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({
+                name: 'parser-flag',
                 unnamedArgumentList: [
                     SlashCommandArgument.fromProps({
                         description: 'The parser flag to modify.',
                         typeList: [ARGUMENT_TYPE.STRING],
                         isRequired: true,
-                        enumList: Object.keys(PARSER_FLAG).map(flag=>new SlashCommandEnumValue(flag, help[PARSER_FLAG[flag]])),
+                        enumList: Object.keys(PARSER_FLAG).map(flag => new SlashCommandEnumValue(flag, help[PARSER_FLAG[flag]])),
                     }),
                     SlashCommandArgument.fromProps({
                         description: 'The state of the parser flag to set.',
@@ -161,7 +163,8 @@ export class SlashCommandParser {
             }));
         }
         if (!Object.keys(this.commands).includes('/')) {
-            SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({ name: '/',
+            SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({
+                name: '/',
                 aliases: ['#'],
                 unnamedArgumentList: [
                     SlashCommandArgument.fromProps({
@@ -173,15 +176,18 @@ export class SlashCommandParser {
             }));
         }
         if (!Object.keys(this.commands).includes('breakpoint')) {
-            SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({ name: 'breakpoint',
+            SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({
+                name: 'breakpoint',
                 helpString: 'Set a breakpoint for debugging in the QR Editor.',
             }));
         }
         if (!Object.keys(this.commands).includes('break')) {
-            SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({ name: 'break',
+            SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({
+                name: 'break',
                 helpString: 'Break out of a loop or closure executed through /run or /:',
                 unnamedArgumentList: [
-                    SlashCommandArgument.fromProps({ description: 'value to pass down the pipe instead of the current pipe value',
+                    SlashCommandArgument.fromProps({
+                        description: 'value to pass down the pipe instead of the current pipe value',
                         typeList: Object.values(ARGUMENT_TYPE),
                     }),
                 ],
@@ -203,8 +209,10 @@ export class SlashCommandParser {
             className: 'number',
             variants: [
                 // DecimalLiteral
-                { begin: `(\\b(${decimalInteger})((${frac})|\\.)?|(${frac}))` +
-        `[eE][+-]?(${decimalDigits})\\b` },
+                {
+                    begin: `(\\b(${decimalInteger})((${frac})|\\.)?|(${frac}))` +
+                        `[eE][+-]?(${decimalDigits})\\b`,
+                },
                 { begin: `\\b(${decimalInteger})\\b((${frac})\\b|\\.)?|(${frac})\\b` },
 
                 // DecimalBigIntegerLiteral
@@ -433,7 +441,7 @@ export class SlashCommandParser {
             PIPEBREAK,
             PIPE,
         );
-        hljs.registerLanguage('stscript', ()=>({
+        hljs.registerLanguage('stscript', () => ({
             case_insensitive: false,
             keywords: [],
             contains: [
@@ -474,47 +482,47 @@ export class SlashCommandParser {
             }
         }
         const executor = this.commandIndex
-            .filter(it=>it.start <= index && (it.end >= index || it.end == null))
+            .filter(it => it.start <= index && (it.end >= index || it.end == null))
             .slice(-1)[0]
             ?? null
-        ;
+            ;
 
         if (executor) {
             const childClosure = this.closureIndex
-                .find(it=>it.start <= index && (it.end >= index || it.end == null) && it.start > executor.start)
+                .find(it => it.start <= index && (it.end >= index || it.end == null) && it.start > executor.start)
                 ?? null
-            ;
+                ;
             if (childClosure !== null) return null;
-            const macro = this.macroIndex.findLast(it=>it.start <= index && it.end >= index);
+            const macro = this.macroIndex.findLast(it => it.start <= index && it.end >= index);
             if (macro) {
                 const frag = document.createRange().createContextualFragment(await (await fetch('/scripts/templates/macros.html')).text());
-                const options = [...frag.querySelectorAll('ul:nth-of-type(2n+1) > li')].map(li=>new MacroAutoCompleteOption(
+                const options = [...frag.querySelectorAll('ul:nth-of-type(2n+1) > li')].map(li => new MacroAutoCompleteOption(
                     li.querySelector('tt').textContent.slice(2, -2).replace(/^([^\s:]+[\s:]+).*$/, '$1'),
                     li.querySelector('tt').textContent,
-                    (li.querySelector('tt').remove(),li.innerHTML),
+                    (li.querySelector('tt').remove(), li.innerHTML),
                 ));
                 const result = new AutoCompleteNameResult(
                     macro.name,
                     macro.start + 2,
                     options,
                     false,
-                    ()=>`No matching macros for "{{${result.name}}}"`,
-                    ()=>'No macros found.',
+                    () => `No matching macros for "{{${result.name}}}"`,
+                    () => 'No macros found.',
                 );
                 return result;
             }
             if (executor.name == ':') {
                 const options = this.scopeIndex[this.commandIndex.indexOf(executor)]
                     ?.allVariableNames
-                    ?.map(it=>new SlashCommandVariableAutoCompleteOption(it))
+                    ?.map(it => new SlashCommandVariableAutoCompleteOption(it))
                     ?? []
-                ;
+                    ;
                 try {
                     const qrApi = (await import('../extensions/quick-reply/index.js')).quickReplyApi;
                     options.push(...qrApi.listSets()
-                        .map(set=>qrApi.listQuickReplies(set).map(qr=>`${set}.${qr}`))
+                        .map(set => qrApi.listQuickReplies(set).map(qr => `${set}.${qr}`))
                         .flat()
-                        .map(qr=>new SlashCommandQuickReplyAutoCompleteOption(qr)),
+                        .map(qr => new SlashCommandQuickReplyAutoCompleteOption(qr)),
                     );
                 } catch { /* empty */ }
                 const result = new AutoCompleteNameResult(
@@ -522,8 +530,8 @@ export class SlashCommandParser {
                     executor.start,
                     options,
                     true,
-                    ()=>`No matching variables in scope and no matching Quick Replies for "${result.name}"`,
-                    ()=>'No variables in scope and no Quick Replies found.',
+                    () => `No matching variables in scope and no matching Quick Replies for "${result.name}"`,
+                    () => 'No variables in scope and no Quick Replies found.',
                 );
                 return result;
             }
@@ -585,7 +593,7 @@ export class SlashCommandParser {
         const test = (sequence instanceof RegExp) ?
             (text) => new RegExp(`^${sequence.source}`).test(text) :
             (text) => text.startsWith(sequence)
-        ;
+            ;
         if (test(this.text.slice(this.index + offset + escapeOffset + escapes))) {
             // no backslashes before sequence
             //   -> sequence found
@@ -611,7 +619,7 @@ export class SlashCommandParser {
         const test = (sequence instanceof RegExp) ?
             (text) => new RegExp(`^${sequence.source}`).test(text) :
             (text) => text.startsWith(sequence)
-        ;
+            ;
         if (test(this.text.slice(this.index + offset + escapeOffset + escapes))) {
             // no backslashes before sequence
             //   -> sequence found
@@ -718,7 +726,7 @@ export class SlashCommandParser {
         return this.testSymbol(':}');
     }
     parseClosure(isRoot = false) {
-        const closureIndexEntry = { start:this.index + 1, end:null };
+        const closureIndexEntry = { start: this.index + 1, end: null };
         this.closureIndex.push(closureIndexEntry);
         let injectPipe = true;
         if (!isRoot) this.take(2); // discard opening {:
@@ -972,14 +980,14 @@ export class SlashCommandParser {
             cmd.unnamedArgumentList = this.parseUnnamedArgument(cmd.command?.unnamedArgumentList?.length && cmd?.command?.splitUnnamedArgument, cmd?.command?.splitUnnamedArgumentCount);
             cmd.endUnnamedArgs = this.index;
             if (cmd.name == 'let') {
-                const keyArg = cmd.namedArgumentList.find(it=>it.name == 'key');
+                const keyArg = cmd.namedArgumentList.find(it => it.name == 'key');
                 if (keyArg) {
                     this.scope.variableNames.push(keyArg.value.toString());
                 } else if (typeof cmd.unnamedArgumentList[0]?.value == 'string') {
                     this.scope.variableNames.push(cmd.unnamedArgumentList[0].value);
                 }
             } else if (cmd.name == 'import') {
-                const value = /**@type {string[]}*/(cmd.unnamedArgumentList.map(it=>it.value));
+                const value = /**@type {string[]}*/(cmd.unnamedArgumentList.map(it => it.value));
                 for (let i = 0; i < value.length; i++) {
                     const srcName = value[i];
                     let dstName = srcName;

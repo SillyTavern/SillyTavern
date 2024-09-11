@@ -1,4 +1,5 @@
-import { SlashCommandClosure } from './SlashCommandClosure.js';
+/** @typedef {import('./SlashCommandClosure.js').SlashCommandClosure} SlashCommandClosure */
+
 
 export class SlashCommandUnnamedArgumentAssignment {
     /**@type {number}*/ start;

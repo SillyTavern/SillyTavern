@@ -1,6 +1,4 @@
-import { SlashCommand } from '../slash-commands/SlashCommand.js';
-import { AutoCompleteFuzzyScore } from './AutoCompleteFuzzyScore.js';
-
+/** @typedef {import('./AutoCompleteFuzzyScore.js').AutoCompleteFuzzyScore} AutoCompleteFuzzyScore */
 
 
 export class AutoCompleteOption {
@@ -57,7 +55,7 @@ export class AutoCompleteOption {
                     name.classList.add('name');
                     name.classList.add('monospace');
                     name.textContent = noSlash ? '' : '/';
-                    key.split('').forEach(char=>{
+                    key.split('').forEach(char => {
                         const span = document.createElement('span'); {
                             span.textContent = char;
                             name.append(span);

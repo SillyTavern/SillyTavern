@@ -1,5 +1,5 @@
-import { SlashCommandExecutor } from './SlashCommandExecutor.js';
-import { SlashCommandScope } from './SlashCommandScope.js';
+/** @typedef {import('./SlashCommandExecutor.js').SlashCommandExecutor} SlashCommandExecutor */
+/** @typedef {import('./SlashCommandScope.js').SlashCommandScope} SlashCommandScope */
 
 
 /**

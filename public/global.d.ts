@@ -26,6 +26,7 @@ declare global {
   var isProbablyReaderable;
   var ePub;
   var ai;
+  var JQuery: JQuery
 }
 
 

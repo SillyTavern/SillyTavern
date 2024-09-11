@@ -534,7 +534,6 @@ let is_delete_mode = false;
 let fav_ch_checked = false;
 let scrollLock = false;
 export let abortStatusCheck = new AbortController();
-let charDragDropHandler = null;
 
 /** @type {debounce_timeout} The debounce timeout used for chat/settings save. debounce_timeout.long: 1.000 ms */
 export const DEFAULT_SAVE_EDIT_TIMEOUT = debounce_timeout.relaxed;
@@ -10932,7 +10931,8 @@ jQuery(async function () {
         }
     });
 
-    charDragDropHandler = new DragAndDropHandler('body', async (files, event) => {
+    // charDragDropHandler
+    new DragAndDropHandler('body', async (files, event) => {
         if (!files.length) {
             await importFromURL(event.originalEvent.dataTransfer.items, files);
         }

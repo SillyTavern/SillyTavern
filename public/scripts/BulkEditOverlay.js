@@ -7,7 +7,6 @@ import {
     event_types,
     eventSource,
     getCharacters,
-    getPastCharacterChats,
     getRequestHeaders,
     buildAvatarList,
     characterToEntity,
@@ -344,7 +343,7 @@ class BulkTagPopupHandler {
         const mutualTags = this.getMutualTags();
 
         for (const characterId of this.characterIds) {
-            for(const tag of mutualTags) {
+            for (const tag of mutualTags) {
                 removeTagFromMap(tag.id, characterId);
             }
         }

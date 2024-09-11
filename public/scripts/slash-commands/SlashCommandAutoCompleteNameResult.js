@@ -1,9 +1,6 @@
 import { AutoCompleteNameResult } from '../autocomplete/AutoCompleteNameResult.js';
-import { AutoCompleteOption } from '../autocomplete/AutoCompleteOption.js';
 import { AutoCompleteSecondaryNameResult } from '../autocomplete/AutoCompleteSecondaryNameResult.js';
 import { SlashCommand } from './SlashCommand.js';
-import { SlashCommandNamedArgument } from './SlashCommandArgument.js';
-import { SlashCommandClosure } from './SlashCommandClosure.js';
 import { SlashCommandCommandAutoCompleteOption } from './SlashCommandCommandAutoCompleteOption.js';
 import { SlashCommandEnumAutoCompleteOption } from './SlashCommandEnumAutoCompleteOption.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
@@ -25,11 +22,11 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             executor.start,
             Object
                 .keys(commands)
-                .map(key=>new SlashCommandCommandAutoCompleteOption(commands[key], key))
+                .map(key => new SlashCommandCommandAutoCompleteOption(commands[key], key))
             ,
             false,
-            ()=>`No matching slash commands for "/${this.name}"`,
-            ()=>'No slash commands found!',
+            () => `No matching slash commands for "/${this.name}"`,
+            () => 'No slash commands found!',
         );
         this.executor = executor;
         this.scope = scope;
@@ -66,7 +63,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
         if (!Array.isArray(this.executor.command?.namedArgumentList)) {
             return null;
         }
-        const notProvidedNamedArguments = this.executor.command.namedArgumentList.filter(arg=>!this.executor.namedArgumentList.find(it=>it.name == arg.name));
+        const notProvidedNamedArguments = this.executor.command.namedArgumentList.filter(arg => !this.executor.namedArgumentList.find(it => it.name == arg.name));
         let name;
         let value;
         let start;
@@ -76,13 +73,13 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
         const namedArgsFollowedBySpace = text[this.executor.endNamedArgs] == ' ';
         if (this.executor.startNamedArgs <= index && this.executor.endNamedArgs + (namedArgsFollowedBySpace ? 1 : 0) >= index) {
             // cursor is somewhere within the named arguments (including final space)
-            argAssign = this.executor.namedArgumentList.find(it=>it.start <= index && it.end >= index);
+            argAssign = this.executor.namedArgumentList.find(it => it.start <= index && it.end >= index);
             if (argAssign) {
                 const [argName, ...v] = text.slice(argAssign.start, index).split(getSplitRegex());
                 name = argName;
                 value = v.join('');
                 start = argAssign.start;
-                cmdArg = this.executor.command.namedArgumentList.find(it=>[it.name, `${it.name}=`].includes(argAssign.name));
+                cmdArg = this.executor.command.namedArgumentList.find(it => [it.name, `${it.name}=`].includes(argAssign.name));
                 if (cmdArg) notProvidedNamedArguments.push(cmdArg);
             } else {
                 name = '';
@@ -109,13 +106,13 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             // if cursor is already behind "=" check for enums
             const enumList = cmdArg?.enumProvider?.(this.executor, this.scope) ?? cmdArg?.enumList;
             if (cmdArg && enumList?.length) {
-                if (isSelect && enumList.find(it=>it.value == value) && argAssign && argAssign.end == index) {
+                if (isSelect && enumList.find(it => it.value == value) && argAssign && argAssign.end == index) {
                     return null;
                 }
                 const result = new AutoCompleteSecondaryNameResult(
                     value,
                     start + name.length,
-                    enumList.map(it=>SlashCommandEnumAutoCompleteOption.from(this.executor.command, it)),
+                    enumList.map(it => SlashCommandEnumAutoCompleteOption.from(this.executor.command, it)),
                     true,
                 );
                 result.isRequired = true;
@@ -128,10 +125,10 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             const result = new AutoCompleteSecondaryNameResult(
                 name,
                 start,
-                notProvidedNamedArguments.map(it=>new SlashCommandNamedArgumentAutoCompleteOption(it, this.executor.command)),
+                notProvidedNamedArguments.map(it => new SlashCommandNamedArgumentAutoCompleteOption(it, this.executor.command)),
                 false,
             );
-            result.isRequired = notProvidedNamedArguments.find(it=>it.isRequired) != null;
+            result.isRequired = notProvidedNamedArguments.find(it => it.isRequired) != null;
             return result;
         }
 
@@ -150,7 +147,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
         let argAssign;
         if (this.executor.startUnnamedArgs <= index && this.executor.endUnnamedArgs + 1 >= index) {
             // cursor is somwehere in the unnamed args
-            const idx = this.executor.unnamedArgumentList.findIndex(it=>it.start <= index && it.end >= index);
+            const idx = this.executor.unnamedArgumentList.findIndex(it => it.start <= index && it.end >= index);
             if (idx > -1) {
                 argAssign = this.executor.unnamedArgumentList[idx];
                 cmdArg = this.executor.command.unnamedArgumentList[idx];
@@ -182,10 +179,10 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
         const result = new AutoCompleteSecondaryNameResult(
             value,
             start,
-            enumList.map(it=>SlashCommandEnumAutoCompleteOption.from(this.executor.command, it)),
+            enumList.map(it => SlashCommandEnumAutoCompleteOption.from(this.executor.command, it)),
             false,
         );
-        const isCompleteValue = enumList.find(it=>it.value == value);
+        const isCompleteValue = enumList.find(it => it.value == value);
         const isSelectedValue = isSelect && isCompleteValue;
         result.isRequired = cmdArg.isRequired && !isSelectedValue;
         result.forceMatch = cmdArg.forceEnum;

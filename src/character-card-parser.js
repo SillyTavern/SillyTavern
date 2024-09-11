@@ -36,7 +36,9 @@ const write = (image, data) => {
 
         const base64EncodedData = Buffer.from(JSON.stringify(v3Data), 'utf8').toString('base64');
         chunks.splice(-1, 0, PNGtext.encode('ccv3', base64EncodedData));
-    } catch (error) { }
+    } catch (error) {
+        console.error(error);
+    }
 
     const newBuffer = Buffer.from(encode(chunks));
     return newBuffer;

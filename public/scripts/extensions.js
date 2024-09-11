@@ -1,5 +1,5 @@
 import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration } from '../script.js';
-import { hideLoader, showLoader } from './loader.js';
+import { showLoader } from './loader.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { renderTemplate, renderTemplateAsync } from './templates.js';
 import { isSubsetOf, setValueByPath } from './utils.js';

@@ -70,7 +70,6 @@ import {
     animation_duration,
     depth_prompt_role_default,
     shouldAutoContinue,
-    this_chid,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';

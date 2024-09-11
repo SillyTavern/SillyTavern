@@ -9,7 +9,8 @@ import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
-import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+/** @typedef {import('./slash-commands/SlashCommandParser.js').PARSER_FLAG} PARSER_FLAG */
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { isFalseBoolean } from './utils.js';
 
@@ -1490,7 +1491,7 @@ export function registerVariableCommands() {
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
                 acceptsMultiple: true,
-                enumProvider: (executor, scope)=>{
+                enumProvider: (executor, scope) => {
                     const vars = commonEnumProviders.variables('all')(executor, scope);
                     vars.push(
                         new SlashCommandEnumValue(
@@ -1498,16 +1499,16 @@ export function registerVariableCommands() {
                             null,
                             enumTypes.variable,
                             enumIcons.variable,
-                            (input)=>/^\w*$/.test(input),
-                            (input)=>input,
+                            (input) => /^\w*$/.test(input),
+                            (input) => input,
                         ),
                         new SlashCommandEnumValue(
                             'any number',
                             null,
                             enumTypes.number,
                             enumIcons.number,
-                            (input)=>input == '' || !Number.isNaN(Number(input)),
-                            (input)=>input,
+                            (input) => input == '' || !Number.isNaN(Number(input)),
+                            (input) => input,
                         ),
                     );
                     return vars;

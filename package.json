@@ -95,6 +95,7 @@
     "devDependencies": {
         "@types/jquery": "^3.5.29",
         "eslint": "^8.57.0",
+        "eslint-plugin-jsdoc": "^50.2.2",
         "jquery": "^3.6.4"
     }
 }

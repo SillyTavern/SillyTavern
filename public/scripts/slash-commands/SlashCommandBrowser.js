@@ -1,5 +1,6 @@
 import { escapeRegex } from '../utils.js';
-import { SlashCommand } from './SlashCommand.js';
+/** @typedef {import('./SlashCommand.js').SlashCommand} SlashCommand */
+
 import { SlashCommandParser } from './SlashCommandParser.js';
 
 export class SlashCommandBrowser {
@@ -26,7 +27,7 @@ export class SlashCommandBrowser {
                             inp.classList.add('text_pole');
                             inp.type = 'search';
                             inp.placeholder = 'Search slash commands - use quotes to search "literal" instead of fuzzy';
-                            inp.addEventListener('input', ()=>{
+                            inp.addEventListener('input', () => {
                                 this.details?.remove();
                                 this.details = null;
                                 let query = inp.value.trim();
@@ -39,7 +40,7 @@ export class SlashCommandBrowser {
                                     const match = queryRegex.exec(query);
                                     if (!match) break;
                                     if (match[1] !== undefined) {
-                                        fuzzyList.push(new RegExp(`^(.*?)${match[1].split('').map(char=>`(${escapeRegex(char)})`).join('(.*?)')}(.*?)$`, 'i'));
+                                        fuzzyList.push(new RegExp(`^(.*?)${match[1].split('').map(char => `(${escapeRegex(char)})`).join('(.*?)')}(.*?)$`, 'i'));
                                     } else if (match[2] !== undefined) {
                                         quotedList.push(match[2]);
                                     }
@@ -48,17 +49,17 @@ export class SlashCommandBrowser {
                                 for (const cmd of this.cmdList) {
                                     const targets = [
                                         cmd.name,
-                                        ...cmd.namedArgumentList.map(it=>it.name),
-                                        ...cmd.namedArgumentList.map(it=>it.description),
-                                        ...cmd.namedArgumentList.map(it=>it.enumList.map(e=>e.value)).flat(),
-                                        ...cmd.namedArgumentList.map(it=>it.typeList).flat(),
-                                        ...cmd.unnamedArgumentList.map(it=>it.description),
-                                        ...cmd.unnamedArgumentList.map(it=>it.enumList.map(e=>e.value)).flat(),
-                                        ...cmd.unnamedArgumentList.map(it=>it.typeList).flat(),
+                                        ...cmd.namedArgumentList.map(it => it.name),
+                                        ...cmd.namedArgumentList.map(it => it.description),
+                                        ...cmd.namedArgumentList.map(it => it.enumList.map(e => e.value)).flat(),
+                                        ...cmd.namedArgumentList.map(it => it.typeList).flat(),
+                                        ...cmd.unnamedArgumentList.map(it => it.description),
+                                        ...cmd.unnamedArgumentList.map(it => it.enumList.map(e => e.value)).flat(),
+                                        ...cmd.unnamedArgumentList.map(it => it.typeList).flat(),
                                         ...cmd.aliases,
                                         cmd.helpString,
                                     ];
-                                    const find = ()=>targets.find(t=>(fuzzyList.find(f=>f.test(t)) ?? quotedList.find(q=>t.includes(q))) !== undefined) !== undefined;
+                                    const find = () => targets.find(t => (fuzzyList.find(f => f.test(t)) ?? quotedList.find(q => t.includes(q))) !== undefined) !== undefined;
                                     if (fuzzyList.length + quotedList.length == 0 || find()) {
                                         this.itemMap[cmd.name].classList.remove('isFiltered');
                                     } else {
@@ -86,7 +87,7 @@ export class SlashCommandBrowser {
                             const item = cmd.renderHelpItem();
                             this.itemMap[cmd.name] = item;
                             let details;
-                            item.addEventListener('click', ()=>{
+                            item.addEventListener('click', () => {
                                 if (!details) {
                                     details = document.createElement('div'); {
                                         details.classList.add('autoComplete-detailsWrap');
@@ -98,7 +99,7 @@ export class SlashCommandBrowser {
                                     }
                                 }
                                 if (this.details != details) {
-                                    Array.from(list.querySelectorAll('.selected')).forEach(it=>it.classList.remove('selected'));
+                                    Array.from(list.querySelectorAll('.selected')).forEach(it => it.classList.remove('selected'));
                                     item.classList.add('selected');
                                     this.details?.remove();
                                     container.append(details);
@@ -123,13 +124,13 @@ export class SlashCommandBrowser {
         }
         parent.append(this.dom);
 
-        this.mo = new MutationObserver(muts=>{
-            if (muts.find(mut=>Array.from(mut.removedNodes).find(it=>it == this.dom || it.contains(this.dom)))) {
+        this.mo = new MutationObserver(muts => {
+            if (muts.find(mut => Array.from(mut.removedNodes).find(it => it == this.dom || it.contains(this.dom)))) {
                 this.mo.disconnect();
                 window.removeEventListener('keydown', boundHandler);
             }
         });
-        this.mo.observe(document.querySelector('#chat'), { childList:true, subtree:true });
+        this.mo.observe(document.querySelector('#chat'), { childList: true, subtree: true });
         const boundHandler = this.handleKeyDown.bind(this);
         window.addEventListener('keydown', boundHandler);
         return this.dom;

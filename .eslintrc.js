@@ -1,4 +1,10 @@
 module.exports = {
+    plugins: ["jsdoc"],
+    settings: {
+        jsdoc: {
+            mode: "typescript"
+        }
+    },
     root: true,
     extends: [
         'eslint:recommended',
@@ -84,6 +90,7 @@ module.exports = {
         'space-infix-ops': 'error',
         'no-unused-expressions': ['error', { allowShortCircuit: true, allowTernary: true }],
         'no-cond-assign': 'error',
+        "jsdoc/no-undefined-types": 1,
 
         // These rules should eventually be enabled.
         'no-async-promise-executor': 'off',

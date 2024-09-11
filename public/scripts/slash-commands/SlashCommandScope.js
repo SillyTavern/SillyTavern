@@ -1,10 +1,11 @@
-import { SlashCommandClosure } from './SlashCommandClosure.js';
+/** @typedef {import('./SlashCommandClosure.js').SlashCommandClosure} SlashCommandClosure */
+
 
 export class SlashCommandScope {
     /**@type {string[]}*/ variableNames = [];
     get allVariableNames() {
         const names = [...this.variableNames, ...(this.parent?.allVariableNames ?? [])];
-        return names.filter((it,idx)=>idx == names.indexOf(it));
+        return names.filter((it, idx) => idx == names.indexOf(it));
     }
     // @ts-ignore
     /**@type {object.<string, string|SlashCommandClosure>}*/ variables = {};
@@ -12,7 +13,7 @@ export class SlashCommandScope {
     /**@type {object.<string, string|SlashCommandClosure>}*/ macros = {};
     /**@type {{key:string, value:string|SlashCommandClosure}[]} */
     get macroList() {
-        return [...Object.keys(this.macros).map(key=>({ key, value:this.macros[key] })), ...(this.parent?.macroList ?? [])];
+        return [...Object.keys(this.macros).map(key => ({ key, value: this.macros[key] })), ...(this.parent?.macroList ?? [])];
     }
     /**@type {SlashCommandScope}*/ parent;
     /**@type {string}*/ #pipe;
@@ -39,7 +40,7 @@ export class SlashCommandScope {
 
 
     setMacro(key, value, overwrite = true) {
-        if (overwrite || !this.macroList.find(it=>it.key == key)) {
+        if (overwrite || !this.macroList.find(it => it.key == key)) {
             this.macros[key] = value;
         }
     }
@@ -110,7 +111,7 @@ export class SlashCommandScope {
 
 
 
-export class SlashCommandScopeVariableExistsError extends Error {}
+export class SlashCommandScopeVariableExistsError extends Error { }
 
 
-export class SlashCommandScopeVariableNotFoundError extends Error {}
+export class SlashCommandScopeVariableNotFoundError extends Error { }

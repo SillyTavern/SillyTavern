@@ -66,7 +66,8 @@ import { SlashCommandNamedArgumentAssignment } from './slash-commands/SlashComma
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
-import { SlashCommandDebugController } from './slash-commands/SlashCommandDebugController.js';
+/** @typedef {import('./slash-commands/SlashCommandDebugController.js').SlashCommandDebugController} SlashCommandDebugController */
+
 import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
 import { SlashCommandExecutionError } from './slash-commands/SlashCommandExecutionError.js';
 export {

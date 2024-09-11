@@ -1,9 +1,11 @@
-import { SlashCommandAbortController } from './SlashCommandAbortController.js';
+/** @typedef {import('./SlashCommandAbortController.js').SlashCommandAbortController} SlashCommandAbortController */
+
 import { SlashCommandArgument, SlashCommandNamedArgument } from './SlashCommandArgument.js';
 import { SlashCommandClosure } from './SlashCommandClosure.js';
-import { SlashCommandDebugController } from './SlashCommandDebugController.js';
-import { PARSER_FLAG } from './SlashCommandParser.js';
-import { SlashCommandScope } from './SlashCommandScope.js';
+/** @typedef {import('./SlashCommandDebugController.js').SlashCommandDebugController} SlashCommandDebugController */
+
+/** @typedef {import('./SlashCommandParser.js').PARSER_FLAG} PARSER_FLAG */
+/** @typedef {import('./SlashCommandScope.js').SlashCommandScope} SlashCommandScope */
 
 
 
@@ -87,7 +89,7 @@ export class SlashCommand {
                         name.classList.add('name');
                         name.classList.add('monospace');
                         name.textContent = '/';
-                        key.split('').forEach(char=>{
+                        key.split('').forEach(char => {
                             const span = document.createElement('span'); {
                                 span.textContent = char;
                                 name.append(span);
@@ -230,7 +232,7 @@ export class SlashCommand {
             const unnamedArguments = cmd.unnamedArgumentList ?? [];
             const returnType = cmd.returns ?? 'void';
             const helpString = cmd.helpString ?? 'NO DETAILS';
-            const aliasList = [cmd.name, ...(cmd.aliases ?? [])].filter(it=>it != key);
+            const aliasList = [cmd.name, ...(cmd.aliases ?? [])].filter(it => it != key);
             const specs = document.createElement('div'); {
                 specs.classList.add('specs');
                 const head = document.createElement('div'); {
@@ -258,7 +260,7 @@ export class SlashCommand {
                             this.isExtension ? 'Extension' : 'Core',
                             this.isThirdParty ? 'Third Party' : (this.isExtension ? 'Core' : null),
                             this.source,
-                        ].filter(it=>it).join('\n');
+                        ].filter(it => it).join('\n');
                         head.append(src);
                     }
                     specs.append(head);
