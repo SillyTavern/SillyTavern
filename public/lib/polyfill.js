@@ -11,3 +11,9 @@ if (!Array.prototype.findLastIndex) {
         return -1;
     };
 }
+
+if (!Array.prototype.toSorted) {
+    Array.prototype.toSorted = function (compareFunction) {
+        return this.slice().sort(compareFunction);
+    };
+}
