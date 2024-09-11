@@ -2533,22 +2533,23 @@ async function askCharacter(args, text) {
             lastMessage.force_avatar = force_avatar;
             lastMessage.original_avatar = original_avatar;
         }
-
-        // Kill this callback once the event fires
-        eventSource.removeListener(event_types.CHARACTER_MESSAGE_RENDERED, restoreCharacter);
     };
 
-    // Run generate and restore previous character on error
+    // Run generate and restore previous character
     try {
         toastr.info(`Asking ${character.name} something...`);
         await Generate('ask_command');
-    } catch {
+        await saveChatConditional();
+    } catch (error) {
+        console.error('Error running /ask command', error);
+    } finally {
         restoreCharacter();
+
+        if (this_chid !== prevChId) {
+            toastr.error('It is strongly recommended to reload the page.', 'Something went wrong');
+        }
     }
 
-    // Restore previous character once message renders
-    // Hack for generate
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, restoreCharacter);
     return '';
 }
 
