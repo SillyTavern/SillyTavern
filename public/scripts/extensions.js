@@ -166,7 +166,10 @@ const extension_settings = {
 let modules = [];
 let activeExtensions = new Set();
 
-const getContext = () => window['SillyTavern'].getContext();
+// To preserve types and keep up old binding
+import { getContext as getContextRoot } from '../script.js';
+const getContext = () => getContextRoot();
+
 const getApiUrl = () => extension_settings.apiUrl;
 let connectedToApi = false;
 
