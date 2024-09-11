@@ -21,15 +21,10 @@ declare global {
   interface Window {
     SillyTavern: {
       getContext: typeof getContext;
-      llm: any;
     }
   }
 }
 
-declare var SillyTavern: {
-  getContext: typeof getContext
-  llm: any;
-};
 
 // Jquery plugins
 interface JQuery {
