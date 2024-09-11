@@ -7486,7 +7486,7 @@ export function showSwipeButtons() {
 
     const currentMessage = $('#chat').children().filter(`[mesid="${chat.length - 1}"]`);
     const swipeId = chat[chat.length - 1].swipe_id;
-    var swipesCounterHTML = (`${(swipeId + 1)}/${(chat[chat.length - 1].swipes.length)}`);
+    const swipeCounterText = (`${(swipeId + 1)}\u200B/\u200b${(chat[chat.length - 1].swipes.length)}`);
 
     if (swipeId !== undefined && (chat[chat.length - 1].swipes.length > 1 || swipeId > 0)) {
         currentMessage.children('.swipe_left').css('display', 'flex');
@@ -7503,7 +7503,7 @@ export function showSwipeButtons() {
     }
     //console.log(swipesCounterHTML);
 
-    $('.swipes-counter').html(swipesCounterHTML);
+    $('.swipes-counter').text(swipeCounterText);
 
     //console.log(swipeId);
     //console.log(chat[chat.length - 1].swipes.length);
