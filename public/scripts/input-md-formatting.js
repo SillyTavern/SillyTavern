@@ -7,8 +7,8 @@ export function initInputMarkdown() {
             return;
         }
 
-        // Early return on only control or no control
-        if (e.key === 'Control' || !e.ctrlKey) {
+        // Early return on only control or no control, alt key, and win/cmd key
+        if (e.key === 'Control' || !e.ctrlKey || e.altKey || e.metaKey) {
             return;
         }
         let charsToAdd = '';
@@ -16,23 +16,31 @@ export function initInputMarkdown() {
 
         switch (true) {
             case e.ctrlKey && e.shiftKey && e.code === 'Backquote':
+                e.preventDefault();
+                e.stopPropagation();
                 charsToAdd = '~~';
                 possiblePreviousFormattingMargin = 2;
                 break;
             case e.ctrlKey && e.code === 'KeyB':
+                e.preventDefault();
+                e.stopPropagation();
                 charsToAdd = '**';
                 possiblePreviousFormattingMargin = 2;
                 break;
             case e.ctrlKey && e.code === 'KeyI':
+                e.preventDefault();
+                e.stopPropagation();
                 charsToAdd = '*';
                 break;
             case e.ctrlKey && e.code === 'KeyU':
-                e.preventDefault(); // Prevent Ctrl+U from opening 'view page source'
+                e.preventDefault();
                 e.stopPropagation();
                 charsToAdd = '__';
                 possiblePreviousFormattingMargin = 2;
                 break;
             case e.ctrlKey && e.code === 'KeyK':
+                e.preventDefault();
+                e.stopPropagation();
                 charsToAdd = '`';
                 break;
             default:
