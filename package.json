@@ -12,7 +12,7 @@
         "cookie-session": "^2.1.0",
         "cors": "^2.8.5",
         "csrf-csrf": "^2.2.3",
-        "express": "^4.19.2",
+        "express": "^4.20.0",
         "form-data": "^4.0.0",
         "google-translate-api-browser": "^3.0.1",
         "he": "^1.2.0",
@@ -62,6 +62,9 @@
         },
         "node-fetch": {
             "whatwg-url": "^14.0.0"
+        },
+        "express": {
+            "send": "^0.19.0"
         }
     },
     "name": "sillytavern",
