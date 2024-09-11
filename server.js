@@ -37,6 +37,7 @@ util.inspect.defaultOptions.depth = 4;
 const userModule = require('./src/users');
 const basicAuthMiddleware = require('./src/middleware/basicAuth');
 const whitelistMiddleware = require('./src/middleware/whitelist');
+const initRequestProxy = require('./src/request-proxy');
 const contentManager = require('./src/endpoints/content-manager');
 const {
     getVersion,
@@ -662,6 +663,9 @@ const preSetupTasks = async function () {
         console.error('Uncaught exception:', err);
         exitProcess();
     });
+
+    // Add request proxy.
+    initRequestProxy();
 };
 
 /**

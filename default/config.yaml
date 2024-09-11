@@ -37,6 +37,16 @@ basicAuthUser:
   password: "password"
 # Enables CORS proxy middleware
 enableCorsProxy: false
+# -- REQUEST PROXY CONFIGURATION --
+requestProxy:
+  # If a proxy is enabled, all outgoing HTTP/HTTPS requests will be routed through it.
+  enabled: false
+  # Proxy URL. Possible protocols: http, https, socks, socks5, socks4, pac
+  url: "socks5://username:password@example.com:1080"
+  # Proxy bypass list. Requests to these hosts won't be routed through the proxy.
+  bypass:
+    - localhost
+    - 127.0.0.1
 # Enable multi-user mode
 enableUserAccounts: false
 # Enable discreet login mode: hides user list on the login screen
