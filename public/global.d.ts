@@ -1,18 +1,4 @@
-// Global namespace modules
-declare var DOMPurify;
-declare var droll;
-declare var Handlebars;
-declare var hljs;
-declare var localforage;
-declare var pdfjsLib;
-declare var Popper;
-declare var showdown;
-declare var showdownKatex;
-declare var SVGInject;
-declare var Readability;
-declare var isProbablyReaderable;
-declare var ePub;
-declare var ai;
+
 
 
 import { getContext } from "./script";
@@ -22,7 +8,24 @@ declare global {
     SillyTavern: {
       getContext: typeof getContext;
     }
+
   }
+  // Global namespace modules
+  var Popper;
+  var DOMPurify;
+  var droll;
+  var Handlebars;
+  var hljs;
+  var localforage;
+  var pdfjsLib;
+  var Popper;
+  var showdown;
+  var showdownKatex;
+  var SVGInject;
+  var Readability;
+  var isProbablyReaderable;
+  var ePub;
+  var ai;
 }
 
 
