@@ -6,7 +6,7 @@ import { searchCharByName, getTagsList, tags } from '../tags.js';
 import { world_names } from '../world-info.js';
 import { SlashCommandClosure } from './SlashCommandClosure.js';
 import { SlashCommandEnumValue, enumTypes } from './SlashCommandEnumValue.js';
-import { SlashCommandScope } from "./SlashCommandScope.js";
+import { SlashCommandScope } from './SlashCommandScope.js';
 
 /**
  * A collection of regularly used enum icons

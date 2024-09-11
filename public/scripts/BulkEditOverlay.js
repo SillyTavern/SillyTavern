@@ -600,7 +600,7 @@ class BulkEditOverlay {
             this.container.removeEventListener('mouseup', cancelHold);
             this.container.removeEventListener('touchend', cancelHold);
         },
-            BulkEditOverlay.longPressDelay);
+        BulkEditOverlay.longPressDelay);
     };
 
     handleLongPressEnd = (event) => {

@@ -7942,7 +7942,7 @@ async function createOrEditCharacter(e) {
     }
 }
 
-window['SillyTavern'].getContext = getContext
+window['SillyTavern'].getContext = getContext;
 export function getContext() {
     return {
         chat: chat,
@@ -8029,7 +8029,7 @@ export function getContext() {
         POPUP_TYPE: POPUP_TYPE,
         POPUP_RESULT: POPUP_RESULT,
     };
-};
+}
 
 function swipe_left() {      // when we swipe left..but no generation.
     if (chat.length - 1 === Number(this_edit_mes_id)) {

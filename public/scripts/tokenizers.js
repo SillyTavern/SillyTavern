@@ -164,7 +164,7 @@ export function getAvailableTokenizers() {
         tokenizerId: Number(tokenizerOption.value),
         tokenizerKey: Object.entries(tokenizers).find(([_, value]) => value === Number(tokenizerOption.value))[0].toLocaleLowerCase(),
         tokenizerName: tokenizerOption.text,
-    }))
+    }));
 }
 
 /**
