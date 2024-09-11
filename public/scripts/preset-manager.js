@@ -338,6 +338,7 @@ class PresetManager {
             'max_tokens_second',
             'openrouter_providers',
             'openrouter_allow_fallbacks',
+            'tabby_model',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 

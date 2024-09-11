@@ -1,12 +1,14 @@
 import { event_types, eventSource, main_api, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
-import { executeSlashCommandsWithOptions } from '../../slash-commands.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { SlashCommandAbortController } from '../../slash-commands/SlashCommandAbortController.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandDebugController } from '../../slash-commands/SlashCommandDebugController.js';
 import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
+import { SlashCommandScope } from '../../slash-commands/SlashCommandScope.js';
 import { collapseSpaces, getUniqueName, isFalseBoolean, uuidv4 } from '../../utils.js';
 
 const MODULE_NAME = 'connection-manager';
@@ -91,6 +93,24 @@ class ConnectionManagerSpinner {
     }
 }
 
+/**
+ * Get named arguments for the command callback.
+ * @param {object} [args] Additional named arguments
+ * @returns {object} Named arguments
+ */
+function getNamedArguments(args = {}) {
+    // None of the commands here use underscored args, but better safe than sorry
+    return {
+        _scope: new SlashCommandScope(),
+        _abortController: new SlashCommandAbortController(),
+        _debugController: new SlashCommandDebugController(),
+        _parserFlags: {},
+        _hasUnnamedArgument: false,
+        quiet: 'true',
+        ...args,
+    };
+}
+
 /** @type {() => SlashCommandEnumValue[]} */
 const profilesProvider = () => [
     new SlashCommandEnumValue(NONE),
@@ -111,8 +131,6 @@ const profilesProvider = () => [
  * @property {string} [instruct-state] Instruct Mode
  * @property {string} [tokenizer] Tokenizer
  */
-
-const escapeArgument = (a) => a.replace(/"/g, '\\"').replace(/\|/g, '\\|');
 
 /**
  * Finds the best match for the search value.
@@ -149,15 +167,15 @@ async function readProfileFromCommands(mode, profile, cleanUp = false) {
     const commands = mode === 'cc' ? CC_COMMANDS : TC_COMMANDS;
     const opposingCommands = mode === 'cc' ? TC_COMMANDS : CC_COMMANDS;
     for (const command of commands) {
-        const commandText = `/${command} quiet=true`;
         try {
-            const result = await executeSlashCommandsWithOptions(commandText, { handleParserErrors: false, handleExecutionErrors: false });
-            if (result.pipe) {
-                profile[command] = result.pipe;
+            const args = getNamedArguments();
+            const result = await SlashCommandParser.commands[command].callback(args, '');
+            if (result) {
+                profile[command] = result;
                 continue;
             }
         } catch (error) {
-            console.warn(`Failed to execute command: ${commandText}`, error);
+            console.error(`Failed to execute command: ${command}`, error);
         }
     }
 
@@ -273,11 +291,11 @@ async function applyConnectionProfile(profile) {
         if (!argument) {
             continue;
         }
-        const commandText = `/${command} quiet=true ${escapeArgument(argument)}`;
         try {
-            await executeSlashCommandsWithOptions(commandText, { handleParserErrors: false, handleExecutionErrors: false });
+            const args = getNamedArguments();
+            await SlashCommandParser.commands[command].callback(args, argument);
         } catch (error) {
-            console.error(`Failed to execute command: ${commandText}`, error);
+            console.error(`Failed to execute command: ${command} ${argument}`, error);
         }
     }
 

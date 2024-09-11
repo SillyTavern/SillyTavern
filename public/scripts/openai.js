@@ -47,6 +47,7 @@ import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 
 import { getEventSourceStream } from './sse-stream.js';
 import {
+    createThumbnail,
     delay,
     download,
     getBase64Async,
@@ -2440,14 +2441,13 @@ class Message {
                 if (!response.ok) throw new Error('Failed to fetch image');
                 const blob = await response.blob();
                 image = await getBase64Async(blob);
-                if (oai_settings.chat_completion_source === chat_completion_sources.MAKERSUITE) {
-                    image = image.split(',')[1];
-                }
             } catch (error) {
                 console.error('Image adding skipped', error);
                 return;
             }
         }
+
+        image = await this.compressImage(image);
 
         const quality = oai_settings.inline_image_quality || default_settings.inline_image_quality;
         this.content = [
@@ -2464,6 +2464,29 @@ class Message {
         }
     }
 
+    /**
+     * Compress an image if it exceeds the size threshold for the current chat completion source.
+     * @param {string} image Data URL of the image.
+     * @returns {Promise<string>} Compressed image as a Data URL.
+     */
+    async compressImage(image) {
+        if ([chat_completion_sources.OPENROUTER, chat_completion_sources.MAKERSUITE].includes(oai_settings.chat_completion_source)) {
+            const sizeThreshold = 2 * 1024 * 1024;
+            const dataSize = image.length * 0.75;
+            const maxSide = 1024;
+            if (dataSize > sizeThreshold) {
+                image = await createThumbnail(image, maxSide);
+            }
+        }
+        return image;
+    }
+
+    /**
+     * Get the token cost of an image.
+     * @param {string} dataUrl Data URL of the image.
+     * @param {string} quality String representing the quality of the image. Can be 'low', 'auto', or 'high'.
+     * @returns {Promise<number>} The token cost of the image.
+     */
     async getImageTokenCost(dataUrl, quality) {
         if (quality === 'low') {
             return Message.tokensPerImage;
