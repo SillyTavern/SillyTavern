@@ -132,7 +132,9 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
     });
 
     // Shouldn't be conditional anymore, messages api expects the last role to be user unless we're explicitly prefilling
-    if (prefillString) {
+    if (messages[messages.length - 1].role == 'assistant' && prefillString) {
+        messages[messages.length - 1].content = prefillString.trimEnd() + messages[messages.length - 1].content;
+    } else if (prefillString) {
         messages.push({
             role: 'assistant',
             content: prefillString.trimEnd(),
