@@ -8,7 +8,7 @@ export function initInputMarkdown() {
         }
 
         // Early return on only control or no control, alt key, and win/cmd key
-        if (e.key === 'Control' || !e.ctrlKey || e.altKey || e.metaKey) {
+        if (e.key === 'Control' || !e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) {
             return;
         }
         let charsToAdd = '';
