@@ -105,6 +105,7 @@
     "@types/showdown": "^2.0.6",
     "@types/toastr": "^2.1.43",
     "eslint": "^8.57.0",
+    "eslint-plugin-jsdoc": "^50.2.2",
     "jquery": "^3.6.4"
   }
 }
