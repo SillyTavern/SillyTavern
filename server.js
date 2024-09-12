@@ -153,7 +153,7 @@ const cliArguments = yargs(hideBin(process.argv))
     }).option('requestProxyEnabled', {
         type: 'boolean',
         default: null,
-        describe: 'Enables request proxy',
+        describe: 'Enables a use of proxy for outgoing requests',
     }).option('requestProxyUrl', {
         type: 'string',
         default: null,
