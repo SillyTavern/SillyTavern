@@ -1,40 +1,44 @@
 const http = require('node:http');
 const https = require('node:https');
 
-const { getConfigValue, isValidUrl, color } = require('./util.js');
+const { isValidUrl, color } = require('./util.js');
 
 const LOG_HEADER = '[Request Proxy]';
 
-function initRequestProxy() {
+/**
+ * Initialize request proxy.
+ * @param {ProxySettings} settings Proxy settings.
+ * @typedef {object} ProxySettings
+ * @property {boolean} enabled Whether proxy is enabled.
+ * @property {string} url Proxy URL.
+ * @property {string[]} bypass List of URLs to bypass proxy.
+ */
+function initRequestProxy({ enabled, url, bypass }) {
     try {
         const { ProxyAgent } = require('proxy-agent');
-        const proxyEnabled = getConfigValue('requestProxy.enabled', false);
 
         // No proxy is enabled, so return
-        if (!proxyEnabled) {
+        if (!enabled) {
             return;
         }
 
-        const proxyUrl = getConfigValue('requestProxy.url', '');
-
-        if (!proxyUrl) {
+        if (!url) {
             console.error(color.red(LOG_HEADER), 'No proxy URL provided');
             return;
         }
 
-        if (!isValidUrl(proxyUrl)) {
+        if (!isValidUrl(url)) {
             console.error(color.red(LOG_HEADER), 'Invalid proxy URL provided');
             return;
         }
 
         // ProxyAgent uses proxy-from-env under the hood
         // Reference: https://github.com/Rob--W/proxy-from-env
-        process.env.all_proxy = proxyUrl;
+        process.env.all_proxy = url;
 
-        const proxyBypass = getConfigValue('requestProxy.bypass', []);
 
-        if (Array.isArray(proxyBypass) && proxyBypass.length > 0) {
-            process.env.no_proxy = proxyBypass.join(',');
+        if (Array.isArray(bypass) && bypass.length > 0) {
+            process.env.no_proxy = bypass.join(',');
         }
 
         const proxyAgent = new ProxyAgent();
@@ -42,7 +46,7 @@ function initRequestProxy() {
         https.globalAgent = proxyAgent;
 
         console.log();
-        console.log(color.green(LOG_HEADER), 'Proxy URL is used:', color.blue(proxyUrl));
+        console.log(color.green(LOG_HEADER), 'Proxy URL is used:', color.blue(url));
         console.log();
     } catch (error) {
         console.error(color.red(LOG_HEADER), 'Failed to initialize request proxy:', error);

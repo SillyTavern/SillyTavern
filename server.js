@@ -76,6 +76,10 @@ const DEFAULT_AVOID_LOCALHOST = false;
 const DEFAULT_AUTORUN_HOSTNAME = 'auto';
 const DEFAULT_AUTORUN_PORT = -1;
 
+const DEFAULT_PROXY_ENABLED = false;
+const DEFAULT_PROXY_URL = '';
+const DEFAULT_PROXY_BYPASS = [];
+
 const cliArguments = yargs(hideBin(process.argv))
     .usage('Usage: <your-start-script> <command> [options]')
     .option('enableIPv6', {
@@ -146,6 +150,18 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'boolean',
         default: null,
         describe: 'Enables basic authentication',
+    }).option('requestProxyEnabled', {
+        type: 'boolean',
+        default: null,
+        describe: 'Enables request proxy',
+    }).option('requestProxyUrl', {
+        type: 'string',
+        default: null,
+        describe: 'Request proxy URL',
+    }).option('requestProxyBypasss', {
+        type: 'array',
+        default: null,
+        describe: 'Request proxy bypass',
     }).parseSync();
 
 // change all relative paths
@@ -181,6 +197,10 @@ const autorunPortOverride = cliArguments.autorunPortOverride ?? getConfigValue('
 const dnsPreferIPv6 = cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', DEFAULT_PREFER_IPV6);
 
 const avoidLocalhost = cliArguments.avoidLocalhost ?? getConfigValue('avoidLocalhost', DEFAULT_AVOID_LOCALHOST);
+
+const proxyEnabled = cliArguments.requestProxyEnabled ?? getConfigValue('requestProxy.enabled', DEFAULT_PROXY_ENABLED);
+const proxyUrl = cliArguments.requestProxyUrl ?? getConfigValue('requestProxy.url', DEFAULT_PROXY_URL);
+const proxyBypass = cliArguments.requestProxyBypass ?? getConfigValue('requestProxy.bypass', DEFAULT_PROXY_BYPASS);
 
 if (dnsPreferIPv6) {
     // Set default DNS resolution order to IPv6 first
@@ -665,7 +685,7 @@ const preSetupTasks = async function () {
     });
 
     // Add request proxy.
-    initRequestProxy();
+    initRequestProxy({ enabled: proxyEnabled, url: proxyUrl, bypass: proxyBypass });
 };
 
 /**
