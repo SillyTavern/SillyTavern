@@ -2525,6 +2525,10 @@ async function askCharacter(args, text) {
     setCharacterName(character.name);
 
     const restoreCharacter = () => {
+        if (String(this_chid) !== String(chId)) {
+            return;
+        }
+
         setCharacterId(prevChId);
         setCharacterName(characters[prevChId].name);
 
@@ -2541,14 +2545,14 @@ async function askCharacter(args, text) {
 
     // Run generate and restore previous character
     try {
+        eventSource.once(event_types.MESSAGE_RECEIVED, restoreCharacter);
         toastr.info(`Asking ${character.name} something...`);
         askResult = await Generate('ask_command');
     } catch (error) {
+        restoreCharacter();
         console.error('Error running /ask command', error);
     } finally {
-        restoreCharacter();
-
-        if (this_chid === prevChId) {
+        if (String(this_chid) === String(prevChId)) {
             await saveChatConditional();
         } else {
             toastr.error('It is strongly recommended to reload the page.', 'Something went wrong');
