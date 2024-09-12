@@ -61,17 +61,18 @@ async function getBookmarkName({ isReplace = false, forceName = null } = {}) {
     const chatNames = await getExistingChatNames();
 
     const body = await renderTemplateAsync('createCheckpoint', { isReplace: isReplace });
-    let name = forceName || await Popup.show.input('Create Checkpoint', body);
-    if (name === null) {
-        return null;
-    }
-    else if (name === '') {
+    let name = forceName ?? await Popup.show.input('Create Checkpoint', body);
+    // Special handling for confirmed empty input (=> auto-generate name)
+    if (name === '') {
         for (let i = chatNames.length; i < 1000; i++) {
             name = bookmarkNameToken + i;
             if (!chatNames.includes(name)) {
                 break;
             }
         }
+    }
+    if (!name) {
+        return null;
     }
 
     return `${name} - ${humanizedDateTime()}`;
@@ -447,8 +448,8 @@ function registerBookmarksSlashCommands() {
             const mesId = Number(args.mesId ?? getLastMessageId());
             if (!validateMessageId(mesId, 'Create Checkpoint')) return '';
 
-            if (!text || typeof text !== 'string') {
-                toastr.warning('Checkpoint name must be provided', 'Create Checkpoint');
+            if (typeof text !== 'string') {
+                toastr.warning('Checkpoint name must be a string or empty', 'Create Checkpoint');
                 return '';
             }
 
@@ -467,12 +468,12 @@ function registerBookmarksSlashCommands() {
             SlashCommandArgument.fromProps({
                 description: 'Checkpoint name',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
             }),
         ],
         helpString: `
         <div>
-            Create a new checkpoint for the selected message with the provided name. If no message id is provided, will use the last message.
+            Create a new checkpoint for the selected message with the provided name. If no message id is provided, will use the last message.<br />
+            Leave the checkpoint name empty to auto-generate one.
         </div>
         <div>
             A created checkpoint will be permanently linked with the message.<br />
