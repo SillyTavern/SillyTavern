@@ -157,11 +157,11 @@ const cliArguments = yargs(hideBin(process.argv))
     }).option('requestProxyUrl', {
         type: 'string',
         default: null,
-        describe: 'Request proxy URL',
-    }).option('requestProxyBypasss', {
+        describe: 'Request proxy URL (HTTP or SOCKS protocols)',
+    }).option('requestProxyBypass', {
         type: 'array',
         default: null,
-        describe: 'Request proxy bypass',
+        describe: 'Request proxy bypass list (space separated list of hosts)',
     }).parseSync();
 
 // change all relative paths
