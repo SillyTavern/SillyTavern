@@ -489,6 +489,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 sticky: entry.sticky ?? null,
                 cooldown: entry.cooldown ?? null,
                 delay: entry.delay ?? null,
+                debugging: entry.debugging ?? true,
             },
         };
 

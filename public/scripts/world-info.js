@@ -108,6 +108,7 @@ const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
  * @property {number} [cooldown] The cooldown of the entry
  * @property {number} [delay] The delay of the entry
  * @property {string[]} [decorators] Array of decorators for the entry
+ * @property {boolean} [debugging] If the entry is for debugging
  */
 
 /**
@@ -2062,6 +2063,7 @@ export const originalWIDataKeyMap = {
     'sticky': 'extensions.sticky',
     'cooldown': 'extensions.cooldown',
     'delay': 'extensions.delay',
+    'debugging': 'extensions.debugging',
 };
 
 /** Checks the state of the current search, and adds/removes the search sorting option accordingly */
@@ -2970,6 +2972,18 @@ async function getWorldEntry(name, data, entry) {
     });
     delayUntilRecursionInput.prop('checked', entry.delayUntilRecursion).trigger('input');
 
+    // debugging
+    const debuggingInput = template.find('input[name="debugging"]');
+    debuggingInput.data('uid', entry.uid);
+    debuggingInput.on('input', async function () {
+        const uid = $(this).data('uid');
+        const value = $(this).prop('checked');
+        data.entries[uid].debugging = value;
+        setWIOriginalDataValue(data, uid, 'extensions.debugging', data.entries[uid].debugging);
+        await saveWorldInfo(name, data);
+    });
+    debuggingInput.prop('checked', entry.debugging).trigger('input');
+
     // duplicate button
     const duplicateButton = template.find('.duplicate_entry_button');
     duplicateButton.data('uid', entry.uid);
@@ -3751,6 +3765,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             // Logging preparation
             let headerLogged = false;
             function log(...args) {
+                if (!entry.debugging) return;
                 if (!headerLogged) {
                     console.debug(`[WI] Entry ${entry.uid}`, `from '${entry.world}' processing`, entry);
                     headerLogged = true;
@@ -3960,19 +3975,19 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             function verifyProbability() {
                 // If we don't need to roll, it's always true
                 if (!entry.useProbability || entry.probability === 100) {
-                    console.debug(`WI entry ${entry.uid} does not use probability`);
+                    if (entry.debugging) console.debug(`WI entry ${entry.uid} does not use probability`);
                     return true;
                 }
 
                 const isSticky = timedEffects.isEffectActive('sticky', entry);
                 if (isSticky) {
-                    console.debug(`WI entry ${entry.uid} is sticky, does not need to re-roll probability`);
+                    if (entry.debugging) console.debug(`WI entry ${entry.uid} is sticky, does not need to re-roll probability`);
                     return true;
                 }
 
                 const rollValue = Math.random() * 100;
                 if (rollValue <= entry.probability) {
-                    console.debug(`WI entry ${entry.uid} passed probability check of ${entry.probability}%`);
+                    if (entry.debugging) console.debug(`WI entry ${entry.uid} passed probability check of ${entry.probability}%`);
                     return true;
                 }
 
@@ -3982,7 +3997,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
 
             const success = verifyProbability();
             if (!success) {
-                console.debug(`WI entry ${entry.uid} failed probability check, removing from activated entries`, entry);
+                if (entry.debugging) console.debug(`WI entry ${entry.uid} failed probability check, removing from activated entries`, entry);
                 continue;
             }
 
@@ -4002,7 +4017,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             }
 
             allActivatedEntries.add(entry);
-            console.debug(`[WI] Entry ${entry.uid} activation successful, adding to prompt`, entry);
+            if (entry.debugging) console.debug(`[WI] Entry ${entry.uid} activation successful, adding to prompt`, entry);
         }
 
         const successfulNewEntries = newEntries.filter(x => !failedProbabilityChecks.has(x));
@@ -4073,7 +4088,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         const content = getRegexedString(entry.content, regex_placement.WORLD_INFO, { depth: regexDepth, isMarkdown: false, isPrompt: true });
 
         if (!content) {
-            console.debug(`[WI] Entry ${entry.uid}`, 'skipped adding to prompt due to empty content', entry);
+            if (entry.debugging) console.debug(`[WI] Entry ${entry.uid}`, 'skipped adding to prompt due to empty content', entry);
             return;
         }
 
@@ -4205,7 +4220,7 @@ function filterGroupsByTimedEffects(groups, timedEffects, removeEntry) {
                     continue;
                 }
 
-                console.debug(`[WI] Entry ${entry.uid}`, `removed as a non-sticky loser from inclusion group '${key}'`, entry);
+                if (entry.debugging) console.debug(`[WI] Entry ${entry.uid}`, `removed as a non-sticky loser from inclusion group '${key}'`, entry);
                 removeEntry(entry);
             }
 
@@ -4266,7 +4281,7 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanSt
                 continue;
             }
 
-            if (logging) console.debug(`[WI] Entry ${entry.uid}`, `removed as loser from inclusion group '${entry.group}'`, entry);
+            if (logging && entry.debugging) console.debug(`[WI] Entry ${entry.uid}`, `removed as loser from inclusion group '${entry.group}'`, entry);
             removeEntry(entry);
         }
     }
@@ -4366,6 +4381,7 @@ function convertAgnaiMemoryBook(inputObj) {
             sticky: null,
             cooldown: null,
             delay: null,
+            debugging: true,
         };
     });
 
@@ -4408,6 +4424,7 @@ function convertRisuLorebook(inputObj) {
             sticky: null,
             cooldown: null,
             delay: null,
+            debugging: true,
         };
     });
 
@@ -4455,6 +4472,7 @@ function convertNovelLorebook(inputObj) {
             sticky: null,
             cooldown: null,
             delay: null,
+            debugging: true,
         };
     });
 
@@ -4504,6 +4522,7 @@ function convertCharacterBook(characterBook) {
             sticky: entry.extensions?.sticky ?? null,
             cooldown: entry.extensions?.cooldown ?? null,
             delay: entry.extensions?.delay ?? null,
+            debugging: entry.extensions?.debugging ?? true,
         };
     });
 
