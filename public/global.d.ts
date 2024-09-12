@@ -1,3 +1,4 @@
+
 // Global namespace modules
 declare var DOMPurify;
 declare var droll;
@@ -14,8 +15,6 @@ declare var isProbablyReaderable;
 declare var ePub;
 declare var ai;
 
-import { getContext } from "./scripts/extensions";
-
 interface SillyTavern_ {
   getContext: typeof getContext
   //used by an extension
@@ -27,9 +26,6 @@ declare var SillyTavern = SillyTavern_
 
 declare global {
   const moment: typeof moment;
-  interface Window {
-    SillyTavern: SillyTavern_
-  }
 }
 
 

@@ -7942,8 +7942,9 @@ async function createOrEditCharacter(e) {
     }
 }
 
+
 //renamed it here to getRootContext so people dont accidentally import this one
-window['SillyTavern'].getContext = getRootContext
+window['SillyTavern'].getContext = getRootContext;
 export function getRootContext() {
     return {
         chat: chat,
