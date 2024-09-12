@@ -993,7 +993,7 @@ body .panelControlBar {
     padding: 0;
     font-family: var(--mainFontFamily);
     font-weight: 400;
-    align-self: self-end;
+    align-self: center;
 }
 
 .swipe_left {
