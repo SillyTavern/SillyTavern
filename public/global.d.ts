@@ -14,108 +14,122 @@ declare var isProbablyReaderable;
 declare var ePub;
 declare var ai;
 
-declare var SillyTavern: {
-    getContext(): any;
-    llm: any;
-};
+import { getContext } from "./scripts/extensions";
+
+interface SillyTavern_ {
+  getContext: typeof getContext
+  //used by an extension
+  llm: any;
+}
+
+declare var SillyTavern = SillyTavern_
+
+
+declare global {
+  const moment: typeof moment;
+  interface Window {
+    SillyTavern: SillyTavern_
+  }
+}
+
 
 // Jquery plugins
 interface JQuery {
-    nanogallery2(options?: any): JQuery;
-    nanogallery2(method: string, options?: any): JQuery;
-    pagination(method: 'getCurrentPageNum'): number;
-    pagination(method: string, options?: any): JQuery;
-    pagination(options?: any): JQuery;
-    transition(options?: any, complete?: function): JQuery;
-    autocomplete(options?: any): JQuery;
-    autocomplete(method: string, options?: any): JQuery;
-    slider(options?: any): JQuery;
-    slider(method: string, func: string, options?: any): JQuery;
-    cropper(options?: any): JQuery;
-    izoomify(options?: any): JQuery;
+  nanogallery2(options?: any): JQuery;
+  nanogallery2(method: string, options?: any): JQuery;
+  pagination(method: 'getCurrentPageNum'): number;
+  pagination(method: string, options?: any): JQuery;
+  pagination(options?: any): JQuery;
+  transition(options?: any, complete?: function): JQuery;
+  autocomplete(options?: any): JQuery;
+  autocomplete(method: string, options?: any): JQuery;
+  slider(options?: any): JQuery;
+  slider(method: string, func: string, options?: any): JQuery;
+  cropper(options?: any): JQuery;
+  izoomify(options?: any): JQuery;
 
-    //#region select2
+  //#region select2
 
-    /**
-     * Initializes or modifies a select2 instance with provided options
-     *
-     * @param options - Configuration options for the select2 instance
-     * @returns The jQuery object for chaining
-     */
-    select2(options?: Select2Options): JQuery;
+  /**
+   * Initializes or modifies a select2 instance with provided options
+   *
+   * @param options - Configuration options for the select2 instance
+   * @returns The jQuery object for chaining
+   */
+  select2(options?: Select2Options): JQuery;
 
-    /**
-     * Retrieves data currently selected in the select2 instance
-     *
-     * @param field - A string specifying the 'data' method
-     * @returns An array of selected items
-     */
-    select2(field: 'data'): any[];
+  /**
+   * Retrieves data currently selected in the select2 instance
+   *
+   * @param field - A string specifying the 'data' method
+   * @returns An array of selected items
+   */
+  select2(field: 'data'): any[];
 
-    /**
-     * Calls the specified select2 method
-     *
-     * @param method - The name of the select2 method to invoke
-     * @returns The jQuery object for chaining
-     */
-    select2(method: 'open' | 'close' | 'destroy' | 'focus' | 'val', value?: any): JQuery;
+  /**
+   * Calls the specified select2 method
+   *
+   * @param method - The name of the select2 method to invoke
+   * @returns The jQuery object for chaining
+   */
+  select2(method: 'open' | 'close' | 'destroy' | 'focus' | 'val', value?: any): JQuery;
 
-    //#endregion
+  //#endregion
 
-    //#region sortable
+  //#region sortable
 
-    /**
-     * Initializes or updates a sortable instance with the provided options
-     *
-     * @param options - Configuration options for the sortable instance
-     * @returns The jQuery object for chaining
-     */
-    sortable(options?: SortableOptions): JQuery;
+  /**
+   * Initializes or updates a sortable instance with the provided options
+   *
+   * @param options - Configuration options for the sortable instance
+   * @returns The jQuery object for chaining
+   */
+  sortable(options?: SortableOptions): JQuery;
 
-    /**
-     * Calls a sortable method to perform actions on the instance
-     *
-     * @param method - The name of the sortable method to invoke
-     * @returns The jQuery object for chaining
-     */
-    sortable(method: 'destroy' | 'disable' | 'enable' | 'refresh' | 'toArray'): JQuery;
+  /**
+   * Calls a sortable method to perform actions on the instance
+   *
+   * @param method - The name of the sortable method to invoke
+   * @returns The jQuery object for chaining
+   */
+  sortable(method: 'destroy' | 'disable' | 'enable' | 'refresh' | 'toArray'): JQuery;
 
-    /**
-     * Retrieves the sortable's instance object. If the element does not have an associated instance, undefined is returned.
-     *
-     * @returns The instance of the sortable object
-     */
-    sortable(method: 'instance'): object;
+  /**
+   * Retrieves the sortable's instance object. If the element does not have an associated instance, undefined is returned.
+   *
+   * @returns The instance of the sortable object
+   */
+  sortable(method: 'instance'): object;
 
-    /**
-     * Retrieves the current option value for the specified option
-     *
-     * @param method - The string 'option' to retrieve an option value
-     * @param optionName - The name of the option to retrieve
-     * @returns The value of the specified option
-     */
-    sortable(method: 'option', optionName: string): any;
+  /**
+   * Retrieves the current option value for the specified option
+   *
+   * @param method - The string 'option' to retrieve an option value
+   * @param optionName - The name of the option to retrieve
+   * @returns The value of the specified option
+   */
+  sortable(method: 'option', optionName: string): any;
 
-    /**
-     * Sets the value of the specified option
-     *
-     * @param method - The string 'option' to set an option value
-     * @param optionName - The name of the option to set
-     * @param value - The value to assign to the option
-     * @returns The jQuery object for chaining
-     */
-    sortable(method: 'option', optionName: string, value: any): JQuery;
+  /**
+   * Sets the value of the specified option
+   *
+   * @param method - The string 'option' to set an option value
+   * @param optionName - The name of the option to set
+   * @param value - The value to assign to the option
+   * @returns The jQuery object for chaining
+   */
+  sortable(method: 'option', optionName: string, value: any): JQuery;
 
-    /**
-     * Sets multiple options using an object
-     *
-     * @param method - The string 'option' to set options
-     * @param options - An object containing multiple option key-value pairs
-     * @returns The jQuery object for chaining
-     */
-    sortable(method: 'option', options: SortableOptions): JQuery;
+  /**
+   * Sets multiple options using an object
+   *
+   * @param method - The string 'option' to set options
+   * @param options - An object containing multiple option key-value pairs
+   * @returns The jQuery object for chaining
+   */
+  sortable(method: 'option', options: SortableOptions): JQuery;
 
-    //#endregion
+  //#endregion
 }
 
 //#region Fuse
@@ -127,147 +141,147 @@ interface JQuery {
  * @param options - Configuration options for the search algorithm
  */
 declare var Fuse: {
-    new(list: any[], options?: FuseOptions): FuseInstance;
+  new(list: any[], options?: FuseOptions): FuseInstance;
 };
 
 /** Instead of providing a (nested) key as a string, an object can be defined that can specify weight and a custom get function */
 interface FuseKey {
-    /**
-     * The name of they key. Supports nested paths.
-     */
-    name: string;
-    /**
-     * You can allocate a weight to keys to give them higher (or lower) values in search results. The weight value has to be greater than 0. When a weight isn't provided, it will default to 1.
-     * @default 1
-     */
-    weight?: number;
-    /**
-     * Function to retrieve an object's value at the specified path. The default searches nested paths.
-     * @default (obj: T, path: string | string[]) => string | string[]
-     */
-    getFn?: (any) => string;
+  /**
+   * The name of they key. Supports nested paths.
+   */
+  name: string;
+  /**
+   * You can allocate a weight to keys to give them higher (or lower) values in search results. The weight value has to be greater than 0. When a weight isn't provided, it will default to 1.
+   * @default 1
+   */
+  weight?: number;
+  /**
+   * Function to retrieve an object's value at the specified path. The default searches nested paths.
+   * @default (obj: T, path: string | string[]) => string | string[]
+   */
+  getFn?: (any) => string;
 }
 
 /** Configuration options for the Fuse search algorithm */
 interface FuseOptions {
-    /**
-     * List of keys that will be searched. Supports nested paths, weighted search, and searching in arrays of strings and objects.
-     * @default []
-     */
-    keys?: string[] | FuseKey[];
+  /**
+   * List of keys that will be searched. Supports nested paths, weighted search, and searching in arrays of strings and objects.
+   * @default []
+   */
+  keys?: string[] | FuseKey[];
 
-    /**
-     * How much distance one character can be from another to be considered a match.
-     * @default 100
-     */
-    distance?: number;
+  /**
+   * How much distance one character can be from another to be considered a match.
+   * @default 100
+   */
+  distance?: number;
 
-    /**
-     * At what point the match algorithm gives up. A threshold of 0.0 requires a perfect match, while 1.0 matches everything.
-     * @default 0.6
-     */
-    threshold?: number;
+  /**
+   * At what point the match algorithm gives up. A threshold of 0.0 requires a perfect match, while 1.0 matches everything.
+   * @default 0.6
+   */
+  threshold?: number;
 
-    /**
-     * Whether the score should be included in the result set. A score of 0 indicates a perfect match, while a score of 1 indicates a complete mismatch.
-     * @default false
-     */
-    includeScore?: boolean;
+  /**
+   * Whether the score should be included in the result set. A score of 0 indicates a perfect match, while a score of 1 indicates a complete mismatch.
+   * @default false
+   */
+  includeScore?: boolean;
 
-    /**
-     * Indicates whether comparisons should be case-sensitive.
-     * @default false
-     */
-    isCaseSensitive?: boolean;
+  /**
+   * Indicates whether comparisons should be case-sensitive.
+   * @default false
+   */
+  isCaseSensitive?: boolean;
 
-    /**
-     * Whether the matches should be included in the result set. When true, each record in the result set will include the indices of matched characters.
-     * @default false
-     */
-    includeMatches?: boolean;
+  /**
+   * Whether the matches should be included in the result set. When true, each record in the result set will include the indices of matched characters.
+   * @default false
+   */
+  includeMatches?: boolean;
 
-    /**
-     * Only matches whose length exceeds this value will be returned.
-     * @default 1
-     */
-    minMatchCharLength?: number;
+  /**
+   * Only matches whose length exceeds this value will be returned.
+   * @default 1
+   */
+  minMatchCharLength?: number;
 
-    /**
-     * Whether to sort the result list by score.
-     * @default true
-     */
-    shouldSort?: boolean;
+  /**
+   * Whether to sort the result list by score.
+   * @default true
+   */
+  shouldSort?: boolean;
 
-    /**
-     * When true, the matching function will continue to the end of a search pattern even if a perfect match has already been found.
-     * @default false
-     */
-    findAllMatches?: boolean;
+  /**
+   * When true, the matching function will continue to the end of a search pattern even if a perfect match has already been found.
+   * @default false
+   */
+  findAllMatches?: boolean;
 
-    /**
-     * Determines approximately where in the text the pattern is expected to be found.
-     * @default 0
-     */
-    location?: number;
+  /**
+   * Determines approximately where in the text the pattern is expected to be found.
+   * @default 0
+   */
+  location?: number;
 
-    /**
-     * When true, search will ignore location and distance, so it won't matter where in the string the pattern appears.
-     * @default false
-     */
-    ignoreLocation?: boolean;
+  /**
+   * When true, search will ignore location and distance, so it won't matter where in the string the pattern appears.
+   * @default false
+   */
+  ignoreLocation?: boolean;
 
-    /**
-     * When true, it enables the use of Unix-like search commands.
-     * @default false
-     */
-    useExtendedSearch?: boolean;
+  /**
+   * When true, it enables the use of Unix-like search commands.
+   * @default false
+   */
+  useExtendedSearch?: boolean;
 
-    /**
-     * Function to retrieve an object's value at the specified path. The default searches nested paths.
-     * @default (obj: T, path: string | string[]) => string | string[]
-     */
-    getFn?: (obj: any, path: string | string[]) => string | string[];
+  /**
+   * Function to retrieve an object's value at the specified path. The default searches nested paths.
+   * @default (obj: T, path: string | string[]) => string | string[]
+   */
+  getFn?: (obj: any, path: string | string[]) => string | string[];
 
-    /**
-     * Function to sort the results. The default sorts by ascending relevance score.
-     * @default (a, b) => number
-     */
-    sortFn?: (a: any, b: any) => number;
+  /**
+   * Function to sort the results. The default sorts by ascending relevance score.
+   * @default (a, b) => number
+   */
+  sortFn?: (a: any, b: any) => number;
 
-    /**
-     * When true, the calculation for the relevance score will ignore the field-length norm.
-     * @default false
-     */
-    ignoreFieldNorm?: boolean;
+  /**
+   * When true, the calculation for the relevance score will ignore the field-length norm.
+   * @default false
+   */
+  ignoreFieldNorm?: boolean;
 
-    /**
-     * Determines how much the field-length norm affects scoring. 0 is equivalent to ignoring the field-length norm, while higher values increase the effect.
-     * @default 1
-     */
-    fieldNormWeight?: number;
+  /**
+   * Determines how much the field-length norm affects scoring. 0 is equivalent to ignoring the field-length norm, while higher values increase the effect.
+   * @default 1
+   */
+  fieldNormWeight?: number;
 }
 
 
 /** Represents an individual Fuse search result */
 interface FuseResult {
-    /** The original item that was matched */
-    item: any;
-    /** The index of the item from the original input collection that was searched */
-    refIndex: number;
-    /** The search score, where 0 is a perfect match and 1 is the worst */
-    score?: number;
-    /** Optional list of matched search keys */
-    matches?: Array<{ key: string; indices: [number, number][] }>;
+  /** The original item that was matched */
+  item: any;
+  /** The index of the item from the original input collection that was searched */
+  refIndex: number;
+  /** The search score, where 0 is a perfect match and 1 is the worst */
+  score?: number;
+  /** Optional list of matched search keys */
+  matches?: Array<{ key: string; indices: [number, number][] }>;
 }
 
 /** Represents a Fuse instance, used for performing searches */
 interface FuseInstance {
-    /**
-     * Searches through the list using the specified query.
-     * @param query - The search term or phrase to use
-     * @returns An array of search results matching the query
-     */
-    search(query: string): FuseResult[];
+  /**
+   * Searches through the list using the specified query.
+   * @param query - The search term or phrase to use
+   * @returns An array of search results matching the query
+   */
+  search(query: string): FuseResult[];
 }
 
 //#endregion
@@ -276,237 +290,237 @@ interface FuseInstance {
 
 /** Options for configuring a select2 instance */
 interface Select2Options {
-    /**
-     * Provides support for ajax data sources
-     * @param params - Parameters including the search term
-     * @param callback - A callback function to handle the results
-     * @default null
-     */
-    ajax?: {
-        url: string;
-        dataType?: string;
-        delay?: number;
-        data?: (params: any) => any;
-        processResults?: (data: any, params: any) => any;
-    } | { transport: (params, success, failure) => any };
+  /**
+   * Provides support for ajax data sources
+   * @param params - Parameters including the search term
+   * @param callback - A callback function to handle the results
+   * @default null
+   */
+  ajax?: {
+    url: string;
+    dataType?: string;
+    delay?: number;
+    data?: (params: any) => any;
+    processResults?: (data: any, params: any) => any;
+  } | { transport: (params, success, failure) => any };
 
-    /**
-     * Provides support for clearable selections
-     * @default false
-     */
-    allowClear?: boolean;
+  /**
+   * Provides support for clearable selections
+   * @default false
+   */
+  allowClear?: boolean;
 
-    /**
-     * See Using Select2 with AMD or CommonJS loaders
-     * @default './i18n/'
-     */
-    amdLanguageBase?: string;
+  /**
+   * See Using Select2 with AMD or CommonJS loaders
+   * @default './i18n/'
+   */
+  amdLanguageBase?: string;
 
-    /**
-     * Controls whether the dropdown is closed after a selection is made
-     * @default true
-     */
-    closeOnSelect?: boolean;
+  /**
+   * Controls whether the dropdown is closed after a selection is made
+   * @default true
+   */
+  closeOnSelect?: boolean;
 
-    /**
-     * Allows rendering dropdown options from an array
-     * @default null
-     */
-    data?: object[];
+  /**
+   * Allows rendering dropdown options from an array
+   * @default null
+   */
+  data?: object[];
 
-    /**
-     * Used to override the built-in DataAdapter
-     * @default SelectAdapter
-     */
-    dataAdapter?: SelectAdapter;
+  /**
+   * Used to override the built-in DataAdapter
+   * @default SelectAdapter
+   */
+  dataAdapter?: SelectAdapter;
 
-    /**
-     * Enable debugging messages in the browser console
-     * @default false
-     */
-    debug?: boolean;
+  /**
+   * Enable debugging messages in the browser console
+   * @default false
+   */
+  debug?: boolean;
 
-    /**
-     * Sets the dir attribute on the selection and dropdown containers to indicate the direction of the text
-     * @default 'ltr'
-     */
-    dir?: string;
+  /**
+   * Sets the dir attribute on the selection and dropdown containers to indicate the direction of the text
+   * @default 'ltr'
+   */
+  dir?: string;
 
-    /**
-     * When set to true, the select control will be disabled
-     * @default false
-     */
-    disabled?: boolean;
+  /**
+   * When set to true, the select control will be disabled
+   * @default false
+   */
+  disabled?: boolean;
 
-    /**
-     * Used to override the built-in DropdownAdapter
-     * @default DropdownAdapter
-     */
-    dropdownAdapter?: DropdownAdapter;
+  /**
+   * Used to override the built-in DropdownAdapter
+   * @default DropdownAdapter
+   */
+  dropdownAdapter?: DropdownAdapter;
 
-    /**
-     * @default false
-     */
-    dropdownAutoWidth?: boolean;
+  /**
+   * @default false
+   */
+  dropdownAutoWidth?: boolean;
 
-    /**
-     * Adds additional CSS classes to the dropdown container. The helper :all: can be used to add all CSS classes present on the original <select> element.
-     * @default ''
-     */
-    dropdownCssClass?: string;
+  /**
+   * Adds additional CSS classes to the dropdown container. The helper :all: can be used to add all CSS classes present on the original <select> element.
+   * @default ''
+   */
+  dropdownCssClass?: string;
 
-    /**
-     * Allows you to customize placement of the dropdown
-     * @default $(document.body)
-     */
-    dropdownParent?: JQuery | HTMLElement;
+  /**
+   * Allows you to customize placement of the dropdown
+   * @default $(document.body)
+   */
+  dropdownParent?: JQuery | HTMLElement;
 
-    /**
-     * Handles automatic escaping of content rendered by custom templates
-     * @default Utils.escapeMarkup
-     */
-    escapeMarkup?: function;
+  /**
+   * Handles automatic escaping of content rendered by custom templates
+   * @default Utils.escapeMarkup
+   */
+  escapeMarkup?: function;
 
-    /**
-     * Specify the language used for Select2 messages
-     * @default EnglishTranslation
-     */
-    language?: string | object;
+  /**
+   * Specify the language used for Select2 messages
+   * @default EnglishTranslation
+   */
+  language?: string | object;
 
-    /**
-     * Handles custom search matching
-     * @default null
-     */
-    matcher?: (searchParams: object, data: object) => boolean;
+  /**
+   * Handles custom search matching
+   * @default null
+   */
+  matcher?: (searchParams: object, data: object) => boolean;
 
-    /**
-     * Maximum number of characters that may be provided for a search term
-     * @default 0
-     */
-    maximumInputLength?: number;
+  /**
+   * Maximum number of characters that may be provided for a search term
+   * @default 0
+   */
+  maximumInputLength?: number;
 
-    /**
-     * The maximum number of items that may be selected in a multi-select control. If the value of this option is less than 1, the number of selected items will not be limited.
-     * @default 0
-     */
-    maximumSelectionLength?: number;
+  /**
+   * The maximum number of items that may be selected in a multi-select control. If the value of this option is less than 1, the number of selected items will not be limited.
+   * @default 0
+   */
+  maximumSelectionLength?: number;
 
-    /**
-     * 	Minimum number of characters required to start a search
-     * @default 0
-     */
-    minimumInputLength?: number;
+  /**
+   * 	Minimum number of characters required to start a search
+   * @default 0
+   */
+  minimumInputLength?: number;
 
-    /**
-     * The minimum number of results required to display the search box
-     * @default 0
-     */
-    minimumResultsForSearch?: number;
+  /**
+   * The minimum number of results required to display the search box
+   * @default 0
+   */
+  minimumResultsForSearch?: number;
 
-    /**
-     * This option enables multi-select (pillbox) mode. Select2 will automatically map the value of the multiple HTML attribute to this option during initialization.
-     * @default false
-     */
-    multiple?: boolean;
+  /**
+   * This option enables multi-select (pillbox) mode. Select2 will automatically map the value of the multiple HTML attribute to this option during initialization.
+   * @default false
+   */
+  multiple?: boolean;
 
-    /**
-     * Specifies the placeholder for the control
-     * @default null
-     */
-    placeholder?: string;
+  /**
+   * Specifies the placeholder for the control
+   * @default null
+   */
+  placeholder?: string;
 
-    /**
-     * Used to override the built-in ResultsAdapter
-     * @default ResultsAdapter
-     */
-    resultsAdapter?: ResultsAdapter;
+  /**
+   * Used to override the built-in ResultsAdapter
+   * @default ResultsAdapter
+   */
+  resultsAdapter?: ResultsAdapter;
 
-    /**
-     * Used to override the built-in SelectionAdapter
-     * @default SingleSelection | MultipleSelection
-     */
-    selectionAdapter?: SingleSelection | MultipleSelection;
+  /**
+   * Used to override the built-in SelectionAdapter
+   * @default SingleSelection | MultipleSelection
+   */
+  selectionAdapter?: SingleSelection | MultipleSelection;
 
-    /**
-     * Adds additional CSS classes to the selection container. The helper :all: can be used to add all CSS classes present on the original <select> element
-     * @default ''
-     */
-    selectionCssClass?: string;
+  /**
+   * Adds additional CSS classes to the selection container. The helper :all: can be used to add all CSS classes present on the original <select> element
+   * @default ''
+   */
+  selectionCssClass?: string;
 
-    /**
-     * Implements automatic selection when the dropdown is closed
-     * @default false
-     */
-    selectOnClose?: boolean;
+  /**
+   * Implements automatic selection when the dropdown is closed
+   * @default false
+   */
+  selectOnClose?: boolean;
 
-    sorter?: function;
+  sorter?: function;
 
-    /**
-     * When set to `true`, allows the user to create new tags that aren't pre-populated
-     * Used to enable free text responses
-     * @default false
-     */
-    tags?: boolean | object[];
+  /**
+   * When set to `true`, allows the user to create new tags that aren't pre-populated
+   * Used to enable free text responses
+   * @default false
+   */
+  tags?: boolean | object[];
 
-    /**
-     * Customizes the way that search results are rendered
-     * @param item - The item object to format
-     * @returns The formatted representation
-     * @default null
-     */
-    templateResult?: (item: any) => JQuery | string;
+  /**
+   * Customizes the way that search results are rendered
+   * @param item - The item object to format
+   * @returns The formatted representation
+   * @default null
+   */
+  templateResult?: (item: any) => JQuery | string;
 
-    /**
-     * Customizes the way that selections are rendered
-     * @param item - The selected item object to format
-     * @returns The formatted representation
-     * @default null
-     */
-    templateSelection?: (item: any) => JQuery | string;
+  /**
+   * Customizes the way that selections are rendered
+   * @param item - The selected item object to format
+   * @returns The formatted representation
+   * @default null
+   */
+  templateSelection?: (item: any) => JQuery | string;
 
-    /**
-     * Allows you to set the theme
-     * @default 'default'
-     */
-    theme?: string;
+  /**
+   * Allows you to set the theme
+   * @default 'default'
+   */
+  theme?: string;
 
-    /**
-     * A callback that handles automatic tokenization of free-text entry
-     * @default null
-     */
-    tokenizer?: (input: { _type: string, term: string }, selection: { options: object }, callback: (Select2Option) => any) => { term: string };
+  /**
+   * A callback that handles automatic tokenization of free-text entry
+   * @default null
+   */
+  tokenizer?: (input: { _type: string, term: string }, selection: { options: object }, callback: (Select2Option) => any) => { term: string };
 
-    /**
-     * The list of characters that should be used as token separators
-     * @default null
-     */
-    tokenSeparators?: string[];
+  /**
+   * The list of characters that should be used as token separators
+   * @default null
+   */
+  tokenSeparators?: string[];
 
-    /**
-     * Supports customization of the container width
-     * @default 'resolve'
-     */
-    width?: string;
+  /**
+   * Supports customization of the container width
+   * @default 'resolve'
+   */
+  width?: string;
 
-    /**
-     * If true, resolves issue for multiselects using closeOnSelect: false that caused the list of results to scroll to the first selection after each select/unselect
-     * @default false
-     */
-    scrollAfterSelect?: boolean;
+  /**
+   * If true, resolves issue for multiselects using closeOnSelect: false that caused the list of results to scroll to the first selection after each select/unselect
+   * @default false
+   */
+  scrollAfterSelect?: boolean;
 
-    /**
-     * Extends Select2 v4 plugin by adding an option to set a placeholder for the 'search' input field
-     * [Custom Field]
-     * @default ''
-     */
-    searchInputPlaceholder?: string;
+  /**
+   * Extends Select2 v4 plugin by adding an option to set a placeholder for the 'search' input field
+   * [Custom Field]
+   * @default ''
+   */
+  searchInputPlaceholder?: string;
 
-    /**
-     * Extends select2 plugin by adding a custom css class for the 'searcH' input field
-     * [Custom Field]
-     * @default ''
-     */
-    searchInputCssClass?: string;
+  /**
+   * Extends select2 plugin by adding a custom css class for the 'searcH' input field
+   * [Custom Field]
+   * @default ''
+   */
+  searchInputCssClass?: string;
 }
 
 //#endregion
@@ -515,64 +529,64 @@ interface Select2Options {
 
 /** Options for configuring a sortable instance */
 interface SortableOptions {
-    /**
-     * When set, prevents the sortable items from being dragged unless clicked with a delay
-     * @default 0
-     */
-    delay?: number;
+  /**
+   * When set, prevents the sortable items from being dragged unless clicked with a delay
+   * @default 0
+   */
+  delay?: number;
 
-    /**
-     * Class name for elements to handle sorting. Elements with this class can be dragged to sort.
-     * @default ''
-     */
-    handle?: string;
+  /**
+   * Class name for elements to handle sorting. Elements with this class can be dragged to sort.
+   * @default ''
+   */
+  handle?: string;
 
-    /**
-     * Whether to allow sorting between different connected lists
-     * @default false
-     */
-    connectWith?: string | boolean;
+  /**
+   * Whether to allow sorting between different connected lists
+   * @default false
+   */
+  connectWith?: string | boolean;
 
-    /**
-     * Function called when sorting starts
-     * @param event - The event object
-     * @param ui - The UI object containing the helper and position information
-     */
-    start?: (event: Event, ui: SortableUI) => void;
+  /**
+   * Function called when sorting starts
+   * @param event - The event object
+   * @param ui - The UI object containing the helper and position information
+   */
+  start?: (event: Event, ui: SortableUI) => void;
 
-    /**
-     * Function called when sorting stops
-     * @param event - The event object
-     * @param ui - The UI object containing the helper and position information
-     */
-    stop?: (event: Event, ui: SortableUI) => void;
+  /**
+   * Function called when sorting stops
+   * @param event - The event object
+   * @param ui - The UI object containing the helper and position information
+   */
+  stop?: (event: Event, ui: SortableUI) => void;
 
-    /**
-     * Function called when sorting updates
-     * @param event - The event object
-     * @param ui - The UI object containing the helper and position information
-     */
-    update?: (event: Event, ui: SortableUI) => void;
+  /**
+   * Function called when sorting updates
+   * @param event - The event object
+   * @param ui - The UI object containing the helper and position information
+   */
+  update?: (event: Event, ui: SortableUI) => void;
 
-    /**
-     * Specifies which items inside the element should be sortable
-     * @default '> *'
-     */
-    items?: string;
+  /**
+   * Specifies which items inside the element should be sortable
+   * @default '> *'
+   */
+  items?: string;
 }
 
 /** UI object passed to sortable event handlers */
 interface SortableUI {
-    /** jQuery object representing the helper element */
-    helper: JQuery;
-    /** The current position of the helper element */
-    position: { top: number; left: number };
-    /** Original position of the helper element */
-    originalPosition: { top: number; left: number };
-    /** jQuery object representing the item being sorted */
-    item: JQuery;
-    /** The placeholder element used during sorting */
-    placeholder: JQuery;
+  /** jQuery object representing the helper element */
+  helper: JQuery;
+  /** The current position of the helper element */
+  position: { top: number; left: number };
+  /** Original position of the helper element */
+  originalPosition: { top: number; left: number };
+  /** jQuery object representing the item being sorted */
+  item: JQuery;
+  /** The placeholder element used during sorting */
+  placeholder: JQuery;
 }
 
 //#endregion
@@ -612,7 +626,7 @@ declare namespace moment {
     preparse(inp: string): string;
     postformat(inp: string): string;
     relativeTime(n: number, withoutSuffix: boolean,
-                 key: RelativeTimeKey, isFuture: boolean): string;
+      key: RelativeTimeKey, isFuture: boolean): string;
     pastFuture(diff: number, absRelTime: string): string;
     set(config: Object): void;
 
@@ -722,7 +736,7 @@ declare namespace moment {
     weekdaysMin?: string[] | StandaloneFormatSpec | WeekdaySimpleFn;
 
     meridiemParse?: RegExp;
-    meridiem?: (hour: number, minute:number, isLower: boolean) => string;
+    meridiem?: (hour: number, minute: number, isLower: boolean) => string;
 
     isPM?: (input: string) => boolean;
 
@@ -1031,13 +1045,13 @@ declare namespace moment {
     /**
      * @deprecated reverse syntax
      */
-    add(unit: unitOfTime.DurationConstructor, amount: number|string): Moment;
+    add(unit: unitOfTime.DurationConstructor, amount: number | string): Moment;
 
     subtract(amount?: DurationInputArg1, unit?: DurationInputArg2): Moment;
     /**
      * @deprecated reverse syntax
      */
-    subtract(unit: unitOfTime.DurationConstructor, amount: number|string): Moment;
+    subtract(unit: unitOfTime.DurationConstructor, amount: number | string): Moment;
 
     calendar(): string;
     calendar(formats: CalendarSpec): string;
@@ -1085,19 +1099,19 @@ declare namespace moment {
     quarter(q: number): Moment;
     quarters(): number;
     quarters(q: number): Moment;
-    month(M: number|string): Moment;
+    month(M: number | string): Moment;
     month(): number;
     /**
      * @deprecated use month(M)
      */
-    months(M: number|string): Moment;
+    months(M: number | string): Moment;
     /**
      * @deprecated use month()
      */
     months(): number;
-    day(d: number|string): Moment;
+    day(d: number | string): Moment;
     day(): number;
-    days(d: number|string): Moment;
+    days(d: number | string): Moment;
     days(): number;
     date(d: number): Moment;
     date(): number;
@@ -1128,7 +1142,7 @@ declare namespace moment {
     weekday(): number;
     weekday(d: number): Moment;
     isoWeekday(): number;
-    isoWeekday(d: number|string): Moment;
+    isoWeekday(d: number | string): Moment;
     weekYear(): number;
     weekYear(d: number): Moment;
     isoWeekYear(): number;
@@ -1166,9 +1180,9 @@ declare namespace moment {
      * @deprecated in favor of utcOffset
      */
     zone(): number;
-    zone(b: number|string): Moment;
+    zone(b: number | string): Moment;
     utcOffset(): number;
-    utcOffset(b: number|string, keepLocalTime?: boolean): Moment;
+    utcOffset(b: number | string, keepLocalTime?: boolean): Moment;
     isUtcOffset(): boolean;
     daysInMonth(): number;
     isDST(): boolean;
@@ -1362,26 +1376,22 @@ declare namespace moment {
 
 }
 
-declare global {
-  const moment: typeof moment;
-}
-
 /**
  * Callback data for the `LLM_FUNCTION_TOOL_REGISTER` event type that is triggered when a function tool can be registered.
  */
 interface FunctionToolRegister {
-    /**
-     * The type of generation that is being used
-     */
-    type?: string;
-    /**
-     * Generation data, including messages and sampling parameters
-     */
-    data: Record<string, object>;
-    /**
-     * Callback to register an LLM function tool.
-     */
-    registerFunctionTool: typeof registerFunctionTool;
+  /**
+   * The type of generation that is being used
+   */
+  type?: string;
+  /**
+   * Generation data, including messages and sampling parameters
+   */
+  data: Record<string, object>;
+  /**
+   * Callback to register an LLM function tool.
+   */
+  registerFunctionTool: typeof registerFunctionTool;
 }
 
 /**
@@ -1397,12 +1407,12 @@ declare function registerFunctionTool(name: string, description: string, params:
  * Callback data for the `LLM_FUNCTION_TOOL_CALL` event type that is triggered when a function tool is called.
  */
 interface FunctionToolCall {
-    /**
-     * Name of the function tool to call
-     */
-    name: string;
-    /**
-     * JSON object with the parameters to pass to the function tool
-     */
-    arguments: string;
+  /**
+   * Name of the function tool to call
+   */
+  name: string;
+  /**
+   * JSON object with the parameters to pass to the function tool
+   */
+  arguments: string;
 }

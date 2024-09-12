@@ -160,7 +160,7 @@ import {
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
-import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
+import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, executeSlashCommands, executeSlashCommandsOnChatInput, executeSlashCommandsWithOptions, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, registerSlashCommand, stopScriptExecution } from './scripts/slash-commands.js';
 import {
     tag_map,
@@ -6739,7 +6739,7 @@ async function messageEditDone(div) {
  * corresponding chat content fetched from the server.
  */
 export async function getChatsFromFiles(data, isGroupChat) {
-    const context = getContext();
+    const context = getRootContext();
     let chat_dict = {};
     let chat_list = Object.values(data).sort((a, b) => a['file_name'].localeCompare(b['file_name'])).reverse();
 
@@ -7942,7 +7942,9 @@ async function createOrEditCharacter(e) {
     }
 }
 
-window['SillyTavern'].getContext = function () {
+//renamed it here to getRootContext so people dont accidentally import this one
+window['SillyTavern'].getContext = getRootContext
+export function getRootContext() {
     return {
         chat: chat,
         characters: characters,
@@ -8623,7 +8625,7 @@ async function importCharacter(file, preserveFileName = '') {
         await getCharacters();
         select_rm_info('char_import', data.file_name, oldSelectedChar);
         if (power_user.tag_import_setting !== tag_import_setting.NONE) {
-            let currentContext = getContext();
+            let currentContext = getRootContext();
             let avatarFileName = `${data.file_name}.png`;
             let importedCharacter = currentContext.characters.find(character => character.avatar === avatarFileName);
             await importTags(importedCharacter);
@@ -8954,7 +8956,7 @@ function addDebugFunctions() {
     });
 
     registerDebugFunction('copySetup', 'Copy ST setup to clipboard [WIP]', 'Useful data when reporting bugs', async () => {
-        const getContextContents = getContext();
+        const getContextContents = getRootContext();
         const getSettingsContents = settings;
         //console.log(getSettingsContents);
         const logMessage = `
