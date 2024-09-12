@@ -67,13 +67,13 @@ module.exports = {
     ],
     // There are various vendored libraries that shouldn't be linted
     ignorePatterns: [
-        'public/lib/**/*',
         '*.min.js',
         'src/ai_horde/**/*',
         'plugins/**/*',
         'data/**/*',
         'backups/**/*',
         'node_modules/**/*',
+        'lib/**/*',
     ],
     rules: {
         'no-unused-vars': ['error', { args: 'none' }],
