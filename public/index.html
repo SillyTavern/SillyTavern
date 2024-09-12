@@ -3282,14 +3282,23 @@
                                     <input id="instruct_skip_examples" type="checkbox" />
                                     <small data-i18n="Skip Example Dialogues Formatting">Skip Example Dialogues Formatting</small>
                                 </label>
-                                <label for="instruct_names" class="checkbox_label">
-                                    <input id="instruct_names" type="checkbox" />
-                                    <small data-i18n="Include Names">Include Names</small>
-                                </label>
-                                <label for="instruct_names_force_groups" class="checkbox_label indent20p">
-                                    <input id="instruct_names_force_groups" type="checkbox" />
-                                    <small data-i18n="Force for Groups and Personas">Force for Groups and Personas</small>
-                                </label>
+                                <div id="instruct_names_behavior">
+                                    <small data-i18n="Include Names">
+                                        Include Names
+                                    </small>
+                                    <label for="instruct_names_behavior_none" class="checkbox_label">
+                                        <input id="instruct_names_behavior_none" name="names_behavior" value="none" type="radio" />
+                                        <small data-i18n="Never">Never</small>
+                                    </label>
+                                    <label for="instruct_names_behavior_force" class="checkbox_label">
+                                        <input id="instruct_names_behavior_force" name="names_behavior" value="force" type="radio" />
+                                        <small data-i18n="Groups and Past Personas">Groups and Past Personas</small>
+                                    </label>
+                                    <label for="instruct_names_behavior_always" class="checkbox_label">
+                                        <input id="instruct_names_behavior_always" name="names_behavior" value="always" type="radio" />
+                                        <small data-i18n="Always">Always</small>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         <div name="tokenizerSettingsBlock">
