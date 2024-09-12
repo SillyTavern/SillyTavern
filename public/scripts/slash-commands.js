@@ -440,7 +440,7 @@ export function initDefaultSlashCommands() {
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
-                'prompt', [ARGUMENT_TYPE.STRING], true, false,
+                'prompt', [ARGUMENT_TYPE.STRING], false, false,
             ),
         ],
         helpString: 'Asks a specified character card a prompt. Character name must be provided in a named argument.',
@@ -2469,30 +2469,20 @@ async function askCharacter(args, text) {
     // Not supported in group chats
     // TODO: Maybe support group chats?
     if (selected_group) {
-        toastr.error('Cannot run this command in a group chat!');
-        return '';
-    }
-
-    if (!text) {
-        console.warn('WARN: No text provided for /ask command');
-        toastr.warning('No text provided for /ask command');
+        toastr.error('Cannot run /ask command in a group chat!');
         return '';
     }
 
     let name = '';
-    let mesText = '';
 
     if (args?.name) {
         name = args.name.trim();
-        mesText = text.trim();
 
-        if (!name && !mesText) {
-            toastr.warning('You must specify a name and text to ask.');
+        if (!name) {
+            toastr.warning('You must specify a name of the character to ask.');
             return '';
         }
     }
-
-    mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND);
 
     const prevChId = this_chid;
 
@@ -2503,9 +2493,12 @@ async function askCharacter(args, text) {
         return '';
     }
 
-    // Sending a message implicitly saves the chat, so this needs to be done before changing the character
-    // Otherwise, a corruption will occur
-    await sendMessageAsUser(mesText, '');
+    if (text) {
+        const mesText = getRegexedString(text.trim(), regex_placement.SLASH_COMMAND);
+        // Sending a message implicitly saves the chat, so this needs to be done before changing the character
+        // Otherwise, a corruption will occur
+        await sendMessageAsUser(mesText, '');
+    }
 
     // Override character and send a user message
     setCharacterId(String(chId));
