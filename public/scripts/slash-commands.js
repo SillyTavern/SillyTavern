@@ -2241,7 +2241,7 @@ function setEphemeralStopStrings(value) {
 async function generateRawCallback(args, value) {
     if (!value) {
         console.warn('WARN: No argument provided for /genraw command');
-        return;
+        return '';
     }
 
     // Prevent generate recursion
@@ -2260,12 +2260,16 @@ async function generateRawCallback(args, value) {
         setEphemeralStopStrings(resolveVariable(args?.stop));
         const result = await generateRaw(value, '', isFalseBoolean(args?.instruct), quietToLoud, systemPrompt, length);
         return result;
+    } catch (err) {
+        console.error('Error on /genraw generation', err);
+        toastr.error(err.message, 'Error on Generate');
     } finally {
         if (lock) {
             activateSendButtons();
         }
         flushEphemeralStoppingStrings();
     }
+    return '';
 }
 
 /**
@@ -2291,12 +2295,16 @@ async function generateCallback(args, value) {
         const name = args?.name;
         const result = await generateQuietPrompt(value, quietToLoud, false, '', name, length);
         return result;
+    } catch (err) {
+        console.error('Error on /genraw generation', err);
+        toastr.error(err.message, 'Error on Generate');
     } finally {
         if (lock) {
             activateSendButtons();
         }
         flushEphemeralStoppingStrings();
     }
+    return '';
 }
 
 /**

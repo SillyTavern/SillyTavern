@@ -3265,7 +3265,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
         }
 
         if (data.error) {
-            throw new Error(data.error);
+            throw new Error(data.response);
         }
 
         const message = cleanUpMessage(extractMessageFromData(data), false, false, true);
