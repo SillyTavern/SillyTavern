@@ -167,7 +167,7 @@ let modules = [];
 let activeExtensions = new Set();
 
 import { getRootContext } from '../script.js';
-const getContext = getRootContext
+const getContext = getRootContext;
 const getApiUrl = () => extension_settings.apiUrl;
 let connectedToApi = false;
 

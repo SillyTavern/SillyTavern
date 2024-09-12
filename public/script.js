@@ -485,6 +485,9 @@ export const systemUserName = 'SillyTavern System';
 let default_user_name = 'User';
 export let name1 = default_user_name;
 export let name2 = 'SillyTavern System';
+/**
+ * @type {ChatMessage[]}
+ */
 export let chat = [];
 let safetychat = [
     {
@@ -2594,6 +2597,7 @@ export async function processCommands(message) {
     return true;
 }
 
+
 export function sendSystemMessage(type, text, extra = {}) {
     const systemMessage = system_messages[type];
 
@@ -2601,6 +2605,9 @@ export function sendSystemMessage(type, text, extra = {}) {
         return;
     }
 
+    /**
+     * @type {ChatMessage} globalVariable
+     */
     const newMessage = { ...systemMessage, send_date: getMessageTimeStamp() };
 
     if (text) {
@@ -2612,6 +2619,7 @@ export function sendSystemMessage(type, text, extra = {}) {
     }
 
     if (!newMessage.extra) {
+        //@ts-ignore it complains that extra is empty
         newMessage.extra = {};
     }
 
@@ -3000,7 +3008,7 @@ class StreamingProcessor {
         addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
 
         if (Array.isArray(this.swipes) && this.swipes.length > 0) {
-            const message = chat[messageId];
+            const message = (chat[messageId]);
             const swipeInfo = {
                 send_date: message.send_date,
                 gen_started: message.gen_started,
@@ -5559,7 +5567,7 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
         !fromStreaming && await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
     }
 
-    const item = chat[chat.length - 1];
+    const item = (chat[chat.length - 1]);
     if (item['swipe_info'] === undefined) {
         item['swipe_info'] = [];
     }
@@ -7677,7 +7685,7 @@ function openCharacterWorldPopup() {
     // Apped to base dropdown
     world_names.forEach((item, i) => {
         const option = document.createElement('option');
-        option.value = i;
+        option.value = String(i);
         option.innerText = item;
         option.selected = item === worldId;
         select.append(option);
@@ -7689,7 +7697,7 @@ function openCharacterWorldPopup() {
     }
     world_names.forEach((item, i) => {
         const option = document.createElement('option');
-        option.value = i;
+        option.value = String(i);
         option.innerText = item;
 
         const existingCharLore = world_info.charLore?.find((e) => e.name === getCharaFilename());
@@ -8226,11 +8234,11 @@ const swipe_right = () => {
         chat[chat.length - 1]['swipe_info'] = [];
     }
     //console.log(chat[chat.length-1]['swipes']);
-    if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length && chat.length !== 1) { //if swipe id of last message is the same as the length of the 'swipes' array and not the greeting
+    if (parseInt(/** @type {any} */(chat[chat.length - 1]['swipe_id'])) === chat[chat.length - 1]['swipes'].length && chat.length !== 1) { //if swipe id of last message is the same as the length of the 'swipes' array and not the greeting
         delete chat[chat.length - 1].gen_started;
         delete chat[chat.length - 1].gen_finished;
         run_generate = true;
-    } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
+    } else if (parseInt(/** @type {any} */(chat[chat.length - 1]['swipe_id'])) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
         chat[chat.length - 1]['send_date'] = chat[chat.length - 1]?.swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1]['send_date']; //update send date
         chat[chat.length - 1]['extra'] = JSON.parse(JSON.stringify(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra || []));
@@ -8320,13 +8328,13 @@ const swipe_right = () => {
                             queue: false,
                             complete: async function () {
                                 await eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
-                                if (run_generate && !is_send_press && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
+                                if (run_generate && !is_send_press && parseInt(/** @type {any} */(chat[chat.length - 1]['swipe_id'])) === chat[chat.length - 1]['swipes'].length) {
                                     console.debug('caught here 2');
                                     is_send_press = true;
                                     $('.mes_buttons:last').hide();
                                     await Generate('swipe');
                                 } else {
-                                    if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
+                                    if (parseInt(/** @type {any} */(chat[chat.length - 1]['swipe_id'])) !== chat[chat.length - 1]['swipes'].length) {
                                         saveChatDebounced();
                                     }
                                 }

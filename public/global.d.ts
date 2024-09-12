@@ -1412,3 +1412,55 @@ interface FunctionToolCall {
    */
   arguments: string;
 }
+
+/**
+ * NEW INTERFACES
+ */
+
+interface ChatMessageExtra {
+  type?: system_message_types.SLASH_COMMANDS
+  bias?: any
+  "api"?: string
+  "model"?: string
+  append_title?: string,
+  title?: string
+  display_text?: string
+  memory?: string
+  token_count?: number
+}
+
+interface SwipeInfo {
+  "send_date": string,
+  "gen_started"?: string | Date
+  "gen_finished"?: string | Date
+  "extra": ChatMessageExtra
+}
+
+// Initial Message
+type ChatMessage =
+  {
+    "name"?: string
+    "is_user"?: boolean,
+    "is_system"?: boolean,
+    "send_date"?: string
+    "mes"?: string
+    "extra"?: ChatMessageExtra
+    "name"?: string,
+    "is_user"?: true,
+    "is_system"?: false,
+    "send_date"?: string,
+    "mes"?: string,
+    "force_avatar"?: string
+    "name"?: string,
+    "is_user"?: false,
+    "is_system"?: boolean,
+    "send_date"?: string,
+    "mes"?: string
+    "swipe_id"?: number,
+    "swipes"?: string[],
+    "swipe_info"?: SwipeInfo[],
+    "gen_started"?: any
+    "gen_finished"?: any
+    //only appears if no slides, and is undefined?
+    title?: string
+  }
