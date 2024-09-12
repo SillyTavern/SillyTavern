@@ -428,6 +428,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'ask',
         callback: askCharacter,
+        returns: 'the generated text',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
@@ -439,7 +440,7 @@ export function initDefaultSlashCommands() {
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
-                'prompt', [ARGUMENT_TYPE.STRING], true, false,
+                'prompt', [ARGUMENT_TYPE.STRING], false, false,
             ),
         ],
         helpString: 'Asks a specified character card a prompt. Character name must be provided in a named argument.',
@@ -2468,44 +2469,40 @@ async function askCharacter(args, text) {
     // Not supported in group chats
     // TODO: Maybe support group chats?
     if (selected_group) {
-        toastr.error('Cannot run this command in a group chat!');
-        return '';
-    }
-
-    if (!text) {
-        console.warn('WARN: No text provided for /ask command');
-        toastr.warning('No text provided for /ask command');
+        toastr.error('Cannot run /ask command in a group chat!');
         return '';
     }
 
     let name = '';
-    let mesText = '';
 
     if (args?.name) {
         name = args.name.trim();
-        mesText = text.trim();
 
-        if (!name && !mesText) {
-            toastr.warning('You must specify a name and text to ask.');
+        if (!name) {
+            toastr.warning('You must specify a name of the character to ask.');
             return '';
         }
     }
 
-    mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND);
-
     const prevChId = this_chid;
 
     // Find the character
-    const chId = characters.findIndex((e) => e.name === name);
+    const chId = characters.findIndex((e) => e.name === name || e.avatar === name);
     if (!characters[chId] || chId === -1) {
         toastr.error('Character not found.');
         return '';
     }
 
+    if (text) {
+        const mesText = getRegexedString(text.trim(), regex_placement.SLASH_COMMAND);
+        // Sending a message implicitly saves the chat, so this needs to be done before changing the character
+        // Otherwise, a corruption will occur
+        await sendMessageAsUser(mesText, '');
+    }
+
     // Override character and send a user message
     setCharacterId(String(chId));
 
-    // TODO: Maybe look up by filename instead of name
     const character = characters[chId];
     let force_avatar, original_avatar;
 
@@ -2520,9 +2517,11 @@ async function askCharacter(args, text) {
 
     setCharacterName(character.name);
 
-    await sendMessageAsUser(mesText, '');
-
     const restoreCharacter = () => {
+        if (String(this_chid) !== String(chId)) {
+            return;
+        }
+
         setCharacterId(prevChId);
         setCharacterName(characters[prevChId].name);
 
@@ -2535,22 +2534,25 @@ async function askCharacter(args, text) {
         }
     };
 
+    let askResult = '';
+
     // Run generate and restore previous character
     try {
+        eventSource.once(event_types.MESSAGE_RECEIVED, restoreCharacter);
         toastr.info(`Asking ${character.name} something...`);
-        await Generate('ask_command');
-        await saveChatConditional();
+        askResult = await Generate('ask_command');
     } catch (error) {
+        restoreCharacter();
         console.error('Error running /ask command', error);
     } finally {
-        restoreCharacter();
-
-        if (this_chid !== prevChId) {
+        if (String(this_chid) === String(prevChId)) {
+            await saveChatConditional();
+        } else {
             toastr.error('It is strongly recommended to reload the page.', 'Something went wrong');
         }
     }
 
-    return '';
+    return askResult;
 }
 
 async function hideMessageCallback(_, arg) {
