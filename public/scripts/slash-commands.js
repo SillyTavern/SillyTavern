@@ -428,6 +428,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'ask',
         callback: askCharacter,
+        returns: 'the generated text',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
@@ -2535,22 +2536,25 @@ async function askCharacter(args, text) {
         }
     };
 
+    let askResult = '';
+
     // Run generate and restore previous character
     try {
         toastr.info(`Asking ${character.name} something...`);
-        await Generate('ask_command');
-        await saveChatConditional();
+        askResult = await Generate('ask_command');
     } catch (error) {
         console.error('Error running /ask command', error);
     } finally {
         restoreCharacter();
 
-        if (this_chid !== prevChId) {
+        if (this_chid === prevChId) {
+            await saveChatConditional();
+        } else {
             toastr.error('It is strongly recommended to reload the page.', 'Something went wrong');
         }
     }
 
-    return '';
+    return askResult;
 }
 
 async function hideMessageCallback(_, arg) {
