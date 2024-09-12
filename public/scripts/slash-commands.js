@@ -2497,16 +2497,19 @@ async function askCharacter(args, text) {
     const prevChId = this_chid;
 
     // Find the character
-    const chId = characters.findIndex((e) => e.name === name);
+    const chId = characters.findIndex((e) => e.name === name || e.avatar === name);
     if (!characters[chId] || chId === -1) {
         toastr.error('Character not found.');
         return '';
     }
 
+    // Sending a message implicitly saves the chat, so this needs to be done before changing the character
+    // Otherwise, a corruption will occur
+    await sendMessageAsUser(mesText, '');
+
     // Override character and send a user message
     setCharacterId(String(chId));
 
-    // TODO: Maybe look up by filename instead of name
     const character = characters[chId];
     let force_avatar, original_avatar;
 
@@ -2520,8 +2523,6 @@ async function askCharacter(args, text) {
     }
 
     setCharacterName(character.name);
-
-    await sendMessageAsUser(mesText, '');
 
     const restoreCharacter = () => {
         setCharacterId(prevChId);
