@@ -3592,11 +3592,13 @@ export async function getSortedEntries() {
         // Chat lore always goes first
         entries = [...chatLore.sort(sortFn), ...entries];
 
-        // Calculate hash and parse decorators
+        // Calculate hash and parse decorators. Split maps to preserve old hashes.
         entries = entries.map((entry) => {
-            const hash = getStringHash(JSON.stringify(entry));
             const [decorators, content] = parseDecorators(entry.content || '');
-            return { ...entry, decorators, content, hash };
+            return { ...entry, decorators, content };
+        }).map((entry) => {
+            const hash = getStringHash(JSON.stringify(entry));
+            return { ...entry, hash };
         });
 
         console.debug(`[WI] Found ${entries.length} world lore entries. Sorted by strategy`, Object.entries(world_info_insertion_strategy).find((x) => x[1] === world_info_character_strategy));
