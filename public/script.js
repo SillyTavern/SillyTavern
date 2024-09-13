@@ -3265,7 +3265,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
         }
 
         if (data.error) {
-            throw new Error(data.error);
+            throw new Error(data.response);
         }
 
         const message = cleanUpMessage(extractMessageFromData(data), false, false, true);
@@ -4413,9 +4413,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             generatedPromptCache = '';
 
             if (data?.response) {
-                toastr.error(data.response, 'API Error');
+                toastr.error(data.response, 'API Error', { preventDuplicates: true });
             }
-            throw data?.response;
+            throw new Error(data?.response);
         }
 
         //const getData = await response.json();
