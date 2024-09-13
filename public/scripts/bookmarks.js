@@ -609,25 +609,25 @@ export function initBookmarks() {
     $(document).on('click', '.select_chat_block, .mes_bookmark', async function (e) {
         // If shift is held down, we are not following the bookmark, but creating a new one
         if (e.shiftKey) {
-            var selectedMesId = $(this).closest('.mes').attr('mesid');
+            const selectedMesId = $(this).closest('.mes').attr('mesid');
             await createNewBookmark(Number(selectedMesId));
             return;
         }
 
-        let file_name = $(this).hasClass('mes_bookmark')
+        const fileName = $(this).hasClass('mes_bookmark')
             ? $(this).closest('.mes').attr('bookmark_link')
             : $(this).attr('file_name').replace('.jsonl', '');
 
-        if (!file_name) {
+        if (!fileName) {
             return;
         }
 
         try {
             showLoader();
             if (selected_group) {
-                await openGroupChat(selected_group, file_name);
+                await openGroupChat(selected_group, fileName);
             } else {
-                await openCharacterChat(file_name);
+                await openCharacterChat(fileName);
             }
         } finally {
             await hideLoader();
@@ -638,16 +638,16 @@ export function initBookmarks() {
     });
 
     $(document).on('click', '.mes_create_bookmark', async function () {
-        var selected_mes_id = $(this).closest('.mes').attr('mesid');
-        if (selected_mes_id !== undefined) {
-            await createNewBookmark(Number(selected_mes_id));
+        const mesId = $(this).closest('.mes').attr('mesid');
+        if (mesId !== undefined) {
+            await createNewBookmark(Number(mesId));
         }
     });
 
     $(document).on('click', '.mes_create_branch', async function () {
-        var selected_mes_id = $(this).closest('.mes').attr('mesid');
-        if (selected_mes_id !== undefined) {
-            await branchChat(Number(selected_mes_id));
+        const mesId = $(this).closest('.mes').attr('mesid');
+        if (mesId !== undefined) {
+            await branchChat(Number(mesId));
         }
     });
 
