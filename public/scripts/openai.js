@@ -1970,6 +1970,8 @@ async function sendOpenAIRequest(type, messages, signal) {
                 msg.role = 'user';
             }
         });
+        generate_data.max_completion_tokens = generate_data.max_tokens;
+        delete generate_data.max_tokens;
         delete generate_data.stream;
         delete generate_data.logprobs;
         delete generate_data.top_logprobs;
