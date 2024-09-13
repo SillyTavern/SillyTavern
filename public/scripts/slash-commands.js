@@ -2261,7 +2261,7 @@ async function generateRawCallback(args, value) {
         const result = await generateRaw(value, '', isFalseBoolean(args?.instruct), quietToLoud, systemPrompt, length);
         return result;
     } catch (err) {
-        console.error('Error on /gen generation', err);
+        console.error('Error on /genraw generation', err);
         toastr.error(err.message, 'Error on Generate');
     } finally {
         if (lock) {
@@ -2296,7 +2296,7 @@ async function generateCallback(args, value) {
         const result = await generateQuietPrompt(value, quietToLoud, false, '', name, length);
         return result;
     } catch (err) {
-        console.error('Error on /genraw generation', err);
+        console.error('Error on /gen generation', err);
         toastr.error(err.message, 'Error on Generate');
     } finally {
         if (lock) {
