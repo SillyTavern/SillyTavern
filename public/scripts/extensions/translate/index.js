@@ -598,9 +598,20 @@ jQuery(async () => {
     $(document).on('click', '.mes_translate', onMessageTranslateClick);
     $('#translate_key_button').on('click', async () => {
         const optionText = $('#translation_provider option:selected').text();
-        const key = await callGenericPopup(`<h3>${optionText} API Key</h3>`, POPUP_TYPE.INPUT);
+        const key = await callGenericPopup(`<h3>${optionText} API Key</h3>`, POPUP_TYPE.INPUT, '', {
+            customButtons: [{
+                text: 'Remove Key',
+                appendAtEnd: true,
+                result: POPUP_RESULT.NEGATIVE,
+                action: async () => {
+                    await writeSecret(extension_settings.translate.provider, '');
+                    toastr.success('API Key removed');
+                    $('#translate_key_button').toggleClass('success', !!secret_state[extension_settings.translate.provider]);
+                },
+            }],
+        });
 
-        if (key == false) {
+        if (!key) {
             return;
         }
 
@@ -634,7 +645,7 @@ jQuery(async () => {
             }],
         });
 
-        if (url == false || url == '') {
+        if (!url) {
             return;
         }
 

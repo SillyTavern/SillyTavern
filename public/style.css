@@ -3964,6 +3964,10 @@ input[type="range"]::-webkit-slider-thumb {
     display: inline-block;
 }
 
+.mes:not([bookmark_link='']) .mes_create_bookmark {
+    display: none;
+}
+
 .mes_edit_buttons {
     display: none;
     flex-direction: row;
