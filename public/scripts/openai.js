@@ -1983,7 +1983,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         delete generate_data.tools;
         delete generate_data.tool_choice;
         delete generate_data.stop;
-        // IDK if it supports it and I have no way to test it
+        // It does support logit_bias, but the tokenizer used and its effect is yet unknown.
         // delete generate_data.logit_bias;
     }
 
