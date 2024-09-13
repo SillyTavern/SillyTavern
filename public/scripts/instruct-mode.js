@@ -331,7 +331,7 @@ export const force_output_sequence = {
 export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2, forceOutputSequence) {
     let includeNames = isNarrator ? false : power_user.instruct.names_behavior === names_behavior_types.ALWAYS;
 
-    if (!isNarrator && power_user.instruct.names_behavior === names_behavior_types.FORCE && (selected_group || forceAvatar)) {
+    if (!isNarrator && power_user.instruct.names_behavior === names_behavior_types.FORCE && (selected_group || (forceAvatar && name !== name1))) {
         includeNames = true;
     }
 
