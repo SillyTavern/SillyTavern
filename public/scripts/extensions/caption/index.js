@@ -358,10 +358,10 @@ function onRefineModeInput() {
  */
 async function captionCommandCallback(args, prompt) {
     const quiet = isTrueBoolean(args?.quiet);
-    const id = args?.id;
+    const mesId = args?.mesId ?? args?.id;
 
-    if (!isNaN(Number(id))) {
-        const message = getContext().chat[id];
+    if (!isNaN(Number(mesId))) {
+        const message = getContext().chat[mesId];
         if (message?.extra?.image) {
             try {
                 const fetchResult = await fetch(message.extra.image);
@@ -546,7 +546,7 @@ jQuery(async function () {
                 'quiet', 'suppress sending a captioned message', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
             ),
             SlashCommandNamedArgument.fromProps({
-                name: 'id',
+                name: 'mesId',
                 description: 'get image from a message with this ID',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 enumProvider: commonEnumProviders.messages(),
