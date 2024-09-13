@@ -1982,9 +1982,9 @@ async function sendOpenAIRequest(type, messages, signal) {
         delete generate_data.presence_penalty;
         delete generate_data.tools;
         delete generate_data.tool_choice;
+        delete generate_data.stop;
         // IDK if it supports it and I have no way to test it
         // delete generate_data.logit_bias;
-        // delete generate_data.stop;
     }
 
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
@@ -2134,7 +2134,6 @@ async function checkFunctionToolCalls(data) {
             const args = toolCall.function;
             console.log('Function tool call:', toolCall);
             await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
-            data.allowEmptyResponse = true;
         }
     }
 
@@ -2148,7 +2147,6 @@ async function checkFunctionToolCalls(data) {
                 /** @type {FunctionToolCall} */
                 const args = { name: content.name, arguments: JSON.stringify(content.input) };
                 await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
-                data.allowEmptyResponse = true;
             }
         }
     }
@@ -2163,7 +2161,6 @@ async function checkFunctionToolCalls(data) {
             const args = { name: toolCall.name, arguments: JSON.stringify(toolCall.parameters) };
             console.log('Function tool call:', toolCall);
             await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
-            data.allowEmptyResponse = true;
         }
     }
 }
