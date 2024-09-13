@@ -35,6 +35,7 @@ import { renderTemplateAsync } from './templates.js';
 
 import {
     getUniqueName,
+    isTrueBoolean,
 } from './utils.js';
 
 const bookmarkNameToken = 'Checkpoint #';
@@ -578,7 +579,7 @@ function registerBookmarksSlashCommands() {
         callback: async (args, _) => {
             const result = Object.entries(chat)
                 .filter(([_, message]) => message.extra?.bookmark_link)
-                .map(([mesId, message]) => args.links ? message.extra.bookmark_link : Number(mesId));
+                .map(([mesId, message]) => isTrueBoolean(args.links) ? message.extra.bookmark_link : Number(mesId));
             return JSON.stringify(result);
         },
         namedArgumentList: [
