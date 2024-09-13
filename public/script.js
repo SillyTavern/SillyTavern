@@ -4413,7 +4413,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             generatedPromptCache = '';
 
             if (data?.response) {
-                toastr.error(data.response, 'API Error');
+                toastr.error(data.response, 'API Error', { preventDuplicates: true });
             }
             throw new Error(data?.response);
         }

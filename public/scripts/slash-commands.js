@@ -2262,7 +2262,7 @@ async function generateRawCallback(args, value) {
         return result;
     } catch (err) {
         console.error('Error on /genraw generation', err);
-        toastr.error(err.message, 'Error on Generate');
+        toastr.error(err.message, 'API Error', { preventDuplicates: true });
     } finally {
         if (lock) {
             activateSendButtons();
@@ -2297,7 +2297,7 @@ async function generateCallback(args, value) {
         return result;
     } catch (err) {
         console.error('Error on /gen generation', err);
-        toastr.error(err.message, 'Error on Generate');
+        toastr.error(err.message, 'API Error', { preventDuplicates: true });
     } finally {
         if (lock) {
             activateSendButtons();
