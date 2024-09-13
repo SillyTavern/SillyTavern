@@ -108,6 +108,7 @@ const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
  * @property {number} [cooldown] The cooldown of the entry
  * @property {number} [delay] The delay of the entry
  * @property {string[]} [decorators] Array of decorators for the entry
+ * @property {number} [hash] The hash of the entry
  */
 
 /**
@@ -383,12 +384,6 @@ class WorldInfoBuffer {
  */
 class WorldInfoTimedEffects {
     /**
-     * Cache for entry hashes. Uses weak map to avoid memory leaks.
-     * @type {WeakMap<WIScanEntry, number>}
-     */
-    #entryHashCache = new WeakMap();
-
-    /**
      * Array of chat messages.
      * @type {string[]}
      */
@@ -485,13 +480,7 @@ class WorldInfoTimedEffects {
     * @returns {number} String hash
     */
     #getEntryHash(entry) {
-        if (this.#entryHashCache.has(entry)) {
-            return this.#entryHashCache.get(entry);
-        }
-
-        const hash = getStringHash(JSON.stringify(entry));
-        this.#entryHashCache.set(entry, hash);
-        return hash;
+        return entry.hash;
     }
 
     /**
@@ -3603,10 +3592,13 @@ export async function getSortedEntries() {
         // Chat lore always goes first
         entries = [...chatLore.sort(sortFn), ...entries];
 
-        // Parse decorators
+        // Calculate hash and parse decorators. Split maps to preserve old hashes.
         entries = entries.map((entry) => {
             const [decorators, content] = parseDecorators(entry.content || '');
             return { ...entry, decorators, content };
+        }).map((entry) => {
+            const hash = getStringHash(JSON.stringify(entry));
+            return { ...entry, hash };
         });
 
         console.debug(`[WI] Found ${entries.length} world lore entries. Sorted by strategy`, Object.entries(world_info_insertion_strategy).find((x) => x[1] === world_info_character_strategy));
