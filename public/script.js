@@ -117,9 +117,9 @@ import {
 } from './scripts/nai-settings.js';
 
 import {
-    createNewBookmark,
+    initBookmarks,
     showBookmarksButtons,
-    createBranch,
+    updateBookmarkDisplay,
 } from './scripts/bookmarks.js';
 
 import {
@@ -558,8 +558,6 @@ export const system_message_types = {
     GROUP: 'group',
     EMPTY: 'empty',
     GENERIC: 'generic',
-    BOOKMARK_CREATED: 'bookmark_created',
-    BOOKMARK_BACK: 'bookmark_back',
     NARRATOR: 'narrator',
     COMMENT: 'comment',
     SLASH_COMMANDS: 'slash_commands',
@@ -670,20 +668,6 @@ async function getSystemMessages() {
             is_user: false,
             is_system: true,
             mes: 'Generic system message. User `text` parameter to override the contents',
-        },
-        bookmark_created: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            mes: 'Checkpoint created! Click here to open the checkpoint chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">{1}</a>',
-        },
-        bookmark_back: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            mes: 'Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>',
         },
         welcome_prompt: {
             name: systemUserName,
@@ -954,6 +938,7 @@ async function firstLoadInit() {
     initDynamicStyles();
     initTags();
     initOpenai();
+    initBookmarks();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
@@ -2128,6 +2113,7 @@ function getMessageFromTemplate({
     tokenCount && mes.find('.tokenCounterDisplay').text(`${tokenCount}t`);
     title && mes.attr('title', title);
     timerValue && mes.find('.mes_timer').attr('title', timerTitle).text(timerValue);
+    bookmarkLink && updateBookmarkDisplay(mes);
 
     if (power_user.timestamp_model_icon && extra?.api) {
         insertSVGIcon(mes, extra);
@@ -8246,29 +8232,6 @@ function swipe_left() {      // when we swipe left..but no generation.
     }
 }
 
-/**
- * Creates a new branch from the message with the given ID
- * @param {number} mesId Message ID
- * @returns {Promise<string>} Branch file name
- */
-async function branchChat(mesId) {
-    if (this_chid === undefined && !selected_group) {
-        toastr.info('No character selected.', 'Branch creation aborted');
-        return;
-    }
-
-    const fileName = await createBranch(mesId);
-    await saveItemizedPrompts(fileName);
-
-    if (selected_group) {
-        await openGroupChat(selected_group, fileName);
-    } else {
-        await openCharacterChat(fileName);
-    }
-
-    return fileName;
-}
-
 // when we click swipe right button
 const swipe_right = () => {
     if (chat.length - 1 === Number(this_edit_mes_id)) {
@@ -10580,44 +10543,6 @@ jQuery(async function () {
 
     $('#dupe_button').click(async function () {
         await duplicateCharacter();
-    });
-
-    $(document).on('click', '.select_chat_block, .bookmark_link, .mes_bookmark', async function () {
-        let file_name = $(this).hasClass('mes_bookmark')
-            ? $(this).closest('.mes').attr('bookmark_link')
-            : $(this).attr('file_name').replace('.jsonl', '');
-
-        if (!file_name) {
-            return;
-        }
-
-        try {
-            showLoader();
-            if (selected_group) {
-                await openGroupChat(selected_group, file_name);
-            } else {
-                await openCharacterChat(file_name);
-            }
-        } finally {
-            hideLoader();
-        }
-
-        $('#shadow_select_chat_popup').css('display', 'none');
-        $('#load_select_chat_div').css('display', 'block');
-    });
-
-    $(document).on('click', '.mes_create_bookmark', async function () {
-        var selected_mes_id = $(this).closest('.mes').attr('mesid');
-        if (selected_mes_id !== undefined) {
-            createNewBookmark(selected_mes_id);
-        }
-    });
-
-    $(document).on('click', '.mes_create_branch', async function () {
-        var selected_mes_id = $(this).closest('.mes').attr('mesid');
-        if (selected_mes_id !== undefined) {
-            branchChat(Number(selected_mes_id));
-        }
     });
 
     $(document).on('click', '.mes_stop', function () {
