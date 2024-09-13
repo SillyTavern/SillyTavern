@@ -77,14 +77,14 @@ class AzureTtsProvider {
                     result: POPUP_RESULT.NEGATIVE,
                     action: async () => {
                         await writeSecret(SECRET_KEYS.AZURE_TTS, '');
-                        $('#azure_tts_key').toggleClass('success', secret_state[SECRET_KEYS.AZURE_TTS]);
+                        $('#azure_tts_key').toggleClass('success', !!secret_state[SECRET_KEYS.AZURE_TTS]);
                         toastr.success('API Key removed');
                         await this.onRefreshClick();
                     },
                 }],
             });
 
-            if (key == false || key == '') {
+            if (!key) {
                 return;
             }
 
