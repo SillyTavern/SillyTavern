@@ -965,6 +965,7 @@ router.post('/generate', jsonParser, function (request, response) {
         'model': request.body.model,
         'temperature': request.body.temperature,
         'max_tokens': request.body.max_tokens,
+        'max_completion_tokens': request.body.max_completion_tokens,
         'stream': request.body.stream,
         'presence_penalty': request.body.presence_penalty,
         'frequency_penalty': request.body.frequency_penalty,

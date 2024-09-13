@@ -881,7 +881,6 @@ let abortController;
 
 //css
 var css_send_form_display = $('<div id=send_form></div>').css('display');
-const MAX_GENERATION_LOOPS = 5;
 
 var kobold_horde_model = '';
 
@@ -2862,7 +2861,12 @@ export function getCharacterCardFields() {
 
 export function isStreamingEnabled() {
     const noStreamSources = [chat_completion_sources.SCALE];
-    return ((main_api == 'openai' && oai_settings.stream_openai && !noStreamSources.includes(oai_settings.chat_completion_source) && !(oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE && oai_settings.google_model.includes('bison')))
+    return (
+        (main_api == 'openai' &&
+            oai_settings.stream_openai &&
+            !noStreamSources.includes(oai_settings.chat_completion_source) &&
+            !(oai_settings.chat_completion_source == chat_completion_sources.OPENAI && oai_settings.openai_model.startsWith('o1-')) &&
+            !(oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE && oai_settings.google_model.includes('bison')))
         || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_flags.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
         || (main_api == 'textgenerationwebui' && textgen_settings.streaming));
@@ -3337,11 +3341,11 @@ function removeLastMessage() {
  * @param {GenerateOptions} options Generation options
  * @param {boolean} dryRun Whether to actually generate a message or just assemble the prompt
  * @returns {Promise<any>} Returns a promise that resolves when the text is done generating.
- * @typedef {{automatic_trigger?: boolean, force_name2?: boolean, quiet_prompt?: string, quietToLoud?: boolean, skipWIAN?: boolean, force_chid?: number, signal?: AbortSignal, quietImage?: string, maxLoops?: number, quietName?: string }} GenerateOptions
+ * @typedef {{automatic_trigger?: boolean, force_name2?: boolean, quiet_prompt?: string, quietToLoud?: boolean, skipWIAN?: boolean, force_chid?: number, signal?: AbortSignal, quietImage?: string, quietName?: string }} GenerateOptions
  */
-export async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops, quietName } = {}, dryRun = false) {
+export async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName } = {}, dryRun = false) {
     console.log('Generate entered');
-    await eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops }, dryRun);
+    await eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
     setGenerationProgress(0);
     generation_started = new Date();
 
@@ -3403,7 +3407,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (selected_group && !is_group_generating) {
         if (!dryRun) {
             // Returns the promise that generateGroupWrapper returns; resolves when generation is done
-            return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage, maxLoops });
+            return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage });
         }
 
         const characterIndexMap = new Map(characters.map((char, index) => [char.avatar, index]));
@@ -4435,53 +4439,30 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         const displayIncomplete = type === 'quiet' && !quietToLoud;
         getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
 
-        if (getMessage.length > 0 || data.allowEmptyResponse) {
-            if (isImpersonate) {
-                $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles: true }));
-                generatedPromptCache = '';
-                await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
-            }
-            else if (type == 'quiet') {
-                unblockGeneration(type);
-                return getMessage;
+        if (isImpersonate) {
+            $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles: true }));
+            generatedPromptCache = '';
+            await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
+        }
+        else if (type == 'quiet') {
+            unblockGeneration(type);
+            return getMessage;
+        }
+        else {
+            // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
+            if (originalType !== 'continue') {
+                ({ type, getMessage } = await saveReply(type, getMessage, false, title, swipes));
             }
             else {
-                // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
-                if (originalType !== 'continue') {
-                    ({ type, getMessage } = await saveReply(type, getMessage, false, title, swipes));
-                }
-                else {
-                    ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes));
-                }
-
-                // This relies on `saveReply` having been called to add the message to the chat, so it must be last.
-                parseAndSaveLogprobs(data, continue_mag);
+                ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes));
             }
 
-            if (type !== 'quiet') {
-                playMessageSound();
-            }
-        } else {
-            // If maxLoops is not passed in (e.g. first time generating), set it to MAX_GENERATION_LOOPS
-            maxLoops ??= MAX_GENERATION_LOOPS;
+            // This relies on `saveReply` having been called to add the message to the chat, so it must be last.
+            parseAndSaveLogprobs(data, continue_mag);
+        }
 
-            if (maxLoops === 0) {
-                if (type !== 'quiet') {
-                    throwCircuitBreakerError();
-                }
-                throw new Error('Generate circuit breaker interruption');
-            }
-
-            // regenerate with character speech reenforced
-            // to make sure we leave on swipe type while also adding the name2 appendage
-            await delay(1000);
-            // A message was already deleted on regeneration, so instead treat is as a normal gen
-            if (type === 'regenerate') {
-                type = 'normal';
-            }
-            // The first await is for waiting for the generate to start. The second one is waiting for it to finish
-            const result = await await Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName, maxLoops: maxLoops - 1 });
-            return result;
+        if (type !== 'quiet') {
+            playMessageSound();
         }
 
         if (power_user.auto_swipe) {
@@ -5252,11 +5233,6 @@ function getGenerateUrl(api) {
         default:
             throw new Error(`Unknown API: ${api}`);
     }
-}
-
-function throwCircuitBreakerError() {
-    callPopup(`Could not extract reply in ${MAX_GENERATION_LOOPS} attempts. Try generating again`, 'text');
-    unblockGeneration();
 }
 
 function extractTitleFromData(data) {
