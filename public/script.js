@@ -4415,7 +4415,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             if (data?.response) {
                 toastr.error(data.response, 'API Error');
             }
-            throw data?.response;
+            throw new Error(data?.response);
         }
 
         //const getData = await response.json();
