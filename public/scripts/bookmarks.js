@@ -609,8 +609,9 @@ export function initBookmarks() {
 
     $(document).on('click', '.select_chat_block, .mes_bookmark', async function (e) {
         // If shift is held down, we are not following the bookmark, but creating a new one
-        if (e.shiftKey) {
-            const selectedMesId = $(this).closest('.mes').attr('mesid');
+        const mes = $(this).closest('.mes');
+        if (e.shiftKey && mes.length) {
+            const selectedMesId = mes.attr('mesid');
             await createNewBookmark(Number(selectedMesId));
             return;
         }
