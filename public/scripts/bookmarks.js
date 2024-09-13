@@ -458,7 +458,7 @@ function registerBookmarksSlashCommands() {
         },
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
-                name: 'mes',
+                name: 'mesId',
                 description: 'Message ID',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 enumProvider: commonEnumProviders.messages(),
