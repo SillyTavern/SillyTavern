@@ -123,6 +123,7 @@ const settings = {
     rep_pen_slope: 1,
     no_repeat_ngram_size: 0,
     penalty_alpha: 0,
+    use_beam_search: false,
     num_beams: 1,
     length_penalty: 1,
     min_length: 0,
@@ -162,14 +163,9 @@ const settings = {
     banned_tokens: '',
     sampler_priority: OOBA_DEFAULT_ORDER,
     samplers: LLAMACPP_DEFAULT_ORDER,
-    //n_aphrodite: 1,
-    //best_of_aphrodite: 1,
     ignore_eos_token: false,
     spaces_between_special_tokens: true,
     speculative_ngram: false,
-    //logits_processors_aphrodite: [],
-    //log_probs_aphrodite: 0,
-    //prompt_log_probs_aphrodite: 0,
     type: textgen_types.OOBA,
     mancer_model: 'mytholite',
     togetherai_model: 'Gryphe/MythoMax-L2-13b',
@@ -191,6 +187,8 @@ const settings = {
     openrouter_allow_fallbacks: true,
     xtc_threshold: 0.1,
     xtc_probability: 0,
+    include_stop_str_in_output: false,
+    guided_regex: '',
 };
 
 export let textgenerationwebui_banned_in_macros = [];
@@ -250,14 +248,9 @@ export const setting_names = [
     'json_schema',
     'banned_tokens',
     'legacy_api',
-    //'n_aphrodite',
-    //'best_of_aphrodite',
     'ignore_eos_token',
     'spaces_between_special_tokens',
     'speculative_ngram',
-    //'logits_processors_aphrodite',
-    //'log_probs_aphrodite',
-    //'prompt_log_probs_aphrodite'
     'sampler_order',
     'sampler_priority',
     'samplers',
@@ -268,6 +261,8 @@ export const setting_names = [
     'openrouter_allow_fallbacks',
     'xtc_threshold',
     'xtc_probability',
+    'include_stop_str_in_output',
+    'guided_regex',
 ];
 
 const DYNATEMP_BLOCK = document.getElementById('dynatemp_block_ooba');
@@ -1208,13 +1203,35 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
     };
     const aphroditeParams = {
         'n': canMultiSwipe ? settings.n : 1,
-        'best_of': canMultiSwipe ? settings.n : 1,
+        'frequency_penalty': settings.freq_pen,
+        'presence_penalty': settings.presence_pen,
+        'repetition_penalty': settings.rep_pen,
+        'seed': settings.seed,
+        'stop': settings.stopping_strings,
+        'temperature': settings.temp,
+        'temperature_last': settings.temperature_last,
+        'top_p': settings.top_p,
+        'top_k': settings.top_k,
+        'top_a': settings.top_a,
+        'min_p': settings.min_p,
+        'tfs': settings.tfs,
+        'eta_cutoff': settings.eta_cutoff,
+        'epsilon_cutoff': settings.epsilon_cutoff,
+        'typical_p': settings.typical_p,
+        'smoothing_factor': settings.smoothing_factor,
+        'smoothing_curve': settings.smoothing_curve,
+        'use_beam_search': settings.use_beam_search,
+        'length_penalty': settings.length_penalty,
+        'early_stopping': settings.early_stopping,
         'ignore_eos': settings.ignore_eos_token,
+        'min_tokens': settings.min_length,
+        'skip_special_tokens': settings.skip_special_tokens,
+        'include_stop_str_in_output': settings.include_stop_str_in_output,
         'spaces_between_special_tokens': settings.spaces_between_special_tokens,
-        'grammar': settings.grammar_string,
-        //'logits_processors': settings.logits_processors_aphrodite,
-        //'logprobs': settings.log_probs_aphrodite,
-        //'prompt_logprobs': settings.prompt_log_probs_aphrodite,
+        'guided_grammar': settings.grammar_string,
+        'guided_json': settings.json_schema,
+
+
     };
 
     if (settings.type === OPENROUTER) {
@@ -1254,7 +1271,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
             break;
 
         case APHRODITE:
-            params = Object.assign(params, aphroditeParams);
+            params = Object.assign(aphroditeParams);
             break;
 
         default:
