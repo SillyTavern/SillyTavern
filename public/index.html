@@ -383,7 +383,7 @@
                                         Max Response Length (tokens)
                                     </div>
                                     <div class="wide100p">
-                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="16384">
+                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="65536 ">
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,custom">
@@ -2610,6 +2610,10 @@
                                         <option value="gpt-4-vision-preview">gpt-4-vision-preview</option>
                                         <option value="gpt-4-0125-preview">gpt-4-0125-preview (2024)</option>
                                         <option value="gpt-4-1106-preview">gpt-4-1106-preview (2023)</option>
+                                    </optgroup>
+                                    <optgroup label="o1">
+                                        <option value="o1-preview">o1-preview</option>
+                                        <option value="o1-mini">o1-mini</option>
                                     </optgroup>
                                     <optgroup label="Other">
                                         <option value="text-davinci-003">text-davinci-003</option>

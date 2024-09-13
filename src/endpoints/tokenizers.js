@@ -350,6 +350,10 @@ function getWebTokenizersChunks(tokenizer, ids) {
  * @returns {string} Tokenizer model to use
  */
 function getTokenizerModel(requestModel) {
+    if (requestModel.includes('o1-preview') || requestModel.includes('o1-mini')) {
+        return 'gpt-4o';
+    }
+
     if (requestModel.includes('gpt-4o')) {
         return 'gpt-4o';
     }

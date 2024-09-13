@@ -1797,7 +1797,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
-    const stream = oai_settings.stream_openai && !isQuiet && !isScale && !(isGoogle && oai_settings.google_model.includes('bison'));
+    const stream = oai_settings.stream_openai && !isQuiet && !isScale && !(isGoogle && oai_settings.google_model.includes('bison')) && !(isOAI && oai_settings.openai_model.startsWith('o1-'));
     const useLogprobs = !!power_user.request_token_probabilities;
     const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isCustom);
 
@@ -1960,11 +1960,32 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['seed'] = oai_settings.seed;
     }
 
-    await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
-
     if (isFunctionCallingSupported() && !stream) {
         await registerFunctionTools(type, generate_data);
     }
+
+    if (isOAI && oai_settings.openai_model.startsWith('o1-')) {
+        generate_data.messages.forEach((msg) => {
+            if (msg.role === 'system') {
+                msg.role = 'user';
+            }
+        });
+        delete generate_data.stream;
+        delete generate_data.logprobs;
+        delete generate_data.top_logprobs;
+        delete generate_data.n;
+        delete generate_data.temperature;
+        delete generate_data.top_p;
+        delete generate_data.frequency_penalty;
+        delete generate_data.presence_penalty;
+        delete generate_data.tools;
+        delete generate_data.tool_choice;
+        // IDK if it supports it and I have no way to test it
+        // delete generate_data.logit_bias;
+        // delete generate_data.stop;
+    }
+
+    await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
 
     const generate_url = '/api/backends/chat-completions/generate';
     const response = await fetch(generate_url, {
@@ -3904,6 +3925,9 @@ function onSettingsPresetChange() {
 function getMaxContextOpenAI(value) {
     if (oai_settings.max_context_unlocked) {
         return unlocked_max;
+    }
+    else if (value.startsWith('o1-')) {
+        return max_128k;
     }
     else if (value.includes('chatgpt-4o-latest') || value.includes('gpt-4-turbo') || value.includes('gpt-4o') || value.includes('gpt-4-1106') || value.includes('gpt-4-0125') || value.includes('gpt-4-vision')) {
         return max_128k;
