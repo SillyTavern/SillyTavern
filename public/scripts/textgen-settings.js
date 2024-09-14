@@ -1225,6 +1225,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'spaces_between_special_tokens': settings.spaces_between_special_tokens,
         'guided_grammar': settings.grammar_string,
         'guided_json': settings.json_schema,
+        'early_stopping': false,  // hack
     };
 
     if (settings.type === OPENROUTER) {
