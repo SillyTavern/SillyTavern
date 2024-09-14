@@ -1603,6 +1603,17 @@ async function loadPowerUserSettings(settings, data) {
     switchSpoilerMode();
     loadMovingUIState();
     loadCharListState();
+    toggleMDHotkeyIconDisplay();
+}
+
+function toggleMDHotkeyIconDisplay() {
+    if (power_user.enable_md_hotkeys) {
+        $('.mdhotkey_location').each(function () {
+            $(this).parent().append('<i class="fa-brands fa-markdown mdhotkey_icon"></i>');
+        });
+    } else {
+        $('.mdhotkey_icon').remove();
+    }
 }
 
 function loadCharListState() {
@@ -3615,6 +3626,7 @@ $(document).ready(() => {
     $('#enable_md_hotkeys').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.enable_md_hotkeys = value;
+        toggleMDHotkeyIconDisplay();
         saveSettingsDebounced();
     });
 
