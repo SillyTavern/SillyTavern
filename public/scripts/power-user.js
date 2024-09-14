@@ -200,6 +200,7 @@ let power_user = {
     relaxed_api_urls: false,
     world_import_dialog: true,
     enable_auto_select_input: false,
+    enable_md_hotkeys: false,
     tag_import_setting: tag_import_setting.ASK,
     disable_group_trimming: false,
     single_line: false,
@@ -1452,6 +1453,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#relaxed_api_urls').prop('checked', power_user.relaxed_api_urls);
     $('#world_import_dialog').prop('checked', power_user.world_import_dialog);
     $('#enable_auto_select_input').prop('checked', power_user.enable_auto_select_input);
+    $('#enable_md_hotkeys').prop('checked', power_user.enable_md_hotkeys);
     $('#trim_spaces').prop('checked', power_user.trim_spaces);
     $('#continue_on_send').prop('checked', power_user.continue_on_send);
     $('#quick_continue').prop('checked', power_user.quick_continue);
@@ -3607,6 +3609,12 @@ $(document).ready(() => {
     $('#enable_auto_select_input').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.enable_auto_select_input = value;
+        saveSettingsDebounced();
+    });
+
+    $('#enable_md_hotkeys').on('input', function () {
+        const value = !!$(this).prop('checked');
+        power_user.enable_md_hotkeys = value;
         saveSettingsDebounced();
     });
 
