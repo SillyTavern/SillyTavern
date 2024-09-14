@@ -383,7 +383,7 @@
                                         Max Response Length (tokens)
                                     </div>
                                     <div class="wide100p">
-                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="16384">
+                                        <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="65536">
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,custom">
@@ -2610,6 +2610,10 @@
                                         <option value="gpt-4-vision-preview">gpt-4-vision-preview</option>
                                         <option value="gpt-4-0125-preview">gpt-4-0125-preview (2024)</option>
                                         <option value="gpt-4-1106-preview">gpt-4-1106-preview (2023)</option>
+                                    </optgroup>
+                                    <optgroup label="o1">
+                                        <option value="o1-preview">o1-preview</option>
+                                        <option value="o1-mini">o1-mini</option>
                                     </optgroup>
                                     <optgroup label="Other">
                                         <option value="text-davinci-003">text-davinci-003</option>
@@ -5799,7 +5803,7 @@
                                 <div title="Create branch" class="mes_button mes_create_branch fa-regular fa-code-branch" data-i18n="[title]Create Branch"></div>
                                 <div title="Copy" class="mes_button mes_copy fa-solid fa-copy " data-i18n="[title]Copy"></div>
                             </div>
-                            <div title="Open checkpoint chat" class="mes_button mes_bookmark fa-solid fa-flag" data-i18n="[title]Open checkpoint chat"></div>
+                            <div data-tooltip="Click to open checkpoint chat&#10;Shift+Click to replace the existing checkpoint with a new one" class="mes_button mes_bookmark fa-solid fa-flag" data-i18n="[data-tooltip]Open checkpoint chat&#10;Shift+Click to replace the existing checkpoint with a new one"></div>
                             <div title="Edit" class="mes_button mes_edit fa-solid fa-pencil " data-i18n="[title]Edit"></div>
                         </div>
                         <div class="mes_edit_buttons">
@@ -6483,8 +6487,8 @@
     </div>
 
     <!-- Script includes -->
+    <script src="lib/polyfill.js"></script>
     <script src="lib/diff_match_patch.js"></script>
-    <script src="lib/object-hasown.js"></script>
     <script src="lib/jquery-3.5.1.min.js"></script>
     <script src="lib/jquery-ui.min.js"></script>
     <script src="lib/jquery.transit.min.js"></script>

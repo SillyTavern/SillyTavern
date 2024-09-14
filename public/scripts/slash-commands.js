@@ -24,6 +24,7 @@ import {
     main_api,
     name1,
     name2,
+    neutralCharacterName,
     reloadCurrentChat,
     removeMacros,
     renameCharacter,
@@ -427,6 +428,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'ask',
         callback: askCharacter,
+        returns: 'the generated text',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
@@ -438,7 +440,7 @@ export function initDefaultSlashCommands() {
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
-                'prompt', [ARGUMENT_TYPE.STRING], true, false,
+                'prompt', [ARGUMENT_TYPE.STRING], false, false,
             ),
         ],
         helpString: 'Asks a specified character card a prompt. Character name must be provided in a named argument.',
@@ -2239,7 +2241,7 @@ function setEphemeralStopStrings(value) {
 async function generateRawCallback(args, value) {
     if (!value) {
         console.warn('WARN: No argument provided for /genraw command');
-        return;
+        return '';
     }
 
     // Prevent generate recursion
@@ -2258,12 +2260,16 @@ async function generateRawCallback(args, value) {
         setEphemeralStopStrings(resolveVariable(args?.stop));
         const result = await generateRaw(value, '', isFalseBoolean(args?.instruct), quietToLoud, systemPrompt, length);
         return result;
+    } catch (err) {
+        console.error('Error on /genraw generation', err);
+        toastr.error(err.message, 'API Error', { preventDuplicates: true });
     } finally {
         if (lock) {
             activateSendButtons();
         }
         flushEphemeralStoppingStrings();
     }
+    return '';
 }
 
 /**
@@ -2289,12 +2295,16 @@ async function generateCallback(args, value) {
         const name = args?.name;
         const result = await generateQuietPrompt(value, quietToLoud, false, '', name, length);
         return result;
+    } catch (err) {
+        console.error('Error on /gen generation', err);
+        toastr.error(err.message, 'API Error', { preventDuplicates: true });
     } finally {
         if (lock) {
             activateSendButtons();
         }
         flushEphemeralStoppingStrings();
     }
+    return '';
 }
 
 /**
@@ -2467,44 +2477,40 @@ async function askCharacter(args, text) {
     // Not supported in group chats
     // TODO: Maybe support group chats?
     if (selected_group) {
-        toastr.error('Cannot run this command in a group chat!');
-        return '';
-    }
-
-    if (!text) {
-        console.warn('WARN: No text provided for /ask command');
-        toastr.warning('No text provided for /ask command');
+        toastr.error('Cannot run /ask command in a group chat!');
         return '';
     }
 
     let name = '';
-    let mesText = '';
 
     if (args?.name) {
         name = args.name.trim();
-        mesText = text.trim();
 
-        if (!name && !mesText) {
-            toastr.warning('You must specify a name and text to ask.');
+        if (!name) {
+            toastr.warning('You must specify a name of the character to ask.');
             return '';
         }
     }
 
-    mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND);
-
     const prevChId = this_chid;
 
     // Find the character
-    const chId = characters.findIndex((e) => e.name === name);
+    const chId = characters.findIndex((e) => e.name === name || e.avatar === name);
     if (!characters[chId] || chId === -1) {
         toastr.error('Character not found.');
         return '';
     }
 
+    if (text) {
+        const mesText = getRegexedString(text.trim(), regex_placement.SLASH_COMMAND);
+        // Sending a message implicitly saves the chat, so this needs to be done before changing the character
+        // Otherwise, a corruption will occur
+        await sendMessageAsUser(mesText, '');
+    }
+
     // Override character and send a user message
     setCharacterId(String(chId));
 
-    // TODO: Maybe look up by filename instead of name
     const character = characters[chId];
     let force_avatar, original_avatar;
 
@@ -2519,9 +2525,11 @@ async function askCharacter(args, text) {
 
     setCharacterName(character.name);
 
-    await sendMessageAsUser(mesText, '');
-
     const restoreCharacter = () => {
+        if (String(this_chid) !== String(chId)) {
+            return;
+        }
+
         setCharacterId(prevChId);
         setCharacterName(characters[prevChId].name);
 
@@ -2532,23 +2540,27 @@ async function askCharacter(args, text) {
             lastMessage.force_avatar = force_avatar;
             lastMessage.original_avatar = original_avatar;
         }
-
-        // Kill this callback once the event fires
-        eventSource.removeListener(event_types.CHARACTER_MESSAGE_RENDERED, restoreCharacter);
     };
 
-    // Run generate and restore previous character on error
+    let askResult = '';
+
+    // Run generate and restore previous character
     try {
+        eventSource.once(event_types.MESSAGE_RECEIVED, restoreCharacter);
         toastr.info(`Asking ${character.name} something...`);
-        await Generate('ask_command');
-    } catch {
+        askResult = await Generate('ask_command');
+    } catch (error) {
         restoreCharacter();
+        console.error('Error running /ask command', error);
+    } finally {
+        if (String(this_chid) === String(prevChId)) {
+            await saveChatConditional();
+        } else {
+            toastr.error('It is strongly recommended to reload the page.', 'Something went wrong');
+        }
     }
 
-    // Restore previous character once message renders
-    // Hack for generate
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, restoreCharacter);
-    return '';
+    return askResult;
 }
 
 async function hideMessageCallback(_, arg) {
@@ -3129,7 +3141,13 @@ export async function sendMessageAs(args, text) {
     const character = characters.find(x => x.avatar === name) ?? characters.find(x => x.name === name);
     let force_avatar, original_avatar;
 
-    if (character && character.avatar !== 'none') {
+    const chatCharacter = this_chid !== undefined ? characters[this_chid] : null;
+    const isNeutralCharacter = !chatCharacter && name2 === neutralCharacterName && name === neutralCharacterName;
+
+    if (chatCharacter === character || isNeutralCharacter) {
+        // If the targeted character is the currently selected one in a solo chat, we don't need to force any avatars
+    }
+    else if (character && character.avatar !== 'none') {
         force_avatar = getThumbnailUrl('avatar', character.avatar);
         original_avatar = character.avatar;
     }

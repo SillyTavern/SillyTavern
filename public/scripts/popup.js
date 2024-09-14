@@ -83,6 +83,9 @@ const showPopupHelper = {
         const content = PopupUtils.BuildTextWithHeader(header, text);
         const popup = new Popup(content, POPUP_TYPE.INPUT, defaultValue, popupOptions);
         const value = await popup.show();
+        // Return values: If empty string, we explicitly handle that as returning that empty string as "success" provided.
+        // Otherwise, all non-truthy values (false, null, undefined) are treated as "cancel" and return null.
+        if (value === '') return '';
         return value ? String(value) : null;
     },
 

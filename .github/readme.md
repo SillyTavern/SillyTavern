@@ -69,7 +69,7 @@ Or get in touch with the developers directly:
 * World Info support: create rich lore or save tokens on your character card
 * [OpenRouter](https://openrouter.ai) connection for various APIs (Claude, GPT-4/3.5 and more)
 * [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
-* [AI Horde](https://horde.koboldai.net/) connection
+* [AI Horde](https://aihorde.net/) connection
 * Prompt generation formatting tweaking
 
 ## Extensions
@@ -275,6 +275,46 @@ In order to enable viewing your keys by clicking a button in the API block:
 
 1. Set the value of `allowKeysExposure` to `true` in `config.yaml` file.
 2. Restart the SillyTavern server.
+
+## Command-line arguments
+
+You can pass command-line arguments to SillyTavern server startup to override some settings in `config.yaml`.
+
+### Examples
+
+```shell
+node server.js --port 8000 --listen false
+# or
+npm run start -- --port 8000 --listen false
+# or (Windows only)
+Start.bat --port 8000 --listen false
+```
+
+### Supported arguments
+
+| Option                  | Description                                                                                          | Type     | Default                      |
+|-------------------------|------------------------------------------------------------------------------------------------------|----------|------------------------------|
+| `--version`             | Show version number                                                                                  | boolean  |                              |
+| `--enableIPv6`          | Enables IPv6.                                                                                        | boolean  | false                        |
+| `--enableIPv4`          | Enables IPv4.                                                                                        | boolean  | true                         |
+| `--port`                | Sets the port under which SillyTavern will run. If not provided falls back to yaml config 'port'.    | number   | 8000                         |
+| `--dnsPreferIPv6`       | Prefers IPv6 for dns. If not provided falls back to yaml config 'preferIPv6'.                        | boolean  | false                        |
+| `--autorun`             | Automatically launch SillyTavern in the browser. If not provided falls back to yaml config 'autorun'.| boolean  | false                        |
+| `--autorunHostname`     | The autorun hostname, probably best left on 'auto'.                                                  | string   | null                         |
+| `--autorunPortOverride` | Overrides the port for autorun.                                                                      | string   | null                         |
+| `--listen`              | SillyTavern is listening on all network interfaces. If not provided falls back to yaml config 'listen'.| boolean  | false                        |
+| `--corsProxy`           | Enables CORS proxy. If not provided falls back to yaml config 'enableCorsProxy'.                     | boolean  | false                        |
+| `--disableCsrf`         | Disables CSRF protection                                                                             | boolean  | null                         |
+| `--ssl`                 | Enables SSL                                                                                          | boolean  | false                        |
+| `--certPath`            | Path to your certificate file.                                                                       | string   | "certs/cert.pem"             |
+| `--keyPath`             | Path to your private key file.                                                                       | string   | "certs/privkey.pem"          |
+| `--whitelist`           | Enables whitelist mode                                                                               | boolean  | null                         |
+| `--dataRoot`            | Root directory for data storage                                                                      | string   | null                         |
+| `--avoidLocalhost`      | Avoids using 'localhost' for autorun in auto mode.                                                   | boolean  | null                         |
+| `--basicAuthMode`       | Enables basic authentication                                                                         | boolean  | null                         |
+| `--requestProxyEnabled` | Enables a use of proxy for outgoing requests                                                         | boolean  | null                         |
+| `--requestProxyUrl`     | Request proxy URL (HTTP or SOCKS protocols)                                                          | string   | null                         |
+| `--requestProxyBypass`  | Request proxy bypass list (space separated list of hosts)                                            | array    | null                         |
 
 ## Remote connections
 

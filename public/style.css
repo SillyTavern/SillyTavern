@@ -993,7 +993,7 @@ body .panelControlBar {
     padding: 0;
     font-family: var(--mainFontFamily);
     font-weight: 400;
-    align-self: self-end;
+    align-self: center;
 }
 
 .swipe_left {
@@ -3962,6 +3962,10 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes:not([bookmark_link='']) .mes_bookmark {
     display: inline-block;
+}
+
+.mes:not([bookmark_link='']) .mes_create_bookmark {
+    display: none;
 }
 
 .mes_edit_buttons {
