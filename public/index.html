@@ -4033,9 +4033,16 @@
                                 <input id="world_import_dialog" type="checkbox" />
                                 <small data-i18n="Lorebook Import Dialog">Lorebook Import Dialog</small>
                             </label>
-                            <label class="checkbox_label" for="enable_auto_select_input" title="Enable auto-select of input text in some text fields when clicking/selecting them. Applies to popup input textboxes, and possible other custom input fields." data-i18n="[title]Enable auto-select of input text in some text fields when clicking/selecting them. Applies to popup input textboxes, and possible other custom input fields.">
+                            <label class="checkbox_label" for=" enable_auto_select_input" title="Enable auto-select of input text in some text fields when clicking/selecting them. Applies to popup input textboxes, and possible other custom input fields." data-i18n="[title]Enable auto-select of input text in some text fields when clicking/selecting them. Applies to popup input textboxes, and possible other custom input fields.">
                                 <input id="enable_auto_select_input" type="checkbox" />
                                 <small data-i18n="Auto-select Input Text">Auto-select Input Text</small>
+                            </label>
+                            <label class="checkbox_label alignItemsCenter" for="enable_md_hotkeys" title="Enable hotkeys for inserting markdown format characters in certain text input boxes. See '/help hotkeys'.">
+                                <input id="enable_md_hotkeys" type="checkbox" />
+                                <small>
+                                    <span data-i18n="Markdown Hotkeys">Markdown Hotkeys</span>
+                                    <i class="fa-brands fa-markdown"></i>
+                                </small>
                             </label>
                             <label class="checkbox_label" for="restore_user_input" title="Restore unsaved user input on page refresh." data-i18n="[title]Restore unsaved user input on page refresh">
                                 <input id="restore_user_input" type="checkbox" />
@@ -4720,7 +4727,7 @@
                             <hr>
                             <div id="description_div" class="title_restorable">
                                 <div class="flex-container alignitemscenter">
-                                    <span data-i18n="Character Description">Description</span>
+                                    <span data-i18n="Character Description" class="mdhotkey_location">Description</span>
                                     <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                     <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
                                         <span class="fa-solid fa-circle-question note-link-span"></span>
@@ -4734,7 +4741,7 @@
                                     </span>
                                 </div>
                             </div>
-                            <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." name="description" placeholder=""></textarea>
+                            <textarea id="description_textarea" class="mdHotkeys" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." name="description" placeholder=""></textarea>
                             <div class="extension_token_counter">
                                 <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
                             </div>
@@ -4742,7 +4749,7 @@
                         <div id="firstMessageWrapper" class="flex-container flexFlowColumn flex1">
                             <div id="first_message_div" class="title_restorable">
                                 <div class="flex-container alignitemscenter flex1">
-                                    <span data-i18n="First message">First message</span>
+                                    <span data-i18n="First message" class="mdhotkey_location">First message</span>
                                     <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="firstmessage_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                     <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#first-message" class="notes-link" target="_blank">
                                         <span class="fa-solid fa-circle-question note-link-span"></span>
@@ -4754,7 +4761,7 @@
                                     </span>
                                 </div>
                             </div>
-                            <textarea id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." name="first_mes" placeholder=""></textarea>
+                            <textarea class="mdHotkeys" id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." name="first_mes" placeholder=""></textarea>
                             <div class="extension_token_counter">
                                 <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="firstmessage_textarea">counting...</span>
                             </div>
@@ -5112,7 +5119,7 @@
             </div>
             <hr>
             <div id="personality_div">
-                <h4>
+                <h4 class="flex-container alignItemsBaseline">
                     <span data-i18n="Personality summary">Personality summary</span>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#personality-summary" class="notes-link" target="_blank"><span class="fa-solid fa-circle-question note-link-span"></span></a>
                 </h4>
@@ -5122,7 +5129,7 @@
                 </div>
             </div>
             <div id="scenario_div">
-                <h4>
+                <h4 class="flex-container alignItemsBaseline">
                     <span data-i18n="Scenario">Scenario</span>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#scenario" class="notes-link" target="_blank">
                         <span class="fa-solid fa-circle-question note-link-span"></span>
@@ -5179,10 +5186,10 @@
             <hr>
             <div id="mes_example_div" class="flex-container flexFlowColumn">
                 <div>
-                    <h4><span data-i18n="Examples of dialogue">Examples of dialogue</span></h4>
+                    <h4 class="flex-container gap5px alignItemsBaseline"><span data-i18n="Examples of dialogue" class="mdhotkey_location">Examples of dialogue</span></h4>
                     <h5 data-i18n="Important to set the character's writing style.">Important to set the character's writing style. <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#examples-of-dialogue" class="notes-link" target="_blank"><span class="fa-solid fa-circle-question note-link-span"></span></a></h5>
                 </div>
-                <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" data-i18n="[placeholder](Examples of chat dialog. Begin each example with START on a new line.)" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" rows="6"></textarea>
+                <textarea id="mes_example_textarea" class="flexGrow mdHotkeys" name="mes_example" data-i18n="[placeholder](Examples of chat dialog. Begin each example with START on a new line.)" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" rows="6"></textarea>
                 <div class="extension_token_counter">
                     <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="mes_example_textarea">counting...</span>
                 </div>
@@ -5477,7 +5484,7 @@
                                         <label for="content ">
                                             <small>
                                                 <span class="alignitemscenter flex-container flexnowrap wide100p justifySpaceBetween">
-                                                    <span data-i18n="Content" class="alignitemscenter flex-container flexNoGap">
+                                                    <span data-i18n="Content" class="alignitemscenter flex-container flexNoGap mdhotkey_location">
                                                         Content
                                                     </span>
                                                     <span>
@@ -5512,7 +5519,7 @@
                                                 </span>
                                             </small>
                                         </label>
-                                        <textarea class="text_pole" name="content" rows="8" data-i18n="[placeholder]What this keyword should mean to the AI, sent verbatim" placeholder="What this keyword should mean to the AI, sent verbatim"></textarea>
+                                        <textarea class="text_pole mdHotkeys" name="content" rows="8" data-i18n="[placeholder]What this keyword should mean to the AI, sent verbatim" placeholder="What this keyword should mean to the AI, sent verbatim"></textarea>
                                     </div>
                                 </div>
                                 <div class="world_entry_thin_controls commentContainer">
@@ -5987,7 +5994,7 @@
         <div id="alternate_greetings_template" class="template_element">
             <div class="alternate_grettings flexFlowColumn flex-container">
                 <div class="title_restorable">
-                    <h3><span data-i18n="Alternate Greetings">Alternate Greetings</span></h3>
+                    <h3><span data-i18n="Alternate Greetings" class="mdhotkey_location">Alternate Greetings</span></h3>
                     <div title="Add" class="menu_button fa-solid fa-plus add_alternate_greeting" data-i18n="[title]Add"></div>
                 </div>
                 <small class="justifyLeft" data-i18n="Alternate_Greetings_desc">
@@ -6008,7 +6015,7 @@
                     <strong><span data-i18n="Alternate Greeting #">Alternate Greeting #</span><span class="greeting_index"></span></strong>
                     <div class="menu_button fa-solid fa-trash-alt delete_alternate_greeting"></div>
                 </div>
-                <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" value="" autocomplete="off" rows="16"></textarea>
+                <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text mdHotkeys" value="" autocomplete="off" rows="16"></textarea>
             </div>
         </div>
 
@@ -6392,7 +6399,7 @@
                     <div id="leftSendForm" class="alignContentCenter">
                         <div id="options_button" class="fa-solid fa-bars interactable"></div>
                     </div>
-                    <textarea id="send_textarea" name="text" data-i18n="[no_connection_text]Not connected to API!;[connected_text]Type a message, or /? for help" placeholder="Not connected to API!" no_connection_text="Not connected to API!" connected_text="Type a message, or /? for help"></textarea>
+                    <textarea id="send_textarea" name="text" class="mdHotkeys" data-i18n="[no_connection_text]Not connected to API!;[connected_text]Type a message, or /? for help" placeholder="Not connected to API!" no_connection_text="Not connected to API!" connected_text="Type a message, or /? for help"></textarea>
                     <div id="rightSendForm" class="alignContentCenter">
                         <div id="stscript_continue" title="Continue script execution" class="stscript_btn stscript_continue" data-i18n="[title]Continue script execution">
                             <i class="fa-solid fa-play"></i>

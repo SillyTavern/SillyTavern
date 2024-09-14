@@ -242,6 +242,7 @@ import { INTERACTABLE_CONTROL_CLASS, initKeyboard } from './scripts/keyboard.js'
 import { initDynamicStyles } from './scripts/dynamic-styles.js';
 import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
+import { initInputMarkdown } from './scripts/input-md-formatting.js';
 import { AbortReason } from './scripts/util/AbortReason.js';
 
 //exporting functions and vars for mods
@@ -951,6 +952,7 @@ async function firstLoadInit() {
     initStats();
     initCfg();
     initLogprobs();
+    initInputMarkdown();
     doDailyExtensionUpdatesCheck();
     await hideLoader();
     await fixViewport();
@@ -10200,7 +10202,7 @@ jQuery(async function () {
                 .closest('.mes_block')
                 .find('.mes_text')
                 .append(
-                    '<textarea id=\'curEditTextarea\' class=\'edit_textarea\' style=\'max-width:auto;\'></textarea>',
+                    '<textarea id=\'curEditTextarea\' class=\'edit_textarea mdHotkeys\' style=\'max-width:auto;\'></textarea>',
                 );
             $('#curEditTextarea').val(text);
             let edit_textarea = $(this)

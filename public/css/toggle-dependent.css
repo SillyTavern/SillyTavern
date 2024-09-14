@@ -455,3 +455,7 @@ body.expandMessageActions .mes .mes_buttons .extraMesButtonsHint {
 #smooth_streaming:checked~#smooth_streaming_speed_control {
     display: block;
 }
+
+.mdhotkey_icon {
+    opacity: 0.6;
+}
