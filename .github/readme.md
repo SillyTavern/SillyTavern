@@ -69,7 +69,7 @@ Or get in touch with the developers directly:
 * World Info support: create rich lore or save tokens on your character card
 * [OpenRouter](https://openrouter.ai) connection for various APIs (Claude, GPT-4/3.5 and more)
 * [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
-* [AI Horde](https://horde.koboldai.net/) connection
+* [AI Horde](https://aihorde.net/) connection
 * Prompt generation formatting tweaking
 
 ## Extensions
