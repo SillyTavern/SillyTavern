@@ -71,7 +71,7 @@ Tavern は単なるフロントエンドのUIであり、必要なハードウ�
 * ワールド情報サポート: 豊富な伝承を作成したり、キャラクターカードにトークンを保存したりできます
 * [OpenRouter](https://openrouter.ai) 各種 API(Claude、GPT-4/3.5 など)の接続
 * [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API 接続
-* [AI Horde](https://horde.koboldai.net/) 接続
+* [AI Horde](https://aihorde.net/) 接続
 * プロンプト生成フォーマットの調整
 
 ## 拡張機能

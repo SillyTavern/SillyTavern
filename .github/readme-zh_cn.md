@@ -67,7 +67,7 @@ SillyTavern 本身并无用处，因为它只是一个用户聊天界面。你�
 * 支持世界信息（Lorebooks）：创建丰富的传说
 * 支持 Window AI 浏览器扩展（运行 Claude、GPT 4 等模型）：<https://windowai.io/>
 * [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API 连接
-* 连接 [AI Horde](https://horde.koboldai.net/)
+* 连接 [AI Horde](https://aihorde.net/)
 * Prompt 生成格式调整
 * Webp 角色卡支持（PNG 仍是内部格式）
 
