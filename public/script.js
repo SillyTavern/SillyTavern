@@ -225,7 +225,7 @@ import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_set
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
 import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels, initTextGenModels, loadTabbyModels } from './scripts/textgen-models.js';
-import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
+import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId, preserveNeutralChat, restoreNeutralChat } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { MacrosParser, evaluateMacros, getLastMessageId } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
@@ -1846,6 +1846,7 @@ export async function deleteLastMessage() {
 }
 
 export async function reloadCurrentChat() {
+    preserveNeutralChat();
     await clearChat();
     chat.length = 0;
 
@@ -1857,6 +1858,7 @@ export async function reloadCurrentChat() {
     }
     else {
         resetChatState();
+        restoreNeutralChat();
         await getCharacters();
         await printMessages();
         await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
@@ -5699,10 +5701,10 @@ export function deactivateSendButtons() {
 }
 
 export function resetChatState() {
+    // replaces deleted charcter name with system user since it will be displayed next.
+    name2 = (this_chid === undefined && neutralCharacterName) ? neutralCharacterName : systemUserName;
     //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
     this_chid = undefined;
-    // replaces deleted charcter name with system user since it will be displayed next.
-    name2 = systemUserName;
     // sets up system user to tell user about having deleted a character
     chat.splice(0, chat.length, ...SAFETY_CHAT);
     // resets chat metadata
