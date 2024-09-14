@@ -89,7 +89,7 @@
     "Text Completion presets": "Пресеты для Text Completion",
     "Documentation on sampling parameters": "Документация по параметрам сэмплеров",
     "Set all samplers to their neutral/disabled state.": "Установить все сэмплеры в нейтральное/отключенное состояние.",
-    "Only enable this if your model supports context sizes greater than 4096 tokens": "Включайте эту опцию, только если ваша модель поддерживает размер контекста более 4096 токенов.\nУвеличивайте только если вы знаете, что делаете.",
+    "Only enable this if your model supports context sizes greater than 8192 tokens": "Включайте эту опцию, только если ваша модель поддерживает размер контекста более 8192 токенов.\nУвеличивайте только если вы знаете, что делаете.",
     "Wrap in Quotes": "Заключать в кавычки",
     "Wrap entire user message in quotes before sending.": "Перед отправкой заключать всё сообщение пользователя в кавычки.",
     "Leave off if you use quotes manually for speech.": "Оставьте выключенным, если вручную выставляете кавычки для прямой речи.",

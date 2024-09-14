@@ -32,7 +32,7 @@
     "Streaming_desc": "Birta svarið bita fyrir bita þegar það er myndað.",
     "context size(tokens)": "Stærð samhengis (í táknum eða stöfum)",
     "unlocked": "Opinn",
-    "Only enable this if your model supports context sizes greater than 4096 tokens": "Virkjið þetta aðeins ef stærð samhengis styður model meira en 4096 tákn.",
+    "Only enable this if your model supports context sizes greater than 8192 tokens": "Virkjið þetta aðeins ef stærð samhengis styður model meira en 8192 tákn.",
     "Max prompt cost:": "Hámarks skyndikostnaður:",
     "Display the response bit by bit as it is generated.": "Birta svarid bita fyrir bita þegar það er búið til.",
     "When this is off, responses will be displayed all at once when they are complete.": "Þegar þetta er slökkt verða svör birt allt í einu þegar þau eru búin.",
