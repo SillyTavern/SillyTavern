@@ -187,7 +187,6 @@ const settings = {
     openrouter_allow_fallbacks: true,
     xtc_threshold: 0.1,
     xtc_probability: 0,
-    include_stop_str_in_output: false,
 };
 
 export let textgenerationwebui_banned_in_macros = [];
@@ -260,7 +259,6 @@ export const setting_names = [
     'openrouter_allow_fallbacks',
     'xtc_threshold',
     'xtc_probability',
-    'include_stop_str_in_output',
 ];
 
 const DYNATEMP_BLOCK = document.getElementById('dynatemp_block_ooba');
@@ -1221,11 +1219,11 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'ignore_eos': settings.ignore_eos_token,
         'min_tokens': settings.min_length,
         'skip_special_tokens': settings.skip_special_tokens,
-        'include_stop_str_in_output': settings.include_stop_str_in_output,
         'spaces_between_special_tokens': settings.spaces_between_special_tokens,
         'guided_grammar': settings.grammar_string,
         'guided_json': settings.json_schema,
-        'early_stopping': false,  // hack
+        'early_stopping': false, // hacks
+        'include_stop_str_in_output': false,
     };
 
     if (settings.type === OPENROUTER) {
