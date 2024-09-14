@@ -1,5 +1,7 @@
 // Plugin manager script.
-// Usage: node plugins.js update
+// Usage:
+// 1. node plugins.js update
+// 2. node plugins.js install <plugin-git-url>
 // More operations coming soon.
 const { default: git } = require('simple-git');
 const fs = require('fs');
