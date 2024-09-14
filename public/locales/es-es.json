@@ -32,7 +32,7 @@
     "Streaming_desc": "Mostrar la respuesta poco a poco según se genera",
     "context size(tokens)": "Tamaño de contexto (tokens)",
     "unlocked": "Desbloqueado",
-    "Only enable this if your model supports context sizes greater than 4096 tokens": "Habilita esto solo si tu modelo admite tamaños de contexto mayores de 4096 tokens",
+    "Only enable this if your model supports context sizes greater than 8192 tokens": "Habilita esto solo si tu modelo admite tamaños de contexto mayores de 8192 tokens",
     "Max prompt cost:": "Costo inmediato máximo:",
     "Display the response bit by bit as it is generated.": "Mostrar la respuesta poco a poco a medida que se genera.",
     "When this is off, responses will be displayed all at once when they are complete.": "Cuando esto está apagado, las respuestas se mostrarán de una vez cuando estén completas.",

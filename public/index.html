@@ -215,7 +215,7 @@
                                         <label class="checkbox_label">
                                             <input id="max_context_unlocked" type="checkbox" />
                                             <small><span data-i18n="unlocked">Unlocked</span>
-                                                <div id="max_context_unlocked_warning" class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Only enable this if your model supports context sizes greater than 4096 tokens" title="Only enable this if your model supports context sizes greater than 4096 tokens.&#13;Increase only if you know what you're doing."></div>
+                                                <div id="max_context_unlocked_warning" class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Only enable this if your model supports context sizes greater than 8192 tokens" title="Only enable this if your model supports context sizes greater than 8192 tokens.&#13;Increase only if you know what you're doing."></div>
                                             </small>
                                         </label>
                                     </div>
@@ -1189,7 +1189,7 @@
                                         <input class="neo-range-slider" type="range" id="tfs_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="tfs_textgenerationwebui" id="tfs_counter_textgenerationwebui">
                                     </div>
-                                    <div data-tg-type="ooba,mancer" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="ooba,mancer,aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Epsilon Cutoff">Epsilon Cutoff</span>
                                             <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Epsilon cutoff sets a probability floor below which tokens are excluded from being sampled" title="Epsilon cutoff sets a probability floor below which tokens are excluded from being sampled.&#13;In units of 1e-4; a reasonable value is 3.&#13;Set to 0 to disable."></div>
@@ -1197,7 +1197,7 @@
                                         <input class="neo-range-slider" type="range" id="epsilon_cutoff_textgenerationwebui" name="volume" min="0" max="9" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="9" step="0.01" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui">
                                     </div>
-                                    <div data-tg-type="ooba,mancer" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="ooba,mancer,aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Eta Cutoff">Eta Cutoff</span>
                                             <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Eta_Cutoff_desc" title="Eta cutoff is the main parameter of the special Eta Sampling technique.&#13;In units of 1e-4; a reasonable value is 3.&#13;Set to 0 to disable.&#13;See the paper Truncation Sampling as Language Model Desmoothing by Hewitt et al. (2022) for details."></div>
@@ -1250,7 +1250,7 @@
                                         <input class="neo-range-slider" type="range" id="skew_textgenerationwebui" name="volume" min="-5" max="5" step="0.01" />
                                         <input class="neo-range-input" type="number" min="-5" max="5" step="0.01" data-for="skew_textgenerationwebui" id="skew_counter_textgenerationwebui">
                                     </div>
-                                    <div data-tg-type="mancer, ooba, tabby, dreamgen, infermaticai" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="mancer, ooba, tabby, dreamgen, infermaticai, aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small data-i18n="Min Length">Min Length</small>
                                         <input class="neo-range-slider" type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
                                         <input class="neo-range-input" type="number" min="0" max="2000" step="1" data-for="min_length_textgenerationwebui" id="min_length_counter_textgenerationwebui">
@@ -1339,7 +1339,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-tg-type="ooba, mancer, koboldcpp, tabby, llamacpp, aphrodite" id="dynatemp_block_ooba" class="wide100p">
+                                    <div data-tg-type="ooba, mancer, koboldcpp, tabby, llamacpp" id="dynatemp_block_ooba" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <div class="flex-container alignitemscenter justifyCenter">
                                                 <div class="checkbox_label" for="dynatemp_textgenerationwebui">
@@ -1367,7 +1367,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-tg-type="ooba,aphrodite,infermaticai,koboldcpp,llamacpp,mancer,ollama,tabby" id="mirostat_block_ooba" class="wide100p">
+                                    <div data-tg-type="ooba,infermaticai,koboldcpp,llamacpp,mancer,ollama,tabby" id="mirostat_block_ooba" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat</label>
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Mirostat_desc" title="Mirostat is a thermostat for output perplexity.&#13;Mirostat matches the output perplexity to that of the input, thus avoiding the repetition trap&#13;(where, as the autoregressive inference produces text, the perplexity of the output tends toward zero)&#13;and the confusion trap (where the perplexity diverges).&#13;For details, see the paper Mirostat: A Neural Text Decoding Algorithm that Directly Controls Perplexity by Basu et al. (2020).&#13;Mode chooses the Mirostat version. 0=disable, 1=Mirostat 1.0 (llama.cpp only), 2=Mirostat 2.0."></div>
@@ -1396,28 +1396,36 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-tg-type="ooba, vllm" id="beamSearchBlock" name="beamSearchBlock" class="wide100p">
+                                    <div data-tg-type="ooba" id="beamSearchBlock" name="beamSearchBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label>
                                                 <span data-i18n="Beam search">Beam Search</span>
-                                                <div class=" fa-solid fa-circle-info opacity50p " title="Helpful tip coming soon." data-i18n="[title]Helpful tip coming soon."></div>
+                                                <div class=" fa-solid fa-circle-info opacity50p " title="A greedy, brute-force algorithm used in LLM sampling to find the most likely sequence of words or tokens. It expands multiple candidate sequences at once, maintaining a fixed number (beam width) of top sequences at each step." data-i18n="[title]A greedy, brute-force algorithm used in LLM sampling to find the most likely sequence of words or tokens. It expands multiple candidate sequences at once, maintaining a fixed number (beam width) of top sequences at each step."></div>
                                             </label>
                                         </h4>
                                         <div class="flex-container flexFlowRow alignitemscenter gap10px flexShrink">
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
-                                                <small data-i18n="Number of Beams"># of Beams</small>
+                                                <label>
+                                                    <small data-i18n="# of Beams"># of Beams</small>
+                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]The number of sequences generated at each step with Beam Search." title="The number of sequences generated at each step with Beam Search."></div>
+                                                </label>
                                                 <input class="neo-range-slider" type="range" id="num_beams_textgenerationwebui" name="volume" min="1" max="20" step="1" />
                                                 <input class="neo-range-input" type="number" min="1" max="20" step="1" data-for="num_beams_textgenerationwebui" id="num_beams_counter_textgenerationwebui">
                                             </div>
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
-                                                <small data-i18n="Length Penalty">Length Penalty</small>
+                                                <label>
+                                                    <small data-i18n="Length Penalty">Length Penalty</small>
+                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Penalize sequences based on their length." title="Penalize sequences based on their length."></div>
+                                                </label>
                                                 <input class="neo-range-slider" type="range" id="length_penalty_textgenerationwebui" name="volume" min="-5" max="5" step="0.1" />
                                                 <input class="neo-range-input" type="number" min="-5" max="5" step="0.1" data-for="length_penalty_textgenerationwebui" id="length_penalty_counter_textgenerationwebui">
                                             </div>
                                             <div class="">
                                                 <label class="checkbox_label" for="early_stopping_textgenerationwebui">
                                                     <input type="checkbox" id="early_stopping_textgenerationwebui" />
-                                                    <small data-i18n="Early Stopping">Early Stopping</small>
+                                                    <small data-i18n="Early Stopping">Early Stopping
+                                                        <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Controls the stopping condition for beam search. If checked, the generation stops as soon as there are '# of Beams' sequences. If not checked, a heuristic is applied and the generation is stopped when it's very unlikely to find better candidates." title="Controls the stopping condition for beam search. If checked, the generation stops as soon as there are '# of Beams' sequences. If not checked, a heuristic is applied and the generation is stopped when it's very unlikely to find better candidates."></div>
+                                                    </small>
                                                 </label>
                                             </div>
                                         </div>
@@ -1487,7 +1495,10 @@
                                         </div>
                                     </div>
                                     <div data-tg-type="mancer, ooba, koboldcpp, vllm, aphrodite, llamacpp, ollama, infermaticai, huggingface" class="flex-container flexFlowColumn alignitemscenter flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Seed" class="textAlignCenter">Seed</small>
+                                        <label>
+                                            <small data-i18n="Seed">Seed</small>
+                                            <div class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Seed_desc" title="A random seed to use for deterministic and reproducable outputs. Set to -1 to use a random seed."></div>
+                                        </label>
                                         <input type="number" id="seed_textgenerationwebui" class="text_pole textAlignCenter" min="-1" value="-1" />
                                     </div>
                                     <div id="banned_tokens_block_ooba" class="wide100p">
@@ -1537,18 +1548,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div id="json_schema_block" data-tg-type="tabby, llamacpp" class="wide100p">
-                                        <hr class="wide100p">
-                                        <h4 class="wide100p textAlignCenter"><span data-i18n="JSON Schema">JSON Schema</span>
-                                            <a href="https://json-schema.org/learn/getting-started-step-by-step" target="_blank">
-                                                <small>
-                                                    <div class="fa-solid fa-circle-question note-link-span"></div>
-                                                </small>
-                                            </a>
-                                        </h4>
-                                        <textarea id="tabby_json_schema" rows="4" class="text_pole textarea_compact monospace" data-i18n="[placeholder]Type in the desired JSON schema" placeholder="Type in the desired JSON schema"></textarea>
-                                    </div>
-                                    <div id="grammar_block_ooba" class="wide100p">
+                                    <div id="grammar_block_ooba" data-tg-type="ooba,aphrodite" class="wide100p">
                                         <hr class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label>
@@ -1562,6 +1562,17 @@
                                             </label>
                                         </h4>
                                         <textarea id="grammar_string_textgenerationwebui" rows="4" class="text_pole textarea_compact monospace" data-i18n="[placeholder]Type in the desired custom grammar" placeholder="Type in the desired custom grammar"></textarea>
+                                    </div>
+                                    <div id="json_schema_block" data-tg-type="tabby, llamacpp, aphrodite" class="wide100p">
+                                        <hr class="wide100p">
+                                        <h4 class="wide100p textAlignCenter"><span data-i18n="JSON Schema">JSON Schema</span>
+                                            <a href="https://json-schema.org/learn/getting-started-step-by-step" target="_blank">
+                                                <small>
+                                                    <div class="fa-solid fa-circle-question note-link-span"></div>
+                                                </small>
+                                            </a>
+                                        </h4>
+                                        <textarea id="tabby_json_schema" rows="4" class="text_pole textarea_compact monospace" data-i18n="[placeholder]Type in the desired JSON schema" placeholder="Type in the desired JSON schema"></textarea>
                                     </div>
                                     <div id="sampler_order_block_kcpp" data-tg-type="koboldcpp" class="range-block flexFlowColumn wide100p">
                                         <hr class="wide100p">
@@ -2425,7 +2436,7 @@
                                 <div data-tg-type="openrouter" class="menu_button menu_button_icon openrouter_authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="Authorize;[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
                                 <div class="api_loading menu_button menu_button_icon" data-i18n="Cancel">Cancel</div>
                             </div>
-                            <label data-tg-type="ooba,aphrodite" class="checkbox_label margin-bot-10px" for="legacy_api_textgenerationwebui">
+                            <label data-tg-type="ooba" class="checkbox_label margin-bot-10px" for="legacy_api_textgenerationwebui">
                                 <input type="checkbox" id="legacy_api_textgenerationwebui" />
                                 <span data-i18n="Legacy API (pre-OAI, no streaming)">Legacy API (pre-OAI, no streaming)</span>
                             </label>

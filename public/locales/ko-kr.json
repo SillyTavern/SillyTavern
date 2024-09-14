@@ -32,7 +32,7 @@
     "Streaming_desc": "생성되는대로 응답을 조금씩 표시하십시오",
     "context size(tokens)": "컨텍스트 크기 (토큰)",
     "unlocked": "잠금 해제됨",
-    "Only enable this if your model supports context sizes greater than 4096 tokens": "모델이 4096 토큰보다 큰 컨텍스트 크기를 지원하는 경우에만 활성화하십시오",
+    "Only enable this if your model supports context sizes greater than 8192 tokens": "모델이 8192 토큰보다 큰 컨텍스트 크기를 지원하는 경우에만 활성화하십시오",
     "Max prompt cost:": "최대 프롬프트 비용:",
     "Display the response bit by bit as it is generated.": "생성되는 대답을 조금씩 표시합니다.",
     "When this is off, responses will be displayed all at once when they are complete.": "이 기능이 꺼져 있으면 대답은 완료되면 한 번에 모두 표시됩니다.",

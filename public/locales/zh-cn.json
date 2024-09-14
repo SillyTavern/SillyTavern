@@ -32,7 +32,7 @@
     "Streaming_desc": "逐位显示生成的回复",
     "context size(tokens)": "上下文长度（以词符数计）",
     "unlocked": "解锁",
-    "Only enable this if your model supports context sizes greater than 4096 tokens": "仅在您的模型支持大于4096个词符的上下文大小时启用此选项",
+    "Only enable this if your model supports context sizes greater than 8192 tokens": "仅在您的模型支持大于8192个词符的上下文大小时启用此选项",
     "Max prompt cost:": "最大提示词费用：",
     "Display the response bit by bit as it is generated.": "随着回复的生成，逐位显示结果。",
     "When this is off, responses will be displayed all at once when they are complete.": "当此选项关闭时，回复将在完成后一次性显示。",
