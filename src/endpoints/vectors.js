@@ -156,7 +156,7 @@ function getSourceSettings(source, request) {
             };
         case 'palm':
             return {
-                // TOOD: Add support for multiple models
+                // TODO: Add support for multiple models
                 model: 'text-embedding-004',
             };
         default:
