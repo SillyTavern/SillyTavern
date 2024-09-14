@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { color } = require('./src/util');
 
+process.chdir(__dirname);
 const pluginsPath = './plugins';
 
 const command = process.argv[2];
@@ -55,7 +56,6 @@ async function updatePlugins() {
     }
 
     console.log(color.magenta('All plugins updated!'));
-
 }
 
 async function installPlugin(pluginName) {
