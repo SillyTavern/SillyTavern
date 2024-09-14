@@ -217,15 +217,15 @@ class WorldInfoBuffer {
             depth = MAX_SCAN_DEPTH;
         }
 
-        let result = this.#depthBuffer.slice(this.#startDepth, depth).join('\n');
+        let result = this.#depthBuffer.slice(this.#startDepth, depth).join('\n\x01');
 
         if (this.#injectBuffer.length > 0) {
-            result += '\n' + this.#injectBuffer.join('\n');
+            result += '\n\x01' + this.#injectBuffer.join('\n\x01');
         }
 
         // Min activations should not include the recursion buffer
         if (this.#recurseBuffer.length > 0 && scanState !== scan_state.MIN_ACTIVATIONS) {
-            result += '\n' + this.#recurseBuffer.join('\n');
+            result += '\n\x01' + this.#recurseBuffer.join('\n\x01');
         }
 
         return result;
