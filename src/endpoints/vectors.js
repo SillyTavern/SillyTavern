@@ -490,7 +490,7 @@ router.post('/purge', jsonParser, async (req, res) => {
                 continue;
             }
             await fs.promises.rm(sourcePath, { recursive: true });
-            console.log(`Deleted vector index at ${path}`);
+            console.log(`Deleted vector index at ${sourcePath}`);
         }
 
         return res.sendStatus(200);
