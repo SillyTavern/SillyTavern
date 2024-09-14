@@ -154,6 +154,11 @@ function getSourceSettings(source, request) {
             return {
                 model: getConfigValue('extras.embeddingModel', ''),
             };
+        case 'palm':
+            return {
+                // TOOD: Add support for multiple models
+                model: 'text-embedding-004',
+            };
         default:
             return {};
     }
