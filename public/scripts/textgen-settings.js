@@ -188,7 +188,6 @@ const settings = {
     xtc_threshold: 0.1,
     xtc_probability: 0,
     include_stop_str_in_output: false,
-    guided_regex: '',
 };
 
 export let textgenerationwebui_banned_in_macros = [];
@@ -262,7 +261,6 @@ export const setting_names = [
     'xtc_threshold',
     'xtc_probability',
     'include_stop_str_in_output',
-    'guided_regex',
 ];
 
 const DYNATEMP_BLOCK = document.getElementById('dynatemp_block_ooba');
@@ -1207,7 +1205,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'presence_penalty': settings.presence_pen,
         'repetition_penalty': settings.rep_pen,
         'seed': settings.seed,
-        'stop': settings.stopping_strings,
+        'stop': getStoppingStrings(isImpersonate, isContinue),
         'temperature': settings.temp,
         'temperature_last': settings.temperature_last,
         'top_p': settings.top_p,
@@ -1221,6 +1219,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'smoothing_factor': settings.smoothing_factor,
         'smoothing_curve': settings.smoothing_curve,
         'use_beam_search': settings.use_beam_search,
+        'best_of': settings.num_beams > 1 ? settings.num_beams : settings.n,
         'length_penalty': settings.length_penalty,
         'early_stopping': settings.early_stopping,
         'ignore_eos': settings.ignore_eos_token,
@@ -1230,8 +1229,6 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'spaces_between_special_tokens': settings.spaces_between_special_tokens,
         'guided_grammar': settings.grammar_string,
         'guided_json': settings.json_schema,
-
-
     };
 
     if (settings.type === OPENROUTER) {
@@ -1271,7 +1268,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
             break;
 
         case APHRODITE:
-            params = Object.assign(aphroditeParams);
+            // set params to aphroditeParams
+            params = Object.assign(params, aphroditeParams);
             break;
 
         default:
