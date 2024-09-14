@@ -718,7 +718,7 @@ async function getQueryText(chat, initiator) {
 async function getSavedHashes(collectionId) {
     const response = await fetch('/api/vector/list', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getVectorHeaders(),
         body: JSON.stringify({
             collectionId: collectionId,
             source: settings.source,
@@ -734,6 +734,81 @@ async function getSavedHashes(collectionId) {
 }
 
 function getVectorHeaders() {
+    /**
+     * Add headers for the Extras API source.
+     * @param {object} headers Headers object
+     */
+    function addExtrasHeaders(headers) {
+        console.log(`Vector source is extras, populating API URL: ${extension_settings.apiUrl}`);
+        Object.assign(headers, {
+            'X-Extras-Url': extension_settings.apiUrl,
+            'X-Extras-Key': extension_settings.apiKey,
+        });
+    }
+
+    /**
+     * Add headers for the TogetherAI API source.
+     * @param {object} headers Headers object
+     */
+    function addTogetherAiHeaders(headers) {
+        Object.assign(headers, {
+            'X-Togetherai-Model': extension_settings.vectors.togetherai_model,
+        });
+    }
+
+    /**
+     * Add headers for the OpenAI API source.
+     * @param {object} headers Header object
+     */
+    function addOpenAiHeaders(headers) {
+        Object.assign(headers, {
+            'X-OpenAI-Model': extension_settings.vectors.openai_model,
+        });
+    }
+
+    /**
+     * Add headers for the Cohere API source.
+     * @param {object} headers Header object
+     */
+    function addCohereHeaders(headers) {
+        Object.assign(headers, {
+            'X-Cohere-Model': extension_settings.vectors.cohere_model,
+        });
+    }
+
+    /**
+     * Add headers for the Ollama API source.
+     * @param {object} headers Header object
+     */
+    function addOllamaHeaders(headers) {
+        Object.assign(headers, {
+            'X-Ollama-Model': extension_settings.vectors.ollama_model,
+            'X-Ollama-URL': textgenerationwebui_settings.server_urls[textgen_types.OLLAMA],
+            'X-Ollama-Keep': !!extension_settings.vectors.ollama_keep,
+        });
+    }
+
+    /**
+     * Add headers for the LlamaCpp API source.
+     * @param {object} headers Header object
+     */
+    function addLlamaCppHeaders(headers) {
+        Object.assign(headers, {
+            'X-LlamaCpp-URL': textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP],
+        });
+    }
+
+    /**
+     * Add headers for the VLLM API source.
+     * @param {object} headers Header object
+     */
+    function addVllmHeaders(headers) {
+        Object.assign(headers, {
+            'X-Vllm-URL': textgenerationwebui_settings.server_urls[textgen_types.VLLM],
+            'X-Vllm-Model': extension_settings.vectors.vllm_model,
+        });
+    }
+
     const headers = getRequestHeaders();
     switch (settings.source) {
         case 'extras':
@@ -761,81 +836,6 @@ function getVectorHeaders() {
             break;
     }
     return headers;
-}
-
-/**
- * Add headers for the Extras API source.
- * @param {object} headers Headers object
- */
-function addExtrasHeaders(headers) {
-    console.log(`Vector source is extras, populating API URL: ${extension_settings.apiUrl}`);
-    Object.assign(headers, {
-        'X-Extras-Url': extension_settings.apiUrl,
-        'X-Extras-Key': extension_settings.apiKey,
-    });
-}
-
-/**
- * Add headers for the TogetherAI API source.
- * @param {object} headers Headers object
- */
-function addTogetherAiHeaders(headers) {
-    Object.assign(headers, {
-        'X-Togetherai-Model': extension_settings.vectors.togetherai_model,
-    });
-}
-
-/**
- * Add headers for the OpenAI API source.
- * @param {object} headers Header object
- */
-function addOpenAiHeaders(headers) {
-    Object.assign(headers, {
-        'X-OpenAI-Model': extension_settings.vectors.openai_model,
-    });
-}
-
-/**
- * Add headers for the Cohere API source.
- * @param {object} headers Header object
- */
-function addCohereHeaders(headers) {
-    Object.assign(headers, {
-        'X-Cohere-Model': extension_settings.vectors.cohere_model,
-    });
-}
-
-/**
- * Add headers for the Ollama API source.
- * @param {object} headers Header object
- */
-function addOllamaHeaders(headers) {
-    Object.assign(headers, {
-        'X-Ollama-Model': extension_settings.vectors.ollama_model,
-        'X-Ollama-URL': textgenerationwebui_settings.server_urls[textgen_types.OLLAMA],
-        'X-Ollama-Keep': !!extension_settings.vectors.ollama_keep,
-    });
-}
-
-/**
- * Add headers for the LlamaCpp API source.
- * @param {object} headers Header object
- */
-function addLlamaCppHeaders(headers) {
-    Object.assign(headers, {
-        'X-LlamaCpp-URL': textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP],
-    });
-}
-
-/**
- * Add headers for the VLLM API source.
- * @param {object} headers Header object
- */
-function addVllmHeaders(headers) {
-    Object.assign(headers, {
-        'X-Vllm-URL': textgenerationwebui_settings.server_urls[textgen_types.VLLM],
-        'X-Vllm-Model': extension_settings.vectors.vllm_model,
-    });
 }
 
 /**
@@ -901,7 +901,7 @@ function throwIfSourceInvalid() {
 async function deleteVectorItems(collectionId, hashes) {
     const response = await fetch('/api/vector/delete', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getVectorHeaders(),
         body: JSON.stringify({
             collectionId: collectionId,
             hashes: hashes,
@@ -987,7 +987,7 @@ async function purgeFileVectorIndex(fileUrl) {
 
         const response = await fetch('/api/vector/purge', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getVectorHeaders(),
             body: JSON.stringify({
                 collectionId: collectionId,
             }),
@@ -1016,7 +1016,7 @@ async function purgeVectorIndex(collectionId) {
 
         const response = await fetch('/api/vector/purge', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getVectorHeaders(),
             body: JSON.stringify({
                 collectionId: collectionId,
             }),
@@ -1041,7 +1041,7 @@ async function purgeAllVectorIndexes() {
     try {
         const response = await fetch('/api/vector/purge-all', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getVectorHeaders(),
         });
 
         if (!response.ok) {
