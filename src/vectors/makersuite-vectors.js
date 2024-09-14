@@ -1,5 +1,6 @@
 const fetch = require('node-fetch').default;
 const { SECRET_KEYS, readSecret } = require('../endpoints/secrets');
+const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 
 /**
  * Gets the vector for the given text from gecko model
@@ -9,12 +10,11 @@ const { SECRET_KEYS, readSecret } = require('../endpoints/secrets');
  */
 async function getMakerSuiteBatchVector(texts, directories) {
     const promises = texts.map(text => getMakerSuiteVector(text, directories));
-    const vectors = await Promise.all(promises);
-    return vectors;
+    return await Promise.all(promises);
 }
 
 /**
- * Gets the vector for the given text from PaLM gecko model
+ * Gets the vector for the given text from Gemini API text-embedding-004 model
  * @param {string} text - The text to get the vector for
  * @param {import('../users').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[]>} - The vector for the text
@@ -27,14 +27,23 @@ async function getMakerSuiteVector(text, directories) {
         throw new Error('No Google AI Studio key found');
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/embedding-gecko-001:embedText?key=${key}`, {
+    const apiUrl = new URL(API_MAKERSUITE);
+    const model = 'text-embedding-004';
+    const url = `${apiUrl.origin}/v1beta/models/${model}:embedContent?key=${key}`;
+    const body = {
+        content: {
+            parts: [
+                { text: text },
+            ],
+        },
+    };
+
+    const response = await fetch(url, {
+        body: JSON.stringify(body),
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            text: text,
-        }),
     });
 
     if (!response.ok) {
@@ -44,11 +53,8 @@ async function getMakerSuiteVector(text, directories) {
     }
 
     const data = await response.json();
-
-    // Access the "value" dictionary
-    const vector = data.embedding.value;
-
-    return vector;
+    // noinspection JSValidateTypes
+    return data['embedding']['values'];
 }
 
 module.exports = {
