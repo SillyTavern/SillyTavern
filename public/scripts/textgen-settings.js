@@ -123,7 +123,6 @@ const settings = {
     rep_pen_slope: 1,
     no_repeat_ngram_size: 0,
     penalty_alpha: 0,
-    use_beam_search: false,
     num_beams: 1,
     length_penalty: 1,
     min_length: 0,
