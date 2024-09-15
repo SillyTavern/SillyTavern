@@ -3728,6 +3728,9 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
     )].sort((a, b) => a - b);
     // Already preset with the first level
     let currentRecursionDelayLevel = availableRecursionDelayLevels.shift() ?? 0;
+    if (currentRecursionDelayLevel > 0 && availableRecursionDelayLevels.length) {
+        console.debug('[WI] Preparing first delayed recursion level', currentRecursionDelayLevel, '. Still delayed:', availableRecursionDelayLevels);
+    }
 
     console.debug(`[WI] --- SEARCHING ENTRIES (on ${sortedEntries.length} entries) ---`);
 
@@ -3741,7 +3744,8 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         // Track how many times the loop has run. May be useful for debugging.
         count++;
 
-        console.debug(`[WI] Loop #${count}. Search state`, Object.entries(scan_state).find(x => x[1] === scanState));
+        console.debug(`[WI] --- LOOP #${count} START ---`);
+        console.debug(`[WI] Scan state`, Object.entries(scan_state).find(x => x[1] === scanState));
 
         // Until decided otherwise, we set the loop to stop scanning after this
         let nextScanState = scan_state.NONE;
@@ -3821,7 +3825,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             }
 
             if (scanState === scan_state.RECURSION && entry.delayUntilRecursion && entry.delayUntilRecursion > currentRecursionDelayLevel && !isSticky) {
-                log('suppressed by delay until recursion and having a higher recursion level');
+                log('suppressed by delay until recursion level', entry.delayUntilRecursion, '. Currently', currentRecursionDelayLevel);
                 continue;
             }
 
@@ -3963,6 +3967,8 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanState, timedEffects);
 
         console.debug('[WI] --- PROBABILITY CHECKS ---');
+        !newEntries.length && console.debug('[WI] No probability checks to do');
+
         for (const entry of newEntries) {
             function verifyProbability() {
                 // If we don't need to roll, it's always true
@@ -3998,6 +4004,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             newContent += `${entry.content}\n`;
 
             if ((textToScanTokens + (await getTokenCountAsync(newContent))) >= budget) {
+                console.debug('[WI] --- BUDGET OVERFLOW CHECK ---');
                 if (world_info_overflow_alert) {
                     console.warn(`[WI] budget of ${budget} reached, stopping after ${allActivatedEntries.size} entries`);
                     toastr.warning(`World info budget reached after ${allActivatedEntries.size} entries.`, 'World Info');
@@ -4015,23 +4022,31 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         const successfulNewEntries = newEntries.filter(x => !failedProbabilityChecks.has(x));
         const successfulNewEntriesForRecursion = successfulNewEntries.filter(x => !x.preventRecursion);
 
+        console.debug(`[WI] --- LOOP #${count} RESULT ---`);
         if (!newEntries.length) {
-            console.debug('[WI] No new entries activated, stopping');
+            console.debug('[WI] No new entries activated.');
         } else if (!successfulNewEntries.length) {
-            console.debug('[WI] Probability checks failed for all activated entries, stopping');
+            console.debug('[WI] Probability checks failed for all activated entries. No new entries activated.');
         } else {
             console.debug(`[WI] Successfully activated ${successfulNewEntries.length} new entries to prompt. ${allActivatedEntries.size} total entries activated.`, successfulNewEntries);
+        }
+
+        function logNextState(...args) {
+            args.length && console.debug(args.shift(), ...args);
+            console.debug('[WI] Setting scan state', Object.entries(scan_state).find(x => x[1] === scanState));
         }
 
         // After processing and rolling entries is done, see if we should continue with normal recursion
         if (world_info_recursive && !token_budget_overflowed && successfulNewEntriesForRecursion.length) {
             nextScanState = scan_state.RECURSION;
+            logNextState('[WI] Found', successfulNewEntriesForRecursion.length, 'new entries for recursion');
         }
 
         // If we are inside min activations scan, and we have recursive buffer, we should do a recursive scan before increasing the buffer again
         // There might be recurse-trigger-able entries that match the buffer, so we need to check that
         if (world_info_recursive && !token_budget_overflowed && scanState === scan_state.MIN_ACTIVATIONS && buffer.hasRecurse()) {
             nextScanState = scan_state.RECURSION;
+            logNextState('[WI] Min Activations run done, whill will always be followed by a recursive scan');
         }
 
         // If scanning is planned to stop, but min activations is set and not satisfied, check if we should continue
@@ -4045,8 +4060,8 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             ) || (buffer.getDepth() > chat.length);
 
             if (!over_max) {
-                console.debug(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), advancing depth to ${buffer.getDepth() + 1} and checking again`);
                 nextScanState = scan_state.MIN_ACTIVATIONS; // loop
+                logNextState(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), advancing depth to ${buffer.getDepth() + 1}, starting another scan`);
                 buffer.advanceScan();
             } else {
                 console.debug(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), but reached on of depth. Stopping`);
@@ -4057,6 +4072,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         if (nextScanState === scan_state.NONE && availableRecursionDelayLevels.length) {
             nextScanState = scan_state.RECURSION;
             currentRecursionDelayLevel = availableRecursionDelayLevels.shift();
+            logNextState('[WI] Open delayed recursion levels left. Preparing next delayed recursion level', currentRecursionDelayLevel, '. Still delayed:', availableRecursionDelayLevels);
         }
 
         // Final check if we should really continue scan, and extend the current WI recurse buffer
@@ -4066,6 +4082,8 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
                 .map(x => x.content).join('\n');
             buffer.addRecurse(text);
             allActivatedText = (text + '\n' + allActivatedText);
+        } else {
+            logNextState('[WI] Scan done. No new entries to prompt. Stopping.');
         }
     }
 
