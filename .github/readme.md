@@ -345,19 +345,13 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Affero General Public License for more details.**
 
 * [TavernAI](https://github.com/TavernAI/TavernAI) 1.2.8 Base by Humi: MIT
-* Cohee's modifications and derived code: AGPL v3
-* RossAscends' additions: AGPL v3
 * Portions of CncAnon's TavernAITurbo mod: Unknown license
 * kingbri's various commits and suggestions (<https://github.com/bdashore3>)
 * city_unit's extensions and various QoL features (<https://github.com/city-unit>)
 * StefanDanielSchwarz's various commits and bug reports (<https://github.com/StefanDanielSchwarz>)
 * Visual Novel Mode inspired by the work of PepperTaco (<https://github.com/peppertaco/Tavern/>)
-* Thanks Pygmalion University for being awesome testers and suggesting cool features!
-* Thanks oobabooga for compiling presets for TextGen
-* KoboldAI Presets from KAI Lite: <https://lite.koboldai.net/>
 * Noto Sans font by Google (OFL license)
 * Icon theme by Font Awesome <https://fontawesome.com> (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
-* AI Horde client library by ZeldaFan0225: <https://github.com/ZeldaFan0225/ai_horde>
 * Linux startup script by AlpinDale
 * Thanks paniphons for providing a FAQ document
 * 10K Discord Users Celebratory Background by @kallmeflocc
