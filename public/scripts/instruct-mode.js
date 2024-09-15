@@ -79,7 +79,7 @@ function migrateInstructModeSettings(settings) {
         names_force_groups: true,
         skip_examples: false,
         system_same_as_user: false,
-        names_behavior: names_behavior_types.NONE,
+        names_behavior: names_behavior_types.FORCE,
     };
 
     for (let key in defaults) {
