@@ -1904,6 +1904,7 @@ export class QuickReply {
             executeOnAi: this.executeOnAi,
             executeOnChatChange: this.executeOnChatChange,
             executeOnGroupMemberDraft: this.executeOnGroupMemberDraft,
+            executeOnNewChat: this.executeOnNewChat,
             automationId: this.automationId,
         };
     }

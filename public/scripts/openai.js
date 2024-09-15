@@ -3338,11 +3338,11 @@ async function getStatusOpen() {
 
         const responseData = await response.json();
 
-        if (!('error' in responseData)) {
-            setOnlineStatus('Valid');
-        }
         if ('data' in responseData && Array.isArray(responseData.data)) {
             saveModelList(responseData.data);
+        }
+        if (!('error' in responseData)) {
+            setOnlineStatus('Valid');
         }
     } catch (error) {
         console.error(error);

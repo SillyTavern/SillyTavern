@@ -32,7 +32,7 @@
     "Streaming_desc": "生成された応答を逐次表示します。",
     "context size(tokens)": "コンテキストのサイズ（トークン数）",
     "unlocked": "ロック解除",
-    "Only enable this if your model supports context sizes greater than 4096 tokens": "モデルが4096トークンを超えるコンテキストサイズをサポートしている場合にのみ有効にします",
+    "Only enable this if your model supports context sizes greater than 8192 tokens": "モデルが8192トークンを超えるコンテキストサイズをサポートしている場合にのみ有効にします",
     "Max prompt cost:": "最大プロンプトコスト:",
     "Display the response bit by bit as it is generated.": "生成されるたびに、応答を逐次表示します。",
     "When this is off, responses will be displayed all at once when they are complete.": "この機能がオフの場合、応答は完全に生成されたときに一度ですべて表示されます。",
