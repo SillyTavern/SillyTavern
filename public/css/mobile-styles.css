@@ -1,6 +1,16 @@
 /*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
 @media screen and (max-width: 1000px) {
 
+    #UI-Theme-Block,
+    #UI-Customization,
+    #power-user-options-block,
+    #ContextSettings,
+    #InstructSettingsColumn,
+    #InstructSequencesColumn {
+        flex-basis: 100%;
+    }
+
+
     #send_form.compact #leftSendForm,
     #send_form.compact #rightSendForm {
         flex-wrap: nowrap;
@@ -339,17 +349,6 @@
 
     .bg_list {
         width: unset;
-    }
-}
-
-@media screen and (min-width: 1001px) {
-
-    #PygOverrides,
-    #ContextFormatting,
-    #UI-Theme-Block,
-    #UI-Customization,
-    #power-user-options-block {
-        flex: 1;
     }
 }
 

@@ -160,20 +160,25 @@ class PresetManager {
 
         const name = selected.text();
         await this.savePreset(name);
-        toastr.success('Preset updated');
+
+        const successToast = !this.isAdvancedFormatting() ? 'Preset updated' : 'Template updated';
+        toastr.success(successToast);
     }
 
     async savePresetAs() {
         const inputValue = this.getSelectedPresetName();
-        const popupText = !this.isNonGenericApi() ? '<h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>' : '';
-        const name = await Popup.show.input('Preset name:', popupText, inputValue);
+        const popupText = !this.isAdvancedFormatting() ? '<h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>' : '';
+        const headerText = !this.isAdvancedFormatting() ? 'Preset name:' : 'Template name:';
+        const name = await Popup.show.input(headerText, popupText, inputValue);
         if (!name) {
             console.log('Preset name not provided');
             return;
         }
 
         await this.savePreset(name);
-        toastr.success('Preset saved');
+
+        const successToast = !this.isAdvancedFormatting() ? 'Preset saved' : 'Template saved';
+        toastr.success(successToast);
     }
 
     async savePreset(name, settings) {
@@ -234,7 +239,7 @@ class PresetManager {
         return this.apiId == 'textgenerationwebui' || this.apiId == 'context' || this.apiId == 'instruct';
     }
 
-    isNonGenericApi() {
+    isAdvancedFormatting() {
         return this.apiId == 'context' || this.apiId == 'instruct';
     }
 
@@ -333,6 +338,7 @@ class PresetManager {
             'max_tokens_second',
             'openrouter_providers',
             'openrouter_allow_fallbacks',
+            'tabby_model',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 
@@ -342,7 +348,7 @@ class PresetManager {
             }
         }
 
-        if (!this.isNonGenericApi()) {
+        if (!this.isAdvancedFormatting()) {
             settings['genamt'] = amount_gen;
             settings['max_length'] = max_context;
         }
@@ -394,7 +400,8 @@ class PresetManager {
         });
 
         if (!response.ok) {
-            toastr.error('Failed to restore default preset');
+            const errorToast = !this.isAdvancedFormatting() ? 'Failed to restore default preset' : 'Failed to restore default template';
+            toastr.error(errorToast);
             return;
         }
 
@@ -580,7 +587,8 @@ export async function initPresetManager() {
         data['name'] = name;
 
         await presetManager.savePreset(name, data);
-        toastr.success('Preset imported');
+        const successToast = !presetManager.isAdvancedFormatting() ? 'Preset imported' : 'Template imported';
+        toastr.success(successToast);
         e.target.value = null;
     });
 
@@ -598,7 +606,8 @@ export async function initPresetManager() {
             return;
         }
 
-        const confirm = await Popup.show.confirm('Delete the preset?', 'This action is irreversible and your current settings will be overwritten.');
+        const headerText = !presetManager.isAdvancedFormatting() ? 'Delete this preset?' : 'Delete this template?';
+        const confirm = await Popup.show.confirm(headerText, 'This action is irreversible and your current settings will be overwritten.');
         if (!confirm) {
             return;
         }
@@ -606,9 +615,11 @@ export async function initPresetManager() {
         const result = await presetManager.deleteCurrentPreset();
 
         if (result) {
-            toastr.success('Preset deleted');
+            const successToast = !presetManager.isAdvancedFormatting() ? 'Preset deleted' : 'Template deleted';
+            toastr.success(successToast);
         } else {
-            toastr.warning('Preset was not deleted from server');
+            const warningToast = !presetManager.isAdvancedFormatting() ? 'Preset was not deleted from server' : 'Template was not deleted from server';
+            toastr.warning(warningToast);
         }
 
         saveSettingsDebounced();
@@ -637,11 +648,15 @@ export async function initPresetManager() {
 
         if (data.isDefault) {
             if (Object.keys(data.preset).length === 0) {
-                toastr.error('Default preset cannot be restored');
+                const errorToast = !presetManager.isAdvancedFormatting() ? 'Default preset cannot be restored' : 'Default template cannot be restored';
+                toastr.error(errorToast);
                 return;
             }
 
-            const confirm = await Popup.show.confirm('Are you sure?', 'Resetting a <b>default preset</b> will restore the default settings.');
+            const confirmText = !presetManager.isAdvancedFormatting()
+                ? 'Resetting a <b>default preset</b> will restore the default settings.'
+                : 'Resetting a <b>default template</b> will restore the default settings.';
+            const confirm = await Popup.show.confirm('Are you sure?', confirmText);
             if (!confirm) {
                 return;
             }
@@ -650,16 +665,21 @@ export async function initPresetManager() {
             await presetManager.savePreset(name, data.preset);
             const option = presetManager.findPreset(name);
             presetManager.selectPreset(option);
-            toastr.success('Default preset restored');
+            const successToast = !presetManager.isAdvancedFormatting() ? 'Default preset restored' : 'Default template restored';
+            toastr.success(successToast);
         } else {
-            const confirm = await Popup.show.confirm('Are you sure?', 'Resetting a <b>custom preset</b> will restore to the last saved state.');
+            const confirmText = !presetManager.isAdvancedFormatting()
+                ? 'Resetting a <b>custom preset</b> will restore to the last saved state.'
+                : 'Resetting a <b>custom template</b> will restore to the last saved state.';
+            const confirm = await Popup.show.confirm('Are you sure?', confirmText);
             if (!confirm) {
                 return;
             }
 
             const option = presetManager.findPreset(name);
             presetManager.selectPreset(option);
-            toastr.success('Preset restored');
+            const successToast = !presetManager.isAdvancedFormatting() ? 'Preset restored' : 'Template restored';
+            toastr.success(successToast);
         }
     });
 }

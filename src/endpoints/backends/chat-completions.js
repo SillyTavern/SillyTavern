@@ -1,11 +1,11 @@
 const express = require('express');
 const fetch = require('node-fetch').default;
-const Readable = require('stream').Readable;
 
 const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY, OPENROUTER_HEADERS } = require('../../constants');
 const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
-const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages, convertMistralMessages, convertCohereTools } = require('../../prompt-converters');
+const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages, convertMistralMessages, convertCohereTools, convertAI21Messages } = require('../../prompt-converters');
+const CohereStream = require('../../cohere-stream');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
 const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sentencepieceTokenizers, TEXT_COMPLETION_MODELS } = require('../tokenizers');
@@ -19,6 +19,7 @@ const API_GROQ = 'https://api.groq.com/openai/v1';
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 const API_01AI = 'https://api.01.ai/v1';
 const API_BLOCKENTROPY = 'https://api.blockentropy.ai/v1';
+const API_AI21 = 'https://api.ai21.com/studio/v1';
 
 /**
  * Applies a post-processing step to the generated messages.
@@ -40,52 +41,30 @@ function postProcessPrompt(messages, type, charName, userName) {
 /**
  * Ollama strikes back. Special boy #2's steaming routine.
  * Wrap this abomination into proper SSE stream, again.
- * @param {import('node-fetch').Response} jsonStream JSON stream
+ * @param {Response} jsonStream JSON stream
  * @param {import('express').Request} request Express request
  * @param {import('express').Response} response Express response
  * @returns {Promise<any>} Nothing valuable
  */
 async function parseCohereStream(jsonStream, request, response) {
     try {
-        let partialData = '';
-        jsonStream.body.on('data', (data) => {
-            const chunk = data.toString();
-            partialData += chunk;
-            while (true) {
-                let json;
-                try {
-                    json = JSON.parse(partialData);
-                } catch (e) {
-                    break;
-                }
-                if (json.message) {
-                    const message = json.message || 'Unknown error';
-                    const chunk = { error: { message: message } };
-                    response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-                    partialData = '';
-                    break;
-                } else if (json.event_type === 'text-generation') {
-                    const text = json.text || '';
-                    const chunk = { choices: [{ text }] };
-                    response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-                    partialData = '';
-                } else {
-                    partialData = '';
-                    break;
-                }
+        const stream = new CohereStream({ stream: jsonStream.body, eventShape: { type: 'json', messageTerminator: '\n' } });
+
+        for await (const json of stream.iterMessages()) {
+            if (json.message) {
+                const message = json.message || 'Unknown error';
+                const chunk = { error: { message: message } };
+                response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+            } else if (json.event_type === 'text-generation') {
+                const text = json.text || '';
+                const chunk = { choices: [{ text }] };
+                response.write(`data: ${JSON.stringify(chunk)}\n\n`);
             }
-        });
+        }
 
-        request.socket.on('close', function () {
-            if (jsonStream.body instanceof Readable) jsonStream.body.destroy();
-            response.end();
-        });
-
-        jsonStream.body.on('end', () => {
-            console.log('Streaming request finished');
-            response.write('data: [DONE]\n\n');
-            response.end();
-        });
+        console.log('Streaming request finished');
+        response.write('data: [DONE]\n\n');
+        response.end();
     } catch (error) {
         console.log('Error forwarding streaming response:', error);
         if (!response.headersSent) {
@@ -233,7 +212,7 @@ async function sendScaleRequest(request, response) {
 
         if (!generateResponse.ok) {
             console.log(`Scale API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
-            return response.status(generateResponse.status).send({ error: true });
+            return response.status(500).send({ error: true });
         }
 
         const generateResponseJson = await generateResponse.json();
@@ -413,6 +392,16 @@ async function sendAI21Request(request, response) {
     request.socket.on('close', function () {
         controller.abort();
     });
+    const convertedPrompt = convertAI21Messages(request.body.messages, request.body.char_name, request.body.user_name);
+    const body = {
+        messages: convertedPrompt,
+        model: request.body.model,
+        max_tokens: request.body.max_tokens,
+        temperature: request.body.temperature,
+        top_p: request.body.top_p,
+        stop: request.body.stop,
+        stream: request.body.stream,
+    };
     const options = {
         method: 'POST',
         headers: {
@@ -420,59 +409,35 @@ async function sendAI21Request(request, response) {
             'content-type': 'application/json',
             Authorization: `Bearer ${readSecret(request.user.directories, SECRET_KEYS.AI21)}`,
         },
-        body: JSON.stringify({
-            numResults: 1,
-            maxTokens: request.body.max_tokens,
-            minTokens: 0,
-            temperature: request.body.temperature,
-            topP: request.body.top_p,
-            stopSequences: request.body.stop_tokens,
-            topKReturn: request.body.top_k,
-            frequencyPenalty: {
-                scale: request.body.frequency_penalty * 100,
-                applyToWhitespaces: false,
-                applyToPunctuations: false,
-                applyToNumbers: false,
-                applyToStopwords: false,
-                applyToEmojis: false,
-            },
-            presencePenalty: {
-                scale: request.body.presence_penalty,
-                applyToWhitespaces: false,
-                applyToPunctuations: false,
-                applyToNumbers: false,
-                applyToStopwords: false,
-                applyToEmojis: false,
-            },
-            countPenalty: {
-                scale: request.body.count_pen,
-                applyToWhitespaces: false,
-                applyToPunctuations: false,
-                applyToNumbers: false,
-                applyToStopwords: false,
-                applyToEmojis: false,
-            },
-            prompt: request.body.messages,
-        }),
+        body: JSON.stringify(body),
         signal: controller.signal,
     };
 
-    fetch(`https://api.ai21.com/studio/v1/${request.body.model}/complete`, options)
-        .then(r => r.json())
-        .then(r => {
-            if (r.completions === undefined) {
-                console.log(r);
-            } else {
-                console.log(r.completions[0].data.text);
-            }
-            const reply = { choices: [{ 'message': { 'content': r.completions?.[0]?.data?.text } }] };
-            return response.send(reply);
-        })
-        .catch(err => {
-            console.error(err);
-            return response.send({ error: true });
-        });
+    console.log('AI21 request:', body);
 
+    try {
+        const generateResponse = await fetch(API_AI21 + '/chat/completions', options);
+        if (request.body.stream) {
+            forwardFetchResponse(generateResponse, response);
+        } else {
+            if (!generateResponse.ok) {
+                const errorText = await generateResponse.text();
+                console.log(`AI21 API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
+            }
+            const generateResponseJson = await generateResponse.json();
+            console.log('AI21 response:', generateResponseJson);
+            return response.send(generateResponseJson);
+        }
+    } catch (error) {
+        console.log('Error communicating with AI21 API: ', error);
+        if (!response.headersSent) {
+            response.send({ error: true });
+        } else {
+            response.end();
+        }
+    }
 }
 
 /**
@@ -531,10 +496,10 @@ async function sendMistralAIRequest(request, response) {
             forwardFetchResponse(generateResponse, response);
         } else {
             if (!generateResponse.ok) {
-                console.log(`MistralAI API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
-                // a 401 unauthorized response breaks the frontend auth, so return a 500 instead. prob a better way of dealing with this.
-                // 401s are already handled by the streaming processor and dont pop up an error toast, that should probably be fixed too.
-                return response.status(generateResponse.status === 401 ? 500 : generateResponse.status).send({ error: true });
+                const errorText = await generateResponse.text();
+                console.log(`MistralAI API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
             console.log('MistralAI response:', generateResponseJson);
@@ -573,7 +538,8 @@ async function sendCohereRequest(request, response) {
         const connectors = [];
         const tools = [];
 
-        if (request.body.websearch) {
+        const canDoWebSearch = !String(request.body.model).includes('c4ai-aya');
+        if (request.body.websearch && canDoWebSearch) {
             connectors.push({
                 id: 'web-search',
             });
@@ -607,6 +573,11 @@ async function sendCohereRequest(request, response) {
             search_queries_only: false,
         };
 
+        const canDoSafetyMode = String(request.body.model).endsWith('08-2024');
+        if (canDoSafetyMode) {
+            requestBody.safety_mode = 'NONE';
+        }
+
         console.log('Cohere request:', requestBody);
 
         const config = {
@@ -623,15 +594,15 @@ async function sendCohereRequest(request, response) {
         const apiUrl = API_COHERE + '/chat';
 
         if (request.body.stream) {
-            const stream = await fetch(apiUrl, config);
+            const stream = await global.fetch(apiUrl, config);
             parseCohereStream(stream, request, response);
         } else {
             const generateResponse = await fetch(apiUrl, config);
             if (!generateResponse.ok) {
-                console.log(`Cohere API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
-                // a 401 unauthorized response breaks the frontend auth, so return a 500 instead. prob a better way of dealing with this.
-                // 401s are already handled by the streaming processor and dont pop up an error toast, that should probably be fixed too.
-                return response.status(generateResponse.status === 401 ? 500 : generateResponse.status).send({ error: true });
+                const errorText = await generateResponse.text();
+                console.log(`Cohere API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
             console.log('Cohere response:', generateResponseJson);
@@ -994,6 +965,7 @@ router.post('/generate', jsonParser, function (request, response) {
         'model': request.body.model,
         'temperature': request.body.temperature,
         'max_tokens': request.body.max_tokens,
+        'max_completion_tokens': request.body.max_completion_tokens,
         'stream': request.body.stream,
         'presence_penalty': request.body.presence_penalty,
         'frequency_penalty': request.body.frequency_penalty,

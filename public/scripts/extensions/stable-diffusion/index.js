@@ -283,7 +283,6 @@ const defaultSettings = {
 
     // Pollinations settings
     pollinations_enhance: false,
-    pollinations_refine: false,
 
     // Visibility toggles
     wand_visible: false,
@@ -425,7 +424,6 @@ async function loadSettings() {
     $('#sd_novel_sm_dyn').prop('disabled', !extension_settings.sd.novel_sm);
     $('#sd_novel_decrisper').prop('checked', extension_settings.sd.novel_decrisper);
     $('#sd_pollinations_enhance').prop('checked', extension_settings.sd.pollinations_enhance);
-    $('#sd_pollinations_refine').prop('checked', extension_settings.sd.pollinations_refine);
     $('#sd_horde').prop('checked', extension_settings.sd.horde);
     $('#sd_horde_nsfw').prop('checked', extension_settings.sd.horde_nsfw);
     $('#sd_horde_karras').prop('checked', extension_settings.sd.horde_karras);
@@ -724,7 +722,7 @@ function onChatChanged() {
 }
 
 async function adjustElementScrollHeight() {
-    if (!$('.sd_settings').is(':visible')) {
+    if (CSS.supports('field-sizing', 'content') || !$('.sd_settings').is(':visible')) {
         return;
     }
 
@@ -737,17 +735,19 @@ async function adjustElementScrollHeight() {
 async function onCharacterPromptInput() {
     const key = getCharaFilename(this_chid);
     extension_settings.sd.character_prompts[key] = $('#sd_character_prompt').val();
-    await resetScrollHeight($(this));
     saveSettingsDebounced();
     writePromptFieldsDebounced(this_chid);
+    if (CSS.supports('field-sizing', 'content')) return;
+    await resetScrollHeight($(this));
 }
 
 async function onCharacterNegativePromptInput() {
     const key = getCharaFilename(this_chid);
     extension_settings.sd.character_negative_prompts[key] = $('#sd_character_negative_prompt').val();
-    await resetScrollHeight($(this));
     saveSettingsDebounced();
     writePromptFieldsDebounced(this_chid);
+    if (CSS.supports('field-sizing', 'content')) return;
+    await resetScrollHeight($(this));
 }
 
 function getCharacterPrefix() {
@@ -856,14 +856,16 @@ function onStepsInput() {
 
 async function onPromptPrefixInput() {
     extension_settings.sd.prompt_prefix = $('#sd_prompt_prefix').val();
-    await resetScrollHeight($(this));
     saveSettingsDebounced();
+    if (CSS.supports('field-sizing', 'content')) return;
+    await resetScrollHeight($(this));
 }
 
 async function onNegativePromptInput() {
     extension_settings.sd.negative_prompt = $('#sd_negative_prompt').val();
-    await resetScrollHeight($(this));
     saveSettingsDebounced();
+    if (CSS.supports('field-sizing', 'content')) return;
+    await resetScrollHeight($(this));
 }
 
 function onSamplerChange() {
@@ -1002,11 +1004,6 @@ function onNovelDecrisperInput() {
 
 function onPollinationsEnhanceInput() {
     extension_settings.sd.pollinations_enhance = !!$('#sd_pollinations_enhance').prop('checked');
-    saveSettingsDebounced();
-}
-
-function onPollinationsRefineInput() {
-    extension_settings.sd.pollinations_refine = !!$('#sd_pollinations_refine').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -1688,16 +1685,17 @@ async function loadStabilityModels() {
 }
 
 async function loadPollinationsModels() {
-    return [
-        {
-            value: 'flux',
-            text: 'FLUX.1 [schnell]',
-        },
-        {
-            value: 'turbo',
-            text: 'SDXL Turbo',
-        },
-    ];
+    const result = await fetch('/api/sd/pollinations/models', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return data;
+    }
+
+    return [];
 }
 
 async function loadTogetherAIModels() {
@@ -2735,7 +2733,6 @@ async function generatePollinationsImage(prompt, negativePrompt, signal) {
             width: extension_settings.sd.width,
             height: extension_settings.sd.height,
             enhance: extension_settings.sd.pollinations_enhance,
-            refine: extension_settings.sd.pollinations_refine,
             seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
         }),
     });
@@ -3752,7 +3749,7 @@ async function onImageSwiped({ message, element, direction }) {
             const generationType = message?.extra?.generationType ?? generationMode.FREE;
             const dimensions = setTypeSpecificDimensions(generationType);
             const originalSeed = extension_settings.sd.seed;
-            extension_settings.sd.seed = Math.round(Math.random() * Number.MAX_SAFE_INTEGER);
+            extension_settings.sd.seed = Math.round(Math.random() * (Math.pow(2, 32) - 1));
             let imagePath = '';
 
             try {
@@ -3882,7 +3879,6 @@ jQuery(async () => {
     $('#sd_novel_sm_dyn').on('input', onNovelSmDynInput);
     $('#sd_novel_decrisper').on('input', onNovelDecrisperInput);
     $('#sd_pollinations_enhance').on('input', onPollinationsEnhanceInput);
-    $('#sd_pollinations_refine').on('input', onPollinationsRefineInput);
     $('#sd_comfy_validate').on('click', validateComfyUrl);
     $('#sd_comfy_url').on('input', onComfyUrlInput);
     $('#sd_comfy_workflow').on('change', onComfyWorkflowChange);
@@ -3911,12 +3907,14 @@ jQuery(async () => {
     $('#sd_stability_style_preset').on('change', onStabilityStylePresetChange);
     $('#sd_huggingface_model_id').on('input', onHFModelInput);
 
-    $('.sd_settings .inline-drawer-toggle').on('click', function () {
-        initScrollHeight($('#sd_prompt_prefix'));
-        initScrollHeight($('#sd_negative_prompt'));
-        initScrollHeight($('#sd_character_prompt'));
-        initScrollHeight($('#sd_character_negative_prompt'));
-    });
+    if (!CSS.supports('field-sizing', 'content')) {
+        $('.sd_settings .inline-drawer-toggle').on('click', function () {
+            initScrollHeight($('#sd_prompt_prefix'));
+            initScrollHeight($('#sd_negative_prompt'));
+            initScrollHeight($('#sd_character_prompt'));
+            initScrollHeight($('#sd_character_negative_prompt'));
+        });
+    }
 
     for (const [key, value] of Object.entries(resolutionOptions)) {
         const option = document.createElement('option');

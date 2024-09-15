@@ -32,7 +32,7 @@
     "Streaming_desc": "生成時逐位顯示回應。當此功能關閉時，回應將在完成後一次顯示。",
     "context size(tokens)": "上下文大小(符記數)",
     "unlocked": "解鎖",
-    "Only enable this if your model supports context sizes greater than 4096 tokens": "僅在您的模型支援超過4096個符記的上下文大小時啟用此功能",
+    "Only enable this if your model supports context sizes greater than 8192 tokens": "僅在您的模型支援超過8192個符記的上下文大小時啟用此功能",
     "Max prompt cost:": "最多提示詞費用",
     "Display the response bit by bit as it is generated.": "生成時逐位顯示回應。",
     "When this is off, responses will be displayed all at once when they are complete.": "關閉時，回應將在完成後一次性顯示。",

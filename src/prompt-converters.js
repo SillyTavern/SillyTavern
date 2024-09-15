@@ -267,10 +267,13 @@ function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '
         'gemini-1.5-flash',
         'gemini-1.5-flash-latest',
         'gemini-1.5-flash-001',
+        'gemini-1.5-flash-exp-0827',
+        'gemini-1.5-flash-8b-exp-0827',
         'gemini-1.5-pro',
         'gemini-1.5-pro-latest',
         'gemini-1.5-pro-001',
         'gemini-1.5-pro-exp-0801',
+        'gemini-1.5-pro-exp-0827',
         'gemini-1.0-pro-vision-latest',
         'gemini-pro-vision',
     ];
@@ -332,10 +335,12 @@ function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '
                 if (part.type === 'text') {
                     parts.push({ text: part.text });
                 } else if (part.type === 'image_url' && isMultimodal) {
+                    const mimeType = part.image_url.url.split(';')[0].split(':')[1];
+                    const base64Data = part.image_url.url.split(',')[1];
                     parts.push({
                         inlineData: {
-                            mimeType: 'image/png',
-                            data: part.image_url.url,
+                            mimeType: mimeType,
+                            data: base64Data,
                         },
                     });
                     hasImage = true;
@@ -365,6 +370,78 @@ function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '
     }
 
     return { contents: contents, system_instruction: system_instruction };
+}
+
+/**
+ * Convert AI21 prompt. Classic: system message squash, user/assistant message merge.
+ * @param {object[]} messages Array of messages
+ * @param {string} charName Character name
+ * @param {string} userName User name
+ */
+function convertAI21Messages(messages, charName = '', userName = '') {
+    if (!Array.isArray(messages)) {
+        return [];
+    }
+
+    // Collect all the system messages up until the first instance of a non-system message, and then remove them from the messages array.
+    let i = 0, systemPrompt = '';
+
+    for (i = 0; i < messages.length; i++) {
+        if (messages[i].role !== 'system') {
+            break;
+        }
+        // Append example names if not already done by the frontend (e.g. for group chats).
+        if (userName && messages[i].name === 'example_user') {
+            if (!messages[i].content.startsWith(`${userName}: `)) {
+                messages[i].content = `${userName}: ${messages[i].content}`;
+            }
+        }
+        if (charName && messages[i].name === 'example_assistant') {
+            if (!messages[i].content.startsWith(`${charName}: `)) {
+                messages[i].content = `${charName}: ${messages[i].content}`;
+            }
+        }
+        systemPrompt += `${messages[i].content}\n\n`;
+    }
+
+    messages.splice(0, i);
+
+    // Prevent erroring out if the messages array is empty.
+    if (messages.length === 0) {
+        messages.unshift({
+            role: 'user',
+            content: '[Start a new chat]',
+        });
+    }
+
+    if (systemPrompt) {
+        messages.unshift({
+            role: 'system',
+            content: systemPrompt.trim(),
+        });
+    }
+
+    // Doesn't support completion names, so prepend if not already done by the frontend (e.g. for group chats).
+    messages.forEach(msg => {
+        if ('name' in msg) {
+            if (msg.role !== 'system' && !msg.content.startsWith(`${msg.name}: `)) {
+                msg.content = `${msg.name}: ${msg.content}`;
+            }
+            delete msg.name;
+        }
+    });
+
+    // Since the messaging endpoint only supports alternating turns, we have to merge messages with the same role if they follow each other
+    let mergedMessages = [];
+    messages.forEach((message) => {
+        if (mergedMessages.length > 0 && mergedMessages[mergedMessages.length - 1].role === message.role) {
+            mergedMessages[mergedMessages.length - 1].content += '\n\n' + message.content;
+        } else {
+            mergedMessages.push(message);
+        }
+    });
+
+    return mergedMessages;
 }
 
 /**
@@ -520,4 +597,5 @@ module.exports = {
     convertCohereMessages,
     convertMistralMessages,
     convertCohereTools,
+    convertAI21Messages,
 };

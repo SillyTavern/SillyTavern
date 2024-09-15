@@ -6,6 +6,7 @@ const { readAllChunks, extractFileFromZipBuffer, forwardFetchResponse } = requir
 const { jsonParser } = require('../express-common');
 
 const API_NOVELAI = 'https://api.novelai.net';
+const TEXT_NOVELAI = 'https://text.novelai.net';
 const IMAGE_NOVELAI = 'https://image.novelai.net';
 
 // Ban bracket generation, plus defaults
@@ -155,7 +156,7 @@ router.post('/generate', jsonParser, async function (req, res) {
             'repetition_penalty_slope': req.body.repetition_penalty_slope,
             'repetition_penalty_frequency': req.body.repetition_penalty_frequency,
             'repetition_penalty_presence': req.body.repetition_penalty_presence,
-            'repetition_penalty_whitelist': isNewModel ? repPenaltyAllowList : null,
+            'repetition_penalty_whitelist': isNewModel ? repPenaltyAllowList.flat() : null,
             'top_a': req.body.top_a,
             'top_p': req.body.top_p,
             'top_k': req.body.top_k,
@@ -178,9 +179,7 @@ router.post('/generate', jsonParser, async function (req, res) {
     };
 
     // Tells the model to stop generation at '>'
-    if ('theme_textadventure' === req.body.prefix &&
-        (true === req.body.model.includes('clio') ||
-         true === req.body.model.includes('kayra'))) {
+    if ('theme_textadventure' === req.body.prefix && isNewModel) {
         data.parameters.eos_token_id = 49405;
     }
 
@@ -193,7 +192,8 @@ router.post('/generate', jsonParser, async function (req, res) {
     };
 
     try {
-        const url = req.body.streaming ? `${API_NOVELAI}/ai/generate-stream` : `${API_NOVELAI}/ai/generate`;
+        const baseURL = req.body.model.includes('kayra') ? TEXT_NOVELAI : API_NOVELAI;
+        const url = req.body.streaming ? `${baseURL}/ai/generate-stream` : `${baseURL}/ai/generate`;
         const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
         if (req.body.streaming) {

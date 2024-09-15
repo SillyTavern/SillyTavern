@@ -12,6 +12,7 @@ let dreamGenModels = [];
 let vllmModels = [];
 let aphroditeModels = [];
 let featherlessModels = [];
+let tabbyModels = [];
 export let openRouterModels = [];
 
 /**
@@ -63,6 +64,30 @@ export async function loadOllamaModels(data) {
         option.text = model.name;
         option.selected = model.id === textgen_settings.ollama_model;
         $('#ollama_model').append(option);
+    }
+}
+
+export async function loadTabbyModels(data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid Tabby models data', data);
+        return;
+    }
+
+    tabbyModels = data;
+    tabbyModels.sort((a, b) => a.id.localeCompare(b.id));
+    tabbyModels.unshift({ id: '' });
+
+    if (!tabbyModels.find(x => x.id === textgen_settings.tabby_model)) {
+        textgen_settings.tabby_model = tabbyModels[0]?.id || '';
+    }
+
+    $('#tabby_model').empty();
+    for (const model of tabbyModels) {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.tabby_model;
+        $('#tabby_model').append(option);
     }
 }
 
@@ -307,6 +332,12 @@ function onDreamGenModelSelect() {
 function onOllamaModelSelect() {
     const modelId = String($('#ollama_model').val());
     textgen_settings.ollama_model = modelId;
+    $('#api_button_textgenerationwebui').trigger('click');
+}
+
+function onTabbyModelSelect() {
+    const modelId = String($('#tabby_model').val());
+    textgen_settings.tabby_model = modelId;
     $('#api_button_textgenerationwebui').trigger('click');
 }
 
@@ -590,6 +621,9 @@ function calculateOpenRouterCost() {
 export function getCurrentOpenRouterModelTokenizer() {
     const modelId = textgen_settings.openrouter_model;
     const model = openRouterModels.find(x => x.id === modelId);
+    if (modelId?.includes('jamba')) {
+        return tokenizers.JAMBA;
+    }
     switch (model?.architecture?.tokenizer) {
         case 'Llama2':
             return tokenizers.LLAMA;
@@ -603,6 +637,10 @@ export function getCurrentOpenRouterModelTokenizer() {
             return tokenizers.GEMMA;
         case 'Claude':
             return tokenizers.CLAUDE;
+        case 'Cohere':
+            return tokenizers.COMMAND_R;
+        case 'Qwen':
+            return tokenizers.QWEN2;
         default:
             return tokenizers.OPENAI;
     }
@@ -634,6 +672,7 @@ export function initTextGenModels() {
     $('#aphrodite_model').on('change', onAphroditeModelSelect);
     $('#featherless_model').on('change', onFeatherlessModelSelect);
     $('#tabby_download_model').on('click', downloadTabbyModel);
+    $('#tabby_model').on('change', onTabbyModelSelect);
 
     const providersSelect = $('.openrouter_providers');
     for (const provider of OPENROUTER_PROVIDERS) {
@@ -663,6 +702,13 @@ export function initTextGenModels() {
             searchInputPlaceholder: 'Search models...',
             searchInputCssClass: 'text_pole',
             width: '100%',
+        });
+        $('#tabby_model').select2({
+            placeholder: '[Currently loaded]',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            allowClear: true,
         });
         $('#model_infermaticai_select').select2({
             placeholder: 'Select a model',

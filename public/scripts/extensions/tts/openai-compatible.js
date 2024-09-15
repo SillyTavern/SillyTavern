@@ -86,14 +86,14 @@ class OpenAICompatibleTtsProvider {
                     result: POPUP_RESULT.NEGATIVE,
                     action: async () => {
                         await writeSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS, '');
-                        $('#openai_compatible_tts_key').toggleClass('success', secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
+                        $('#openai_compatible_tts_key').toggleClass('success', !!secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
                         toastr.success('API Key removed');
                         await this.onRefreshClick();
                     },
                 }],
             });
 
-            if (key == false || key == '') {
+            if (!key) {
                 return;
             }
 

@@ -1,4 +1,5 @@
 import { SlashCommandClosure } from './SlashCommandClosure.js';
+import { convertValueType } from '../utils.js';
 
 export class SlashCommandScope {
     /**@type {string[]}*/ variableNames = [];
@@ -55,7 +56,7 @@ export class SlashCommandScope {
         if (this.existsVariableInScope(key)) throw new SlashCommandScopeVariableExistsError(`Variable named "${key}" already exists.`);
         this.variables[key] = value;
     }
-    setVariable(key, value, index = null) {
+    setVariable(key, value, index = null, type = null) {
         if (this.existsVariableInScope(key)) {
             if (index !== null && index !== undefined) {
                 let v = this.variables[key];
@@ -63,13 +64,13 @@ export class SlashCommandScope {
                     v = JSON.parse(v);
                     const numIndex = Number(index);
                     if (Number.isNaN(numIndex)) {
-                        v[index] = value;
+                        v[index] = convertValueType(value, type);
                     } else {
-                        v[numIndex] = value;
+                        v[numIndex] = convertValueType(value, type);
                     }
                     v = JSON.stringify(v);
                 } catch {
-                    v[index] = value;
+                    v[index] = convertValueType(value, type);
                 }
                 this.variables[key] = v;
             } else {
@@ -78,7 +79,7 @@ export class SlashCommandScope {
             return value;
         }
         if (this.parent) {
-            return this.parent.setVariable(key, value, index);
+            return this.parent.setVariable(key, value, index, type);
         }
         throw new SlashCommandScopeVariableNotFoundError(`No such variable: "${key}"`);
     }

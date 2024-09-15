@@ -360,6 +360,10 @@
     margin-right: 2px;
 }
 
+.flexAuto {
+    flex: auto;
+}
+
 .flex0 {
     flex: 0;
 }
@@ -492,6 +496,10 @@
 input:disabled,
 textarea:disabled {
     cursor: not-allowed;
+    filter: brightness(0.5);
+}
+
+#AdvancedFormatting .disabled {
     filter: brightness(0.5);
 }
 

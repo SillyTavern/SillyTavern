@@ -123,6 +123,11 @@ const extension_settings = {
         /** @type {string[]} */
         custom: [],
     },
+    connectionManager: {
+        selectedProfile: '',
+        /** @type {import('./extensions/connection-manager/index.js').ConnectionProfile[]} */
+        profiles: [],
+    },
     dice: {},
     /** @type {import('./char-data.js').RegexScriptData[]} */
     regex: [],
@@ -822,16 +827,17 @@ export async function installExtension(url) {
     const response = await request.json();
     toastr.success(`Extension "${response.display_name}" by ${response.author} (version ${response.version}) has been installed successfully!`, 'Extension installation successful');
     console.debug(`Extension "${response.display_name}" has been installed successfully at ${response.extensionPath}`);
-    await loadExtensionSettings({}, false);
-    eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+    await loadExtensionSettings({}, false, false);
+    await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
 }
 
 /**
  * Loads extension settings from the app settings.
  * @param {object} settings App Settings
  * @param {boolean} versionChanged Is this a version change?
+ * @param {boolean} enableAutoUpdate Enable auto-update
  */
-async function loadExtensionSettings(settings, versionChanged) {
+async function loadExtensionSettings(settings, versionChanged, enableAutoUpdate) {
     if (settings.extension_settings) {
         Object.assign(extension_settings, settings.extension_settings);
     }
@@ -842,11 +848,11 @@ async function loadExtensionSettings(settings, versionChanged) {
     $('#extensions_notify_updates').prop('checked', extension_settings.notifyUpdates);
 
     // Activate offline extensions
-    eventSource.emit(event_types.EXTENSIONS_FIRST_LOAD);
+    await eventSource.emit(event_types.EXTENSIONS_FIRST_LOAD);
     extensionNames = await discoverExtensions();
     manifests = await getManifests(extensionNames);
 
-    if (versionChanged) {
+    if (versionChanged && enableAutoUpdate) {
         await autoUpdateExtensions(false);
     }
 
