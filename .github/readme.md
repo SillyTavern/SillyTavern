@@ -86,6 +86,7 @@ To get a general idea on how to define character cards, see the default characte
 * Rich UI customization options: theme colors, background images, custom CSS, and more
 * User personas: let the AI know a bit about you for greater immersion
 * Built-in RAG support: add documents to your chats for the AI to reference
+* Extensive chat commands subsystem and own [scripting engine](https://docs.sillytavern.app/usage/st-script/)
 
 ## Extensions
 
