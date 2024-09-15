@@ -4,9 +4,9 @@ English | [中文](readme-zh_cn.md) | [日本語](readme-ja_jp.md) | [Русск
 
 ![][cover]
 
-Mobile-friendly layout, support 17+ LLM APIs (KoboldAI/CPP, Horde, NovelAI, Ooba, Tabby, OpenAI, OpenRouter, Claude, Mistral and more), Visual Novel Mode, Automatic1111 & ComfyUI API integration, TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need + ability to install third-party extensions.
+SillyTavern provides a mobile-friendly layout, support for 17+ LLM APIs (KoboldAI/CPP, Horde, NovelAI, Ooba, Tabby, OpenAI, OpenRouter, Claude, Mistral and more), Visual Novel Mode, Automatic1111 & ComfyUI API image generation integration, TTS, WorldInfo (lorebooks), customizable UI, auto-translate, more prompt options than you'd ever want or need, and endless growth potential via third-party extensions.
 
-## Important news
+## Important News
 
 1. We have created a [Documentation website](https://docs.sillytavern.app/) to answer most of your questions and help you get started.
 
@@ -22,13 +22,13 @@ Beginning in February 2023 as a fork of TavernAI 1.2.8, SillyTavern quickly beca
 
 With now more than 100 contributors and almost 2 year of independent development, SillyTavern is considered an entirely different program from the original TavernAI.
 
-## Our vision
+## Our Vision
 
 **Brought to you by a dedicated community of LLM enthusiasts, SillyTavern will always be free and open-source.**
 
-1. SillyTavern is not a plug-and-play solution and has a steep learning curve. Our priority is to give maximum utility and control over your LLM prompts.
-2. We do not provide any online or hosted services. Your data is yours to keep.
-3. We do not accept donations for the project or seek any form of monetization.
+1. We aim to empower users with as much utility and control over their LLM prompts as possible. The steep learning curve is part of the fun!
+2. We do not provide any online or hosted services, nor programatically track any user data.
+3. SillyTavern is a passion project, and will always be free and open sourced.
 
 ## Screenshots
 
@@ -39,29 +39,29 @@ With now more than 100 contributors and almost 2 year of independent development
 
 SillyTavern is being developed using a two-branch system to ensure a smooth experience for all users.
 
-* release -🌟 **Recommended for most users.** This is the most stable and recommended branch, updated only when major releases are pushed. It's suitable for the majority of users.
-* staging - ⚠️ **Not recommended for casual use.** This branch has the latest features, but be cautious as it may break at any time. Only for power users and enthusiasts.
+* `release` -🌟 **Recommended for most users.** This is the most stable and recommended branch, updated only when major releases are pushed. It's suitable for the majority of users. Typically updated once a month.
+* `staging` - ⚠️ **Not recommended for casual use.** This branch has the latest features, but be cautious as it may break at any time. Only for power users and enthusiasts. Updates several times daily.
 
 If you're not familiar with using the git CLI or don't understand what a branch is, don't worry! The release branch is always the preferable option for you.
 
 ### What do I need other than SillyTavern?
 
-Since SillyTavern is only an interface, you will need access to an LLM backend to provide inference. You can use KoboldAI Horde for instant out-of-the-box chatting. Aside from that, we support many other local and cloud-based LLM backends: OpenAPI API, KoboldAI, Tabby, and many more. You can read more about our supported APIs in [the FAQ](https://docs.sillytavern.app/usage/faq/).
+Since SillyTavern is only an interface, you will need access to an LLM backend to provide inference. You can use KoboldAI Horde for instant out-of-the-box chatting. Aside from that, we support many other local and cloud-based LLM backends: OpenAI-compatible API, KoboldAI, Tabby, and many more. You can read more about our supported APIs in [the FAQ](https://docs.sillytavern.app/usage/faq/).
 
-**Suggestions (not affiliated):**
+**Suggested Backends (not affiliated):**
 
 * [AI Horde](https://aihorde.net/) - use models hosted by volunteers. Requires no further setup
 * [KoboldCpp](https://github.com/LostRuins/koboldcpp) - a community's favorite for running GGUF models locally
-* [tabbyAPI](https://github.com/theroyallab/tabbyAPI) - a popular locally hosted exl2 inference API
-* [OpenRouter](https://openrouter.ai) - a single API for many cloud providers (OpenAI, Claude, Meta Llama, etc.)
+* [tabbyAPI](https://github.com/theroyallab/tabbyAPI) - a popular, lightweight, locally-hosted exl2 inference API
+* [OpenRouter](https://openrouter.ai) - a single API for many cloud providers (OpenAI, Claude, Meta Llama, etc.) as well as popular community models.
 
 ### Do I need a powerful PC to run SillyTavern?
 
-The hardware requirements are minimal: it will run on anything that can run NodeJS 18+. If you intend to do LLM inference on your local machine, we recommend a 3000-series NVIDIA graphics card with at least 6GB of VRAM.
+The hardware requirements are minimal: it will run on anything that can run NodeJS 18+. If you intend to do LLM inference on your local machine, we recommend a 3000-series NVIDIA graphics card with at least 6GB of VRAM. Check your backend's documentation for more details.
 
 ## Questions or suggestions?
 
-### We now have a community Discord server
+### Discord server
 
 | [![][discord-shield-badge]][discord-link] | [Join our Discord community!](https://discord.gg/sillytavern) Get support, share favorite characters and prompts. |
 | :---------------------------------------- | :----------------------------------------------------------------------------------------------------------------- |
@@ -75,15 +75,15 @@ Or get in touch with the developers directly:
 ### I like your project! How do I contribute?
 
 1. Send pull requests. Learn how to contribute: [CONTRIBUTING.md](../CONTRIBUTING.md)
-2. Send feature suggestions and issue reports using established templates
-3. Read the readme file and the documentation before asking anything
+2. Send feature suggestions and issue reports using the provided templates.
+3. Read this entire readme file and the check the documentation website first, to avoid sending duplicate issues.
 
 ## Key Features
 
 * Advanced text generation settings with many community-made presets
 * World Info support: create rich lore or save tokens on your character card
-* Group chats: multi-bot rooms for characters to talk to you or each other
-* Rich UI customization options: theme colors, background images, and more
+* Group chats: multi-bot rooms for characters to talk to you and/or each other
+* Rich UI customization options: theme colors, background images, custom CSS, and more
 * User personas: let the AI know a bit about you for greater immersion
 * Built-in RAG support: add documents to your chats for the AI to reference
 
