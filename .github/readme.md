@@ -338,21 +338,12 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Affero General Public License for more details.**
 
-* [TavernAI](https://github.com/TavernAI/TavernAI) 1.2.8 Base by Humi: MIT
-* Portions of CncAnon's TavernAITurbo mod: Unknown license
-* kingbri's various commits and suggestions (<https://github.com/bdashore3>)
-* city_unit's extensions and various QoL features (<https://github.com/city-unit>)
-* StefanDanielSchwarz's various commits and bug reports (<https://github.com/StefanDanielSchwarz>)
+* [TavernAI](https://github.com/TavernAI/TavernAI) 1.2.8 by Humi: MIT License
+* Portions of CncAnon's TavernAITurbo mod used with permission
 * Visual Novel Mode inspired by the work of PepperTaco (<https://github.com/peppertaco/Tavern/>)
 * Noto Sans font by Google (OFL license)
 * Icon theme by Font Awesome <https://fontawesome.com> (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
-* Linux startup script by AlpinDale
-* Thanks paniphons for providing a FAQ document
-* 10K Discord Users Celebratory Background by @kallmeflocc
-* Default content (characters and lore books) provided by @OtisAlejandro, @RossAscends and @kallmeflocc
-* Korean translation by @doloroushyeonse
-* k_euler_a support for Horde by <https://github.com/Teashrock>
-* Chinese translation by [@XXpE3](https://github.com/XXpE3), 中文 ISSUES 可以联系 @XXpE3
+* Default content by @OtisAlejandro (Seraphina character and lorebook) and @kallmeflocc (10K Discord Users Celebratory Background)
 * Docker guide by [@mrguymiah](https://github.com/mrguymiah) and [@Bronya-Rand](https://github.com/Bronya-Rand)
 
 ## Contributors
