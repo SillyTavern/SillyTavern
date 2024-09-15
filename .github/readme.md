@@ -263,10 +263,12 @@ You will need two mandatory directory mappings and a port mapping to allow Silly
 
 > Note that 8000 is a default listening port. Don't forget to use an appropriate port if you change it in the config.
 
-## 📱 Mobile Android - Installing via Termux
+## 📱 Installing via Termux on Android OS
 
 > \[!NOTE]
-> **SillyTavern can be run natively on Android phones using Termux. Please refer to this guide by ArroganceComplex#2659:**
+> **SillyTavern can be run natively on Android device using Termux, but we do not provide official support for this use case.**
+
+> **Please refer to this guide by ArroganceComplex#2659:**
 >
 > * <https://rentry.org/STAI-Termux>
 
