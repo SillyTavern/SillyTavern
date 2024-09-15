@@ -294,29 +294,29 @@ Start.bat --port 8000 --listen false
 
 ### Supported arguments
 
-| Option                  | Description                                                                                          | Type     | Default                      |
-|-------------------------|------------------------------------------------------------------------------------------------------|----------|------------------------------|
-| `--version`             | Show version number                                                                                  | boolean  |                              |
-| `--enableIPv6`          | Enables IPv6.                                                                                        | boolean  | false                        |
-| `--enableIPv4`          | Enables IPv4.                                                                                        | boolean  | true                         |
-| `--port`                | Sets the port under which SillyTavern will run. If not provided falls back to yaml config 'port'.    | number   | 8000                         |
-| `--dnsPreferIPv6`       | Prefers IPv6 for dns. If not provided falls back to yaml config 'preferIPv6'.                        | boolean  | false                        |
-| `--autorun`             | Automatically launch SillyTavern in the browser. If not provided falls back to yaml config 'autorun'.| boolean  | false                        |
-| `--autorunHostname`     | The autorun hostname, probably best left on 'auto'.                                                  | string   | null                         |
-| `--autorunPortOverride` | Overrides the port for autorun.                                                                      | string   | null                         |
-| `--listen`              | SillyTavern is listening on all network interfaces. If not provided falls back to yaml config 'listen'.| boolean  | false                        |
-| `--corsProxy`           | Enables CORS proxy. If not provided falls back to yaml config 'enableCorsProxy'.                     | boolean  | false                        |
-| `--disableCsrf`         | Disables CSRF protection                                                                             | boolean  | null                         |
-| `--ssl`                 | Enables SSL                                                                                          | boolean  | false                        |
-| `--certPath`            | Path to your certificate file.                                                                       | string   | "certs/cert.pem"             |
-| `--keyPath`             | Path to your private key file.                                                                       | string   | "certs/privkey.pem"          |
-| `--whitelist`           | Enables whitelist mode                                                                               | boolean  | null                         |
-| `--dataRoot`            | Root directory for data storage                                                                      | string   | null                         |
-| `--avoidLocalhost`      | Avoids using 'localhost' for autorun in auto mode.                                                   | boolean  | null                         |
-| `--basicAuthMode`       | Enables basic authentication                                                                         | boolean  | null                         |
-| `--requestProxyEnabled` | Enables a use of proxy for outgoing requests                                                         | boolean  | null                         |
-| `--requestProxyUrl`     | Request proxy URL (HTTP or SOCKS protocols)                                                          | string   | null                         |
-| `--requestProxyBypass`  | Request proxy bypass list (space separated list of hosts)                                            | array    | null                         |
+| Option                  | Description                                                                                          | Type     |
+|-------------------------|------------------------------------------------------------------------------------------------------|----------|
+| `--version`             | Show version number                                                                                  | boolean  |
+| `--enableIPv6`          | Enables IPv6.                                                                                        | boolean  |
+| `--enableIPv4`          | Enables IPv4.                                                                                        | boolean  |
+| `--port`                | Sets the port under which SillyTavern will run. If not provided falls back to yaml config 'port'.    | number   |
+| `--dnsPreferIPv6`       | Prefers IPv6 for dns. If not provided falls back to yaml config 'preferIPv6'.                        | boolean  |
+| `--autorun`             | Automatically launch SillyTavern in the browser. If not provided falls back to yaml config 'autorun'.| boolean  |
+| `--autorunHostname`     | The autorun hostname, probably best left on 'auto'.                                                  | string   |
+| `--autorunPortOverride` | Overrides the port for autorun.                                                                      | string   |
+| `--listen`              | SillyTavern is listening on all network interfaces. If not provided falls back to yaml config 'listen'.| boolean  |
+| `--corsProxy`           | Enables CORS proxy. If not provided falls back to yaml config 'enableCorsProxy'.                     | boolean  |
+| `--disableCsrf`         | Disables CSRF protection                                                                             | boolean  |
+| `--ssl`                 | Enables SSL                                                                                          | boolean  |
+| `--certPath`            | Path to your certificate file.                                                                       | string   |
+| `--keyPath`             | Path to your private key file.                                                                       | string   |
+| `--whitelist`           | Enables whitelist mode                                                                               | boolean  |
+| `--dataRoot`            | Root directory for data storage                                                                      | string   |
+| `--avoidLocalhost`      | Avoids using 'localhost' for autorun in auto mode.                                                   | boolean  |
+| `--basicAuthMode`       | Enables basic authentication                                                                         | boolean  |
+| `--requestProxyEnabled` | Enables a use of proxy for outgoing requests                                                         | boolean  |
+| `--requestProxyUrl`     | Request proxy URL (HTTP or SOCKS protocols)                                                          | string   |
+| `--requestProxyBypass`  | Request proxy bypass list (space separated list of hosts)                                            | array    |
 
 ## Remote connections
 
