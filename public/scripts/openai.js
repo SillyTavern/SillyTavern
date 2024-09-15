@@ -541,7 +541,7 @@ function setOpenAIMessages(chat) {
             case character_names_behavior.NONE:
                 break;
             case character_names_behavior.DEFAULT:
-                if (selected_group || (chat[j].force_avatar && chat[j].name !== name1 && chat[j].extra?.type !== system_message_types.NARRATOR)) {
+                if ((selected_group && chat[j].name !== name1) || (chat[j].force_avatar && chat[j].name !== name1 && chat[j].extra?.type !== system_message_types.NARRATOR)) {
                     content = `${chat[j].name}: ${content}`;
                 }
                 break;

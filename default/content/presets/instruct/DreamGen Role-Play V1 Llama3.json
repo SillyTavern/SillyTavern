@@ -10,8 +10,7 @@
     "separator_sequence": "",
     "wrap": false,
     "macro": true,
-    "names": false,
-    "names_force_groups": false,
+    "names_behavior": "none",
     "activation_regex": "",
     "skip_examples": false,
     "name": "DreamGen Role-Play V1 Llama3"

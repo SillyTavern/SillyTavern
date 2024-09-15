@@ -32,6 +32,7 @@ import {
 import {
     instruct_presets,
     loadInstructMode,
+    names_behavior_types,
     selectInstructPreset,
 } from './instruct-mode.js';
 
@@ -224,8 +225,7 @@ let power_user = {
         stop_sequence: '',
         wrap: true,
         macro: true,
-        names: false,
-        names_force_groups: true,
+        names_behavior: names_behavior_types.FORCE,
         activation_regex: '',
         bind_to_context: false,
         user_alignment_message: '',

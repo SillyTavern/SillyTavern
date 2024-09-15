@@ -14,6 +14,12 @@ import { regexFromString, resetScrollHeight } from './utils.js';
  */
 export let instruct_presets = [];
 
+export const names_behavior_types = {
+    NONE: 'none',
+    FORCE: 'force',
+    ALWAYS: 'always',
+};
+
 const controls = [
     { id: 'instruct_enabled', property: 'enabled', isCheckbox: true },
     { id: 'instruct_wrap', property: 'wrap', isCheckbox: true },
@@ -30,8 +36,6 @@ const controls = [
     { id: 'instruct_user_alignment_message', property: 'user_alignment_message', isCheckbox: false },
     { id: 'instruct_stop_sequence', property: 'stop_sequence', isCheckbox: false },
     { id: 'instruct_names', property: 'names', isCheckbox: true },
-    { id: 'instruct_macro', property: 'macro', isCheckbox: true },
-    { id: 'instruct_names_force_groups', property: 'names_force_groups', isCheckbox: true },
     { id: 'instruct_first_output_sequence', property: 'first_output_sequence', isCheckbox: false },
     { id: 'instruct_last_output_sequence', property: 'last_output_sequence', isCheckbox: false },
     { id: 'instruct_first_input_sequence', property: 'first_input_sequence', isCheckbox: false },
@@ -39,6 +43,7 @@ const controls = [
     { id: 'instruct_activation_regex', property: 'activation_regex', isCheckbox: false },
     { id: 'instruct_bind_to_context', property: 'bind_to_context', isCheckbox: true },
     { id: 'instruct_skip_examples', property: 'skip_examples', isCheckbox: true },
+    { id: 'instruct_names_behavior input[name="names_behavior"]', property: 'names_behavior', isCheckbox: false },
     { id: 'instruct_system_same_as_user', property: 'system_same_as_user', isCheckbox: true, trigger: true },
 ];
 
@@ -54,6 +59,15 @@ function migrateInstructModeSettings(settings) {
         delete settings.separator_sequence;
     }
 
+    // names, names_force_groups => names_behavior
+    if (settings.names !== undefined) {
+        settings.names_behavior = settings.names
+            ? names_behavior_types.ALWAYS
+            : (settings.names_force_groups ? names_behavior_types.FORCE : names_behavior_types.NONE);
+        delete settings.names;
+        delete settings.names_force_groups;
+    }
+
     const defaults = {
         input_suffix: '',
         system_sequence: '',
@@ -65,6 +79,7 @@ function migrateInstructModeSettings(settings) {
         names_force_groups: true,
         skip_examples: false,
         system_same_as_user: false,
+        names_behavior: names_behavior_types.FORCE,
     };
 
     for (let key in defaults) {
@@ -94,6 +109,9 @@ export async function loadInstructMode(data) {
 
         if (control.isCheckbox) {
             $element.prop('checked', power_user.instruct[control.property]);
+        } else if (control.property === 'names_behavior') {
+            const behavior = power_user.instruct[control.property];
+            $element.filter(`[value="${behavior}"]`).prop('checked', true);
         } else {
             $element.val(power_user.instruct[control.property]);
         }
@@ -311,9 +329,9 @@ export const force_output_sequence = {
  * @returns {string} Formatted instruct mode chat message.
  */
 export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2, forceOutputSequence) {
-    let includeNames = isNarrator ? false : power_user.instruct.names;
+    let includeNames = isNarrator ? false : power_user.instruct.names_behavior === names_behavior_types.ALWAYS;
 
-    if (!isNarrator && power_user.instruct.names_force_groups && (selected_group || forceAvatar)) {
+    if (!isNarrator && power_user.instruct.names_behavior === names_behavior_types.FORCE && ((selected_group && name !== name1) || (forceAvatar && name !== name1))) {
         includeNames = true;
     }
 
@@ -416,7 +434,7 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
         return mesExamplesArray.map(x => x.replace(/<START>\n/i, blockHeading));
     }
 
-    const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
+    const includeNames = power_user.instruct.names_behavior === names_behavior_types.ALWAYS || (!!selected_group && power_user.instruct.names_behavior === names_behavior_types.FORCE);
 
     let inputPrefix = power_user.instruct.input_sequence || '';
     let outputPrefix = power_user.instruct.output_sequence || '';
@@ -460,7 +478,7 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
 
         for (const example of blockExamples) {
             // If force group/persona names is set, we should override the include names for the user placeholder
-            const includeThisName = includeNames || (power_user.instruct.names_force_groups && example.name == 'example_user');
+            const includeThisName = includeNames || (power_user.instruct.names_behavior === names_behavior_types.FORCE && example.name == 'example_user');
 
             const prefix = example.name == 'example_user' ? inputPrefix : outputPrefix;
             const suffix = example.name == 'example_user' ? inputSuffix : outputSuffix;
@@ -490,7 +508,7 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
  * @returns {string} Formatted instruct mode last prompt line.
  */
 export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2, isQuiet, isQuietToLoud) {
-    const includeNames = name && (power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups)) && !(isQuiet && !isQuietToLoud);
+    const includeNames = name && (power_user.instruct.names_behavior === names_behavior_types.ALWAYS || (!!selected_group && power_user.instruct.names_behavior === names_behavior_types.FORCE)) && !(isQuiet && !isQuietToLoud);
 
     function getSequence() {
         // User impersonation prompt
@@ -668,6 +686,9 @@ jQuery(() => {
 
                 if (control.isCheckbox) {
                     $element.prop('checked', power_user.instruct[control.property]).trigger('input');
+                } else if (control.property === 'names_behavior') {
+                    const behavior = power_user.instruct[control.property];
+                    $element.filter(`[value="${behavior}"]`).prop('checked', true).trigger('input');
                 } else {
                     $element.val(power_user.instruct[control.property]);
                     $element.trigger('input');
