@@ -3696,6 +3696,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         }
     }
 
+    /** @type {scan_state} */
     let scanState = scan_state.INITIAL;
     let token_budget_overflowed = false;
     let count = 0;
@@ -3719,6 +3720,14 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
     if (sortedEntries.length === 0) {
         return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], EMEntries: [], allActivatedEntries: new Set() };
     }
+
+    /** @type {number[]} Represents the delay levels for entries that are delayed until recursion */
+    const availableRecursionDelayLevels = [...new Set(sortedEntries
+        .filter(entry => entry.delayUntilRecursion)
+        .map(entry => entry.delayUntilRecursion === true ? 1 : entry.delayUntilRecursion)
+    )].sort((a, b) => a - b);
+    // Already preset with the first level
+    let currentRecursionDelayLevel = availableRecursionDelayLevels.shift() ?? 0;
 
     console.debug(`[WI] --- SEARCHING ENTRIES (on ${sortedEntries.length} entries) ---`);
 
@@ -3808,6 +3817,11 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             // Only use checks for recursion flags if the scan step was activated by recursion
             if (scanState !== scan_state.RECURSION && entry.delayUntilRecursion && !isSticky) {
                 log('suppressed by delay until recursion');
+                continue;
+            }
+
+            if (scanState === scan_state.RECURSION && entry.delayUntilRecursion && entry.delayUntilRecursion > currentRecursionDelayLevel && !isSticky) {
+                log('suppressed by delay until recursion and having a higher recursion level');
                 continue;
             }
 
@@ -4037,6 +4051,11 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             } else {
                 console.debug(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), but reached on of depth. Stopping`);
             }
+        }
+
+        // If the scan is done, but we still have open "delay until recursion" levels, we should continue with the next one
+        if (nextScanState === scan_state.NONE && availableRecursionDelayLevels.length) {
+            currentRecursionDelayLevel = availableRecursionDelayLevels.shift();
         }
 
         // Final check if we should really continue scan, and extend the current WI recurse buffer
