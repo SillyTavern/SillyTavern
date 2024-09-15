@@ -355,9 +355,9 @@ GNU Affero General Public License for more details.**
 * Chinese translation by [@XXpE3](https://github.com/XXpE3), 中文 ISSUES 可以联系 @XXpE3
 * Docker guide by [@mrguymiah](https://github.com/mrguymiah) and [@Bronya-Rand](https://github.com/Bronya-Rand)
 
-## Top Contributors
+## Contributors
 
-![Top Contributors](./CONTRIBUTORS.svg)
+![Contributors](https://contrib.rocks/image?repo=SillyTavern/SillyTavern)
 
 <!-- LINK GROUP -->
 [cover]: https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4
