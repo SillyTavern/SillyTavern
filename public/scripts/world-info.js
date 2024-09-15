@@ -2953,12 +2953,34 @@ async function getWorldEntry(name, data, entry) {
     delayUntilRecursionInput.data('uid', entry.uid);
     delayUntilRecursionInput.on('input', async function () {
         const uid = $(this).data('uid');
-        const value = $(this).prop('checked');
+        const toggled = $(this).prop('checked');
+
+        // If the value contains a number, we'll take that one (set by the level input), otherwise we can use true/false switch
+        const value = toggled ? data.entries[uid].delayUntilRecursion || true : false;
+
         data.entries[uid].delayUntilRecursion = value;
         setWIOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
         await saveWorldInfo(name, data);
     });
     delayUntilRecursionInput.prop('checked', entry.delayUntilRecursion).trigger('input');
+
+    // delay until recursion level
+    const delayUntilRecursionLevelInput = template.find('input[name="delayUntilRecursionLevel"]');
+    delayUntilRecursionLevelInput.data('uid', entry.uid);
+    delayUntilRecursionLevelInput.on('input', async function () {
+        const uid = $(this).data('uid');
+        const content = $(this).val();
+        const value = content === '' ? (typeof data.entries[uid].delayUntilRecursion === 'boolean' ? data.entries[uid].delayUntilRecursion : true)
+            : content === 1 ? true
+                : !isNaN(Number(content)) ? Number(content)
+                    : false;
+
+        data.entries[uid].delayUntilRecursion = value;
+        setWIOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
+        await saveWorldInfo(name, data);
+    });
+    // No need to retrigger inpout event, we'll just set the curret current value. It was edited/saved above already
+    delayUntilRecursionLevelInput.val(['number', 'string'].includes(typeof entry.delayUntilRecursion) ? entry.delayUntilRecursion : '').trigger('input');
 
     // duplicate button
     const duplicateButton = template.find('.duplicate_entry_button');
@@ -3257,7 +3279,7 @@ export const newWorldInfoEntryDefinition = {
     disable: { default: false, type: 'boolean' },
     excludeRecursion: { default: false, type: 'boolean' },
     preventRecursion: { default: false, type: 'boolean' },
-    delayUntilRecursion: { default: false, type: 'boolean' },
+    delayUntilRecursion: { default: 0, type: 'number' },
     probability: { default: 100, type: 'number' },
     useProbability: { default: true, type: 'boolean' },
     depth: { default: DEFAULT_DEPTH, type: 'number' },
