@@ -124,20 +124,6 @@ Tutorials on how to use them can be found in the [Docs](https://docs.sillytavern
   7. Once everything is cloned, double-click `Start.bat` to make NodeJS install its requirements.
   8. The server will then start, and SillyTavern will pop up in your browser.
 
-### Installing via SillyTavern Launcher
-
-1. On your keyboard: press **`WINDOWS + R`** to open Run dialog box. Then, run the following command to install git:
-
-```shell
-cmd /c winget install -e --id Git.Git
-```
-
-2. On your keyboard: press **`WINDOWS + E`** to open File Explorer, then navigate to the folder where you want to install the launcher. Once in the desired folder, type `cmd` into the address bar and press enter. Then, run the following command:
-
-```shell
-git clone https://github.com/SillyTavern/SillyTavern-Launcher.git && cd SillyTavern-Launcher && start installer.bat
-```
-
 ### Installing via GitHub Desktop
 
 (This allows git usage **only** in GitHub Desktop, if you want to use `git` on the command line too, you also need to install [Git for Windows](https://gitforwindows.org/))
@@ -168,9 +154,25 @@ For MacOS / Linux all of these will be done in a Terminal.
 * `./start.sh`
 * `bash start.sh`
 
-### Installing via SillyTavern Launcher
+## Installing via SillyTavern Launcher
 
-#### For Linux users
+SillyTavern Launcher is a setup wizard that will help you get setup with many options, including installing a backend for local inference.
+
+### For Windows
+
+1. On your keyboard: press **`WINDOWS + R`** to open Run dialog box. Then, run the following command to install git:
+
+```shell
+cmd /c winget install -e --id Git.Git
+```
+
+2. On your keyboard: press **`WINDOWS + E`** to open File Explorer, then navigate to the folder where you want to install the launcher. Once in the desired folder, type `cmd` into the address bar and press enter. Then, run the following command:
+
+```shell
+git clone https://github.com/SillyTavern/SillyTavern-Launcher.git && cd SillyTavern-Launcher && start installer.bat
+```
+
+### For Linux users
 
 1. Open your favorite terminal and install git
 2. Git clone the Sillytavern-Launcher with:
@@ -191,7 +193,7 @@ chmod +x install.sh && ./install.sh
 chmod +x launcher.sh && ./launcher.sh
 ```
 
-#### For Mac users
+### For Mac users
 
 1. Open a terminal and install brew with:
 
