@@ -5,7 +5,6 @@
     "windowai_model": "",
     "openrouter_model": "OR_Website",
     "openrouter_use_fallback": false,
-    "openrouter_force_instruct": false,
     "openrouter_group_models": false,
     "openrouter_sort_models": "alphabetically",
     "ai21_model": "jamba-1.5-large",
