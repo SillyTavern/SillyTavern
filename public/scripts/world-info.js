@@ -2976,7 +2976,7 @@ async function getWorldEntry(name, data, entry) {
     delayUntilRecursionInput.prop('checked', entry.delayUntilRecursion).trigger('input');
 
     // prevent recursion
-    const recursionForNotLogicInput = template.find('input[name="prevent_recursion"]');
+    const recursionForNotLogicInput = template.find('input[name="recursion_for_not_logic"]');
     recursionForNotLogicInput.data('uid', entry.uid);
     recursionForNotLogicInput.on('input', async function () {
         const uid = $(this).data('uid');
