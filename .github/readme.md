@@ -70,7 +70,7 @@ Or get in touch with the developers directly:
 
 ## Character Cards
 
-SillyTavern is built around the concept of "character cards". Character card is a collection of prompts that sets the behavior of the LLM and is required to have persistent conversations, similar to [ChatGPT's GPTs](https://openai.com/index/introducing-gpts/) or [Poe's bots](https://poe.com/about). It can be anything: an abstract scenario, an assistant tailored for a specific task, a famous personality or a fictional character.
+SillyTavern is built around the concept of "character cards". Character card is a collection of prompts that sets the behavior of the LLM and is required to have persistent conversations, similar to ChatGPT's GPTs or Poe's bots. It can be anything: an abstract scenario, an assistant tailored for a specific task, a famous personality or a fictional character.
 
 None of the card fields except the name is required. To start a neutral conversation with the language model, create an empty card simply called "Assistant". For a more themed chat, you can provide the language model with various background details, such as a behavior patterns and the conversation starters.
 
