@@ -187,9 +187,16 @@ export function initDefaultSlashCommands() {
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'avatar',
-                description: 'Optional character avatar override (Can be either avatar filename or just the character name to pull the avatar from)',
+                description: 'Character avatar override (Can be either avatar filename or just the character name to pull the avatar from)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumProvider: commonEnumProviders.characters('character'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'tag',
+                description: 'Supply one or more tags to filter down to the correct character for the provided name, if multiple characters have the same name. (does not apply to the avatar argument)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.tagsForChar('all'),
+                acceptsMultiple: true,
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'compact',
@@ -3109,6 +3116,44 @@ async function setNarratorName(_, text) {
     return '';
 }
 
+/**
+ * Finds a character by name, with optional filtering and precedence for avatars
+ * @param {string} name - The name to search for
+ * @param {object} [options={}] - The options for the search
+ * @param {boolean} [options.allowAvatar=false] - Whether to allow searching by avatar
+ * @param {boolean} [options.insensitive=true] - Whether the search should be case insensitive
+ * @param {string[]?} [options.filteredByTags=null] - Tags to filter characters by
+ * @param {any?} [options.preferCurrentChar=null] - The current character to prefer
+ * @returns {any?} - The found character or null if not found
+ */
+export function findCharByName(name, { allowAvatar = false, insensitive = true, filteredByTags = null, preferCurrentChar = null } = {}) {
+    const matches = (char) => (allowAvatar && char.avatar === name) || insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name;
+
+    // If we have a current char and prefer it, return that if it matches - unless tags are provided, they have precedence
+    if (preferCurrentChar && !filteredByTags && matches(preferCurrentChar)) {
+        return preferCurrentChar;
+    }
+
+    // Filter characters by tags if provided
+    let filteredCharacters = characters;
+    if (filteredByTags) {
+        filteredCharacters = characters.filter(char => filteredByTags.every(tag => char.tags.includes(tag)));
+    }
+
+    // If allowAvatar is true, search by avatar first
+    if (allowAvatar) {
+        const characterByAvatar = filteredCharacters.find(char => char.avatar === name);
+        if (characterByAvatar) {
+            return characterByAvatar;
+        }
+    }
+
+    // Search for a matching character by name
+    let character = filteredCharacters.find(matches);
+
+    return character;
+}
+
 export async function sendMessageAs(args, text) {
     if (!text) {
         return '';
@@ -3150,24 +3195,21 @@ export async function sendMessageAs(args, text) {
     const chatCharacter = this_chid !== undefined ? characters[this_chid] : null;
     const isNeutralCharacter = !chatCharacter && name2 === neutralCharacterName && name === neutralCharacterName;
 
-    const character = equalsIgnoreCaseAndAccents(chatCharacter.name, name) ? chatCharacter : characters.find(x => equalsIgnoreCaseAndAccents(x.name, name));
+    const character = findCharByName(name, { filteredByTags: args?.tags, preferCurrentChar: chatCharacter });
 
-    let avatarChar = character;
-    if (args.avatar) {
-        avatarChar = characters.find(x => x.avatar == args.avatar) ?? characters.find(x => equalsIgnoreCaseAndAccents(x.name, args.avatar));
-        if (!avatarChar) {
-            toastr.warning(`Character for avatar ${args.avatar} not found`);
-            return '';
-        }
+    const avatarCharacter = args.avatar ? findCharByName(args.avatar) : character;
+    if (args.avatar && !avatarCharacter) {
+        toastr.warning(`Character for avatar ${args.avatar} not found`);
+        return '';
     }
 
     let force_avatar, original_avatar;
-    if (chatCharacter === avatarChar || isNeutralCharacter) {
+    if (chatCharacter === avatarCharacter || isNeutralCharacter) {
         // If the targeted character is the currently selected one in a solo chat, we don't need to force any avatars
     }
-    else if (avatarChar && avatarChar.avatar !== 'none') {
-        force_avatar = getThumbnailUrl('avatar', avatarChar.avatar);
-        original_avatar = avatarChar.avatar;
+    else if (avatarCharacter && avatarCharacter.avatar !== 'none') {
+        force_avatar = getThumbnailUrl('avatar', avatarCharacter.avatar);
+        original_avatar = avatarCharacter.avatar;
     }
     else {
         force_avatar = default_avatar;

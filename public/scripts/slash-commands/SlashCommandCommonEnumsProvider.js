@@ -193,7 +193,7 @@ export const commonEnumProviders = {
         if (charName instanceof SlashCommandClosure) throw new Error('Argument \'name\' does not support closures');
         const key = searchCharByName(substituteParams(charName), { suppressLogging: true });
         const assigned = key ? getTagsList(key) : [];
-        return tags.filter(it => !key || mode === 'all' || mode === 'existing' && assigned.includes(it) || mode === 'not-existing' && !assigned.includes(it))
+        return tags.filter(it => mode === 'all' || mode === 'existing' && assigned.includes(it) || mode === 'not-existing' && !assigned.includes(it))
             .map(tag => new SlashCommandEnumValue(tag.name, null, enumTypes.command, enumIcons.tag));
     },
 
