@@ -156,7 +156,7 @@ For MacOS / Linux all of these will be done in a Terminal.
 
 ## Installing via SillyTavern Launcher
 
-SillyTavern Launcher is a setup wizard that will help you get setup with many options, including installing a backend for local inference.
+SillyTavern Launcher is a installation wizard that will help you get setup with many options, including installing a backend for local inference.
 
 ### For Windows users
 
