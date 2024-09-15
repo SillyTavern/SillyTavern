@@ -6,14 +6,6 @@ English | [中文](readme-zh_cn.md) | [日本語](readme-ja_jp.md) | [Русск
 
 SillyTavern provides a single unified interface for 17+ LLM APIs (KoboldAI/CPP, Horde, NovelAI, Ooba, Tabby, OpenAI, OpenRouter, Claude, Mistral and more), a mobile-friendly layout, Visual Novel Mode, Automatic1111 & ComfyUI API image generation integration, TTS, WorldInfo (lorebooks), customizable UI, auto-translate, more prompt options than you'd ever want or need, and endless growth potential via third-party extensions.
 
-## Important News
-
-1. We have created a [Documentation website](https://docs.sillytavern.app/) to answer most of your questions and help you get started.
-
-2. Missing extensions after the update? Since the 1.10.6 release version, most of the previously built-in extensions have been converted to downloadable add-ons. You can download them via the built-in "Download Extensions and Assets" menu in the extensions panel (stacked blocks icon in the top bar).
-
-3. Unsupported platform: android arm LEtime-web. 32-bit Android requires an external dependency that can't be installed with npm. Use the following command to install it: `pkg install esbuild`. Then run the usual installation steps.
-
 ## What is SillyTavern?
 
 SillyTavern is a locally installed user interface that allows you to interact with text generation LLMs, image generation engines, and TTS voice models.
@@ -21,6 +13,14 @@ SillyTavern is a locally installed user interface that allows you to interact wi
 Beginning in February 2023 as a fork of TavernAI 1.2.8, SillyTavern quickly became a leader and trendsetter for LLM frontend software.
 
 With now more than 100 contributors and almost 2 year of independent development, SillyTavern is considered an entirely different program from the original TavernAI.
+
+## Important News
+
+1. We have created a [Documentation website](https://docs.sillytavern.app/) to answer most of your questions and help you get started.
+
+2. Missing extensions after the update? Since the 1.10.6 release version, most of the previously built-in extensions have been converted to downloadable add-ons. You can download them via the built-in "Download Extensions and Assets" menu in the extensions panel (stacked blocks icon in the top bar).
+
+3. Unsupported platform: android arm LEtime-web. 32-bit Android requires an external dependency that can't be installed with npm. Use the following command to install it: `pkg install esbuild`. Then run the usual installation steps.
 
 ## Our Vision
 
