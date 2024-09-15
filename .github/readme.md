@@ -158,7 +158,7 @@ For MacOS / Linux all of these will be done in a Terminal.
 
 SillyTavern Launcher is a setup wizard that will help you get setup with many options, including installing a backend for local inference.
 
-### For Windows
+### For Windows users
 
 1. On your keyboard: press **`WINDOWS + R`** to open Run dialog box. Then, run the following command to install git:
 
