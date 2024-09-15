@@ -347,7 +347,7 @@ GNU Affero General Public License for more details.**
 * Default content by @OtisAlejandro (Seraphina character and lorebook) and @kallmeflocc (10K Discord Users Celebratory Background)
 * Docker guide by [@mrguymiah](https://github.com/mrguymiah) and [@Bronya-Rand](https://github.com/Bronya-Rand)
 
-## Contributors
+## Top Contributors
 
 ![Contributors](https://contrib.rocks/image?repo=SillyTavern/SillyTavern)
 
