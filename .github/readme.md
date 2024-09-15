@@ -61,7 +61,7 @@ Or get in touch with the developers directly:
 
 1. Send pull requests. Learn how to contribute: [CONTRIBUTING.md](../CONTRIBUTING.md)
 2. Send feature suggestions and issue reports using the provided templates.
-3. Read this entire readme file and the check the documentation website first, to avoid sending duplicate issues.
+3. Read this entire readme file and check the documentation website first, to avoid sending duplicate issues.
 
 ## Screenshots
 
@@ -87,7 +87,7 @@ SillyTavern has extensibility support.
 * Stable Diffusion/FLUX/DALL-E image generation
 * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
 * Web Search capabilities for adding additional real world context to your prompts
-* Many more available to download from the "Download Extensions & Assets" menu.
+* Many more are available to download from the "Download Extensions & Assets" menu.
 
 Tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/).
 
@@ -148,7 +148,7 @@ For MacOS / Linux all of these will be done in a Terminal.
 
 ## ⚡ Installing via SillyTavern Launcher
 
-SillyTavern Launcher is a installation wizard that will help you get setup with many options, including installing a backend for local inference.
+SillyTavern Launcher is an installation wizard that will help you get setup with many options, including installing a backend for local inference.
 
 ### For Windows users
 
@@ -328,8 +328,9 @@ You may also want to configure SillyTavern user profiles with (optional) passwor
 
 ## Performance issues?
 
-1. Disable Blur Effect and enable Reduced Motion on the User Settings panel (UI Theme toggles category).
+1. Disable the Blur Effect and enable Reduced Motion on the User Settings panel (UI Theme toggles category).
 2. If using response streaming, set the streaming FPS to a lower value (10-15 FPS is recommended).
+3. Make sure the browser is enabled to use GPU acceleration for rendering.
 
 ## License and credits
 
