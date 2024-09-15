@@ -349,7 +349,7 @@ GNU Affero General Public License for more details.**
 
 ## Top Contributors
 
-![Contributors](https://contrib.rocks/image?repo=SillyTavern/SillyTavern)
+[![Contributors](https://contrib.rocks/image?repo=SillyTavern/SillyTavern)](https://github.com/SillyTavern/SillyTavern/graphs/contributors)
 
 <!-- LINK GROUP -->
 [cover]: https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4
