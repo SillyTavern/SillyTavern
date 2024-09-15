@@ -168,6 +168,20 @@ class WorldInfoBuffer {
     }
 
     /**
+     * Clone the buffer
+     * @returns {WorldInfoBuffer} The cloned buffer
+     */
+    clone() {
+        let result = new WorldInfoBuffer([]);
+        result.#depthBuffer = this.#depthBuffer.slice();
+        result.#recurseBuffer = this.#recurseBuffer.slice();
+        result.#injectBuffer = this.#injectBuffer.slice();
+        result.#skew = this.#skew;
+        result.#startDepth = this.#startDepth;
+        return result;
+    }
+
+    /**
      * Populates the buffer with the given messages.
      * @param {string[]} messages Array of messages to add to the buffer
      * @returns {void} Hardly seen nothing down here
@@ -2028,6 +2042,7 @@ export const originalWIDataKeyMap = {
     'excludeRecursion': 'extensions.exclude_recursion',
     'preventRecursion': 'extensions.prevent_recursion',
     'delayUntilRecursion': 'extensions.delay_until_recursion',
+    'recursionForNotLogic': 'extensions.recursion_for_not_logic',
     'selectiveLogic': 'selectiveLogic',
     'comment': 'comment',
     'constant': 'constant',
@@ -2960,6 +2975,18 @@ async function getWorldEntry(name, data, entry) {
     });
     delayUntilRecursionInput.prop('checked', entry.delayUntilRecursion).trigger('input');
 
+    // prevent recursion
+    const recursionForNotLogicInput = template.find('input[name="prevent_recursion"]');
+    recursionForNotLogicInput.data('uid', entry.uid);
+    recursionForNotLogicInput.on('input', async function () {
+        const uid = $(this).data('uid');
+        const value = $(this).prop('checked');
+        data.entries[uid].recursionForNotLogic = value;
+        setWIOriginalDataValue(data, uid, 'extensions.recursion_for_not_logic', data.entries[uid].recursionForNotLogic);
+        await saveWorldInfo(name, data);
+    });
+    recursionForNotLogicInput.prop('checked', entry.recursionForNotLogic).trigger('input');
+
     // duplicate button
     const duplicateButton = template.find('.duplicate_entry_button');
     duplicateButton.data('uid', entry.uid);
@@ -3258,6 +3285,7 @@ export const newWorldInfoEntryDefinition = {
     excludeRecursion: { default: false, type: 'boolean' },
     preventRecursion: { default: false, type: 'boolean' },
     delayUntilRecursion: { default: false, type: 'boolean' },
+    recursionForNotLogic: { default: false, type: 'boolean' },
     probability: { default: 100, type: 'number' },
     useProbability: { default: true, type: 'boolean' },
     depth: { default: DEFAULT_DEPTH, type: 'number' },
@@ -3679,7 +3707,7 @@ function parseDecorators(content) {
  */
 export async function checkWorldInfo(chat, maxContext, isDryRun) {
     const context = getContext();
-    const buffer = new WorldInfoBuffer(chat);
+    let buffer = new WorldInfoBuffer(chat);
 
     console.debug(`[WI] --- START WI SCAN (on ${chat.length} messages) ---`);
 
@@ -3720,6 +3748,9 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], EMEntries: [], allActivatedEntries: new Set() };
     }
 
+    // Clone the buffer to avoid modifying the original
+    const oriBuffer = buffer.clone();
+
     console.debug(`[WI] --- SEARCHING ENTRIES (on ${sortedEntries.length} entries) ---`);
 
     while (scanState) {
@@ -3752,7 +3783,10 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             }
 
             // Already processed, considered and then skipped entries should still be skipped
-            if (failedProbabilityChecks.has(entry) || allActivatedEntries.has(entry)) {
+            if (failedProbabilityChecks.has(entry)) {
+                continue;
+            }
+            if (!entry.recursionForNotLogic && allActivatedEntries.has(entry)) {
                 continue;
             }
 
@@ -3924,8 +3958,13 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             const matched = matchSecondaryKeys();
             if (!matched) {
                 log('skipped. Secondary keywords not satisfied', entry.keysecondary);
+                if (entry.recursionForNotLogic) {
+                    log('removed from activated WIs because recursionForNotLogic is true');
+                    allActivatedEntries.delete(entry);
+                }
                 continue;
             }
+            if (allActivatedEntries.has(entry)) continue;
 
             // Success logging was already done inside the function, so just add the entry
             activatedNow.add(entry);
@@ -3980,8 +4019,8 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             }
 
             // Substitute macros inline, for both this checking and also future processing
-            entry.content = substituteParams(entry.content);
-            newContent += `${entry.content}\n`;
+            entry.processedContent ??= substituteParams(entry.content);
+            newContent += `${entry.processedContent}\n`;
 
             if ((textToScanTokens + (await getTokenCountAsync(newContent))) >= budget) {
                 if (world_info_overflow_alert) {
@@ -4042,10 +4081,10 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         // Final check if we should really continue scan, and extend the current WI recurse buffer
         scanState = nextScanState;
         if (scanState) {
-            const text = successfulNewEntriesForRecursion
-                .map(x => x.content).join('\n');
-            buffer.addRecurse(text);
-            allActivatedText = (text + '\n' + allActivatedText);
+            let allActivatedArray = [...allActivatedEntries.values()]
+            allActivatedText = allActivatedArray.map(x => x.processedContent).join('\n');
+            buffer = oriBuffer.clone()
+            buffer.addRecurse(allActivatedArray.filter(x => x.preventRecursion !== true).map(x => x.processedContent).join('\n'));
         }
     }
 
@@ -4063,7 +4102,9 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
     // TODO (kingbri): Change to use WI Anchor positioning instead of separate top/bottom arrays
     [...allActivatedEntries].sort(sortFn).forEach((entry) => {
         const regexDepth = entry.position === world_info_position.atDepth ? (entry.depth ?? DEFAULT_DEPTH) : null;
-        const content = getRegexedString(entry.content, regex_placement.WORLD_INFO, { depth: regexDepth, isMarkdown: false, isPrompt: true });
+        const content = substituteParams(
+            getRegexedString(entry.processedContent, regex_placement.WORLD_INFO, { depth: regexDepth, isMarkdown: false, isPrompt: true })
+        );
 
         if (!content) {
             console.debug(`[WI] Entry ${entry.uid}`, 'skipped adding to prompt due to empty content', entry);
@@ -4072,10 +4113,10 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
 
         switch (entry.position) {
             case world_info_position.before:
-                WIBeforeEntries.unshift(substituteParams(content));
+                WIBeforeEntries.unshift(content);
                 break;
             case world_info_position.after:
-                WIAfterEntries.unshift(substituteParams(content));
+                WIAfterEntries.unshift(content);
                 break;
             case world_info_position.EMTop:
                 EMEntries.unshift(
@@ -4110,6 +4151,8 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
                 break;
         }
     });
+
+    for (const entry of sortedEntries) delete entry.processedContent;
 
     const worldInfoBefore = WIBeforeEntries.length ? WIBeforeEntries.join('\n') : '';
     const worldInfoAfter = WIAfterEntries.length ? WIAfterEntries.join('\n') : '';
@@ -4477,6 +4520,7 @@ function convertCharacterBook(characterBook) {
             excludeRecursion: entry.extensions?.exclude_recursion ?? false,
             preventRecursion: entry.extensions?.prevent_recursion ?? false,
             delayUntilRecursion: entry.extensions?.delay_until_recursion ?? false,
+            recursionForNotLogic: entry.extensions?.recursion_for_not_logic ?? false,
             disable: !entry.enabled,
             addMemo: entry.comment ? true : false,
             displayIndex: entry.extensions?.display_index ?? index,

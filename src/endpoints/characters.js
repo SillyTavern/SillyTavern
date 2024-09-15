@@ -479,6 +479,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 group_weight: entry.groupWeight ?? null,
                 prevent_recursion: entry.preventRecursion ?? false,
                 delay_until_recursion: entry.delayUntilRecursion ?? false,
+                recursion_for_not_logic: entry.recursionForNotLogic ?? false,
                 scan_depth: entry.scanDepth ?? null,
                 match_whole_words: entry.matchWholeWords ?? null,
                 use_group_scoring: entry.useGroupScoring ?? false,
