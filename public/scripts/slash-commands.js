@@ -3138,11 +3138,11 @@ export async function sendMessageAs(args, text) {
     const isSystem = bias && !removeMacros(mesText).length;
     const compact = isTrueBoolean(args?.compact);
 
-    const character = characters.find(x => x.avatar === name) ?? characters.find(x => x.name === name);
-    let force_avatar, original_avatar;
-
     const chatCharacter = this_chid !== undefined ? characters[this_chid] : null;
     const isNeutralCharacter = !chatCharacter && name2 === neutralCharacterName && name === neutralCharacterName;
+
+    const character = chatCharacter.name === name ? chatCharacter : characters.find(x => x.name === name);
+    let force_avatar, original_avatar;
 
     if (chatCharacter === character || isNeutralCharacter) {
         // If the targeted character is the currently selected one in a solo chat, we don't need to force any avatars
