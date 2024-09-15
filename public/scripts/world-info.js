@@ -4055,6 +4055,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
 
         // If the scan is done, but we still have open "delay until recursion" levels, we should continue with the next one
         if (nextScanState === scan_state.NONE && availableRecursionDelayLevels.length) {
+            nextScanState = scan_state.RECURSION;
             currentRecursionDelayLevel = availableRecursionDelayLevels.shift();
         }
 
