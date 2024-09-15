@@ -32,7 +32,7 @@
     "Streaming_desc": "Поступово відображати відповідь по мірі її створення",
     "context size(tokens)": "Контекст (токени)",
     "unlocked": "Розблоковано",
-    "Only enable this if your model supports context sizes greater than 4096 tokens": "Увімкніть це лише в разі підтримки моделлю розмірів контексту більше 4096 токенів",
+    "Only enable this if your model supports context sizes greater than 8192 tokens": "Увімкніть це лише в разі підтримки моделлю розмірів контексту більше 8192 токенів",
     "Max prompt cost:": "Максимальна оперативна вартість:",
     "Display the response bit by bit as it is generated.": "Показувати відповідь по бітах по мірі її генерації.",
     "When this is off, responses will be displayed all at once when they are complete.": "Коли це вимкнено, відповіді будуть відображатися разом, коли вони будуть завершені.",

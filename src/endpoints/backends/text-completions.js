@@ -137,6 +137,7 @@ router.post('/status', jsonParser, async function (request, response) {
         }
 
         const modelsReply = await fetch(url, args);
+        const isPossiblyLmStudio = modelsReply.headers.get('x-powered-by') === 'Express';
 
         if (!modelsReply.ok) {
             console.log('Models endpoint is offline.');
@@ -174,7 +175,7 @@ router.post('/status', jsonParser, async function (request, response) {
         // Set result to the first model ID
         result = modelIds[0] || 'Valid';
 
-        if (apiType === TEXTGEN_TYPES.OOBA) {
+        if (apiType === TEXTGEN_TYPES.OOBA && !isPossiblyLmStudio) {
             try {
                 const modelInfoUrl = baseUrl + '/v1/internal/model/info';
                 const modelInfoReply = await fetch(modelInfoUrl, args);

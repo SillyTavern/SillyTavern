@@ -32,7 +32,7 @@
     "Streaming_desc": "Mostra la risposta pezzo per pezzo man mano che viene generata",
     "context size(tokens)": "Dimensione del contesto (token)",
     "unlocked": "Sbloccato",
-    "Only enable this if your model supports context sizes greater than 4096 tokens": "Abilita solo se il tuo modello supporta dimensioni del contesto superiori a 4096 token",
+    "Only enable this if your model supports context sizes greater than 8192 tokens": "Abilita solo se il tuo modello supporta dimensioni del contesto superiori a 8192 token",
     "Max prompt cost:": "Costo massimo immediato:",
     "Display the response bit by bit as it is generated.": "Visualizza la risposta pezzo per pezzo mentre viene generata.",
     "When this is off, responses will be displayed all at once when they are complete.": "Quando questo è disattivato, le risposte verranno visualizzate tutte in una volta quando sono complete.",
