@@ -55,7 +55,7 @@ import { autoSelectPersona, retriggerFirstMessageOnEmptyChat, setPersonaLockStat
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer } from './tokenizers.js';
-import { debounce, delay, isFalseBoolean, isTrueBoolean, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
+import { debounce, delay, equalsIgnoreCaseAndAccents, isFalseBoolean, isTrueBoolean, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { background_settings } from './backgrounds.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
@@ -3141,7 +3141,7 @@ export async function sendMessageAs(args, text) {
     const chatCharacter = this_chid !== undefined ? characters[this_chid] : null;
     const isNeutralCharacter = !chatCharacter && name2 === neutralCharacterName && name === neutralCharacterName;
 
-    const character = chatCharacter.name === name ? chatCharacter : characters.find(x => x.name === name);
+    const character = equalsIgnoreCaseAndAccents(chatCharacter.name, name) ? chatCharacter : characters.find(x => equalsIgnoreCaseAndAccents(x.name, name));
     let force_avatar, original_avatar;
 
     if (chatCharacter === character || isNeutralCharacter) {
@@ -3157,7 +3157,7 @@ export async function sendMessageAs(args, text) {
     }
 
     const message = {
-        name: name,
+        name: character?.name || name,
         is_user: false,
         is_system: isSystem,
         send_date: getMessageTimeStamp(),
