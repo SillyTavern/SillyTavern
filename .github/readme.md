@@ -14,7 +14,7 @@ SillyTavern provides a mobile-friendly layout, support for 17+ LLM APIs (KoboldA
 
 3. Unsupported platform: android arm LEtime-web. 32-bit Android requires an external dependency that can't be installed with npm. Use the following command to install it: `pkg install esbuild`. Then run the usual installation steps.
 
-### What is SillyTavern?
+## What is SillyTavern?
 
 SillyTavern is a locally installed user interface that allows you to interact with text generation LLMs, image generation engines, and TTS voice models.
 
@@ -33,7 +33,7 @@ With now more than 100 contributors and almost 2 year of independent development
 <img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/e902c7a2-45a6-4415-97aa-c59c597669c1">
 <img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/f8a79c47-4fe9-4564-9e4a-bf247ed1c961">
 
-### Branches
+## Branches
 
 SillyTavern is being developed using a two-branch system to ensure a smooth experience for all users.
 
@@ -42,7 +42,7 @@ SillyTavern is being developed using a two-branch system to ensure a smooth expe
 
 If you're not familiar with using the git CLI or don't understand what a branch is, don't worry! The release branch is always the preferable option for you.
 
-### What do I need other than SillyTavern?
+## What do I need other than SillyTavern?
 
 Since SillyTavern is only an interface, you will need access to an LLM backend to provide inference. You can use KoboldAI Horde for instant out-of-the-box chatting. Aside from that, we support many other local and cloud-based LLM backends: OpenAI-compatible API, KoboldAI, Tabby, and many more. You can read more about our supported APIs in [the FAQ](https://docs.sillytavern.app/usage/faq/).
 
@@ -53,7 +53,7 @@ Since SillyTavern is only an interface, you will need access to an LLM backend t
 * [tabbyAPI](https://github.com/theroyallab/tabbyAPI) - a popular, lightweight, locally-hosted exl2 inference API
 * [OpenRouter](https://openrouter.ai) - a single API for many cloud providers (OpenAI, Claude, Meta Llama, etc.) as well as popular community models.
 
-### Do I need a powerful PC to run SillyTavern?
+## Do I need a powerful PC to run SillyTavern?
 
 The hardware requirements are minimal: it will run on anything that can run NodeJS 18+. If you intend to do LLM inference on your local machine, we recommend a 3000-series NVIDIA graphics card with at least 6GB of VRAM. Check your backend's documentation for more details.
 
@@ -322,9 +322,7 @@ Start.bat --port 8000 --listen false
 
 ## Remote connections
 
-Most often this is for people who want to use SillyTavern on their mobile phones while their PC runs the ST server on the same wifi network.
-
-However, it can be used to allow remote connections from anywhere as well.
+Most often this is for people who want to use SillyTavern on their mobile phones while their PC runs the ST server on the same Wi-Fi network. However, it can be used to allow remote connections from anywhere as well.
 
 Read the detailed guide on how to set up remote connections in the [Docs](https://docs.sillytavern.app/usage/remoteconnections/).
 
