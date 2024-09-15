@@ -111,18 +111,18 @@ Tutorials on how to use them can be found in the [Docs](https://docs.sillytavern
 
 ### Installing via Git
 
-  1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
-  2. Install [Git for Windows](https://gitforwindows.org/)
-  3. Open Windows Explorer (`Win+E`)
-  4. Browse to or Create a folder that is not controlled or monitored by Windows. (ex: C:\MySpecialFolder\)
-  5. Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing `cmd`, and pressing Enter.
-  6. Once the black box (Command Prompt) pops up, type ONE of the following into it and press Enter:
+1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
+2. Install [Git for Windows](https://gitforwindows.org/)
+3. Open Windows Explorer (`Win+E`)
+4. Browse to or Create a folder that is not controlled or monitored by Windows. (ex: C:\MySpecialFolder\)
+5. Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing `cmd`, and pressing Enter.
+6. Once the black box (Command Prompt) pops up, type ONE of the following into it and press Enter:
 
 * for Release Branch: `git clone https://github.com/SillyTavern/SillyTavern -b release`
 * for Staging Branch: `git clone https://github.com/SillyTavern/SillyTavern -b staging`
 
-  7. Once everything is cloned, double-click `Start.bat` to make NodeJS install its requirements.
-  8. The server will then start, and SillyTavern will pop up in your browser.
+7. Once everything is cloned, double-click `Start.bat` to make NodeJS install its requirements.
+8. The server will then start, and SillyTavern will pop up in your browser.
 
 ### Installing via GitHub Desktop
 
