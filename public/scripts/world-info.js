@@ -2949,8 +2949,11 @@ async function getWorldEntry(name, data, entry) {
     preventRecursionInput.prop('checked', entry.preventRecursion).trigger('input');
 
     // delay until recursion
+    // delay until recursion level
     const delayUntilRecursionInput = template.find('input[name="delay_until_recursion"]');
     delayUntilRecursionInput.data('uid', entry.uid);
+    const delayUntilRecursionLevelInput = template.find('input[name="delayUntilRecursionLevel"]');
+    delayUntilRecursionLevelInput.data('uid', entry.uid);
     delayUntilRecursionInput.on('input', async function () {
         const uid = $(this).data('uid');
         const toggled = $(this).prop('checked');
@@ -2958,15 +2961,13 @@ async function getWorldEntry(name, data, entry) {
         // If the value contains a number, we'll take that one (set by the level input), otherwise we can use true/false switch
         const value = toggled ? data.entries[uid].delayUntilRecursion || true : false;
 
+        if (!toggled) delayUntilRecursionLevelInput.val('');
+
         data.entries[uid].delayUntilRecursion = value;
         setWIOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
         await saveWorldInfo(name, data);
     });
     delayUntilRecursionInput.prop('checked', entry.delayUntilRecursion).trigger('input');
-
-    // delay until recursion level
-    const delayUntilRecursionLevelInput = template.find('input[name="delayUntilRecursionLevel"]');
-    delayUntilRecursionLevelInput.data('uid', entry.uid);
     delayUntilRecursionLevelInput.on('input', async function () {
         const uid = $(this).data('uid');
         const content = $(this).val();
@@ -3746,7 +3747,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
     /** @type {number[]} Represents the delay levels for entries that are delayed until recursion */
     const availableRecursionDelayLevels = [...new Set(sortedEntries
         .filter(entry => entry.delayUntilRecursion)
-        .map(entry => entry.delayUntilRecursion === true ? 1 : entry.delayUntilRecursion)
+        .map(entry => entry.delayUntilRecursion === true ? 1 : entry.delayUntilRecursion),
     )].sort((a, b) => a - b);
     // Already preset with the first level
     let currentRecursionDelayLevel = availableRecursionDelayLevels.shift() ?? 0;
@@ -3767,7 +3768,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         count++;
 
         console.debug(`[WI] --- LOOP #${count} START ---`);
-        console.debug(`[WI] Scan state`, Object.entries(scan_state).find(x => x[1] === scanState));
+        console.debug('[WI] Scan state', Object.entries(scan_state).find(x => x[1] === scanState));
 
         // Until decided otherwise, we set the loop to stop scanning after this
         let nextScanState = scan_state.NONE;
