@@ -267,7 +267,7 @@ You will need two mandatory directory mappings and a port mapping to allow Silly
 
 > \[!NOTE]
 > **SillyTavern can be run natively on Android device using Termux, but we do not provide official support for this use case.**
-
+>
 > **Please refer to this guide by ArroganceComplex#2659:**
 >
 > * <https://rentry.org/STAI-Termux>
