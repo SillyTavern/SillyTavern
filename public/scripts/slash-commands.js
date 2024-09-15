@@ -185,9 +185,18 @@ export function initDefaultSlashCommands() {
                 enumProvider: commonEnumProviders.characters('character'),
                 forceEnum: false,
             }),
-            new SlashCommandNamedArgument(
-                'compact', 'Use compact layout', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'avatar',
+                description: 'Optional character avatar override (Can be either avatar filename or just the character name to pull the avatar from)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.characters('character'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'compact',
+                description: 'Use compact layout',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+            }),
             SlashCommandNamedArgument.fromProps({
                 name: 'at',
                 description: 'position to insert the message (index-based, corresponding to message id). If not set, the message will be inserted at the end of the chat.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will insert the message right before the last message in chat.',
@@ -3142,14 +3151,23 @@ export async function sendMessageAs(args, text) {
     const isNeutralCharacter = !chatCharacter && name2 === neutralCharacterName && name === neutralCharacterName;
 
     const character = equalsIgnoreCaseAndAccents(chatCharacter.name, name) ? chatCharacter : characters.find(x => equalsIgnoreCaseAndAccents(x.name, name));
-    let force_avatar, original_avatar;
 
-    if (chatCharacter === character || isNeutralCharacter) {
+    let avatarChar = character;
+    if (args.avatar) {
+        avatarChar = characters.find(x => x.avatar == args.avatar) ?? characters.find(x => equalsIgnoreCaseAndAccents(x.name, args.avatar));
+        if (!avatarChar) {
+            toastr.warning(`Character for avatar ${args.avatar} not found`);
+            return '';
+        }
+    }
+
+    let force_avatar, original_avatar;
+    if (chatCharacter === avatarChar || isNeutralCharacter) {
         // If the targeted character is the currently selected one in a solo chat, we don't need to force any avatars
     }
-    else if (character && character.avatar !== 'none') {
-        force_avatar = getThumbnailUrl('avatar', character.avatar);
-        original_avatar = character.avatar;
+    else if (avatarChar && avatarChar.avatar !== 'none') {
+        force_avatar = getThumbnailUrl('avatar', avatarChar.avatar);
+        original_avatar = avatarChar.avatar;
     }
     else {
         force_avatar = default_avatar;
