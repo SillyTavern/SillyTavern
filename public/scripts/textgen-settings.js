@@ -321,7 +321,7 @@ async function selectPreset(name) {
 function formatTextGenURL(value) {
     try {
         const noFormatTypes = [MANCER, TOGETHERAI, INFERMATICAI, DREAMGEN, OPENROUTER];
-        const legacyApiTypes = [OOBA, APHRODITE];
+        const legacyApiTypes = [OOBA];
         if (noFormatTypes.includes(settings.type)) {
             return value;
         }
@@ -1156,7 +1156,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'banned_strings': banned_strings,
         'api_type': settings.type,
         'api_server': getTextGenServer(),
-        'legacy_api': settings.legacy_api && (settings.type === OOBA || settings.type === APHRODITE),
+        'legacy_api': settings.legacy_api && settings.type === OOBA,
         'sampler_order': settings.type === textgen_types.KOBOLDCPP ? settings.sampler_order : undefined,
         'xtc_threshold': settings.xtc_threshold,
         'xtc_probability': settings.xtc_probability,

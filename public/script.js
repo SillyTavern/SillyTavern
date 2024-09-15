@@ -1166,7 +1166,7 @@ async function getStatusTextgen() {
             body: JSON.stringify({
                 api_server: endpoint,
                 api_type: textgen_settings.type,
-                legacy_api: textgen_settings.legacy_api && (textgen_settings.type === OOBA || textgen_settings.type === APHRODITE),
+                legacy_api: textgen_settings.legacy_api && textgen_settings.type === OOBA,
             }),
             signal: abortStatusCheck.signal,
         });
@@ -3367,7 +3367,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (main_api === 'textgenerationwebui' &&
         textgen_settings.streaming &&
         textgen_settings.legacy_api &&
-        (textgen_settings.type === OOBA || textgen_settings.type === APHRODITE)) {
+        textgen_settings.type === OOBA) {
         toastr.error('Streaming is not supported for the Legacy API. Update Ooba and use new API to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
         unblockGeneration(type);
         return Promise.resolve();
@@ -4346,6 +4346,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             main_api: main_api,
             instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && system ? system : power_user.instruct.system_prompt) : '',
             userPersona: (power_user.persona_description_position == persona_description_positions.IN_PROMPT ? (persona || '') : ''),
+            tokenizer: getFriendlyTokenizerName(main_api).tokenizerName || '',
         };
 
         //console.log(additionalPromptStuff);
@@ -5032,7 +5033,7 @@ export async function itemizedParams(itemizedPrompts, thisPromptSet, incomingMes
         params.promptBiasTokensPercentage = ((params.promptBiasTokens / (params.totalTokensInPrompt)) * 100).toFixed(2);
         params.worldInfoStringTokensPercentage = ((params.worldInfoStringTokens / (params.totalTokensInPrompt)) * 100).toFixed(2);
         params.allAnchorsTokensPercentage = ((params.allAnchorsTokens / (params.totalTokensInPrompt)) * 100).toFixed(2);
-        params.selectedTokenizer = getFriendlyTokenizerName(params.this_main_api).tokenizerName;
+        params.selectedTokenizer = itemizedPrompts[thisPromptSet]?.tokenizer || getFriendlyTokenizerName(params.this_main_api).tokenizerName;
     }
     return params;
 }

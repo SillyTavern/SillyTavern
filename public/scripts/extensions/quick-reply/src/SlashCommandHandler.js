@@ -35,6 +35,7 @@ export class SlashCommandHandler {
             if (qr.executeOnUser) icons += enumIcons.user;
             if (qr.executeOnAi) icons += enumIcons.assistant;
             if (qr.executeOnChatChange) icons += '💬';
+            if (qr.executeOnNewChat) icons += '🆕';
             if (qr.executeOnGroupMemberDraft) icons += enumIcons.group;
             return icons;
         }
@@ -265,6 +266,7 @@ export class SlashCommandHandler {
             new SlashCommandNamedArgument('user', 'auto execute on user message, e.g., user=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
             new SlashCommandNamedArgument('bot', 'auto execute on AI message, e.g., bot=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
             new SlashCommandNamedArgument('load', 'auto execute on chat load, e.g., load=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
+            new SlashCommandNamedArgument('new', 'auto execute on new chat, e.g., new=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
             new SlashCommandNamedArgument('group', 'auto execute on group member selection, e.g., group=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
             new SlashCommandNamedArgument('title', 'title / tooltip to be shown on button, e.g., title="My Fancy Button"', [ARGUMENT_TYPE.STRING], false),
         ];
@@ -857,6 +859,7 @@ export class SlashCommandHandler {
                     executeOnUser: isTrueBoolean(args.user),
                     executeOnAi: isTrueBoolean(args.bot),
                     executeOnChatChange: isTrueBoolean(args.load),
+                    executeOnNewChat: isTrueBoolean(args.new),
                     executeOnGroupMemberDraft: isTrueBoolean(args.group),
                     automationId: args.automationId ?? '',
                 },
@@ -889,6 +892,7 @@ export class SlashCommandHandler {
                     executeOnAi: args.bot === undefined ? undefined : isTrueBoolean(args.bot),
                     executeOnChatChange: args.load === undefined ? undefined : isTrueBoolean(args.load),
                     executeOnGroupMemberDraft: args.group === undefined ? undefined : isTrueBoolean(args.group),
+                    executeOnNewChat: args.new === undefined ? undefined : isTrueBoolean(args.new),
                     automationId: args.automationId ?? '',
                 },
             );
