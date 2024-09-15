@@ -53,8 +53,8 @@ The hardware requirements are minimal: it will run on anything that can run Node
 
 Or get in touch with the developers directly:
 
-* Discord: cohee or rossascends
-* Reddit: [/u/RossAscends](https://www.reddit.com/user/RossAscends/) or [/u/sillylossy](https://www.reddit.com/user/sillylossy/)
+* Discord: cohee, or rossascends, or wolfsblvt
+* Reddit: [/u/RossAscends](https://www.reddit.com/user/RossAscends/), [/u/sillylossy](https://www.reddit.com/user/sillylossy/), [u/Wolfsblvt](https://www.reddit.com/user/Wolfsblvt/)
 * [Post a GitHub issue](https://github.com/SillyTavern/SillyTavern/issues)
 
 ### I like your project! How do I contribute?
