@@ -10,7 +10,7 @@ We have a [Documentation website](https://docs.sillytavern.app/) to answer most 
 
 ## What is SillyTavern?
 
-SillyTavern is a locally installed user interface that allows you to interact with text generation LLMs, image generation engines, and TTS voice models.
+SillyTavern (or ST for short) is a locally installed user interface that allows you to interact with text generation LLMs, image generation engines, and TTS voice models.
 
 Beginning in February 2023 as a fork of TavernAI 1.2.8, SillyTavern now has over 100 contributors and 2 years of independent development under its belt, and continues to serve as a leading software for savvy AI hobbyists.
 
@@ -67,6 +67,16 @@ Or get in touch with the developers directly:
 
 <img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/e902c7a2-45a6-4415-97aa-c59c597669c1">
 <img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/f8a79c47-4fe9-4564-9e4a-bf247ed1c961">
+
+## Character Cards
+
+SillyTavern is built around the concept of "character cards". Character card is a collection of prompts that sets the behavior of the LLM and is required to have persistent conversations, similar to ChatGPT's GPTs or Poe's bots. It can be anything: an abstract scenario, an assistant tailored for a specific task, a famous personality or a fictional character.
+
+None of the card fields except the name is required. To start a neutral conversation with the language model, create an empty card simply called "Assistant". For a more themed chat, you can provide the language model with various background details, such as behavior patterns and the chat starters.
+
+To have a quick conversation without selecting a character card or just test the LLM connection, type your prompt on a welcome screen after opening SillyTavern. Please note that the temporary chat will not be saved.
+
+To get a general idea on how to define character cards, see the default character (Seraphina) or download selected community-made cards from the "Download Extensions & Assets" menu.
 
 ## Key Features
 
