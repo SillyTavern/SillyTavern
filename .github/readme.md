@@ -24,11 +24,9 @@ With now more than 100 contributors and almost 2 year of independent development
 
 ## Our Vision
 
-**Brought to you by a dedicated community of LLM enthusiasts, SillyTavern will always be free and open-source.**
-
 1. We aim to empower users with as much utility and control over their LLM prompts as possible. The steep learning curve is part of the fun!
-2. We do not provide any online or hosted services, nor programatically track any user data.
-3. SillyTavern is a passion project, and will always be free and open sourced.
+2. We do not provide any online or hosted services, nor programmatically track any user data.
+3. SillyTavern is a passion project brought to you by a dedicated community of LLM enthusiasts, and will always be free and open sourced.
 
 ## Screenshots
 
