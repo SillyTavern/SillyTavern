@@ -3753,6 +3753,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
 
     console.debug(`[WI] --- SEARCHING ENTRIES (on ${sortedEntries.length} entries) ---`);
 
+    let allActivatedEntriesLength = 0;
     while (scanState) {
         //if world_info_max_recursion_steps is non-zero min activations are disabled, and vice versa
         if (world_info_max_recursion_steps && world_info_max_recursion_steps <= count) {
@@ -3762,6 +3763,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
 
         // Track how many times the loop has run. May be useful for debugging.
         count++;
+        allActivatedEntriesLength = allActivatedEntries.size;
 
         console.debug(`[WI] Loop #${count}. Search state`, Object.entries(scan_state).find(x => x[1] === scanState));
 
@@ -4038,7 +4040,6 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         }
 
         const successfulNewEntries = newEntries.filter(x => !failedProbabilityChecks.has(x));
-        const successfulNewEntriesForRecursion = successfulNewEntries.filter(x => !x.preventRecursion);
 
         if (!newEntries.length) {
             console.debug('[WI] No new entries activated, stopping');
@@ -4049,7 +4050,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         }
 
         // After processing and rolling entries is done, see if we should continue with normal recursion
-        if (world_info_recursive && !token_budget_overflowed && successfulNewEntriesForRecursion.length) {
+        if (world_info_recursive && !token_budget_overflowed && allActivatedEntriesLength != allActivatedEntries.size) {
             nextScanState = scan_state.RECURSION;
         }
 
