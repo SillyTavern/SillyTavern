@@ -8949,15 +8949,12 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
  * It also ensures to save the settings after all the operations.
  */
 async function removeCharacterFromUI() {
+    preserveNeutralChat();
     await clearChat();
-    $('#character_cross').click();
-    this_chid = undefined;
-    characters.length = 0;
-    name2 = systemUserName;
-    chat.splice(0, chat.length, ...SAFETY_CHAT);
-    chat_metadata = {};
+    $('#character_cross').trigger('click');
+    resetChatState();
     $(document.getElementById('rm_button_selected_ch')).children('h2').text('');
-    this_chid = undefined;
+    restoreNeutralChat();
     await getCharacters();
     await printMessages();
     saveSettingsDebounced();
