@@ -4,7 +4,7 @@ English | [中文](readme-zh_cn.md) | [日本語](readme-ja_jp.md) | [Русск
 
 ![][cover]
 
-Mobile-friendly layout, support 17+ LLM APIs (KoboldAI/CPP, Horde, NovelAI, Ooba, Tabby, OpenAI, OpenRouter, Claude, Scale, and more), Visual Novel Mode, Automatic1111 & ComfyUI API integration, TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need + ability to install third-party extensions.
+Mobile-friendly layout, support 17+ LLM APIs (KoboldAI/CPP, Horde, NovelAI, Ooba, Tabby, OpenAI, OpenRouter, Claude, Mistral and more), Visual Novel Mode, Automatic1111 & ComfyUI API integration, TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need + ability to install third-party extensions.
 
 ## Important news
 
@@ -14,15 +14,21 @@ Mobile-friendly layout, support 17+ LLM APIs (KoboldAI/CPP, Horde, NovelAI, Ooba
 
 3. Unsupported platform: android arm LEtime-web. 32-bit Android requires an external dependency that can't be installed with npm. Use the following command to install it: `pkg install esbuild`. Then run the usual installation steps.
 
-### Brought to you by Cohee, RossAscends, and the SillyTavern community
-
 ### What is SillyTavern?
 
 SillyTavern is a locally installed user interface that allows you to interact with text generation LLMs, image generation engines, and TTS voice models.
 
-Beginning in December 2022 as a fork of TavernAI 1.2.8, SillyTavern quickly became a leader and trendsetter for LLM frontend software.
+Beginning in February 2023 as a fork of TavernAI 1.2.8, SillyTavern quickly became a leader and trendsetter for LLM frontend software.
 
-With now more than 100 contributors and almost 2 year of independent developement, SillyTavern is considered an entirely different program from the original TavernAI.
+With now more than 100 contributors and almost 2 year of independent development, SillyTavern is considered an entirely different program from the original TavernAI.
+
+## Our vision
+
+**Brought to you by a dedicated community of LLM enthusiasts, SillyTavern will always be free and open-source.**
+
+1. SillyTavern is not a plug-and-play solution and has a steep learning curve. Our priority is to give maximum utility and control over your LLM prompts.
+2. We do not provide any online or hosted services. Your data is yours to keep.
+3. We do not accept donations for the project or seek any form of monetization.
 
 ## Screenshots
 
@@ -42,9 +48,16 @@ If you're not familiar with using the git CLI or don't understand what a branch 
 
 Since SillyTavern is only an interface, you will need access to an LLM backend to provide inference. You can use KoboldAI Horde for instant out-of-the-box chatting. Aside from that, we support many other local and cloud-based LLM backends: OpenAPI API, KoboldAI, Tabby, and many more. You can read more about our supported APIs in [the FAQ](https://docs.sillytavern.app/usage/faq/).
 
+**Suggestions (not affiliated):**
+
+* [AI Horde](https://aihorde.net/) - use models hosted by volunteers. Requires no further setup
+* [KoboldCpp](https://github.com/LostRuins/koboldcpp) - a community's favorite for running GGUF models locally
+* [tabbyAPI](https://github.com/theroyallab/tabbyAPI) - a popular locally hosted exl2 inference API
+* [OpenRouter](https://openrouter.ai) - a single API for many cloud providers (OpenAI, Claude, Meta Llama, etc.)
+
 ### Do I need a powerful PC to run SillyTavern?
 
-The hardware requirements are minimal: it will run on anything that can run NodeJS 18+. If you intend to do LLM inference on your local machine, we reccomend a 3000 series NVIDIA graphics card with at least 6GB of VRAM.
+The hardware requirements are minimal: it will run on anything that can run NodeJS 18+. If you intend to do LLM inference on your local machine, we recommend a 3000-series NVIDIA graphics card with at least 6GB of VRAM.
 
 ## Questions or suggestions?
 
@@ -59,67 +72,34 @@ Or get in touch with the developers directly:
 * Reddit: [/u/RossAscends](https://www.reddit.com/user/RossAscends/) or [/u/sillylossy](https://www.reddit.com/user/sillylossy/)
 * [Post a GitHub issue](https://github.com/SillyTavern/SillyTavern/issues)
 
+### I like your project! How do I contribute?
+
+1. Send pull requests. Learn how to contribute: [CONTRIBUTING.md](../CONTRIBUTING.md)
+2. Send feature suggestions and issue reports using established templates
+3. Read the readme file and the documentation before asking anything
+
 ## Key Features
 
-* Group chats: multi-bot rooms for characters to talk to you or each other
-* Chat checkpoints / branching
-* Advanced KoboldAI / TextGen generation settings with many of community-made presets
+* Advanced text generation settings with many community-made presets
 * World Info support: create rich lore or save tokens on your character card
-* [OpenRouter](https://openrouter.ai) connection for various APIs (Claude, GPT-4/3.5 and more)
-* [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
-* Built-in Tabby API model loading
-* [AI Horde](https://aihorde.net/) connection possible with no further setup
-* Prompt generation format tweaking
-* Automatic UI and chat translation
+* Group chats: multi-bot rooms for characters to talk to you or each other
+* Rich UI customization options: theme colors, background images, and more
+* User personas: let the AI know a bit about you for greater immersion
+* Built-in RAG support: add documents to your chats for the AI to reference
 
 ## Extensions
 
-SillyTavern has extensibility support, with some additional AI modules hosted via [SillyTavern Extras API](https://github.com/SillyTavern/SillyTavern-extras)
+SillyTavern has extensibility support.
 
-* Author's Note / Character Bias
 * Character emotional expressions (sprites)
 * Auto-Summary of the chat history
-* Sending images to chat, and the AI interpreting the content
-* Stable Diffusion image generation (5 chat-related presets plus 'free mode')
+* Automatic UI and chat translation
+* Stable Diffusion/FLUX/DALL-E image generation
 * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
+* Web Search capabilities for adding additional real world context to your prompts
+* Many more available to download from the "Download Extensions & Assets" menu.
 
-A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/).
-
-## UI/UX/Quality of Life tweaks
-
-* Optimized Mobile UI that's compatible with PWA mode for an app-like experience.
-* HotKeys
-  * Up = Edit last message in chat
-  * Ctrl+Up = Edit last USER message in chat
-  * Left = swipe left
-  * Right = swipe right (NOTE: swipe hotkeys are disabled when the chat bar has something typed into it)
-  * Ctrl+Left = view locally stored variables (in the browser console window)
-  * Enter (with chat bar selected) = send your message to AI
-  * Ctrl+Enter = Regenerate the last AI response
-
-* User Name Changes and Character Deletion no longer force the page to refresh.
-
-* Toggle option to automatically connect to API on page load.
-* Toggle option to automatically load the most recently viewed character on page load.
-* Better Token Counter - works on unsaved characters, and shows both permanent and temporary tokens.
-
-* Better Past Chats View
-  * New Chat filenames are saved in a readable format of "(character) - (when it was created)"
-  * Chat preview increased from 40 characters to 300.
-  * Multiple options for characters list sorting (by name, creation date, chat sizes).
-
-* By default the left and right settings panel will close when you click away from it.
-* Clicking the Lock on the nav panel will hold the panel open, and this setting be remembered across sessions.
-* Nav panel status of open or closed will also be saved across sessions.
-
-* Customizable UI:
-  * Play a sound when a new message arrives
-  * Switch between round, square, or rectangle avatar styles
-  * Customizable chat window width
-  * Customizable UI panel transparency, colors, and blur effects
-  * Customizable colors for various text and markdown styles
-  * Custom CSS support allows for unlimited UI creativity
-  * MovingUI lets you adjust many core panels to any size and location on the screen
+Tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/).
 
 # ⌛ Installation
 
@@ -301,6 +281,46 @@ In order to enable viewing your keys by clicking a button in the API block:
 1. Set the value of `allowKeysExposure` to `true` in `config.yaml` file.
 2. Restart the SillyTavern server.
 
+## Command-line arguments
+
+You can pass command-line arguments to SillyTavern server startup to override some settings in `config.yaml`.
+
+### Examples
+
+```shell
+node server.js --port 8000 --listen false
+# or
+npm run start -- --port 8000 --listen false
+# or (Windows only)
+Start.bat --port 8000 --listen false
+```
+
+### Supported arguments
+
+| Option                  | Description                                                                                          | Type     | Default                      |
+|-------------------------|------------------------------------------------------------------------------------------------------|----------|------------------------------|
+| `--version`             | Show version number                                                                                  | boolean  |                              |
+| `--enableIPv6`          | Enables IPv6.                                                                                        | boolean  | false                        |
+| `--enableIPv4`          | Enables IPv4.                                                                                        | boolean  | true                         |
+| `--port`                | Sets the port under which SillyTavern will run. If not provided falls back to yaml config 'port'.    | number   | 8000                         |
+| `--dnsPreferIPv6`       | Prefers IPv6 for dns. If not provided falls back to yaml config 'preferIPv6'.                        | boolean  | false                        |
+| `--autorun`             | Automatically launch SillyTavern in the browser. If not provided falls back to yaml config 'autorun'.| boolean  | false                        |
+| `--autorunHostname`     | The autorun hostname, probably best left on 'auto'.                                                  | string   | null                         |
+| `--autorunPortOverride` | Overrides the port for autorun.                                                                      | string   | null                         |
+| `--listen`              | SillyTavern is listening on all network interfaces. If not provided falls back to yaml config 'listen'.| boolean  | false                        |
+| `--corsProxy`           | Enables CORS proxy. If not provided falls back to yaml config 'enableCorsProxy'.                     | boolean  | false                        |
+| `--disableCsrf`         | Disables CSRF protection                                                                             | boolean  | null                         |
+| `--ssl`                 | Enables SSL                                                                                          | boolean  | false                        |
+| `--certPath`            | Path to your certificate file.                                                                       | string   | "certs/cert.pem"             |
+| `--keyPath`             | Path to your private key file.                                                                       | string   | "certs/privkey.pem"          |
+| `--whitelist`           | Enables whitelist mode                                                                               | boolean  | null                         |
+| `--dataRoot`            | Root directory for data storage                                                                      | string   | null                         |
+| `--avoidLocalhost`      | Avoids using 'localhost' for autorun in auto mode.                                                   | boolean  | null                         |
+| `--basicAuthMode`       | Enables basic authentication                                                                         | boolean  | null                         |
+| `--requestProxyEnabled` | Enables a use of proxy for outgoing requests                                                         | boolean  | null                         |
+| `--requestProxyUrl`     | Request proxy URL (HTTP or SOCKS protocols)                                                          | string   | null                         |
+| `--requestProxyBypass`  | Request proxy bypass list (space separated list of hosts)                                            | array    | null                         |
+
 ## Remote connections
 
 Most often this is for people who want to use SillyTavern on their mobile phones while their PC runs the ST server on the same wifi network.
@@ -379,29 +399,8 @@ After restarting your ST server, any device will be able to connect to it, regar
 
 ## Performance issues?
 
-Try enabling the No Blur Effect (Fast UI) mode on the User settings panel.
-
-## I like your project! How do I contribute?
-
-### DO's
-
-1. Send pull requests
-2. Send feature suggestions and issue reports using established templates
-3. Read the readme file and built-in documentation before asking anything
-
-### DONT's
-
-1. Offer monetary donations
-2. Send bug reports without providing any context
-3. Ask the questions that were already answered numerous times
-
-## Where can I find the old backgrounds?
-
-We're moving to a 100% original content only policy, so old background images have been removed from this repository.
-
-You can find them archived here:
-
-<https://files.catbox.moe/1xevnc.zip>
+1. Disable Blur Effect and enable Reduced Motion on the User Settings panel (UI Theme toggles category).
+2. If using response streaming, set the streaming FPS to a lower value (10-15 FPS is recommended).
 
 ## License and credits
 
