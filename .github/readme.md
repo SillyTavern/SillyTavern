@@ -272,12 +272,13 @@ You will need two mandatory directory mappings and a port mapping to allow Silly
 
 SillyTavern saves your API keys to a `secrets.json` file in the user data directory (`/data/default-user/secrets.json` is the default path).
 
-By default, they will not be exposed to a frontend after you enter them and reload the page.
+By default, API keys will not be visible from the interface after you have saved them and refreshed the page.
 
-In order to enable viewing your keys by clicking a button in the API block:
+In order to enable viewing your keys:
 
 1. Set the value of `allowKeysExposure` to `true` in `config.yaml` file.
 2. Restart the SillyTavern server.
+3. Click the 'View hidden API keys' link at the bottom right of the API Connection Panel.
 
 ## Command-line arguments
 
