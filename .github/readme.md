@@ -20,11 +20,6 @@ Beginning in February 2023 as a fork of TavernAI 1.2.8, SillyTavern quickly beca
 2. We do not provide any online or hosted services, nor programmatically track any user data.
 3. SillyTavern is a passion project brought to you by a dedicated community of LLM enthusiasts, and will always be free and open sourced.
 
-## Screenshots
-
-<img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/e902c7a2-45a6-4415-97aa-c59c597669c1">
-<img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/f8a79c47-4fe9-4564-9e4a-bf247ed1c961">
-
 ## Branches
 
 SillyTavern is being developed using a two-branch system to ensure a smooth experience for all users.
@@ -38,16 +33,16 @@ If you're not familiar with using the git CLI or don't understand what a branch 
 
 Since SillyTavern is only an interface, you will need access to an LLM backend to provide inference. You can use AI Horde for instant out-of-the-box chatting. Aside from that, we support many other local and cloud-based LLM backends: OpenAI-compatible API, KoboldAI, Tabby, and many more. You can read more about our supported APIs in [the FAQ](https://docs.sillytavern.app/usage/faq/).
 
-**Suggested Backends (not affiliated):**
+### Do I need a powerful PC to run SillyTavern?
+
+The hardware requirements are minimal: it will run on anything that can run NodeJS 18 or higher. If you intend to do LLM inference on your local machine, we recommend a 3000-series NVIDIA graphics card with at least 6GB of VRAM. Check your backend's documentation for more details.
+
+### Suggested Backends (not affiliated)
 
 * [AI Horde](https://aihorde.net/) - use models hosted by volunteers. Requires no further setup
 * [KoboldCpp](https://github.com/LostRuins/koboldcpp) - a community's favorite for running GGUF models locally
 * [tabbyAPI](https://github.com/theroyallab/tabbyAPI) - a popular, lightweight, locally-hosted exl2 inference API
 * [OpenRouter](https://openrouter.ai) - a single API for many cloud providers (OpenAI, Claude, Meta Llama, etc.) as well as popular community models.
-
-## Do I need a powerful PC to run SillyTavern?
-
-The hardware requirements are minimal: it will run on anything that can run NodeJS 18 or higher. If you intend to do LLM inference on your local machine, we recommend a 3000-series NVIDIA graphics card with at least 6GB of VRAM. Check your backend's documentation for more details.
 
 ## Questions or suggestions?
 
@@ -67,6 +62,11 @@ Or get in touch with the developers directly:
 1. Send pull requests. Learn how to contribute: [CONTRIBUTING.md](../CONTRIBUTING.md)
 2. Send feature suggestions and issue reports using the provided templates.
 3. Read this entire readme file and the check the documentation website first, to avoid sending duplicate issues.
+
+## Screenshots
+
+<img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/e902c7a2-45a6-4415-97aa-c59c597669c1">
+<img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/f8a79c47-4fe9-4564-9e4a-bf247ed1c961">
 
 ## Key Features
 
