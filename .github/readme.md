@@ -46,7 +46,7 @@ If you're not familiar with using the git CLI or don't understand what a branch 
 
 ### What do I need other than SillyTavern?
 
-Since SillyTavern is only an interface, you will need access to an LLM backend to provide inference. You can use KoboldAI Horde for instant out-of-the-box chatting. Aside from that, we support many other local and cloud-based LLM backends: OpenAPI API, KoboldAI, Tabby, and many more. You can read more about our supported APIs in [the FAQ](https://docs.sillytavern.app/usage/faq/).
+Since SillyTavern is only an interface, you will need access to an LLM backend to provide inference. You can use KoboldAI Horde for instant out-of-the-box chatting. Aside from that, we support many other local and cloud-based LLM backends: OpenAI-compatible API, KoboldAI, Tabby, and many more. You can read more about our supported APIs in [the FAQ](https://docs.sillytavern.app/usage/faq/).
 
 **Suggestions (not affiliated):**
 
