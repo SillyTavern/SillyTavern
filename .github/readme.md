@@ -109,7 +109,7 @@ Tutorials on how to use them can be found in the [Docs](https://docs.sillytavern
 
 ## 🪟 Windows
 
-## Installing via Git
+### Installing via Git
 
   1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
   2. Install [Git for Windows](https://gitforwindows.org/)
@@ -124,7 +124,7 @@ Tutorials on how to use them can be found in the [Docs](https://docs.sillytavern
   7. Once everything is cloned, double-click `Start.bat` to make NodeJS install its requirements.
   8. The server will then start, and SillyTavern will pop up in your browser.
 
-## Installing via SillyTavern Launcher
+### Installing via SillyTavern Launcher
 
 1. On your keyboard: press **`WINDOWS + R`** to open Run dialog box. Then, run the following command to install git:
 
@@ -138,7 +138,7 @@ cmd /c winget install -e --id Git.Git
 git clone https://github.com/SillyTavern/SillyTavern-Launcher.git && cd SillyTavern-Launcher && start installer.bat
 ```
 
-## Installing via GitHub Desktop
+### Installing via GitHub Desktop
 
 (This allows git usage **only** in GitHub Desktop, if you want to use `git` on the command line too, you also need to install [Git for Windows](https://gitforwindows.org/))
 
@@ -168,9 +168,9 @@ For MacOS / Linux all of these will be done in a Terminal.
 * `./start.sh`
 * `bash start.sh`
 
-## Installing via SillyTavern Launcher
+### Installing via SillyTavern Launcher
 
-### For Linux users
+#### For Linux users
 
 1. Open your favorite terminal and install git
 2. Git clone the Sillytavern-Launcher with:
@@ -191,7 +191,7 @@ chmod +x install.sh && ./install.sh
 chmod +x launcher.sh && ./launcher.sh
 ```
 
-### For Mac users
+#### For Mac users
 
 1. Open a terminal and install brew with:
 
@@ -261,7 +261,7 @@ You will need two mandatory directory mappings and a port mapping to allow Silly
 
 > Note that 8000 is a default listening port. Don't forget to use an appropriate port if you change it in the config.
 
-## 📱 Mobile - Installing via termux
+## 📱 Mobile Android - Installing via Termux
 
 > \[!NOTE]
 > **SillyTavern can be run natively on Android phones using Termux. Please refer to this guide by ArroganceComplex#2659:**
