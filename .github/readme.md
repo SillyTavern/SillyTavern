@@ -68,6 +68,16 @@ Or get in touch with the developers directly:
 <img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/e902c7a2-45a6-4415-97aa-c59c597669c1">
 <img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/f8a79c47-4fe9-4564-9e4a-bf247ed1c961">
 
+## Character Cards
+
+SillyTavern is built around the concept of "character cards". Character card is a collection of prompts that sets the behavior of the LLM and is required to have persistent conversations, similar to [ChatGPT's GPTs](https://openai.com/index/introducing-gpts/) or [Poe's bots](https://poe.com/about). It can be anything: an abstract scenario, an assistant tailored for a specific task, a famous personality or a fictional character.
+
+None of the card fields except the name is required. To start a neutral conversation with the language model, create an empty card simply called "Assistant". For a more themed chat, you can provide the language model with various background details, such as a behavior patterns and the conversation starters.
+
+To have a quick conversation without selecting a character card or just test the LLM connection, type your prompt on a welcome screen after opening SillyTavern. Please note that the temporary conversation will not be saved.
+
+To get a general idea on how to define character cards, see the default character (Seraphina) or download selected community-made cards from the "Download Extensions & Assets" menu.
+
 ## Key Features
 
 * Advanced text generation settings with many community-made presets
