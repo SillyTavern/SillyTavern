@@ -274,3 +274,7 @@ select.keyselect+span.select2-container .select2-selection--multiple {
     align-self: center;
     width: 100%;
 }
+
+.world_entry:has(input[name="delay_until_recursion"]:not(:checked)) .world_entry_form_control:has(input[name="delayUntilRecursionLevel"]) {
+    display: none;
+}

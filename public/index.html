@@ -5473,23 +5473,23 @@
                                     <div class="world_entry_form_control flex1">
                                         <small class="textAlignCenter" data-i18n="Case-Sensitive">Case-Sensitive</small>
                                         <select name="caseSensitive" class="text_pole widthNatural margin0">
-                                            <option value="null" data-i18n="Use global setting">Use global setting</option>
+                                            <option value="null" data-i18n="Use global">Use global</option>
                                             <option value="true" data-i18n="Yes">Yes</option>
                                             <option value="false" data-i18n="No">No</option>
                                         </select>
                                     </div>
                                     <div class="world_entry_form_control flex1">
-                                        <small class="textAlignCenter" data-i18n="Match Whole Words">Match Whole Words</small>
+                                        <small class="textAlignCenter" data-i18n="Whole Words">Whole Words</small>
                                         <select name="matchWholeWords" class="text_pole widthNatural margin0">
-                                            <option value="null" data-i18n="Use global setting">Use global setting</option>
+                                            <option value="null" data-i18n="Use global">Use global</option>
                                             <option value="true" data-i18n="Yes">Yes</option>
                                             <option value="false" data-i18n="No">No</option>
                                         </select>
                                     </div>
                                     <div class="world_entry_form_control flex1">
-                                        <small class="textAlignCenter" data-i18n="Use Group Scoring">Use Group Scoring</small>
+                                        <small class="textAlignCenter" data-i18n="Group Scoring">Group Scoring</small>
                                         <select name="useGroupScoring" class="text_pole widthNatural margin0">
-                                            <option value="null" data-i18n="Use global setting">Use global setting</option>
+                                            <option value="null" data-i18n="Use global">Use global</option>
                                             <option value="true" data-i18n="Yes">Yes</option>
                                             <option value="false" data-i18n="No">No</option>
                                         </select>
@@ -5497,6 +5497,13 @@
                                     <div class="world_entry_form_control flex1" title="Can be used to automatically activate Quick Replies" data-i18n="[title]Can be used to automatically activate Quick Replies">
                                         <small class="textAlignCenter" data-i18n="Automation ID">Automation ID</small>
                                         <input class="text_pole margin0" name="automationId" type="text" placeholder="( None )" data-i18n="[placeholder]( None )">
+                                    </div>
+                                    <div class="world_entry_form_control flex1" title="Defines delay levels for recursive scans.&#13;&#13;Initially, only the first level (smallest number) will match.&#13;Once no matches are found, the next level becomes eligible for matching.&#13;This repeats until all levels are checked.&#13;&#13;Tied to the &quot;Delay until recursion&quot; setting." data-i18n="[title]delay_until_recursion_level">
+                                        <small class="textAlignCenter">
+                                            <span data-i18n="Recursion Level">Recursion Level</span>
+                                            <div class="fa-solid fa-circle-info opacity50p"></div>
+                                        </small>
+                                        <input class="text_pole margin0" name="delayUntilRecursionLevel" type="text" placeholder="1">
                                     </div>
                                 </div>
                                 <div name="contentAndCharFilterBlock" class="world_entry_thin_controls flex2">
@@ -5514,20 +5521,20 @@
                                                     <div>
                                                         <label class="checkbox flex-container alignitemscenter flexNoGap">
                                                             <input type="checkbox" name="exclude_recursion" />
-                                                            <span data-i18n="Exclude from recursion">
-                                                                Non-recursable (this entry will not be activated by another)
+                                                            <span data-i18n="Non-recursable (will not be activated by another)">
+                                                                Non-recursable (will not be activated by another)
                                                             </span>
                                                         </label>
                                                         <label class="checkbox flex-container alignitemscenter flexNoGap">
                                                             <input type="checkbox" name="prevent_recursion" />
                                                             <span data-i18n="Prevent further recursion (this entry will not activate others)">
-                                                                Prevent further recursion (this entry will not activate others)
+                                                                Prevent further recursion (will not activate others)
                                                             </span>
                                                         </label>
                                                         <label class="checkbox flex-container alignitemscenter flexNoGap">
                                                             <input type="checkbox" name="delay_until_recursion" />
-                                                            <span data-i18n="Delay until recursion (this entry can only be activated on recursive checking)">
-                                                                Delay until recursion (this entry can only be activated on recursive checking)
+                                                            <span data-i18n="Delay until recursion (can only be activated on recursive checking)">
+                                                                Delay until recursion (can only be activated on recursive checking)
                                                             </span>
                                                         </label>
                                                     </div>
