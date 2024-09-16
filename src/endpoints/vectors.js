@@ -365,6 +365,11 @@ async function regenerateCorruptedIndexErrorHandler(req, res, error) {
 
 const router = express.Router();
 
+router.get('/scopes-enabled', (_req, res) => {
+    const scopesEnabled = getConfigValue('vectors.enableModelScopes', false);
+    return res.json({ enabled: scopesEnabled });
+});
+
 router.post('/query', jsonParser, async (req, res) => {
     try {
         if (!req.body.collectionId || !req.body.searchText) {
