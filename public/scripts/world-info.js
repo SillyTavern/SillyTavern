@@ -217,8 +217,9 @@ class WorldInfoBuffer {
             depth = MAX_SCAN_DEPTH;
         }
 
-        const JOINER = '\n\x01';
-        let result = this.#depthBuffer.slice(this.#startDepth, depth).join(JOINER);
+        const MATCHER = '\x01';
+        const JOINER = '\n' + MATCHER;
+        let result = MATCHER + this.#depthBuffer.slice(this.#startDepth, depth).join(JOINER);
 
         if (this.#injectBuffer.length > 0) {
             result += JOINER + this.#injectBuffer.join(JOINER);
