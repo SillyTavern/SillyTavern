@@ -8807,7 +8807,7 @@ export async function renameChat(oldFileName, newName) {
         is_group: !!selected_group,
         avatar_url: characters[this_chid]?.avatar,
         original_file: `${oldFileName}.jsonl`,
-        renamed_file: `${newName}.jsonl`,
+        renamed_file: `${newName.trim()}.jsonl`,
     };
 
     try {
