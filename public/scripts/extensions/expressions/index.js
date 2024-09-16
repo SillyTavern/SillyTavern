@@ -2064,6 +2064,11 @@ function migrateSettings() {
     });
     eventSource.on(event_types.MOVABLE_PANELS_RESET, updateVisualNovelModeDebounced);
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
+    eventSource.on(event_types.EXTRAS_CONNECTED, () => {
+        if (extension_settings.expressions.talkinghead) {
+            setTalkingHeadState(extension_settings.expressions.talkinghead);
+        }
+    });
 
     const localEnumProviders = {
         expressions: () => getCachedExpressions().map(expression => {
