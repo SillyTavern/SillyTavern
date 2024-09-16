@@ -199,8 +199,9 @@ router.post('/rename', jsonParser, async function (request, response) {
     const pathToFolder = request.body.is_group
         ? request.user.directories.groupChats
         : path.join(request.user.directories.chats, String(request.body.avatar_url).replace('.png', ''));
-    const pathToOriginalFile = path.join(pathToFolder, request.body.original_file);
-    const pathToRenamedFile = path.join(pathToFolder, request.body.renamed_file);
+    const pathToOriginalFile = path.join(pathToFolder, sanitize(request.body.original_file));
+    const pathToRenamedFile = path.join(pathToFolder, sanitize(request.body.renamed_file));
+    const sanitizedFileName = path.parse(pathToRenamedFile).name;
     console.log('Old chat name', pathToOriginalFile);
     console.log('New chat name', pathToRenamedFile);
 
@@ -212,7 +213,7 @@ router.post('/rename', jsonParser, async function (request, response) {
     fs.copyFileSync(pathToOriginalFile, pathToRenamedFile);
     fs.rmSync(pathToOriginalFile);
     console.log('Successfully renamed.');
-    return response.send({ ok: true });
+    return response.send({ ok: true, sanitizedFileName });
 });
 
 router.post('/delete', jsonParser, function (request, response) {

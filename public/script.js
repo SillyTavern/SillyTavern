@@ -8828,6 +8828,10 @@ export async function renameChat(oldFileName, newName) {
             throw new Error('Server returned an error.');
         }
 
+        if (data.sanitizedFileName) {
+            newName = data.sanitizedFileName;
+        }
+
         if (selected_group) {
             await renameGroupChat(selected_group, oldFileName, newName);
         }
