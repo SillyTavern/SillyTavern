@@ -41,6 +41,8 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (request.body.api === 'koboldcpp') {
             key = readSecret(request.user.directories, SECRET_KEYS.KOBOLDCPP);
+            bodyParams.temperature = 0.1;
+            bodyParams.max_tokens = 800;
         }
 
         if (request.body.api === 'vllm') {
