@@ -281,7 +281,6 @@ async function getHordeModels(force) {
         return sortByWhitelisted(a, b) || sortByPopular(a, b) || sortByPerformance(a, b);
     });
     for (const model of models) {
-        console.log('getHordeModels', model);
         const option = document.createElement('option');
         option.value = model.name;
         option.innerText = hordeModelTextString(model);
@@ -362,7 +361,7 @@ function getHordeModelTemplate(option) {
 
     const workerInfo = hordeModelQueueStateString(model);
     const isPopular = model.tags?.includes('popular');
-    const descriptionDiv = description ? `<div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${description}</div>` : '';
+    const descriptionDiv = description ? `<div class="horde-model-description">${description}</div>` : '';
     const tagSpans = tags.length > 0 &&
         `${tags.map(tag => `<span class="tag tag_name">${tag}</span>`).join('')}</span>` || '';
 
