@@ -83,6 +83,8 @@ skipContentCheck: false
 disableChatBackup: false
 # Number of backups to keep for each chat and settings file
 numberOfBackups: 50
+# Interval in milliseconds to throttle chat backups per user
+chatBackupThrottleInterval: 10000
 # Allowed hosts for card downloads
 whitelistImportDomains:
   - localhost
