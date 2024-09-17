@@ -43,8 +43,9 @@ const backupFunctions = new Map();
  * @returns {function(string, string, string): void} Backup function
  */
 function getBackupFunction(handle) {
+    const throttleInterval = getConfigValue('chatBackupThrottleInterval', 10_000);
     if (!backupFunctions.has(handle)) {
-        backupFunctions.set(handle, _.throttle(backupChat, 10_000, { leading: true, trailing: true }));
+        backupFunctions.set(handle, _.throttle(backupChat, throttleInterval, { leading: true, trailing: true }));
     }
     return backupFunctions.get(handle);
 }
