@@ -1,10 +1,13 @@
 import { saveSettingsDebounced } from '../script.js';
+import { callGenericPopup, POPUP_TYPE } from './popup.js';
 import { power_user } from './power-user.js';
+import { getPresetManager } from './preset-manager.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { renderTemplateAsync } from './templates.js';
 import { isTrueBoolean, resetScrollHeight } from './utils.js';
 
 export let system_prompts = [];
@@ -39,7 +42,7 @@ export async function loadSystemPrompts(data) {
     }
 
     migrateSystemPromptFromInstructMode();
-    toggleSyspromptDisabledControls();
+    toggleSystemPromptDisabledControls();
 
     for (const prompt of system_prompts) {
         $('<option>').val(prompt.name).text(prompt.name).appendTo($select);
@@ -53,7 +56,29 @@ export async function loadSystemPrompts(data) {
     }
 }
 
-function toggleSyspromptDisabledControls() {
+/**
+ * Checks if the instruct template has a system prompt and prompts the user to save it as a system prompt.
+ * @param {string} name Name of the instruct template
+ * @param {object} template Instruct template object
+ */
+export async function checkForSystemPromptInInstructTemplate(name, template) {
+    if ('system_prompt' in template && name && template.system_prompt && !system_prompts.some(x => x.name === name)) {
+        const html = await renderTemplateAsync('migrateInstructPrompt', { prompt: template.system_prompt });
+        const confirm = await callGenericPopup(html, POPUP_TYPE.CONFIRM);
+        if (confirm) {
+            const prompt = { name: name, content: template.system_prompt };
+            const presetManager = getPresetManager('sysprompt');
+            await presetManager.savePreset(prompt.name, prompt);
+            toastr.success(`System prompt "${prompt.name}" has been saved.`);
+        } else {
+            toastr.info('System prompt has been discarded.');
+        }
+
+        delete template.system_prompt;
+    }
+}
+
+function toggleSystemPromptDisabledControls() {
     $enabled.parent().find('i').toggleClass('toggleEnabled', !!power_user.sysprompt.enabled);
     $contentBlock.toggleClass('disabled', !power_user.sysprompt.enabled);
 }
@@ -61,7 +86,7 @@ function toggleSyspromptDisabledControls() {
 function enableSystemPromptCallback() {
     power_user.sysprompt.enabled = true;
     $enabled.prop('checked', true);
-    toggleSyspromptDisabledControls();
+    toggleSystemPromptDisabledControls();
     saveSettingsDebounced();
     return '';
 }
@@ -69,7 +94,7 @@ function enableSystemPromptCallback() {
 function disableSystemPromptCallback() {
     power_user.sysprompt.enabled = false;
     $enabled.prop('checked', false);
-    toggleSyspromptDisabledControls();
+    toggleSystemPromptDisabledControls();
     saveSettingsDebounced();
     return '';
 }
@@ -112,7 +137,7 @@ function selectSystemPromptCallback(args, name) {
 jQuery(function () {
     $enabled.on('input', function () {
         power_user.sysprompt.enabled = !!$(this).prop('checked');
-        toggleSyspromptDisabledControls();
+        toggleSystemPromptDisabledControls();
         saveSettingsDebounced();
     });
 

@@ -25,7 +25,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashComma
 import { enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
-import { system_prompts } from './sysprompt.js';
+import { checkForSystemPromptInInstructTemplate, system_prompts } from './sysprompt.js';
 import {
     textgenerationwebui_preset_names,
     textgenerationwebui_presets,
@@ -72,7 +72,7 @@ function autoSelectPreset() {
  * @param {string} apiId API id
  * @returns {PresetManager} Preset manager
  */
-function getPresetManager(apiId = '') {
+export function getPresetManager(apiId = '') {
     if (!apiId) {
         apiId = main_api == 'koboldhorde' ? 'kobold' : main_api;
     }
@@ -183,6 +183,10 @@ class PresetManager {
     }
 
     async savePreset(name, settings) {
+        if (this.apiId === 'instruct') {
+            await checkForSystemPromptInInstructTemplate(name, settings);
+        }
+
         const preset = settings ?? this.getPresetSettings(name);
 
         const response = await fetch('/api/presets/save', {
