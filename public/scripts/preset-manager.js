@@ -25,6 +25,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashComma
 import { enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { system_prompts } from './sysprompt.js';
 import {
     textgenerationwebui_preset_names,
     textgenerationwebui_presets,
@@ -228,6 +229,10 @@ class PresetManager {
                 presets = instruct_presets;
                 preset_names = instruct_presets.map(x => x.name);
                 break;
+            case 'sysprompt':
+                presets = system_prompts;
+                preset_names = system_prompts.map(x => x.name);
+                break;
             default:
                 console.warn(`Unknown API ID ${this.apiId}`);
         }
@@ -240,7 +245,7 @@ class PresetManager {
     }
 
     isAdvancedFormatting() {
-        return this.apiId == 'context' || this.apiId == 'instruct';
+        return this.apiId == 'context' || this.apiId == 'instruct' || this.apiId == 'sysprompt';
     }
 
     updateList(name, preset) {
@@ -297,6 +302,11 @@ class PresetManager {
                     const instruct_preset = structuredClone(power_user.instruct);
                     instruct_preset['name'] = name || power_user.instruct.preset;
                     return instruct_preset;
+                }
+                case 'sysprompt': {
+                    const sysprompt_preset = structuredClone(power_user.sysprompt);
+                    sysprompt_preset['name'] = name || power_user.sysprompt.preset;
+                    return sysprompt_preset;
                 }
                 default:
                     console.warn(`Unknown API ID ${apiId}`);

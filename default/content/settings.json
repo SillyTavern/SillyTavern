@@ -154,7 +154,6 @@
         "instruct": {
             "enabled": false,
             "preset": "Alpaca",
-            "system_prompt": "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n",
             "input_sequence": "### Instruction:",
             "output_sequence": "### Response:",
             "last_output_sequence": "",
@@ -173,6 +172,11 @@
             "system_suffix": "\n\n",
             "user_alignment_message": "",
             "system_same_as_user": false
+        },
+        "sysprompt": {
+            "enabled": true,
+            "name": "Blank",
+            "content": ""
         },
         "default_context": "Default",
         "context": {

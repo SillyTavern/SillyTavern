@@ -1,5 +1,4 @@
 {
-    "system_prompt": "Write {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n",
     "input_sequence": "",
     "output_sequence": "### Response:",
     "last_output_sequence": "",

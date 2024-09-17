@@ -3206,116 +3206,74 @@
                                     <small data-i18n="Allow Post-History Instructions">Allow Post-History Instructions</small>
                                 </label>
                             </div>
-                            <div>
-                                <h4 class="range-block-title justifyLeft standoutHeader">
-                                    <span data-i18n="Custom Stopping Strings">
-                                        Custom Stopping Strings
-                                    </span>
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#custom-stopping-strings" class="notes-link" target="_blank">
-                                        <span class="fa-solid fa-circle-question note-link-span"></span>
-                                    </a>
-                                </h4>
-                                <div>
-                                    <small>
-                                        <span data-i18n="JSON serialized array of strings">JSON serialized array of strings</span>
-                                        <i class="fa-solid fa-question-circle opacity50p" title="e.g: [&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></i>
-                                    </small>
-                                </div>
-                                <div>
-                                    <textarea id="custom_stopping_strings" class="text_pole textarea_compact monospace autoSetHeight"></textarea>
-                                </div>
-                                <label class="checkbox_label" for="custom_stopping_strings_macro">
-                                    <input id="custom_stopping_strings_macro" type="checkbox" checked>
-                                    <small data-i18n="Replace Macro in Custom Stopping Strings">
-                                        Replace Macro in Custom Stopping Strings
-                                    </small>
-                                </label>
-                            </div>
                         </div>
                     </div>
-                    <div id="InstructSettingsColumn" class="flex-container flexNoGap flexFlowColumn flex1">
-                        <div id="instructSettingsBlock">
+                    <div id="SystemPromptColumn" class="flex-container flexNoGap flexFlowColumn flex1">
+                        <div id="SystemPromptBlock">
                             <h4 class="standoutHeader title_restorable justifySpaceBetween">
                                 <div class="flex-container">
-                                    <span data-i18n="Instruct Template">Instruct Template</span>
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
+                                    <span data-i18n="System Prompt">System Prompt</span>
+                                    <a href="/" class="notes-link" target="_blank">
                                         <span class="fa-solid fa-circle-question note-link-span"></span>
                                     </a>
                                 </div>
                                 <div class="flex-container">
-                                    <label for="instruct_enabled" class="checkbox_label flex1" title="Enable Instruct Mode" data-i18n="[title]instruct_enabled">
-                                        <input id="instruct_enabled" type="checkbox" style="display:none;" />
+                                    <label for="sysprompt_enabled" class="checkbox_label flex1" title="Enable System Prompt" data-i18n="[title]sysprompt_enabled">
+                                        <input id="sysprompt_enabled" type="checkbox" style="display:none;" />
                                         <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
-                                    </label>
-                                    <label for="instruct_bind_to_context" class="checkbox_label flex1" title="Bind to Context&#10If enabled, Context templates will be automatically selected based on selected Instruct template name or by preference." data-i18n="[title]instruct_bind_to_context">
-                                        <input id="instruct_bind_to_context" type="checkbox" style="display:none;" />
-                                        <small><i class="fa-solid fa-link menu_button margin0"></i></small>
                                     </label>
                                 </div>
                             </h4>
+
                             <div class="flex-container margin0 justifyCenter">
-                                <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
-                                <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this template on API connection." data-i18n="[title]Auto-select this template on API connection"></i>
-                                <i data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current template" data-i18n="[title]Update current template"></i>
-                                <i data-preset-manager-new="instruct" class="menu_button fa-solid fa-file-circle-plus" title="Save template as" data-i18n="[title]Save template as"></i>
-                                <i data-preset-manager-import="instruct" class=" menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
-                                <i data-preset-manager-export="instruct" class=" menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
-                                <i data-preset-manager-restore="instruct" class=" menu_button fa-solid fa-recycle" title="Restore current template" data-i18n="[title]Restore current template"></i>
-                                <i data-preset-manager-delete="instruct" class=" menu_button fa-solid fa-trash-can" title="Delete template" data-i18n="[title]Delete template"></i>
+                                <input type="file" hidden data-preset-manager-file="sysprompt" accept=".json, .settings">
+                                <i data-preset-manager-update="sysprompt" class="menu_button fa-solid fa-save" title="Update current prompt" data-i18n="[title]Update current prompt"></i>
+                                <i data-preset-manager-new="sysprompt" class="menu_button fa-solid fa-file-circle-plus" title="Save prompt as" data-i18n="[title]Save prompt as"></i>
+                                <i data-preset-manager-import="sysprompt" class="menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
+                                <i data-preset-manager-export="sysprompt" class="menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
+                                <i data-preset-manager-restore="sysprompt" class="menu_button fa-solid fa-recycle" title="Restore current prompt" data-i18n="[title]Restore current prompt"></i>
+                                <i data-preset-manager-delete="sysprompt" class="menu_button fa-solid fa-trash-can" title="Delete prompt" data-i18n="[title]Delete prompt"></i>
                             </div>
 
-                            <div class="flex-container" title="Select your current Instruct Template" data-i18n="[title]Select your current Instruct Template">
-                                <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1 text_pole"></select>
-                            </div>
-                            <label>
-                                <small>
-                                    <span data-i18n="Activation Regex">Activation Regex</span>
-                                    <span class="fa-solid fa-circle-question" title="When connecting to an API or choosing a model, automatically activate this Instruct Template if the model name matches the provided regular expression."></span>
-                                </small>
-                            </label>
-                            <div>
-                                <input type="text" id="instruct_activation_regex" class="text_pole textarea_compact" placeholder="e.g. /llama(-)?[3|3.1]/i">
-                            </div>
-                            <div>
-                                <label for="instruct_system_prompt" class="flex-container">
-                                    <small data-i18n="System Prompt">System Prompt</small>
-                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="instruct_system_prompt" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
-                                </label>
-                                <textarea id="instruct_system_prompt" class="text_pole textarea_compact autoSetHeight"></textarea>
+                            <div class="flex-container" title="Select your current System Prompt" data-i18n="[title]Select your current System Prompt">
+                                <select id="sysprompt_select" data-preset-manager-for="sysprompt" class="flex1 text_pole"></select>
                             </div>
 
                             <div>
-                                <label for="instruct_wrap" class="checkbox_label">
-                                    <input id="instruct_wrap" type="checkbox" />
-                                    <small data-i18n="Wrap Sequences with Newline">Wrap Sequences with Newline</small>
+                                <label for="sysprompt_content" class="flex-container">
+                                    <small data-i18n="Prompt Content">Prompt Content</small>
+                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="sysprompt_content" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                 </label>
-                                <label for="instruct_macro" class="checkbox_label">
-                                    <input id="instruct_macro" type="checkbox" />
-                                    <small data-i18n="Replace Macro in Sequences">Replace Macro in Sequences</small>
-                                </label>
-                                <label for="instruct_skip_examples" class="checkbox_label">
-                                    <input id="instruct_skip_examples" type="checkbox" />
-                                    <small data-i18n="Skip Example Dialogues Formatting">Skip Example Dialogues Formatting</small>
-                                </label>
-                                <div id="instruct_names_behavior">
-                                    <small data-i18n="Include Names">
-                                        Include Names
-                                    </small>
-                                    <label for="instruct_names_behavior_none" class="checkbox_label" title="Do not add name prefixes before the message contents.">
-                                        <input id="instruct_names_behavior_none" name="names_behavior" value="none" type="radio" />
-                                        <small data-i18n="Never">Never</small>
-                                    </label>
-                                    <label for="instruct_names_behavior_force" class="checkbox_label" title="Only add name prefixes to messages from group characters and past personas.">
-                                        <input id="instruct_names_behavior_force" name="names_behavior" value="force" type="radio" />
-                                        <small data-i18n="Groups and Past Personas">Groups and Past Personas</small>
-                                    </label>
-                                    <label for="instruct_names_behavior_always" class="checkbox_label" title="Always add name prefixes to messages.">
-                                        <input id="instruct_names_behavior_always" name="names_behavior" value="always" type="radio" />
-                                        <small data-i18n="Always">Always</small>
-                                    </label>
-                                </div>
+                                <textarea id="sysprompt_content" class="text_pole textarea_compact autoSetHeight"></textarea>
                             </div>
                         </div>
+
+                        <div>
+                            <h4 class="range-block-title justifyLeft standoutHeader">
+                                <span data-i18n="Custom Stopping Strings">
+                                    Custom Stopping Strings
+                                </span>
+                                <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#custom-stopping-strings" class="notes-link" target="_blank">
+                                    <span class="fa-solid fa-circle-question note-link-span"></span>
+                                </a>
+                            </h4>
+                            <div>
+                                <small>
+                                    <span data-i18n="JSON serialized array of strings">JSON serialized array of strings</span>
+                                    <i class="fa-solid fa-question-circle opacity50p" title="e.g: [&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></i>
+                                </small>
+                            </div>
+                            <div>
+                                <textarea id="custom_stopping_strings" class="text_pole textarea_compact monospace autoSetHeight"></textarea>
+                            </div>
+                            <label class="checkbox_label" for="custom_stopping_strings_macro">
+                                <input id="custom_stopping_strings_macro" type="checkbox" checked>
+                                <small data-i18n="Replace Macro in Custom Stopping Strings">
+                                    Replace Macro in Custom Stopping Strings
+                                </small>
+                            </label>
+                        </div>
+
                         <div name="tokenizerSettingsBlock">
                             <div name="tokenizerSelectorBlock">
                                 <h4 class="standoutHeader"><span data-i18n="Tokenizer">Tokenizer</span>
@@ -3386,8 +3344,75 @@
                             </div>
                         </div>
                     </div>
-                    <div id="InstructSequencesColumn" class="flex-container flexNoGap flexFlowColumn flex1">
-                        <div class="wide100p flexFlowColumn">
+                    <div id="InstructSettingsColumn" class="flex-container flexNoGap flexFlowColumn flex1">
+                        <div id="instructSettingsBlock">
+                            <h4 class="standoutHeader title_restorable justifySpaceBetween">
+                                <div class="flex-container">
+                                    <span data-i18n="Instruct Template">Instruct Template</span>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </div>
+                                <div class="flex-container">
+                                    <label for="instruct_enabled" class="checkbox_label flex1" title="Enable Instruct Mode" data-i18n="[title]instruct_enabled">
+                                        <input id="instruct_enabled" type="checkbox" style="display:none;" />
+                                        <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
+                                    </label>
+                                    <label for="instruct_bind_to_context" class="checkbox_label flex1" title="Bind to Context&#10If enabled, Context templates will be automatically selected based on selected Instruct template name or by preference." data-i18n="[title]instruct_bind_to_context">
+                                        <input id="instruct_bind_to_context" type="checkbox" style="display:none;" />
+                                        <small><i class="fa-solid fa-link menu_button margin0"></i></small>
+                                    </label>
+                                </div>
+                            </h4>
+                            <div class="flex-container margin0 justifyCenter">
+                                <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
+                                <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this template on API connection." data-i18n="[title]Auto-select this template on API connection"></i>
+                                <i data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current template" data-i18n="[title]Update current template"></i>
+                                <i data-preset-manager-new="instruct" class="menu_button fa-solid fa-file-circle-plus" title="Save template as" data-i18n="[title]Save template as"></i>
+                                <i data-preset-manager-import="instruct" class=" menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
+                                <i data-preset-manager-export="instruct" class=" menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
+                                <i data-preset-manager-restore="instruct" class=" menu_button fa-solid fa-recycle" title="Restore current template" data-i18n="[title]Restore current template"></i>
+                                <i data-preset-manager-delete="instruct" class=" menu_button fa-solid fa-trash-can" title="Delete template" data-i18n="[title]Delete template"></i>
+                            </div>
+
+                            <div class="flex-container" title="Select your current Instruct Template" data-i18n="[title]Select your current Instruct Template">
+                                <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1 text_pole"></select>
+                            </div>
+                            <label>
+                                <small>
+                                    <span data-i18n="Activation Regex">Activation Regex</span>
+                                    <span class="fa-solid fa-circle-question" title="When connecting to an API or choosing a model, automatically activate this Instruct Template if the model name matches the provided regular expression."></span>
+                                </small>
+                            </label>
+                            <div>
+                                <input type="text" id="instruct_activation_regex" class="text_pole textarea_compact" placeholder="e.g. /llama(-)?[3|3.1]/i">
+                            </div>
+                            <div>
+                                <label for="instruct_wrap" class="checkbox_label">
+                                    <input id="instruct_wrap" type="checkbox" />
+                                    <small data-i18n="Wrap Sequences with Newline">Wrap Sequences with Newline</small>
+                                </label>
+                                <label for="instruct_macro" class="checkbox_label">
+                                    <input id="instruct_macro" type="checkbox" />
+                                    <small data-i18n="Replace Macro in Sequences">Replace Macro in Sequences</small>
+                                </label>
+                                <label for="instruct_skip_examples" class="checkbox_label">
+                                    <input id="instruct_skip_examples" type="checkbox" />
+                                    <small data-i18n="Skip Example Dialogues Formatting">Skip Example Dialogues Formatting</small>
+                                </label>
+                                <div>
+                                    <small data-i18n="Include Names">
+                                        Include Names
+                                    </small>
+                                    <select id="instruct_names_behavior">
+                                        <option value="none" data-i18n="Never">Never</option>
+                                        <option value="force" data-i18n="Groups and Past Personas">Groups and Past Personas</option>
+                                        <option value="always" data-i18n="Always">Always</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="InstructSequencesColumn" class="wide100p flexFlowColumn">
                             <h4 class="standoutHeader title_restorable">
                                 <b>
                                     <span data-i18n="Instruct Sequences">

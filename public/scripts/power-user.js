@@ -50,6 +50,7 @@ import { AUTOCOMPLETE_SELECT_KEY, AUTOCOMPLETE_WIDTH } from './autocomplete/Auto
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { POPUP_TYPE, callGenericPopup } from './popup.js';
+import { loadSystemPrompts } from './sysprompt.js';
 
 export {
     loadPowerUserSettings,
@@ -210,7 +211,6 @@ let power_user = {
     instruct: {
         enabled: false,
         preset: 'Alpaca',
-        system_prompt: 'Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}\'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n',
         input_sequence: '### Instruction:',
         input_suffix: '',
         output_sequence: '### Response:',
@@ -243,6 +243,12 @@ let power_user = {
         use_stop_strings: true,
         allow_jailbreak: false,
         names_as_stop_strings: true,
+    },
+
+    sysprompt: {
+        enabled: true,
+        name: 'Blank',
+        content: '',
     },
 
     personas: {},
@@ -1598,6 +1604,7 @@ async function loadPowerUserSettings(settings, data) {
     reloadMarkdownProcessor(power_user.render_formulas);
     await loadInstructMode(data);
     await loadContextSettings();
+    await loadSystemPrompts(data);
     loadMaxContextUnlocked();
     switchWaifuMode();
     switchSpoilerMode();

@@ -23,7 +23,6 @@ export const names_behavior_types = {
 const controls = [
     { id: 'instruct_enabled', property: 'enabled', isCheckbox: true },
     { id: 'instruct_wrap', property: 'wrap', isCheckbox: true },
-    { id: 'instruct_system_prompt', property: 'system_prompt', isCheckbox: false },
     { id: 'instruct_system_sequence_prefix', property: 'system_sequence_prefix', isCheckbox: false },
     { id: 'instruct_system_sequence_suffix', property: 'system_sequence_suffix', isCheckbox: false },
     { id: 'instruct_input_sequence', property: 'input_sequence', isCheckbox: false },
@@ -43,7 +42,7 @@ const controls = [
     { id: 'instruct_activation_regex', property: 'activation_regex', isCheckbox: false },
     { id: 'instruct_bind_to_context', property: 'bind_to_context', isCheckbox: true },
     { id: 'instruct_skip_examples', property: 'skip_examples', isCheckbox: true },
-    { id: 'instruct_names_behavior input[name="names_behavior"]', property: 'names_behavior', isCheckbox: false },
+    { id: 'instruct_names_behavior', property: 'names_behavior', isCheckbox: false },
     { id: 'instruct_system_same_as_user', property: 'system_same_as_user', isCheckbox: true, trigger: true },
 ];
 
@@ -109,9 +108,10 @@ export async function loadInstructMode(data) {
 
         if (control.isCheckbox) {
             $element.prop('checked', power_user.instruct[control.property]);
-        } else if (control.property === 'names_behavior') {
-            const behavior = power_user.instruct[control.property];
-            $element.filter(`[value="${behavior}"]`).prop('checked', true);
+        } else if ($element.is('select')) {
+            const value = power_user.instruct[control.property];
+            $element.val(value);
+            $element.filter(`[value="${value}"]`).prop('checked', true);
         } else {
             $element.val(power_user.instruct[control.property]);
         }
@@ -584,9 +584,13 @@ export function replaceInstructMacros(input, env) {
     if (!input) {
         return '';
     }
+
+    const syspromptMacros = {
+        'systemPrompt': (power_user.prefer_character_prompt && env.charPrompt ? env.charPrompt : power_user.sysprompt.content),
+        'defaultSystemPrompt|instructSystem|instructSystemPrompt': power_user.sysprompt.content,
+    };
+
     const instructMacros = {
-        'systemPrompt': (power_user.prefer_character_prompt && env.charPrompt ? env.charPrompt : power_user.instruct.system_prompt),
-        'instructSystem|instructSystemPrompt': power_user.instruct.system_prompt,
         'instructSystemPromptPrefix': power_user.instruct.system_sequence_prefix,
         'instructSystemPromptSuffix': power_user.instruct.system_sequence_suffix,
         'instructInput|instructUserPrefix': power_user.instruct.input_sequence,
@@ -607,6 +611,11 @@ export function replaceInstructMacros(input, env) {
     for (const [placeholder, value] of Object.entries(instructMacros)) {
         const regex = new RegExp(`{{(${placeholder})}}`, 'gi');
         input = input.replace(regex, power_user.instruct.enabled ? value : '');
+    }
+
+    for (const [placeholder, value] of Object.entries(syspromptMacros)) {
+        const regex = new RegExp(`{{(${placeholder})}}`, 'gi');
+        input = input.replace(regex, power_user.sysprompt.enabled ? value : '');
     }
 
     input = input.replace(/{{exampleSeparator}}/gi, power_user.context.example_separator);
@@ -686,9 +695,10 @@ jQuery(() => {
 
                 if (control.isCheckbox) {
                     $element.prop('checked', power_user.instruct[control.property]).trigger('input');
-                } else if (control.property === 'names_behavior') {
-                    const behavior = power_user.instruct[control.property];
-                    $element.filter(`[value="${behavior}"]`).prop('checked', true).trigger('input');
+                } else if ($element.is('select')) {
+                    const value = power_user.instruct[control.property];
+                    $element.val(value);
+                    $element.filter(`[value="${value}"]`).prop('checked', true).trigger('input');
                 } else {
                     $element.val(power_user.instruct[control.property]);
                     $element.trigger('input');

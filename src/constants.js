@@ -42,6 +42,7 @@ const USER_DIRECTORY_TEMPLATE = Object.freeze({
     files: 'user/files',
     vectors: 'vectors',
     backups: 'backups',
+    sysprompt: 'sysprompt',
 });
 
 /**
