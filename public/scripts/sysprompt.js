@@ -9,6 +9,21 @@ const $select = $('#sysprompt_select');
 const $content = $('#sysprompt_content');
 const $contentBlock = $('#SystemPromptBlock');
 
+function migrateSystemPromptFromInstructMode() {
+    if ('system_prompt' in power_user.instruct) {
+        power_user.sysprompt.enabled = power_user.instruct.enabled;
+        power_user.sysprompt.content = String(power_user.instruct.system_prompt);
+        delete power_user.instruct.system_prompt;
+
+        if (system_prompts.some(x => x.name === power_user.instruct.preset)) {
+            power_user.sysprompt.name = power_user.instruct.preset;
+        }
+
+        saveSettingsDebounced();
+        toastr.info('System prompt settings have been moved from the Instruct Mode.', 'Migration notice', { timeOut: 5000 });
+    }
+}
+
 /**
  * Loads sysprompt settings from the given data object.
  * @param {object} data Settings data object.
@@ -18,6 +33,7 @@ export async function loadSystemPrompts(data) {
         system_prompts = data.sysprompt;
     }
 
+    migrateSystemPromptFromInstructMode();
     toggleSyspromptDisabledControls();
 
     for (const prompt of system_prompts) {
