@@ -33,6 +33,8 @@ const CC_COMMANDS = [
 
 const TC_COMMANDS = [
     ...COMMON_COMMANDS,
+    'sysprompt',
+    'sysprompt-state',
     'instruct',
     'context',
     'instruct-state',
@@ -45,6 +47,8 @@ const FANCY_NAMES = {
     'preset': 'Settings Preset',
     'model': 'Model',
     'proxy': 'Proxy Preset',
+    'sysprompt-state': 'Use System Prompt',
+    'sysprompt': 'System Prompt Name',
     'instruct-state': 'Instruct Mode',
     'instruct': 'Instruct Template',
     'context': 'Context Template',
@@ -180,6 +184,11 @@ async function readProfileFromCommands(mode, profile, cleanUp = false) {
     }
 
     if (cleanUp) {
+        for (const command of commands) {
+            if (command.endsWith('-state') && profile[command] === 'false') {
+                delete profile[command.replace('-state', '')];
+            }
+        }
         for (const command of opposingCommands) {
             if (commands.includes(command)) {
                 continue;
