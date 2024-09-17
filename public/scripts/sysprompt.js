@@ -37,7 +37,7 @@ function migrateSystemPromptFromInstructMode() {
  * @param {object} data Settings data object.
  */
 export async function loadSystemPrompts(data) {
-    if (data.instruct !== undefined) {
+    if (data.sysprompt !== undefined) {
         system_prompts = data.sysprompt;
     }
 
