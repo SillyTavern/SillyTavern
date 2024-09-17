@@ -2,7 +2,7 @@ import {
     characters,
     chat,
     chat_metadata,
-    default_avatar,
+    default_user_avatar,
     eventSource,
     event_types,
     getRequestHeaders,
@@ -357,7 +357,7 @@ async function createDummyPersona() {
     // Date + name (only ASCII) to make it unique
     const avatarId = `${Date.now()}-${personaName.replace(/[^a-zA-Z0-9]/g, '')}.png`;
     initPersona(avatarId, personaName, '');
-    await uploadUserAvatar(default_avatar, avatarId);
+    await uploadUserAvatar(default_user_avatar, avatarId);
 }
 
 /**
@@ -944,7 +944,7 @@ async function onPersonasRestoreInput(e) {
         // If the avatar is missing, upload it
         if (!avatarsList.includes(key)) {
             warnings.push(`Persona image "${key}" (${value}) is missing, uploading default avatar`);
-            await uploadUserAvatar(default_avatar, key);
+            await uploadUserAvatar(default_user_avatar, key);
         }
     }
 
