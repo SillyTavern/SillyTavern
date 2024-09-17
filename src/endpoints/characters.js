@@ -726,13 +726,12 @@ router.post('/create', urlencodedParser, async function (request, response) {
         const char = JSON.stringify(charaFormatData(request.body, request.user.directories));
         const internalName = getPngName(request.body.ch_name, request.user.directories);
         const avatarName = `${internalName}.png`;
-        const defaultAvatar = './public/img/ai4.png';
         const chatsPath = path.join(request.user.directories.chats, internalName);
 
         if (!fs.existsSync(chatsPath)) fs.mkdirSync(chatsPath);
 
         if (!request.file) {
-            await writeCharacterData(defaultAvatar, char, internalName, request);
+            await writeCharacterData(defaultAvatarPath, char, internalName, request);
             return response.send(avatarName);
         } else {
             const crop = tryParse(request.query.crop);
