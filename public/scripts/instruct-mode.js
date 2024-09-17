@@ -34,7 +34,6 @@ const controls = [
     { id: 'instruct_last_system_sequence', property: 'last_system_sequence', isCheckbox: false },
     { id: 'instruct_user_alignment_message', property: 'user_alignment_message', isCheckbox: false },
     { id: 'instruct_stop_sequence', property: 'stop_sequence', isCheckbox: false },
-    { id: 'instruct_names', property: 'names', isCheckbox: true },
     { id: 'instruct_first_output_sequence', property: 'first_output_sequence', isCheckbox: false },
     { id: 'instruct_last_output_sequence', property: 'last_output_sequence', isCheckbox: false },
     { id: 'instruct_first_input_sequence', property: 'first_input_sequence', isCheckbox: false },
