@@ -1908,13 +1908,13 @@ export function select2ChoiceClickSubscribe(control, action, { buttonStyle = fal
  * @returns {string} The html representation of the highlighted regex
  */
 export function highlightRegex(regexStr) {
-    // Function to escape HTML special characters for safety
-    const escapeHtml = (str) => str.replace(/[&<>"']/g, match => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;',
+    // Function to escape special characters for safety or readability
+    const escape = (str) => str.replace(/[&<>"'\x01]/g, match => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;', '\x01': '\\x01',
     })[match]);
 
-    // Replace special characters with their HTML-escaped forms
-    regexStr = escapeHtml(regexStr);
+    // Replace special characters with their escaped forms
+    regexStr = escape(regexStr);
 
     // Patterns that we want to highlight only if they are not escaped
     function getPatterns() {
