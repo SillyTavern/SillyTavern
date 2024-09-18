@@ -928,7 +928,6 @@ class PromptManager {
             'personaDescription',
             'worldInfoBefore',
             'worldInfoAfter',
-            'dialogueExamples',
         ];
         return forceEditPrompts.includes(prompt.identifier) || !prompt.marker;
     }
