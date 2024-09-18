@@ -33,18 +33,22 @@ export const tokenizers = {
     BEST_MATCH: 99,
 };
 
-export const SENTENCEPIECE_TOKENIZERS = [
+// A list of local tokenizers that support encoding and decoding token ids.
+export const ENCODE_TOKENIZERS = [
     tokenizers.LLAMA,
     tokenizers.MISTRAL,
     tokenizers.YI,
     tokenizers.LLAMA3,
     tokenizers.GEMMA,
     tokenizers.JAMBA,
+    tokenizers.QWEN2,
+    tokenizers.COMMAND_R,
     // uncomment when NovelAI releases Kayra and Clio weights, lol
     //tokenizers.NERD,
     //tokenizers.NERD2,
 ];
 
+// A list of Text Completion sources that support remote tokenization.
 export const TEXTGEN_TOKENIZERS = [OOBA, TABBY, KOBOLDCPP, LLAMACPP, VLLM, APHRODITE];
 
 const TOKENIZER_URLS = {

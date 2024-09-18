@@ -3518,6 +3518,14 @@ grammarly-extension {
     column-gap: 20px;
 }
 
+.horde-model-description {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    font-size: 0.9em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .drag-handle {
     cursor: grab;
     /* Make the drag handle not selectable in most browsers */

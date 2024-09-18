@@ -11,7 +11,7 @@ const mime = require('mime-types');
 const archiver = require('archiver');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 
-const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, DEFAULT_AVATAR, SETTINGS_FILE } = require('./constants');
+const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE } = require('./constants');
 const { getConfigValue, color, delay, setConfigValue, generateTimestamp } = require('./util');
 const { readSecret, writeSecret } = require('./endpoints/secrets');
 
@@ -25,6 +25,7 @@ const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
  * @type {Map<string, UserDirectoryList>}
  */
 const DIRECTORIES_CACHE = new Map();
+const PUBLIC_USER_AVATAR = '/img/default-user.png';
 
 const STORAGE_KEYS = {
     csrfSecret: 'csrfSecret',
@@ -510,11 +511,11 @@ async function getUserAvatar(handle) {
         const settings = fs.existsSync(pathToSettings) ? JSON.parse(fs.readFileSync(pathToSettings, 'utf8')) : {};
         const avatarFile = settings?.power_user?.default_persona || settings?.user_avatar;
         if (!avatarFile) {
-            return DEFAULT_AVATAR;
+            return PUBLIC_USER_AVATAR;
         }
         const avatarPath = path.join(directory.avatars, avatarFile);
         if (!fs.existsSync(avatarPath)) {
-            return DEFAULT_AVATAR;
+            return PUBLIC_USER_AVATAR;
         }
         const mimeType = mime.lookup(avatarPath);
         const base64Content = fs.readFileSync(avatarPath, 'base64');
@@ -522,7 +523,7 @@ async function getUserAvatar(handle) {
     }
     catch {
         // Ignore errors
-        return DEFAULT_AVATAR;
+        return PUBLIC_USER_AVATAR;
     }
 }
 

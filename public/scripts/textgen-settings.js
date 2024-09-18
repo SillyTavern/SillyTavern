@@ -15,7 +15,7 @@ import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasList
 import { power_user, registerDebugFunction } from './power-user.js';
 import { getEventSourceStream } from './sse-stream.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer } from './textgen-models.js';
-import { SENTENCEPIECE_TOKENIZERS, TEXTGEN_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
+import { ENCODE_TOKENIZERS, TEXTGEN_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
 import { getSortableDelay, onlyUnique } from './utils.js';
 
 export {
@@ -353,7 +353,7 @@ function getTokenizerForTokenIds() {
         return tokenizers.API_CURRENT;
     }
 
-    if (SENTENCEPIECE_TOKENIZERS.includes(power_user.tokenizer)) {
+    if (ENCODE_TOKENIZERS.includes(power_user.tokenizer)) {
         return power_user.tokenizer;
     }
 

@@ -2490,7 +2490,7 @@ class Message {
      * @returns {Promise<string>} Compressed image as a Data URL.
      */
     async compressImage(image) {
-        if ([chat_completion_sources.OPENROUTER, chat_completion_sources.MAKERSUITE].includes(oai_settings.chat_completion_source)) {
+        if ([chat_completion_sources.OPENROUTER, chat_completion_sources.MAKERSUITE, chat_completion_sources.MISTRALAI].includes(oai_settings.chat_completion_source)) {
             const sizeThreshold = 2 * 1024 * 1024;
             const dataSize = image.length * 0.75;
             const maxSide = 1024;
@@ -4221,6 +4221,8 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_128k);
         } else if (oai_settings.mistralai_model.includes('mixtral-8x22b')) {
             $('#openai_max_context').attr('max', max_64k);
+        } else if (oai_settings.mistralai_model.includes('pixtral')) {
+            $('#openai_max_context').attr('max', max_128k);
         } else {
             $('#openai_max_context').attr('max', max_32k);
         }
@@ -4770,6 +4772,8 @@ export function isImageInliningSupported() {
         'gpt-4o-mini',
         'chatgpt-4o-latest',
         'yi-vision',
+        'pixtral-latest',
+        'pixtral-12b-2409',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -4785,6 +4789,8 @@ export function isImageInliningSupported() {
             return true;
         case chat_completion_sources.ZEROONEAI:
             return visionSupportedModels.some(model => oai_settings.zerooneai_model.includes(model));
+        case chat_completion_sources.MISTRALAI:
+            return visionSupportedModels.some(model => oai_settings.mistralai_model.includes(model));
         default:
             return false;
     }
