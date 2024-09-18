@@ -30,6 +30,7 @@ export const tokenizers = {
     JAMBA: 14,
     QWEN2: 15,
     COMMAND_R: 16,
+    NEMO: 17,
     BEST_MATCH: 99,
 };
 
@@ -43,6 +44,7 @@ export const ENCODE_TOKENIZERS = [
     tokenizers.JAMBA,
     tokenizers.QWEN2,
     tokenizers.COMMAND_R,
+    tokenizers.NEMO,
     // uncomment when NovelAI releases Kayra and Clio weights, lol
     //tokenizers.NERD,
     //tokenizers.NERD2,
@@ -120,6 +122,11 @@ const TOKENIZER_URLS = {
         encode: '/api/tokenizers/command-r/encode',
         decode: '/api/tokenizers/command-r/decode',
         count: '/api/tokenizers/command-r/encode',
+    },
+    [tokenizers.NEMO]: {
+        encode: '/api/tokenizers/nemo/encode',
+        decode: '/api/tokenizers/nemo/decode',
+        count: '/api/tokenizers/nemo/encode',
     },
     [tokenizers.API_TEXTGENERATIONWEBUI]: {
         encode: '/api/tokenizers/remote/textgenerationwebui/encode',
@@ -535,6 +542,7 @@ export function getTokenizerModel() {
     const jambaTokenizer = 'jamba';
     const qwen2Tokenizer = 'qwen2';
     const commandRTokenizer = 'command-r';
+    const nemoTokenizer = 'nemo';
 
     // Assuming no one would use it for different models.. right?
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
@@ -628,6 +636,9 @@ export function getTokenizerModel() {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
+        if (oai_settings.mistralai_model.includes('nemo') || oai_settings.mistralai_model.includes('pixtral')) {
+            return nemoTokenizer;
+        }
         return mistralTokenizer;
     }
 
