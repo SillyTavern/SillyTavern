@@ -105,7 +105,7 @@ function toggleSystemPromptCallback(_args, state) {
     }
 
     const newState = isTrueBoolean(state);
-    newState ? setSystemPromptStateCallback(true) : setSystemPromptStateCallback(false);
+    setSystemPromptStateCallback(newState);
     return String(power_user.sysprompt.enabled);
 }
 
