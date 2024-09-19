@@ -10,6 +10,7 @@ const express = require('express');
 const mime = require('mime-types');
 const archiver = require('archiver');
 const writeFileAtomicSync = require('write-file-atomic').sync;
+const _ = require('lodash');
 
 const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE } = require('./constants');
 const { getConfigValue, color, delay, setConfigValue, generateTimestamp } = require('./util');
@@ -326,6 +327,19 @@ async function migrateUserData() {
 }
 
 async function migrateSystemPrompts() {
+    /**
+     * Gets the default system prompts.
+     * @returns {Promise<any[]>} - The list of default system prompts
+     */
+    async function getDefaultSystemPrompts() {
+        try {
+            const { getContentOfType } = await import('./endpoints/content-manager.js');
+            return getContentOfType('sysprompt', 'json');
+        } catch {
+            return [];
+        }
+    }
+
     const directories = await getUserDirectoriesList();
     for (const directory of directories) {
         try {
@@ -333,20 +347,30 @@ async function migrateSystemPrompts() {
             if (fs.existsSync(migrateMarker)) {
                 continue;
             }
+            const defaultPrompts = await getDefaultSystemPrompts();
             const instucts = fs.readdirSync(directory.instruct);
+            let migratedPrompts = [];
             for (const instruct of instucts) {
                 const instructPath = path.join(directory.instruct, instruct);
-                const syspromptPath = path.join(directory.sysprompt, instruct);
-                if (path.extname(instruct) === '.json' && !fs.existsSync(syspromptPath)) {
+                const sysPromptPath = path.join(directory.sysprompt, instruct);
+                if (path.extname(instruct) === '.json' && !fs.existsSync(sysPromptPath)) {
                     const instructData = JSON.parse(fs.readFileSync(instructPath, 'utf8'));
                     if ('system_prompt' in instructData && 'name' in instructData) {
                         const syspromptData = { name: instructData.name, content: instructData.system_prompt };
-                        writeFileAtomicSync(syspromptPath, JSON.stringify(syspromptData, null, 4));
+                        migratedPrompts.push(syspromptData);
                         delete instructData.system_prompt;
                         writeFileAtomicSync(instructPath, JSON.stringify(instructData, null, 4));
-                        console.log(`Migrated system prompt ${instruct} for ${directory.root.split(path.sep).pop()}`);
                     }
                 }
+            }
+            // Only leave unique contents
+            migratedPrompts = _.uniqBy(migratedPrompts, 'content');
+            // Only leave contents that are not in the default prompts
+            migratedPrompts = migratedPrompts.filter(x => !defaultPrompts.some(y => y.content === x.content));
+            for (const sysPromptData of migratedPrompts) {
+                const syspromptPath = path.join(directory.sysprompt, `${sysPromptData.name}.json`);
+                writeFileAtomicSync(syspromptPath, JSON.stringify(sysPromptData, null, 4));
+                console.log(`Migrated system prompt ${sysPromptData.name} for ${directory.root.split(path.sep).pop()}`);
             }
             writeFileAtomicSync(migrateMarker, '');
         } catch {

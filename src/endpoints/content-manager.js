@@ -219,6 +219,37 @@ function getContentIndex() {
 }
 
 /**
+ * Gets content by type and format.
+ * @param {string} type Type of content
+ * @param {'json'|'string'|'raw'} format Format of content
+ * @returns {string[]|Buffer[]} Array of content
+ */
+function getContentOfType(type, format) {
+    const contentIndex = getContentIndex();
+    const indexItems = contentIndex.filter((item) => item.type === type && item.folder);
+    const files = [];
+    for (const item of indexItems) {
+        if (!item.folder) {
+            continue;
+        }
+        const filePath = path.join(item.folder, item.filename);
+        const fileContent = fs.readFileSync(filePath);
+        switch (format) {
+            case 'json':
+                files.push(JSON.parse(fileContent.toString()));
+                break;
+            case 'string':
+                files.push(fileContent.toString());
+                break;
+            case 'raw':
+                files.push(fileContent);
+                break;
+        }
+    }
+    return files;
+}
+
+/**
  * Gets the target directory for the specified asset type.
  * @param {ContentType} type Asset type
  * @param {import('../users').UserDirectoryList} directories User directories
@@ -724,5 +755,6 @@ module.exports = {
     checkForNewContent,
     getDefaultPresets,
     getDefaultPresetFile,
+    getContentOfType,
     router,
 };
