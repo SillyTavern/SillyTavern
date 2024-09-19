@@ -19,7 +19,7 @@ ENV NODE_ENV=production
 COPY package*.json post-install.js ./
 RUN \
   echo "*** Install npm packages ***" && \
-  npm i --no-audit --no-fund --quiet --omit=dev && npm cache clean --force
+  npm i --no-audit --no-fund --loglevel=error --no-progress --omit=dev && npm cache clean --force
 
 # Bundle app source
 COPY . ./
