@@ -183,7 +183,7 @@ class PresetManager {
     }
 
     async savePreset(name, settings) {
-        if (this.apiId === 'instruct') {
+        if (this.apiId === 'instruct' && settings) {
             await checkForSystemPromptInInstructTemplate(name, settings);
         }
 
