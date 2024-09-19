@@ -722,5 +722,9 @@
     {
         "filename": "presets/sysprompt/Blank.json",
         "type": "sysprompt"
+    },
+    {
+        "filename": "presets/sysprompt/Neutral - Chat.json",
+        "type": "sysprompt"
     }
 ]

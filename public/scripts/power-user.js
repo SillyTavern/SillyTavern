@@ -247,8 +247,8 @@ let power_user = {
 
     sysprompt: {
         enabled: true,
-        name: 'Blank',
-        content: '',
+        name: 'Neutral - Chat',
+        content: 'Write {{char}}\'s next reply in a fictional chat between {{char}} and {{user}}.',
     },
 
     personas: {},
