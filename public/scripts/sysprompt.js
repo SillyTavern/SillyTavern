@@ -137,7 +137,7 @@ function selectSystemPromptCallback(args, name) {
     return foundName;
 }
 
-jQuery(function () {
+export function initSystemPrompts() {
     $enabled.on('input', function () {
         power_user.sysprompt.enabled = !!$(this).prop('checked');
         toggleSystemPromptDisabledControls();
@@ -236,4 +236,4 @@ jQuery(function () {
         ],
         callback: toggleSystemPromptCallback,
     }));
-});
+}

@@ -244,6 +244,7 @@ import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/Slash
 import { commonEnumProviders, enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
 import { initInputMarkdown } from './scripts/input-md-formatting.js';
 import { AbortReason } from './scripts/util/AbortReason.js';
+import { initSystemPrompts } from './scripts/sysprompt.js';
 
 //exporting functions and vars for mods
 export {
@@ -932,6 +933,7 @@ async function firstLoadInit() {
     initLocales();
     initDefaultSlashCommands();
     initTextGenModels();
+    initSystemPrompts();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     sendSystemMessage(system_message_types.WELCOME_PROMPT);
