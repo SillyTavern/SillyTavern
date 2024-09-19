@@ -1,4 +1,10 @@
 module.exports = {
+    plugins: ["jsdoc"],
+    settings: {
+        jsdoc: {
+            mode: "typescript"
+        }
+    },
     root: true,
     extends: [
         'eslint:recommended',
@@ -61,13 +67,13 @@ module.exports = {
     ],
     // There are various vendored libraries that shouldn't be linted
     ignorePatterns: [
-        'public/lib/**/*',
         '*.min.js',
         'src/ai_horde/**/*',
         'plugins/**/*',
         'data/**/*',
         'backups/**/*',
         'node_modules/**/*',
+        'lib/**/*',
     ],
     rules: {
         'no-unused-vars': ['error', { args: 'none' }],
@@ -76,6 +82,7 @@ module.exports = {
         'require-yield': 'off',
         'quotes': ['error', 'single'],
         'semi': ['error', 'always'],
+        "jsdoc/no-undefined-types": 0,
         'indent': ['error', 4, { SwitchCase: 1, FunctionDeclaration: { parameters: 'first' } }],
         'comma-dangle': ['error', 'always-multiline'],
         'eol-last': ['error', 'always'],

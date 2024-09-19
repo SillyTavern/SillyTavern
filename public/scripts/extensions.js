@@ -166,7 +166,8 @@ const extension_settings = {
 let modules = [];
 let activeExtensions = new Set();
 
-const getContext = () => window['SillyTavern'].getContext();
+import { getRootContext } from '../script.js';
+const getContext = getRootContext;
 const getApiUrl = () => extension_settings.apiUrl;
 let connectedToApi = false;
 
@@ -1056,3 +1057,4 @@ jQuery(async function () {
      */
     $('#third_party_extension_button').on('click', () => openThirdPartyExtensionMenu());
 });
+
