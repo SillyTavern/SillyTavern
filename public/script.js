@@ -8569,20 +8569,27 @@ async function connectAPISlash(args, text) {
         return '';
     }
 
-    $(`#main_api option[value='${apiConfig.selected || text}']`).prop('selected', true);
-    $('#main_api').trigger('change');
+    let connectionRequired = false;
 
-    if (apiConfig.source) {
+    if (main_api !== apiConfig.selected) {
+        $(`#main_api option[value='${apiConfig.selected || text}']`).prop('selected', true);
+        $('#main_api').trigger('change');
+        connectionRequired = true;
+    }
+
+    if (apiConfig.source && oai_settings.chat_completion_source !== apiConfig.source) {
         $(`#chat_completion_source option[value='${apiConfig.source}']`).prop('selected', true);
         $('#chat_completion_source').trigger('change');
+        connectionRequired = true;
     }
 
-    if (apiConfig.type) {
+    if (apiConfig.type && textgen_settings.type !== apiConfig.type) {
         $(`#textgen_type option[value='${apiConfig.type}']`).prop('selected', true);
         $('#textgen_type').trigger('change');
+        connectionRequired = true;
     }
 
-    if (apiConfig.button) {
+    if (connectionRequired && apiConfig.button) {
         $(apiConfig.button).trigger('click');
     }
 

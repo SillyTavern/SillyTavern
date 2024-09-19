@@ -19,20 +19,21 @@ const DEFAULT_SETTINGS = {
     selectedProfile: null,
 };
 
-const COMMON_COMMANDS = [
+const CC_COMMANDS = [
     'api',
     'preset',
+    // Do not fix; CC needs to set the API twice because it could be overridden by the preset
+    'api',
     'api-url',
     'model',
-];
-
-const CC_COMMANDS = [
-    ...COMMON_COMMANDS,
     'proxy',
 ];
 
 const TC_COMMANDS = [
-    ...COMMON_COMMANDS,
+    'api',
+    'preset',
+    'api-url',
+    'model',
     'instruct',
     'context',
     'instruct-state',
