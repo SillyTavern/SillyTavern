@@ -118,7 +118,7 @@ function selectSystemPromptCallback(args, name) {
     }
 
     if (!name) {
-        return power_user.sysprompt.name;
+        return power_user.sysprompt.name ?? '';
     }
 
     const quiet = isTrueBoolean(args?.quiet);
