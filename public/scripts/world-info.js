@@ -4134,10 +4134,10 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
 
         switch (entry.position) {
             case world_info_position.before:
-                WIBeforeEntries.unshift(substituteParams(content));
+                WIBeforeEntries.unshift(content);
                 break;
             case world_info_position.after:
-                WIAfterEntries.unshift(substituteParams(content));
+                WIAfterEntries.unshift(content);
                 break;
             case world_info_position.EMTop:
                 EMEntries.unshift(
