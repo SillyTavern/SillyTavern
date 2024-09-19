@@ -4125,7 +4125,9 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
     // TODO (kingbri): Change to use WI Anchor positioning instead of separate top/bottom arrays
     [...allActivatedEntries].sort(sortFn).forEach((entry) => {
         const regexDepth = entry.position === world_info_position.atDepth ? (entry.depth ?? DEFAULT_DEPTH) : null;
-        const content = getRegexedString(entry.content, regex_placement.WORLD_INFO, { depth: regexDepth, isMarkdown: false, isPrompt: true });
+        const content = substituteParams(
+            getRegexedString(entry.content, regex_placement.WORLD_INFO, { depth: regexDepth, isMarkdown: false, isPrompt: true })
+        );
 
         if (!content) {
             console.debug(`[WI] Entry ${entry.uid}`, 'skipped adding to prompt due to empty content', entry);
@@ -4134,10 +4136,10 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
 
         switch (entry.position) {
             case world_info_position.before:
-                WIBeforeEntries.unshift(substituteParams(content));
+                WIBeforeEntries.unshift(content);
                 break;
             case world_info_position.after:
-                WIAfterEntries.unshift(substituteParams(content));
+                WIAfterEntries.unshift(content);
                 break;
             case world_info_position.EMTop:
                 EMEntries.unshift(
