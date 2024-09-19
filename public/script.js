@@ -6923,15 +6923,13 @@ export async function displayPastChats() {
             }
             // Check whether `text` {string} includes all of the `fragments` {string[]}.
             function matchFragments(fragments, text) {
-                if (!text) {
-                    return false;
-                }
-                return fragments.every(item => text.includes(item));
+                if (!text || !text.toLowerCase) return false;
+                return fragments.every(item => text.toLowerCase().includes(item));
             }
             const fragments = makeQueryFragments(searchQuery);
             // At least one chat message must match *all* the fragments.
             // Currently, this doesn't match if the fragment matches are distributed across several chat messages.
-            return chatContent && Object.values(chatContent).some(message => matchFragments(fragments, message?.mes?.toLowerCase()));
+            return chatContent && Object.values(chatContent).some(message => matchFragments(fragments, message?.mes));
         });
 
         console.debug(filteredData);

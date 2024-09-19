@@ -92,8 +92,7 @@ function importOobaChat(userName, characterName, jsonData) {
         }
     }
 
-    const chatContent = chat.map(obj => JSON.stringify(obj)).join('\n');
-    return chatContent;
+    return chat.map(obj => JSON.stringify(obj)).join('\n');
 }
 
 /**
@@ -121,8 +120,7 @@ function importAgnaiChat(userName, characterName, jsonData) {
         });
     }
 
-    const chatContent = chat.map(obj => JSON.stringify(obj)).join('\n');
-    return chatContent;
+    return chat.map(obj => JSON.stringify(obj)).join('\n');
 }
 
 /**
@@ -157,6 +155,37 @@ function importCAIChat(userName, characterName, jsonData) {
 
     const newChats = (jsonData.histories.histories ?? []).map(history => newChats.push(convert(history).map(obj => JSON.stringify(obj)).join('\n')));
     return newChats;
+}
+
+/**
+ * Flattens `msg` and `swipes` data from Chub Chat format.
+ * Only changes enough to make it compatible with the standard chat serialization format.
+ * @param {string} userName User name
+ * @param {string} characterName Character name
+ * @param {string[]} lines serialised JSONL data
+ * @returns {string} Converted data
+ */
+function flattenChubChat(userName, characterName, lines) {
+    function flattenSwipe(swipe) {
+        return swipe.message ? swipe.message : swipe;
+    }
+
+    function convert(line) {
+        const lineData = tryParse(line);
+        if (!lineData) return line;
+
+        if (lineData.mes && lineData.mes.message) {
+            lineData.mes = lineData?.mes.message;
+        }
+
+        if (lineData?.swipes && Array.isArray(lineData.swipes)) {
+            lineData.swipes = lineData.swipes.map(swipe => flattenSwipe(swipe));
+        }
+
+        return JSON.stringify(lineData);
+    }
+
+    return (lines ?? []).map(convert).join('\n');
 }
 
 const router = express.Router();
@@ -273,7 +302,7 @@ router.post('/export', jsonParser, async function (request, response) {
     }
     try {
         // Short path for JSONL files
-        if (request.body.format == 'jsonl') {
+        if (request.body.format === 'jsonl') {
             try {
                 const rawFile = fs.readFileSync(filename, 'utf8');
                 const successMessage = {
@@ -283,8 +312,7 @@ router.post('/export', jsonParser, async function (request, response) {
 
                 console.log(`Chat exported as ${exportfilename}`);
                 return response.status(200).json(successMessage);
-            }
-            catch (err) {
+            } catch (err) {
                 console.error(err);
                 const errorMessage = {
                     message: `Could not read JSONL file to export. Source chat file: ${filename}.`,
@@ -319,8 +347,7 @@ router.post('/export', jsonParser, async function (request, response) {
             console.log(`Chat exported as ${exportfilename}`);
             return response.status(200).json(successMessage);
         });
-    }
-    catch (err) {
+    } catch (err) {
         console.log('chat export failed.');
         console.log(err);
         return response.sendStatus(400);
@@ -396,20 +423,36 @@ router.post('/import', urlencodedParser, function (request, response) {
         }
 
         if (format === 'jsonl') {
-            const line = data.split('\n')[0];
+            let lines = data.split('\n');
+            const header = lines[0];
 
-            const jsonData = JSON.parse(line);
+            const jsonData = JSON.parse(header);
 
-            if (jsonData.user_name !== undefined || jsonData.name !== undefined) {
-                const fileName = `${characterName} - ${humanizedISO8601DateTime()} imported.jsonl`;
-                const filePath = path.join(request.user.directories.chats, avatarUrl, fileName);
-                fs.copyFileSync(pathToUpload, filePath);
-                fs.unlinkSync(pathToUpload);
-                response.send({ res: true });
-            } else {
+            if (!(jsonData.user_name !== undefined || jsonData.name !== undefined)) {
                 console.log('Incorrect chat format .jsonl');
                 return response.send({ error: true });
             }
+
+            // Do a tiny bit of work to import Chub Chat data
+            // Processing the entire file is so fast that it's not worth checking if it's a Chub chat first
+            let flattenedChat;
+            try {
+                // flattening is unlikely to break, but it's not worth failing to
+                // import normal chats in an attempt to import a Chub chat
+                flattenedChat = flattenChubChat(userName, characterName, lines);
+            } catch (error) {
+                console.warn('Failed to flatten Chub Chat data: ', error);
+            }
+
+            const fileName = `${characterName} - ${humanizedISO8601DateTime()} imported.jsonl`;
+            const filePath = path.join(request.user.directories.chats, avatarUrl, fileName);
+            if (flattenedChat !== data) {
+                writeFileAtomicSync(filePath, flattenedChat, 'utf8');
+            } else {
+                fs.copyFileSync(pathToUpload, filePath);
+            }
+            fs.unlinkSync(pathToUpload);
+            response.send({ res: true });
         }
     } catch (error) {
         console.error(error);
