@@ -62,7 +62,10 @@ export async function loadSystemPrompts(data) {
  * @param {object} template Instruct template object
  */
 export async function checkForSystemPromptInInstructTemplate(name, template) {
-    if ('system_prompt' in template && name && template.system_prompt && !system_prompts.some(x => x.name === name)) {
+    if (!template || !name || typeof name !== 'string' || typeof template !== 'object') {
+        return;
+    }
+    if ('system_prompt' in template && template.system_prompt && !system_prompts.some(x => x.name === name)) {
         const html = await renderTemplateAsync('migrateInstructPrompt', { prompt: template.system_prompt });
         const confirm = await callGenericPopup(html, POPUP_TYPE.CONFIRM);
         if (confirm) {
