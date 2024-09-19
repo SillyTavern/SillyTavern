@@ -86,17 +86,14 @@ function toggleSystemPromptDisabledControls() {
     $contentBlock.toggleClass('disabled', !power_user.sysprompt.enabled);
 }
 
-function enableSystemPromptCallback() {
-    power_user.sysprompt.enabled = true;
-    $enabled.prop('checked', true);
-    toggleSystemPromptDisabledControls();
-    saveSettingsDebounced();
-    return '';
-}
-
-function disableSystemPromptCallback() {
-    power_user.sysprompt.enabled = false;
-    $enabled.prop('checked', false);
+/**
+ * Sets the system prompt state.
+ * @param {boolean} state System prompt state
+ * @returns {string} Empty string
+ */
+function setSystemPromptStateCallback(state) {
+    power_user.sysprompt.enabled = state;
+    $enabled.prop('checked', state);
     toggleSystemPromptDisabledControls();
     saveSettingsDebounced();
     return '';
@@ -108,7 +105,7 @@ function toggleSystemPromptCallback(_args, state) {
     }
 
     const newState = isTrueBoolean(state);
-    newState ? enableSystemPromptCallback() : disableSystemPromptCallback();
+    newState ? setSystemPromptStateCallback(true) : setSystemPromptStateCallback(false);
     return String(power_user.sysprompt.enabled);
 }
 
@@ -219,13 +216,13 @@ export function initSystemPrompts() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sysprompt-on',
         aliases: ['sysprompt-enable'],
-        callback: enableSystemPromptCallback,
+        callback: () => setSystemPromptStateCallback(true),
         helpString: 'Enables system prompt.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sysprompt-off',
         aliases: ['sysprompt-disable'],
-        callback: disableSystemPromptCallback,
+        callback: () => setSystemPromptStateCallback(false),
         helpString: 'Disables system prompt',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
