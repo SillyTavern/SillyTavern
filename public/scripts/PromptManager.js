@@ -427,12 +427,13 @@ class PromptManager {
 
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name').value = prompt.name;
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role').value = 'system';
-            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value = prompt.content;
+            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value = prompt.content ?? '';
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position').value = prompt.injection_position ?? 0;
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth').value = prompt.injection_depth ?? DEFAULT_DEPTH;
             document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block').style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides').checked = prompt.forbid_overrides ?? false;
             document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block').style.visibility = this.overridablePrompts.includes(prompt.identifier) ? 'visible' : 'hidden';
+            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').disabled = prompt.marker ?? false;
 
             if (!this.systemPrompts.includes(promptId)) {
                 document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position').removeAttribute('disabled');
@@ -920,7 +921,15 @@ class PromptManager {
      * @returns {boolean} True if the prompt can be edited, false otherwise.
      */
     isPromptEditAllowed(prompt) {
-        return !prompt.marker;
+        const forceEditPrompts = [
+            'charDescription',
+            'charPersonality',
+            'scenario',
+            'personaDescription',
+            'worldInfoBefore',
+            'worldInfoAfter',
+        ];
+        return forceEditPrompts.includes(prompt.identifier) || !prompt.marker;
     }
 
     /**
@@ -929,7 +938,17 @@ class PromptManager {
      * @returns {boolean} True if the prompt can be deleted, false otherwise.
      */
     isPromptToggleAllowed(prompt) {
-        const forceTogglePrompts = ['charDescription', 'charPersonality', 'scenario', 'personaDescription', 'worldInfoBefore', 'worldInfoAfter', 'main', 'chatHistory', 'dialogueExamples'];
+        const forceTogglePrompts = [
+            'charDescription',
+            'charPersonality',
+            'scenario',
+            'personaDescription',
+            'worldInfoBefore',
+            'worldInfoAfter',
+            'main',
+            'chatHistory',
+            'dialogueExamples',
+        ];
         return prompt.marker && !forceTogglePrompts.includes(prompt.identifier) ? false : !this.configuration.toggleDisabled.includes(prompt.identifier);
     }
 
@@ -1182,8 +1201,9 @@ class PromptManager {
         const forbidOverridesBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block');
 
         nameField.value = prompt.name ?? '';
-        roleField.value = prompt.role ?? '';
+        roleField.value = prompt.role ?? 'system';
         promptField.value = prompt.content ?? '';
+        promptField.disabled = prompt.marker ?? false;
         injectionPositionField.value = prompt.injection_position ?? INJECTION_POSITION.RELATIVE;
         injectionDepthField.value = prompt.injection_depth ?? DEFAULT_DEPTH;
         injectionDepthBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
@@ -1279,6 +1299,7 @@ class PromptManager {
         nameField.value = '';
         roleField.selectedIndex = 0;
         promptField.value = '';
+        promptField.disabled = false;
         injectionPositionField.selectedIndex = 0;
         injectionPositionField.removeAttribute('disabled');
         injectionDepthField.value = DEFAULT_DEPTH;

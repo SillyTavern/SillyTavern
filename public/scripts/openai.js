@@ -970,6 +970,12 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
         }
 
         const prompt = prompts.get(source);
+
+        if (prompt.injection_position === INJECTION_POSITION.ABSOLUTE) {
+            promptManager.log(`Skipping prompt ${source} because it is an absolute prompt`);
+            return;
+        }
+
         const index = target ? prompts.index(target) : prompts.index(source);
         const collection = new MessageCollection(source);
         collection.add(Message.fromPrompt(prompt));
@@ -1014,8 +1020,8 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
             acc.push(prompt.identifier);
             return acc;
         }, []);
-    const userAbsolutePrompts = prompts.collection
-        .filter((prompt) => false === prompt.system_prompt && prompt.injection_position === INJECTION_POSITION.ABSOLUTE)
+    const absolutePrompts = prompts.collection
+        .filter((prompt) => prompt.injection_position === INJECTION_POSITION.ABSOLUTE)
         .reduce((acc, prompt) => {
             acc.push(prompt);
             return acc;
@@ -1080,7 +1086,7 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
     }
 
     // Add in-chat injections
-    messages = populationInjectionPrompts(userAbsolutePrompts, messages);
+    messages = populationInjectionPrompts(absolutePrompts, messages);
 
     // Decide whether dialogue examples should always be added
     if (power_user.pin_examples) {
@@ -1217,6 +1223,18 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
 
     // Merge system prompts with prompt manager prompts
     systemPrompts.forEach(prompt => {
+        const collectionPrompt = prompts.get(prompt.identifier);
+
+        // Apply system prompt role/depth overrides if they set in the prompt manager
+        if (collectionPrompt) {
+            // In-Chat / Relative
+            prompt.injection_position = collectionPrompt.injection_position ?? prompt.injection_position;
+            // Depth for In-Chat
+            prompt.injection_depth = collectionPrompt.injection_depth ?? prompt.injection_depth;
+            // Role (system, user, assistant)
+            prompt.role = collectionPrompt.role ?? prompt.role;
+        }
+
         const newPrompt = promptManager.preparePrompt(prompt);
         const markerIndex = prompts.index(prompt.identifier);
 

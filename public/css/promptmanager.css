@@ -316,3 +316,15 @@
         margin-left: 0.5em;
     }
 }
+
+.completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt:disabled) > div:first-child::after {
+    content: 'The content of this prompt is pulled from elsewhere and cannot be edited here.';
+    display: block;
+    width: 100%;
+    font-weight: 600;
+    text-align: center;
+}
+
+.completion_prompt_manager_popup_entry_form_control #completion_prompt_manager_popup_entry_form_prompt:disabled {
+    visibility: hidden;
+}
