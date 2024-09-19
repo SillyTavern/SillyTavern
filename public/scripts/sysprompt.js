@@ -123,15 +123,20 @@ function selectSystemPromptCallback(args, name) {
 
     const quiet = isTrueBoolean(args?.quiet);
     const instructNames = system_prompts.map(preset => preset.name);
-    const fuse = new Fuse(instructNames);
-    const result = fuse.search(name);
+    let foundName = instructNames.find(x => x.toLowerCase() === name.toLowerCase());
 
-    if (result.length === 0) {
-        !quiet && toastr.warning(`System prompt "${name}" not found`);
-        return '';
+    if (!foundName) {
+        const fuse = new Fuse(instructNames);
+        const result = fuse.search(name);
+
+        if (result.length === 0) {
+            !quiet && toastr.warning(`System prompt "${name}" not found`);
+            return '';
+        }
+
+        foundName = result[0].item;
     }
 
-    const foundName = result[0].item;
     $select.val(foundName).trigger('input');
     !quiet && toastr.success(`System prompt "${foundName}" selected`);
     return foundName;
