@@ -203,7 +203,7 @@ export function initSystemPrompts() {
         ],
         helpString: `
             <div>
-                Selects a system prompt by name. Enables the use of system prompt if not already enabled.
+                Selects a system prompt by name, using fuzzy search to find the closest match. Enables the use of system prompt if not already enabled.
                 Gets the current system prompt if no name is provided and sysprompt is enabled or <code>forceGet=true</code> is passed.
             </div>
             <div>
