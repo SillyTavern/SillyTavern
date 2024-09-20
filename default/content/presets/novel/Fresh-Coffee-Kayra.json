@@ -16,5 +16,6 @@
   "prefix": "vanilla",
   "cfg_scale": 1,
   "phrase_rep_pen": "off",
-  "max_context": 7800
+  "max_context": 7800,
+  "min_p": 0
 }
