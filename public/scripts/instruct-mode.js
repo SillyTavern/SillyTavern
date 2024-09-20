@@ -532,6 +532,19 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
     }
 
     let sequence = getSequence() || '';
+    let nameFiller = '';
+
+    // A hack for Mistral's formatting that has a normal output sequence ending with a space
+    if (
+        includeNames &&
+        power_user.instruct.last_output_sequence &&
+        power_user.instruct.output_sequence &&
+        sequence === power_user.instruct.last_output_sequence &&
+        /\s$/.test(power_user.instruct.output_sequence) &&
+        !/\s$/.test(power_user.instruct.last_output_sequence)
+    ) {
+        nameFiller = power_user.instruct.output_sequence.slice(-1);
+    }
 
     if (power_user.instruct.macro) {
         sequence = substituteParams(sequence, name1, name2);
@@ -539,7 +552,7 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
     }
 
     const separator = power_user.instruct.wrap ? '\n' : '';
-    let text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
+    let text = includeNames ? (separator + sequence + separator + nameFiller + `${name}:`) : (separator + sequence);
 
     // Quiet prompt already has a newline at the end
     if (isQuiet && separator) {
