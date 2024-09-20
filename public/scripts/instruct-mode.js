@@ -541,7 +541,7 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
         power_user.instruct.output_sequence &&
         sequence === power_user.instruct.last_output_sequence &&
         /\s$/.test(power_user.instruct.output_sequence) &&
-        !/\s$/.test(sequence)
+        !/\s$/.test(power_user.instruct.last_output_sequence)
     ) {
         nameFiller = power_user.instruct.output_sequence.slice(-1);
     }
