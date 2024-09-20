@@ -232,18 +232,22 @@ function getContentOfType(type, format) {
         if (!item.folder) {
             continue;
         }
-        const filePath = path.join(item.folder, item.filename);
-        const fileContent = fs.readFileSync(filePath);
-        switch (format) {
-            case 'json':
-                files.push(JSON.parse(fileContent.toString()));
-                break;
-            case 'string':
-                files.push(fileContent.toString());
-                break;
-            case 'raw':
-                files.push(fileContent);
-                break;
+        try {
+            const filePath = path.join(item.folder, item.filename);
+            const fileContent = fs.readFileSync(filePath);
+            switch (format) {
+                case 'json':
+                    files.push(JSON.parse(fileContent.toString()));
+                    break;
+                case 'string':
+                    files.push(fileContent.toString());
+                    break;
+                case 'raw':
+                    files.push(fileContent);
+                    break;
+            }
+        } catch {
+            // Ignore errors
         }
     }
     return files;
