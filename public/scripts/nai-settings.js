@@ -38,6 +38,10 @@ export const nai_settings = {
     top_p: 0.75,
     top_a: 0.08,
     typical_p: 0.975,
+    min_p: 0,
+    math1_temp: 1,
+    math1_quad: 0,
+    math1_quad_entropy_scale: 0,
     min_length: 1,
     model_novel: 'clio-v1',
     preset_settings_novel: 'Talker-Chat-Clio',
@@ -151,6 +155,10 @@ export function loadNovelPreset(preset) {
     nai_settings.order = preset.order || default_order;
     nai_settings.logit_bias = preset.logit_bias || [];
     nai_settings.preamble = preset.preamble || default_preamble;
+    nai_settings.min_p = preset.min_p || 0;
+    nai_settings.math1_temp = preset.math1_temp || 1;
+    nai_settings.math1_quad = preset.math1_quad || 0;
+    nai_settings.math1_quad_entropy_scale = preset.math1_quad_entropy_scale || 0;
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -188,6 +196,10 @@ export function loadNovelSettings(settings) {
     nai_settings.banned_tokens = settings.banned_tokens || '';
     nai_settings.order = settings.order || default_order;
     nai_settings.logit_bias = settings.logit_bias || [];
+    nai_settings.min_p = settings.min_p || 0;
+    nai_settings.math1_temp = settings.math1_temp || 1;
+    nai_settings.math1_quad = settings.math1_quad || 0;
+    nai_settings.math1_quad_entropy_scale = settings.math1_quad_entropy_scale || 0;
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -227,6 +239,14 @@ function loadNovelSettingsUi(ui_settings) {
     $('#nai_prefix').val(ui_settings.prefix || 'vanilla');
     $('#nai_cfg_uc').val(ui_settings.cfg_uc || '');
     $('#nai_banned_tokens').val(ui_settings.banned_tokens || '');
+    $('#min_p_novel').val(ui_settings.min_p);
+    $('#min_p_counter_novel').val(Number(ui_settings.min_p).toFixed(3));
+    $('#math1_temp_novel').val(ui_settings.math1_temp);
+    $('#math1_temp_counter_novel').val(Number(ui_settings.math1_temp).toFixed(2));
+    $('#math1_quad_novel').val(ui_settings.math1_quad);
+    $('#math1_quad_counter_novel').val(Number(ui_settings.math1_quad).toFixed(2));
+    $('#math1_quad_entropy_scale_novel').val(ui_settings.math1_quad_entropy_scale);
+    $('#math1_quad_entropy_scale_counter_novel').val(Number(ui_settings.math1_quad_entropy_scale).toFixed(2));
 
     $('#streaming_novel').prop('checked', ui_settings.streaming_novel);
     sortItemsByOrder(ui_settings.order);
@@ -335,6 +355,30 @@ const sliders = [
         counterId: '#nai_banned_tokens_counter',
         format: (val) => val,
         setValue: (val) => { nai_settings.banned_tokens = val; },
+    },
+    {
+        sliderId: '#min_p_novel',
+        counterId: '#min_p_counter_novel',
+        format: (val) => Number(val).toFixed(3),
+        setValue: (val) => { nai_settings.min_p = Number(val); },
+    },
+    {
+        sliderId: '#math1_temp_novel',
+        counterId: '#math1_temp_counter_novel',
+        format: (val) => Number(val).toFixed(2),
+        setValue: (val) => { nai_settings.math1_temp = Number(val); },
+    },
+    {
+        sliderId: '#math1_quad_novel',
+        counterId: '#math1_quad_counter_novel',
+        format: (val) => Number(val).toFixed(2),
+        setValue: (val) => { nai_settings.math1_quad = Number(val); },
+    },
+    {
+        sliderId: '#math1_quad_entropy_scale_novel',
+        counterId: '#math1_quad_entropy_scale_counter_novel',
+        format: (val) => Number(val).toFixed(2),
+        setValue: (val) => { nai_settings.math1_quad_entropy_scale = Number(val); },
     },
 ];
 
@@ -469,6 +513,10 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
         'top_a': Number(nai_settings.top_a),
         'top_p': Number(nai_settings.top_p),
         'top_k': Number(nai_settings.top_k),
+        'min_p': Number(nai_settings.min_p),
+        'math1_temp': Number(nai_settings.math1_temp),
+        'math1_quad': Number(nai_settings.math1_quad),
+        'math1_quad_entropy_scale': Number(nai_settings.math1_quad_entropy_scale),
         'typical_p': Number(nai_settings.typical_p),
         'mirostat_lr': Number(nai_settings.mirostat_lr),
         'mirostat_tau': Number(nai_settings.mirostat_tau),
