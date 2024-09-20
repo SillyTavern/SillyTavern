@@ -508,10 +508,6 @@
         "type": "context"
     },
     {
-        "filename": "presets/context/Mistral.json",
-        "type": "context"
-    },
-    {
         "filename": "presets/context/NovelAI.json",
         "type": "context"
     },
@@ -589,10 +585,6 @@
     },
     {
         "filename": "presets/instruct/Metharme.json",
-        "type": "instruct"
-    },
-    {
-        "filename": "presets/instruct/Mistral.json",
         "type": "instruct"
     },
     {
@@ -726,5 +718,29 @@
     {
         "filename": "presets/sysprompt/Neutral - Chat.json",
         "type": "sysprompt"
+    },
+    {
+        "filename": "presets/instruct/Mistral V1.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/Mistral V1.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/instruct/Mistral V2 & V3.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/Mistral V2 & V3.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/instruct/Mistral V3-Tekken.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/Mistral V3-Tekken.json",
+        "type": "context"
     }
 ]

@@ -175,6 +175,10 @@ router.post('/generate', jsonParser, async function (req, res) {
             'prefix': req.body.prefix,
             'order': req.body.order,
             'num_logprobs': req.body.num_logprobs,
+            'min_p': req.body.min_p,
+            'math1_temp': req.body.math1_temp,
+            'math1_quad': req.body.math1_quad,
+            'math1_quad_entropy_scale': req.body.math1_quad_entropy_scale,
         },
     };
 

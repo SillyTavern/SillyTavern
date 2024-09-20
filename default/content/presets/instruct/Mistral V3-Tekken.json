@@ -1,6 +1,6 @@
 {
-    "input_sequence": "[INST] ",
-    "output_sequence": "",
+    "input_sequence": "[INST]",
+    "output_sequence": "[/INST]",
     "last_output_sequence": "",
     "system_sequence": "",
     "stop_sequence": "",
@@ -12,11 +12,11 @@
     "system_sequence_suffix": "",
     "first_output_sequence": "",
     "skip_examples": false,
-    "output_suffix": "\n",
-    "input_suffix": " [/INST]\n",
+    "output_suffix": "</s>",
+    "input_suffix": "",
     "system_suffix": "",
     "user_alignment_message": "Let's get started. Please respond based on the information and instructions provided above.",
     "system_same_as_user": true,
     "last_system_sequence": "",
-    "name": "Mistral"
+    "name": "Mistral V3-Tekken"
 }
