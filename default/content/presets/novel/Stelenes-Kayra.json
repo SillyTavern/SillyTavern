@@ -14,5 +14,8 @@
   "prefix": "vanilla",
   "phrase_rep_pen": "medium",
   "max_context": 7800,
-  "min_p": 0
+  "min_p": 0,
+  "math1_temp": 1,
+  "math1_quad": 0,
+  "math1_quad_entropy_scale": 0
 }
