@@ -3522,6 +3522,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (power_user.sysprompt.enabled) {
         system = power_user.prefer_character_prompt && system ? system : baseChatReplace(power_user.sysprompt.content, name1, name2);
         system = isInstruct ? formatInstructModeSystemPrompt(substituteParams(system, name1, name2, power_user.sysprompt.content)) : system;
+    } else {
+        // Nullify if it's not enabled
+        system = '';
     }
 
     // Depth prompt (character-specific A/N)
@@ -3774,7 +3777,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         personality: personality,
         persona: power_user.persona_description_position == persona_description_positions.IN_PROMPT ? persona : '',
         scenario: scenario,
-        system: isInstruct ? system : '',
+        system: system,
         char: name2,
         user: name1,
         wiBefore: worldInfoBefore,
