@@ -1,6 +1,6 @@
 {
     "system_prompt": "Write {{char}}'s next reply in this fictional roleplay with {{user}}.",
-    "input_sequence": "[INST] ",
+    "input_sequence": " [INST] ",
     "output_sequence": "",
     "last_output_sequence": "",
     "system_sequence": "",
@@ -14,8 +14,8 @@
     "system_sequence_suffix": "",
     "first_output_sequence": "",
     "skip_examples": false,
-    "output_suffix": "\n",
-    "input_suffix": " [/INST]\n",
+    "output_suffix": "</s>",
+    "input_suffix": " [/INST]",
     "system_suffix": "",
     "user_alignment_message": "Let's get started. Please respond based on the information and instructions provided above.",
     "system_same_as_user": true,
