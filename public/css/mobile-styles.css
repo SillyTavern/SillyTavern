@@ -103,7 +103,6 @@
         touch-action: none;
         overflow: hidden;
         position: fixed;
-
     }
 
     .world_entry_form_control {
@@ -112,7 +111,7 @@
 
     .drawer-content {
         min-width: unset;
-        width: 100%;
+        width: 100dvw;
         max-height: calc(100vh - 45px);
         max-height: calc(100dvh - 45px);
         position: fixed;
@@ -159,9 +158,9 @@
     #sheld,
     #character_popup,
     .drawer-content {
-        width: 100% !important;
+        width: 100dvw !important;
         margin: 0 auto;
-        max-width: 100%;
+        max-width: 100dvw;
         left: 0 !important;
         resize: none !important;
         top: var(--topBarBlockSize);
@@ -233,9 +232,9 @@
         /* 100vh are fallback units for browsers that don't support dvh */
         height: calc(100vh - 45px);
         height: calc(100dvh - 45px);
-        min-width: 100% !important;
-        width: 100% !important;
-        max-width: 100% !important;
+        min-width: 100dvw !important;
+        width: 100dvw !important;
+        max-width: 100dvw !important;
         overflow-y: hidden;
         border-left: 1px solid var(--SmartThemeBorderColor);
         border-right: 1px solid var(--SmartThemeBorderColor);
@@ -481,10 +480,10 @@
         margin: 0 auto;
         height: calc(100vh - 70px);
         height: calc(100dvh - 70px);
-        width: calc(100% - 5px);
+        width: calc(100dvw - 5px);
         max-height: calc(100vh - 70px);
         max-height: calc(100dvh - 70px);
-        max-width: calc(100% - 5px);
+        max-width: calc(100dvw - 5px);
 
     }
 
