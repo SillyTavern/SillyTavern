@@ -435,7 +435,7 @@ router.post('/import', urlencodedParser, function (request, response) {
 
             // Do a tiny bit of work to import Chub Chat data
             // Processing the entire file is so fast that it's not worth checking if it's a Chub chat first
-            let flattenedChat;
+            let flattenedChat = data;
             try {
                 // flattening is unlikely to break, but it's not worth failing to
                 // import normal chats in an attempt to import a Chub chat

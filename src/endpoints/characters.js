@@ -1027,6 +1027,12 @@ router.post('/chats', jsonParser, async function (request, response) {
                 const stats = fs.statSync(pathToFile);
                 const fileSizeInKB = `${(stats.size / 1024).toFixed(2)}kb`;
 
+                if (stats.size === 0) {
+                    console.log(`Found an empty chat file: ${pathToFile}`);
+                    res({});
+                    return;
+                }
+
                 const rl = readline.createInterface({
                     input: fileStream,
                     crlfDelay: Infinity,
