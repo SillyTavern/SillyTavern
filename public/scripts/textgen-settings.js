@@ -1228,9 +1228,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'dynatemp_exponent': dynatemp ? settings.dynatemp_exponent : undefined,
         'xtc_threshold': settings.xtc_threshold,
         'xtc_probability': settings.xtc_probability,
-        'custom_token_bans': [APHRODITE, MANCER].includes(settings.type) ?
-            toIntArray(banned_tokens) :
-            banned_tokens,
+        'custom_token_bans': toIntArray(banned_tokens),
     };
 
     if (settings.type === OPENROUTER) {
