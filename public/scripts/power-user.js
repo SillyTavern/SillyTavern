@@ -207,7 +207,6 @@ let power_user = {
     disable_group_trimming: false,
     single_line: false,
 
-    default_instruct: '',
     instruct: {
         enabled: false,
         preset: 'Alpaca',
@@ -234,7 +233,6 @@ let power_user = {
         separator_sequence: '',
     },
 
-    default_context: 'Default',
     context: {
         preset: 'Default',
         story_string: defaultStoryString,
@@ -1824,29 +1822,8 @@ async function loadContextSettings() {
             }
         }
 
-        highlightDefaultContext();
         saveSettingsDebounced();
     });
-
-    $('#context_set_default').on('click', function () {
-        if (power_user.context.preset !== power_user.default_context) {
-            power_user.default_context = power_user.context.preset;
-            $(this).addClass('default');
-            toastr.info(`Default context template set to ${power_user.default_context}`);
-
-            highlightDefaultContext();
-
-            saveSettingsDebounced();
-        }
-    });
-
-    highlightDefaultContext();
-}
-
-function highlightDefaultContext() {
-    $('#context_set_default').toggleClass('default', power_user.default_context === power_user.context.preset);
-    $('#context_set_default').toggleClass('disabled', power_user.default_context === power_user.context.preset);
-    $('#context_delete_preset').toggleClass('disabled', power_user.default_context === power_user.context.preset);
 }
 
 /**

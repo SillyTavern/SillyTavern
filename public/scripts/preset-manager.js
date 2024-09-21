@@ -615,11 +615,6 @@ export async function initPresetManager() {
             return;
         }
 
-        // default context preset cannot be deleted
-        if (apiId == 'context' && power_user.default_context === power_user.context.preset) {
-            return;
-        }
-
         const headerText = !presetManager.isAdvancedFormatting() ? 'Delete this preset?' : 'Delete this template?';
         const confirm = await Popup.show.confirm(headerText, 'This action is irreversible and your current settings will be overwritten.');
         if (!confirm) {

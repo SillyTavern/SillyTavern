@@ -3190,7 +3190,6 @@
                             </h4>
                             <div class="flex-container justifyCenter">
                                 <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
-                                <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this template for Instruct Mode." data-i18n="[title]Auto-select this template for Instruct Mode"></i>
                                 <i data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current template" data-i18n="[title]Update current template"></i>
                                 <i data-preset-manager-new="context" class="menu_button fa-solid fa-file-circle-plus" title="Save template as" data-i18n="[title]Save template as"></i>
                                 <i data-preset-manager-import="context" class="displayNone menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
@@ -3285,143 +3284,6 @@
                             </div>
                         </div>
                     </div>
-                    <div id="SystemPromptColumn" class="flex-container flexNoGap flexFlowColumn flex1">
-                        <div id="SystemPromptBlock">
-                            <h4 class="standoutHeader title_restorable justifySpaceBetween">
-                                <div class="flex-container">
-                                    <span data-i18n="System Prompt">System Prompt</span>
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#system-prompt" class="notes-link" target="_blank">
-                                        <span class="fa-solid fa-circle-question note-link-span"></span>
-                                    </a>
-                                </div>
-                                <div class="flex-container">
-                                    <label for="sysprompt_enabled" class="checkbox_label flex1" title="Enable System Prompt" data-i18n="[title]sysprompt_enabled">
-                                        <input id="sysprompt_enabled" type="checkbox" style="display:none;" />
-                                        <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
-                                    </label>
-                                </div>
-                            </h4>
-
-                            <div class="flex-container margin0 justifyCenter">
-                                <input type="file" hidden data-preset-manager-file="sysprompt" accept=".json, .settings">
-                                <i data-preset-manager-update="sysprompt" class="menu_button fa-solid fa-save" title="Update current prompt" data-i18n="[title]Update current prompt"></i>
-                                <i data-preset-manager-new="sysprompt" class="menu_button fa-solid fa-file-circle-plus" title="Save prompt as" data-i18n="[title]Save prompt as"></i>
-                                <i data-preset-manager-import="sysprompt" class="displayNone menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
-                                <i data-preset-manager-export="sysprompt" class="displayNone menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
-                                <i data-preset-manager-restore="sysprompt" class="menu_button fa-solid fa-recycle" title="Restore current prompt" data-i18n="[title]Restore current prompt"></i>
-                                <i data-preset-manager-delete="sysprompt" class="menu_button fa-solid fa-trash-can" title="Delete prompt" data-i18n="[title]Delete prompt"></i>
-                            </div>
-
-                            <div class="flex-container" title="Select your current System Prompt" data-i18n="[title]Select your current System Prompt">
-                                <select id="sysprompt_select" data-preset-manager-for="sysprompt" class="flex1 text_pole"></select>
-                            </div>
-
-                            <div>
-                                <label for="sysprompt_content" class="flex-container">
-                                    <small data-i18n="Prompt Content">Prompt Content</small>
-                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="sysprompt_content" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
-                                </label>
-                                <textarea id="sysprompt_content" class="text_pole textarea_compact autoSetHeight"></textarea>
-                            </div>
-                        </div>
-
-                        <div>
-                            <h4 class="range-block-title justifyLeft standoutHeader">
-                                <span data-i18n="Custom Stopping Strings">
-                                    Custom Stopping Strings
-                                </span>
-                                <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#custom-stopping-strings" class="notes-link" target="_blank">
-                                    <span class="fa-solid fa-circle-question note-link-span"></span>
-                                </a>
-                            </h4>
-                            <div>
-                                <small>
-                                    <span data-i18n="JSON serialized array of strings">JSON serialized array of strings</span>
-                                    <i class="fa-solid fa-question-circle opacity50p" title="e.g: [&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></i>
-                                </small>
-                            </div>
-                            <div>
-                                <textarea id="custom_stopping_strings" class="text_pole textarea_compact monospace autoSetHeight"></textarea>
-                            </div>
-                            <label class="checkbox_label" for="custom_stopping_strings_macro">
-                                <input id="custom_stopping_strings_macro" type="checkbox" checked>
-                                <small data-i18n="Replace Macro in Custom Stopping Strings">
-                                    Replace Macro in Custom Stopping Strings
-                                </small>
-                            </label>
-                        </div>
-
-                        <div name="tokenizerSettingsBlock">
-                            <div name="tokenizerSelectorBlock">
-                                <h4 class="standoutHeader"><span data-i18n="Tokenizer">Tokenizer</span>
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#tokenizer" class="notes-link" target="_blank">
-                                        <span class="fa-solid fa-circle-question note-link-span"></span>
-                                    </a>
-                                </h4>
-                                <select id="tokenizer">
-                                    <option value="99">Best match (recommended)</option>
-                                    <option value="0">None / Estimated</option>
-                                    <option value="1">GPT-2</option>
-                                    <!-- Option #2 was a legacy GPT-2/3 tokenizer -->
-                                    <option value="3">Llama 1/2</option>
-                                    <option value="12">Llama 3</option>
-                                    <option value="13">Gemma / Gemini</option>
-                                    <option value="14">Jamba</option>
-                                    <option value="15">Qwen2</option>
-                                    <option value="16">Command-R</option>
-                                    <option value="4">NerdStash (NovelAI Clio)</option>
-                                    <option value="5">NerdStash v2 (NovelAI Kayra)</option>
-                                    <option value="7">Mistral V1</option>
-                                    <option value="17">Mistral Nemo</option>
-                                    <option value="8">Yi</option>
-                                    <option value="11">Claude 1/2</option>
-                                    <option value="6">API (WebUI / koboldcpp)</option>
-                                </select>
-                            </div>
-                            <div class="range-block flex-container flexnowrap" name="tokenPaddingBlock">
-                                <div class="range-block-title justifyLeft">
-                                    <small data-i18n="Token Padding" class="flex-container">Token Padding
-                                        <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#token-padding" class="notes-link" target="_blank">
-                                            <span class="fa-solid fa-circle-question note-link-span"></span>
-                                        </a>
-                                    </small>
-                                </div>
-                                <input id="token_padding" class="text_pole textarea_compact" type="number" min="-2048" max="2048" />
-                            </div>
-                        </div>
-                        <div>
-                            <h4 class="standoutHeader" data-i18n="Miscellaneous">Miscellaneous</h4>
-                            <div>
-                                <small>
-                                    <span data-i18n="Non-markdown strings">
-                                        Non-markdown strings
-                                    </span>
-                                </small>
-                                <div>
-                                    <input id="markdown_escape_strings" class="text_pole textarea_compact" type="text" data-i18n="[placeholder]comma delimited,no spaces between" placeholder="comma delimited,no spaces between" />
-                                </div>
-                            </div>
-
-                            <div name="startReplyWithBlock">
-                                <div>
-                                    <small>
-                                        <span data-i18n="Start Reply With">
-                                            Start Reply With
-                                        </span>
-                                    </small>
-                                    <div>
-                                        <textarea id="start_reply_with" class="text_pole textarea_compact autoSetHeight"></textarea>
-                                    </div>
-                                    <label class="checkbox_label" for="chat-show-reply-prefix-checkbox">
-                                        <input id="chat-show-reply-prefix-checkbox" type="checkbox" />
-                                        <small data-i18n="Show reply prefix in chat">
-                                            Show reply prefix in chat
-                                        </small>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     <div id="InstructSettingsColumn" class="flex-container flexNoGap flexFlowColumn flex1">
                         <div id="instructSettingsBlock">
                             <h4 class="standoutHeader title_restorable justifySpaceBetween">
@@ -3444,7 +3306,6 @@
                             </h4>
                             <div class="flex-container margin0 justifyCenter">
                                 <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
-                                <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this template on API connection." data-i18n="[title]Auto-select this template on API connection"></i>
                                 <i data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current template" data-i18n="[title]Update current template"></i>
                                 <i data-preset-manager-new="instruct" class="menu_button fa-solid fa-file-circle-plus" title="Save template as" data-i18n="[title]Save template as"></i>
                                 <i data-preset-manager-import="instruct" class="displayNone menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
@@ -3593,6 +3454,143 @@
                                 <div class="flexAuto" title="Will be inserted at the start of the chat history if it doesn't start with a User message." data-i18n="[title]Will be inserted at the start of the chat history if it doesn't start with a User message.">
                                     <small data-i18n="User Filler Message">User Filler Message</small>
                                     <textarea id="instruct_user_alignment_message" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="SystemPromptColumn" class="flex-container flexNoGap flexFlowColumn flex1">
+                        <div id="SystemPromptBlock">
+                            <h4 class="standoutHeader title_restorable justifySpaceBetween">
+                                <div class="flex-container">
+                                    <span data-i18n="System Prompt">System Prompt</span>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#system-prompt" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </div>
+                                <div class="flex-container">
+                                    <label for="sysprompt_enabled" class="checkbox_label flex1" title="Enable System Prompt" data-i18n="[title]sysprompt_enabled">
+                                        <input id="sysprompt_enabled" type="checkbox" style="display:none;" />
+                                        <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
+                                    </label>
+                                </div>
+                            </h4>
+
+                            <div class="flex-container margin0 justifyCenter">
+                                <input type="file" hidden data-preset-manager-file="sysprompt" accept=".json, .settings">
+                                <i data-preset-manager-update="sysprompt" class="menu_button fa-solid fa-save" title="Update current prompt" data-i18n="[title]Update current prompt"></i>
+                                <i data-preset-manager-new="sysprompt" class="menu_button fa-solid fa-file-circle-plus" title="Save prompt as" data-i18n="[title]Save prompt as"></i>
+                                <i data-preset-manager-import="sysprompt" class="displayNone menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
+                                <i data-preset-manager-export="sysprompt" class="displayNone menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
+                                <i data-preset-manager-restore="sysprompt" class="menu_button fa-solid fa-recycle" title="Restore current prompt" data-i18n="[title]Restore current prompt"></i>
+                                <i data-preset-manager-delete="sysprompt" class="menu_button fa-solid fa-trash-can" title="Delete prompt" data-i18n="[title]Delete prompt"></i>
+                            </div>
+
+                            <div class="flex-container" title="Select your current System Prompt" data-i18n="[title]Select your current System Prompt">
+                                <select id="sysprompt_select" data-preset-manager-for="sysprompt" class="flex1 text_pole"></select>
+                            </div>
+
+                            <div>
+                                <label for="sysprompt_content" class="flex-container">
+                                    <small data-i18n="Prompt Content">Prompt Content</small>
+                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="sysprompt_content" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                                </label>
+                                <textarea id="sysprompt_content" class="text_pole textarea_compact autoSetHeight"></textarea>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="range-block-title justifyLeft standoutHeader">
+                                <span data-i18n="Custom Stopping Strings">
+                                    Custom Stopping Strings
+                                </span>
+                                <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#custom-stopping-strings" class="notes-link" target="_blank">
+                                    <span class="fa-solid fa-circle-question note-link-span"></span>
+                                </a>
+                            </h4>
+                            <div>
+                                <small>
+                                    <span data-i18n="JSON serialized array of strings">JSON serialized array of strings</span>
+                                    <i class="fa-solid fa-question-circle opacity50p" title="e.g: [&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></i>
+                                </small>
+                            </div>
+                            <div>
+                                <textarea id="custom_stopping_strings" class="text_pole textarea_compact monospace autoSetHeight"></textarea>
+                            </div>
+                            <label class="checkbox_label" for="custom_stopping_strings_macro">
+                                <input id="custom_stopping_strings_macro" type="checkbox" checked>
+                                <small data-i18n="Replace Macro in Custom Stopping Strings">
+                                    Replace Macro in Custom Stopping Strings
+                                </small>
+                            </label>
+                        </div>
+
+                        <div name="tokenizerSettingsBlock">
+                            <div name="tokenizerSelectorBlock">
+                                <h4 class="standoutHeader"><span data-i18n="Tokenizer">Tokenizer</span>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#tokenizer" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </h4>
+                                <select id="tokenizer">
+                                    <option value="99">Best match (recommended)</option>
+                                    <option value="0">None / Estimated</option>
+                                    <option value="1">GPT-2</option>
+                                    <!-- Option #2 was a legacy GPT-2/3 tokenizer -->
+                                    <option value="3">Llama 1/2</option>
+                                    <option value="12">Llama 3</option>
+                                    <option value="13">Gemma / Gemini</option>
+                                    <option value="14">Jamba</option>
+                                    <option value="15">Qwen2</option>
+                                    <option value="16">Command-R</option>
+                                    <option value="4">NerdStash (NovelAI Clio)</option>
+                                    <option value="5">NerdStash v2 (NovelAI Kayra)</option>
+                                    <option value="7">Mistral V1</option>
+                                    <option value="17">Mistral Nemo</option>
+                                    <option value="8">Yi</option>
+                                    <option value="11">Claude 1/2</option>
+                                    <option value="6">API (WebUI / koboldcpp)</option>
+                                </select>
+                            </div>
+                            <div class="range-block flex-container flexnowrap" name="tokenPaddingBlock">
+                                <div class="range-block-title justifyLeft">
+                                    <small data-i18n="Token Padding" class="flex-container">Token Padding
+                                        <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#token-padding" class="notes-link" target="_blank">
+                                            <span class="fa-solid fa-circle-question note-link-span"></span>
+                                        </a>
+                                    </small>
+                                </div>
+                                <input id="token_padding" class="text_pole textarea_compact" type="number" min="-2048" max="2048" />
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="standoutHeader" data-i18n="Miscellaneous">Miscellaneous</h4>
+                            <div>
+                                <small>
+                                    <span data-i18n="Non-markdown strings">
+                                        Non-markdown strings
+                                    </span>
+                                </small>
+                                <div>
+                                    <input id="markdown_escape_strings" class="text_pole textarea_compact" type="text" data-i18n="[placeholder]comma delimited,no spaces between" placeholder="comma delimited,no spaces between" />
+                                </div>
+                            </div>
+
+                            <div name="startReplyWithBlock">
+                                <div>
+                                    <small>
+                                        <span data-i18n="Start Reply With">
+                                            Start Reply With
+                                        </span>
+                                    </small>
+                                    <div>
+                                        <textarea id="start_reply_with" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                    </div>
+                                    <label class="checkbox_label" for="chat-show-reply-prefix-checkbox">
+                                        <input id="chat-show-reply-prefix-checkbox" type="checkbox" />
+                                        <small data-i18n="Show reply prefix in chat">
+                                            Show reply prefix in chat
+                                        </small>
+                                    </label>
                                 </div>
                             </div>
                         </div>

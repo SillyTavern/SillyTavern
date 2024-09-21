@@ -136,12 +136,6 @@ export async function loadInstructMode(data) {
         option.selected = name === power_user.instruct.preset;
         $('#instruct_presets').append(option);
     });
-
-    highlightDefaultPreset();
-}
-
-function highlightDefaultPreset() {
-    $('#instruct_set_default').toggleClass('default', power_user.default_instruct === power_user.instruct.preset);
 }
 
 /**
@@ -156,13 +150,6 @@ export function selectContextPreset(preset, { quiet = false, isAuto = false } = 
     if (preset !== power_user.context.preset) {
         $('#context_presets').val(preset).trigger('change');
         !quiet && toastr.info(`Context Template: "${preset}" ${isAuto ? 'auto-' : ''}selected`);
-    }
-
-    // If instruct mode is disabled, enable it, except for default context template
-    if (!power_user.instruct.enabled && preset !== power_user.default_context) {
-        power_user.instruct.enabled = true;
-        $('#instruct_enabled').prop('checked', true).trigger('change');
-        !quiet && toastr.info('Instruct Mode enabled');
     }
 
     saveSettingsDebounced();
@@ -232,13 +219,6 @@ export function autoSelectInstructPreset(modelId) {
                     // If regex is invalid, ignore it
                     console.warn(`Invalid instruct activation regex in preset "${preset.name}"`);
                 }
-            }
-        }
-
-        if (power_user.instruct.bind_to_context && power_user.default_instruct && power_user.instruct.preset !== power_user.default_instruct) {
-            if (instruct_presets.some(p => p.name === power_user.default_instruct)) {
-                console.log(`Instruct mode: default preset "${power_user.default_instruct}" selected`);
-                $('#instruct_presets').val(power_user.default_instruct).trigger('change');
             }
         }
     }
@@ -579,10 +559,6 @@ function selectMatchingContextTemplate(name) {
             break;
         }
     }
-    if (!foundMatch) {
-        // If no match was found, select default context preset
-        selectContextPreset(power_user.default_context, { isAuto: true });
-    }
 }
 
 /**
@@ -637,20 +613,6 @@ export function replaceInstructMacros(input, env) {
 }
 
 jQuery(() => {
-    $('#instruct_set_default').on('click', function () {
-        if (power_user.instruct.preset === power_user.default_instruct) {
-            power_user.default_instruct = null;
-            $(this).removeClass('default');
-            toastr.info('Default instruct template cleared');
-        } else {
-            power_user.default_instruct = power_user.instruct.preset;
-            $(this).addClass('default');
-            toastr.info(`Default instruct template set to ${power_user.default_instruct}`);
-        }
-
-        saveSettingsDebounced();
-    });
-
     $('#instruct_system_same_as_user').on('input', function () {
         const state = !!$(this).prop('checked');
         if (state) {
@@ -679,9 +641,6 @@ jQuery(() => {
         // When instruct mode gets enabled, select context template matching selected instruct preset
         if (power_user.instruct.enabled) {
             selectMatchingContextTemplate(power_user.instruct.preset);
-        } else {
-            // When instruct mode gets disabled, select default context preset
-            selectContextPreset(power_user.default_context);
         }
     });
 
@@ -722,7 +681,5 @@ jQuery(() => {
             // Select matching context template
             selectMatchingContextTemplate(name);
         }
-
-        highlightDefaultPreset();
     });
 });
