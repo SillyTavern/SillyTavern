@@ -241,7 +241,7 @@ class PresetManager {
 
         const html = $(await renderTemplateAsync('masterImport', { sections: sectionNames }));
         const popup = new Popup(html, POPUP_TYPE.CONFIRM, '', {
-            okButton: 'Confirm',
+            okButton: 'Import',
             cancelButton: 'Cancel',
         });
 
