@@ -737,6 +737,16 @@ export function initRossMods() {
         RA_autoconnect();
     }
 
+    if (isMobile()) {
+        const fixFunkyPositioning = () => {
+            console.debug('[Mobile] Device viewport change detected.');
+            document.documentElement.style.position = 'fixed';
+            requestAnimationFrame(() => document.documentElement.style.position = '');
+        };
+        window.addEventListener('resize', fixFunkyPositioning);
+        window.addEventListener('orientationchange', fixFunkyPositioning);
+    }
+
     $('#main_api').change(function () {
         var PrevAPI = main_api;
         setTimeout(() => RA_autoconnect(PrevAPI), 100);
