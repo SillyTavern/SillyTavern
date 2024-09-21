@@ -148,7 +148,7 @@ class PresetManager {
             isValid: (data) => PresetManager.isPossiblySystemPromptData(data),
         },
         'preset': {
-            name: 'Text Completion Settings',
+            name: 'Text Completion Preset',
             getData: () => {
                 const manager = getPresetManager('textgenerationwebui');
                 const name = manager.getSelectedPresetName();
@@ -185,7 +185,13 @@ class PresetManager {
         return data && textCompletionProps.every(prop => Object.keys(data).includes(prop));
     }
 
-    static async performMasterImport(data) {
+    /**
+     * Imports master settings from JSON data.
+     * @param {object} data Data to import
+     * @param {string} fileName File name
+     * @returns {Promise<void>}
+     */
+    static async performMasterImport(data, fileName) {
         if (!data || typeof data !== 'object') {
             toastr.error('Invalid data provided for master import');
             return;
@@ -213,7 +219,7 @@ class PresetManager {
         // 4. Text Completion settings
         if (this.isPossiblyTextCompletionData(data)) {
             toastr.info('Importing as settings preset...', 'Text Completion settings detected');
-            return await getPresetManager('textgenerationwebui').savePreset(data.name, data);
+            return await getPresetManager('textgenerationwebui').savePreset(fileName, data);
         }
 
         const validSections = [];
@@ -266,6 +272,10 @@ class PresetManager {
         toastr.success(`Imported ${importedSections.length} settings: ${importedSections.join(', ')}`);
     }
 
+    /**
+     * Exports master settings to JSON data.
+     * @returns {Promise<string>} JSON data
+     */
     static async performMasterExport() {
         const sectionNames = Object.entries(this.masterSections).reduce((acc, [key, section]) => {
             acc[key] = section.name;
@@ -907,7 +917,8 @@ export async function initPresetManager() {
         }
 
         const data = await parseJsonFile(file);
-        await PresetManager.performMasterImport(data);
+        const fileName = file.name.replace('.json', '');
+        await PresetManager.performMasterImport(data, fileName);
     });
 
     $('#af_master_export').on('click', async () => {
