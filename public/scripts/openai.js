@@ -2885,7 +2885,7 @@ export class ChatCompletion {
                 const message = { role: item.role, content: item.content, ...(item.name ? { name: item.name } : {}) };
                 chat.push(message);
             } else {
-                console.warn('Invalid message in collection', item);
+                this.log(`Skipping invalid or empty message in collection: ${JSON.stringify(item)}`);
             }
         }
         return chat;
