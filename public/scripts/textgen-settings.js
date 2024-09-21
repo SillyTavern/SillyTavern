@@ -1203,7 +1203,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'repetition_penalty': settings.rep_pen,
         'seed': settings.seed >= 0 ? settings.seed : undefined,
         'stop': getStoppingStrings(isImpersonate, isContinue),
-        'temperature': settings.temp,
+        'temperature': dynatemp ? (settings.min_temp + settings.max_temp) / 2 : settings.temp,
         'temperature_last': settings.temperature_last,
         'top_p': settings.top_p,
         'top_k': settings.top_k,
@@ -1223,6 +1223,14 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'guided_json': settings.json_schema,
         'early_stopping': false, // hacks
         'include_stop_str_in_output': false,
+        'dynatemp_min': dynatemp ? settings.min_temp : undefined,
+        'dynatemp_max': dynatemp ? settings.max_temp : undefined,
+        'dynatemp_exponent': dynatemp ? settings.dynatemp_exponent : undefined,
+        'xtc_threshold': settings.xtc_threshold,
+        'xtc_probability': settings.xtc_probability,
+        'custom_token_bans': [APHRODITE, MANCER].includes(settings.type) ?
+            toIntArray(banned_tokens) :
+            banned_tokens,
     };
 
     if (settings.type === OPENROUTER) {
