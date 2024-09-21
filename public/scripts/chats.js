@@ -135,10 +135,11 @@ export async function hideChatMessageRange(start, end, unhide) {
         const message = chat[messageId];
         if (!message) continue;
 
+        message.is_system = hide;
+
+        // Also toggle "hidden" state for all visible messages
         const messageBlock = $(`.mes[mesid="${messageId}"]`);
         if (!messageBlock.length) continue;
-
-        message.is_system = hide;
         messageBlock.attr('is_system', String(hide));
     }
 
