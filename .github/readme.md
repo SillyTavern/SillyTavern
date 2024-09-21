@@ -1,8 +1,19 @@
 <a name="readme-top"></a>
 
+![][cover]
+
+<div align="center">
+
 English | [中文](readme-zh_cn.md) | [日本語](readme-ja_jp.md) | [Русский](readme-ru_ru.md)
 
-![][cover]
+[![GitHub Stars](https://img.shields.io/github/stars/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/network)
+[![GitHub Issues](https://img.shields.io/github/issues/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/pulls)
+
+</div>
+
+---
 
 SillyTavern provides a single unified interface for many LLM APIs (KoboldAI/CPP, Horde, NovelAI, Ooba, Tabby, OpenAI, OpenRouter, Claude, Mistral and more), a mobile-friendly layout, Visual Novel Mode, Automatic1111 & ComfyUI API image generation integration, TTS, WorldInfo (lorebooks), customizable UI, auto-translate, more prompt options than you'd ever want or need, and endless growth potential via third-party extensions.
 
@@ -65,8 +76,8 @@ Or get in touch with the developers directly:
 
 ## Screenshots
 
-<img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/e902c7a2-45a6-4415-97aa-c59c597669c1">
-<img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/f8a79c47-4fe9-4564-9e4a-bf247ed1c961">
+<img width="500" alt="image" src="https://github.com/user-attachments/assets/9b5f32f0-c3b3-4102-b3f5-0e9213c0f50f">
+<img width="500" alt="image" src="https://github.com/user-attachments/assets/913fdbaa-7d33-42f1-ae2c-89dca41c53d1">
 
 ## Character Cards
 
@@ -363,6 +374,6 @@ GNU Affero General Public License for more details.**
 [![Contributors](https://contrib.rocks/image?repo=SillyTavern/SillyTavern)](https://github.com/SillyTavern/SillyTavern/graphs/contributors)
 
 <!-- LINK GROUP -->
-[cover]: https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4
+[cover]: https://github.com/user-attachments/assets/01a6ae9a-16aa-45f2-8bff-32b5dc587e44
 [discord-link]: https://discord.gg/sillytavern
 [discord-shield-badge]: https://img.shields.io/discord/1100685673633153084?color=5865F2&label=discord&labelColor=black&logo=discord&logoColor=white&style=for-the-badge

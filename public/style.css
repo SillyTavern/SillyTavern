@@ -2570,20 +2570,25 @@ input[type="file"] {
 /*#################################################################*/
 
 select {
-
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
     padding: 3px 2px;
     background-color: var(--black30a);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
     margin-bottom: 5px;
     height: min-content;
+    background-image: url('/img/down-arrow.svg');
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    background-size: 8px 5px;
 }
 
 select option {
     /* works to highlight selected/active option */
     background-color: var(--white50a);
     color: var(--black70a);
-
 }
 
 select option:not(:checked) {

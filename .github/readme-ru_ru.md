@@ -3,9 +3,20 @@
 
 <a name="readme-top"></a>
 
+![][cover]
+
+<div align="center">
+
 [English](readme.md) | [中文](readme-zh_cn.md) | [日本語](readme-ja_jp.md) | Русский
 
-![][cover]
+[![GitHub Stars](https://img.shields.io/github/stars/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/network)
+[![GitHub Issues](https://img.shields.io/github/issues/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/pulls)
+
+</div>
+
+---
 
 Мобайл-френдли интерфейс, поддержка множества API (KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI, OpenRouter, Claude, Scale), ВН-образный режим Вайфу, Stable Diffusion, TTS, поддержка миров (лорбуков), кастомизируемый UI, автоперевод, тончайшая настройка промптов + возможность устанавливать расширения.
 
@@ -29,8 +40,8 @@ SillyTavern — это форк версии TavernAI 1.2.8, который ра
 
 ## Скриншоты
 
-<img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/e902c7a2-45a6-4415-97aa-c59c597669c1"> 
-<img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/f8a79c47-4fe9-4564-9e4a-bf247ed1c961">
+<img width="500" alt="image" src="https://github.com/user-attachments/assets/9b5f32f0-c3b3-4102-b3f5-0e9213c0f50f">
+<img width="500" alt="image" src="https://github.com/user-attachments/assets/913fdbaa-7d33-42f1-ae2c-89dca41c53d1">
 
 ### Ветки
 
@@ -355,7 +366,7 @@ SillyTavern сохраняет ключи от ваших API в файле `sec
 
 <!-- LINK GROUP -->
 [back-to-top]: https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square
-[cover]: https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4
+[cover]: https://github.com/user-attachments/assets/01a6ae9a-16aa-45f2-8bff-32b5dc587e44
 [discord-link]: https://discord.gg/sillytavern
 [discord-shield]: https://img.shields.io/discord/1100685673633153084?color=5865F2&label=discord&labelColor=black&logo=discord&logoColor=white&style=flat-square
 [discord-shield-badge]: https://img.shields.io/discord/1100685673633153084?color=5865F2&label=discord&labelColor=black&logo=discord&logoColor=white&style=for-the-badge
