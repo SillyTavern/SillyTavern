@@ -18,7 +18,7 @@ import {
 import { groups, selected_group } from './group-chats.js';
 import { instruct_presets } from './instruct-mode.js';
 import { kai_settings } from './kai-settings.js';
-import { Popup } from './popup.js';
+import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
@@ -26,6 +26,7 @@ import { enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { checkForSystemPromptInInstructTemplate, system_prompts } from './sysprompt.js';
+import { renderTemplateAsync } from './templates.js';
 import {
     textgenerationwebui_preset_names,
     textgenerationwebui_presets,
@@ -101,6 +102,205 @@ class PresetManager {
     constructor(select, apiId) {
         this.select = select;
         this.apiId = apiId;
+    }
+
+    static masterSections = {
+        'instruct': {
+            name: 'Instruct Template',
+            getData: () => {
+                const manager = getPresetManager('instruct');
+                const name = manager.getSelectedPresetName();
+                return manager.getPresetSettings(name);
+            },
+            setData: (data) => {
+                const manager = getPresetManager('instruct');
+                const name = data.name;
+                return manager.savePreset(name, data);
+            },
+            isValid: (data) => PresetManager.isPossiblyInstructData(data),
+        },
+        'context': {
+            name: 'Context Template',
+            getData: () => {
+                const manager = getPresetManager('context');
+                const name = manager.getSelectedPresetName();
+                return manager.getPresetSettings(name);
+            },
+            setData: (data) => {
+                const manager = getPresetManager('context');
+                const name = data.name;
+                return manager.savePreset(name, data);
+            },
+            isValid: (data) => PresetManager.isPossiblyContextData(data),
+        },
+        'sysprompt': {
+            name: 'System Prompt',
+            getData: () => {
+                const manager = getPresetManager('sysprompt');
+                const name = manager.getSelectedPresetName();
+                return manager.getPresetSettings(name);
+            },
+            setData: (data) => {
+                const manager = getPresetManager('sysprompt');
+                const name = data.name;
+                return manager.savePreset(name, data);
+            },
+            isValid: (data) => PresetManager.isPossiblySystemPromptData(data),
+        },
+        'preset': {
+            name: 'Text Completion Settings',
+            getData: () => {
+                const manager = getPresetManager('textgenerationwebui');
+                const name = manager.getSelectedPresetName();
+                const data = manager.getPresetSettings(name);
+                data['name'] = name;
+                return data;
+            },
+            setData: (data) => {
+                const manager = getPresetManager('textgenerationwebui');
+                const name = data.name;
+                return manager.savePreset(name, data);
+            },
+            isValid: (data) => PresetManager.isPossiblyTextCompletionData(data),
+        },
+    };
+
+    static isPossiblyInstructData(data) {
+        const instructProps = ['name', 'input_sequence', 'output_sequence'];
+        return data && instructProps.every(prop => Object.keys(data).includes(prop));
+    }
+
+    static isPossiblyContextData(data) {
+        const contextProps = ['name', 'story_string'];
+        return data && contextProps.every(prop => Object.keys(data).includes(prop));
+    }
+
+    static isPossiblySystemPromptData(data) {
+        const sysPromptProps = ['name', 'content'];
+        return data && sysPromptProps.every(prop => Object.keys(data).includes(prop));
+    }
+
+    static isPossiblyTextCompletionData(data) {
+        const textCompletionProps = ['temp', 'top_k', 'top_p', 'rep_pen'];
+        return data && textCompletionProps.every(prop => Object.keys(data).includes(prop));
+    }
+
+    static async performMasterImport(data) {
+        if (!data || typeof data !== 'object') {
+            toastr.error('Invalid data provided for master import');
+            return;
+        }
+
+        // Check for legacy file imports
+        // 1. Instruct Template
+        if (this.isPossiblyInstructData(data)) {
+            toastr.info('Importing instruct template...', 'Instruct template detected');
+            return await getPresetManager('instruct').savePreset(data.name, data);
+        }
+
+        // 2. Context Template
+        if (this.isPossiblyContextData(data)) {
+            toastr.info('Importing as context template...', 'Context template detected');
+            return await getPresetManager('context').savePreset(data.name, data);
+        }
+
+        // 3. System Prompt
+        if (this.isPossiblySystemPromptData(data)) {
+            toastr.info('Importing as system prompt...', 'System prompt detected');
+            return await getPresetManager('sysprompt').savePreset(data.name, data);
+        }
+
+        // 4. Text Completion settings
+        if (this.isPossiblyTextCompletionData(data)) {
+            toastr.info('Importing as settings preset...', 'Text Completion settings detected');
+            return await getPresetManager('textgenerationwebui').savePreset(data.name, data);
+        }
+
+        const validSections = [];
+        for (const [key, section] of Object.entries(this.masterSections)) {
+            if (key in data && section.isValid(data[key])) {
+                validSections.push(key);
+            }
+        }
+
+        if (validSections.length === 0) {
+            toastr.error('No valid sections found in imported data');
+            return;
+        }
+
+        const sectionNames = validSections.reduce((acc, key) => {
+            acc[key] = this.masterSections[key].name;
+            return acc;
+        }, {});
+
+        const html = $(await renderTemplateAsync('masterImport', { sections: sectionNames }));
+        const popup = new Popup(html, POPUP_TYPE.CONFIRM, '', {
+            okButton: 'Confirm',
+            cancelButton: 'Cancel',
+        });
+
+        const result = await popup.show();
+
+        // Import cancelled
+        if (result !== POPUP_RESULT.AFFIRMATIVE) {
+            return;
+        }
+
+        const importedSections = [];
+        const confirmedSections = html.find('input:checked').map((_, el) => el instanceof HTMLInputElement && el.value).get();
+
+        if (confirmedSections.length === 0) {
+            toastr.info('No sections selected for import');
+            return;
+        }
+
+        for (const section of confirmedSections) {
+            const sectionData = data[section];
+            const masterSection = this.masterSections[section];
+            if (sectionData && masterSection) {
+                await masterSection.setData(sectionData);
+                importedSections.push(masterSection.name);
+            }
+        }
+
+        toastr.success(`Imported ${importedSections.length} settings: ${importedSections.join(', ')}`);
+    }
+
+    static async performMasterExport() {
+        const sectionNames = Object.entries(this.masterSections).reduce((acc, [key, section]) => {
+            acc[key] = section.name;
+            return acc;
+        }, {});
+        const html = $(await renderTemplateAsync('masterExport', { sections: sectionNames }));
+
+        const popup = new Popup(html, POPUP_TYPE.CONFIRM, '', {
+            okButton: 'Export',
+            cancelButton: 'Cancel',
+        });
+
+        const result = await popup.show();
+
+        // Export cancelled
+        if (result !== POPUP_RESULT.AFFIRMATIVE) {
+            return;
+        }
+
+        const confirmedSections = html.find('input:checked').map((_, el) => el instanceof HTMLInputElement && el.value).get();
+        const data = {};
+
+        if (confirmedSections.length === 0) {
+            toastr.info('No sections selected for export');
+            return;
+        }
+
+        for (const section of confirmedSections) {
+            const masterSection = this.masterSections[section];
+            if (masterSection) {
+                data[section] = masterSection.getData();
+            }
+        }
+
+        return JSON.stringify(data, null, 4);
     }
 
     /**
@@ -690,5 +890,34 @@ export async function initPresetManager() {
             const successToast = !presetManager.isAdvancedFormatting() ? 'Preset restored' : 'Template restored';
             toastr.success(successToast);
         }
+    });
+
+    $('#af_master_import').on('click', () => {
+        $('#af_master_import_file').trigger('click');
+    });
+
+    $('#af_master_import_file').on('change', async function (e) {
+        if (!(e.target instanceof HTMLInputElement)) {
+            return;
+        }
+        const file = e.target.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        const data = await parseJsonFile(file);
+        await PresetManager.performMasterImport(data);
+    });
+
+    $('#af_master_export').on('click', async () => {
+        const data = await PresetManager.performMasterExport();
+
+        if (!data) {
+            return;
+        }
+
+        const shortDate = new Date().toISOString().split('T')[0];
+        download(data, `ST-formatting-${shortDate}.json`, 'application/json');
     });
 }
