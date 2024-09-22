@@ -100,7 +100,7 @@ import {
     proxies,
     loadProxyPresets,
     selected_proxy,
-    initOpenai,
+    initOpenAI,
 } from './scripts/openai.js';
 
 import {
@@ -932,6 +932,7 @@ async function firstLoadInit() {
     await initLocales();
     initDefaultSlashCommands();
     initTextGenModels();
+    initOpenAI();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     sendSystemMessage(system_message_types.WELCOME_PROMPT);
@@ -939,7 +940,6 @@ async function firstLoadInit() {
     initKeyboard();
     initDynamicStyles();
     initTags();
-    initOpenai();
     initBookmarks();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
