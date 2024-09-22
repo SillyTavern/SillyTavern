@@ -1,10 +1,17 @@
 <h3>
     This instruct template also contains a system prompt.
 </h3>
-<div class="marginBot10">
+<div>
     Would you like to migrate the system prompt from the template?
 </div>
-<div class="justifyLeft marginBot10">
+{{#if existing}}
+<div class="marginTopBot5">
+    <b>Note:</b>
+    <span>you already have this prompt saved as:</span>
+    <span>{{existing}}</span>
+</div>
+{{/if}}
+<div class="justifyLeft marginTop5">
     <div>
         <small>
             <b>"Yes"</b> &ndash; The prompt will be imported and selected as a current system prompt.

@@ -73,7 +73,8 @@ export async function checkForSystemPromptInInstructTemplate(name, template) {
         return;
     }
     if ('system_prompt' in template && template.system_prompt) {
-        const html = await renderTemplateAsync('migrateInstructPrompt', { prompt: template.system_prompt });
+        const existingName = system_prompts.find(x => x.content === template.system_prompt)?.name;
+        const html = await renderTemplateAsync('migrateInstructPrompt', { prompt: template.system_prompt, existing: existingName });
         const confirm = await callGenericPopup(html, POPUP_TYPE.CONFIRM);
         if (confirm) {
             const migratedName = `[Migrated] ${name}`;
