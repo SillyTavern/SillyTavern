@@ -2573,7 +2573,7 @@ select {
     -moz-appearance: none;
     -webkit-appearance: none;
     appearance: none;
-    padding: 3px 2px;
+    padding: 3px 5px;
     background-color: var(--black30a);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
