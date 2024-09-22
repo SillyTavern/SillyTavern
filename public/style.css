@@ -5469,3 +5469,12 @@ body:not(.movingUI) .drawer-content.maximized {
 #AdvancedFormatting .autoSetHeight {
     overflow-wrap: anywhere;
 }
+
+#InstructSequencesColumn summary {
+    font-size: 0.95em;
+    cursor: pointer;
+}
+
+#InstructSequencesColumn details:not(:last-of-type) {
+    margin-bottom: 5px;
+}

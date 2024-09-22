@@ -682,4 +682,12 @@ jQuery(() => {
             selectMatchingContextTemplate(name);
         }
     });
+
+    if (!CSS.supports('field-sizing', 'content')) {
+        $('#InstructSequencesColumn details').on('toggle', function () {
+            if ($(this).prop('open')) {
+                resetScrollHeight($(this).find('textarea'));
+            }
+        });
+    }
 });
