@@ -11,7 +11,7 @@ import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCom
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
-import { isFalseBoolean, convertValueType } from './utils.js';
+import { isFalseBoolean, convertValueType, isTrueBoolean } from './utils.js';
 
 /** @typedef {import('./slash-commands/SlashCommandParser.js').NamedArguments} NamedArguments */
 /** @typedef {import('./slash-commands/SlashCommand.js').UnnamedArguments} UnnamedArguments */
@@ -463,7 +463,7 @@ function existsGlobalVariable(name) {
 /**
  * Parses boolean operands from command arguments.
  * @param {object} args Command arguments
- * @returns {{a: string | number, b: string | number, rule: string}} Boolean operands
+ * @returns {{a: string | number, b: string | number?, rule: string}} Boolean operands
  */
 export function parseBooleanOperands(args) {
     // Resolution order: numeric literal, local variable, global variable, string literal
@@ -472,6 +472,9 @@ export function parseBooleanOperands(args) {
      */
     function getOperand(operand) {
         if (operand === undefined) {
+            return undefined;
+        }
+        if (operand === '') {
             return '';
         }
 
@@ -500,9 +503,9 @@ export function parseBooleanOperands(args) {
         return stringLiteral || '';
     }
 
-    const left = getOperand(args.a || args.left || args.first || args.x);
-    const right = getOperand(args.b || args.right || args.second || args.y);
-    const rule = args.rule;
+    const left = getOperand(args.a ?? args.left ?? args.first ?? args.x);
+    const right = getOperand(args.b ?? args.right ?? args.second ?? args.y);
+    const rule = args.rule ?? 'eq';
 
     return { a: left, b: right, rule };
 }
@@ -511,16 +514,22 @@ export function parseBooleanOperands(args) {
  * Evaluates a boolean comparison rule.
  * @param {string} rule Boolean comparison rule
  * @param {string|number} a The left operand
- * @param {string|number} b The right operand
+ * @param {string|number?} b The right operand
  * @returns {boolean} True if the rule yields true, false otherwise
  */
 export function evalBoolean(rule, a, b) {
-    if (!rule) {
-        toastr.warning('The rule must be specified for the boolean comparison.', 'Invalid command');
-        throw new Error('Invalid command.');
+    let result = false;
+
+    if (b === undefined && rule === 'eq') {
+        // If right-hand side was not provided, whe just check if the left side is truthy
+        if (isTrueBoolean(String(a))) return true;
+        if (isFalseBoolean(String(a))) return false;
+        return !!a;
     }
 
-    let result = false;
+    // Restore old behavior, where b cannot be undefined
+    b = b ?? '';
+
     if (typeof a === 'number' && typeof b === 'number') {
         // only do numeric comparison if both operands are numbers
         const aNumber = Number(a);
@@ -582,7 +591,7 @@ export function evalBoolean(rule, a, b) {
                 break;
             default:
                 toastr.error('Unknown boolean comparison rule for type string.', 'Invalid /if command');
-                throw new Error('Invalid command.');
+                throw new Error('Unknown boolean comparison rule for type string.');
         }
     }
 
@@ -1264,21 +1273,18 @@ export function registerVariableCommands() {
                 typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
                 isRequired: true,
                 enumProvider: commonEnumProviders.variables('all'),
-                forceEnum: false,
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'right',
                 description: 'right operand',
                 typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
-                isRequired: true,
                 enumProvider: commonEnumProviders.variables('all'),
-                forceEnum: false,
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'rule',
                 description: 'comparison rule',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
+                defaultValue: 'eq',
                 enumList: [
                     new SlashCommandEnumValue('gt', 'a > b'),
                     new SlashCommandEnumValue('gte', 'a >= b'),
@@ -1290,12 +1296,12 @@ export function registerVariableCommands() {
                     new SlashCommandEnumValue('in', 'a includes b'),
                     new SlashCommandEnumValue('nin', 'a not includes b'),
                 ],
+                forceEnum: true,
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'else',
                 description: 'command to execute if not true',
                 typeList: [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND],
-                isRequired: false,
             }),
         ],
         unnamedArgumentList: [
@@ -1312,6 +1318,11 @@ export function registerVariableCommands() {
             </div>
             <div>
                 Numeric values and string literals for left and right operands supported.
+            </div>
+            <div>
+                If the rule is not provided, it defaults to <code>eq</code>.<br />
+                If no right operand is provided, it defaults to checking the <code>left</code> value to be truthy.
+                A non-empty string or non-zero number is considered truthy, as is the value <code>true</code>.
             </div>
             <div>
                 <strong>Available rules:</strong>
@@ -1333,6 +1344,13 @@ export function registerVariableCommands() {
                     <li>
                         <pre><code class="language-stscript">/if left=score right=10 rule=gte "/speak You win"</code></pre>
                         triggers a /speak command if the value of "score" is greater or equals 10.
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/if left={{lastMessage}} rule=in right=surprise {: /echo SURPISE! :}</code></pre>
+                        executes a subcommand defined as a closure if the given value contains a specified word.
+                    <li>
+                        <pre><code class="language-stscript">/if left=myContent {: /echo "My content had some content." :}</code></pre>
+                        executes the defined subcommand, if the provided value of left is truthy (contains some kind of contant that is not empty or false)
                     </li>
                 </ul>
             </div>
