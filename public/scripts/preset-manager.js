@@ -455,7 +455,7 @@ class PresetManager {
     }
 
     isKeyedApi() {
-        return this.apiId == 'textgenerationwebui' || this.apiId == 'context' || this.apiId == 'instruct';
+        return this.apiId == 'textgenerationwebui' || this.isAdvancedFormatting();
     }
 
     isAdvancedFormatting() {

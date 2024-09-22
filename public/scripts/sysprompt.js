@@ -153,7 +153,7 @@ export function initSystemPrompts() {
         saveSettingsDebounced();
     });
 
-    $select.on('input', async function () {
+    $select.on('change', async function () {
         if (!power_user.sysprompt.enabled) {
             $enabled.prop('checked', true).trigger('input');
         }
