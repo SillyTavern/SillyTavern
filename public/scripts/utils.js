@@ -607,12 +607,11 @@ export function sortByCssOrder(a, b) {
 /**
  * Trims a string to the end of a nearest sentence.
  * @param {string} input The string to trim.
- * @param {boolean} include_newline Whether to include a newline character in the trimmed string.
  * @returns {string} The trimmed string.
  * @example
  * trimToEndSentence('Hello, world! I am from'); // 'Hello, world!'
  */
-export function trimToEndSentence(input, include_newline = false) {
+export function trimToEndSentence(input) {
     if (!input) {
         return '';
     }
@@ -631,11 +630,6 @@ export function trimToEndSentence(input, include_newline = false) {
             } else {
                 last = i;
             }
-            break;
-        }
-
-        if (include_newline && char === '\n') {
-            last = i;
             break;
         }
     }
