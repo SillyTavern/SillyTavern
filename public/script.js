@@ -5485,7 +5485,7 @@ export function cleanUpMessage(getMessage, isImpersonate, isContinue, displayInc
     }
 
     if (!displayIncompleteSentences && power_user.trim_sentences) {
-        getMessage = trimToEndSentence(getMessage, power_user.include_newline);
+        getMessage = trimToEndSentence(getMessage);
     }
 
     if (power_user.trim_spaces) {

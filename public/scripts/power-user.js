@@ -115,7 +115,6 @@ let power_user = {
     pin_examples: false,
     strip_examples: false,
     trim_sentences: false,
-    include_newline: false,
     always_force_name2: false,
     user_prompt_bias: '',
     show_user_prompt_bias: true,
@@ -321,7 +320,6 @@ const contextControls = [
     // Existing power user settings
     { id: 'always-force-name2-checkbox', property: 'always_force_name2', isCheckbox: true, isGlobalSetting: true, defaultValue: true },
     { id: 'trim_sentences_checkbox', property: 'trim_sentences', isCheckbox: true, isGlobalSetting: true, defaultValue: false },
-    { id: 'include_newline_checkbox', property: 'include_newline', isCheckbox: true, isGlobalSetting: true, defaultValue: false },
     { id: 'single_line', property: 'single_line', isCheckbox: true, isGlobalSetting: true, defaultValue: false },
 ];
 
@@ -1491,7 +1489,6 @@ async function loadPowerUserSettings(settings, data) {
     $('#collapse-newlines-checkbox').prop('checked', power_user.collapse_newlines);
     $('#always-force-name2-checkbox').prop('checked', power_user.always_force_name2);
     $('#trim_sentences_checkbox').prop('checked', power_user.trim_sentences);
-    $('#include_newline_checkbox').prop('checked', power_user.include_newline);
     $('#render_formulas').prop('checked', power_user.render_formulas);
     $('#disable_group_trimming').prop('checked', power_user.disable_group_trimming);
     $('#markdown_escape_strings').val(power_user.markdown_escape_strings);
@@ -3053,19 +3050,6 @@ $(document).ready(() => {
     // if trim sentences is unchecked, include newline must be unchecked
     $('#trim_sentences_checkbox').change(function () {
         power_user.trim_sentences = !!$(this).prop('checked');
-        if (!$(this).prop('checked')) {
-            $('#include_newline_checkbox').prop('checked', false);
-            power_user.include_newline = false;
-        }
-        saveSettingsDebounced();
-    });
-
-    $('#include_newline_checkbox').change(function () {
-        power_user.include_newline = !!$(this).prop('checked');
-        if ($(this).prop('checked')) {
-            $('#trim_sentences_checkbox').prop('checked', true);
-            power_user.trim_sentences = true;
-        }
         saveSettingsDebounced();
     });
 
