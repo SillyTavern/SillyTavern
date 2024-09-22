@@ -368,6 +368,7 @@ async function migrateSystemPrompts() {
             // Only leave contents that are not in the default prompts
             migratedPrompts = migratedPrompts.filter(x => !defaultPrompts.some(y => y.content === x.content));
             for (const sysPromptData of migratedPrompts) {
+                sysPromptData.name = `[Migrated] ${sysPromptData.name}`;
                 const syspromptPath = path.join(directory.sysprompt, `${sysPromptData.name}.json`);
                 writeFileAtomicSync(syspromptPath, JSON.stringify(sysPromptData, null, 4));
                 console.log(`Migrated system prompt ${sysPromptData.name} for ${directory.root.split(path.sep).pop()}`);

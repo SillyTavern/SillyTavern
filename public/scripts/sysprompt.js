@@ -29,7 +29,7 @@ async function migrateSystemPromptFromInstructMode() {
         if (existingPromptName) {
             power_user.sysprompt.name = existingPromptName;
         } else {
-            const data = { name: `${power_user.instruct.preset} (Migrated)`, content: prompt };
+            const data = { name: `[Migrated] ${power_user.instruct.preset}`, content: prompt };
             await getPresetManager('sysprompt')?.savePreset(data.name, data);
             power_user.sysprompt.name = data.name;
         }
