@@ -923,15 +923,20 @@ function countTokensFromTextgenAPI(str, resolve) {
 
 function apiFailureTokenCount(str) {
     console.error('Error counting tokens');
+    let shouldTryAgain = false;
 
     if (!sessionStorage.getItem(TOKENIZER_WARNING_KEY)) {
-        toastr.warning(
-            'Your selected API doesn\'t support the tokenization endpoint. Using estimated counts.',
-            'Error counting tokens',
-            { timeOut: 10000, preventDuplicates: true },
-        );
-
+        const bestMatchBefore = getTokenizerBestMatch(main_api);
         sessionStorage.setItem(TOKENIZER_WARNING_KEY, String(true));
+        const bestMatchAfter = getTokenizerBestMatch(main_api);
+        if ([tokenizers.API_TEXTGENERATIONWEBUI, tokenizers.API_KOBOLD].includes(bestMatchBefore) && bestMatchBefore !== bestMatchAfter) {
+            shouldTryAgain = true;
+        }
+    }
+
+    // Only try again if we guarantee not to be looped by the same error
+    if (shouldTryAgain && power_user.tokenizer === tokenizers.BEST_MATCH) {
+        return getTokenCount(str);
     }
 
     return guesstimate(str);
