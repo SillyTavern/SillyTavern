@@ -919,6 +919,7 @@ export async function initPresetManager() {
         const data = await parseJsonFile(file);
         const fileName = file.name.replace('.json', '');
         await PresetManager.performMasterImport(data, fileName);
+        e.target.value = null;
     });
 
     $('#af_master_export').on('click', async () => {
