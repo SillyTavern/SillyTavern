@@ -72,14 +72,15 @@ export async function checkForSystemPromptInInstructTemplate(name, template) {
     if (!template || !name || typeof name !== 'string' || typeof template !== 'object') {
         return;
     }
-    if ('system_prompt' in template && template.system_prompt && !system_prompts.some(x => x.name === name)) {
+    if ('system_prompt' in template && template.system_prompt) {
         const html = await renderTemplateAsync('migrateInstructPrompt', { prompt: template.system_prompt });
         const confirm = await callGenericPopup(html, POPUP_TYPE.CONFIRM);
         if (confirm) {
-            const prompt = { name: name, content: template.system_prompt };
+            const migratedName = `[Migrated] ${name}`;
+            const prompt = { name: migratedName, content: template.system_prompt };
             const presetManager = getPresetManager('sysprompt');
-            await presetManager.savePreset(prompt.name, prompt);
-            toastr.success(`System prompt "${prompt.name}" has been saved.`);
+            await presetManager.savePreset(migratedName, prompt);
+            toastr.success(`System prompt "${migratedName}" has been saved.`);
         } else {
             toastr.info('System prompt has been discarded.');
         }
