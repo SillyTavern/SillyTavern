@@ -4937,7 +4937,7 @@ function runProxyCallback(_, value) {
     return foundName;
 }
 
-export function initOpenai() {
+export function initOpenAI() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'proxy',
         callback: runProxyCallback,
@@ -4953,9 +4953,7 @@ export function initOpenai() {
         ],
         helpString: 'Sets a proxy preset by name.',
     }));
-}
 
-$(document).ready(async function () {
     $('#test_api_button').on('click', testApiConnection);
 
     $('#scale-alt').on('change', function () {
@@ -5419,4 +5417,4 @@ $(document).ready(async function () {
     $('#openai_proxy_password_show').on('click', onProxyPasswordShowClick);
     $('#customize_additional_parameters').on('click', onCustomizeParametersClick);
     $('#openai_proxy_preset').on('change', onProxyPresetChange);
-});
+}

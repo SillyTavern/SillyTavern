@@ -100,7 +100,7 @@ import {
     proxies,
     loadProxyPresets,
     selected_proxy,
-    initOpenai,
+    initOpenAI,
 } from './scripts/openai.js';
 
 import {
@@ -930,9 +930,10 @@ async function firstLoadInit() {
     addSafariPatch();
     await getClientVersion();
     await readSecretState();
-    initLocales();
+    await initLocales();
     initDefaultSlashCommands();
     initTextGenModels();
+    initOpenAI();
     initSystemPrompts();
     await initPresetManager();
     await getSystemMessages();
@@ -942,7 +943,6 @@ async function firstLoadInit() {
     initKeyboard();
     initDynamicStyles();
     initTags();
-    initOpenai();
     initBookmarks();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
