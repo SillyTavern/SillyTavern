@@ -10,7 +10,8 @@ import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, o
 const { OOBA, TABBY, KOBOLDCPP, VLLM, APHRODITE, LLAMACPP, OPENROUTER, DREAMGEN } = textgen_types;
 
 export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
-const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
+export const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
+export const TOKENIZER_SUPPORTED_KEY = 'tokenizationSupported';
 
 export const tokenizers = {
     NONE: 0,
@@ -280,8 +281,9 @@ export function getTokenizerBestMatch(forApi) {
         // - Kobold must pass a version check
         // - Tokenizer haven't reported an error previously
         const hasTokenizerError = sessionStorage.getItem(TOKENIZER_WARNING_KEY);
+        const hasValidEndpoint = sessionStorage.getItem(TOKENIZER_SUPPORTED_KEY);
         const isConnected = online_status !== 'no_connection';
-        const isTokenizerSupported = TEXTGEN_TOKENIZERS.includes(textgen_settings.type);
+        const isTokenizerSupported = TEXTGEN_TOKENIZERS.includes(textgen_settings.type) && (textgen_settings.type !== OOBA || hasValidEndpoint);
 
         if (!hasTokenizerError && isConnected) {
             if (forApi === 'kobold' && kai_flags.can_use_tokenization) {
