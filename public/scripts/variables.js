@@ -518,8 +518,6 @@ export function parseBooleanOperands(args) {
  * @returns {boolean} True if the rule yields true, false otherwise
  */
 export function evalBoolean(rule, a, b) {
-    let result = false;
-
     if (b === undefined && rule === 'eq') {
         // If right-hand side was not provided, whe just check if the left side is truthy
         if (isTrueBoolean(String(a))) return true;
@@ -537,65 +535,42 @@ export function evalBoolean(rule, a, b) {
 
         switch (rule) {
             case 'not':
-                result = !aNumber;
-                break;
+                return !aNumber;
             case 'gt':
-                result = aNumber > bNumber;
-                break;
+                return aNumber > bNumber;
             case 'gte':
-                result = aNumber >= bNumber;
-                break;
+                return aNumber >= bNumber;
             case 'lt':
-                result = aNumber < bNumber;
-                break;
+                return aNumber < bNumber;
             case 'lte':
-                result = aNumber <= bNumber;
-                break;
+                return aNumber <= bNumber;
             case 'eq':
-                result = aNumber === bNumber;
-                break;
+                return aNumber === bNumber;
             case 'neq':
-                result = aNumber !== bNumber;
-                break;
+                return aNumber !== bNumber;
             default:
                 toastr.error('Unknown boolean comparison rule for type number.', 'Invalid command');
                 throw new Error('Invalid command.');
         }
     } else {
         // otherwise do case-insensitive string comparsion, stringify non-strings
-        let aString;
-        let bString;
-        if (typeof a == 'string') {
-            aString = a.toLowerCase();
-        } else {
-            aString = JSON.stringify(a).toLowerCase();
-        }
-        if (typeof b == 'string') {
-            bString = b.toLowerCase();
-        } else {
-            bString = JSON.stringify(b).toLowerCase();
-        }
+        let aString = (typeof a === 'string') ? a.toLowerCase() : JSON.stringify(a).toLowerCase();
+        let bString = (typeof b === 'string') ? b.toLowerCase() : JSON.stringify(b).toLowerCase();
 
         switch (rule) {
             case 'in':
-                result = aString.includes(bString);
-                break;
+                return aString.includes(bString);
             case 'nin':
-                result = !aString.includes(bString);
-                break;
+                return !aString.includes(bString);
             case 'eq':
-                result = aString === bString;
-                break;
+                return aString === bString;
             case 'neq':
-                result = aString !== bString;
-                break;
+                return aString !== bString;
             default:
                 toastr.error('Unknown boolean comparison rule for type string.', 'Invalid /if command');
                 throw new Error('Unknown boolean comparison rule for type string.');
         }
     }
-
-    return result;
 }
 
 /**
