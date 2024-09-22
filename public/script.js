@@ -929,7 +929,7 @@ async function firstLoadInit() {
     addSafariPatch();
     await getClientVersion();
     await readSecretState();
-    initLocales();
+    await initLocales();
     initDefaultSlashCommands();
     initTextGenModels();
     await getSystemMessages();
