@@ -278,7 +278,7 @@ class PresetManager {
      */
     static async performMasterExport() {
         const sectionNames = Object.entries(this.masterSections).reduce((acc, [key, section]) => {
-            acc[key] = section.name;
+            acc[key] = { key: key, name: section.name, checked: key !== 'preset' };
             return acc;
         }, {});
         const html = $(await renderTemplateAsync('masterExport', { sections: sectionNames }));
