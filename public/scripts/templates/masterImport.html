@@ -3,9 +3,15 @@
 </h3>
 <div class="flex-container flexFlowColumn justifyLeft">
     {{#each sections}}
-        <label class="checkbox_label">
-            <input type="checkbox" value="{{@key}}" checked>
-            <span data-i18n="{{this}}">{{this}}</span>
-        </label>
+        {{#with this}}
+            <label class="checkbox_label">
+                <input type="checkbox" value="{{key}}" checked>
+                <span data-i18n="{{name}}">{{name}}</span>
+                {{#if preset}}
+                    <span>&ndash;</span>
+                    <small>{{preset}}</small>
+                {{/if}}
+            </label>
+        {{/with}}
     {{/each}}
 </div>

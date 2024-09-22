@@ -235,7 +235,7 @@ class PresetManager {
         }
 
         const sectionNames = validSections.reduce((acc, key) => {
-            acc[key] = this.masterSections[key].name;
+            acc[key] = { key: key, name: this.masterSections[key].name, preset: data[key]?.name || '' };
             return acc;
         }, {});
 
