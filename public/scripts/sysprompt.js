@@ -17,14 +17,21 @@ const $select = $('#sysprompt_select');
 const $content = $('#sysprompt_content');
 const $contentBlock = $('#SystemPromptBlock');
 
-function migrateSystemPromptFromInstructMode() {
+async function migrateSystemPromptFromInstructMode() {
     if ('system_prompt' in power_user.instruct) {
-        power_user.sysprompt.enabled = power_user.instruct.enabled;
-        power_user.sysprompt.content = String(power_user.instruct.system_prompt);
+        const prompt = String(power_user.instruct.system_prompt);
         delete power_user.instruct.system_prompt;
+        power_user.sysprompt.enabled = power_user.instruct.enabled;
+        power_user.sysprompt.content = prompt;
 
-        if (system_prompts.some(x => x.name === power_user.instruct.preset)) {
-            power_user.sysprompt.name = power_user.instruct.preset;
+        const existingPromptName = system_prompts.find(x => x.content === prompt)?.name;
+
+        if (existingPromptName) {
+            power_user.sysprompt.name = existingPromptName;
+        } else {
+            const data = { name: `${power_user.instruct.preset} (Migrated)`, content: prompt };
+            await getPresetManager('sysprompt')?.savePreset(data.name, data);
+            power_user.sysprompt.name = data.name;
         }
 
         saveSettingsDebounced();
@@ -41,7 +48,7 @@ export async function loadSystemPrompts(data) {
         system_prompts = data.sysprompt;
     }
 
-    migrateSystemPromptFromInstructMode();
+    await migrateSystemPromptFromInstructMode();
     toggleSystemPromptDisabledControls();
 
     for (const prompt of system_prompts) {

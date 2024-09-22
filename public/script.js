@@ -934,6 +934,7 @@ async function firstLoadInit() {
     initDefaultSlashCommands();
     initTextGenModels();
     initSystemPrompts();
+    await initPresetManager();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     sendSystemMessage(system_message_types.WELCOME_PROMPT);
@@ -947,7 +948,6 @@ async function firstLoadInit() {
     await getCharacters();
     await getBackgrounds();
     await initTokenizers();
-    await initPresetManager();
     initBackgrounds();
     initAuthorsNote();
     initPersonas();
