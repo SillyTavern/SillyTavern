@@ -1342,18 +1342,19 @@ export function registerVariableCommands() {
                 typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
                 isRequired: true,
                 enumProvider: commonEnumProviders.variables('all'),
-                forceEnum: false,
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'right',
                 description: 'right operand',
                 typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
-                isRequired: true,
                 enumProvider: commonEnumProviders.variables('all'),
-                forceEnum: false,
             }),
-            new SlashCommandNamedArgument(
-                'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, [
+            SlashCommandNamedArgument.fromProps({
+                name: 'rule',
+                description: 'comparison rule',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'eq',
+                enumList: [
                     new SlashCommandEnumValue('gt', 'a > b'),
                     new SlashCommandEnumValue('gte', 'a >= b'),
                     new SlashCommandEnumValue('lt', 'a < b'),
@@ -1364,10 +1365,15 @@ export function registerVariableCommands() {
                     new SlashCommandEnumValue('in', 'a includes b'),
                     new SlashCommandEnumValue('nin', 'a not includes b'),
                 ],
-            ),
-            new SlashCommandNamedArgument(
-                'guard', 'disable loop iteration limit', [ARGUMENT_TYPE.STRING], false, false, null, commonEnumProviders.boolean('onOff')(),
-            ),
+                forceEnum: true,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'guard',
+                description: 'disable loop iteration limit',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'off',
+                enumList: commonEnumProviders.boolean('onOff')(),
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -1403,6 +1409,10 @@ export function registerVariableCommands() {
                     <li>
                         <pre><code class="language-stscript">/setvar key=i 0 | /while left=i right=10 rule=lte "/addvar key=i 1"</code></pre>
                         adds 1 to the value of "i" until it reaches 10.
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/while left={{getvar::currentword}} {: /setvar key=currentword {: /do-something-and-return :}() | /echo The current work is "{{getvar::currentword}}" :}</code></pre>
+                        executes the defined subcommand as long as the "currentword" variable is truthy (has any content that is not false/empty)
                     </li>
                 </ul>
             </div>
