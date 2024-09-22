@@ -1274,8 +1274,12 @@ export function registerVariableCommands() {
                 enumProvider: commonEnumProviders.variables('all'),
                 forceEnum: false,
             }),
-            new SlashCommandNamedArgument(
-                'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, [
+            SlashCommandNamedArgument.fromProps({
+                name: 'rule',
+                description: 'comparison rule',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumList: [
                     new SlashCommandEnumValue('gt', 'a > b'),
                     new SlashCommandEnumValue('gte', 'a >= b'),
                     new SlashCommandEnumValue('lt', 'a < b'),
@@ -1286,10 +1290,13 @@ export function registerVariableCommands() {
                     new SlashCommandEnumValue('in', 'a includes b'),
                     new SlashCommandEnumValue('nin', 'a not includes b'),
                 ],
-            ),
-            new SlashCommandNamedArgument(
-                'else', 'command to execute if not true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], false,
-            ),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'else',
+                description: 'command to execute if not true',
+                typeList: [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND],
+                isRequired: false,
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
