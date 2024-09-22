@@ -56,7 +56,7 @@ const settings = {
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
-    summary_prompt: 'Pause your roleplay. Summarize the most important parts of the message. Limit yourself to 250 words or less. Your response should include nothing but the summary.',
+    summary_prompt: 'Ignore previous instructions. Summarize the most important parts of the message. Limit yourself to 250 words or less. Your response should include nothing but the summary.',
     force_chunk_delimiter: '',
 
     // For chats

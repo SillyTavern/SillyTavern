@@ -186,6 +186,7 @@ router.post('/status', jsonParser, async function (request, response) {
 
                     const modelName = modelInfo?.model_name;
                     result = modelName || result;
+                    response.setHeader('x-supports-tokenization', 'true');
                 }
             } catch (error) {
                 console.error(`Failed to get Ooba model info: ${error}`);
