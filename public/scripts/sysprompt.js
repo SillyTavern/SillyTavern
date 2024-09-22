@@ -126,11 +126,11 @@ function selectSystemPromptCallback(args, name) {
     }
 
     const quiet = isTrueBoolean(args?.quiet);
-    const instructNames = system_prompts.map(preset => preset.name);
-    let foundName = instructNames.find(x => x.toLowerCase() === name.toLowerCase());
+    const systemPromptNames = system_prompts.map(preset => preset.name);
+    let foundName = systemPromptNames.find(x => x.toLowerCase() === name.toLowerCase());
 
     if (!foundName) {
-        const fuse = new Fuse(instructNames);
+        const fuse = new Fuse(systemPromptNames);
         const result = fuse.search(name);
 
         if (result.length === 0) {
