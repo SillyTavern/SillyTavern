@@ -3162,9 +3162,22 @@
                 <div class="drawer-icon fa-solid fa-font fa-fw closedIcon" title="AI Response Formatting" data-i18n="[title]AI Response Formatting"></div>
             </div>
             <div id="AdvancedFormatting" class="drawer-content">
-                <h3 class="margin0" data-i18n="Advanced Formatting">
-                    Advanced Formatting
-                </h3>
+                <div class="flex-container alignItemsBaseline">
+                    <h3 class="margin0 flex1" data-i18n="Advanced Formatting">
+                        Advanced Formatting
+                    </h3>
+                    <div class="flex-container">
+                        <input id="af_master_import_file" type="file" hidden accept=".json" class="displayNone">
+                        <div id="af_master_import" class="menu_button menu_button_icon" title="Import Advanced Formatting settings" data-i18n="[title]Import Advanced Formatting settings">
+                            <i class="fa-solid fa-file-import"></i>
+                            <span data-i18n="Master Import">Master Import</span>
+                        </div>
+                        <div id="af_master_export" class="menu_button menu_button_icon" title="Export Advanced Formatting settings" data-i18n="[title]Export Advanced Formatting settings">
+                            <i class="fa-solid fa-file-export"></i>
+                            <span data-i18n="Master Export">Master Export</span>
+                        </div>
+                    </div>
+                </div>
                 <div class="flex-container spaceEvenly">
                     <div id="ContextSettings" class="flex-container flexNoGap flexFlowColumn flex1">
                         <div>
@@ -3176,18 +3189,17 @@
                                     </a>
                                 </div>
                             </h4>
-                            <div class="flex-container justifyCenter">
-                                <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
-                                <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this template for Instruct Mode." data-i18n="[title]Auto-select this template for Instruct Mode"></i>
-                                <i data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current template" data-i18n="[title]Update current template"></i>
-                                <i data-preset-manager-new="context" class="menu_button fa-solid fa-file-circle-plus" title="Save template as" data-i18n="[title]Save template as"></i>
-                                <i data-preset-manager-import="context" class="menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
-                                <i data-preset-manager-export="context" class="menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
-                                <i data-preset-manager-restore="context" class="menu_button fa-solid fa-recycle" title="Restore current template" data-i18n="[title]Restore current template"></i>
-                                <i id="context_delete_preset" data-preset-manager-delete="context" class="menu_button fa-solid fa-trash-can" title="Delete the template" data-i18n="[title]Delete the template"></i>
-                            </div>
                             <div class="flex-container" title="Select your current Context Template" data-i18n="[title]Select your current Context Template">
                                 <select id="context_presets" data-preset-manager-for="context" class="flex1 text_pole"></select>
+                                <div class="flex-container justifyCenter">
+                                    <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
+                                    <i data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current template" data-i18n="[title]Update current template"></i>
+                                    <i data-preset-manager-new="context" class="menu_button fa-solid fa-file-circle-plus" title="Save template as" data-i18n="[title]Save template as"></i>
+                                    <i data-preset-manager-import="context" class="displayNone menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
+                                    <i data-preset-manager-export="context" class="displayNone menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
+                                    <i data-preset-manager-restore="context" class="menu_button fa-solid fa-recycle" title="Restore current template" data-i18n="[title]Restore current template"></i>
+                                    <i id="context_delete_preset" data-preset-manager-delete="context" class="menu_button fa-solid fa-trash-can" title="Delete the template" data-i18n="[title]Delete the template"></i>
+                                </div>
                             </div>
                             <div>
                                 <label for="context_story_string" class="flex-container">
@@ -3218,9 +3230,6 @@
                                         <span data-i18n="Context Formatting">
                                             Context Formatting
                                         </span>
-                                        <small data-i18n="(Saves to Template)">
-                                            (Saves to Template)
-                                        </small>
                                     </h4>
 
                                     <label class="checkbox_label" for="always-force-name2-checkbox">
@@ -3266,31 +3275,6 @@
                                     <small data-i18n="Allow Post-History Instructions">Allow Post-History Instructions</small>
                                 </label>
                             </div>
-                            <div>
-                                <h4 class="range-block-title justifyLeft standoutHeader">
-                                    <span data-i18n="Custom Stopping Strings">
-                                        Custom Stopping Strings
-                                    </span>
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#custom-stopping-strings" class="notes-link" target="_blank">
-                                        <span class="fa-solid fa-circle-question note-link-span"></span>
-                                    </a>
-                                </h4>
-                                <div>
-                                    <small>
-                                        <span data-i18n="JSON serialized array of strings">JSON serialized array of strings</span>
-                                        <i class="fa-solid fa-question-circle opacity50p" title="e.g: [&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></i>
-                                    </small>
-                                </div>
-                                <div>
-                                    <textarea id="custom_stopping_strings" class="text_pole textarea_compact monospace autoSetHeight"></textarea>
-                                </div>
-                                <label class="checkbox_label" for="custom_stopping_strings_macro">
-                                    <input id="custom_stopping_strings_macro" type="checkbox" checked>
-                                    <small data-i18n="Replace Macro in Custom Stopping Strings">
-                                        Replace Macro in Custom Stopping Strings
-                                    </small>
-                                </label>
-                            </div>
                         </div>
                     </div>
                     <div id="InstructSettingsColumn" class="flex-container flexNoGap flexFlowColumn flex1">
@@ -3303,29 +3287,28 @@
                                     </a>
                                 </div>
                                 <div class="flex-container">
-                                    <label for="instruct_enabled" class="checkbox_label flex1" title="Enable Instruct Mode" data-i18n="[title]instruct_enabled">
-                                        <input id="instruct_enabled" type="checkbox" style="display:none;" />
-                                        <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
-                                    </label>
                                     <label for="instruct_bind_to_context" class="checkbox_label flex1" title="Bind to Context&#10If enabled, Context templates will be automatically selected based on selected Instruct template name or by preference." data-i18n="[title]instruct_bind_to_context">
                                         <input id="instruct_bind_to_context" type="checkbox" style="display:none;" />
                                         <small><i class="fa-solid fa-link menu_button margin0"></i></small>
                                     </label>
+                                    <label for="instruct_enabled" class="checkbox_label flex1" title="Enable Instruct Mode" data-i18n="[title]instruct_enabled">
+                                        <input id="instruct_enabled" type="checkbox" style="display:none;" />
+                                        <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
+                                    </label>
                                 </div>
                             </h4>
-                            <div class="flex-container margin0 justifyCenter">
-                                <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
-                                <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this template on API connection." data-i18n="[title]Auto-select this template on API connection"></i>
-                                <i data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current template" data-i18n="[title]Update current template"></i>
-                                <i data-preset-manager-new="instruct" class="menu_button fa-solid fa-file-circle-plus" title="Save template as" data-i18n="[title]Save template as"></i>
-                                <i data-preset-manager-import="instruct" class=" menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
-                                <i data-preset-manager-export="instruct" class=" menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
-                                <i data-preset-manager-restore="instruct" class=" menu_button fa-solid fa-recycle" title="Restore current template" data-i18n="[title]Restore current template"></i>
-                                <i data-preset-manager-delete="instruct" class=" menu_button fa-solid fa-trash-can" title="Delete template" data-i18n="[title]Delete template"></i>
-                            </div>
 
                             <div class="flex-container" title="Select your current Instruct Template" data-i18n="[title]Select your current Instruct Template">
                                 <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1 text_pole"></select>
+                                <div class="flex-container margin0 justifyCenter">
+                                    <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
+                                    <i data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current template" data-i18n="[title]Update current template"></i>
+                                    <i data-preset-manager-new="instruct" class="menu_button fa-solid fa-file-circle-plus" title="Save template as" data-i18n="[title]Save template as"></i>
+                                    <i data-preset-manager-import="instruct" class="displayNone menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
+                                    <i data-preset-manager-export="instruct" class="displayNone menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
+                                    <i data-preset-manager-restore="instruct" class="menu_button fa-solid fa-recycle" title="Restore current template" data-i18n="[title]Restore current template"></i>
+                                    <i data-preset-manager-delete="instruct" class="menu_button fa-solid fa-trash-can" title="Delete template" data-i18n="[title]Delete template"></i>
+                                </div>
                             </div>
                             <label>
                                 <small>
@@ -3336,14 +3319,6 @@
                             <div>
                                 <input type="text" id="instruct_activation_regex" class="text_pole textarea_compact" placeholder="e.g. /llama(-)?[3|3.1]/i">
                             </div>
-                            <div>
-                                <label for="instruct_system_prompt" class="flex-container">
-                                    <small data-i18n="System Prompt">System Prompt</small>
-                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="instruct_system_prompt" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
-                                </label>
-                                <textarea id="instruct_system_prompt" class="text_pole textarea_compact autoSetHeight"></textarea>
-                            </div>
-
                             <div>
                                 <label for="instruct_wrap" class="checkbox_label">
                                     <input id="instruct_wrap" type="checkbox" />
@@ -3357,25 +3332,203 @@
                                     <input id="instruct_skip_examples" type="checkbox" />
                                     <small data-i18n="Skip Example Dialogues Formatting">Skip Example Dialogues Formatting</small>
                                 </label>
-                                <div id="instruct_names_behavior">
+                                <div>
                                     <small data-i18n="Include Names">
                                         Include Names
                                     </small>
-                                    <label for="instruct_names_behavior_none" class="checkbox_label" title="Do not add name prefixes before the message contents.">
-                                        <input id="instruct_names_behavior_none" name="names_behavior" value="none" type="radio" />
-                                        <small data-i18n="Never">Never</small>
-                                    </label>
-                                    <label for="instruct_names_behavior_force" class="checkbox_label" title="Only add name prefixes to messages from group characters and past personas.">
-                                        <input id="instruct_names_behavior_force" name="names_behavior" value="force" type="radio" />
-                                        <small data-i18n="Groups and Past Personas">Groups and Past Personas</small>
-                                    </label>
-                                    <label for="instruct_names_behavior_always" class="checkbox_label" title="Always add name prefixes to messages.">
-                                        <input id="instruct_names_behavior_always" name="names_behavior" value="always" type="radio" />
-                                        <small data-i18n="Always">Always</small>
-                                    </label>
+                                    <select id="instruct_names_behavior">
+                                        <option value="none" data-i18n="Never">Never</option>
+                                        <option value="force" data-i18n="Groups and Past Personas">Groups and Past Personas</option>
+                                        <option value="always" data-i18n="Always">Always</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
+                        <div id="InstructSequencesColumn" class="wide100p flexFlowColumn">
+                            <h4 class="standoutHeader title_restorable">
+                                <b>
+                                    <span data-i18n="Instruct Sequences">
+                                        Instruct Sequences
+                                    </span>
+                                </b>
+                            </h4>
+                            <!-- We keep one auto-open so the user would know what is going on in the picked template -->
+                            <details open>
+                                <summary>User Message Sequences</summary>
+                                <div class="flex-container">
+                                    <div class="flexAuto" title="Inserted before a User message and as a last prompt line when impersonating." data-i18n="[title]Inserted before a User message and as a last prompt line when impersonating.">
+                                        <small data-i18n="User Prefix">User Message Prefix</small>
+                                        <textarea id="instruct_input_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                    </div>
+                                    <div class="flexAuto" title="Inserted after a User message." data-i18n="[title]Inserted after a User message.">
+                                        <small data-i18n="User Suffix">User Message Suffix</small>
+                                        <textarea id="instruct_input_suffix" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
+                                    </div>
+                                </div>
+                            </details>
+                            <details open>
+                                <summary>Assistant Message Sequences</summary>
+                                <div class="flex-container">
+                                    <div class="flexAuto" title="Inserted before an Assistant message and as a last prompt line when generating an AI reply." data-i18n="[title]Inserted before an Assistant message and as a last prompt line when generating an AI reply.">
+                                        <small data-i18n="Assistant Prefix">Assistant Message Prefix</small>
+                                        <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
+                                    </div>
+                                    <div class="flexAuto" title="Inserted after an Assistant message." data-i18n="[title]Inserted after an Assistant message.">
+                                        <small data-i18n="Assistant Suffix">Assistant Message Suffix</small>
+                                        <textarea id="instruct_output_suffix" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
+                                    </div>
+                                </div>
+                            </details>
+                            <details>
+                                <summary>System Message Sequences</summary>
+                                <div class="flex-container">
+                                    <div class="flexAuto" id="instruct_system_sequence_block" title="Inserted before a System (added by slash commands or extensions) message." data-i18n="[title]Inserted before a System (added by slash commands or extensions) message.">
+                                        <small data-i18n="System Prefix">System Message Prefix</small>
+                                        <textarea id="instruct_system_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                    </div>
+                                    <div class="flexAuto" id="instruct_system_suffix_block" title="Inserted after a System message." data-i18n="[title]Inserted after a System message.">
+                                        <small data-i18n="System Suffix">System Message Suffix</small>
+                                        <textarea id="instruct_system_suffix" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
+                                    </div>
+                                </div>
+                                <div class="flexBasis100p" title="If enabled, System Sequences will be the same as User Sequences." data-i18n="[title]If enabled, System Sequences will be the same as User Sequences.">
+                                    <label class="checkbox_label" for="instruct_system_same_as_user">
+                                        <input id="instruct_system_same_as_user" type="checkbox" />
+                                        <small data-i18n="System same as User">System same as User</small>
+                                    </label>
+                                </div>
+                            </details>
+                            <details>
+                                <summary>System Prompt Sequences</summary>
+                                <div class="flex-container">
+                                    <div class="flexAuto" title="Inserted before a System prompt." data-i18n="[title]Inserted before a System prompt.">
+                                        <label for="instruct_system_sequence_prefix">
+                                            <small data-i18n="System Prompt Prefix">System Prompt Prefix</small>
+                                        </label>
+                                        <div>
+                                            <textarea id="instruct_system_sequence_prefix" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="flexAuto" title="Inserted after a System prompt." data-i18n="[title]Inserted after a System prompt.">
+                                        <label for="instruct_system_sequence_suffix">
+                                            <small data-i18n="System Prompt Suffix">System Prompt Suffix</small>
+                                        </label>
+                                        <div>
+                                            <textarea id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                            <details>
+                                <summary data-i18n="Misc. Sequences">Misc. Sequences</summary>
+                                <div class="flex-container">
+                                    <div class="flexAuto" title="Inserted before the first Assistant's message." data-i18n="[title]Inserted before the first Assistant's message.">
+                                        <small data-i18n="First Assistant Prefix">First Assistant Prefix</small>
+                                        <textarea id="instruct_first_output_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                    </div>
+                                    <div class="flexAuto" title="Inserted before the last Assistant's message or as a last prompt line when generating an AI reply (except a neutral/system role)." data-i18n="[title]instruct_last_output_sequence">
+                                        <small data-i18n="Last Assistant Prefix">Last Assistant Prefix</small>
+                                        <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
+                                    </div>
+                                </div>
+                                <div class="flex-container">
+                                    <div class="flexAuto" title="Inserted before the first User's message." data-i18n="[title]Inserted before the first User's message.">
+                                        <small data-i18n="First User Prefix">First User Prefix</small>
+                                        <textarea id="instruct_first_input_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                    </div>
+                                    <div class="flexAuto" title="Inserted before the last User's message." data-i18n="[title]instruct_last_input_sequence">
+                                        <small data-i18n="Last User Prefix">Last User Prefix</small>
+                                        <textarea id="instruct_last_input_sequence" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
+                                    </div>
+                                </div>
+                                <div class="flex-container">
+                                    <div class="flexAuto" title="Will be inserted as a last prompt line when using system/neutral generation." data-i18n="[title]Will be inserted as a last prompt line when using system/neutral generation.">
+                                        <small data-i18n="System Instruction Prefix">System Instruction Prefix</small>
+                                        <textarea id="instruct_last_system_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                    </div>
+                                    <div class="flexAuto" title="If a stop sequence is generated, everything past it will be removed from the output (inclusive)." data-i18n="[title]If a stop sequence is generated, everything past it will be removed from the output (inclusive).">
+                                        <small data-i18n="Stop Sequence">Stop Sequence</small>
+                                        <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                    </div>
+                                </div>
+                                <div class="flex-container">
+                                    <div class="flexAuto" title="Will be inserted at the start of the chat history if it doesn't start with a User message." data-i18n="[title]Will be inserted at the start of the chat history if it doesn't start with a User message.">
+                                        <small data-i18n="User Filler Message">User Filler Message</small>
+                                        <textarea id="instruct_user_alignment_message" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                    <div id="SystemPromptColumn" class="flex-container flexNoGap flexFlowColumn flex1">
+                        <div id="SystemPromptBlock">
+                            <h4 class="standoutHeader title_restorable justifySpaceBetween">
+                                <div class="flex-container">
+                                    <span data-i18n="System Prompt">System Prompt</span>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#system-prompt" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </div>
+                                <div class="flex-container">
+                                    <label for="sysprompt_enabled" class="checkbox_label flex1" title="Enable System Prompt" data-i18n="[title]sysprompt_enabled">
+                                        <input id="sysprompt_enabled" type="checkbox" style="display:none;" />
+                                        <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
+                                    </label>
+                                </div>
+                            </h4>
+
+                            <div class="flex-container" title="Select your current System Prompt" data-i18n="[title]Select your current System Prompt">
+                                <select id="sysprompt_select" data-preset-manager-for="sysprompt" class="flex1 text_pole"></select>
+                                <div class="flex-container margin0 justifyCenter">
+                                    <input type="file" hidden data-preset-manager-file="sysprompt" accept=".json, .settings">
+                                    <i data-preset-manager-update="sysprompt" class="menu_button fa-solid fa-save" title="Update current prompt" data-i18n="[title]Update current prompt"></i>
+                                    <i data-preset-manager-new="sysprompt" class="menu_button fa-solid fa-file-circle-plus" title="Save prompt as" data-i18n="[title]Save prompt as"></i>
+                                    <i data-preset-manager-import="sysprompt" class="displayNone menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
+                                    <i data-preset-manager-export="sysprompt" class="displayNone menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
+                                    <i data-preset-manager-restore="sysprompt" class="menu_button fa-solid fa-recycle" title="Restore current prompt" data-i18n="[title]Restore current prompt"></i>
+                                    <i data-preset-manager-delete="sysprompt" class="menu_button fa-solid fa-trash-can" title="Delete prompt" data-i18n="[title]Delete prompt"></i>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="sysprompt_content" class="flex-container">
+                                    <small data-i18n="Prompt Content">Prompt Content</small>
+                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="sysprompt_content" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                                </label>
+                                <textarea id="sysprompt_content" class="text_pole textarea_compact autoSetHeight"></textarea>
+                            </div>
+                        </div>
+
+                        <div>
+                            &nbsp;
+                        </div>
+
+                        <div>
+                            <h4 class="range-block-title justifyLeft standoutHeader">
+                                <span data-i18n="Custom Stopping Strings">
+                                    Custom Stopping Strings
+                                </span>
+                                <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#custom-stopping-strings" class="notes-link" target="_blank">
+                                    <span class="fa-solid fa-circle-question note-link-span"></span>
+                                </a>
+                            </h4>
+                            <div>
+                                <small>
+                                    <span data-i18n="JSON serialized array of strings">JSON serialized array of strings</span>
+                                    <i class="fa-solid fa-question-circle opacity50p" title="e.g: [&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></i>
+                                </small>
+                            </div>
+                            <div>
+                                <textarea id="custom_stopping_strings" class="text_pole textarea_compact monospace autoSetHeight"></textarea>
+                            </div>
+                            <label class="checkbox_label" for="custom_stopping_strings_macro">
+                                <input id="custom_stopping_strings_macro" type="checkbox" checked>
+                                <small data-i18n="Replace Macro in Custom Stopping Strings">
+                                    Replace Macro in Custom Stopping Strings
+                                </small>
+                            </label>
+                        </div>
+
                         <div name="tokenizerSettingsBlock">
                             <div name="tokenizerSelectorBlock">
                                 <h4 class="standoutHeader"><span data-i18n="Tokenizer">Tokenizer</span>
@@ -3443,114 +3596,6 @@
                                             Show reply prefix in chat
                                         </small>
                                     </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="InstructSequencesColumn" class="flex-container flexNoGap flexFlowColumn flex1">
-                        <div class="wide100p flexFlowColumn">
-                            <h4 class="standoutHeader title_restorable">
-                                <b>
-                                    <span data-i18n="Instruct Sequences">
-                                        Instruct Sequences
-                                    </span>
-                                    <small data-i18n="(Saves to Template)">
-                                        (Saves to Template)
-                                    </small>
-                                </b>
-                            </h4>
-                            <div class="flex-container">
-                                <div class="flexAuto" title="Inserted before a System prompt." data-i18n="[title]Inserted before a System prompt.">
-                                    <label for="instruct_system_sequence_prefix">
-                                        <small data-i18n="System Prompt Prefix">System Prompt Prefix</small>
-                                    </label>
-                                    <div>
-                                        <textarea id="instruct_system_sequence_prefix" class="text_pole textarea_compact autoSetHeight"></textarea>
-                                    </div>
-                                </div>
-                                <div class="flexAuto" title="Inserted after a System prompt." data-i18n="[title]Inserted after a System prompt.">
-                                    <label for="instruct_system_sequence_suffix">
-                                        <small data-i18n="System Prompt Suffix">System Prompt Suffix</small>
-                                    </label>
-                                    <div>
-                                        <textarea id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex-container">
-                                <div class="flexAuto" title="Inserted before a User message and as a last prompt line when impersonating." data-i18n="[title]Inserted before a User message and as a last prompt line when impersonating.">
-                                    <small data-i18n="User Prefix">User Message Prefix</small>
-                                    <textarea id="instruct_input_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
-                                </div>
-                                <div class="flexAuto" title="Inserted after a User message." data-i18n="[title]Inserted after a User message.">
-                                    <small data-i18n="User Suffix">User Message Suffix</small>
-                                    <textarea id="instruct_input_suffix" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
-                                </div>
-                            </div>
-                            <div class="flex-container">
-                                <div class="flexAuto" title="Inserted before an Assistant message and as a last prompt line when generating an AI reply." data-i18n="[title]Inserted before an Assistant message and as a last prompt line when generating an AI reply.">
-                                    <small data-i18n="Assistant Prefix">Assistant Message Prefix</small>
-                                    <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
-                                </div>
-                                <div class="flexAuto" title="Inserted after an Assistant message." data-i18n="[title]Inserted after an Assistant message.">
-                                    <small data-i18n="Assistant Suffix">Assistant Message Suffix</small>
-                                    <textarea id="instruct_output_suffix" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
-                                </div>
-                            </div>
-                            <div class="flex-container">
-                                <div class="flexAuto" id="instruct_system_sequence_block" title="Inserted before a System (added by slash commands or extensions) message." data-i18n="[title]Inserted before a System (added by slash commands or extensions) message.">
-                                    <small data-i18n="System Prefix">System Message Prefix</small>
-                                    <textarea id="instruct_system_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
-                                </div>
-                                <div class="flexAuto" id="instruct_system_suffix_block" title="Inserted after a System message." data-i18n="[title]Inserted after a System message.">
-                                    <small data-i18n="System Suffix">System Message Suffix</small>
-                                    <textarea id="instruct_system_suffix" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
-                                </div>
-                            </div>
-                            <div class="flexBasis100p" title="If enabled, System Sequences will be the same as User Sequences." data-i18n="[title]If enabled, System Sequences will be the same as User Sequences.">
-                                <label class="checkbox_label" for="instruct_system_same_as_user">
-                                    <input id="instruct_system_same_as_user" type="checkbox" />
-                                    <small data-i18n="System same as User">System same as User</small>
-                                </label>
-                            </div>
-
-                            <h5 class="textAlignCenter" data-i18n="Misc. Sequences">
-                                Misc. Sequences
-                            </h5>
-                            <div class="flex-container">
-                                <div class="flexAuto" title="Inserted before the first Assistant's message." data-i18n="[title]Inserted before the first Assistant's message.">
-                                    <small data-i18n="First Assistant Prefix">First Assistant Prefix</small>
-                                    <textarea id="instruct_first_output_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
-                                </div>
-                                <div class="flexAuto" title="Inserted before the last Assistant's message or as a last prompt line when generating an AI reply (except a neutral/system role)." data-i18n="[title]instruct_last_output_sequence">
-                                    <small data-i18n="Last Assistant Prefix">Last Assistant Prefix</small>
-                                    <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
-                                </div>
-                            </div>
-                            <div class="flex-container">
-                                <div class="flexAuto" title="Inserted before the first User's message." data-i18n="[title]Inserted before the first User's message.">
-                                    <small data-i18n="First User Prefix">First User Prefix</small>
-                                    <textarea id="instruct_first_input_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
-                                </div>
-                                <div class="flexAuto" title="Inserted before the last User's message." data-i18n="[title]instruct_last_input_sequence">
-                                    <small data-i18n="Last User Prefix">Last User Prefix</small>
-                                    <textarea id="instruct_last_input_sequence" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
-                                </div>
-                            </div>
-                            <div class="flex-container">
-                                <div class="flexAuto" title="Will be inserted as a last prompt line when using system/neutral generation." data-i18n="[title]Will be inserted as a last prompt line when using system/neutral generation.">
-                                    <small data-i18n="System Instruction Prefix">System Instruction Prefix</small>
-                                    <textarea id="instruct_last_system_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
-                                </div>
-                                <div class="flexAuto" title="If a stop sequence is generated, everything past it will be removed from the output (inclusive)." data-i18n="[title]If a stop sequence is generated, everything past it will be removed from the output (inclusive).">
-                                    <small data-i18n="Stop Sequence">Stop Sequence</small>
-                                    <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
-                                </div>
-                            </div>
-                            <div class="flex-container">
-                                <div class="flexAuto" title="Will be inserted at the start of the chat history if it doesn't start with a User message." data-i18n="[title]Will be inserted at the start of the chat history if it doesn't start with a User message.">
-                                    <small data-i18n="User Filler Message">User Filler Message</small>
-                                    <textarea id="instruct_user_alignment_message" class="text_pole textarea_compact autoSetHeight"></textarea>
                                 </div>
                             </div>
                         </div>

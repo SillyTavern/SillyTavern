@@ -468,10 +468,6 @@
         "type": "context"
     },
     {
-        "filename": "presets/context/Alpaca-Roleplay.json",
-        "type": "context"
-    },
-    {
         "filename": "presets/context/Alpaca-Single-Turn.json",
         "type": "context"
     },
@@ -549,10 +545,6 @@
     },
     {
         "filename": "presets/instruct/Adventure.json",
-        "type": "instruct"
-    },
-    {
-        "filename": "presets/instruct/Alpaca-Roleplay.json",
         "type": "instruct"
     },
     {
@@ -678,6 +670,54 @@
     {
         "filename": "presets/instruct/Gemma 2.json",
         "type": "instruct"
+    },
+    {
+        "filename": "presets/sysprompt/Actor.json",
+        "type": "sysprompt"
+    },
+    {
+        "filename": "presets/sysprompt/Assistant - Expert.json",
+        "type": "sysprompt"
+    },
+    {
+        "filename": "presets/sysprompt/Assistant - Simple.json",
+        "type": "sysprompt"
+    },
+    {
+        "filename": "presets/sysprompt/Chain of Thought.json",
+        "type": "sysprompt"
+    },
+    {
+        "filename": "presets/sysprompt/Roleplay - Detailed.json",
+        "type": "sysprompt"
+    },
+    {
+        "filename": "presets/sysprompt/Roleplay - Immersive.json",
+        "type": "sysprompt"
+    },
+    {
+        "filename": "presets/sysprompt/Roleplay - Simple.json",
+        "type": "sysprompt"
+    },
+    {
+        "filename": "presets/sysprompt/Text Adventure.json",
+        "type": "sysprompt"
+    },
+    {
+        "filename": "presets/sysprompt/Writer - Creative.json",
+        "type": "sysprompt"
+    },
+    {
+        "filename": "presets/sysprompt/Writer - Realistic.json",
+        "type": "sysprompt"
+    },
+    {
+        "filename": "presets/sysprompt/Blank.json",
+        "type": "sysprompt"
+    },
+    {
+        "filename": "presets/sysprompt/Neutral - Chat.json",
+        "type": "sysprompt"
     },
     {
         "filename": "presets/instruct/Mistral V1.json",

@@ -1,5 +1,4 @@
 {
-    "system_prompt": "You are an intelligent, skilled, versatile writer.\n\nYour task is to write a role-play based on the information below.",
     "input_sequence": "<|eot_id|>\n<|start_header_id|>writer character: {{user}}<|end_header_id|>\n\n",
     "output_sequence": "<|eot_id|>\n<|start_header_id|>writer character: {{char}}<|end_header_id|>\n\n",
     "first_output_sequence": "",

@@ -932,6 +932,7 @@ async function verifySecuritySettings() {
 userModule.initUserStorage(dataRoot)
     .then(userModule.ensurePublicDirectoriesExist)
     .then(userModule.migrateUserData)
+    .then(userModule.migrateSystemPrompts)
     .then(verifySecuritySettings)
     .then(preSetupTasks)
     .finally(startServer);

@@ -149,11 +149,9 @@
         "continue_on_send": false,
         "trim_spaces": true,
         "relaxed_api_urls": false,
-        "default_instruct": "",
         "instruct": {
             "enabled": false,
             "preset": "Alpaca",
-            "system_prompt": "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n",
             "input_sequence": "### Instruction:",
             "output_sequence": "### Response:",
             "last_output_sequence": "",
@@ -173,7 +171,11 @@
             "user_alignment_message": "",
             "system_same_as_user": false
         },
-        "default_context": "Default",
+        "sysprompt": {
+            "enabled": true,
+            "name": "Neutral - Chat",
+            "content": "Write {{char}}'s next reply in a fictional chat between {{char}} and {{user}}."
+        },
         "context": {
             "preset": "Default",
             "story_string": "{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}",

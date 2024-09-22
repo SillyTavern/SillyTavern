@@ -1,5 +1,4 @@
 {
-    "system_prompt": "Continue writing this story and portray characters realistically.",
     "input_sequence": "<start_of_turn>user",
     "output_sequence": "<start_of_turn>model",
     "last_output_sequence": "",
