@@ -541,7 +541,8 @@ function selectPrefix(selected_prefix, finalPrompt) {
     let useInstruct = false;
     const clio = nai_settings.model_novel.includes('clio');
     const kayra = nai_settings.model_novel.includes('kayra');
-    const isNewModel = clio || kayra;
+    const erato = nai_settings.model_novel.includes('erato');
+    const isNewModel = clio || kayra || erato;
 
     if (isNewModel) {
         // NovelAI claims they scan backwards 1000 characters (not tokens!) to look for instruct brackets. That's really short.
