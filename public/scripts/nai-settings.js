@@ -24,6 +24,7 @@ const maximum_output_length = 150;
 const default_presets = {
     'clio-v1': 'Talker-Chat-Clio',
     'kayra-v1': 'Carefree-Kayra',
+    'llama-3-erato-v1': 'Universal-Erato',
 };
 
 export const nai_settings = {
@@ -558,6 +559,9 @@ function getTokenizerTypeForModel(model) {
     }
     if (model.includes('kayra')) {
         return tokenizers.NERD2;
+    }
+    if (model.includes('erato')) {
+        return tokenizers.LLAMA3;
     }
     return tokenizers.NONE;
 }
