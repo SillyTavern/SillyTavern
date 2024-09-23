@@ -496,7 +496,14 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
         console.log(finalPrompt);
     }
 
-    const adjustedMaxLength = nai_settings.model_novel.includes('kayra') ? getKayraMaxResponseTokens() : maximum_output_length;
+    const isKayra = nai_settings.model_novel.includes('kayra');
+    const isErato = nai_settings.model_novel.includes('erato');
+
+    if (isErato) {
+        finalPrompt = '<|reserved_special_token_81|>' + finalPrompt;
+    }
+
+    const adjustedMaxLength = (isKayra || isErato) ? getKayraMaxResponseTokens() : maximum_output_length;
 
     return {
         'input': finalPrompt,
