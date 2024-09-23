@@ -335,7 +335,7 @@ function renderConnectionProfiles(profiles) {
     noneOption.selected = !extension_settings.connectionManager.selectedProfile;
     profiles.appendChild(noneOption);
 
-    for (const profile of extension_settings.connectionManager.profiles) {
+    for (const profile of extension_settings.connectionManager.profiles.sort((a, b) => a.name.localeCompare(b.name))) {
         const option = document.createElement('option');
         option.value = profile.id;
         option.textContent = profile.name;
@@ -470,6 +470,31 @@ async function renderDetailsContent(detailsContent) {
         renderConnectionProfiles(profiles);
         await renderDetailsContent(detailsContent);
         await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, NONE);
+    });
+
+    const renameButton = document.getElementById('rename_connection_profile');
+    renameButton.addEventListener('click', async () => {
+        const selectedProfile = extension_settings.connectionManager.selectedProfile;
+        const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
+        if (!profile) {
+            console.log('No profile selected');
+            return;
+        }
+
+        const newName = await Popup.show.input('Enter a new name', null, profile.name, { rows: 2 });
+        if (!newName) {
+            return;
+        }
+
+        if (extension_settings.connectionManager.profiles.some(p => p.name === newName)) {
+            toastr.error('A profile with the same name already exists.');
+            return;
+        }
+
+        profile.name = newName;
+        saveSettingsDebounced();
+        renderConnectionProfiles(profiles);
+        toastr.success('Connection profile renamed', '', { timeOut: 1500 });
     });
 
     /** @type {HTMLElement} */
