@@ -1750,7 +1750,7 @@ class PromptManager {
      */
     showPopup(area = 'edit') {
         const areaElement = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_' + area);
-        areaElement.style.display = 'block';
+        areaElement.style.display = 'flex';
 
         $('#' + this.configuration.prefix + 'prompt_manager_popup').first()
             .slideDown(200, 'swing')
