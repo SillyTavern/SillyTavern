@@ -500,7 +500,7 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
     const isErato = nai_settings.model_novel.includes('erato');
 
     if (isErato) {
-        finalPrompt = '<|reserved_special_token_81|>' + finalPrompt;
+        finalPrompt = '<|startoftext|>' + finalPrompt;
     }
 
     const adjustedMaxLength = (isKayra || isErato) ? getKayraMaxResponseTokens() : maximum_output_length;
