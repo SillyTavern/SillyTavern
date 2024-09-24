@@ -811,6 +811,31 @@ drawthings.post('/generate', jsonParser, async (request, response) => {
 
 const pollinations = express.Router();
 
+pollinations.post('/models', jsonParser, async (_request, response) => {
+    try {
+        const modelsUrl = new URL('https://image.pollinations.ai/models');
+        const result = await fetch(modelsUrl);
+
+        if (!result.ok) {
+            console.log('Pollinations returned an error.', result.status, result.statusText);
+            throw new Error('Pollinations request failed.');
+        }
+
+        const data = await result.json();
+
+        if (!Array.isArray(data)) {
+            console.log('Pollinations returned invalid data.');
+            throw new Error('Pollinations request failed.');
+        }
+
+        const models = data.map(x => ({ value: x, text: x }));
+        return response.send(models);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
 pollinations.post('/generate', jsonParser, async (request, response) => {
     try {
         const promptUrl = new URL(`https://image.pollinations.ai/prompt/${encodeURIComponent(request.body.prompt)}`);
@@ -819,7 +844,6 @@ pollinations.post('/generate', jsonParser, async (request, response) => {
             negative_prompt: String(request.body.negative_prompt),
             seed: String(request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 10_000_000)),
             enhance: String(request.body.enhance ?? false),
-            refine: String(request.body.refine ?? false),
             width: String(request.body.width ?? 1024),
             height: String(request.body.height ?? 1024),
             nologo: String(true),

@@ -32,7 +32,7 @@
     "Streaming_desc": "Toon de reactie beetje bij beetje zoals deze wordt gegenereerd",
     "context size(tokens)": "Contextgrootte (tokens)",
     "unlocked": "Ontgrendeld",
-    "Only enable this if your model supports context sizes greater than 4096 tokens": "Schakel dit alleen in als uw model contextgroottes ondersteunt groter dan 4096 tokens",
+    "Only enable this if your model supports context sizes greater than 8192 tokens": "Schakel dit alleen in als uw model contextgroottes ondersteunt groter dan 8192 tokens",
     "Max prompt cost:": "Maximale promptkosten:",
     "Display the response bit by bit as it is generated.": "Toon het antwoord stuk voor stuk terwijl het wordt gegenereerd.",
     "When this is off, responses will be displayed all at once when they are complete.": "Als dit uit staat, worden reacties in één keer weergegeven wanneer ze compleet zijn.",

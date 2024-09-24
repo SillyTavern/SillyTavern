@@ -1,0 +1,11 @@
+{
+    "story_string": "[INST]{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{personality}}\n{{/if}}{{#if scenario}}{{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{trim}}[/INST]Understood.</s>",
+    "example_separator": "",
+    "chat_start": "",
+    "use_stop_strings": false,
+    "allow_jailbreak": false,
+    "always_force_name2": true,
+    "trim_sentences": false,
+    "single_line": false,
+    "name": "Mistral V3-Tekken"
+}

@@ -1,4 +1,3 @@
-import { eventSource, event_types } from '../script.js';
 import { power_user } from './power-user.js';
 import { delay } from './utils.js';
 
@@ -268,7 +267,6 @@ export class SmoothEventSourceStream extends EventSourceStream {
                         hasFocus && await delay(getDelay(lastStr));
                         controller.enqueue(new MessageEvent(event.type, { data: JSON.stringify(parsed.data) }));
                         lastStr = parsed.chunk;
-                        hasFocus && await eventSource.emit(event_types.SMOOTH_STREAM_TOKEN_RECEIVED, parsed.chunk);
                     }
                 } catch (error) {
                     console.debug('Smooth Streaming parsing error', error);

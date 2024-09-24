@@ -37,6 +37,16 @@ basicAuthUser:
   password: "password"
 # Enables CORS proxy middleware
 enableCorsProxy: false
+# -- REQUEST PROXY CONFIGURATION --
+requestProxy:
+  # If a proxy is enabled, all outgoing HTTP/HTTPS requests will be routed through it.
+  enabled: false
+  # Proxy URL. Possible protocols: http, https, socks, socks5, socks4, pac
+  url: "socks5://username:password@example.com:1080"
+  # Proxy bypass list. Requests to these hosts won't be routed through the proxy.
+  bypass:
+    - localhost
+    - 127.0.0.1
 # Enable multi-user mode
 enableUserAccounts: false
 # Enable discreet login mode: hides user list on the login screen
@@ -73,6 +83,8 @@ skipContentCheck: false
 disableChatBackup: false
 # Number of backups to keep for each chat and settings file
 numberOfBackups: 50
+# Interval in milliseconds to throttle chat backups per user
+chatBackupThrottleInterval: 10000
 # Allowed hosts for card downloads
 whitelistImportDomains:
   - localhost
@@ -90,9 +102,17 @@ whitelistImportDomains:
 ##   headers:
 ##     User-Agent: "Googlebot/2.1 (+http://www.google.com/bot.html)"
 requestOverrides: []
-# -- PLUGIN CONFIGURATION --
+# -- EXTENSIONS CONFIGURATION --
 # Enable UI extensions
 enableExtensions: true
+# Automatically update extensions when a release version changes
+enableExtensionsAutoUpdate: true
+# Additional model tokenizers can be downloaded on demand.
+# Disabling will fallback to another locally available tokenizer.
+enableDownloadableTokenizers: true
+# Vector storage settings
+vectors:
+  enableModelScopes: false
 # Extension settings
 extras:
   # Disables automatic model download from HuggingFace

@@ -34,8 +34,9 @@ function getConfig() {
         CACHED_CONFIG = config;
         return config;
     } catch (error) {
-        console.warn('Failed to read config.yaml');
-        return {};
+        console.error(color.red('FATAL: Failed to read config.yaml. Please check the file for syntax errors.'));
+        console.error(error.message);
+        process.exit(1);
     }
 }
 
@@ -298,8 +299,8 @@ const color = {
  * @returns {string} A UUIDv4 string
  */
 function uuidv4() {
-    if ('randomUUID' in crypto) {
-        return crypto.randomUUID();
+    if ('crypto' in global && 'randomUUID' in global.crypto) {
+        return global.crypto.randomUUID();
     }
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0;
@@ -646,6 +647,20 @@ function getSeparator(n) {
     return '='.repeat(n);
 }
 
+/**
+ * Checks if the string is a valid URL.
+ * @param {string} url String to check
+ * @returns {boolean} If the URL is valid
+ */
+function isValidUrl(url) {
+    try {
+        new URL(url);
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -675,4 +690,5 @@ module.exports = {
     makeHttp2Request,
     removeColorFormatting,
     getSeparator,
+    isValidUrl,
 };

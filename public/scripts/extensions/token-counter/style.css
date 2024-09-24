@@ -4,3 +4,8 @@
     padding: 2px;
     display: inline-block;
 }
+
+#token_counter_textarea,
+#token_counter_ids {
+    field-sizing: content;
+}

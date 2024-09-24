@@ -1,0 +1,22 @@
+{
+    "input_sequence": "[INST] ",
+    "output_sequence": "[/INST] ",
+    "last_output_sequence": "[/INST]",
+    "system_sequence": "",
+    "stop_sequence": "",
+    "wrap": false,
+    "macro": true,
+    "names_behavior": "always",
+    "activation_regex": "",
+    "system_sequence_prefix": "",
+    "system_sequence_suffix": "",
+    "first_output_sequence": "",
+    "skip_examples": false,
+    "output_suffix": "</s>",
+    "input_suffix": "",
+    "system_suffix": "",
+    "user_alignment_message": "Let's get started. Please respond based on the information and instructions provided above.",
+    "system_same_as_user": true,
+    "last_system_sequence": "",
+    "name": "Mistral V2 & V3"
+}

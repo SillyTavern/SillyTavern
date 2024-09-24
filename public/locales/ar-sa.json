@@ -32,7 +32,7 @@
     "Streaming_desc": "عرض الاستجابة لحظيا كما يتم إنشاؤها.",
     "context size(tokens)": "حجم الاحرف (بعدد الاحرف او الرموز)",
     "unlocked": "مفتوح",
-    "Only enable this if your model supports context sizes greater than 4096 tokens": "قم بتمكين هذا فقط إذا كانت نموذجك يدعم مقاطع السياق بأحجام أكبر من 4096 رمزًا.",
+    "Only enable this if your model supports context sizes greater than 8192 tokens": "قم بتمكين هذا فقط إذا كانت نموذجك يدعم مقاطع السياق بأحجام أكبر من 8192 رمزًا.",
     "Max prompt cost:": "أقصى تكلفة فورية:",
     "Display the response bit by bit as it is generated.": "عرض الاستجابة بتدريج كما يتم إنشاؤها.",
     "When this is off, responses will be displayed all at once when they are complete.": "عند إيقاف هذا الخيار، سيتم عرض الردود جميعها دفعة واحدة عند اكتمالها.",

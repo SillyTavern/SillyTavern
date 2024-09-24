@@ -108,6 +108,7 @@ const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
  * @property {number} [cooldown] The cooldown of the entry
  * @property {number} [delay] The delay of the entry
  * @property {string[]} [decorators] Array of decorators for the entry
+ * @property {number} [hash] The hash of the entry
  */
 
 /**
@@ -216,15 +217,17 @@ class WorldInfoBuffer {
             depth = MAX_SCAN_DEPTH;
         }
 
-        let result = this.#depthBuffer.slice(this.#startDepth, depth).join('\n');
+        const MATCHER = '\x01';
+        const JOINER = '\n' + MATCHER;
+        let result = MATCHER + this.#depthBuffer.slice(this.#startDepth, depth).join(JOINER);
 
         if (this.#injectBuffer.length > 0) {
-            result += '\n' + this.#injectBuffer.join('\n');
+            result += JOINER + this.#injectBuffer.join(JOINER);
         }
 
         // Min activations should not include the recursion buffer
         if (this.#recurseBuffer.length > 0 && scanState !== scan_state.MIN_ACTIVATIONS) {
-            result += '\n' + this.#recurseBuffer.join('\n');
+            result += JOINER + this.#recurseBuffer.join(JOINER);
         }
 
         return result;
@@ -383,12 +386,6 @@ class WorldInfoBuffer {
  */
 class WorldInfoTimedEffects {
     /**
-     * Cache for entry hashes. Uses weak map to avoid memory leaks.
-     * @type {WeakMap<WIScanEntry, number>}
-     */
-    #entryHashCache = new WeakMap();
-
-    /**
      * Array of chat messages.
      * @type {string[]}
      */
@@ -485,13 +482,7 @@ class WorldInfoTimedEffects {
     * @returns {number} String hash
     */
     #getEntryHash(entry) {
-        if (this.#entryHashCache.has(entry)) {
-            return this.#entryHashCache.get(entry);
-        }
-
-        const hash = getStringHash(JSON.stringify(entry));
-        this.#entryHashCache.set(entry, hash);
-        return hash;
+        return entry.hash;
     }
 
     /**
@@ -2334,7 +2325,7 @@ async function getWorldEntry(name, data, entry) {
             input.on('select2:unselect', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data], { remove: true }));
 
             select2ChoiceClickSubscribe(input, target => {
-                const key = $(target).text();
+                const key = $(target.closest('.regex-highlight, .item')).text();
                 console.debug('Editing WI key', key);
 
                 // Remove the current key from the actual selection
@@ -2959,16 +2950,39 @@ async function getWorldEntry(name, data, entry) {
     preventRecursionInput.prop('checked', entry.preventRecursion).trigger('input');
 
     // delay until recursion
+    // delay until recursion level
     const delayUntilRecursionInput = template.find('input[name="delay_until_recursion"]');
     delayUntilRecursionInput.data('uid', entry.uid);
+    const delayUntilRecursionLevelInput = template.find('input[name="delayUntilRecursionLevel"]');
+    delayUntilRecursionLevelInput.data('uid', entry.uid);
     delayUntilRecursionInput.on('input', async function () {
         const uid = $(this).data('uid');
-        const value = $(this).prop('checked');
+        const toggled = $(this).prop('checked');
+
+        // If the value contains a number, we'll take that one (set by the level input), otherwise we can use true/false switch
+        const value = toggled ? data.entries[uid].delayUntilRecursion || true : false;
+
+        if (!toggled) delayUntilRecursionLevelInput.val('');
+
         data.entries[uid].delayUntilRecursion = value;
         setWIOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
         await saveWorldInfo(name, data);
     });
     delayUntilRecursionInput.prop('checked', entry.delayUntilRecursion).trigger('input');
+    delayUntilRecursionLevelInput.on('input', async function () {
+        const uid = $(this).data('uid');
+        const content = $(this).val();
+        const value = content === '' ? (typeof data.entries[uid].delayUntilRecursion === 'boolean' ? data.entries[uid].delayUntilRecursion : true)
+            : content === 1 ? true
+                : !isNaN(Number(content)) ? Number(content)
+                    : false;
+
+        data.entries[uid].delayUntilRecursion = value;
+        setWIOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
+        await saveWorldInfo(name, data);
+    });
+    // No need to retrigger inpout event, we'll just set the curret current value. It was edited/saved above already
+    delayUntilRecursionLevelInput.val(['number', 'string'].includes(typeof entry.delayUntilRecursion) ? entry.delayUntilRecursion : '').trigger('input');
 
     // duplicate button
     const duplicateButton = template.find('.duplicate_entry_button');
@@ -3267,7 +3281,7 @@ export const newWorldInfoEntryDefinition = {
     disable: { default: false, type: 'boolean' },
     excludeRecursion: { default: false, type: 'boolean' },
     preventRecursion: { default: false, type: 'boolean' },
-    delayUntilRecursion: { default: false, type: 'boolean' },
+    delayUntilRecursion: { default: 0, type: 'number' },
     probability: { default: 100, type: 'number' },
     useProbability: { default: true, type: 'boolean' },
     depth: { default: DEFAULT_DEPTH, type: 'number' },
@@ -3603,10 +3617,13 @@ export async function getSortedEntries() {
         // Chat lore always goes first
         entries = [...chatLore.sort(sortFn), ...entries];
 
-        // Parse decorators
+        // Calculate hash and parse decorators. Split maps to preserve old hashes.
         entries = entries.map((entry) => {
             const [decorators, content] = parseDecorators(entry.content || '');
             return { ...entry, decorators, content };
+        }).map((entry) => {
+            const hash = getStringHash(JSON.stringify(entry));
+            return { ...entry, hash };
         });
 
         console.debug(`[WI] Found ${entries.length} world lore entries. Sorted by strategy`, Object.entries(world_info_insertion_strategy).find((x) => x[1] === world_info_character_strategy));
@@ -3703,6 +3720,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         }
     }
 
+    /** @type {scan_state} */
     let scanState = scan_state.INITIAL;
     let token_budget_overflowed = false;
     let count = 0;
@@ -3727,6 +3745,17 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], EMEntries: [], allActivatedEntries: new Set() };
     }
 
+    /** @type {number[]} Represents the delay levels for entries that are delayed until recursion */
+    const availableRecursionDelayLevels = [...new Set(sortedEntries
+        .filter(entry => entry.delayUntilRecursion)
+        .map(entry => entry.delayUntilRecursion === true ? 1 : entry.delayUntilRecursion),
+    )].sort((a, b) => a - b);
+    // Already preset with the first level
+    let currentRecursionDelayLevel = availableRecursionDelayLevels.shift() ?? 0;
+    if (currentRecursionDelayLevel > 0 && availableRecursionDelayLevels.length) {
+        console.debug('[WI] Preparing first delayed recursion level', currentRecursionDelayLevel, '. Still delayed:', availableRecursionDelayLevels);
+    }
+
     console.debug(`[WI] --- SEARCHING ENTRIES (on ${sortedEntries.length} entries) ---`);
 
     while (scanState) {
@@ -3739,7 +3768,8 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         // Track how many times the loop has run. May be useful for debugging.
         count++;
 
-        console.debug(`[WI] Loop #${count}. Search state`, Object.entries(scan_state).find(x => x[1] === scanState));
+        console.debug(`[WI] --- LOOP #${count} START ---`);
+        console.debug('[WI] Scan state', Object.entries(scan_state).find(x => x[1] === scanState));
 
         // Until decided otherwise, we set the loop to stop scanning after this
         let nextScanState = scan_state.NONE;
@@ -3813,12 +3843,17 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             }
 
             // Only use checks for recursion flags if the scan step was activated by recursion
-            if (scanState !== scan_state.RECURSION && entry.delayUntilRecursion) {
+            if (scanState !== scan_state.RECURSION && entry.delayUntilRecursion && !isSticky) {
                 log('suppressed by delay until recursion');
                 continue;
             }
 
-            if (scanState === scan_state.RECURSION && world_info_recursive && entry.excludeRecursion) {
+            if (scanState === scan_state.RECURSION && entry.delayUntilRecursion && entry.delayUntilRecursion > currentRecursionDelayLevel && !isSticky) {
+                log('suppressed by delay until recursion level', entry.delayUntilRecursion, '. Currently', currentRecursionDelayLevel);
+                continue;
+            }
+
+            if (scanState === scan_state.RECURSION && world_info_recursive && entry.excludeRecursion && !isSticky) {
                 log('suppressed by exclude recursion');
                 continue;
             }
@@ -3940,14 +3975,24 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         }
 
         console.debug(`[WI] Search done. Found ${activatedNow.size} possible entries.`);
+
+        // Sort the entries for the probability and the budget limit checks
         const newEntries = [...activatedNow]
-            .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
+            .sort((a, b) => {
+                const isASticky = timedEffects.isEffectActive('sticky', a) ? 1 : 0;
+                const isBSticky = timedEffects.isEffectActive('sticky', b) ? 1 : 0;
+                return isBSticky - isASticky || sortedEntries.indexOf(a) - sortedEntries.indexOf(b);
+            });
+
+
         let newContent = '';
         const textToScanTokens = await getTokenCountAsync(allActivatedText);
 
-        filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanState);
+        filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanState, timedEffects);
 
         console.debug('[WI] --- PROBABILITY CHECKS ---');
+        !newEntries.length && console.debug('[WI] No probability checks to do');
+
         for (const entry of newEntries) {
             function verifyProbability() {
                 // If we don't need to roll, it's always true
@@ -3983,6 +4028,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             newContent += `${entry.content}\n`;
 
             if ((textToScanTokens + (await getTokenCountAsync(newContent))) >= budget) {
+                console.debug('[WI] --- BUDGET OVERFLOW CHECK ---');
                 if (world_info_overflow_alert) {
                     console.warn(`[WI] budget of ${budget} reached, stopping after ${allActivatedEntries.size} entries`);
                     toastr.warning(`World info budget reached after ${allActivatedEntries.size} entries.`, 'World Info');
@@ -4000,23 +4046,31 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         const successfulNewEntries = newEntries.filter(x => !failedProbabilityChecks.has(x));
         const successfulNewEntriesForRecursion = successfulNewEntries.filter(x => !x.preventRecursion);
 
+        console.debug(`[WI] --- LOOP #${count} RESULT ---`);
         if (!newEntries.length) {
-            console.debug('[WI] No new entries activated, stopping');
+            console.debug('[WI] No new entries activated.');
         } else if (!successfulNewEntries.length) {
-            console.debug('[WI] Probability checks failed for all activated entries, stopping');
+            console.debug('[WI] Probability checks failed for all activated entries. No new entries activated.');
         } else {
             console.debug(`[WI] Successfully activated ${successfulNewEntries.length} new entries to prompt. ${allActivatedEntries.size} total entries activated.`, successfulNewEntries);
+        }
+
+        function logNextState(...args) {
+            args.length && console.debug(args.shift(), ...args);
+            console.debug('[WI] Setting scan state', Object.entries(scan_state).find(x => x[1] === scanState));
         }
 
         // After processing and rolling entries is done, see if we should continue with normal recursion
         if (world_info_recursive && !token_budget_overflowed && successfulNewEntriesForRecursion.length) {
             nextScanState = scan_state.RECURSION;
+            logNextState('[WI] Found', successfulNewEntriesForRecursion.length, 'new entries for recursion');
         }
 
         // If we are inside min activations scan, and we have recursive buffer, we should do a recursive scan before increasing the buffer again
         // There might be recurse-trigger-able entries that match the buffer, so we need to check that
         if (world_info_recursive && !token_budget_overflowed && scanState === scan_state.MIN_ACTIVATIONS && buffer.hasRecurse()) {
             nextScanState = scan_state.RECURSION;
+            logNextState('[WI] Min Activations run done, whill will always be followed by a recursive scan');
         }
 
         // If scanning is planned to stop, but min activations is set and not satisfied, check if we should continue
@@ -4030,12 +4084,19 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             ) || (buffer.getDepth() > chat.length);
 
             if (!over_max) {
-                console.debug(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), advancing depth to ${buffer.getDepth() + 1} and checking again`);
                 nextScanState = scan_state.MIN_ACTIVATIONS; // loop
+                logNextState(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), advancing depth to ${buffer.getDepth() + 1}, starting another scan`);
                 buffer.advanceScan();
             } else {
                 console.debug(`[WI] Min activations not reached (${allActivatedEntries.size}/${world_info_min_activations}), but reached on of depth. Stopping`);
             }
+        }
+
+        // If the scan is done, but we still have open "delay until recursion" levels, we should continue with the next one
+        if (nextScanState === scan_state.NONE && availableRecursionDelayLevels.length) {
+            nextScanState = scan_state.RECURSION;
+            currentRecursionDelayLevel = availableRecursionDelayLevels.shift();
+            logNextState('[WI] Open delayed recursion levels left. Preparing next delayed recursion level', currentRecursionDelayLevel, '. Still delayed:', availableRecursionDelayLevels);
         }
 
         // Final check if we should really continue scan, and extend the current WI recurse buffer
@@ -4045,6 +4106,8 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
                 .map(x => x.content).join('\n');
             buffer.addRecurse(text);
             allActivatedText = (text + '\n' + allActivatedText);
+        } else {
+            logNextState('[WI] Scan done. No new entries to prompt. Stopping.');
         }
     }
 
@@ -4071,10 +4134,10 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
 
         switch (entry.position) {
             case world_info_position.before:
-                WIBeforeEntries.unshift(substituteParams(content));
+                WIBeforeEntries.unshift(content);
                 break;
             case world_info_position.after:
-                WIAfterEntries.unshift(substituteParams(content));
+                WIAfterEntries.unshift(content);
                 break;
             case world_info_position.EMTop:
                 EMEntries.unshift(
@@ -4135,12 +4198,20 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
  * @param {WorldInfoBuffer} buffer The buffer to use for scoring
  * @param {(entry: WIScanEntry) => void} removeEntry The function to remove an entry
  * @param {number} scanState The current scan state
+ * @param {Map<string, boolean>} hasStickyMap The sticky entries map
  */
-function filterGroupsByScoring(groups, buffer, removeEntry, scanState) {
+function filterGroupsByScoring(groups, buffer, removeEntry, scanState, hasStickyMap) {
     for (const [key, group] of Object.entries(groups)) {
         // Group scoring is disabled both globally and for the group entries
         if (!world_info_use_group_scoring && !group.some(x => x.useGroupScoring)) {
             console.debug(`[WI] Skipping group scoring for group '${key}'`);
+            continue;
+        }
+
+        // If the group has any sticky entries, the rest are already removed by the timed effects filter
+        const hasAnySticky = hasStickyMap.get(key);
+        if (hasAnySticky) {
+            console.debug(`[WI] Skipping group scoring check, group '${key}' has sticky entries`);
             continue;
         }
 
@@ -4168,13 +4239,64 @@ function filterGroupsByScoring(groups, buffer, removeEntry, scanState) {
 }
 
 /**
+ * Removes entries on cooldown and forces sticky entries as winners.
+ * @param {Record<string, WIScanEntry[]>} groups The groups to filter
+ * @param {WorldInfoTimedEffects} timedEffects The timed effects to use
+ * @param {(entry: WIScanEntry) => void} removeEntry The function to remove an entry
+ * @returns {Map<string, boolean>} If any sticky entries were found
+ */
+function filterGroupsByTimedEffects(groups, timedEffects, removeEntry) {
+    /** @type {Map<string, boolean>} */
+    const hasStickyMap = new Map();
+
+    for (const [key, group] of Object.entries(groups)) {
+        hasStickyMap.set(key, false);
+
+        // If the group has any sticky entries, leave only the sticky entries
+        const stickyEntries = group.filter(x => timedEffects.isEffectActive('sticky', x));
+        if (stickyEntries.length) {
+            for (const entry of group) {
+                if (stickyEntries.includes(entry)) {
+                    continue;
+                }
+
+                console.debug(`[WI] Entry ${entry.uid}`, `removed as a non-sticky loser from inclusion group '${key}'`, entry);
+                removeEntry(entry);
+            }
+
+            hasStickyMap.set(key, true);
+        }
+
+        // It should not be possible for an entry on cooldown/delay to event get into the grouping phase but @Wolfsblvt told me to leave it here.
+        const cooldownEntries = group.filter(x => timedEffects.isEffectActive('cooldown', x));
+        if (cooldownEntries.length) {
+            console.debug(`[WI] Inclusion group '${key}' has entries on cooldown. They will be removed.`, cooldownEntries);
+            for (const entry of cooldownEntries) {
+                removeEntry(entry);
+            }
+        }
+
+        const delayEntries = group.filter(x => timedEffects.isEffectActive('delay', x));
+        if (delayEntries.length) {
+            console.debug(`[WI] Inclusion group '${key}' has entries with delay. They will be removed.`, delayEntries);
+            for (const entry of delayEntries) {
+                removeEntry(entry);
+            }
+        }
+    }
+
+    return hasStickyMap;
+}
+
+/**
  * Filters entries by inclusion groups.
  * @param {object[]} newEntries Entries activated on current recursion level
  * @param {Set<object>} allActivatedEntries Set of all activated entries
  * @param {WorldInfoBuffer} buffer The buffer to use for scanning
  * @param {number} scanState The current scan state
+ * @param {WorldInfoTimedEffects} timedEffects The timed effects currently active
  */
-function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanState) {
+function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanState, timedEffects) {
     console.debug('[WI] --- INCLUSION GROUP CHECKS ---');
 
     const grouped = newEntries.filter(x => x.group).reduce((acc, item) => {
@@ -4204,10 +4326,18 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanSt
         }
     }
 
-    filterGroupsByScoring(grouped, buffer, removeEntry, scanState);
+    const hasStickyMap = filterGroupsByTimedEffects(grouped, timedEffects, removeEntry);
+    filterGroupsByScoring(grouped, buffer, removeEntry, scanState, hasStickyMap);
 
     for (const [key, group] of Object.entries(grouped)) {
         console.debug(`[WI] Checking inclusion group '${key}' with ${group.length} entries`, group);
+
+        // If the group has any sticky entries, the rest are already removed by the timed effects filter
+        const hasAnySticky = hasStickyMap.get(key);
+        if (hasAnySticky) {
+            console.debug(`[WI] Skipping inclusion group check, group '${key}' has sticky entries`);
+            continue;
+        }
 
         if (Array.from(allActivatedEntries).some(x => x.group === key)) {
             console.debug(`[WI] Skipping inclusion group check, group '${key}' was already activated`);
@@ -4777,8 +4907,10 @@ jQuery(() => {
         world_info_min_activations = Number($(this).val());
         $('#world_info_min_activations_counter').val(world_info_min_activations);
 
-        if (world_info_min_activations !== 0) {
+        if (world_info_min_activations !== 0 && world_info_max_recursion_steps !== 0) {
             $('#world_info_max_recursion_steps').val(0).trigger('input');
+            flashHighlight($('#world_info_max_recursion_steps').parent()); // flash the other control to show it has changed
+            console.info('[WI] Max recursion steps set to 0, as min activations is set to', world_info_min_activations);
         } else {
             saveSettings();
         }
@@ -4840,8 +4972,10 @@ jQuery(() => {
     $('#world_info_max_recursion_steps').on('input', function () {
         world_info_max_recursion_steps = Number($(this).val());
         $('#world_info_max_recursion_steps_counter').val(world_info_max_recursion_steps);
-        if (world_info_max_recursion_steps !== 0) {
+        if (world_info_max_recursion_steps !== 0 && world_info_min_activations !== 0) {
             $('#world_info_min_activations').val(0).trigger('input');
+            flashHighlight($('#world_info_min_activations').parent()); // flash the other control to show it has changed
+            console.info('[WI] Min activations set to 0, as max recursion steps is set to', world_info_max_recursion_steps);
         } else {
             saveSettings();
         }

@@ -108,14 +108,12 @@ class CharacterContextMenu {
      * Delete one or more characters,
      * opens a popup.
      *
-     * @param {number} characterId
+     * @param {string|string[]} characterKey
      * @param {boolean} [deleteChats]
      * @returns {Promise<void>}
      */
-    static delete = async (characterId, deleteChats = false) => {
-        const character = CharacterContextMenu.#getCharacter(characterId);
-
-        await deleteCharacter(character.avatar, { deleteChats: deleteChats });
+    static delete = async (characterKey, deleteChats = false) => {
+        await deleteCharacter(characterKey, { deleteChats: deleteChats });
     };
 
     static #getCharacter = (characterId) => characters[characterId] ?? null;
@@ -344,7 +342,7 @@ class BulkTagPopupHandler {
         const mutualTags = this.getMutualTags();
 
         for (const characterId of this.characterIds) {
-            for(const tag of mutualTags) {
+            for (const tag of mutualTags) {
                 removeTagFromMap(tag.id, characterId);
             }
         }
@@ -599,8 +597,7 @@ class BulkEditOverlay {
 
             this.container.removeEventListener('mouseup', cancelHold);
             this.container.removeEventListener('touchend', cancelHold);
-        },
-            BulkEditOverlay.longPressDelay);
+        }, BulkEditOverlay.longPressDelay);
     };
 
     handleLongPressEnd = (event) => {
@@ -847,11 +844,14 @@ class BulkEditOverlay {
                 const deleteChats = document.getElementById('del_char_checkbox').checked ?? false;
 
                 showLoader();
-                toastr.info('We\'re deleting your characters, please wait...', 'Working on it');
-                return Promise.allSettled(characterIds.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
-                    .then(() => getCharacters())
+                const toast = toastr.info('We\'re deleting your characters, please wait...', 'Working on it');
+                const avatarList = characterIds.map(id => characters[id]?.avatar).filter(a => a);
+                return CharacterContextMenu.delete(avatarList, deleteChats)
                     .then(() => this.browseState())
-                    .finally(() => hideLoader());
+                    .finally(() => {
+                        toastr.clear(toast);
+                        hideLoader();
+                    });
             });
 
         // At this moment the popup is already changed in the dom, but not yet closed/resolved. We build the avatar list here

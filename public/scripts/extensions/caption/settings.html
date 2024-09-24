@@ -23,6 +23,7 @@
                         <option value="google">Google AI Studio</option>
                         <option value="koboldcpp">KoboldCpp</option>
                         <option value="llamacpp">llama.cpp</option>
+                        <option value="mistral">MistralAI</option>
                         <option value="ollama">Ollama</option>
                         <option value="openai">OpenAI</option>
                         <option value="openrouter">OpenRouter</option>
@@ -33,6 +34,8 @@
                 <div class="flex1 flex-container flexFlowColumn flexNoGap">
                     <label for="caption_multimodal_model" data-i18n="Model">Model</label>
                     <select id="caption_multimodal_model" class="flex1 text_pole">
+                        <option data-type="mistral" value="pixtral-latest">pixtral-latest</option>
+                        <option data-type="mistral" value="pixtral-12b-2409">pixtral-12b-2409</option>
                         <option data-type="zerooneai" value="yi-vision">yi-vision</option>
                         <option data-type="openai" value="gpt-4-vision-preview">gpt-4-vision-preview</option>
                         <option data-type="openai" value="gpt-4-turbo">gpt-4-turbo</option>
@@ -43,14 +46,25 @@
                         <option data-type="anthropic" value="claude-3-opus-20240229">claude-3-opus-20240229</option>
                         <option data-type="anthropic" value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
                         <option data-type="anthropic" value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
-                        <option data-type="google" value="gemini-pro-vision">gemini-pro-vision</option>
+                        <option data-type="google" value="gemini-1.5-flash">gemini-1.5-flash</option>
                         <option data-type="google" value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</option>
+                        <option data-type="google" value="gemini-1.5-flash-001">gemini-1.5-flash-001</option>
+                        <option data-type="google" value="gemini-1.5-flash-exp-0827">gemini-1.5-flash-exp-0827</option>
+                        <option data-type="google" value="gemini-1.5-flash-8b-exp-0827">gemini-1.5-flash-8b-exp-0827</option>
+                        <option data-type="google" value="gemini-1.5-pro">gemini-1.5-pro</option>
                         <option data-type="google" value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+                        <option data-type="google" value="gemini-1.5-pro-001">gemini-1.5-pro-001</option>
                         <option data-type="google" value="gemini-1.5-pro-exp-0801">gemini-1.5-pro-exp-0801</option>
+                        <option data-type="google" value="gemini-1.5-pro-exp-0827">gemini-1.5-pro-exp-0827</option>
+                        <option data-type="google" value="gemini-pro-vision">gemini-pro-vision</option>
                         <option data-type="openrouter" value="openai/gpt-4-vision-preview">openai/gpt-4-vision-preview</option>
                         <option data-type="openrouter" value="openai/gpt-4o">openai/gpt-4o</option>
+                        <option data-type="openrouter" value="openai/gpt-4o-2024-05-13">openai/gpt-4o-2024-05-13</option>
+                        <option data-type="openrouter" value="openai/gpt-4o-2024-08-06">openai/gpt-4o-2024-08-06</option>
                         <option data-type="openrouter" value="openai/gpt-4-turbo">openai/gpt-4-turbo</option>
                         <option data-type="openrouter" value="openai/gpt-4o-mini">openai/gpt-4o-mini</option>
+                        <option data-type="openrouter" value="openai/gpt-4o-mini-2024-07-18">openai/gpt-4o-mini-2024-07-18</option>
+                        <option data-type="openrouter" value="openai/chatgpt-4o-latest">openai/chatgpt-4o-latest</option>
                         <option data-type="openrouter" value="haotian-liu/llava-13b">haotian-liu/llava-13b</option>
                         <option data-type="openrouter" value="fireworks/firellava-13b">fireworks/firellava-13b</option>
                         <option data-type="openrouter" value="anthropic/claude-3.5-sonnet">anthropic/claude-3.5-sonnet</option>
@@ -62,8 +76,12 @@
                         <option data-type="openrouter" value="anthropic/claude-3-sonnet:beta">anthropic/claude-3-sonnet:beta</option>
                         <option data-type="openrouter" value="anthropic/claude-3-opus:beta">anthropic/claude-3-opus:beta</option>
                         <option data-type="openrouter" value="nousresearch/nous-hermes-2-vision-7b">nousresearch/nous-hermes-2-vision-7b</option>
-                        <option data-type="openrouter" value="google/gemini-pro-vision">google/gemini-pro-vision</option>
+                        <option data-type="openrouter" value="google/gemini-flash-8b-1.5-exp">google/gemini-flash-8b-1.5-exp</option>
                         <option data-type="openrouter" value="google/gemini-flash-1.5">google/gemini-flash-1.5</option>
+                        <option data-type="openrouter" value="google/gemini-flash-1.5-exp">google/gemini-flash-1.5-exp</option>
+                        <option data-type="openrouter" value="google/gemini-pro-1.5">google/gemini-pro-1.5</option>
+                        <option data-type="openrouter" value="google/gemini-pro-1.5-exp">google/gemini-pro-1.5-exp</option>
+                        <option data-type="openrouter" value="google/gemini-pro-vision">google/gemini-pro-vision</option>
                         <option data-type="openrouter" value="liuhaotian/llava-yi-34b">liuhaotian/llava-yi-34b</option>
                         <option data-type="ollama" value="ollama_current" data-i18n="currently_selected">[Currently selected]</option>
                         <option data-type="ollama" value="bakllava">bakllava</option>
@@ -81,7 +99,7 @@
                 <div data-type="ollama">
                     The model must be downloaded first! Do it with the <code>ollama pull</code> command or <a href="#" id="caption_ollama_pull">click here</a>.
                 </div>
-                <label data-type="openai,anthropic,google" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
+                <label data-type="openai,anthropic,google,mistral" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
                     <input id="caption_allow_reverse_proxy" type="checkbox" class="checkbox">
                     <span data-i18n="Allow reverse proxy">Allow reverse proxy</span>
                 </label>

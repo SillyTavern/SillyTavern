@@ -13,8 +13,8 @@ import { setting_names } from './textgen-settings.js';
 
 const TGsamplerNames = setting_names;
 
-const forcedOnColoring = 'filter: sepia(1) hue-rotate(59deg) contrast(1.5) saturate(3.5)';
-const forcedOffColoring = 'filter: sepia(1) hue-rotate(308deg) contrast(0.7) saturate(10)';
+const forcedOnColoring = 'color: #89db35;';
+const forcedOffColoring = 'color: #e84f62;';
 
 let userDisabledSamplers, userShownSamplers;
 

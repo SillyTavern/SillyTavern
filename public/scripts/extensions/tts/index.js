@@ -421,7 +421,7 @@ function completeTtsJob() {
 async function tts(text, voiceId, char) {
     async function processResponse(response) {
         // RVC injection
-        if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
+        if (typeof window['rvcVoiceConversion'] === 'function' && extension_settings.rvc.enabled)
             response = await window['rvcVoiceConversion'](response, char, text);
 
         await addAudioJob(response, char);

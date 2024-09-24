@@ -1,5 +1,4 @@
 {
-    "system_prompt": "Write {{char}}'s next reply in this fictional roleplay with {{user}}.",
     "input_sequence": "[INST] ",
     "output_sequence": "",
     "last_output_sequence": "",
@@ -7,8 +6,7 @@
     "stop_sequence": "",
     "wrap": false,
     "macro": true,
-    "names": false,
-    "names_force_groups": true,
+    "names_behavior": "force",
     "activation_regex": "",
     "system_sequence_prefix": "",
     "system_sequence_suffix": "",
