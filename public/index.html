@@ -532,32 +532,6 @@
                                         <div class="logit_bias_list"></div>
                                     </div>
                                 </div>
-                                <div class="range-block">
-                                    <hr>
-                                    <div class="range-block-title justifyLeft" data-i18n="CFG Scale">
-                                        CFG Scale
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="cfg_scale_novel" name="volume" min="1" max="3" step="0.05">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="1" max="3" step="0.05" data-for="cfg_scale_novel" id="cfg_scale_counter_novel">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title justifyLeft">
-                                        <span data-i18n="Negative Prompt">Negative Prompt</span>
-                                    </div>
-                                    <div class="wide100p">
-                                        <textarea id="nai_cfg_uc" class="text_pole textarea_compact" name="cfg_uc" rows="2" data-i18n="[placeholder]Add text here that would make the AI generate things you don't want in your outputs." placeholder="Add text here that would make the AI generate things you don't want in your outputs."></textarea>
-                                    </div>
-                                    <small class="margin-bot-10px" data-i18n="Used if CFG Scale is unset globally, per chat or character">
-                                        Used if CFG Scale is unset globally, per chat or character
-                                    </small>
-                                    <hr>
-                                </div>
                             </div>
                             <div id="range_block_openai">
                                 <div class="range-block">
@@ -1154,12 +1128,7 @@
                                             <small>5</small>
                                             <div class="toggle_button right_menu_button"></div>
                                         </div>
-                                        <div data-id="6">
-                                            <span data-i18n="CFG">CFG</span>
-                                            <small>6</small>
-                                            <div class="toggle_button right_menu_button"></div>
-                                        </div>
-                                        <!-- Yes, there is no 7. It was a removed Top G sampling. RIP. -->
+                                        <!-- 6 and 7 were removed samplers. -->
                                         <div data-id="8">
                                             <span data-i18n="Mirostat">Mirostat</span>
                                             <small>8</small>

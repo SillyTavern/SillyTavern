@@ -417,7 +417,6 @@
         "preset_settings_novel": "Talker-Chat-Clio",
         "streaming_novel": true,
         "preamble": "[ Style: chat, complex, sensory, visceral ]",
-        "cfg_uc": "",
         "banned_tokens": "",
         "order": [
             1,

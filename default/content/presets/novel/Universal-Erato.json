@@ -16,14 +16,12 @@
     "math1_quad_entropy_scale": 0,
     "min_length": 1,
     "prefix": "vanilla",
-    "cfg_uc": "",
     "banned_tokens": "",
     "order": [
         0,
         10
     ],
     "phrase_rep_pen": "off",
-    "cfg_scale": 1,
     "mirostat_lr": 0,
     "mirostat_tau": 0
 }

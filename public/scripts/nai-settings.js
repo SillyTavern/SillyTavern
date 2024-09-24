@@ -49,7 +49,6 @@ export const nai_settings = {
     streaming_novel: false,
     preamble: default_preamble,
     prefix: '',
-    cfg_uc: '',
     banned_tokens: '',
     order: default_order,
     logit_bias: [],
@@ -146,12 +145,10 @@ export function loadNovelPreset(preset) {
     nai_settings.top_a = preset.top_a;
     nai_settings.typical_p = preset.typical_p;
     nai_settings.min_length = preset.min_length;
-    nai_settings.cfg_scale = preset.cfg_scale;
     nai_settings.phrase_rep_pen = preset.phrase_rep_pen;
     nai_settings.mirostat_lr = preset.mirostat_lr;
     nai_settings.mirostat_tau = preset.mirostat_tau;
     nai_settings.prefix = preset.prefix;
-    nai_settings.cfg_uc = preset.cfg_uc || '';
     nai_settings.banned_tokens = preset.banned_tokens || '';
     nai_settings.order = preset.order || default_order;
     nai_settings.logit_bias = preset.logit_bias || [];
@@ -187,13 +184,11 @@ export function loadNovelSettings(settings) {
     nai_settings.typical_p = settings.typical_p;
     nai_settings.min_length = settings.min_length;
     nai_settings.phrase_rep_pen = settings.phrase_rep_pen;
-    nai_settings.cfg_scale = settings.cfg_scale;
     nai_settings.mirostat_lr = settings.mirostat_lr;
     nai_settings.mirostat_tau = settings.mirostat_tau;
     nai_settings.streaming_novel = !!settings.streaming_novel;
     nai_settings.preamble = settings.preamble || default_preamble;
     nai_settings.prefix = settings.prefix;
-    nai_settings.cfg_uc = settings.cfg_uc || '';
     nai_settings.banned_tokens = settings.banned_tokens || '';
     nai_settings.order = settings.order || default_order;
     nai_settings.logit_bias = settings.logit_bias || [];
@@ -227,8 +222,6 @@ function loadNovelSettingsUi(ui_settings) {
     $('#top_a_counter_novel').val(Number(ui_settings.top_a).toFixed(3));
     $('#typical_p_novel').val(ui_settings.typical_p);
     $('#typical_p_counter_novel').val(Number(ui_settings.typical_p).toFixed(3));
-    $('#cfg_scale_novel').val(ui_settings.cfg_scale);
-    $('#cfg_scale_counter_novel').val(Number(ui_settings.cfg_scale).toFixed(2));
     $('#phrase_rep_pen_novel').val(ui_settings.phrase_rep_pen || 'off');
     $('#mirostat_lr_novel').val(ui_settings.mirostat_lr);
     $('#mirostat_lr_counter_novel').val(Number(ui_settings.mirostat_lr).toFixed(2));
@@ -238,7 +231,6 @@ function loadNovelSettingsUi(ui_settings) {
     $('#min_length_counter_novel').val(Number(ui_settings.min_length).toFixed(0));
     $('#nai_preamble_textarea').val(ui_settings.preamble);
     $('#nai_prefix').val(ui_settings.prefix || 'vanilla');
-    $('#nai_cfg_uc').val(ui_settings.cfg_uc || '');
     $('#nai_banned_tokens').val(ui_settings.banned_tokens || '');
     $('#min_p_novel').val(ui_settings.min_p);
     $('#min_p_counter_novel').val(Number(ui_settings.min_p).toFixed(3));
@@ -334,22 +326,10 @@ const sliders = [
         setValue: (val) => { nai_settings.mirostat_lr = Number(val).toFixed(2); },
     },
     {
-        sliderId: '#cfg_scale_novel',
-        counterId: '#cfg_scale_counter_novel',
-        format: (val) => `${val}`,
-        setValue: (val) => { nai_settings.cfg_scale = Number(val).toFixed(2); },
-    },
-    {
         sliderId: '#min_length_novel',
         counterId: '#min_length_counter_novel',
         format: (val) => `${val}`,
         setValue: (val) => { nai_settings.min_length = Number(val).toFixed(0); },
-    },
-    {
-        sliderId: '#nai_cfg_uc',
-        counterId: '#nai_cfg_uc_counter',
-        format: (val) => val,
-        setValue: (val) => { nai_settings.cfg_uc = val; },
     },
     {
         sliderId: '#nai_banned_tokens',
@@ -468,11 +448,8 @@ function getBadWordPermutations(text) {
     return result.filter(onlyUnique);
 }
 
-export function getNovelGenerationData(finalPrompt, settings, maxLength, isImpersonate, isContinue, cfgValues, type) {
+export function getNovelGenerationData(finalPrompt, settings, maxLength, isImpersonate, isContinue, _cfgValues, type) {
     console.debug('NovelAI generation data for', type);
-    if (cfgValues && cfgValues.guidanceScale && cfgValues.guidanceScale?.value !== 1) {
-        cfgValues.negativePrompt = (getCfgPrompt(cfgValues.guidanceScale, true))?.value;
-    }
 
     const tokenizerType = getTokenizerTypeForModel(nai_settings.model_novel);
     const stopSequences = (tokenizerType !== tokenizers.NONE)
@@ -528,8 +505,6 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
         'typical_p': Number(nai_settings.typical_p),
         'mirostat_lr': Number(nai_settings.mirostat_lr),
         'mirostat_tau': Number(nai_settings.mirostat_tau),
-        'cfg_scale': cfgValues?.guidanceScale?.value ?? Number(nai_settings.cfg_scale),
-        'cfg_uc': cfgValues?.negativePrompt ?? substituteParams(nai_settings.cfg_uc) ?? '',
         'phrase_rep_pen': nai_settings.phrase_rep_pen,
         'stop_sequences': stopSequences,
         'bad_words_ids': badWordIds,
