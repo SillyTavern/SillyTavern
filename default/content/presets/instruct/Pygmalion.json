@@ -1,5 +1,4 @@
 {
-    "system_prompt": "Enter RP mode. You shall reply to {{user}} while staying in character. Your responses must be detailed, creative, immersive, and drive the scenario forward. You will follow {{char}}'s persona.",
     "input_sequence": "<|user|>",
     "output_sequence": "<|model|>",
     "last_output_sequence": "",
@@ -7,8 +6,7 @@
     "stop_sequence": "<|user|>",
     "wrap": false,
     "macro": true,
-    "names": true,
-    "names_force_groups": true,
+    "names_behavior": "always",
     "activation_regex": "",
     "system_sequence_prefix": "<|system|>",
     "system_sequence_suffix": "",

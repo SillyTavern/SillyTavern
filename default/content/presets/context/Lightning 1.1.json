@@ -6,7 +6,6 @@
     "allow_jailbreak": false,
     "always_force_name2": true,
     "trim_sentences": false,
-    "include_newline": false,
     "single_line": false,
     "name": "Lightning 1.1"
 }

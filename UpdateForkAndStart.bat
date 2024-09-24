@@ -42,7 +42,7 @@ if NOT "!AUTO_SWITCH!"=="" (
         SET TARGET_BRANCH=release
         goto update
     )
-    
+
     echo Auto-switching defined to stay on current branch
     goto update
 )
@@ -95,7 +95,7 @@ if %errorlevel% neq 0 (
 
 echo Installing npm packages and starting server
 set NODE_ENV=production
-call npm install --no-audit --no-fund --quiet --omit=dev
+call npm install --no-audit --no-fund --loglevel=error --no-progress --omit=dev
 node server.js %*
 
 :end

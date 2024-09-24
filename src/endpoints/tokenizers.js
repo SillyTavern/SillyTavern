@@ -221,6 +221,7 @@ const claude_tokenizer = new WebTokenizer('src/tokenizers/claude.json');
 const llama3_tokenizer = new WebTokenizer('src/tokenizers/llama3.json');
 const commandTokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/command-r.json', 'src/tokenizers/llama3.json');
 const qwen2Tokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/qwen2.json', 'src/tokenizers/llama3.json');
+const nemoTokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/nemo.json', 'src/tokenizers/llama3.json');
 
 const sentencepieceTokenizers = [
     'llama',
@@ -416,6 +417,10 @@ function getTokenizerModel(requestModel) {
 
     if (requestModel.includes('command-r')) {
         return 'command-r';
+    }
+
+    if (requestModel.includes('nemo')) {
+        return 'nemo';
     }
 
     // default
@@ -645,6 +650,7 @@ router.post('/claude/encode', jsonParser, createWebTokenizerEncodingHandler(clau
 router.post('/llama3/encode', jsonParser, createWebTokenizerEncodingHandler(llama3_tokenizer));
 router.post('/qwen2/encode', jsonParser, createWebTokenizerEncodingHandler(qwen2Tokenizer));
 router.post('/command-r/encode', jsonParser, createWebTokenizerEncodingHandler(commandTokenizer));
+router.post('/nemo/encode', jsonParser, createWebTokenizerEncodingHandler(nemoTokenizer));
 router.post('/llama/decode', jsonParser, createSentencepieceDecodingHandler(spp_llama));
 router.post('/nerdstash/decode', jsonParser, createSentencepieceDecodingHandler(spp_nerd));
 router.post('/nerdstash_v2/decode', jsonParser, createSentencepieceDecodingHandler(spp_nerd_v2));
@@ -657,6 +663,7 @@ router.post('/claude/decode', jsonParser, createWebTokenizerDecodingHandler(clau
 router.post('/llama3/decode', jsonParser, createWebTokenizerDecodingHandler(llama3_tokenizer));
 router.post('/qwen2/decode', jsonParser, createWebTokenizerDecodingHandler(qwen2Tokenizer));
 router.post('/command-r/decode', jsonParser, createWebTokenizerDecodingHandler(commandTokenizer));
+router.post('/nemo/decode', jsonParser, createWebTokenizerDecodingHandler(nemoTokenizer));
 
 router.post('/openai/encode', jsonParser, async function (req, res) {
     try {
@@ -704,6 +711,11 @@ router.post('/openai/encode', jsonParser, async function (req, res) {
 
         if (queryModel.includes('command-r')) {
             const handler = createWebTokenizerEncodingHandler(commandTokenizer);
+            return handler(req, res);
+        }
+
+        if (queryModel.includes('nemo')) {
+            const handler = createWebTokenizerEncodingHandler(nemoTokenizer);
             return handler(req, res);
         }
 
@@ -762,6 +774,11 @@ router.post('/openai/decode', jsonParser, async function (req, res) {
 
         if (queryModel.includes('command-r')) {
             const handler = createWebTokenizerDecodingHandler(commandTokenizer);
+            return handler(req, res);
+        }
+
+        if (queryModel.includes('nemo')) {
+            const handler = createWebTokenizerDecodingHandler(nemoTokenizer);
             return handler(req, res);
         }
 
@@ -831,6 +848,13 @@ router.post('/openai/count', jsonParser, async function (req, res) {
         if (model === 'command-r') {
             const instance = await commandTokenizer.get();
             if (!instance) throw new Error('Failed to load the Command-R tokenizer');
+            num_tokens = countWebTokenizerTokens(instance, req.body);
+            return res.send({ 'token_count': num_tokens });
+        }
+
+        if (model === 'nemo') {
+            const instance = await nemoTokenizer.get();
+            if (!instance) throw new Error('Failed to load the Nemo tokenizer');
             num_tokens = countWebTokenizerTokens(instance, req.body);
             return res.send({ 'token_count': num_tokens });
         }

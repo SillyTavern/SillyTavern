@@ -1,0 +1,27 @@
+{
+    "max_context": 8000,
+    "temperature": 1,
+    "max_length": 150,
+    "min_length": 1,
+    "top_k": 300,
+    "top_p": 0.98,
+    "top_a": 0.004,
+    "typical_p": 0.96,
+    "tail_free_sampling": 0.96,
+    "repetition_penalty": 1.48,
+    "repetition_penalty_range": 2240,
+    "repetition_penalty_slope": 0.64,
+    "repetition_penalty_frequency": 0,
+    "repetition_penalty_presence": 0,
+    "phrase_rep_pen": "medium",
+    "mirostat_lr": 1,
+    "mirostat_tau": 0,
+    "math1_temp": -0.0485,
+    "math1_quad": 0.145,
+    "math1_quad_entropy_scale": 0,
+    "min_p": 0.02,
+    "order": [
+        9,
+        10
+    ]
+}

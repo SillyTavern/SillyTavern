@@ -1,5 +1,4 @@
 {
-    "system_prompt": "You are an intelligent, skilled, versatile writer.\n\nYour task is to write a role-play based on the information below.",
     "input_sequence": "\n<|im_start|>text names= {{name}}\n",
     "output_sequence": "\n<|im_start|>text names= {{name}}\n",
     "last_output_sequence": "",
@@ -7,8 +6,7 @@
     "stop_sequence": "\n<|im_start|>",
     "wrap": false,
     "macro": true,
-    "names": false,
-    "names_force_groups": false,
+    "names_behavior": "none",
     "activation_regex": "",
     "system_sequence_prefix": "",
     "system_sequence_suffix": "",

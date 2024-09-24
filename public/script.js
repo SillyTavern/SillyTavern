@@ -99,7 +99,7 @@ import {
     proxies,
     loadProxyPresets,
     selected_proxy,
-    initOpenai,
+    initOpenAI,
 } from './scripts/openai.js';
 
 import {
@@ -210,7 +210,7 @@ import {
     selectContextPreset,
 } from './scripts/instruct-mode.js';
 import { initLocales, t, translate } from './scripts/i18n.js';
-import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
+import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache, TOKENIZER_SUPPORTED_KEY } from './scripts/tokenizers.js';
 import {
     user_avatar,
     getUserAvatars,
@@ -224,7 +224,7 @@ import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_set
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
 import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels, initTextGenModels, loadTabbyModels } from './scripts/textgen-models.js';
-import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
+import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId, preserveNeutralChat, restoreNeutralChat } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { MacrosParser, evaluateMacros, getLastMessageId } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
@@ -243,6 +243,7 @@ import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/Slash
 import { commonEnumProviders, enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
 import { initInputMarkdown } from './scripts/input-md-formatting.js';
 import { AbortReason } from './scripts/util/AbortReason.js';
+import { initSystemPrompts } from './scripts/sysprompt.js';
 
 //exporting functions and vars for mods
 export {
@@ -411,6 +412,7 @@ export const event_types = {
     MESSAGE_FILE_EMBEDDED: 'message_file_embedded',
     IMPERSONATE_READY: 'impersonate_ready',
     CHAT_CHANGED: 'chat_id_changed',
+    GENERATION_AFTER_COMMANDS: 'GENERATION_AFTER_COMMANDS',
     GENERATION_STARTED: 'generation_started',
     GENERATION_STOPPED: 'generation_stopped',
     GENERATION_ENDED: 'generation_ended',
@@ -509,6 +511,7 @@ let saveCharactersPage = 0;
 export const default_avatar = 'img/ai4.png';
 export const system_avatar = 'img/five.png';
 export const comment_avatar = 'img/quill.png';
+export const default_user_avatar = 'img/user-default.png';
 export let CLIENT_VERSION = 'SillyTavern:UNKNOWN:Cohee#1207'; // For Horde header
 let optionsPopper = Popper.createPopper(document.getElementById('options_button'), document.getElementById('options'), {
     placement: 'top-start',
@@ -927,9 +930,12 @@ async function firstLoadInit() {
     addSafariPatch();
     await getClientVersion();
     await readSecretState();
-    initLocales();
+    await initLocales();
     initDefaultSlashCommands();
     initTextGenModels();
+    initOpenAI();
+    initSystemPrompts();
+    await initPresetManager();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     sendSystemMessage(system_message_types.WELCOME_PROMPT);
@@ -937,13 +943,11 @@ async function firstLoadInit() {
     initKeyboard();
     initDynamicStyles();
     initTags();
-    initOpenai();
     initBookmarks();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
     await initTokenizers();
-    await initPresetManager();
     initBackgrounds();
     initAuthorsNote();
     initPersonas();
@@ -1212,6 +1216,9 @@ async function getStatusTextgen() {
 
         // Determine instruct mode preset
         autoSelectInstructPreset(online_status);
+
+        const supportsTokenization = response.headers.get('x-supports-tokenization') === 'true';
+        supportsTokenization ? sessionStorage.setItem(TOKENIZER_SUPPORTED_KEY, 'true') : sessionStorage.removeItem(TOKENIZER_SUPPORTED_KEY);
 
         // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
         if (online_status === 'no_connection' && data.response) {
@@ -1845,6 +1852,7 @@ export async function deleteLastMessage() {
 }
 
 export async function reloadCurrentChat() {
+    preserveNeutralChat();
     await clearChat();
     chat.length = 0;
 
@@ -1856,6 +1864,7 @@ export async function reloadCurrentChat() {
     }
     else {
         resetChatState();
+        restoreNeutralChat();
         await getCharacters();
         await printMessages();
         await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
@@ -3332,9 +3341,11 @@ function removeLastMessage() {
  */
 export async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName } = {}, dryRun = false) {
     console.log('Generate entered');
-    await eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
     setGenerationProgress(0);
     generation_started = new Date();
+
+    // Occurs every time, even if the generation is aborted due to slash commands execution
+    await eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
 
     // Don't recreate abort controller if signal is passed
     if (!(abortController && signal)) {
@@ -3354,6 +3365,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             return Promise.resolve();
         }
     }
+
+    // Occurs only if the generation is not aborted due to slash commands execution
+    await eventSource.emit(event_types.GENERATION_AFTER_COMMANDS, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
 
     if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
         toastr.error('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
@@ -3512,9 +3526,14 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         jailbreak,
     } = getCharacterCardFields();
 
-    if (isInstruct) {
-        system = power_user.prefer_character_prompt && system ? system : baseChatReplace(power_user.instruct.system_prompt, name1, name2);
-        system = formatInstructModeSystemPrompt(substituteParams(system, name1, name2, power_user.instruct.system_prompt));
+    if (main_api !== 'openai') {
+        if (power_user.sysprompt.enabled) {
+            system = power_user.prefer_character_prompt && system ? system : baseChatReplace(power_user.sysprompt.content, name1, name2);
+            system = isInstruct ? formatInstructModeSystemPrompt(substituteParams(system, name1, name2, power_user.sysprompt.content)) : system;
+        } else {
+            // Nullify if it's not enabled
+            system = '';
+        }
     }
 
     // Depth prompt (character-specific A/N)
@@ -3767,7 +3786,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         personality: personality,
         persona: power_user.persona_description_position == persona_description_positions.IN_PROMPT ? persona : '',
         scenario: scenario,
-        system: isInstruct ? system : '',
+        system: system,
         char: name2,
         user: name1,
         wiBefore: worldInfoBefore,
@@ -4340,7 +4359,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             this_max_context: this_max_context,
             padding: power_user.token_padding,
             main_api: main_api,
-            instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && system ? system : power_user.instruct.system_prompt) : '',
+            instruction: main_api !== 'openai' && power_user.sysprompt.enabled ? substituteParams(power_user.prefer_character_prompt && system ? system : power_user.sysprompt.content) : '',
             userPersona: (power_user.persona_description_position == persona_description_positions.IN_PROMPT ? (persona || '') : ''),
             tokenizer: getFriendlyTokenizerName(main_api).tokenizerName || '',
         };
@@ -4838,6 +4857,13 @@ export function getMaxContextSize(overrideResponseLength = null) {
                 this_max_context = subscriptionLimit;
                 console.log(`NovelAI subscription limit reached. Max context size is now ${this_max_context}`);
             }
+        }
+        if (nai_settings.model_novel.includes('erato')) {
+            // subscriber limits coming soon
+            this_max_context = Math.min(max_context, 8192);
+
+            // Added special tokens and whatnot
+            this_max_context -= 1;
         }
 
         this_max_context = this_max_context - (overrideResponseLength || amount_gen);
@@ -5466,7 +5492,7 @@ export function cleanUpMessage(getMessage, isImpersonate, isContinue, displayInc
     }
 
     if (!displayIncompleteSentences && power_user.trim_sentences) {
-        getMessage = trimToEndSentence(getMessage, power_user.include_newline);
+        getMessage = trimToEndSentence(getMessage);
     }
 
     if (power_user.trim_spaces) {
@@ -5698,10 +5724,10 @@ export function deactivateSendButtons() {
 }
 
 export function resetChatState() {
+    // replaces deleted charcter name with system user since it will be displayed next.
+    name2 = (this_chid === undefined && neutralCharacterName) ? neutralCharacterName : systemUserName;
     //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
     this_chid = undefined;
-    // replaces deleted charcter name with system user since it will be displayed next.
-    name2 = systemUserName;
     // sets up system user to tell user about having deleted a character
     chat.splice(0, chat.length, ...SAFETY_CHAT);
     // resets chat metadata
@@ -6917,15 +6943,13 @@ export async function displayPastChats() {
             }
             // Check whether `text` {string} includes all of the `fragments` {string[]}.
             function matchFragments(fragments, text) {
-                if (!text) {
-                    return false;
-                }
-                return fragments.every(item => text.includes(item));
+                if (!text || !text.toLowerCase) return false;
+                return fragments.every(item => text.toLowerCase().includes(item));
             }
             const fragments = makeQueryFragments(searchQuery);
             // At least one chat message must match *all* the fragments.
             // Currently, this doesn't match if the fragment matches are distributed across several chat messages.
-            return chatContent && Object.values(chatContent).some(message => matchFragments(fragments, message?.mes?.toLowerCase()));
+            return chatContent && Object.values(chatContent).some(message => matchFragments(fragments, message?.mes));
         });
 
         console.debug(filteredData);
@@ -8565,20 +8589,27 @@ async function connectAPISlash(args, text) {
         return '';
     }
 
-    $(`#main_api option[value='${apiConfig.selected || text}']`).prop('selected', true);
-    $('#main_api').trigger('change');
+    let connectionRequired = false;
 
-    if (apiConfig.source) {
+    if (main_api !== apiConfig.selected) {
+        $(`#main_api option[value='${apiConfig.selected || text}']`).prop('selected', true);
+        $('#main_api').trigger('change');
+        connectionRequired = true;
+    }
+
+    if (apiConfig.source && oai_settings.chat_completion_source !== apiConfig.source) {
         $(`#chat_completion_source option[value='${apiConfig.source}']`).prop('selected', true);
         $('#chat_completion_source').trigger('change');
+        connectionRequired = true;
     }
 
-    if (apiConfig.type) {
+    if (apiConfig.type && textgen_settings.type !== apiConfig.type) {
         $(`#textgen_type option[value='${apiConfig.type}']`).prop('selected', true);
         $('#textgen_type').trigger('change');
+        connectionRequired = true;
     }
 
-    if (apiConfig.button) {
+    if (connectionRequired && apiConfig.button) {
         $(apiConfig.button).trigger('click');
     }
 
@@ -8803,7 +8834,7 @@ export async function renameChat(oldFileName, newName) {
         is_group: !!selected_group,
         avatar_url: characters[this_chid]?.avatar,
         original_file: `${oldFileName}.jsonl`,
-        renamed_file: `${newName}.jsonl`,
+        renamed_file: `${newName.trim()}.jsonl`,
     };
 
     try {
@@ -8822,6 +8853,10 @@ export async function renameChat(oldFileName, newName) {
 
         if (data.error) {
             throw new Error('Server returned an error.');
+        }
+
+        if (data.sanitizedFileName) {
+            newName = data.sanitizedFileName;
         }
 
         if (selected_group) {
@@ -8945,15 +8980,12 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
  * It also ensures to save the settings after all the operations.
  */
 async function removeCharacterFromUI() {
+    preserveNeutralChat();
     await clearChat();
-    $('#character_cross').click();
-    this_chid = undefined;
-    characters.length = 0;
-    name2 = systemUserName;
-    chat.splice(0, chat.length, ...SAFETY_CHAT);
-    chat_metadata = {};
+    $('#character_cross').trigger('click');
+    resetChatState();
     $(document.getElementById('rm_button_selected_ch')).children('h2').text('');
-    this_chid = undefined;
+    restoreNeutralChat();
     await getCharacters();
     await printMessages();
     saveSettingsDebounced();

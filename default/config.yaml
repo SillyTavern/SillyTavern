@@ -83,6 +83,8 @@ skipContentCheck: false
 disableChatBackup: false
 # Number of backups to keep for each chat and settings file
 numberOfBackups: 50
+# Interval in milliseconds to throttle chat backups per user
+chatBackupThrottleInterval: 10000
 # Allowed hosts for card downloads
 whitelistImportDomains:
   - localhost
@@ -108,6 +110,9 @@ enableExtensionsAutoUpdate: true
 # Additional model tokenizers can be downloaded on demand.
 # Disabling will fallback to another locally available tokenizer.
 enableDownloadableTokenizers: true
+# Vector storage settings
+vectors:
+  enableModelScopes: false
 # Extension settings
 extras:
   # Disables automatic model download from HuggingFace

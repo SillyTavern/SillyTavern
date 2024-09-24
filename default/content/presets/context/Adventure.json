@@ -6,7 +6,6 @@
     "allow_jailbreak": false,
     "always_force_name2": false,
     "trim_sentences": false,
-    "include_newline": false,
     "single_line": true,
     "name": "Adventure"
 }

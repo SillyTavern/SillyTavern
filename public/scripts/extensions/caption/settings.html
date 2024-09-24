@@ -23,6 +23,7 @@
                         <option value="google">Google AI Studio</option>
                         <option value="koboldcpp">KoboldCpp</option>
                         <option value="llamacpp">llama.cpp</option>
+                        <option value="mistral">MistralAI</option>
                         <option value="ollama">Ollama</option>
                         <option value="openai">OpenAI</option>
                         <option value="openrouter">OpenRouter</option>
@@ -33,6 +34,8 @@
                 <div class="flex1 flex-container flexFlowColumn flexNoGap">
                     <label for="caption_multimodal_model" data-i18n="Model">Model</label>
                     <select id="caption_multimodal_model" class="flex1 text_pole">
+                        <option data-type="mistral" value="pixtral-latest">pixtral-latest</option>
+                        <option data-type="mistral" value="pixtral-12b-2409">pixtral-12b-2409</option>
                         <option data-type="zerooneai" value="yi-vision">yi-vision</option>
                         <option data-type="openai" value="gpt-4-vision-preview">gpt-4-vision-preview</option>
                         <option data-type="openai" value="gpt-4-turbo">gpt-4-turbo</option>
@@ -96,7 +99,7 @@
                 <div data-type="ollama">
                     The model must be downloaded first! Do it with the <code>ollama pull</code> command or <a href="#" id="caption_ollama_pull">click here</a>.
                 </div>
-                <label data-type="openai,anthropic,google" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
+                <label data-type="openai,anthropic,google,mistral" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
                     <input id="caption_allow_reverse_proxy" type="checkbox" class="checkbox">
                     <span data-i18n="Allow reverse proxy">Allow reverse proxy</span>
                 </label>

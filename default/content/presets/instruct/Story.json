@@ -1,5 +1,4 @@
 {
-    "system_prompt": "",
     "input_sequence": "",
     "output_sequence": "",
     "last_output_sequence": "",
@@ -7,8 +6,7 @@
     "stop_sequence": "",
     "wrap": true,
     "macro": true,
-    "names": false,
-    "names_force_groups": false,
+    "names_behavior": "none",
     "activation_regex": "",
     "system_sequence_prefix": "",
     "system_sequence_suffix": "",

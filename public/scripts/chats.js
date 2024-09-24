@@ -19,6 +19,8 @@ import {
     this_chid,
     saveChatConditional,
     chat_metadata,
+    neutralCharacterName,
+    updateChatMetadata,
 } from '../script.js';
 import { selected_group } from './group-chats.js';
 import { power_user } from './power-user.js';
@@ -133,10 +135,11 @@ export async function hideChatMessageRange(start, end, unhide) {
         const message = chat[messageId];
         if (!message) continue;
 
+        message.is_system = hide;
+
+        // Also toggle "hidden" state for all visible messages
         const messageBlock = $(`.mes[mesid="${messageId}"]`);
         if (!messageBlock.length) continue;
-
-        message.is_system = hide;
         messageBlock.attr('is_system', String(hide));
     }
 
@@ -1350,6 +1353,32 @@ async function verifyAttachmentsForSource(source) {
     } catch (error) {
         console.error('Attachment verification failed', error);
     }
+}
+
+const NEUTRAL_CHAT_KEY = 'neutralChat';
+
+export function preserveNeutralChat() {
+    if (this_chid !== undefined || selected_group || name2 !== neutralCharacterName) {
+        return;
+    }
+
+    sessionStorage.setItem(NEUTRAL_CHAT_KEY, JSON.stringify({ chat, chat_metadata }));
+}
+
+export function restoreNeutralChat() {
+    if (this_chid !== undefined || selected_group || name2 !== neutralCharacterName) {
+        return;
+    }
+
+    const neutralChat = sessionStorage.getItem(NEUTRAL_CHAT_KEY);
+    if (!neutralChat) {
+        return;
+    }
+
+    const { chat: neutralChatData, chat_metadata: neutralChatMetadata } = JSON.parse(neutralChat);
+    chat.splice(0, chat.length, ...neutralChatData);
+    updateChatMetadata(neutralChatMetadata, true);
+    sessionStorage.removeItem(NEUTRAL_CHAT_KEY);
 }
 
 /**

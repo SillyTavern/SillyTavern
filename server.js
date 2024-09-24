@@ -610,6 +610,9 @@ app.use('/api/search', require('./src/endpoints/search').router);
 // Ooba/OpenAI text completions
 app.use('/api/backends/text-completions', require('./src/endpoints/backends/text-completions').router);
 
+// OpenRouter
+app.use('/api/openrouter', require('./src/endpoints/openrouter').router);
+
 // KoboldAI
 app.use('/api/backends/kobold', require('./src/endpoints/backends/kobold').router);
 
@@ -929,6 +932,7 @@ async function verifySecuritySettings() {
 userModule.initUserStorage(dataRoot)
     .then(userModule.ensurePublicDirectoriesExist)
     .then(userModule.migrateUserData)
+    .then(userModule.migrateSystemPrompts)
     .then(verifySecuritySettings)
     .then(preSetupTasks)
     .finally(startServer);

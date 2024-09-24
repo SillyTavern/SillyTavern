@@ -2570,20 +2570,25 @@ input[type="file"] {
 /*#################################################################*/
 
 select {
-
-    padding: 3px 2px;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
+    padding: 3px 5px;
     background-color: var(--black30a);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
     margin-bottom: 5px;
     height: min-content;
+    background-image: url('/img/down-arrow.svg');
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    background-size: 8px 5px;
 }
 
 select option {
     /* works to highlight selected/active option */
     background-color: var(--white50a);
     color: var(--black70a);
-
 }
 
 select option:not(:checked) {
@@ -2623,14 +2628,6 @@ select option:not(:checked) {
 .world_set,
 .toggleEnabled {
     color: var(--active) !important;
-}
-
-#context_set_default.default {
-    color: var(--preferred) !important;
-}
-
-#instruct_set_default.default {
-    color: var(--preferred) !important;
 }
 
 .displayBlock {
@@ -3516,6 +3513,14 @@ grammarly-extension {
     flex-direction: row;
     align-items: center;
     column-gap: 20px;
+}
+
+.horde-model-description {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    font-size: 0.9em;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .drag-handle {
@@ -5463,4 +5468,13 @@ body:not(.movingUI) .drawer-content.maximized {
 
 #AdvancedFormatting .autoSetHeight {
     overflow-wrap: anywhere;
+}
+
+#InstructSequencesColumn summary {
+    font-size: 0.95em;
+    cursor: pointer;
+}
+
+#InstructSequencesColumn details:not(:last-of-type) {
+    margin-bottom: 5px;
 }

@@ -10,7 +10,8 @@ import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, o
 const { OOBA, TABBY, KOBOLDCPP, VLLM, APHRODITE, LLAMACPP, OPENROUTER, DREAMGEN } = textgen_types;
 
 export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
-const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
+export const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
+export const TOKENIZER_SUPPORTED_KEY = 'tokenizationSupported';
 
 export const tokenizers = {
     NONE: 0,
@@ -30,21 +31,27 @@ export const tokenizers = {
     JAMBA: 14,
     QWEN2: 15,
     COMMAND_R: 16,
+    NEMO: 17,
     BEST_MATCH: 99,
 };
 
-export const SENTENCEPIECE_TOKENIZERS = [
+// A list of local tokenizers that support encoding and decoding token ids.
+export const ENCODE_TOKENIZERS = [
     tokenizers.LLAMA,
     tokenizers.MISTRAL,
     tokenizers.YI,
     tokenizers.LLAMA3,
     tokenizers.GEMMA,
     tokenizers.JAMBA,
+    tokenizers.QWEN2,
+    tokenizers.COMMAND_R,
+    tokenizers.NEMO,
     // uncomment when NovelAI releases Kayra and Clio weights, lol
     //tokenizers.NERD,
     //tokenizers.NERD2,
 ];
 
+// A list of Text Completion sources that support remote tokenization.
 export const TEXTGEN_TOKENIZERS = [OOBA, TABBY, KOBOLDCPP, LLAMACPP, VLLM, APHRODITE];
 
 const TOKENIZER_URLS = {
@@ -116,6 +123,11 @@ const TOKENIZER_URLS = {
         encode: '/api/tokenizers/command-r/encode',
         decode: '/api/tokenizers/command-r/decode',
         count: '/api/tokenizers/command-r/encode',
+    },
+    [tokenizers.NEMO]: {
+        encode: '/api/tokenizers/nemo/encode',
+        decode: '/api/tokenizers/nemo/decode',
+        count: '/api/tokenizers/nemo/encode',
     },
     [tokenizers.API_TEXTGENERATIONWEBUI]: {
         encode: '/api/tokenizers/remote/textgenerationwebui/encode',
@@ -262,6 +274,9 @@ export function getTokenizerBestMatch(forApi) {
         if (nai_settings.model_novel.includes('kayra')) {
             return tokenizers.NERD2;
         }
+        if (nai_settings.model_novel.includes('erato')) {
+            return tokenizers.LLAMA3;
+        }
     }
     if (forApi === 'kobold' || forApi === 'textgenerationwebui' || forApi === 'koboldhorde') {
         // Try to use the API tokenizer if possible:
@@ -269,8 +284,9 @@ export function getTokenizerBestMatch(forApi) {
         // - Kobold must pass a version check
         // - Tokenizer haven't reported an error previously
         const hasTokenizerError = sessionStorage.getItem(TOKENIZER_WARNING_KEY);
+        const hasValidEndpoint = sessionStorage.getItem(TOKENIZER_SUPPORTED_KEY);
         const isConnected = online_status !== 'no_connection';
-        const isTokenizerSupported = TEXTGEN_TOKENIZERS.includes(textgen_settings.type);
+        const isTokenizerSupported = TEXTGEN_TOKENIZERS.includes(textgen_settings.type) && (textgen_settings.type !== OOBA || hasValidEndpoint);
 
         if (!hasTokenizerError && isConnected) {
             if (forApi === 'kobold' && kai_flags.can_use_tokenization) {
@@ -531,6 +547,7 @@ export function getTokenizerModel() {
     const jambaTokenizer = 'jamba';
     const qwen2Tokenizer = 'qwen2';
     const commandRTokenizer = 'command-r';
+    const nemoTokenizer = 'nemo';
 
     // Assuming no one would use it for different models.. right?
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
@@ -624,6 +641,9 @@ export function getTokenizerModel() {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
+        if (oai_settings.mistralai_model.includes('nemo') || oai_settings.mistralai_model.includes('pixtral')) {
+            return nemoTokenizer;
+        }
         return mistralTokenizer;
     }
 
@@ -908,15 +928,20 @@ function countTokensFromTextgenAPI(str, resolve) {
 
 function apiFailureTokenCount(str) {
     console.error('Error counting tokens');
+    let shouldTryAgain = false;
 
     if (!sessionStorage.getItem(TOKENIZER_WARNING_KEY)) {
-        toastr.warning(
-            'Your selected API doesn\'t support the tokenization endpoint. Using estimated counts.',
-            'Error counting tokens',
-            { timeOut: 10000, preventDuplicates: true },
-        );
-
+        const bestMatchBefore = getTokenizerBestMatch(main_api);
         sessionStorage.setItem(TOKENIZER_WARNING_KEY, String(true));
+        const bestMatchAfter = getTokenizerBestMatch(main_api);
+        if ([tokenizers.API_TEXTGENERATIONWEBUI, tokenizers.API_KOBOLD].includes(bestMatchBefore) && bestMatchBefore !== bestMatchAfter) {
+            shouldTryAgain = true;
+        }
+    }
+
+    // Only try again if we guarantee not to be looped by the same error
+    if (shouldTryAgain && power_user.tokenizer === tokenizers.BEST_MATCH) {
+        return getTokenCount(str);
     }
 
     return guesstimate(str);

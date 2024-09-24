@@ -29,7 +29,6 @@ export function saveMetadataDebounced() {
     const characterId = context.characterId;
 
     if (saveMetadataTimeout) {
-        console.debug('Clearing save metadata timeout');
         clearTimeout(saveMetadataTimeout);
     }
 

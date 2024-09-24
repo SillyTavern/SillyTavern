@@ -56,7 +56,7 @@ const settings = {
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
-    summary_prompt: 'Pause your roleplay. Summarize the most important parts of the message. Limit yourself to 250 words or less. Your response should include nothing but the summary.',
+    summary_prompt: 'Ignore previous instructions. Summarize the most important parts of the message. Limit yourself to 250 words or less. Your response should include nothing but the summary.',
     force_chunk_delimiter: '',
 
     // For chats
@@ -718,7 +718,7 @@ async function getQueryText(chat, initiator) {
 async function getSavedHashes(collectionId) {
     const response = await fetch('/api/vector/list', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getVectorHeaders(),
         body: JSON.stringify({
             collectionId: collectionId,
             source: settings.source,
@@ -737,105 +737,48 @@ function getVectorHeaders() {
     const headers = getRequestHeaders();
     switch (settings.source) {
         case 'extras':
-            addExtrasHeaders(headers);
+            Object.assign(headers, {
+                'X-Extras-Url': extension_settings.apiUrl,
+                'X-Extras-Key': extension_settings.apiKey,
+            });
             break;
         case 'togetherai':
-            addTogetherAiHeaders(headers);
+            Object.assign(headers, {
+                'X-Togetherai-Model': extension_settings.vectors.togetherai_model,
+            });
             break;
         case 'openai':
-            addOpenAiHeaders(headers);
+            Object.assign(headers, {
+                'X-OpenAI-Model': extension_settings.vectors.openai_model,
+            });
             break;
         case 'cohere':
-            addCohereHeaders(headers);
+            Object.assign(headers, {
+                'X-Cohere-Model': extension_settings.vectors.cohere_model,
+            });
             break;
         case 'ollama':
-            addOllamaHeaders(headers);
+            Object.assign(headers, {
+                'X-Ollama-Model': extension_settings.vectors.ollama_model,
+                'X-Ollama-URL': textgenerationwebui_settings.server_urls[textgen_types.OLLAMA],
+                'X-Ollama-Keep': !!extension_settings.vectors.ollama_keep,
+            });
             break;
         case 'llamacpp':
-            addLlamaCppHeaders(headers);
+            Object.assign(headers, {
+                'X-LlamaCpp-URL': textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP],
+            });
             break;
         case 'vllm':
-            addVllmHeaders(headers);
+            Object.assign(headers, {
+                'X-Vllm-URL': textgenerationwebui_settings.server_urls[textgen_types.VLLM],
+                'X-Vllm-Model': extension_settings.vectors.vllm_model,
+            });
             break;
         default:
             break;
     }
     return headers;
-}
-
-/**
- * Add headers for the Extras API source.
- * @param {object} headers Headers object
- */
-function addExtrasHeaders(headers) {
-    console.log(`Vector source is extras, populating API URL: ${extension_settings.apiUrl}`);
-    Object.assign(headers, {
-        'X-Extras-Url': extension_settings.apiUrl,
-        'X-Extras-Key': extension_settings.apiKey,
-    });
-}
-
-/**
- * Add headers for the TogetherAI API source.
- * @param {object} headers Headers object
- */
-function addTogetherAiHeaders(headers) {
-    Object.assign(headers, {
-        'X-Togetherai-Model': extension_settings.vectors.togetherai_model,
-    });
-}
-
-/**
- * Add headers for the OpenAI API source.
- * @param {object} headers Header object
- */
-function addOpenAiHeaders(headers) {
-    Object.assign(headers, {
-        'X-OpenAI-Model': extension_settings.vectors.openai_model,
-    });
-}
-
-/**
- * Add headers for the Cohere API source.
- * @param {object} headers Header object
- */
-function addCohereHeaders(headers) {
-    Object.assign(headers, {
-        'X-Cohere-Model': extension_settings.vectors.cohere_model,
-    });
-}
-
-/**
- * Add headers for the Ollama API source.
- * @param {object} headers Header object
- */
-function addOllamaHeaders(headers) {
-    Object.assign(headers, {
-        'X-Ollama-Model': extension_settings.vectors.ollama_model,
-        'X-Ollama-URL': textgenerationwebui_settings.server_urls[textgen_types.OLLAMA],
-        'X-Ollama-Keep': !!extension_settings.vectors.ollama_keep,
-    });
-}
-
-/**
- * Add headers for the LlamaCpp API source.
- * @param {object} headers Header object
- */
-function addLlamaCppHeaders(headers) {
-    Object.assign(headers, {
-        'X-LlamaCpp-URL': textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP],
-    });
-}
-
-/**
- * Add headers for the VLLM API source.
- * @param {object} headers Header object
- */
-function addVllmHeaders(headers) {
-    Object.assign(headers, {
-        'X-Vllm-URL': textgenerationwebui_settings.server_urls[textgen_types.VLLM],
-        'X-Vllm-Model': extension_settings.vectors.vllm_model,
-    });
 }
 
 /**
@@ -901,7 +844,7 @@ function throwIfSourceInvalid() {
 async function deleteVectorItems(collectionId, hashes) {
     const response = await fetch('/api/vector/delete', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getVectorHeaders(),
         body: JSON.stringify({
             collectionId: collectionId,
             hashes: hashes,
@@ -987,7 +930,7 @@ async function purgeFileVectorIndex(fileUrl) {
 
         const response = await fetch('/api/vector/purge', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getVectorHeaders(),
             body: JSON.stringify({
                 collectionId: collectionId,
             }),
@@ -1016,7 +959,7 @@ async function purgeVectorIndex(collectionId) {
 
         const response = await fetch('/api/vector/purge', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getVectorHeaders(),
             body: JSON.stringify({
                 collectionId: collectionId,
             }),
@@ -1041,7 +984,7 @@ async function purgeAllVectorIndexes() {
     try {
         const response = await fetch('/api/vector/purge-all', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getVectorHeaders(),
         });
 
         if (!response.ok) {
@@ -1053,6 +996,25 @@ async function purgeAllVectorIndexes() {
     } catch (error) {
         console.error('Vectors: Failed to purge all', error);
         toastr.error('Failed to purge all vector indexes', 'Purge failed');
+    }
+}
+
+async function isModelScopesEnabled() {
+    try {
+        const response = await fetch('/api/vector/scopes-enabled', {
+            method: 'GET',
+            headers: getVectorHeaders(),
+        });
+
+        if (!response.ok) {
+            return false;
+        }
+
+        const data = await response.json();
+        return data?.enabled ?? false;
+    } catch (error) {
+        console.error('Vectors: Failed to check model scopes', error);
+        return false;
     }
 }
 
@@ -1320,6 +1282,7 @@ jQuery(async () => {
     }
 
     Object.assign(settings, extension_settings.vectors);
+    const scopesEnabled = await isModelScopesEnabled();
 
     // Migrate from TensorFlow to Transformers
     settings.source = settings.source !== 'local' ? settings.source : 'transformers';
@@ -1371,31 +1334,31 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
     $('#vectors_togetherai_model').val(settings.togetherai_model).on('change', () => {
-        $('#vectors_modelWarning').show();
+        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.togetherai_model = String($('#vectors_togetherai_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
     $('#vectors_openai_model').val(settings.openai_model).on('change', () => {
-        $('#vectors_modelWarning').show();
+        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.openai_model = String($('#vectors_openai_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
     $('#vectors_cohere_model').val(settings.cohere_model).on('change', () => {
-        $('#vectors_modelWarning').show();
+        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.cohere_model = String($('#vectors_cohere_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
     $('#vectors_ollama_model').val(settings.ollama_model).on('input', () => {
-        $('#vectors_modelWarning').show();
+        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.ollama_model = String($('#vectors_ollama_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
     $('#vectors_vllm_model').val(settings.vllm_model).on('input', () => {
-        $('#vectors_modelWarning').show();
+        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.vllm_model = String($('#vectors_vllm_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();

@@ -431,7 +431,7 @@ function setOpenAIMessages(chat) {
             case character_names_behavior.NONE:
                 break;
             case character_names_behavior.DEFAULT:
-                if (selected_group || (chat[j].force_avatar && chat[j].name !== name1 && chat[j].extra?.type !== system_message_types.NARRATOR)) {
+                if ((selected_group && chat[j].name !== name1) || (chat[j].force_avatar && chat[j].name !== name1 && chat[j].extra?.type !== system_message_types.NARRATOR)) {
                     content = `${chat[j].name}: ${content}`;
                 }
                 break;
@@ -855,6 +855,12 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
         }
 
         const prompt = prompts.get(source);
+
+        if (prompt.injection_position === INJECTION_POSITION.ABSOLUTE) {
+            promptManager.log(`Skipping prompt ${source} because it is an absolute prompt`);
+            return;
+        }
+
         const index = target ? prompts.index(target) : prompts.index(source);
         const collection = new MessageCollection(source);
         collection.add(Message.fromPrompt(prompt));
@@ -899,8 +905,8 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
             acc.push(prompt.identifier);
             return acc;
         }, []);
-    const userAbsolutePrompts = prompts.collection
-        .filter((prompt) => false === prompt.system_prompt && prompt.injection_position === INJECTION_POSITION.ABSOLUTE)
+    const absolutePrompts = prompts.collection
+        .filter((prompt) => prompt.injection_position === INJECTION_POSITION.ABSOLUTE)
         .reduce((acc, prompt) => {
             acc.push(prompt);
             return acc;
@@ -965,7 +971,7 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
     }
 
     // Add in-chat injections
-    messages = populationInjectionPrompts(userAbsolutePrompts, messages);
+    messages = populationInjectionPrompts(absolutePrompts, messages);
 
     // Decide whether dialogue examples should always be added
     if (power_user.pin_examples) {
@@ -1102,6 +1108,18 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
 
     // Merge system prompts with prompt manager prompts
     systemPrompts.forEach(prompt => {
+        const collectionPrompt = prompts.get(prompt.identifier);
+
+        // Apply system prompt role/depth overrides if they set in the prompt manager
+        if (collectionPrompt) {
+            // In-Chat / Relative
+            prompt.injection_position = collectionPrompt.injection_position ?? prompt.injection_position;
+            // Depth for In-Chat
+            prompt.injection_depth = collectionPrompt.injection_depth ?? prompt.injection_depth;
+            // Role (system, user, assistant)
+            prompt.role = collectionPrompt.role ?? prompt.role;
+        }
+
         const newPrompt = promptManager.preparePrompt(prompt);
         const markerIndex = prompts.index(prompt.identifier);
 
@@ -2370,7 +2388,7 @@ class Message {
      * @returns {Promise<string>} Compressed image as a Data URL.
      */
     async compressImage(image) {
-        if ([chat_completion_sources.OPENROUTER, chat_completion_sources.MAKERSUITE].includes(oai_settings.chat_completion_source)) {
+        if ([chat_completion_sources.OPENROUTER, chat_completion_sources.MAKERSUITE, chat_completion_sources.MISTRALAI].includes(oai_settings.chat_completion_source)) {
             const sizeThreshold = 2 * 1024 * 1024;
             const dataSize = image.length * 0.75;
             const maxSide = 1024;
@@ -2747,7 +2765,7 @@ export class ChatCompletion {
                 const message = { role: item.role, content: item.content, ...(item.name ? { name: item.name } : {}) };
                 chat.push(message);
             } else {
-                console.warn('Invalid message in collection', item);
+                this.log(`Skipping invalid or empty message in collection: ${JSON.stringify(item)}`);
             }
         }
         return chat;
@@ -3216,11 +3234,11 @@ async function getStatusOpen() {
 
         const responseData = await response.json();
 
-        if (!('error' in responseData)) {
-            setOnlineStatus('Valid');
-        }
         if ('data' in responseData && Array.isArray(responseData.data)) {
             saveModelList(responseData.data);
+        }
+        if (!('error' in responseData)) {
+            setOnlineStatus('Valid');
         }
     } catch (error) {
         console.error(error);
@@ -3986,6 +4004,8 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_2mil);
         } else if (value.includes('gemini-1.5-pro')) {
             $('#openai_max_context').attr('max', max_2mil);
+        } else if (value.match('gemini-1.5-flash-002')) {
+            $('#openai_max_context').attr('max', max_2mil);
         } else if (value.includes('gemini-1.5-flash')) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value.includes('gemini-1.0-pro-vision') || value === 'gemini-pro-vision') {
@@ -4097,6 +4117,8 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_128k);
         } else if (oai_settings.mistralai_model.includes('mixtral-8x22b')) {
             $('#openai_max_context').attr('max', max_64k);
+        } else if (oai_settings.mistralai_model.includes('pixtral')) {
+            $('#openai_max_context').attr('max', max_128k);
         } else {
             $('#openai_max_context').attr('max', max_32k);
         }
@@ -4630,12 +4652,15 @@ export function isImageInliningSupported() {
         'gemini-1.5-flash',
         'gemini-1.5-flash-latest',
         'gemini-1.5-flash-001',
+        'gemini-1.5-flash-002',
         'gemini-1.5-flash-exp-0827',
         'gemini-1.5-flash-8b-exp-0827',
+        'gemini-1.5-flash-8b-exp-0924',
         'gemini-1.0-pro-vision-latest',
         'gemini-1.5-pro',
         'gemini-1.5-pro-latest',
         'gemini-1.5-pro-001',
+        'gemini-1.5-pro-002',
         'gemini-1.5-pro-exp-0801',
         'gemini-1.5-pro-exp-0827',
         'gemini-pro-vision',
@@ -4646,6 +4671,8 @@ export function isImageInliningSupported() {
         'gpt-4o-mini',
         'chatgpt-4o-latest',
         'yi-vision',
+        'pixtral-latest',
+        'pixtral-12b-2409',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -4661,6 +4688,8 @@ export function isImageInliningSupported() {
             return true;
         case chat_completion_sources.ZEROONEAI:
             return visionSupportedModels.some(model => oai_settings.zerooneai_model.includes(model));
+        case chat_completion_sources.MISTRALAI:
+            return visionSupportedModels.some(model => oai_settings.mistralai_model.includes(model));
         default:
             return false;
     }
@@ -4789,7 +4818,7 @@ function runProxyCallback(_, value) {
     return foundName;
 }
 
-export function initOpenai() {
+export function initOpenAI() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'proxy',
         callback: runProxyCallback,
@@ -4805,9 +4834,7 @@ export function initOpenai() {
         ],
         helpString: 'Sets a proxy preset by name.',
     }));
-}
 
-$(document).ready(async function () {
     $('#test_api_button').on('click', testApiConnection);
 
     $('#scale-alt').on('change', function () {
@@ -5266,4 +5293,4 @@ $(document).ready(async function () {
     $('#openai_proxy_password_show').on('click', onProxyPasswordShowClick);
     $('#customize_additional_parameters').on('click', onCustomizeParametersClick);
     $('#openai_proxy_preset').on('change', onProxyPresetChange);
-});
+}

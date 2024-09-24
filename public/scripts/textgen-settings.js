@@ -15,7 +15,7 @@ import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasList
 import { power_user, registerDebugFunction } from './power-user.js';
 import { getEventSourceStream } from './sse-stream.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer } from './textgen-models.js';
-import { SENTENCEPIECE_TOKENIZERS, TEXTGEN_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
+import { ENCODE_TOKENIZERS, TEXTGEN_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
 import { getSortableDelay, onlyUnique } from './utils.js';
 
 export {
@@ -353,7 +353,7 @@ function getTokenizerForTokenIds() {
         return tokenizers.API_CURRENT;
     }
 
-    if (SENTENCEPIECE_TOKENIZERS.includes(power_user.tokenizer)) {
+    if (ENCODE_TOKENIZERS.includes(power_user.tokenizer)) {
         return power_user.tokenizer;
     }
 
@@ -1201,9 +1201,9 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'frequency_penalty': settings.freq_pen,
         'presence_penalty': settings.presence_pen,
         'repetition_penalty': settings.rep_pen,
-        'seed': settings.seed,
+        'seed': settings.seed >= 0 ? settings.seed : undefined,
         'stop': getStoppingStrings(isImpersonate, isContinue),
-        'temperature': settings.temp,
+        'temperature': dynatemp ? (settings.min_temp + settings.max_temp) / 2 : settings.temp,
         'temperature_last': settings.temperature_last,
         'top_p': settings.top_p,
         'top_k': settings.top_k,
@@ -1223,6 +1223,12 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'guided_json': settings.json_schema,
         'early_stopping': false, // hacks
         'include_stop_str_in_output': false,
+        'dynatemp_min': dynatemp ? settings.min_temp : undefined,
+        'dynatemp_max': dynatemp ? settings.max_temp : undefined,
+        'dynatemp_exponent': dynatemp ? settings.dynatemp_exponent : undefined,
+        'xtc_threshold': settings.xtc_threshold,
+        'xtc_probability': settings.xtc_probability,
+        'custom_token_bans': toIntArray(banned_tokens),
     };
 
     if (settings.type === OPENROUTER) {
