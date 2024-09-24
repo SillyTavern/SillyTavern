@@ -1795,10 +1795,9 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     if (isGoogle) {
-        const nameStopString = isImpersonate ? `\n${name2}:` : `\n${name1}:`;
-        const stopStringsLimit = 3; // 5 - 2 (nameStopString and new_chat_prompt)
+        const stopStringsLimit = 5;
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['stop'] = [nameStopString, substituteParams(oai_settings.new_chat_prompt), ...getCustomStoppingStrings(stopStringsLimit)];
+        generate_data['stop'] = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
         generate_data['use_makersuite_sysprompt'] = oai_settings.use_makersuite_sysprompt;
     }
 
