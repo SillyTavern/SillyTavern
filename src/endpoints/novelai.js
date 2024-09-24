@@ -116,10 +116,10 @@ router.post('/generate', jsonParser, async function (req, res) {
         controller.abort();
     });
 
-    const isNewModel = (req.body.model.includes('clio') || req.body.model.includes('kayra'));
+    const isNewModel = (req.body.model.includes('clio') || req.body.model.includes('kayra') || req.body.model.includes('erato'));
     const badWordsList = getBadWordsList(req.body.model);
 
-    // Add customized bad words for Clio and Kayra
+    // Add customized bad words for Clio, Kayra, and Erato
     if (isNewModel && Array.isArray(req.body.bad_words_ids)) {
         for (const badWord of req.body.bad_words_ids) {
             if (Array.isArray(badWord) && badWord.every(x => Number.isInteger(x))) {
@@ -183,7 +183,7 @@ router.post('/generate', jsonParser, async function (req, res) {
     };
 
     // Tells the model to stop generation at '>'
-    if ('theme_textadventure' === req.body.prefix && isNewModel) {
+    if ('theme_textadventure' === req.body.prefix && isNewModel && !req.body.model.includes('erato')) {
         data.parameters.eos_token_id = 49405;
     }
 
