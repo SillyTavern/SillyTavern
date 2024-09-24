@@ -61,12 +61,6 @@ import {
     stringFormat,
 } from './utils.js';
 import { countTokensOpenAI, getTokenizerModel } from './tokenizers.js';
-import {
-    formatInstructModeChat,
-    formatInstructModeExamples,
-    formatInstructModePrompt,
-    formatInstructModeSystemPrompt,
-} from './instruct-mode.js';
 import { isMobile } from './RossAscends-mods.js';
 import { saveLogprobsForActiveMessage } from './logprobs.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
@@ -263,7 +257,6 @@ const default_settings = {
     windowai_model: '',
     openrouter_model: openrouter_website_model,
     openrouter_use_fallback: false,
-    openrouter_force_instruct: false,
     openrouter_group_models: false,
     openrouter_sort_models: 'alphabetically',
     openrouter_providers: [],
@@ -341,7 +334,6 @@ const oai_settings = {
     windowai_model: '',
     openrouter_model: openrouter_website_model,
     openrouter_use_fallback: false,
-    openrouter_force_instruct: false,
     openrouter_group_models: false,
     openrouter_sort_models: 'alphabetically',
     openrouter_providers: [],
@@ -414,108 +406,6 @@ async function validateReverseProxy() {
     }
 
     localStorage.setItem(rememberKey, String(true));
-}
-
-/**
- * Converts the Chat Completion object to an Instruct Mode prompt string.
- * @param {object[]} messages Array of messages
- * @param {string} type Generation type
- * @returns {string} Text completion prompt
- */
-function convertChatCompletionToInstruct(messages, type) {
-    const newChatPrompts = [
-        substituteParams(oai_settings.new_chat_prompt),
-        substituteParams(oai_settings.new_example_chat_prompt),
-        substituteParams(oai_settings.new_group_chat_prompt),
-    ];
-    messages = messages.filter(x => !newChatPrompts.includes(x.content));
-
-    let chatMessagesText = '';
-    let systemPromptText = '';
-    let examplesText = '';
-
-    function getPrefix(message) {
-        let prefix;
-
-        if (message.role === 'user' || message.name === 'example_user') {
-            if (selected_group) {
-                prefix = '';
-            } else if (message.name === 'example_user') {
-                prefix = name1;
-            } else {
-                prefix = message.name ?? name1;
-            }
-        }
-
-        if (message.role === 'assistant' || message.name === 'example_assistant') {
-            if (selected_group) {
-                prefix = '';
-            }
-            else if (message.name === 'example_assistant') {
-                prefix = name2;
-            } else {
-                prefix = message.name ?? name2;
-            }
-        }
-
-        return prefix;
-    }
-
-    function toString(message) {
-        if (message.role === 'system' && !message.name) {
-            return message.content;
-        }
-
-        const prefix = getPrefix(message);
-        return prefix ? `${prefix}: ${message.content}` : message.content;
-    }
-
-    const firstChatMessage = messages.findIndex(message => message.role === 'assistant' || message.role === 'user');
-    const systemPromptMessages = messages.slice(0, firstChatMessage).filter(message => message.role === 'system' && !message.name);
-
-    if (systemPromptMessages.length) {
-        systemPromptText = systemPromptMessages.map(message => message.content).join('\n');
-        systemPromptText = formatInstructModeSystemPrompt(systemPromptText);
-    }
-
-    const exampleMessages = messages.filter(x => x.role === 'system' && (x.name === 'example_user' || x.name === 'example_assistant'));
-
-    if (exampleMessages.length) {
-        const blockHeading = power_user.context.example_separator ? (substituteParams(power_user.context.example_separator) + '\n') : '';
-        const examplesArray = exampleMessages.map(m => '<START>\n' + toString(m));
-        examplesText = blockHeading + formatInstructModeExamples(examplesArray, name1, name2).join('');
-    }
-
-    const chatMessages = messages.slice(firstChatMessage);
-
-    if (chatMessages.length) {
-        chatMessagesText = substituteParams(power_user.context.chat_start) + '\n';
-
-        for (const message of chatMessages) {
-            const name = getPrefix(message);
-            const isUser = message.role === 'user';
-            const isNarrator = message.role === 'system';
-            chatMessagesText += formatInstructModeChat(name, message.content, isUser, isNarrator, '', name1, name2, false);
-        }
-    }
-
-    const isImpersonate = type === 'impersonate';
-    const isContinue = type === 'continue';
-    const isQuiet = type === 'quiet';
-    const isQuietToLoud = false; // Quiet to loud not implemented for Chat Completion
-    const promptName = isImpersonate ? name1 : name2;
-    const promptLine = isContinue ? '' : formatInstructModePrompt(promptName, isImpersonate, '', name1, name2, isQuiet, isQuietToLoud).trimStart();
-
-    let prompt = [systemPromptText, examplesText, chatMessagesText, promptLine]
-        .filter(x => x)
-        .map(x => x.endsWith('\n') ? x : `${x}\n`)
-        .join('');
-
-    if (isContinue) {
-        prompt = prompt.replace(/\n$/, '');
-    }
-
-    return prompt;
 }
 
 /**
@@ -761,10 +651,6 @@ function populationInjectionPrompts(prompts, messages) {
     return messages;
 }
 
-export function isOpenRouterWithInstruct() {
-    return oai_settings.chat_completion_source === chat_completion_sources.OPENROUTER && oai_settings.openrouter_force_instruct && power_user.instruct.enabled;
-}
-
 /**
  * Populates the chat history of the conversation.
  * @param {object[]} messages - Array containing all messages.
@@ -795,8 +681,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
     // Reserve budget for continue nudge
     let continueMessage = null;
-    const instruct = isOpenRouterWithInstruct();
-    if (type === 'continue' && cyclePrompt && !instruct && !oai_settings.continue_prefill) {
+    if (type === 'continue' && cyclePrompt && !oai_settings.continue_prefill) {
         const promptObject = {
             identifier: 'continueNudge',
             role: 'system',
@@ -1811,18 +1696,13 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isPerplexity = oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY;
     const isGroq = oai_settings.chat_completion_source == chat_completion_sources.GROQ;
     const is01AI = oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI;
-    const isTextCompletion = (isOAI && textCompletionModels.includes(oai_settings.openai_model)) || (isOpenRouter && oai_settings.openrouter_force_instruct && power_user.instruct.enabled);
+    const isTextCompletion = isOAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
     const stream = oai_settings.stream_openai && !isQuiet && !isScale && !(isGoogle && oai_settings.google_model.includes('bison')) && !(isOAI && oai_settings.openai_model.startsWith('o1-'));
     const useLogprobs = !!power_user.request_token_probabilities;
     const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isCustom);
-
-    if (isTextCompletion && isOpenRouter) {
-        messages = convertChatCompletionToInstruct(messages, type);
-        replaceItemizedPromptText(messageId, messages);
-    }
 
     // If we're using the window.ai extension, use that instead
     // Doesn't support logit bias yet
@@ -3063,7 +2943,6 @@ function loadOpenAISettings(data, settings) {
     oai_settings.openrouter_group_models = settings.openrouter_group_models ?? default_settings.openrouter_group_models;
     oai_settings.openrouter_sort_models = settings.openrouter_sort_models ?? default_settings.openrouter_sort_models;
     oai_settings.openrouter_use_fallback = settings.openrouter_use_fallback ?? default_settings.openrouter_use_fallback;
-    oai_settings.openrouter_force_instruct = settings.openrouter_force_instruct ?? default_settings.openrouter_force_instruct;
     oai_settings.openrouter_allow_fallbacks = settings.openrouter_allow_fallbacks ?? default_settings.openrouter_allow_fallbacks;
     oai_settings.ai21_model = settings.ai21_model ?? default_settings.ai21_model;
     oai_settings.mistralai_model = settings.mistralai_model ?? default_settings.mistralai_model;
@@ -3170,7 +3049,6 @@ function loadOpenAISettings(data, settings) {
     $('#use_makersuite_sysprompt').prop('checked', oai_settings.use_makersuite_sysprompt);
     $('#scale-alt').prop('checked', oai_settings.use_alt_scale);
     $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback);
-    $('#openrouter_force_instruct').prop('checked', oai_settings.openrouter_force_instruct);
     $('#openrouter_group_models').prop('checked', oai_settings.openrouter_group_models);
     $('#openrouter_allow_fallbacks').prop('checked', oai_settings.openrouter_allow_fallbacks);
     $('#openrouter_providers_chat').val(oai_settings.openrouter_providers).trigger('change');
@@ -3398,7 +3276,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         windowai_model: settings.windowai_model,
         openrouter_model: settings.openrouter_model,
         openrouter_use_fallback: settings.openrouter_use_fallback,
-        openrouter_force_instruct: settings.openrouter_force_instruct,
         openrouter_group_models: settings.openrouter_group_models,
         openrouter_sort_models: settings.openrouter_sort_models,
         openrouter_providers: settings.openrouter_providers,
@@ -3835,7 +3712,6 @@ function onSettingsPresetChange() {
         windowai_model: ['#model_windowai_select', 'windowai_model', false],
         openrouter_model: ['#model_openrouter_select', 'openrouter_model', false],
         openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true],
-        openrouter_force_instruct: ['#openrouter_force_instruct', 'openrouter_force_instruct', true],
         openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false],
         openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false],
         openrouter_providers: ['#openrouter_providers_chat', 'openrouter_providers', false],
@@ -4807,7 +4683,7 @@ export function isImageInliningSupported() {
         case chat_completion_sources.CLAUDE:
             return visionSupportedModels.some(model => oai_settings.claude_model.includes(model));
         case chat_completion_sources.OPENROUTER:
-            return !oai_settings.openrouter_force_instruct;
+            return true;
         case chat_completion_sources.CUSTOM:
             return true;
         case chat_completion_sources.ZEROONEAI:
@@ -5226,11 +5102,6 @@ export function initOpenAI() {
 
     $('#openrouter_use_fallback').on('input', function () {
         oai_settings.openrouter_use_fallback = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $('#openrouter_force_instruct').on('input', function () {
-        oai_settings.openrouter_force_instruct = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

@@ -2797,22 +2797,10 @@
                                     <span data-i18n="Allow fallback providers">Allow fallback providers</span>
                                 </label>
                             </div>
-                            <div class="marginTopBot5">
-                                <label for="openrouter_force_instruct" class="checkbox_label">
-                                    <input id="openrouter_force_instruct" type="checkbox" />
-                                    <span class="flex-container alignItemsBaseline" title="This option is outdated and will be removed in the future. To use instruct formatting, please switch to OpenRouter under Text Completion API instead." data-i18n="[title]openrouter_force_instruct">
-                                        <i class="fa-solid fa-circle-exclamation neutral_warning"></i>
-                                        <b data-i18n="LEGACY">LEGACY</b>
-                                    </span>
-                                    <span data-i18n="Force Instruct Mode formatting">Force Instruct Mode formatting</span>
-                                </label>
-                                <div class="toggle-description justifyLeft wide100p">
-                                    <span data-i18n="Force_Instruct_Mode_formatting_Description">
-                                        If both Instruct Mode and this are enabled, the prompt will be formatted by SillyTavern using the current
-                                        advanced formatting settings (except instruct System Prompt). If disabled, the prompt will be formatted by OpenRouter.
-                                    </span>
-                                </div>
-                            </div>
+                            <small class="marginTopBot5">
+                                <i class="fa-solid fa-lightbulb"></i>
+                                <span>To use instruct formatting, switch to OpenRouter under Text Completion API.</span>
+                            </small>
                         </form>
                         <form id="scale_form" data-source="scale" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <div id="normal_scale_form">
