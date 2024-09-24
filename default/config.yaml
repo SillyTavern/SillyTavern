@@ -110,9 +110,6 @@ enableExtensionsAutoUpdate: true
 # Additional model tokenizers can be downloaded on demand.
 # Disabling will fallback to another locally available tokenizer.
 enableDownloadableTokenizers: true
-# Vector storage settings
-vectors:
-  enableModelScopes: false
 # Extension settings
 extras:
   # Disables automatic model download from HuggingFace

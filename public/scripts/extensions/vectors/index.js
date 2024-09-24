@@ -999,25 +999,6 @@ async function purgeAllVectorIndexes() {
     }
 }
 
-async function isModelScopesEnabled() {
-    try {
-        const response = await fetch('/api/vector/scopes-enabled', {
-            method: 'GET',
-            headers: getVectorHeaders(),
-        });
-
-        if (!response.ok) {
-            return false;
-        }
-
-        const data = await response.json();
-        return data?.enabled ?? false;
-    } catch (error) {
-        console.error('Vectors: Failed to check model scopes', error);
-        return false;
-    }
-}
-
 function toggleSettings() {
     $('#vectors_files_settings').toggle(!!settings.enabled_files);
     $('#vectors_chats_settings').toggle(!!settings.enabled_chats);
@@ -1282,7 +1263,6 @@ jQuery(async () => {
     }
 
     Object.assign(settings, extension_settings.vectors);
-    const scopesEnabled = await isModelScopesEnabled();
 
     // Migrate from TensorFlow to Transformers
     settings.source = settings.source !== 'local' ? settings.source : 'transformers';
@@ -1294,7 +1274,6 @@ jQuery(async () => {
         saveSettingsDebounced();
         toggleSettings();
     });
-    $('#vectors_modelWarning').hide();
     $('#vectors_enabled_files').prop('checked', settings.enabled_files).on('input', () => {
         settings.enabled_files = $('#vectors_enabled_files').prop('checked');
         Object.assign(extension_settings.vectors, settings);
@@ -1334,31 +1313,26 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
     $('#vectors_togetherai_model').val(settings.togetherai_model).on('change', () => {
-        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.togetherai_model = String($('#vectors_togetherai_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
     $('#vectors_openai_model').val(settings.openai_model).on('change', () => {
-        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.openai_model = String($('#vectors_openai_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
     $('#vectors_cohere_model').val(settings.cohere_model).on('change', () => {
-        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.cohere_model = String($('#vectors_cohere_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
     $('#vectors_ollama_model').val(settings.ollama_model).on('input', () => {
-        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.ollama_model = String($('#vectors_ollama_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
     $('#vectors_vllm_model').val(settings.vllm_model).on('input', () => {
-        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.vllm_model = String($('#vectors_vllm_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();

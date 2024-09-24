@@ -4,7 +4,7 @@ const fs = require('fs');
 const express = require('express');
 const sanitize = require('sanitize-filename');
 const { jsonParser } = require('../express-common');
-const { getConfigValue, color } = require('../util');
+const { getConfigValue } = require('../util');
 
 // Don't forget to add new sources to the SOURCES array
 const SOURCES = [
@@ -150,7 +150,7 @@ function getSourceSettings(source, request) {
                 extrasUrl: String(request.headers['x-extras-url']),
                 extrasKey: String(request.headers['x-extras-key']),
             };
-        case 'local':
+        case 'transformers':
             return {
                 model: getConfigValue('extras.embeddingModel', ''),
             };
@@ -158,6 +158,14 @@ function getSourceSettings(source, request) {
             return {
                 // TODO: Add support for multiple models
                 model: 'text-embedding-004',
+            };
+        case 'mistral':
+            return {
+                model: 'mistral-embed',
+            };
+        case 'nomicai':
+            return {
+                model: 'nomic-embed-text-v1.5',
             };
         default:
             return {};
@@ -170,19 +178,7 @@ function getSourceSettings(source, request) {
  * @returns {string} The model scope for the source
  */
 function getModelScope(sourceSettings) {
-    const scopesEnabled = getConfigValue('vectors.enableModelScopes', false);
-    const warningShown = global.process.env.VECTORS_MODEL_SCOPE_WARNING_SHOWN === 'true';
-
-    if (!scopesEnabled && !warningShown) {
-        console.log();
-        console.warn(color.red('[DEPRECATION NOTICE]'), 'Model scopes for Vectore Storage are disabled, but will soon be required.');
-        console.log(`To enable model scopes, set the ${color.cyan('vectors.enableModelScopes')} in config.yaml to ${color.green(true)}.`);
-        console.log('This message won\'t be shown again in the current session.');
-        console.log();
-        global.process.env.VECTORS_MODEL_SCOPE_WARNING_SHOWN = 'true';
-    }
-
-    return scopesEnabled ? (sourceSettings?.model || '') : '';
+    return (sourceSettings?.model || '');
 }
 
 /**
@@ -364,11 +360,6 @@ async function regenerateCorruptedIndexErrorHandler(req, res, error) {
 }
 
 const router = express.Router();
-
-router.get('/scopes-enabled', (_req, res) => {
-    const scopesEnabled = getConfigValue('vectors.enableModelScopes', false);
-    return res.json({ enabled: scopesEnabled });
-});
 
 router.post('/query', jsonParser, async (req, res) => {
     try {
