@@ -18,6 +18,7 @@ import {
 import { groups, selected_group } from './group-chats.js';
 import { instruct_presets } from './instruct-mode.js';
 import { kai_settings } from './kai-settings.js';
+import { convertNovelPreset } from './nai-settings.js';
 import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -395,6 +396,10 @@ class PresetManager {
     async savePreset(name, settings) {
         if (this.apiId === 'instruct' && settings) {
             await checkForSystemPromptInInstructTemplate(name, settings);
+        }
+
+        if (this.apiId === 'novel' && settings) {
+            settings = convertNovelPreset(settings);
         }
 
         const preset = settings ?? this.getPresetSettings(name);
