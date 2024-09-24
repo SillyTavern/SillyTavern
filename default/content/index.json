@@ -320,7 +320,23 @@
         "type": "novel_preset"
     },
     {
-        "filename": "presets/novel/Universal-Erato.json",
+        "filename": "presets/novel/Erato-Dragonfruit.json",
+        "type": "novel_preset"
+    },
+    {
+        "filename": "presets/novel/Erato-Golden Arrow.json",
+        "type": "novel_preset"
+    },
+    {
+        "filename": "presets/novel/Erato-Shosetsu.json",
+        "type": "novel_preset"
+    },
+    {
+        "filename": "presets/novel/Erato-Wilder.json",
+        "type": "novel_preset"
+    },
+    {
+        "filename": "presets/novel/Erato-Zany Scribe.json",
         "type": "novel_preset"
     },
     {

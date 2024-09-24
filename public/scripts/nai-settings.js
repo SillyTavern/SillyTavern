@@ -22,7 +22,7 @@ const maximum_output_length = 150;
 const default_presets = {
     'clio-v1': 'Talker-Chat-Clio',
     'kayra-v1': 'Carefree-Kayra',
-    'llama-3-erato-v1': 'Universal-Erato',
+    'llama-3-erato-v1': 'Erato-Dragonfruit',
 };
 
 export const nai_settings = {
