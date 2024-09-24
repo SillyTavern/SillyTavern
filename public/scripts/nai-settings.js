@@ -24,6 +24,7 @@ const maximum_output_length = 150;
 const default_presets = {
     'clio-v1': 'Talker-Chat-Clio',
     'kayra-v1': 'Carefree-Kayra',
+    'llama-3-erato-v1': 'Universal-Erato',
 };
 
 export const nai_settings = {
@@ -495,7 +496,14 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
         console.log(finalPrompt);
     }
 
-    const adjustedMaxLength = nai_settings.model_novel.includes('kayra') ? getKayraMaxResponseTokens() : maximum_output_length;
+    const isKayra = nai_settings.model_novel.includes('kayra');
+    const isErato = nai_settings.model_novel.includes('erato');
+
+    if (isErato) {
+        finalPrompt = '<|startoftext|>' + finalPrompt;
+    }
+
+    const adjustedMaxLength = (isKayra || isErato) ? getKayraMaxResponseTokens() : maximum_output_length;
 
     return {
         'input': finalPrompt,
@@ -540,7 +548,8 @@ function selectPrefix(selected_prefix, finalPrompt) {
     let useInstruct = false;
     const clio = nai_settings.model_novel.includes('clio');
     const kayra = nai_settings.model_novel.includes('kayra');
-    const isNewModel = clio || kayra;
+    const erato = nai_settings.model_novel.includes('erato');
+    const isNewModel = clio || kayra || erato;
 
     if (isNewModel) {
         // NovelAI claims they scan backwards 1000 characters (not tokens!) to look for instruct brackets. That's really short.
@@ -558,6 +567,9 @@ function getTokenizerTypeForModel(model) {
     }
     if (model.includes('kayra')) {
         return tokenizers.NERD2;
+    }
+    if (model.includes('erato')) {
+        return tokenizers.LLAMA3;
     }
     return tokenizers.NONE;
 }

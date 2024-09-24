@@ -320,6 +320,10 @@
         "type": "novel_preset"
     },
     {
+        "filename": "presets/novel/Universal-Erato.json",
+        "type": "novel_preset"
+    },
+    {
         "filename": "presets/textgen/Asterism.json",
         "type": "textgen_preset"
     },

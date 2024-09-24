@@ -274,6 +274,9 @@ export function getTokenizerBestMatch(forApi) {
         if (nai_settings.model_novel.includes('kayra')) {
             return tokenizers.NERD2;
         }
+        if (nai_settings.model_novel.includes('erato')) {
+            return tokenizers.LLAMA3;
+        }
     }
     if (forApi === 'kobold' || forApi === 'textgenerationwebui' || forApi === 'koboldhorde') {
         // Try to use the API tokenizer if possible:

@@ -4860,6 +4860,13 @@ export function getMaxContextSize(overrideResponseLength = null) {
                 console.log(`NovelAI subscription limit reached. Max context size is now ${this_max_context}`);
             }
         }
+        if (nai_settings.model_novel.includes('erato')) {
+            // subscriber limits coming soon
+            this_max_context = Math.min(max_context, 8192);
+
+            // Added special tokens and whatnot
+            this_max_context -= 1;
+        }
 
         this_max_context = this_max_context - (overrideResponseLength || amount_gen);
     }
