@@ -15,6 +15,11 @@ const badWordsList = [
     [19438], [43145], [26523], [41471], [2936], [85, 85], [49332], [7286], [1115], [24],
 ];
 
+const eratoBadWordsList = [
+    [16067], [933, 11144], [25106, 11144], [58, 106901, 16073, 33710, 25, 109933],
+    [933, 58, 11144], [128030], [58, 30591, 33503, 17663, 100204, 25, 11144],
+];
+
 const hypeBotBadWordsList = [
     [58], [60], [90], [92], [685], [1391], [1782], [2361], [3693], [4083], [4357], [4895],
     [5512], [5974], [7131], [8183], [8351], [8762], [8964], [8973], [9063], [11208],
@@ -42,6 +47,13 @@ const repPenaltyAllowList = [
         803, 1040, 49209, 4, 5, 6, 7, 8, 9, 10, 11, 12],
 ];
 
+const eratoRepPenWhitelist = [
+    6, 1, 11, 13, 25, 198, 12, 9, 8, 279, 264, 459, 323, 477, 539, 912, 374, 574, 1051, 1550, 1587, 4536, 5828, 15058,
+    3287, 3250, 1461, 1077, 813, 11074, 872, 1202, 1436, 7846, 1288, 13434, 1053, 8434, 617, 9167, 1047, 19117, 706,
+    12775, 649, 4250, 527, 7784, 690, 2834, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 1210, 1359, 608, 220, 596, 956,
+    3077, 44886, 4265, 3358, 2351, 2846, 311, 389, 315, 304, 520, 505, 430
+];
+
 // Ban the dinkus and asterism
 const logitBiasExp = [
     { 'sequence': [23], 'bias': -0.08, 'ensure_sequence_finish': false, 'generate_once': false },
@@ -62,6 +74,10 @@ function getBadWordsList(model) {
 
     if (model.includes('clio') || model.includes('kayra')) {
         list = badWordsList;
+    }
+
+    if (model.includes('erato')) {
+        list = eratoBadWordsList;
     }
 
     // Clone the list so we don't modify the original
@@ -85,6 +101,10 @@ function getLogitBiasList(model) {
 function getRepPenaltyWhitelist(model) {
     if (model.includes('clio') || model.includes('kayra')) {
         return repPenaltyAllowList.flat();
+    }
+
+    if (model.includes('erato')) {
+        return eratoRepPenWhitelist.flat();
     }
 
     return null;
