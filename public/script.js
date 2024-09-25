@@ -244,6 +244,7 @@ import { commonEnumProviders, enumIcons } from './scripts/slash-commands/SlashCo
 import { initInputMarkdown } from './scripts/input-md-formatting.js';
 import { AbortReason } from './scripts/util/AbortReason.js';
 import { initSystemPrompts } from './scripts/sysprompt.js';
+import { registerExtensionSlashCommands } from './scripts/extensions-slashcommands.js';
 
 //exporting functions and vars for mods
 export {
@@ -957,6 +958,7 @@ async function firstLoadInit() {
     initLogprobs();
     initInputMarkdown();
     initExtensions();
+    registerExtensionSlashCommands();
     doDailyExtensionUpdatesCheck();
     await hideLoader();
     await fixViewport();
