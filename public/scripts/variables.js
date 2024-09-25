@@ -544,6 +544,10 @@ export function parseBooleanOperands(args) {
  * @returns {boolean} True if the rule yields true, false otherwise
  */
 export function evalBoolean(rule, a, b) {
+    if (a === undefined) {
+        throw new Error('Left operand is not provided');
+    }
+
     // If right-hand side was not provided, whe just check if the left side is truthy
     if (b === undefined) {
         switch (rule) {
