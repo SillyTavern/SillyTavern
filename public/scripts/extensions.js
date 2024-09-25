@@ -1056,7 +1056,7 @@ export async function openThirdPartyExtensionMenu(suggestUrl = '') {
 function getExtensionActionCallback(action) {
     return async (args, extensionName) => {
         if (args?.reload instanceof SlashCommandClosure) throw new Error('\'reload\' argument cannot be a closure.');
-        if (typeof extensionName !== 'string') throw new Error('Extension name does only support string. Closures or arrays are not allowed.');
+        if (typeof extensionName !== 'string') throw new Error('Extension name must be a string. Closures or arrays are not allowed.');
         if (!extensionName) {
             toastr.warning(`Extension name must be provided as an argument to ${action} this extension.`);
             return '';
@@ -1184,7 +1184,7 @@ function registerExtensionSlashCommands() {
         name: 'extension-toggle',
         callback: async (args, extensionName) => {
             if (args?.state instanceof SlashCommandClosure) throw new Error('\'state\' argument cannot be a closure.');
-            if (typeof extensionName !== 'string') throw new Error('Extension name does only support string. Closures or arrays are not allowed.');
+            if (typeof extensionName !== 'string') throw new Error('Extension name must be a string. Closures or arrays are not allowed.');
 
             const action = isTrueBoolean(args?.state) ? 'enable' :
                 isFalseBoolean(args?.state) ? 'disable' :
@@ -1233,6 +1233,73 @@ function registerExtensionSlashCommands() {
                     </li>
                     <li>
                         <pre><code class="language-stscript">/extension-toggle Summarize state=true</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'extension-state',
+        callback: async (_, extensionName) => {
+            if (typeof extensionName !== 'string') throw new Error('Extension name must be a string. Closures or arrays are not allowed.');
+            const internalExtensionName = extensionNames.find(x => equalsIgnoreCaseAndAccents(x, extensionName));
+            if (!internalExtensionName) {
+                toastr.warning(`Extension ${extensionName} does not exist.`);
+                return '';
+            }
+
+            const isEnabled = !extension_settings.disabledExtensions.includes(internalExtensionName);
+            return String(isEnabled);
+        },
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Extension name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: () => extensionNames.map(name => new SlashCommandEnumValue(name)),
+                forceEnum: true,
+            }),
+        ],
+        helpString: `
+            <div>
+                Returns the state of a specified extension (true if enabled, false if disabled).
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/extension-state Summarize</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'extension-exists',
+        aliases: ['extension-installed'],
+        callback: async (_, extensionName) => {
+            if (typeof extensionName !== 'string') throw new Error('Extension name must be a string. Closures or arrays are not allowed.');
+            const exists = extensionNames.find(x => equalsIgnoreCaseAndAccents(x, extensionName)) !== undefined;
+            return exists ? 'true' : 'false';
+        },
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Extension name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: () => extensionNames.map(name => new SlashCommandEnumValue(name)),
+                forceEnum: true,
+            }),
+        ],
+        helpString: `
+            <div>
+                Checks if a specified extension exists.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/extension-exists LALib</code></pre>
                     </li>
                 </ul>
             </div>
