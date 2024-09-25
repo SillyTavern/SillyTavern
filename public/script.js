@@ -7852,7 +7852,10 @@ function addAlternateGreeting(template, greeting, index, getArray) {
         array[index] = value;
     }).val(greeting);
     greetingBlock.find('.greeting_index').text(index + 1);
-    greetingBlock.find('.delete_alternate_greeting').on('click', async function () {
+    greetingBlock.find('.delete_alternate_greeting').on('click', async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
         if (confirm('Are you sure you want to delete this alternate greeting?')) {
             const array = getArray();
             array.splice(index, 1);
