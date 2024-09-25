@@ -1,8 +1,14 @@
 import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration } from '../script.js';
-import { hideLoader, showLoader } from './loader.js';
+import { showLoader } from './loader.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
+import { SlashCommand } from './slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
+import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
+import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
+import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { renderTemplate, renderTemplateAsync } from './templates.js';
-import { isSubsetOf, setValueByPath } from './utils.js';
+import { equalsIgnoreCaseAndAccents, isSubsetOf, isTrueBoolean, setValueByPath } from './utils.js';
 export {
     getContext,
     getApiUrl,
@@ -14,7 +20,9 @@ export {
     ModuleWorkerWrapper,
 };
 
+/** @type {string[]} */
 export let extensionNames = [];
+
 let manifests = {};
 const defaultUrl = 'http://localhost:5100';
 
@@ -1041,7 +1049,135 @@ export async function openThirdPartyExtensionMenu(suggestUrl = '') {
     await installExtension(url);
 }
 
+/**
+ * @param {boolean} enable - Whether to enable or disable the extension
+ * @returns {(args: {[key: string]: string | SlashCommandClosure}, extensionName: string | SlashCommandClosure) => Promise<string>}
+ */
+function getExtensionToggleCallback(enable) {
+    return async (args, extensionName) => {
+        if (args?.reload instanceof SlashCommandClosure) throw new Error('\'reload\' argument cannot be a closure.');
+        if (typeof extensionName !== 'string') throw new Error('Extension name does only support string. Closures or arrays are not allowed.');
+        if (!extensionName) {
+            toastr.warning(`Extension name must be provided as an argument to ${enable ? 'enable' : 'disable'} this extension.`);
+            return '';
+        }
+
+        const reload = isTrueBoolean(args?.reload);
+
+        const internalExtensionName = extensionNames.find(x => equalsIgnoreCaseAndAccents(x, extensionName));
+        if (!internalExtensionName) {
+            toastr.warning(`Extension ${extensionName} does not exist.`);
+            return '';
+        }
+        if (enable === !extension_settings.disabledExtensions.includes(internalExtensionName)) {
+            toastr.info(`Extension ${extensionName} is already ${enable ? 'enabled' : 'disabled'}.`);
+            return internalExtensionName;
+        }
+
+        reload && toastr.info(`${enable ? 'Enabling' : 'Disabling'} extension ${extensionName} and reloading...`);
+        await enableExtension(internalExtensionName, reload);
+        toastr.success(`Extension ${extensionName} ${enable ? 'enabled' : 'disabled'}.`);
+
+        return internalExtensionName;
+    };
+}
+
+function registerExtensionSlashCommands() {
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'extension-enable',
+        callback: getExtensionToggleCallback(true),
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'reload',
+                description: 'Whether to reload the page after enabling the extension',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Extension name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: () => extensionNames.map(name => new SlashCommandEnumValue(name)),
+                forceEnum: true,
+            }),
+        ],
+        helpString: `
+            <div>
+                Enables a specified extension.
+            </div>
+            <div>
+                By default, the page will be reloaded automatically, stopping any further commands.<br />
+                If <code>reload=false</code> named argument is passed, the page will not be reloaded, and the extension will stay disabled until refreshed.
+                The page either needs to be refreshed, or <code>/reload-page</code> has to be called.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/extension-enable Summarize</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'extension-disable',
+        callback: getExtensionToggleCallback(false),
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'reload',
+                description: 'Whether to reload the page after disabling the extension',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Extension name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: () => extensionNames.map(name => new SlashCommandEnumValue(name)),
+                forceEnum: true,
+            }),
+        ],
+        helpString: `
+            <div>
+                Disables a specified extension.
+            </div>
+            <div>
+                By default, the page will be reloaded automatically, stopping any further commands.<br />
+                If <code>reload=false</code> named argument is passed, the page will not be reloaded, and the extension will stay enabled until refreshed.
+                The page either needs to be refreshed, or <code>/reload-page</code> has to be called.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/extension-disable Summarize</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'reload-page',
+        callback: async () => {
+            toastr.info('Reloading the page...');
+            location.reload();
+            return '';
+        },
+        helpString: 'Reloads the current page. All further commands will not be processed.',
+    }));
+}
+
 export async function initExtensions() {
+    registerExtensionSlashCommands();
+
     await addExtensionsButtonAndMenu();
     $('#extensionsMenuButton').css('display', 'flex');
 
