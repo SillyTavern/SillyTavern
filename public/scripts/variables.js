@@ -505,28 +505,36 @@ export function parseBooleanOperands(args) {
 
     const left = getOperand(args.a ?? args.left ?? args.first ?? args.x);
     const right = getOperand(args.b ?? args.right ?? args.second ?? args.y);
-    const rule = args.rule ?? 'eq';
+    const rule = args.rule;
 
     return { a: left, b: right, rule };
 }
 
 /**
  * Evaluates a boolean comparison rule.
- * @param {string} rule Boolean comparison rule
+ *
+ * @param {string?} rule Boolean comparison rule
  * @param {string|number} a The left operand
  * @param {string|number?} b The right operand
  * @returns {boolean} True if the rule yields true, false otherwise
  */
 export function evalBoolean(rule, a, b) {
-    if (b === undefined && rule === 'eq') {
-        // If right-hand side was not provided, whe just check if the left side is truthy
-        if (isTrueBoolean(String(a))) return true;
-        if (isFalseBoolean(String(a))) return false;
-        return !!a;
+    // If right-hand side was not provided, whe just check if the left side is truthy
+    if (b === undefined) {
+        switch (rule) {
+            case undefined:
+            case 'not':
+                const resultOnTruthy = rule !== 'not';
+                if (isTrueBoolean(String(a))) return resultOnTruthy;
+                if (isFalseBoolean(String(a))) return !resultOnTruthy;
+                return !!a ? resultOnTruthy : !resultOnTruthy;
+            default:
+                throw new Error(`Unknown boolean comparison rule for truthy check. If right-hand side is not provided, the rule must not provided or be "not". Provided: ${rule}`);
+        }
     }
 
-    // Restore old behavior, where b cannot be undefined
-    b = b ?? '';
+    // If no rule was provided, we are implicitly using 'eq', as defined for the slash commands
+    rule ??= 'eq';
 
     if (typeof a === 'number' && typeof b === 'number') {
         // only do numeric comparison if both operands are numbers
@@ -534,8 +542,6 @@ export function evalBoolean(rule, a, b) {
         const bNumber = Number(b);
 
         switch (rule) {
-            case 'not':
-                return !aNumber;
             case 'gt':
                 return aNumber > bNumber;
             case 'gte':
@@ -549,27 +555,25 @@ export function evalBoolean(rule, a, b) {
             case 'neq':
                 return aNumber !== bNumber;
             default:
-                toastr.error('Unknown boolean comparison rule for type number.', 'Invalid command');
-                throw new Error('Invalid command.');
+                throw new Error(`Unknown boolean comparison rule for type number. Accepted: gt, gte, lt, lte, eq, neq. Provided: ${rule}`);
         }
-    } else {
-        // otherwise do case-insensitive string comparsion, stringify non-strings
-        let aString = (typeof a === 'string') ? a.toLowerCase() : JSON.stringify(a).toLowerCase();
-        let bString = (typeof b === 'string') ? b.toLowerCase() : JSON.stringify(b).toLowerCase();
+    }
 
-        switch (rule) {
-            case 'in':
-                return aString.includes(bString);
-            case 'nin':
-                return !aString.includes(bString);
-            case 'eq':
-                return aString === bString;
-            case 'neq':
-                return aString !== bString;
-            default:
-                toastr.error('Unknown boolean comparison rule for type string.', 'Invalid /if command');
-                throw new Error('Unknown boolean comparison rule for type string.');
-        }
+    // otherwise do case-insensitive string comparsion, stringify non-strings
+    let aString = (typeof a === 'string') ? a.toLowerCase() : JSON.stringify(a).toLowerCase();
+    let bString = (typeof b === 'string') ? b.toLowerCase() : JSON.stringify(b).toLowerCase();
+
+    switch (rule) {
+        case 'in':
+            return aString.includes(bString);
+        case 'nin':
+            return !aString.includes(bString);
+        case 'eq':
+            return aString === bString;
+        case 'neq':
+            return aString !== bString;
+        default:
+            throw new Error(`Unknown boolean comparison rule for type number. Accepted: in, nin, eq, neq. Provided: ${rule}`);
     }
 }
 
