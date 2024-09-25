@@ -1041,7 +1041,7 @@ export async function openThirdPartyExtensionMenu(suggestUrl = '') {
     await installExtension(url);
 }
 
-jQuery(async function () {
+export async function initExtensions() {
     await addExtensionsButtonAndMenu();
     $('#extensionsMenuButton').css('display', 'flex');
 
@@ -1060,4 +1060,4 @@ jQuery(async function () {
      * @listens #third_party_extension_button#click - The click event of the '#third_party_extension_button' element.
      */
     $('#third_party_extension_button').on('click', () => openThirdPartyExtensionMenu());
-});
+}
