@@ -74,7 +74,7 @@ const samplers = {
 
 let novel_data = null;
 let badWordsCache = {};
-const BIAS_KEY = '#novel_api-settings';
+const BIAS_KEY = '#range_block_novel';
 
 export function setNovelData(data) {
     novel_data = data;
