@@ -529,7 +529,7 @@ export function evalBoolean(rule, a, b) {
                 if (isFalseBoolean(String(a))) return !resultOnTruthy;
                 return !!a ? resultOnTruthy : !resultOnTruthy;
             default:
-                throw new Error(`Unknown boolean comparison rule for truthy check. If right-hand side is not provided, the rule must not provided or be "not". Provided: ${rule}`);
+                throw new Error(`Unknown boolean comparison rule for truthy check. If right operand is not provided, the rule must not provided or be 'not'. Provided: ${rule}`);
         }
     }
 
@@ -554,6 +554,11 @@ export function evalBoolean(rule, a, b) {
                 return aNumber === bNumber;
             case 'neq':
                 return aNumber !== bNumber;
+            case 'in':
+            case 'nin':
+                // Fall through to string comparison. Otherwise you could not check if 12345 contains 45 for example.
+                console.debug(`Boolean comparison rule '${rule}' is not supported for type number. Falling back to string comparison.`);
+                break;
             default:
                 throw new Error(`Unknown boolean comparison rule for type number. Accepted: gt, gte, lt, lte, eq, neq. Provided: ${rule}`);
         }
@@ -1265,15 +1270,15 @@ export function registerVariableCommands() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: 'eq',
                 enumList: [
-                    new SlashCommandEnumValue('gt', 'a > b'),
-                    new SlashCommandEnumValue('gte', 'a >= b'),
-                    new SlashCommandEnumValue('lt', 'a < b'),
-                    new SlashCommandEnumValue('lte', 'a <= b'),
-                    new SlashCommandEnumValue('eq', 'a == b'),
-                    new SlashCommandEnumValue('neq', 'a !== b'),
-                    new SlashCommandEnumValue('not', '!a'),
-                    new SlashCommandEnumValue('in', 'a includes b'),
-                    new SlashCommandEnumValue('nin', 'a not includes b'),
+                    new SlashCommandEnumValue('eq', 'a == b (strings & numbers)'),
+                    new SlashCommandEnumValue('neq', 'a !== b (strings & numbers)'),
+                    new SlashCommandEnumValue('in', 'a includes b (strings & numbers as strings)'),
+                    new SlashCommandEnumValue('nin', 'a not includes b (strings & numbers as strings)'),
+                    new SlashCommandEnumValue('gt', 'a > b (numbers)'),
+                    new SlashCommandEnumValue('gte', 'a >= b (numbers)'),
+                    new SlashCommandEnumValue('lt', 'a < b (numbers)'),
+                    new SlashCommandEnumValue('lte', 'a <= b (numbers)'),
+                    new SlashCommandEnumValue('not', '!a (truthy)'),
                 ],
                 forceEnum: true,
             }),
@@ -1299,22 +1304,25 @@ export function registerVariableCommands() {
                 Numeric values and string literals for left and right operands supported.
             </div>
             <div>
-                If the rule is not provided, it defaults to <code>eq</code>.<br />
+                If the rule is not provided, it defaults to <code>eq</code>.
+            </div>
+            <div>
                 If no right operand is provided, it defaults to checking the <code>left</code> value to be truthy.
-                A non-empty string or non-zero number is considered truthy, as is the value <code>true</code>.
+                A non-empty string or non-zero number is considered truthy, as is the value <code>true</code> or <code>on</code>.<br />
+                Only acceptable rules for no provided right operand are <code>not</code>, and no provided rule - which default to returning whether it is not or is truthy.
             </div>
             <div>
                 <strong>Available rules:</strong>
                 <ul>
-                    <li>gt => a > b</li>
-                    <li>gte => a >= b</li>
-                    <li>lt => a < b</li>
-                    <li>lte => a <= b</li>
-                    <li>eq => a == b</li>
-                    <li>neq => a != b</li>
-                    <li>not => !a</li>
-                    <li>in (strings) => a includes b</li>
-                    <li>nin (strings) => a not includes b</li>
+                    <li><code>eq</code> => a == b <small>(strings & numbers)</small></li>
+                    <li><code>neq</code> => a !== b <small>(strings & numbers)</small></li>
+                    <li><code>in</code> => a includes b <small>(strings & numbers as strings)</small></li>
+                    <li><code>nin</code> => a not includes b <small>(strings & numbers as strings)</small></li>
+                    <li><code>gt</code> => a > b <small>(numbers)</small></li>
+                    <li><code>gte</code> => a >= b <small>(numbers)</small></li>
+                    <li><code>lt</code> => a < b <small>(numbers)</small></li>
+                    <li><code>lte</code> => a <= b <small>(numbers)</small></li>
+                    <li><code>not</code> => !a <small>(truthy)</small></li>
                 </ul>
             </div>
             <div>
@@ -1328,8 +1336,12 @@ export function registerVariableCommands() {
                         <pre><code class="language-stscript">/if left={{lastMessage}} rule=in right=surprise {: /echo SURPISE! :}</code></pre>
                         executes a subcommand defined as a closure if the given value contains a specified word.
                     <li>
-                        <pre><code class="language-stscript">/if left=myContent {: /echo "My content had some content." :}</code></pre>
+                        <pre><code class="language-stscript">/if left=myContent {: /echo My content had some content. :}</code></pre>
                         executes the defined subcommand, if the provided value of left is truthy (contains some kind of contant that is not empty or false)
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/if left=tree right={{getvar::object}} {: /echo The object is a tree! :}</code></pre>
+                        executes the defined subcommand, if the left and right values are equals.
                     </li>
                 </ul>
             </div>
@@ -1359,15 +1371,15 @@ export function registerVariableCommands() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: 'eq',
                 enumList: [
-                    new SlashCommandEnumValue('gt', 'a > b'),
-                    new SlashCommandEnumValue('gte', 'a >= b'),
-                    new SlashCommandEnumValue('lt', 'a < b'),
-                    new SlashCommandEnumValue('lte', 'a <= b'),
-                    new SlashCommandEnumValue('eq', 'a == b'),
-                    new SlashCommandEnumValue('neq', 'a !== b'),
-                    new SlashCommandEnumValue('not', '!a'),
-                    new SlashCommandEnumValue('in', 'a includes b'),
-                    new SlashCommandEnumValue('nin', 'a not includes b'),
+                    new SlashCommandEnumValue('eq', 'a == b (strings & numbers)'),
+                    new SlashCommandEnumValue('neq', 'a !== b (strings & numbers)'),
+                    new SlashCommandEnumValue('in', 'a includes b (strings & numbers as strings)'),
+                    new SlashCommandEnumValue('nin', 'a not includes b (strings & numbers as strings)'),
+                    new SlashCommandEnumValue('gt', 'a > b (numbers)'),
+                    new SlashCommandEnumValue('gte', 'a >= b (numbers)'),
+                    new SlashCommandEnumValue('lt', 'a < b (numbers)'),
+                    new SlashCommandEnumValue('lte', 'a <= b (numbers)'),
+                    new SlashCommandEnumValue('not', '!a (truthy)'),
                 ],
                 forceEnum: true,
             }),
@@ -1396,15 +1408,15 @@ export function registerVariableCommands() {
             <div>
                 <strong>Available rules:</strong>
                 <ul>
-                    <li>gt => a > b</li>
-                    <li>gte => a >= b</li>
-                    <li>lt => a < b</li>
-                    <li>lte => a <= b</li>
-                    <li>eq => a == b</li>
-                    <li>neq => a != b</li>
-                    <li>not => !a</li>
-                    <li>in (strings) => a includes b</li>
-                    <li>nin (strings) => a not includes b</li>
+                    <li><code>eq</code> => a == b <small>(strings & numbers)</small></li>
+                    <li><code>neq</code> => a !== b <small>(strings & numbers)</small></li>
+                    <li><code>in</code> => a includes b <small>(strings & numbers as strings)</small></li>
+                    <li><code>nin</code> => a not includes b <small>(strings & numbers as strings)</small></li>
+                    <li><code>gt</code> => a > b <small>(numbers)</small></li>
+                    <li><code>gte</code> => a >= b <small>(numbers)</small></li>
+                    <li><code>lt</code> => a < b <small>(numbers)</small></li>
+                    <li><code>lte</code> => a <= b <small>(numbers)</small></li>
+                    <li><code>not</code> => !a <small>(truthy)</small></li>
                 </ul>
             </div>
             <div>
