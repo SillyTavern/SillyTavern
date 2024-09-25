@@ -523,11 +523,12 @@ export function evalBoolean(rule, a, b) {
     if (b === undefined) {
         switch (rule) {
             case undefined:
-            case 'not':
+            case 'not': {
                 const resultOnTruthy = rule !== 'not';
                 if (isTrueBoolean(String(a))) return resultOnTruthy;
                 if (isFalseBoolean(String(a))) return !resultOnTruthy;
-                return !!a ? resultOnTruthy : !resultOnTruthy;
+                return a ? resultOnTruthy : !resultOnTruthy;
+            }
             default:
                 throw new Error(`Unknown boolean comparison rule for truthy check. If right operand is not provided, the rule must not provided or be 'not'. Provided: ${rule}`);
         }
