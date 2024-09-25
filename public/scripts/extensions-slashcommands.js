@@ -20,7 +20,7 @@ function getExtensionActionCallback(action) {
             return '';
         }
 
-        const reload = isTrueBoolean(args?.reload);
+        const reload = !isFalseBoolean(args?.reload);
         const internalExtensionName = findExtension(extensionName);
         if (!internalExtensionName) {
             toastr.warning(`Extension ${extensionName} does not exist.`);
@@ -43,7 +43,14 @@ function getExtensionActionCallback(action) {
             action = isEnabled ? 'disable' : 'enable';
         }
 
-        reload && toastr.info(`${action.charAt(0).toUpperCase() + action.slice(1)}ing extension ${extensionName} and reloading...`);
+        if (reload) {
+            toastr.info(`${action.charAt(0).toUpperCase() + action.slice(1)}ing extension ${extensionName} and reloading...`);
+
+            // Clear input, so it doesn't stay because the command didn't "finish",
+            // and wait for a bit to both show the toast and let the clear bubble through.
+            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
 
         if (action === 'enable') {
             await enableExtension(internalExtensionName, reload);
@@ -52,6 +59,12 @@ function getExtensionActionCallback(action) {
         }
 
         toastr.success(`Extension ${extensionName} ${action}d.`);
+
+
+        console.info(`Extension ${action}ed: ${extensionName}`);
+        if (!reload) {
+            console.info('Reload not requested, so page needs to be reloaded manually for changes to take effect.');
+        }
 
         return internalExtensionName;
     };
@@ -88,6 +101,7 @@ export function registerExtensionSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'extension-enable',
         callback: getExtensionActionCallback('enable'),
+        returns: 'The internal extension name',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'reload',
@@ -127,7 +141,8 @@ export function registerExtensionSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'extension-disable',
-        callback: getExtensionActionCallback('enable'),
+        callback: getExtensionActionCallback('disable'),
+        returns: 'The internal extension name',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'reload',
@@ -177,6 +192,7 @@ export function registerExtensionSlashCommands() {
 
             return await getExtensionActionCallback(action)(args, extensionName);
         },
+        returns: 'The internal extension name',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'reload',
@@ -236,6 +252,7 @@ export function registerExtensionSlashCommands() {
             const isEnabled = !extension_settings.disabledExtensions.includes(internalExtensionName);
             return String(isEnabled);
         },
+        returns: '<code>true</code>/<code>false</code> - The state of the extension, whether it is enabled.',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'Extension name',
@@ -267,6 +284,7 @@ export function registerExtensionSlashCommands() {
             const exists = findExtension(extensionName) !== undefined;
             return exists ? 'true' : 'false';
         },
+        returns: '<code>true</code>/<code>false</code> - Whether the extension exists and is installed.',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'Extension name',
