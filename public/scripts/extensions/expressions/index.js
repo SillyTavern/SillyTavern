@@ -1161,7 +1161,7 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
                 }
 
                 const expressionsList = await getExpressionsList();
-                const prompt = substituteParamsExtended(String(customPrompt), { labels: expressionsList }) || await getLlmPrompt(expressionsList);
+                const prompt = substituteParamsExtended(customPrompt, { labels: expressionsList }) || await getLlmPrompt(expressionsList);
                 let functionResult = null;
                 eventSource.once(event_types.TEXT_COMPLETION_SETTINGS_READY, onTextGenSettingsReady);
                 eventSource.once(event_types.LLM_FUNCTION_TOOL_REGISTER, onFunctionToolRegister);
