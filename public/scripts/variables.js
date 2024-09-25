@@ -1,5 +1,6 @@
 import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessage, system_message_types } from '../script.js';
 import { extension_settings, saveMetadataDebounced } from './extensions.js';
+import { callGenericPopup, POPUP_TYPE } from './popup.js';
 import { executeSlashCommandsWithOptions } from './slash-commands.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortController.js';
@@ -303,24 +304,48 @@ export function replaceVariableMacros(input) {
     return lines.join('\n');
 }
 
-function listVariablesCallback() {
+async function listVariablesCallback(args) {
+    const type = String(args?.format || '').toLowerCase().trim() || 'popup';
+    const scope = String(args?.scope || '').toLowerCase().trim() || 'all';
     if (!chat_metadata.variables) {
         chat_metadata.variables = {};
     }
 
-    const localVariables = Object.entries(chat_metadata.variables).map(([name, value]) => `${name}: ${value}`);
-    const globalVariables = Object.entries(extension_settings.variables.global).map(([name, value]) => `${name}: ${value}`);
+    const includeLocalVariables = scope === 'all' || scope === 'local';
+    const includeGlobalVariables = scope === 'all' || scope === 'global';
+
+    const localVariables = includeLocalVariables ? Object.entries(chat_metadata.variables).map(([name, value]) => `${name}: ${value}`) : [];
+    const globalVariables = includeGlobalVariables ? Object.entries(extension_settings.variables.global).map(([name, value]) => `${name}: ${value}`) : [];
+
+    const jsonVariables = [
+        ...Object.entries(chat_metadata.variables).map(x => ({ key: x[0], value: x[1], scope: 'local' })),
+        ...Object.entries(extension_settings.variables.global).map(x => ({ key: x[0], value: x[1], scope: 'global' })),
+    ];
 
     const localVariablesString = localVariables.length > 0 ? localVariables.join('\n\n') : 'No local variables';
     const globalVariablesString = globalVariables.length > 0 ? globalVariables.join('\n\n') : 'No global variables';
     const chatName = getCurrentChatId();
 
     const converter = new showdown.Converter();
-    const message = `### Local variables (${chatName}):\n${localVariablesString}\n\n### Global variables:\n${globalVariablesString}`;
+    const message = [
+        includeLocalVariables ? `### Local variables (${chatName}):\n${localVariablesString}` : '',
+        includeGlobalVariables ? `### Global variables:\n${globalVariablesString}` : '',
+    ].filter(x => x).join('\n\n');
     const htmlMessage = DOMPurify.sanitize(converter.makeHtml(message));
 
-    sendSystemMessage(system_message_types.GENERIC, htmlMessage);
-    return '';
+    switch (type) {
+        case 'none':
+            break;
+        case 'chat':
+            sendSystemMessage(system_message_types.GENERIC, htmlMessage);
+            break;
+        case 'popup':
+        default:
+            await callGenericPopup(htmlMessage, POPUP_TYPE.TEXT);
+            break;
+    }
+
+    return JSON.stringify(jsonVariables);
 }
 
 /**
@@ -887,7 +912,35 @@ export function registerVariableCommands() {
         name: 'listvar',
         callback: listVariablesCallback,
         aliases: ['listchatvar'],
-        helpString: 'List registered chat variables.',
+        helpString: 'List registered chat variables. Displays variables in a popup by default. Use the <code>format</code> argument to change the output format.',
+        returns: 'JSON list of local variables',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'scope',
+                description: 'filter variables by scope',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'all',
+                isRequired: false,
+                forceEnum: true,
+                enumList: [
+                    new SlashCommandEnumValue('all', 'All variables', enumTypes.enum, enumIcons.variable),
+                    new SlashCommandEnumValue('local', 'Local variables', enumTypes.enum, enumIcons.localVariable),
+                    new SlashCommandEnumValue('global', 'Global variables', enumTypes.enum, enumIcons.globalVariable),
+                ],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'format',
+                description: 'output format',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                forceEnum: true,
+                enumList: [
+                    new SlashCommandEnumValue('popup', 'Show variables in a popup.', enumTypes.enum, enumIcons.default),
+                    new SlashCommandEnumValue('chat', 'Post a system message to the chat.', enumTypes.enum, enumIcons.message),
+                    new SlashCommandEnumValue('none', 'Just return the variables as a JSON list.', enumTypes.enum, enumIcons.array),
+                ],
+            }),
+        ],
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'setvar',
@@ -1276,16 +1329,16 @@ export function registerVariableCommands() {
             }),
             new SlashCommandNamedArgument(
                 'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, [
-                    new SlashCommandEnumValue('gt', 'a > b'),
-                    new SlashCommandEnumValue('gte', 'a >= b'),
-                    new SlashCommandEnumValue('lt', 'a < b'),
-                    new SlashCommandEnumValue('lte', 'a <= b'),
-                    new SlashCommandEnumValue('eq', 'a == b'),
-                    new SlashCommandEnumValue('neq', 'a !== b'),
-                    new SlashCommandEnumValue('not', '!a'),
-                    new SlashCommandEnumValue('in', 'a includes b'),
-                    new SlashCommandEnumValue('nin', 'a not includes b'),
-                ],
+                new SlashCommandEnumValue('gt', 'a > b'),
+                new SlashCommandEnumValue('gte', 'a >= b'),
+                new SlashCommandEnumValue('lt', 'a < b'),
+                new SlashCommandEnumValue('lte', 'a <= b'),
+                new SlashCommandEnumValue('eq', 'a == b'),
+                new SlashCommandEnumValue('neq', 'a !== b'),
+                new SlashCommandEnumValue('not', '!a'),
+                new SlashCommandEnumValue('in', 'a includes b'),
+                new SlashCommandEnumValue('nin', 'a not includes b'),
+            ],
             ),
             new SlashCommandNamedArgument(
                 'else', 'command to execute if not true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], false,
@@ -1354,16 +1407,16 @@ export function registerVariableCommands() {
             }),
             new SlashCommandNamedArgument(
                 'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, [
-                    new SlashCommandEnumValue('gt', 'a > b'),
-                    new SlashCommandEnumValue('gte', 'a >= b'),
-                    new SlashCommandEnumValue('lt', 'a < b'),
-                    new SlashCommandEnumValue('lte', 'a <= b'),
-                    new SlashCommandEnumValue('eq', 'a == b'),
-                    new SlashCommandEnumValue('neq', 'a !== b'),
-                    new SlashCommandEnumValue('not', '!a'),
-                    new SlashCommandEnumValue('in', 'a includes b'),
-                    new SlashCommandEnumValue('nin', 'a not includes b'),
-                ],
+                new SlashCommandEnumValue('gt', 'a > b'),
+                new SlashCommandEnumValue('gte', 'a >= b'),
+                new SlashCommandEnumValue('lt', 'a < b'),
+                new SlashCommandEnumValue('lte', 'a <= b'),
+                new SlashCommandEnumValue('eq', 'a == b'),
+                new SlashCommandEnumValue('neq', 'a !== b'),
+                new SlashCommandEnumValue('not', '!a'),
+                new SlashCommandEnumValue('in', 'a includes b'),
+                new SlashCommandEnumValue('nin', 'a not includes b'),
+            ],
             ),
             new SlashCommandNamedArgument(
                 'guard', 'disable loop iteration limit', [ARGUMENT_TYPE.STRING], false, false, null, commonEnumProviders.boolean('onOff')(),
