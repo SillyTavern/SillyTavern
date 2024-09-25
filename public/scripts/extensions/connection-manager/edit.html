@@ -1,0 +1,16 @@
+<div>
+    <h3>Included settings:</h3>
+    <div class="justifyLeft flex-container flexFlowColumn flexNoGap">
+        {{#each settings}}
+        <label class="checkbox_label">
+            {{#if this}}
+                <input type="checkbox" value="{{@key}}" name="exclude" checked>
+            {{else}}
+                <input type="checkbox" value="{{@key}}" name="exclude">
+            {{/if}}
+            <span>{{@key}}</span>
+        </label>
+        {{/each}}
+    </div>
+    <h3>Profile name:</h3>
+</div>
