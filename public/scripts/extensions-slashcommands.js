@@ -3,7 +3,7 @@ import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
-import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
+import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { equalsIgnoreCaseAndAccents, isFalseBoolean, isTrueBoolean } from './utils.js';
 
@@ -21,7 +21,7 @@ function getExtensionActionCallback(action) {
         }
 
         const reload = isTrueBoolean(args?.reload);
-        const internalExtensionName = extensionNames.find(x => equalsIgnoreCaseAndAccents(x, extensionName));
+        const internalExtensionName = findExtension(extensionName);
         if (!internalExtensionName) {
             toastr.warning(`Extension ${extensionName} does not exist.`);
             return '';
@@ -57,6 +57,33 @@ function getExtensionActionCallback(action) {
     };
 }
 
+/**
+ * Finds an extension by name, allowing omission of the "third-party/" prefix.
+ *
+ * @param {string} name - The name of the extension to find
+ * @returns {string?} - The matched extension name or undefined if not found
+ */
+function findExtension(name) {
+    return extensionNames.find(extName => {
+        return equalsIgnoreCaseAndAccents(extName, name) || equalsIgnoreCaseAndAccents(extName, `third-party/${name}`);
+    });
+}
+
+/**
+ * Provides an array of SlashCommandEnumValue objects based on the extension names.
+ * Each object contains the name of the extension and a description indicating if it is a third-party extension.
+ *
+ * @returns {SlashCommandEnumValue[]} An array of SlashCommandEnumValue objects
+ */
+const extensionNamesEnumProvider = () => extensionNames.map(name => {
+    const isThirdParty = name.startsWith('third-party/');
+    if (isThirdParty) name = name.slice('third-party/'.length);
+
+    const description = isThirdParty ? 'third party extension' : null;
+
+    return new SlashCommandEnumValue(name, description, !isThirdParty ? enumTypes.name : enumTypes.enum);
+});
+
 export function registerExtensionSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'extension-enable',
@@ -75,7 +102,7 @@ export function registerExtensionSlashCommands() {
                 description: 'Extension name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: () => extensionNames.map(name => new SlashCommandEnumValue(name)),
+                enumProvider: extensionNamesEnumProvider,
                 forceEnum: true,
             }),
         ],
@@ -115,7 +142,7 @@ export function registerExtensionSlashCommands() {
                 description: 'Extension name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: () => extensionNames.map(name => new SlashCommandEnumValue(name)),
+                enumProvider: extensionNamesEnumProvider,
                 forceEnum: true,
             }),
         ],
@@ -170,7 +197,7 @@ export function registerExtensionSlashCommands() {
                 description: 'Extension name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: () => extensionNames.map(name => new SlashCommandEnumValue(name)),
+                enumProvider: extensionNamesEnumProvider,
                 forceEnum: true,
             }),
         ],
@@ -200,7 +227,7 @@ export function registerExtensionSlashCommands() {
         name: 'extension-state',
         callback: async (_, extensionName) => {
             if (typeof extensionName !== 'string') throw new Error('Extension name must be a string. Closures or arrays are not allowed.');
-            const internalExtensionName = extensionNames.find(x => equalsIgnoreCaseAndAccents(x, extensionName));
+            const internalExtensionName = findExtension(extensionName);
             if (!internalExtensionName) {
                 toastr.warning(`Extension ${extensionName} does not exist.`);
                 return '';
@@ -214,7 +241,7 @@ export function registerExtensionSlashCommands() {
                 description: 'Extension name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: () => extensionNames.map(name => new SlashCommandEnumValue(name)),
+                enumProvider: extensionNamesEnumProvider,
                 forceEnum: true,
             }),
         ],
@@ -237,7 +264,7 @@ export function registerExtensionSlashCommands() {
         aliases: ['extension-installed'],
         callback: async (_, extensionName) => {
             if (typeof extensionName !== 'string') throw new Error('Extension name must be a string. Closures or arrays are not allowed.');
-            const exists = extensionNames.find(x => equalsIgnoreCaseAndAccents(x, extensionName)) !== undefined;
+            const exists = findExtension(extensionName) !== undefined;
             return exists ? 'true' : 'false';
         },
         unnamedArgumentList: [
@@ -245,8 +272,7 @@ export function registerExtensionSlashCommands() {
                 description: 'Extension name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: () => extensionNames.map(name => new SlashCommandEnumValue(name)),
-                forceEnum: true,
+                enumProvider: extensionNamesEnumProvider,
             }),
         ],
         helpString: `
@@ -257,7 +283,7 @@ export function registerExtensionSlashCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code class="language-stscript">/extension-exists LALib</code></pre>
+                        <pre><code class="language-stscript">/extension-exists SillyTavern-LALib</code></pre>
                     </li>
                 </ul>
             </div>
