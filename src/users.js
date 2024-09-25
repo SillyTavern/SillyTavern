@@ -347,6 +347,8 @@ async function migrateSystemPrompts() {
             if (fs.existsSync(migrateMarker)) {
                 continue;
             }
+            const backupsPath = path.join(directory.backups, '_sysprompt');
+            fs.mkdirSync(backupsPath, { recursive: true });
             const defaultPrompts = await getDefaultSystemPrompts();
             const instucts = fs.readdirSync(directory.instruct);
             let migratedPrompts = [];
@@ -356,6 +358,8 @@ async function migrateSystemPrompts() {
                 if (path.extname(instruct) === '.json' && !fs.existsSync(sysPromptPath)) {
                     const instructData = JSON.parse(fs.readFileSync(instructPath, 'utf8'));
                     if ('system_prompt' in instructData && 'name' in instructData) {
+                        const backupPath = path.join(backupsPath, `${instructData.name}.json`);
+                        fs.cpSync(instructPath, backupPath, { force: true });
                         const syspromptData = { name: instructData.name, content: instructData.system_prompt };
                         migratedPrompts.push(syspromptData);
                         delete instructData.system_prompt;
@@ -374,8 +378,8 @@ async function migrateSystemPrompts() {
                 console.log(`Migrated system prompt ${sysPromptData.name} for ${directory.root.split(path.sep).pop()}`);
             }
             writeFileAtomicSync(migrateMarker, '');
-        } catch {
-            // Ignore errors
+        } catch (error) {
+            console.error('Error migrating system prompts:', error);
         }
     }
 }
