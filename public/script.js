@@ -96,11 +96,10 @@ import {
     openai_messages_count,
     chat_completion_sources,
     getChatCompletionModel,
-    isOpenRouterWithInstruct,
     proxies,
     loadProxyPresets,
     selected_proxy,
-    initOpenai,
+    initOpenAI,
 } from './scripts/openai.js';
 
 import {
@@ -211,7 +210,7 @@ import {
     selectContextPreset,
 } from './scripts/instruct-mode.js';
 import { initLocales, t, translate } from './scripts/i18n.js';
-import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
+import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache, TOKENIZER_SUPPORTED_KEY } from './scripts/tokenizers.js';
 import {
     user_avatar,
     getUserAvatars,
@@ -244,6 +243,7 @@ import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/Slash
 import { commonEnumProviders, enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
 import { initInputMarkdown } from './scripts/input-md-formatting.js';
 import { AbortReason } from './scripts/util/AbortReason.js';
+import { initSystemPrompts } from './scripts/sysprompt.js';
 
 //exporting functions and vars for mods
 export {
@@ -412,6 +412,7 @@ export const event_types = {
     MESSAGE_FILE_EMBEDDED: 'message_file_embedded',
     IMPERSONATE_READY: 'impersonate_ready',
     CHAT_CHANGED: 'chat_id_changed',
+    GENERATION_AFTER_COMMANDS: 'GENERATION_AFTER_COMMANDS',
     GENERATION_STARTED: 'generation_started',
     GENERATION_STOPPED: 'generation_stopped',
     GENERATION_ENDED: 'generation_ended',
@@ -929,9 +930,12 @@ async function firstLoadInit() {
     addSafariPatch();
     await getClientVersion();
     await readSecretState();
-    initLocales();
+    await initLocales();
     initDefaultSlashCommands();
     initTextGenModels();
+    initOpenAI();
+    initSystemPrompts();
+    await initPresetManager();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     sendSystemMessage(system_message_types.WELCOME_PROMPT);
@@ -939,13 +943,11 @@ async function firstLoadInit() {
     initKeyboard();
     initDynamicStyles();
     initTags();
-    initOpenai();
     initBookmarks();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
     await initTokenizers();
-    await initPresetManager();
     initBackgrounds();
     initAuthorsNote();
     initPersonas();
@@ -1214,6 +1216,9 @@ async function getStatusTextgen() {
 
         // Determine instruct mode preset
         autoSelectInstructPreset(online_status);
+
+        const supportsTokenization = response.headers.get('x-supports-tokenization') === 'true';
+        supportsTokenization ? sessionStorage.setItem(TOKENIZER_SUPPORTED_KEY, 'true') : sessionStorage.removeItem(TOKENIZER_SUPPORTED_KEY);
 
         // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
         if (online_status === 'no_connection' && data.response) {
@@ -3339,6 +3344,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     setGenerationProgress(0);
     generation_started = new Date();
 
+    // Occurs every time, even if the generation is aborted due to slash commands execution
+    await eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
+
     // Don't recreate abort controller if signal is passed
     if (!(abortController && signal)) {
         abortController = new AbortController();
@@ -3358,7 +3366,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
     }
 
-    await eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
+    // Occurs only if the generation is not aborted due to slash commands execution
+    await eventSource.emit(event_types.GENERATION_AFTER_COMMANDS, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
 
     if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
         toastr.error('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
@@ -3517,9 +3526,14 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         jailbreak,
     } = getCharacterCardFields();
 
-    if (isInstruct) {
-        system = power_user.prefer_character_prompt && system ? system : baseChatReplace(power_user.instruct.system_prompt, name1, name2);
-        system = formatInstructModeSystemPrompt(substituteParams(system, name1, name2, power_user.instruct.system_prompt));
+    if (main_api !== 'openai') {
+        if (power_user.sysprompt.enabled) {
+            system = power_user.prefer_character_prompt && system ? system : baseChatReplace(power_user.sysprompt.content, name1, name2);
+            system = isInstruct ? formatInstructModeSystemPrompt(substituteParams(system, name1, name2, power_user.sysprompt.content)) : system;
+        } else {
+            // Nullify if it's not enabled
+            system = '';
+        }
     }
 
     // Depth prompt (character-specific A/N)
@@ -3772,7 +3786,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         personality: personality,
         persona: power_user.persona_description_position == persona_description_positions.IN_PROMPT ? persona : '',
         scenario: scenario,
-        system: isInstruct ? system : '',
+        system: system,
         char: name2,
         user: name1,
         wiBefore: worldInfoBefore,
@@ -3931,8 +3945,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     if (isContinue) {
         // Coping mechanism for OAI spacing
-        const isForceInstruct = isOpenRouterWithInstruct();
-        if (main_api === 'openai' && !isForceInstruct && !cyclePrompt.endsWith(' ')) {
+        if (main_api === 'openai' && !cyclePrompt.endsWith(' ')) {
             cyclePrompt += oai_settings.continue_postfix;
             continue_mag += oai_settings.continue_postfix;
         }
@@ -4346,7 +4359,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             this_max_context: this_max_context,
             padding: power_user.token_padding,
             main_api: main_api,
-            instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && system ? system : power_user.instruct.system_prompt) : '',
+            instruction: main_api !== 'openai' && power_user.sysprompt.enabled ? substituteParams(power_user.prefer_character_prompt && system ? system : power_user.sysprompt.content) : '',
             userPersona: (power_user.persona_description_position == persona_description_positions.IN_PROMPT ? (persona || '') : ''),
             tokenizer: getFriendlyTokenizerName(main_api).tokenizerName || '',
         };
@@ -4844,6 +4857,13 @@ export function getMaxContextSize(overrideResponseLength = null) {
                 this_max_context = subscriptionLimit;
                 console.log(`NovelAI subscription limit reached. Max context size is now ${this_max_context}`);
             }
+        }
+        if (nai_settings.model_novel.includes('erato')) {
+            // subscriber limits coming soon
+            this_max_context = Math.min(max_context, 8192);
+
+            // Added special tokens and whatnot
+            this_max_context -= 1;
         }
 
         this_max_context = this_max_context - (overrideResponseLength || amount_gen);
@@ -5472,7 +5492,7 @@ export function cleanUpMessage(getMessage, isImpersonate, isContinue, displayInc
     }
 
     if (!displayIncompleteSentences && power_user.trim_sentences) {
-        getMessage = trimToEndSentence(getMessage, power_user.include_newline);
+        getMessage = trimToEndSentence(getMessage);
     }
 
     if (power_user.trim_spaces) {

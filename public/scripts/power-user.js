@@ -50,6 +50,7 @@ import { AUTOCOMPLETE_SELECT_KEY, AUTOCOMPLETE_WIDTH } from './autocomplete/Auto
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { POPUP_TYPE, callGenericPopup } from './popup.js';
+import { loadSystemPrompts } from './sysprompt.js';
 
 export {
     loadPowerUserSettings,
@@ -114,7 +115,6 @@ let power_user = {
     pin_examples: false,
     strip_examples: false,
     trim_sentences: false,
-    include_newline: false,
     always_force_name2: false,
     user_prompt_bias: '',
     show_user_prompt_bias: true,
@@ -206,11 +206,9 @@ let power_user = {
     disable_group_trimming: false,
     single_line: false,
 
-    default_instruct: '',
     instruct: {
         enabled: false,
         preset: 'Alpaca',
-        system_prompt: 'Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}\'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n',
         input_sequence: '### Instruction:',
         input_suffix: '',
         output_sequence: '### Response:',
@@ -234,7 +232,6 @@ let power_user = {
         separator_sequence: '',
     },
 
-    default_context: 'Default',
     context: {
         preset: 'Default',
         story_string: defaultStoryString,
@@ -243,6 +240,12 @@ let power_user = {
         use_stop_strings: true,
         allow_jailbreak: false,
         names_as_stop_strings: true,
+    },
+
+    sysprompt: {
+        enabled: true,
+        name: 'Neutral - Chat',
+        content: 'Write {{char}}\'s next reply in a fictional chat between {{char}} and {{user}}.',
     },
 
     personas: {},
@@ -317,7 +320,6 @@ const contextControls = [
     // Existing power user settings
     { id: 'always-force-name2-checkbox', property: 'always_force_name2', isCheckbox: true, isGlobalSetting: true, defaultValue: true },
     { id: 'trim_sentences_checkbox', property: 'trim_sentences', isCheckbox: true, isGlobalSetting: true, defaultValue: false },
-    { id: 'include_newline_checkbox', property: 'include_newline', isCheckbox: true, isGlobalSetting: true, defaultValue: false },
     { id: 'single_line', property: 'single_line', isCheckbox: true, isGlobalSetting: true, defaultValue: false },
 ];
 
@@ -1487,7 +1489,6 @@ async function loadPowerUserSettings(settings, data) {
     $('#collapse-newlines-checkbox').prop('checked', power_user.collapse_newlines);
     $('#always-force-name2-checkbox').prop('checked', power_user.always_force_name2);
     $('#trim_sentences_checkbox').prop('checked', power_user.trim_sentences);
-    $('#include_newline_checkbox').prop('checked', power_user.include_newline);
     $('#render_formulas').prop('checked', power_user.render_formulas);
     $('#disable_group_trimming').prop('checked', power_user.disable_group_trimming);
     $('#markdown_escape_strings').val(power_user.markdown_escape_strings);
@@ -1598,6 +1599,7 @@ async function loadPowerUserSettings(settings, data) {
     reloadMarkdownProcessor(power_user.render_formulas);
     await loadInstructMode(data);
     await loadContextSettings();
+    await loadSystemPrompts(data);
     loadMaxContextUnlocked();
     switchWaifuMode();
     switchSpoilerMode();
@@ -1817,29 +1819,8 @@ async function loadContextSettings() {
             }
         }
 
-        highlightDefaultContext();
         saveSettingsDebounced();
     });
-
-    $('#context_set_default').on('click', function () {
-        if (power_user.context.preset !== power_user.default_context) {
-            power_user.default_context = power_user.context.preset;
-            $(this).addClass('default');
-            toastr.info(`Default context template set to ${power_user.default_context}`);
-
-            highlightDefaultContext();
-
-            saveSettingsDebounced();
-        }
-    });
-
-    highlightDefaultContext();
-}
-
-function highlightDefaultContext() {
-    $('#context_set_default').toggleClass('default', power_user.default_context === power_user.context.preset);
-    $('#context_set_default').toggleClass('disabled', power_user.default_context === power_user.context.preset);
-    $('#context_delete_preset').toggleClass('disabled', power_user.default_context === power_user.context.preset);
 }
 
 /**
@@ -3069,19 +3050,6 @@ $(document).ready(() => {
     // if trim sentences is unchecked, include newline must be unchecked
     $('#trim_sentences_checkbox').change(function () {
         power_user.trim_sentences = !!$(this).prop('checked');
-        if (!$(this).prop('checked')) {
-            $('#include_newline_checkbox').prop('checked', false);
-            power_user.include_newline = false;
-        }
-        saveSettingsDebounced();
-    });
-
-    $('#include_newline_checkbox').change(function () {
-        power_user.include_newline = !!$(this).prop('checked');
-        if ($(this).prop('checked')) {
-            $('#trim_sentences_checkbox').prop('checked', true);
-            power_user.trim_sentences = true;
-        }
         saveSettingsDebounced();
     });
 

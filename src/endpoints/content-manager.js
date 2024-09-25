@@ -43,6 +43,7 @@ const CONTENT_TYPES = {
     CONTEXT: 'context',
     MOVING_UI: 'moving_ui',
     QUICK_REPLIES: 'quick_replies',
+    SYSPROMPT: 'sysprompt',
 };
 
 /**
@@ -56,7 +57,7 @@ function getDefaultPresets(directories) {
         const presets = [];
 
         for (const contentItem of contentIndex) {
-            if (contentItem.type.endsWith('_preset') || contentItem.type === 'instruct' || contentItem.type === 'context') {
+            if (contentItem.type.endsWith('_preset') || contentItem.type === 'instruct' || contentItem.type === 'context' || contentItem.type === 'sysprompt') {
                 contentItem.name = path.parse(contentItem.filename).name;
                 contentItem.folder = getTargetByType(contentItem.type, directories);
                 presets.push(contentItem);
@@ -218,6 +219,41 @@ function getContentIndex() {
 }
 
 /**
+ * Gets content by type and format.
+ * @param {string} type Type of content
+ * @param {'json'|'string'|'raw'} format Format of content
+ * @returns {string[]|Buffer[]} Array of content
+ */
+function getContentOfType(type, format) {
+    const contentIndex = getContentIndex();
+    const indexItems = contentIndex.filter((item) => item.type === type && item.folder);
+    const files = [];
+    for (const item of indexItems) {
+        if (!item.folder) {
+            continue;
+        }
+        try {
+            const filePath = path.join(item.folder, item.filename);
+            const fileContent = fs.readFileSync(filePath);
+            switch (format) {
+                case 'json':
+                    files.push(JSON.parse(fileContent.toString()));
+                    break;
+                case 'string':
+                    files.push(fileContent.toString());
+                    break;
+                case 'raw':
+                    files.push(fileContent);
+                    break;
+            }
+        } catch {
+            // Ignore errors
+        }
+    }
+    return files;
+}
+
+/**
  * Gets the target directory for the specified asset type.
  * @param {ContentType} type Asset type
  * @param {import('../users').UserDirectoryList} directories User directories
@@ -257,6 +293,8 @@ function getTargetByType(type, directories) {
             return directories.movingUI;
         case CONTENT_TYPES.QUICK_REPLIES:
             return directories.quickreplies;
+        case CONTENT_TYPES.SYSPROMPT:
+            return directories.sysprompt;
         default:
             return null;
     }
@@ -721,5 +759,6 @@ module.exports = {
     checkForNewContent,
     getDefaultPresets,
     getDefaultPresetFile,
+    getContentOfType,
     router,
 };

@@ -10,7 +10,8 @@ import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, o
 const { OOBA, TABBY, KOBOLDCPP, VLLM, APHRODITE, LLAMACPP, OPENROUTER, DREAMGEN } = textgen_types;
 
 export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
-const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
+export const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
+export const TOKENIZER_SUPPORTED_KEY = 'tokenizationSupported';
 
 export const tokenizers = {
     NONE: 0,
@@ -273,6 +274,9 @@ export function getTokenizerBestMatch(forApi) {
         if (nai_settings.model_novel.includes('kayra')) {
             return tokenizers.NERD2;
         }
+        if (nai_settings.model_novel.includes('erato')) {
+            return tokenizers.LLAMA3;
+        }
     }
     if (forApi === 'kobold' || forApi === 'textgenerationwebui' || forApi === 'koboldhorde') {
         // Try to use the API tokenizer if possible:
@@ -280,8 +284,9 @@ export function getTokenizerBestMatch(forApi) {
         // - Kobold must pass a version check
         // - Tokenizer haven't reported an error previously
         const hasTokenizerError = sessionStorage.getItem(TOKENIZER_WARNING_KEY);
+        const hasValidEndpoint = sessionStorage.getItem(TOKENIZER_SUPPORTED_KEY);
         const isConnected = online_status !== 'no_connection';
-        const isTokenizerSupported = TEXTGEN_TOKENIZERS.includes(textgen_settings.type);
+        const isTokenizerSupported = TEXTGEN_TOKENIZERS.includes(textgen_settings.type) && (textgen_settings.type !== OOBA || hasValidEndpoint);
 
         if (!hasTokenizerError && isConnected) {
             if (forApi === 'kobold' && kai_flags.can_use_tokenization) {
@@ -923,15 +928,20 @@ function countTokensFromTextgenAPI(str, resolve) {
 
 function apiFailureTokenCount(str) {
     console.error('Error counting tokens');
+    let shouldTryAgain = false;
 
     if (!sessionStorage.getItem(TOKENIZER_WARNING_KEY)) {
-        toastr.warning(
-            'Your selected API doesn\'t support the tokenization endpoint. Using estimated counts.',
-            'Error counting tokens',
-            { timeOut: 10000, preventDuplicates: true },
-        );
-
+        const bestMatchBefore = getTokenizerBestMatch(main_api);
         sessionStorage.setItem(TOKENIZER_WARNING_KEY, String(true));
+        const bestMatchAfter = getTokenizerBestMatch(main_api);
+        if ([tokenizers.API_TEXTGENERATIONWEBUI, tokenizers.API_KOBOLD].includes(bestMatchBefore) && bestMatchBefore !== bestMatchAfter) {
+            shouldTryAgain = true;
+        }
+    }
+
+    // Only try again if we guarantee not to be looped by the same error
+    if (shouldTryAgain && power_user.tokenizer === tokenizers.BEST_MATCH) {
+        return getTokenCount(str);
     }
 
     return guesstimate(str);

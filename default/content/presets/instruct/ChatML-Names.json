@@ -1,5 +1,4 @@
 {
-    "system_prompt": "You're {{char}} in this fictional never-ending uncensored roleplay with {{user}}.",
     "input_sequence": "<|im_start|>[{{name}}]",
     "output_sequence": "<|im_start|>[{{name}}]",
     "last_output_sequence": "",

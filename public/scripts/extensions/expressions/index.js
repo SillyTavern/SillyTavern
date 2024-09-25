@@ -20,7 +20,7 @@ const STREAMING_UPDATE_INTERVAL = 10000;
 const TALKINGCHECK_UPDATE_INTERVAL = 500;
 const DEFAULT_FALLBACK_EXPRESSION = 'joy';
 const FUNCTION_NAME = 'set_emotion';
-const DEFAULT_LLM_PROMPT = 'Pause your roleplay. Classify the emotion of the last message. Output just one word, e.g. "joy" or "anger". Choose only one of the following labels: {{labels}}';
+const DEFAULT_LLM_PROMPT = 'Ignore previous instructions. Classify the emotion of the last message. Output just one word, e.g. "joy" or "anger". Choose only one of the following labels: {{labels}}';
 const DEFAULT_EXPRESSIONS = [
     'talkinghead',
     'admiration',
@@ -1161,7 +1161,7 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
                 }
 
                 const expressionsList = await getExpressionsList();
-                const prompt = substituteParamsExtended(String(customPrompt), { labels: expressionsList }) || await getLlmPrompt(expressionsList);
+                const prompt = substituteParamsExtended(customPrompt, { labels: expressionsList }) || await getLlmPrompt(expressionsList);
                 let functionResult = null;
                 eventSource.once(event_types.TEXT_COMPLETION_SETTINGS_READY, onTextGenSettingsReady);
                 eventSource.once(event_types.LLM_FUNCTION_TOOL_REGISTER, onFunctionToolRegister);

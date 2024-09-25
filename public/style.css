@@ -2573,7 +2573,7 @@ select {
     -moz-appearance: none;
     -webkit-appearance: none;
     appearance: none;
-    padding: 3px 2px;
+    padding: 3px 5px;
     background-color: var(--black30a);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
@@ -2628,14 +2628,6 @@ select option:not(:checked) {
 .world_set,
 .toggleEnabled {
     color: var(--active) !important;
-}
-
-#context_set_default.default {
-    color: var(--preferred) !important;
-}
-
-#instruct_set_default.default {
-    color: var(--preferred) !important;
 }
 
 .displayBlock {
@@ -5476,4 +5468,13 @@ body:not(.movingUI) .drawer-content.maximized {
 
 #AdvancedFormatting .autoSetHeight {
     overflow-wrap: anywhere;
+}
+
+#InstructSequencesColumn summary {
+    font-size: 0.95em;
+    cursor: pointer;
+}
+
+#InstructSequencesColumn details:not(:last-of-type) {
+    margin-bottom: 5px;
 }

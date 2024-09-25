@@ -15,6 +15,11 @@ const badWordsList = [
     [19438], [43145], [26523], [41471], [2936], [85, 85], [49332], [7286], [1115], [24],
 ];
 
+const eratoBadWordsList = [
+    [16067], [933, 11144], [25106, 11144], [58, 106901, 16073, 33710, 25, 109933],
+    [933, 58, 11144], [128030], [58, 30591, 33503, 17663, 100204, 25, 11144],
+];
+
 const hypeBotBadWordsList = [
     [58], [60], [90], [92], [685], [1391], [1782], [2361], [3693], [4083], [4357], [4895],
     [5512], [5974], [7131], [8183], [8351], [8762], [8964], [8973], [9063], [11208],
@@ -42,10 +47,22 @@ const repPenaltyAllowList = [
         803, 1040, 49209, 4, 5, 6, 7, 8, 9, 10, 11, 12],
 ];
 
+const eratoRepPenWhitelist = [
+    6, 1, 11, 13, 25, 198, 12, 9, 8, 279, 264, 459, 323, 477, 539, 912, 374, 574, 1051, 1550, 1587, 4536, 5828, 15058,
+    3287, 3250, 1461, 1077, 813, 11074, 872, 1202, 1436, 7846, 1288, 13434, 1053, 8434, 617, 9167, 1047, 19117, 706,
+    12775, 649, 4250, 527, 7784, 690, 2834, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 1210, 1359, 608, 220, 596, 956,
+    3077, 44886, 4265, 3358, 2351, 2846, 311, 389, 315, 304, 520, 505, 430
+];
+
 // Ban the dinkus and asterism
 const logitBiasExp = [
     { 'sequence': [23], 'bias': -0.08, 'ensure_sequence_finish': false, 'generate_once': false },
     { 'sequence': [21], 'bias': -0.08, 'ensure_sequence_finish': false, 'generate_once': false },
+];
+
+const eratoLogitBiasExp = [
+    { 'sequence': [12488], 'bias': -0.08, 'ensure_sequence_finish': false, 'generate_once': false },
+    { 'sequence': [128041], 'bias': -0.08, 'ensure_sequence_finish': false, 'generate_once': false },
 ];
 
 function getBadWordsList(model) {
@@ -59,8 +76,38 @@ function getBadWordsList(model) {
         list = badWordsList;
     }
 
+    if (model.includes('erato')) {
+        list = eratoBadWordsList;
+    }
+
     // Clone the list so we don't modify the original
     return list.slice();
+}
+
+function getLogitBiasList(model) {
+    let list = [];
+
+    if (model.includes('erato')) {
+        list = eratoLogitBiasExp;
+    }
+
+    if (model.includes('clio') || model.includes('kayra')) {
+        list = logitBiasExp;
+    }
+
+    return list.slice();
+}
+
+function getRepPenaltyWhitelist(model) {
+    if (model.includes('clio') || model.includes('kayra')) {
+        return repPenaltyAllowList.flat();
+    }
+
+    if (model.includes('erato')) {
+        return eratoRepPenWhitelist.flat();
+    }
+
+    return null;
 }
 
 const router = express.Router();
@@ -116,11 +163,10 @@ router.post('/generate', jsonParser, async function (req, res) {
         controller.abort();
     });
 
-    const isNewModel = (req.body.model.includes('clio') || req.body.model.includes('kayra'));
+    // Add customized bad words for Clio, Kayra, and Erato
     const badWordsList = getBadWordsList(req.body.model);
 
-    // Add customized bad words for Clio and Kayra
-    if (isNewModel && Array.isArray(req.body.bad_words_ids)) {
+    if (Array.isArray(badWordsList) && Array.isArray(req.body.bad_words_ids)) {
         for (const badWord of req.body.bad_words_ids) {
             if (Array.isArray(badWord) && badWord.every(x => Number.isInteger(x))) {
                 badWordsList.push(badWord);
@@ -136,11 +182,13 @@ router.post('/generate', jsonParser, async function (req, res) {
     }
 
     // Add default biases for dinkus and asterism
-    const logit_bias_exp = isNewModel ? logitBiasExp.slice() : [];
+    const logitBiasList = getLogitBiasList(req.body.model);
 
-    if (Array.isArray(logit_bias_exp) && Array.isArray(req.body.logit_bias_exp)) {
-        logit_bias_exp.push(...req.body.logit_bias_exp);
+    if (Array.isArray(logitBiasList) && Array.isArray(req.body.logit_bias_exp)) {
+        logitBiasList.push(...req.body.logit_bias_exp);
     }
+
+    const repPenWhitelist = getRepPenaltyWhitelist(req.body.model);
 
     const data = {
         'input': req.body.input,
@@ -156,19 +204,17 @@ router.post('/generate', jsonParser, async function (req, res) {
             'repetition_penalty_slope': req.body.repetition_penalty_slope,
             'repetition_penalty_frequency': req.body.repetition_penalty_frequency,
             'repetition_penalty_presence': req.body.repetition_penalty_presence,
-            'repetition_penalty_whitelist': isNewModel ? repPenaltyAllowList.flat() : null,
+            'repetition_penalty_whitelist': repPenWhitelist,
             'top_a': req.body.top_a,
             'top_p': req.body.top_p,
             'top_k': req.body.top_k,
             'typical_p': req.body.typical_p,
             'mirostat_lr': req.body.mirostat_lr,
             'mirostat_tau': req.body.mirostat_tau,
-            'cfg_scale': req.body.cfg_scale,
-            'cfg_uc': req.body.cfg_uc,
             'phrase_rep_pen': req.body.phrase_rep_pen,
             'stop_sequences': req.body.stop_sequences,
             'bad_words_ids': badWordsList.length ? badWordsList : null,
-            'logit_bias_exp': logit_bias_exp,
+            'logit_bias_exp': logitBiasList,
             'generate_until_sentence': req.body.generate_until_sentence,
             'use_cache': req.body.use_cache,
             'return_full_text': req.body.return_full_text,
@@ -183,8 +229,13 @@ router.post('/generate', jsonParser, async function (req, res) {
     };
 
     // Tells the model to stop generation at '>'
-    if ('theme_textadventure' === req.body.prefix && isNewModel) {
-        data.parameters.eos_token_id = 49405;
+    if ('theme_textadventure' === req.body.prefix) {
+        if (req.body.model.includes('clio') || req.body.model.includes('kayra')) {
+            data.parameters.eos_token_id = 49405;
+        }
+        if (req.body.model.includes('erato')) {
+            data.parameters.eos_token_id = 29;
+        }
     }
 
     console.log(util.inspect(data, { depth: 4 }));
@@ -196,7 +247,7 @@ router.post('/generate', jsonParser, async function (req, res) {
     };
 
     try {
-        const baseURL = req.body.model.includes('kayra') ? TEXT_NOVELAI : API_NOVELAI;
+        const baseURL = (req.body.model.includes('kayra') || req.body.model.includes('erato')) ? TEXT_NOVELAI : API_NOVELAI;
         const url = req.body.streaming ? `${baseURL}/ai/generate-stream` : `${baseURL}/ai/generate`;
         const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
