@@ -390,10 +390,11 @@ async function renderDetailsContent(detailsContent) {
     const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
     if (profile) {
         const profileForDisplay = makeFancyProfile(profile);
+        const templateParams = { profile: profileForDisplay };
         if (Array.isArray(profile.exclude) && profile.exclude.length > 0) {
-            profileForDisplay['Omitted Settings'] = profile.exclude.map(e => FANCY_NAMES[e]).join(', ');
+            templateParams.omitted = profile.exclude.map(e => FANCY_NAMES[e]).join(', ');
         }
-        const template = await renderExtensionTemplateAsync(MODULE_NAME, 'view', { profile: profileForDisplay });
+        const template = await renderExtensionTemplateAsync(MODULE_NAME, 'view', templateParams);
         detailsContent.innerHTML = template;
     } else {
         detailsContent.textContent = 'No profile selected';
