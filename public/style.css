@@ -3245,8 +3245,9 @@ grammarly-extension {
 }
 
 .wide_dialogue_popup {
-    aspect-ratio: 1 / 1;
-    width: unset !important;
+    /* FIXME: Chrome 129 broke max-height for aspect-ratio sized elements */
+    /* aspect-ratio: 1 / 1; */
+    /* width: unset !important; */
     min-width: var(--sheldWidth);
 }
 
