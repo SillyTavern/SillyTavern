@@ -51,7 +51,7 @@ class GptSovitsV2Provider {
 
         <label for="tts_endpoint">Provider Endpoint:</label>
         <input id="tts_endpoint" type="text" class="text_pole" maxlength="250" height="300" value="${this.defaultSettings.provider_endpoint}"/>
-        <span>Use <a target="_blank" href="https://github.com/v3ucn/GPT-SoVITS-V2">GPT-SoVITS-V2</a>.</span><br/>
+        <span>Use <a target="_blank" href="https://github.com/v3ucn/GPT-SoVITS-V2">GPT-SoVITS-V2</a>(Unofficial).</span><br/>
         <label for="text_lang">Text Lang(Inference text language):</label>
         <input id="text_lang" type="text" class="text_pole" maxlength="250" height="300" value="${this.defaultSettings.text_lang}"/>
         <label for="text_lang">Prompt Lang(Reference audio text language):</label>
