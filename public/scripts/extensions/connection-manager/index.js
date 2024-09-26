@@ -534,7 +534,7 @@ async function renderDetailsContent(detailsContent) {
         const newName = await callGenericPopup(template, POPUP_TYPE.INPUT, profile.name, {
             customButtons: [{
                 text: 'Save and Update',
-                classes: ['primary'],
+                classes: ['popup-button-ok'],
                 result: POPUP_RESULT.AFFIRMATIVE,
                 action: () => {
                     saveChanges = true;
