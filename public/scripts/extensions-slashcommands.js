@@ -252,7 +252,7 @@ export function registerExtensionSlashCommands() {
             const isEnabled = !extension_settings.disabledExtensions.includes(internalExtensionName);
             return String(isEnabled);
         },
-        returns: '<code>true</code>/<code>false</code> - The state of the extension, whether it is enabled.',
+        returns: 'The state of the extension, whether it is enabled.',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'Extension name',
