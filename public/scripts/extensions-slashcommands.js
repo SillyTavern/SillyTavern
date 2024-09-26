@@ -284,7 +284,7 @@ export function registerExtensionSlashCommands() {
             const exists = findExtension(extensionName) !== undefined;
             return exists ? 'true' : 'false';
         },
-        returns: '<code>true</code>/<code>false</code> - Whether the extension exists and is installed.',
+        returns: 'Whether the extension exists and is installed.',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'Extension name',
