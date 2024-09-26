@@ -516,8 +516,9 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
         stoppingStrings.push(...additionalStopStrings);
     }
 
+    const MAX_STOP_SEQUENCES = 1024;
     const stopSequences = (tokenizerType !== tokenizers.NONE)
-        ? stoppingStrings.map(t => getTextTokens(tokenizerType, t))
+        ? stoppingStrings.slice(0, MAX_STOP_SEQUENCES).map(t => getTextTokens(tokenizerType, t))
         : undefined;
 
     const badWordIds = (tokenizerType !== tokenizers.NONE)
