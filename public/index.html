@@ -6090,7 +6090,10 @@
             <div class="alternate_grettings flexFlowColumn flex-container">
                 <div class="title_restorable">
                     <h3><span data-i18n="Alternate Greetings" class="mdhotkey_location">Alternate Greetings</span></h3>
-                    <div title="Add" class="menu_button fa-solid fa-plus add_alternate_greeting" data-i18n="[title]Add"></div>
+                    <div class="menu_button menu_button_icon add_alternate_greeting">
+                        <i class="fa-solid fa-plus"></i>
+                        <span data-i18n="Add">Add</span>
+                    </div>
                 </div>
                 <small class="justifyLeft" data-i18n="Alternate_Greetings_desc">
                     These will be displayed as swipes on the first message when starting a new chat.
@@ -6110,7 +6113,10 @@
                     <summary>
                         <div class="title_restorable">
                             <strong><span data-i18n="Alternate Greeting #">Alternate Greeting #</span><span class="greeting_index"></span></strong>
-                            <div class="menu_button fa-solid fa-trash-alt delete_alternate_greeting"></div>
+                            <div class="menu_button menu_button_icon delete_alternate_greeting">
+                                <i class="fa-solid fa-trash-alt"></i>
+                                <span data-i18n="Delete">Delete</span>
+                            </div>
                         </div>
                     </summary>
                     <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text mdHotkeys" value="" autocomplete="off" rows="12"></textarea>
