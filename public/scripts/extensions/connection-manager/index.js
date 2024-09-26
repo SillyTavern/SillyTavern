@@ -524,8 +524,9 @@ async function renderDetailsContent(detailsContent) {
         }
 
         let saveChanges = false;
+        const sortByViewOrder = (a, b) => Object.keys(FANCY_NAMES).indexOf(a) - Object.keys(FANCY_NAMES).indexOf(b);
         const commands = profile.mode === 'cc' ? CC_COMMANDS : TC_COMMANDS;
-        const settings = commands.reduce((acc, command) => {
+        const settings = commands.slice().sort(sortByViewOrder).reduce((acc, command) => {
             const fancyName = FANCY_NAMES[command];
             acc[fancyName] = !profile.exclude.includes(command);
             return acc;
