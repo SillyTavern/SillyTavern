@@ -1,6 +1,6 @@
 import { event_types, eventSource, main_api, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
-import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
+import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from '../../slash-commands/SlashCommandAbortController.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
@@ -523,6 +523,7 @@ async function renderDetailsContent(detailsContent) {
             profile.exclude = [];
         }
 
+        let saveChanges = false;
         const commands = profile.mode === 'cc' ? CC_COMMANDS : TC_COMMANDS;
         const settings = commands.reduce((acc, command) => {
             const fancyName = FANCY_NAMES[command];
@@ -530,7 +531,16 @@ async function renderDetailsContent(detailsContent) {
             return acc;
         }, {});
         const template = $(await renderExtensionTemplateAsync(MODULE_NAME, 'edit', { name: profile.name, settings }));
-        const newName = await callGenericPopup(template, POPUP_TYPE.INPUT, profile.name);
+        const newName = await callGenericPopup(template, POPUP_TYPE.INPUT, profile.name, {
+            customButtons: [{
+                text: 'Save and Update',
+                classes: ['primary'],
+                result: POPUP_RESULT.AFFIRMATIVE,
+                action: () => {
+                    saveChanges = true;
+                },
+            }],
+        });
 
         if (!newName) {
             return;
@@ -550,7 +560,11 @@ async function renderDetailsContent(detailsContent) {
             for (const command of newExcludeList) {
                 delete profile[command];
             }
-            toastr.info('Press "Update" to record them into the profile.', 'Included settings list updated');
+            if (saveChanges) {
+                await updateConnectionProfile(profile);
+            } else {
+                toastr.info('Press "Update" to record them into the profile.', 'Included settings list updated');
+            }
         }
 
         if (profile.name !== newName) {

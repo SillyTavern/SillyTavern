@@ -149,10 +149,12 @@ body.no-blur .popup[open]::backdrop {
     box-shadow: 0 0 5px var(--white20a);
 }
 
+.menu_button.primary,
 .menu_button.popup-button-ok {
     background-color: var(--crimson70a);
 }
 
+.menu_button.primary:hover,
 .menu_button.popup-button-ok:hover {
     background-color: var(--crimson-hover);
 }
