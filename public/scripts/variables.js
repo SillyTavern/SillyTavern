@@ -12,7 +12,7 @@ import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCom
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
-import { isFalseBoolean, convertValueType } from './utils.js';
+import { isFalseBoolean, convertValueType, isTrueBoolean } from './utils.js';
 
 /** @typedef {import('./slash-commands/SlashCommandParser.js').NamedArguments} NamedArguments */
 /** @typedef {import('./slash-commands/SlashCommand.js').UnnamedArguments} UnnamedArguments */
@@ -488,7 +488,7 @@ function existsGlobalVariable(name) {
 /**
  * Parses boolean operands from command arguments.
  * @param {object} args Command arguments
- * @returns {{a: string | number, b: string | number, rule: string}} Boolean operands
+ * @returns {{a: string | number, b: string | number?, rule: string}} Boolean operands
  */
 export function parseBooleanOperands(args) {
     // Resolution order: numeric literal, local variable, global variable, string literal
@@ -497,6 +497,9 @@ export function parseBooleanOperands(args) {
      */
     function getOperand(operand) {
         if (operand === undefined) {
+            return undefined;
+        }
+        if (operand === '') {
             return '';
         }
 
@@ -525,8 +528,8 @@ export function parseBooleanOperands(args) {
         return stringLiteral || '';
     }
 
-    const left = getOperand(args.a || args.left || args.first || args.x);
-    const right = getOperand(args.b || args.right || args.second || args.y);
+    const left = getOperand(args.a ?? args.left ?? args.first ?? args.x);
+    const right = getOperand(args.b ?? args.right ?? args.second ?? args.y);
     const rule = args.rule;
 
     return { a: left, b: right, rule };
@@ -534,84 +537,79 @@ export function parseBooleanOperands(args) {
 
 /**
  * Evaluates a boolean comparison rule.
- * @param {string} rule Boolean comparison rule
+ *
+ * @param {string?} rule Boolean comparison rule
  * @param {string|number} a The left operand
- * @param {string|number} b The right operand
+ * @param {string|number?} b The right operand
  * @returns {boolean} True if the rule yields true, false otherwise
  */
 export function evalBoolean(rule, a, b) {
-    if (!rule) {
-        toastr.warning('The rule must be specified for the boolean comparison.', 'Invalid command');
-        throw new Error('Invalid command.');
+    if (a === undefined) {
+        throw new Error('Left operand is not provided');
     }
 
-    let result = false;
+    // If right-hand side was not provided, whe just check if the left side is truthy
+    if (b === undefined) {
+        switch (rule) {
+            case undefined:
+            case 'not': {
+                const resultOnTruthy = rule !== 'not';
+                if (isTrueBoolean(String(a))) return resultOnTruthy;
+                if (isFalseBoolean(String(a))) return !resultOnTruthy;
+                return a ? resultOnTruthy : !resultOnTruthy;
+            }
+            default:
+                throw new Error(`Unknown boolean comparison rule for truthy check. If right operand is not provided, the rule must not provided or be 'not'. Provided: ${rule}`);
+        }
+    }
+
+    // If no rule was provided, we are implicitly using 'eq', as defined for the slash commands
+    rule ??= 'eq';
+
     if (typeof a === 'number' && typeof b === 'number') {
         // only do numeric comparison if both operands are numbers
         const aNumber = Number(a);
         const bNumber = Number(b);
 
         switch (rule) {
-            case 'not':
-                result = !aNumber;
-                break;
             case 'gt':
-                result = aNumber > bNumber;
-                break;
+                return aNumber > bNumber;
             case 'gte':
-                result = aNumber >= bNumber;
-                break;
+                return aNumber >= bNumber;
             case 'lt':
-                result = aNumber < bNumber;
-                break;
+                return aNumber < bNumber;
             case 'lte':
-                result = aNumber <= bNumber;
-                break;
+                return aNumber <= bNumber;
             case 'eq':
-                result = aNumber === bNumber;
-                break;
+                return aNumber === bNumber;
             case 'neq':
-                result = aNumber !== bNumber;
-                break;
-            default:
-                toastr.error('Unknown boolean comparison rule for type number.', 'Invalid command');
-                throw new Error('Invalid command.');
-        }
-    } else {
-        // otherwise do case-insensitive string comparsion, stringify non-strings
-        let aString;
-        let bString;
-        if (typeof a == 'string') {
-            aString = a.toLowerCase();
-        } else {
-            aString = JSON.stringify(a).toLowerCase();
-        }
-        if (typeof b == 'string') {
-            bString = b.toLowerCase();
-        } else {
-            bString = JSON.stringify(b).toLowerCase();
-        }
-
-        switch (rule) {
+                return aNumber !== bNumber;
             case 'in':
-                result = aString.includes(bString);
-                break;
             case 'nin':
-                result = !aString.includes(bString);
-                break;
-            case 'eq':
-                result = aString === bString;
-                break;
-            case 'neq':
-                result = aString !== bString;
+                // Fall through to string comparison. Otherwise you could not check if 12345 contains 45 for example.
+                console.debug(`Boolean comparison rule '${rule}' is not supported for type number. Falling back to string comparison.`);
                 break;
             default:
-                toastr.error('Unknown boolean comparison rule for type string.', 'Invalid /if command');
-                throw new Error('Invalid command.');
+                throw new Error(`Unknown boolean comparison rule for type number. Accepted: gt, gte, lt, lte, eq, neq. Provided: ${rule}`);
         }
     }
 
-    return result;
+    // otherwise do case-insensitive string comparsion, stringify non-strings
+    let aString = (typeof a === 'string') ? a.toLowerCase() : JSON.stringify(a).toLowerCase();
+    let bString = (typeof b === 'string') ? b.toLowerCase() : JSON.stringify(b).toLowerCase();
+
+    switch (rule) {
+        case 'in':
+            return aString.includes(bString);
+        case 'nin':
+            return !aString.includes(bString);
+        case 'eq':
+            return aString === bString;
+        case 'neq':
+            return aString !== bString;
+        default:
+            throw new Error(`Unknown boolean comparison rule for type number. Accepted: in, nin, eq, neq. Provided: ${rule}`);
+    }
 }
 
 /**
@@ -1317,32 +1315,36 @@ export function registerVariableCommands() {
                 typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
                 isRequired: true,
                 enumProvider: commonEnumProviders.variables('all'),
-                forceEnum: false,
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'right',
                 description: 'right operand',
                 typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
-                isRequired: true,
                 enumProvider: commonEnumProviders.variables('all'),
-                forceEnum: false,
             }),
-            new SlashCommandNamedArgument(
-                'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, [
-                new SlashCommandEnumValue('gt', 'a > b'),
-                new SlashCommandEnumValue('gte', 'a >= b'),
-                new SlashCommandEnumValue('lt', 'a < b'),
-                new SlashCommandEnumValue('lte', 'a <= b'),
-                new SlashCommandEnumValue('eq', 'a == b'),
-                new SlashCommandEnumValue('neq', 'a !== b'),
-                new SlashCommandEnumValue('not', '!a'),
-                new SlashCommandEnumValue('in', 'a includes b'),
-                new SlashCommandEnumValue('nin', 'a not includes b'),
-            ],
-            ),
-            new SlashCommandNamedArgument(
-                'else', 'command to execute if not true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], false,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'rule',
+                description: 'comparison rule',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'eq',
+                enumList: [
+                    new SlashCommandEnumValue('eq', 'a == b (strings & numbers)'),
+                    new SlashCommandEnumValue('neq', 'a !== b (strings & numbers)'),
+                    new SlashCommandEnumValue('in', 'a includes b (strings & numbers as strings)'),
+                    new SlashCommandEnumValue('nin', 'a not includes b (strings & numbers as strings)'),
+                    new SlashCommandEnumValue('gt', 'a > b (numbers)'),
+                    new SlashCommandEnumValue('gte', 'a >= b (numbers)'),
+                    new SlashCommandEnumValue('lt', 'a < b (numbers)'),
+                    new SlashCommandEnumValue('lte', 'a <= b (numbers)'),
+                    new SlashCommandEnumValue('not', '!a (truthy)'),
+                ],
+                forceEnum: true,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'else',
+                description: 'command to execute if not true',
+                typeList: [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND],
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -1360,17 +1362,25 @@ export function registerVariableCommands() {
                 Numeric values and string literals for left and right operands supported.
             </div>
             <div>
+                If the rule is not provided, it defaults to <code>eq</code>.
+            </div>
+            <div>
+                If no right operand is provided, it defaults to checking the <code>left</code> value to be truthy.
+                A non-empty string or non-zero number is considered truthy, as is the value <code>true</code> or <code>on</code>.<br />
+                Only acceptable rules for no provided right operand are <code>not</code>, and no provided rule - which default to returning whether it is not or is truthy.
+            </div>
+            <div>
                 <strong>Available rules:</strong>
                 <ul>
-                    <li>gt => a > b</li>
-                    <li>gte => a >= b</li>
-                    <li>lt => a < b</li>
-                    <li>lte => a <= b</li>
-                    <li>eq => a == b</li>
-                    <li>neq => a != b</li>
-                    <li>not => !a</li>
-                    <li>in (strings) => a includes b</li>
-                    <li>nin (strings) => a not includes b</li>
+                    <li><code>eq</code> => a == b <small>(strings & numbers)</small></li>
+                    <li><code>neq</code> => a !== b <small>(strings & numbers)</small></li>
+                    <li><code>in</code> => a includes b <small>(strings & numbers as strings)</small></li>
+                    <li><code>nin</code> => a not includes b <small>(strings & numbers as strings)</small></li>
+                    <li><code>gt</code> => a > b <small>(numbers)</small></li>
+                    <li><code>gte</code> => a >= b <small>(numbers)</small></li>
+                    <li><code>lt</code> => a < b <small>(numbers)</small></li>
+                    <li><code>lte</code> => a <= b <small>(numbers)</small></li>
+                    <li><code>not</code> => !a <small>(truthy)</small></li>
                 </ul>
             </div>
             <div>
@@ -1379,6 +1389,17 @@ export function registerVariableCommands() {
                     <li>
                         <pre><code class="language-stscript">/if left=score right=10 rule=gte "/speak You win"</code></pre>
                         triggers a /speak command if the value of "score" is greater or equals 10.
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/if left={{lastMessage}} rule=in right=surprise {: /echo SURPISE! :}</code></pre>
+                        executes a subcommand defined as a closure if the given value contains a specified word.
+                    <li>
+                        <pre><code class="language-stscript">/if left=myContent {: /echo My content had some content. :}</code></pre>
+                        executes the defined subcommand, if the provided value of left is truthy (contains some kind of contant that is not empty or false)
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/if left=tree right={{getvar::object}} {: /echo The object is a tree! :}</code></pre>
+                        executes the defined subcommand, if the left and right values are equals.
                     </li>
                 </ul>
             </div>
@@ -1395,32 +1416,38 @@ export function registerVariableCommands() {
                 typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
                 isRequired: true,
                 enumProvider: commonEnumProviders.variables('all'),
-                forceEnum: false,
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'right',
                 description: 'right operand',
                 typeList: [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER],
-                isRequired: true,
                 enumProvider: commonEnumProviders.variables('all'),
-                forceEnum: false,
             }),
-            new SlashCommandNamedArgument(
-                'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, [
-                new SlashCommandEnumValue('gt', 'a > b'),
-                new SlashCommandEnumValue('gte', 'a >= b'),
-                new SlashCommandEnumValue('lt', 'a < b'),
-                new SlashCommandEnumValue('lte', 'a <= b'),
-                new SlashCommandEnumValue('eq', 'a == b'),
-                new SlashCommandEnumValue('neq', 'a !== b'),
-                new SlashCommandEnumValue('not', '!a'),
-                new SlashCommandEnumValue('in', 'a includes b'),
-                new SlashCommandEnumValue('nin', 'a not includes b'),
-            ],
-            ),
-            new SlashCommandNamedArgument(
-                'guard', 'disable loop iteration limit', [ARGUMENT_TYPE.STRING], false, false, null, commonEnumProviders.boolean('onOff')(),
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'rule',
+                description: 'comparison rule',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'eq',
+                enumList: [
+                    new SlashCommandEnumValue('eq', 'a == b (strings & numbers)'),
+                    new SlashCommandEnumValue('neq', 'a !== b (strings & numbers)'),
+                    new SlashCommandEnumValue('in', 'a includes b (strings & numbers as strings)'),
+                    new SlashCommandEnumValue('nin', 'a not includes b (strings & numbers as strings)'),
+                    new SlashCommandEnumValue('gt', 'a > b (numbers)'),
+                    new SlashCommandEnumValue('gte', 'a >= b (numbers)'),
+                    new SlashCommandEnumValue('lt', 'a < b (numbers)'),
+                    new SlashCommandEnumValue('lte', 'a <= b (numbers)'),
+                    new SlashCommandEnumValue('not', '!a (truthy)'),
+                ],
+                forceEnum: true,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'guard',
+                description: 'disable loop iteration limit',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'off',
+                enumList: commonEnumProviders.boolean('onOff')(),
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -1439,15 +1466,15 @@ export function registerVariableCommands() {
             <div>
                 <strong>Available rules:</strong>
                 <ul>
-                    <li>gt => a > b</li>
-                    <li>gte => a >= b</li>
-                    <li>lt => a < b</li>
-                    <li>lte => a <= b</li>
-                    <li>eq => a == b</li>
-                    <li>neq => a != b</li>
-                    <li>not => !a</li>
-                    <li>in (strings) => a includes b</li>
-                    <li>nin (strings) => a not includes b</li>
+                    <li><code>eq</code> => a == b <small>(strings & numbers)</small></li>
+                    <li><code>neq</code> => a !== b <small>(strings & numbers)</small></li>
+                    <li><code>in</code> => a includes b <small>(strings & numbers as strings)</small></li>
+                    <li><code>nin</code> => a not includes b <small>(strings & numbers as strings)</small></li>
+                    <li><code>gt</code> => a > b <small>(numbers)</small></li>
+                    <li><code>gte</code> => a >= b <small>(numbers)</small></li>
+                    <li><code>lt</code> => a < b <small>(numbers)</small></li>
+                    <li><code>lte</code> => a <= b <small>(numbers)</small></li>
+                    <li><code>not</code> => !a <small>(truthy)</small></li>
                 </ul>
             </div>
             <div>
@@ -1457,7 +1484,11 @@ export function registerVariableCommands() {
                         <pre><code class="language-stscript">/setvar key=i 0 | /while left=i right=10 rule=lte "/addvar key=i 1"</code></pre>
                         adds 1 to the value of "i" until it reaches 10.
                     </li>
-                </ul>
+                    <li>
+                        <pre><code class="language-stscript">/while left={{getvar::currentword}} {: /setvar key=currentword {: /do-something-and-return :}() | /echo The current work is "{{getvar::currentword}}" :}</code></pre>
+                        executes the defined subcommand as long as the "currentword" variable is truthy (has any content that is not false/empty)
+                        </ul>
+                        </li>
             </div>
             <div>
                 Loops are limited to 100 iterations by default, pass <code>guard=off</code> to disable.
@@ -1572,7 +1603,7 @@ export function registerVariableCommands() {
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
                 acceptsMultiple: true,
-                enumProvider: (executor, scope)=>{
+                enumProvider: (executor, scope) => {
                     const vars = commonEnumProviders.variables('all')(executor, scope);
                     vars.push(
                         new SlashCommandEnumValue(
@@ -1580,16 +1611,16 @@ export function registerVariableCommands() {
                             null,
                             enumTypes.variable,
                             enumIcons.variable,
-                            (input)=>/^\w*$/.test(input),
-                            (input)=>input,
+                            (input) => /^\w*$/.test(input),
+                            (input) => input,
                         ),
                         new SlashCommandEnumValue(
                             'any number',
                             null,
                             enumTypes.number,
                             enumIcons.number,
-                            (input)=>input == '' || !Number.isNaN(Number(input)),
-                            (input)=>input,
+                            (input) => input == '' || !Number.isNaN(Number(input)),
+                            (input) => input,
                         ),
                     );
                     return vars;
