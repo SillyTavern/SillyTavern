@@ -538,7 +538,7 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
 
 
     if (isErato) {
-        finalPrompt = '<|startoftext|>' + finalPrompt;
+        finalPrompt = '<|startoftext|><|reserved_special_token81|>' + finalPrompt;
     }
 
     const adjustedMaxLength = (isKayra || isErato) ? getKayraMaxResponseTokens() : maximum_output_length;

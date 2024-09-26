@@ -4863,7 +4863,7 @@ export function getMaxContextSize(overrideResponseLength = null) {
             this_max_context = Math.min(max_context, 8192);
 
             // Added special tokens and whatnot
-            this_max_context -= 1;
+            this_max_context -= 10;
         }
 
         this_max_context = this_max_context - (overrideResponseLength || amount_gen);
