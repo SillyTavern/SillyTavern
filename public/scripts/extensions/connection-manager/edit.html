@@ -3,11 +3,7 @@
     <div class="justifyLeft flex-container flexFlowColumn flexNoGap">
         {{#each settings}}
         <label class="checkbox_label">
-            {{#if this}}
-                <input type="checkbox" value="{{@key}}" name="exclude" checked>
-            {{else}}
-                <input type="checkbox" value="{{@key}}" name="exclude">
-            {{/if}}
+            <input type="checkbox" value="{{@key}}" name="exclude"{{#if this}} checked{{/if}}>
             <span>{{@key}}</span>
         </label>
         {{/each}}
