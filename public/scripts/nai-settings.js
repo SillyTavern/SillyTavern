@@ -510,6 +510,10 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
                 additionalStopStrings.push('"' + stoppingString);
                 additionalStopStrings.push('_' + stoppingString);
                 additionalStopStrings.push('...' + stoppingString);
+                additionalStopStrings.push('."' + stoppingString);
+                additionalStopStrings.push('?"' + stoppingString);
+                additionalStopStrings.push('!"' + stoppingString);
+                additionalStopStrings.push('.*' + stoppingString);
                 additionalStopStrings.push(')' + stoppingString);
             }
         }
