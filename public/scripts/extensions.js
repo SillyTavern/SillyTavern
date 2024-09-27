@@ -1,5 +1,5 @@
 import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration } from '../script.js';
-import { hideLoader, showLoader } from './loader.js';
+import { showLoader } from './loader.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { renderTemplate, renderTemplateAsync } from './templates.js';
 import { isSubsetOf, setValueByPath } from './utils.js';
@@ -14,7 +14,9 @@ export {
     ModuleWorkerWrapper,
 };
 
+/** @type {string[]} */
 export let extensionNames = [];
+
 let manifests = {};
 const defaultUrl = 'http://localhost:5100';
 
@@ -29,7 +31,6 @@ export function saveMetadataDebounced() {
     const characterId = context.characterId;
 
     if (saveMetadataTimeout) {
-        console.debug('Clearing save metadata timeout');
         clearTimeout(saveMetadataTimeout);
     }
 
@@ -122,6 +123,11 @@ const extension_settings = {
     expressions: {
         /** @type {string[]} */
         custom: [],
+    },
+    connectionManager: {
+        selectedProfile: '',
+        /** @type {import('./extensions/connection-manager/index.js').ConnectionProfile[]} */
+        profiles: [],
     },
     dice: {},
     /** @type {import('./char-data.js').RegexScriptData[]} */
@@ -237,7 +243,7 @@ function onEnableExtensionClick() {
     enableExtension(name, false);
 }
 
-async function enableExtension(name, reload = true) {
+export async function enableExtension(name, reload = true) {
     extension_settings.disabledExtensions = extension_settings.disabledExtensions.filter(x => x !== name);
     stateChanged = true;
     await saveSettings();
@@ -248,7 +254,7 @@ async function enableExtension(name, reload = true) {
     }
 }
 
-async function disableExtension(name, reload = true) {
+export async function disableExtension(name, reload = true) {
     extension_settings.disabledExtensions.push(name);
     stateChanged = true;
     await saveSettings();
@@ -822,16 +828,17 @@ export async function installExtension(url) {
     const response = await request.json();
     toastr.success(`Extension "${response.display_name}" by ${response.author} (version ${response.version}) has been installed successfully!`, 'Extension installation successful');
     console.debug(`Extension "${response.display_name}" has been installed successfully at ${response.extensionPath}`);
-    await loadExtensionSettings({}, false);
-    eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+    await loadExtensionSettings({}, false, false);
+    await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
 }
 
 /**
  * Loads extension settings from the app settings.
  * @param {object} settings App Settings
  * @param {boolean} versionChanged Is this a version change?
+ * @param {boolean} enableAutoUpdate Enable auto-update
  */
-async function loadExtensionSettings(settings, versionChanged) {
+async function loadExtensionSettings(settings, versionChanged, enableAutoUpdate) {
     if (settings.extension_settings) {
         Object.assign(extension_settings, settings.extension_settings);
     }
@@ -842,11 +849,11 @@ async function loadExtensionSettings(settings, versionChanged) {
     $('#extensions_notify_updates').prop('checked', extension_settings.notifyUpdates);
 
     // Activate offline extensions
-    eventSource.emit(event_types.EXTENSIONS_FIRST_LOAD);
+    await eventSource.emit(event_types.EXTENSIONS_FIRST_LOAD);
     extensionNames = await discoverExtensions();
     manifests = await getManifests(extensionNames);
 
-    if (versionChanged) {
+    if (versionChanged && enableAutoUpdate) {
         await autoUpdateExtensions(false);
     }
 
@@ -1036,7 +1043,9 @@ export async function openThirdPartyExtensionMenu(suggestUrl = '') {
     await installExtension(url);
 }
 
-jQuery(async function () {
+
+
+export async function initExtensions() {
     await addExtensionsButtonAndMenu();
     $('#extensionsMenuButton').css('display', 'flex');
 
@@ -1055,4 +1064,4 @@ jQuery(async function () {
      * @listens #third_party_extension_button#click - The click event of the '#third_party_extension_button' element.
      */
     $('#third_party_extension_button').on('click', () => openThirdPartyExtensionMenu());
-});
+}

@@ -19,6 +19,8 @@ import {
     this_chid,
     saveChatConditional,
     chat_metadata,
+    neutralCharacterName,
+    updateChatMetadata,
 } from '../script.js';
 import { selected_group } from './group-chats.js';
 import { power_user } from './power-user.js';
@@ -125,8 +127,6 @@ function getConverter(type) {
  * @returns {Promise<void>}
  */
 export async function hideChatMessageRange(start, end, unhide) {
-    if (!getCurrentChatId()) return;
-
     if (isNaN(start)) return;
     if (!end) end = start;
     const hide = !unhide;
@@ -135,10 +135,11 @@ export async function hideChatMessageRange(start, end, unhide) {
         const message = chat[messageId];
         if (!message) continue;
 
+        message.is_system = hide;
+
+        // Also toggle "hidden" state for all visible messages
         const messageBlock = $(`.mes[mesid="${messageId}"]`);
         if (!messageBlock.length) continue;
-
-        message.is_system = hide;
         messageBlock.attr('is_system', String(hide));
     }
 
@@ -1354,6 +1355,32 @@ async function verifyAttachmentsForSource(source) {
     }
 }
 
+const NEUTRAL_CHAT_KEY = 'neutralChat';
+
+export function preserveNeutralChat() {
+    if (this_chid !== undefined || selected_group || name2 !== neutralCharacterName) {
+        return;
+    }
+
+    sessionStorage.setItem(NEUTRAL_CHAT_KEY, JSON.stringify({ chat, chat_metadata }));
+}
+
+export function restoreNeutralChat() {
+    if (this_chid !== undefined || selected_group || name2 !== neutralCharacterName) {
+        return;
+    }
+
+    const neutralChat = sessionStorage.getItem(NEUTRAL_CHAT_KEY);
+    if (!neutralChat) {
+        return;
+    }
+
+    const { chat: neutralChatData, chat_metadata: neutralChatMetadata } = JSON.parse(neutralChat);
+    chat.splice(0, chat.length, ...neutralChatData);
+    updateChatMetadata(neutralChatMetadata, true);
+    sessionStorage.removeItem(NEUTRAL_CHAT_KEY);
+}
+
 /**
  * Registers a file converter function.
  * @param {string} mimeType MIME type
@@ -1418,6 +1445,7 @@ jQuery(function () {
     $(document).on('click', '.editor_maximize', function () {
         const broId = $(this).attr('data-for');
         const bro = $(`#${broId}`);
+        const contentEditable = bro.is('[contenteditable]');
         const withTab = $(this).attr('data-tab');
 
         if (!bro.length) {
@@ -1429,11 +1457,16 @@ jQuery(function () {
         wrapper.classList.add('height100p', 'wide100p', 'flex-container');
         wrapper.classList.add('flexFlowColumn', 'justifyCenter', 'alignitemscenter');
         const textarea = document.createElement('textarea');
-        textarea.value = String(bro.val());
+        textarea.value = String(contentEditable ? bro[0].innerText : bro.val());
         textarea.classList.add('height100p', 'wide100p', 'maximized_textarea');
         bro.hasClass('monospace') && textarea.classList.add('monospace');
         textarea.addEventListener('input', function () {
-            bro.val(textarea.value).trigger('input');
+            if (contentEditable) {
+                bro[0].innerText = textarea.value;
+                bro.trigger('input');
+            } else {
+                bro.val(textarea.value).trigger('input');
+            }
         });
         wrapper.appendChild(textarea);
 

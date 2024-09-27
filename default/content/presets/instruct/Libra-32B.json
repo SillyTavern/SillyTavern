@@ -1,5 +1,4 @@
 {
-    "system_prompt": "Avoid repetition, don't loop. Develop the plot slowly, always stay in character. Describe all actions in full, elaborate, explicit, graphic, and vivid detail. Mention all relevant sensory perceptions.",
     "input_sequence": "",
     "output_sequence": "",
     "last_output_sequence": "\n### Response:",
@@ -7,8 +6,7 @@
     "stop_sequence": "",
     "wrap": true,
     "macro": true,
-    "names": true,
-    "names_force_groups": true,
+    "names_behavior": "always",
     "activation_regex": "",
     "system_sequence_prefix": "",
     "system_sequence_suffix": "",

@@ -4,6 +4,7 @@ import { isMobile } from './RossAscends-mods.js';
 import { collapseNewlines } from './power-user.js';
 import { debounce_timeout } from './constants.js';
 import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
+import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 
 /**
  * Pagination status string template.
@@ -30,6 +31,74 @@ export function isValidUrl(value) {
         return true;
     } catch (_) {
         return false;
+    }
+}
+
+/**
+ * Converts string to a value of a given type. Includes pythonista-friendly aliases.
+ * @param {string|SlashCommandClosure} value String value
+ * @param {string} type Type to convert to
+ * @returns {any} Converted value
+ */
+export function convertValueType(value, type) {
+    if (value instanceof SlashCommandClosure || typeof type !== 'string') {
+        return value;
+    }
+
+    switch (type.trim().toLowerCase()) {
+        case 'string':
+        case 'str':
+            return String(value);
+
+        case 'null':
+            return null;
+
+        case 'undefined':
+        case 'none':
+            return undefined;
+
+        case 'number':
+            return Number(value);
+
+        case 'int':
+            return parseInt(value, 10);
+
+        case 'float':
+            return parseFloat(value);
+
+        case 'boolean':
+        case 'bool':
+            return isTrueBoolean(value);
+
+        case 'list':
+        case 'array':
+            try {
+                const parsedArray = JSON.parse(value);
+                if (Array.isArray(parsedArray)) {
+                    return parsedArray;
+                }
+                // The value is not an array
+                return [];
+            } catch {
+                return [];
+            }
+
+        case 'object':
+        case 'dict':
+        case 'dictionary':
+            try {
+                const parsedObject = JSON.parse(value);
+                if (typeof parsedObject === 'object') {
+                    return parsedObject;
+                }
+                // The value is not an object
+                return {};
+            } catch {
+                return {};
+            }
+
+        default:
+            return value;
     }
 }
 
@@ -538,12 +607,11 @@ export function sortByCssOrder(a, b) {
 /**
  * Trims a string to the end of a nearest sentence.
  * @param {string} input The string to trim.
- * @param {boolean} include_newline Whether to include a newline character in the trimmed string.
  * @returns {string} The trimmed string.
  * @example
  * trimToEndSentence('Hello, world! I am from'); // 'Hello, world!'
  */
-export function trimToEndSentence(input, include_newline = false) {
+export function trimToEndSentence(input) {
     if (!input) {
         return '';
     }
@@ -562,11 +630,6 @@ export function trimToEndSentence(input, include_newline = false) {
             } else {
                 last = i;
             }
-            break;
-        }
-
-        if (include_newline && char === '\n') {
-            last = i;
             break;
         }
     }
@@ -1367,6 +1430,15 @@ export function uuidv4() {
     });
 }
 
+/**
+ * Collapses multiple spaces in a strings into one.
+ * @param {string} s String to process
+ * @returns {string} String with collapsed spaces
+ */
+export function collapseSpaces(s) {
+    return s.replace(/\s+/g, ' ').trim();
+}
+
 function postProcessText(text, collapse = true) {
     // Remove carriage returns
     text = text.replace(/\r/g, '');
@@ -1830,13 +1902,13 @@ export function select2ChoiceClickSubscribe(control, action, { buttonStyle = fal
  * @returns {string} The html representation of the highlighted regex
  */
 export function highlightRegex(regexStr) {
-    // Function to escape HTML special characters for safety
-    const escapeHtml = (str) => str.replace(/[&<>"']/g, match => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;',
+    // Function to escape special characters for safety or readability
+    const escape = (str) => str.replace(/[&<>"'\x01]/g, match => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;', '\x01': '\\x01',
     })[match]);
 
-    // Replace special characters with their HTML-escaped forms
-    regexStr = escapeHtml(regexStr);
+    // Replace special characters with their escaped forms
+    regexStr = escape(regexStr);
 
     // Patterns that we want to highlight only if they are not escaped
     function getPatterns() {
@@ -1959,7 +2031,9 @@ export function toggleDrawer(drawer, expand = true) {
     }
 
     // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
-    content.querySelectorAll('textarea.autoSetHeight').forEach(resetScrollHeight);
+    if (!CSS.supports('field-sizing', 'content')) {
+        content.querySelectorAll('textarea.autoSetHeight').forEach(resetScrollHeight);
+    }
 }
 
 export async function fetchFaFile(name) {
@@ -1968,7 +2042,10 @@ export async function fetchFaFile(name) {
     document.head.append(style);
     const sheet = style.sheet;
     style.remove();
-    return [...sheet.cssRules].filter(it => it.style?.content).map(it => it.selectorText.split('::').shift().slice(1));
+    return [...sheet.cssRules]
+        .filter(rule => rule.style?.content)
+        .map(rule => rule.selectorText.split(/,\s*/).map(selector => selector.split('::').shift().slice(1)))
+    ;
 }
 export async function fetchFa() {
     return [...new Set((await Promise.all([
@@ -1994,7 +2071,7 @@ export async function showFontAwesomePicker(customList = null) {
                 qry.placeholder = 'Filter icons';
                 qry.autofocus = true;
                 const qryDebounced = debounce(() => {
-                    const result = faList.filter(it => it.includes(qry.value));
+                    const result = faList.filter(fa => fa.find(className => className.includes(qry.value.toLowerCase())));
                     for (const fa of faList) {
                         if (!result.includes(fa)) {
                             fas[fa].classList.add('hidden');
@@ -2015,10 +2092,10 @@ export async function showFontAwesomePicker(customList = null) {
                     fas[fa] = opt;
                     opt.classList.add('menu_button');
                     opt.classList.add('fa-solid');
-                    opt.classList.add(fa);
-                    opt.title = fa.slice(3);
+                    opt.classList.add(fa[0]);
+                    opt.title = fa.map(it => it.slice(3)).join(', ');
                     opt.dataset.result = POPUP_RESULT.AFFIRMATIVE.toString();
-                    opt.addEventListener('click', () => value = fa);
+                    opt.addEventListener('click', () => value = fa[0]);
                     grid.append(opt);
                 }
             }

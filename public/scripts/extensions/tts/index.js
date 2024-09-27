@@ -16,6 +16,7 @@ import { VITSTtsProvider } from './vits.js';
 import { GSVITtsProvider } from './gsvi.js';
 import { SBVits2TtsProvider } from './sbvits2.js';
 import { AllTalkTtsProvider } from './alltalk.js';
+import { CosyVoiceProvider } from './cosyvoice.js';
 import { SpeechT5TtsProvider } from './speecht5.js';
 import { AzureTtsProvider } from './azure.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -87,6 +88,7 @@ const ttsProviders = {
     AllTalk: AllTalkTtsProvider,
     Azure: AzureTtsProvider,
     Coqui: CoquiTtsProvider,
+    'CosyVoice (Unofficial)': CosyVoiceProvider,
     Edge: EdgeTtsProvider,
     ElevenLabs: ElevenLabsTtsProvider,
     GSVI: GSVITtsProvider,
@@ -423,7 +425,7 @@ function completeTtsJob() {
 async function tts(text, voiceId, char) {
     async function processResponse(response) {
         // RVC injection
-        if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
+        if (typeof window['rvcVoiceConversion'] === 'function' && extension_settings.rvc.enabled)
             response = await window['rvcVoiceConversion'](response, char, text);
 
         await addAudioJob(response, char);

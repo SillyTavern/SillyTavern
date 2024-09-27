@@ -1,5 +1,4 @@
 {
-    "system_prompt": "Write {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n",
     "input_sequence": "USER: ",
     "output_sequence": "GPT: ",
     "last_output_sequence": "",
@@ -7,8 +6,7 @@
     "stop_sequence": "",
     "wrap": false,
     "macro": true,
-    "names": false,
-    "names_force_groups": true,
+    "names_behavior": "force",
     "activation_regex": "",
     "system_sequence_prefix": "BEGINNING OF CONVERSATION: ",
     "system_sequence_suffix": "",
