@@ -350,6 +350,7 @@
 }
 .popup:has(#qr--modalEditor) {
   aspect-ratio: unset;
+  width: unset;
 }
 .popup:has(#qr--modalEditor):has(.qr--isExecuting.qr--minimized) {
   min-width: unset;
