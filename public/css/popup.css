@@ -47,6 +47,10 @@ dialog {
     padding: 1px;
 }
 
+.popup:not(:has(.img_enlarged_container)) .popup-body {
+    max-height: 95dvh;
+}
+
 .popup .popup-content {
     margin-top: 10px;
     padding: 0 8px;

@@ -1414,8 +1414,11 @@ function toggleHiddenControls(group, generationMode = null) {
     const isJoin = [group_generation_mode.APPEND, group_generation_mode.APPEND_DISABLED].includes(generationMode ?? group?.generation_mode);
     $('#rm_group_generation_mode_join_prefix').parent().toggle(isJoin);
     $('#rm_group_generation_mode_join_suffix').parent().toggle(isJoin);
-    initScrollHeight($('#rm_group_generation_mode_join_prefix'));
-    initScrollHeight($('#rm_group_generation_mode_join_suffix'));
+
+    if (!CSS.supports('field-sizing', 'content')) {
+        initScrollHeight($('#rm_group_generation_mode_join_prefix'));
+        initScrollHeight($('#rm_group_generation_mode_join_suffix'));
+    }
 }
 
 function select_group_chats(groupId, skipAnimation) {
@@ -1491,9 +1494,11 @@ function select_group_chats(groupId, skipAnimation) {
     }
 
     // Toggle textbox sizes, as input events have not fired here
-    $('#rm_group_chats_block .autoSetHeight').each(element => {
-        resetScrollHeight(element);
-    });
+    if (!CSS.supports('field-sizing', 'content')) {
+        $('#rm_group_chats_block .autoSetHeight').each(element => {
+            resetScrollHeight(element);
+        });
+    }
 
     eventSource.emit('groupSelected', { detail: { id: openGroupId, group: group } });
 }
@@ -1964,9 +1969,11 @@ function doCurMemberListPopout() {
 }
 
 jQuery(() => {
-    $(document).on('input', '#rm_group_chats_block .autoSetHeight', function () {
-        resetScrollHeight($(this));
-    });
+    if (!CSS.supports('field-sizing', 'content')) {
+        $(document).on('input', '#rm_group_chats_block .autoSetHeight', function () {
+            resetScrollHeight($(this));
+        });
+    }
 
     $(document).on('click', '.group_select', function () {
         const groupId = $(this).attr('chid') || $(this).attr('grid') || $(this).data('id');

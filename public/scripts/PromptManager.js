@@ -1,12 +1,13 @@
 'use strict';
 
-import { callPopup, event_types, eventSource, is_send_press, main_api, substituteParams } from '../script.js';
+import { event_types, eventSource, is_send_press, main_api, substituteParams } from '../script.js';
 import { is_group_generating } from './group-chats.js';
 import { Message, TokenHandler } from './openai.js';
 import { power_user } from './power-user.js';
 import { debounce, waitUntilCondition, escapeHtml } from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { renderTemplateAsync } from './templates.js';
+import { Popup } from './popup.js';
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -427,12 +428,13 @@ class PromptManager {
 
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name').value = prompt.name;
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role').value = 'system';
-            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value = prompt.content;
+            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value = prompt.content ?? '';
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position').value = prompt.injection_position ?? 0;
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth').value = prompt.injection_depth ?? DEFAULT_DEPTH;
             document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block').style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides').checked = prompt.forbid_overrides ?? false;
             document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block').style.visibility = this.overridablePrompts.includes(prompt.identifier) ? 'visible' : 'hidden';
+            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').disabled = prompt.marker ?? false;
 
             if (!this.systemPrompts.includes(promptId)) {
                 document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position').removeAttribute('disabled');
@@ -452,21 +454,24 @@ class PromptManager {
         };
 
         // Delete selected prompt from list form and close edit form
-        this.handleDeletePrompt = (event) => {
-            const promptID = document.getElementById(this.configuration.prefix + 'prompt_manager_footer_append_prompt').value;
-            const prompt = this.getPromptById(promptID);
+        this.handleDeletePrompt = async (event) => {
+            Popup.show.confirm('Are you sure you want to delete this prompt?', null).then((userChoice) => {
+                if (!userChoice) return;
+                const promptID = document.getElementById(this.configuration.prefix + 'prompt_manager_footer_append_prompt').value;
+                const prompt = this.getPromptById(promptID);
 
-            if (prompt && true === this.isPromptDeletionAllowed(prompt)) {
-                const promptIndex = this.getPromptIndexById(promptID);
-                this.serviceSettings.prompts.splice(Number(promptIndex), 1);
+                if (prompt && true === this.isPromptDeletionAllowed(prompt)) {
+                    const promptIndex = this.getPromptIndexById(promptID);
+                    this.serviceSettings.prompts.splice(Number(promptIndex), 1);
 
-                this.log('Deleted prompt: ' + prompt.identifier);
+                    this.log('Deleted prompt: ' + prompt.identifier);
 
-                this.hidePopup();
-                this.clearEditForm();
-                this.render();
-                this.saveServiceSettings();
-            }
+                    this.hidePopup();
+                    this.clearEditForm();
+                    this.render();
+                    this.saveServiceSettings();
+                }
+            });
         };
 
         // Create new prompt, then save it to settings and close form.
@@ -526,9 +531,9 @@ class PromptManager {
 
         // Import prompts for the selected character
         this.handleImport = () => {
-            callPopup('Existing prompts with the same ID will be overridden. Do you want to proceed?', 'confirm')
+            Popup.show.confirm('Existing prompts with the same ID will be overridden. Do you want to proceed?', null)
                 .then(userChoice => {
-                    if (false === userChoice) return;
+                    if (!userChoice) return;
 
                     const fileOpener = document.createElement('input');
                     fileOpener.type = 'file';
@@ -562,9 +567,9 @@ class PromptManager {
 
         // Restore default state of a characters prompt order
         this.handleCharacterReset = () => {
-            callPopup('This will reset the prompt order for this character. You will not lose any prompts.', 'confirm')
+            Popup.show.confirm('This will reset the prompt order for this character. You will not lose any prompts.', null)
                 .then(userChoice => {
-                    if (false === userChoice) return;
+                    if (!userChoice) return;
 
                     this.removePromptOrderForCharacter(this.activeCharacter);
                     this.addPromptOrderForCharacter(this.activeCharacter, promptManagerDefaultPromptOrder);
@@ -920,7 +925,15 @@ class PromptManager {
      * @returns {boolean} True if the prompt can be edited, false otherwise.
      */
     isPromptEditAllowed(prompt) {
-        return !prompt.marker;
+        const forceEditPrompts = [
+            'charDescription',
+            'charPersonality',
+            'scenario',
+            'personaDescription',
+            'worldInfoBefore',
+            'worldInfoAfter',
+        ];
+        return forceEditPrompts.includes(prompt.identifier) || !prompt.marker;
     }
 
     /**
@@ -929,7 +942,17 @@ class PromptManager {
      * @returns {boolean} True if the prompt can be deleted, false otherwise.
      */
     isPromptToggleAllowed(prompt) {
-        const forceTogglePrompts = ['charDescription', 'charPersonality', 'scenario', 'personaDescription', 'worldInfoBefore', 'worldInfoAfter', 'main', 'chatHistory', 'dialogueExamples'];
+        const forceTogglePrompts = [
+            'charDescription',
+            'charPersonality',
+            'scenario',
+            'personaDescription',
+            'worldInfoBefore',
+            'worldInfoAfter',
+            'main',
+            'chatHistory',
+            'dialogueExamples',
+        ];
         return prompt.marker && !forceTogglePrompts.includes(prompt.identifier) ? false : !this.configuration.toggleDisabled.includes(prompt.identifier);
     }
 
@@ -1182,8 +1205,9 @@ class PromptManager {
         const forbidOverridesBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block');
 
         nameField.value = prompt.name ?? '';
-        roleField.value = prompt.role ?? '';
+        roleField.value = prompt.role ?? 'system';
         promptField.value = prompt.content ?? '';
+        promptField.disabled = prompt.marker ?? false;
         injectionPositionField.value = prompt.injection_position ?? INJECTION_POSITION.RELATIVE;
         injectionDepthField.value = prompt.injection_depth ?? DEFAULT_DEPTH;
         injectionDepthBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
@@ -1279,6 +1303,7 @@ class PromptManager {
         nameField.value = '';
         roleField.selectedIndex = 0;
         promptField.value = '';
+        promptField.disabled = false;
         injectionPositionField.selectedIndex = 0;
         injectionPositionField.removeAttribute('disabled');
         injectionDepthField.value = DEFAULT_DEPTH;
@@ -1515,16 +1540,17 @@ class PromptManager {
             }
 
             const encodedName = escapeHtml(prompt.name);
+            const isMarkerPrompt = prompt.marker && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE;
             const isSystemPrompt = !prompt.marker && prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE && !prompt.forbid_overrides;
-            const isImportantPrompt = !prompt.marker && prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE  && prompt.forbid_overrides;
+            const isImportantPrompt = !prompt.marker && prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE && prompt.forbid_overrides;
             const isUserPrompt = !prompt.marker && !prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE;
-            const isInjectionPrompt = !prompt.marker && prompt.injection_position === INJECTION_POSITION.ABSOLUTE;
+            const isInjectionPrompt = prompt.injection_position === INJECTION_POSITION.ABSOLUTE;
             const isOverriddenPrompt = Array.isArray(this.overriddenPrompts) && this.overriddenPrompts.includes(prompt.identifier);
             const importantClass = isImportantPrompt ? `${prefix}prompt_manager_important` : '';
             listItemHtml += `
                 <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass} ${importantClass}" data-pm-identifier="${prompt.identifier}">
                     <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${encodedName}">
-                        ${prompt.marker ? '<span class="fa-fw fa-solid fa-thumb-tack" title="Marker"></span>' : ''}
+                        ${isMarkerPrompt ? '<span class="fa-fw fa-solid fa-thumb-tack" title="Marker"></span>' : ''}
                         ${isSystemPrompt ? '<span class="fa-fw fa-solid fa-square-poll-horizontal" title="Global Prompt"></span>' : ''}
                         ${isImportantPrompt ? '<span class="fa-fw fa-solid fa-star" title="Important Prompt"></span>' : ''}
                         ${isUserPrompt ? '<span class="fa-fw fa-solid fa-user" title="User Prompt"></span>' : ''}
@@ -1724,7 +1750,7 @@ class PromptManager {
      */
     showPopup(area = 'edit') {
         const areaElement = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_' + area);
-        areaElement.style.display = 'block';
+        areaElement.style.display = 'flex';
 
         $('#' + this.configuration.prefix + 'prompt_manager_popup').first()
             .slideDown(200, 'swing')

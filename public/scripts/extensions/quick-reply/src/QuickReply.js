@@ -360,7 +360,7 @@ export class QuickReply {
                         del.classList.add('fa-solid');
                         del.classList.add('fa-trash-can');
                         del.classList.add('redWarningBG');
-                        del.title = 'Remove Quick Reply\n---\nShit+Click to skip confirmation';
+                        del.title = 'Remove Quick Reply\n---\nShift+Click to skip confirmation';
                         del.addEventListener('click', async(evt)=>{
                             if (!evt.shiftKey) {
                                 const result = await Popup.show.confirm(
@@ -1904,6 +1904,7 @@ export class QuickReply {
             executeOnAi: this.executeOnAi,
             executeOnChatChange: this.executeOnChatChange,
             executeOnGroupMemberDraft: this.executeOnGroupMemberDraft,
+            executeOnNewChat: this.executeOnNewChat,
             automationId: this.automationId,
         };
     }

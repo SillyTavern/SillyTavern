@@ -1,11 +1,14 @@
 // Plugin manager script.
-// Usage: node plugins.js update
+// Usage:
+// 1. node plugins.js update
+// 2. node plugins.js install <plugin-git-url>
 // More operations coming soon.
 const { default: git } = require('simple-git');
 const fs = require('fs');
 const path = require('path');
 const { color } = require('./src/util');
 
+process.chdir(__dirname);
 const pluginsPath = './plugins';
 
 const command = process.argv[2];
@@ -55,7 +58,6 @@ async function updatePlugins() {
     }
 
     console.log(color.magenta('All plugins updated!'));
-
 }
 
 async function installPlugin(pluginName) {

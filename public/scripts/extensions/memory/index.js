@@ -15,6 +15,7 @@ import {
     generateRaw,
     getMaxContextSize,
     setExtensionPrompt,
+    streamingProcessor,
 } from '../../../script.js';
 import { is_group_generating, selected_group } from '../../group-chats.js';
 import { loadMovingUIState } from '../../power-user.js';
@@ -101,7 +102,7 @@ const prompt_builders = {
     RAW_NON_BLOCKING: 2,
 };
 
-const defaultPrompt = '[Pause your roleplay. Summarize the most important facts and events in the story so far. If a summary already exists in your memory, use that as a base and expand with new facts. Limit the summary to {{words}} words or less. Your response should include nothing but the summary.]';
+const defaultPrompt = 'Ignore previous instructions. Summarize the most important facts and events in the story so far. If a summary already exists in your memory, use that as a base and expand with new facts. Limit the summary to {{words}} words or less. Your response should include nothing but the summary.';
 const defaultTemplate = '[Summary: {{summary}}]';
 
 const defaultSettings = {
@@ -408,8 +409,8 @@ async function onChatEvent() {
         return;
     }
 
-    // Generation is in progress, summary prevented
-    if (is_send_press) {
+    // Streaming in-progress
+    if (streamingProcessor && !streamingProcessor.isFinished) {
         return;
     }
 
@@ -446,15 +447,9 @@ async function onChatEvent() {
         delete chat[chat.length - 1].extra.memory;
     }
 
-    try {
-        await summarizeChat(context);
-    }
-    catch (error) {
-        console.log(error);
-    }
-    finally {
-        saveLastValues();
-    }
+    summarizeChat(context)
+        .catch(console.error)
+        .finally(saveLastValues);
 }
 
 /**
@@ -567,7 +562,7 @@ async function getSummaryPromptForNow(context, force) {
             await waitUntilCondition(() => is_group_generating === false, 1000, 10);
         }
         // Wait for the send button to be released
-        waitUntilCondition(() => is_send_press === false, 30000, 100);
+        await waitUntilCondition(() => is_send_press === false, 30000, 100);
     } catch {
         console.debug('Timeout waiting for is_send_press');
         return '';
@@ -650,19 +645,29 @@ async function summarizeChatWebLLM(context, force) {
         params.max_tokens = extension_settings.memory.overrideResponseLength;
     }
 
-    const summary = await generateWebLlmChatPrompt(messages, params);
-    const newContext = getContext();
+    try {
+        inApiCall = true;
+        const summary = await generateWebLlmChatPrompt(messages, params);
+        const newContext = getContext();
 
-    // something changed during summarization request
-    if (newContext.groupId !== context.groupId ||
-        newContext.chatId !== context.chatId ||
-        (!newContext.groupId && (newContext.characterId !== context.characterId))) {
-        console.log('Context changed, summary discarded');
-        return;
+        if (!summary) {
+            console.warn('Empty summary received');
+            return;
+        }
+
+        // something changed during summarization request
+        if (newContext.groupId !== context.groupId ||
+            newContext.chatId !== context.chatId ||
+            (!newContext.groupId && (newContext.characterId !== context.characterId))) {
+            console.log('Context changed, summary discarded');
+            return;
+        }
+
+        setMemoryContext(summary, true, lastUsedIndex);
+        return summary;
+    } finally {
+        inApiCall = false;
     }
-
-    setMemoryContext(summary, true, lastUsedIndex);
-    return summary;
 }
 
 async function summarizeChatMain(context, force, skipWIAN) {
@@ -677,12 +682,18 @@ async function summarizeChatMain(context, force, skipWIAN) {
     let index = null;
 
     if (prompt_builders.DEFAULT === extension_settings.memory.prompt_builder) {
-        summary = await generateQuietPrompt(prompt, false, skipWIAN, '', '', extension_settings.memory.overrideResponseLength);
+        try {
+            inApiCall = true;
+            summary = await generateQuietPrompt(prompt, false, skipWIAN, '', '', extension_settings.memory.overrideResponseLength);
+        } finally {
+            inApiCall = false;
+        }
     }
 
     if ([prompt_builders.RAW_BLOCKING, prompt_builders.RAW_NON_BLOCKING].includes(extension_settings.memory.prompt_builder)) {
         const lock = extension_settings.memory.prompt_builder === prompt_builders.RAW_BLOCKING;
         try {
+            inApiCall = true;
             if (lock) {
                 deactivateSendButtons();
             }
@@ -700,10 +711,16 @@ async function summarizeChatMain(context, force, skipWIAN) {
             summary = await generateRaw(rawPrompt, '', false, false, prompt, extension_settings.memory.overrideResponseLength);
             index = lastUsedIndex;
         } finally {
+            inApiCall = false;
             if (lock) {
                 activateSendButtons();
             }
         }
+    }
+
+    if (!summary) {
+        console.warn('Empty summary received');
+        return;
     }
 
     const newContext = getContext();
@@ -839,6 +856,11 @@ async function summarizeChatExtras(context) {
         inApiCall = true;
         const summary = await callExtrasSummarizeAPI(resultingString);
         const newContext = getContext();
+
+        if (!summary) {
+            console.warn('Empty summary received');
+            return;
+        }
 
         // something changed during summarization request
         if (newContext.groupId !== context.groupId

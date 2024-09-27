@@ -5,7 +5,6 @@ const PUBLIC_DIRECTORIES = {
     extensions: 'public/scripts/extensions',
 };
 
-const DEFAULT_AVATAR = '/img/ai4.png';
 const SETTINGS_FILE = 'settings.json';
 
 /**
@@ -42,6 +41,7 @@ const USER_DIRECTORY_TEMPLATE = Object.freeze({
     files: 'user/files',
     vectors: 'vectors',
     backups: 'backups',
+    sysprompt: 'sysprompt',
 });
 
 /**
@@ -150,6 +150,10 @@ const GEMINI_SAFETY = [
     },
     {
         category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+        threshold: 'BLOCK_NONE',
+    },
+    {
+        category: 'HARM_CATEGORY_CIVIC_INTEGRITY',
         threshold: 'BLOCK_NONE',
     },
 ];
@@ -418,7 +422,6 @@ const VLLM_KEYS = [
 
 module.exports = {
     DEFAULT_USER,
-    DEFAULT_AVATAR,
     SETTINGS_FILE,
     PUBLIC_DIRECTORIES,
     USER_DIRECTORY_TEMPLATE,

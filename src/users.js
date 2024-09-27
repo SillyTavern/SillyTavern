@@ -9,8 +9,10 @@ const storage = require('node-persist');
 const express = require('express');
 const mime = require('mime-types');
 const archiver = require('archiver');
+const writeFileAtomicSync = require('write-file-atomic').sync;
+const _ = require('lodash');
 
-const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, DEFAULT_AVATAR, SETTINGS_FILE } = require('./constants');
+const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE } = require('./constants');
 const { getConfigValue, color, delay, setConfigValue, generateTimestamp } = require('./util');
 const { readSecret, writeSecret } = require('./endpoints/secrets');
 
@@ -24,6 +26,7 @@ const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
  * @type {Map<string, UserDirectoryList>}
  */
 const DIRECTORIES_CACHE = new Map();
+const PUBLIC_USER_AVATAR = '/img/default-user.png';
 
 const STORAGE_KEYS = {
     csrfSecret: 'csrfSecret',
@@ -82,6 +85,7 @@ const STORAGE_KEYS = {
  * @property {string} files - The directory where the uploaded files are stored
  * @property {string} vectors - The directory where the vectors are stored
  * @property {string} backups - The directory where the backups are stored
+ * @property {string} sysprompt - The directory where the system prompt data is stored
  */
 
 /**
@@ -322,6 +326,64 @@ async function migrateUserData() {
     console.log(color.green('Migration completed!'));
 }
 
+async function migrateSystemPrompts() {
+    /**
+     * Gets the default system prompts.
+     * @returns {Promise<any[]>} - The list of default system prompts
+     */
+    async function getDefaultSystemPrompts() {
+        try {
+            const { getContentOfType } = await import('./endpoints/content-manager.js');
+            return getContentOfType('sysprompt', 'json');
+        } catch {
+            return [];
+        }
+    }
+
+    const directories = await getUserDirectoriesList();
+    for (const directory of directories) {
+        try {
+            const migrateMarker = path.join(directory.sysprompt, '.migrated');
+            if (fs.existsSync(migrateMarker)) {
+                continue;
+            }
+            const backupsPath = path.join(directory.backups, '_sysprompt');
+            fs.mkdirSync(backupsPath, { recursive: true });
+            const defaultPrompts = await getDefaultSystemPrompts();
+            const instucts = fs.readdirSync(directory.instruct);
+            let migratedPrompts = [];
+            for (const instruct of instucts) {
+                const instructPath = path.join(directory.instruct, instruct);
+                const sysPromptPath = path.join(directory.sysprompt, instruct);
+                if (path.extname(instruct) === '.json' && !fs.existsSync(sysPromptPath)) {
+                    const instructData = JSON.parse(fs.readFileSync(instructPath, 'utf8'));
+                    if ('system_prompt' in instructData && 'name' in instructData) {
+                        const backupPath = path.join(backupsPath, `${instructData.name}.json`);
+                        fs.cpSync(instructPath, backupPath, { force: true });
+                        const syspromptData = { name: instructData.name, content: instructData.system_prompt };
+                        migratedPrompts.push(syspromptData);
+                        delete instructData.system_prompt;
+                        writeFileAtomicSync(instructPath, JSON.stringify(instructData, null, 4));
+                    }
+                }
+            }
+            // Only leave unique contents
+            migratedPrompts = _.uniqBy(migratedPrompts, 'content');
+            // Only leave contents that are not in the default prompts
+            migratedPrompts = migratedPrompts.filter(x => !defaultPrompts.some(y => y.content === x.content));
+            for (const sysPromptData of migratedPrompts) {
+                sysPromptData.name = `[Migrated] ${sysPromptData.name}`;
+                const syspromptPath = path.join(directory.sysprompt, `${sysPromptData.name}.json`);
+                writeFileAtomicSync(syspromptPath, JSON.stringify(sysPromptData, null, 4));
+                console.log(`Migrated system prompt ${sysPromptData.name} for ${directory.root.split(path.sep).pop()}`);
+            }
+            writeFileAtomicSync(migrateMarker, '');
+        } catch (error) {
+            console.error('Error migrating system prompts:', error);
+        }
+    }
+}
+
 /**
  * Converts a user handle to a storage key.
  * @param {string} handle User handle
@@ -478,11 +540,11 @@ async function getUserAvatar(handle) {
         const settings = fs.existsSync(pathToSettings) ? JSON.parse(fs.readFileSync(pathToSettings, 'utf8')) : {};
         const avatarFile = settings?.power_user?.default_persona || settings?.user_avatar;
         if (!avatarFile) {
-            return DEFAULT_AVATAR;
+            return PUBLIC_USER_AVATAR;
         }
         const avatarPath = path.join(directory.avatars, avatarFile);
         if (!fs.existsSync(avatarPath)) {
-            return DEFAULT_AVATAR;
+            return PUBLIC_USER_AVATAR;
         }
         const mimeType = mime.lookup(avatarPath);
         const base64Content = fs.readFileSync(avatarPath, 'base64');
@@ -490,7 +552,7 @@ async function getUserAvatar(handle) {
     }
     catch {
         // Ignore errors
-        return DEFAULT_AVATAR;
+        return PUBLIC_USER_AVATAR;
     }
 }
 
@@ -723,6 +785,7 @@ module.exports = {
     requireLoginMiddleware,
     requireAdminMiddleware,
     migrateUserData,
+    migrateSystemPrompts,
     getPasswordSalt,
     getPasswordHash,
     getCsrfSecret,

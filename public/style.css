@@ -182,6 +182,10 @@ body.movingUI ::-webkit-scrollbar-thumb:vertical {
     min-width: 40px;
 }
 
+::-webkit-scrollbar-corner {
+    background-color: transparent;
+}
+
 table.responsiveTable {
     width: 100%;
     margin: 10px 0;
@@ -989,6 +993,7 @@ body .panelControlBar {
     padding: 0;
     font-family: var(--mainFontFamily);
     font-weight: 400;
+    align-self: center;
 }
 
 .swipe_left {
@@ -1176,6 +1181,7 @@ textarea {
 textarea.autoSetHeight {
     max-height: 50vh;
     max-height: 50dvh;
+    field-sizing: content;
 }
 
 input,
@@ -1602,6 +1608,7 @@ body[data-stscript-style] .hljs.language-stscript {
     .hljs-pipe {
         color: var(--ac-style-color-punctuation);
     }
+
     .hljs-pipebreak {
         color: var(--ac-style-color-type);
     }
@@ -1695,6 +1702,7 @@ body[data-stscript-style] .hljs.language-stscript {
             background-color: var(--ac-color-selectedBackground);
             color: var(--ac-color-selectedText);
         }
+
         &.selected.not-selectable>* {
             background-color: var(--ac-color-notSelectableBackground);
             color: var(--ac-color-notSelectableText);
@@ -1776,11 +1784,13 @@ body[data-stscript-style] .hljs.language-stscript {
         padding: 0.25em 0.25em 0.5em 0.25em;
         border-bottom: 1px solid var(--ac-color-border);
 
-        > .head {
+        >.head {
             display: flex;
             gap: 0.5em;
         }
-        > .head > .name, > .name {
+
+        >.head>.name,
+        >.name {
             flex: 1 1 auto;
             font-weight: bold;
             color: var(--ac-color-text);
@@ -1790,20 +1800,25 @@ body[data-stscript-style] .hljs.language-stscript {
                 text-decoration: 1px dotted underline;
             }
         }
-        > .head > .source {
+
+        >.head>.source {
             padding: 0 0.5em;
             cursor: help;
             display: flex;
             align-items: center;
             gap: 0.5em;
+
             &.isThirdParty.isExtension {
                 color: #F89406;
             }
+
             &.isCore {
                 color: transparent;
+
                 &.isExtension {
                     color: #51A351;
                 }
+
                 &:after {
                     content: '';
                     order: -1;
@@ -2412,7 +2427,6 @@ input[type="file"] {
 }
 
 #rm_print_characters_block .text_block {
-    height: 100%;
     width: 100%;
     opacity: 0.5;
     margin: 0 auto 1px auto;
@@ -2556,20 +2570,25 @@ input[type="file"] {
 /*#################################################################*/
 
 select {
-
-    padding: 3px 2px;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
+    padding: 3px 5px;
     background-color: var(--black30a);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
     margin-bottom: 5px;
     height: min-content;
+    background-image: url('/img/down-arrow.svg');
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    background-size: 8px 5px;
 }
 
 select option {
     /* works to highlight selected/active option */
     background-color: var(--white50a);
     color: var(--black70a);
-
 }
 
 select option:not(:checked) {
@@ -2606,16 +2625,9 @@ select option:not(:checked) {
     color: var(--golden) !important;
 }
 
-.world_set {
+.world_set,
+.toggleEnabled {
     color: var(--active) !important;
-}
-
-#context_set_default.default {
-    color: var(--preferred) !important;
-}
-
-#instruct_set_default.default {
-    color: var(--preferred) !important;
 }
 
 .displayBlock {
@@ -3142,6 +3154,26 @@ grammarly-extension {
     align-items: center;
 }
 
+.alternate_greeting details {
+    padding: 2px;
+}
+
+.alternate_greeting summary {
+    list-style-position: outside;
+    margin-left: 1em;
+    padding-left: 1em;
+}
+
+.alternate_greeting textarea {
+    field-sizing: content;
+    max-height: 50dvh;
+}
+
+.alternate_greeting summary::marker,
+.alternate_greeting summary strong {
+    cursor: pointer;
+}
+
 #rm_characters_block .form_create_bottom_buttons_block {
     justify-content: space-evenly !important;
     flex-grow: 0;
@@ -3233,8 +3265,9 @@ grammarly-extension {
 }
 
 .wide_dialogue_popup {
-    aspect-ratio: 1 / 1;
-    width: unset !important;
+    /* FIXME: Chrome 129 broke max-height for aspect-ratio sized elements */
+    /* aspect-ratio: 1 / 1; */
+    /* width: unset !important; */
     min-width: var(--sheldWidth);
 }
 
@@ -3501,6 +3534,14 @@ grammarly-extension {
     flex-direction: row;
     align-items: center;
     column-gap: 20px;
+}
+
+.horde-model-description {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    font-size: 0.9em;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .drag-handle {
@@ -3949,6 +3990,10 @@ input[type="range"]::-webkit-slider-thumb {
     display: inline-block;
 }
 
+.mes:not([bookmark_link='']) .mes_create_bookmark {
+    display: none;
+}
+
 .mes_edit_buttons {
     display: none;
     flex-direction: row;
@@ -4379,7 +4424,6 @@ body.big-avatars .missing-avatar {
     text-align: center;
 }
 
-
 .userSettingsInnerExpandable {
     border: 1px solid;
     border-color: var(--SmartThemeBorderColor);
@@ -4565,7 +4609,6 @@ a {
     border-radius: 10px;
     max-width: 100%;
     max-height: 40vh;
-    max-height: 40dvh;
     image-rendering: -webkit-optimize-contrast;
 }
 
@@ -4667,10 +4710,6 @@ body:not(.sd) .mes_img_swipes {
     width: 100%;
 }
 
-.img_enlarged_holder::-webkit-scrollbar-corner {
-    background-color: transparent;
-}
-
 .img_enlarged_container pre code {
     position: relative;
     display: block;
@@ -4750,6 +4789,8 @@ body:not(.sd) .mes_img_swipes {
 
 #customCSS {
     flex: 1 1 auto;
+    min-height: 20vh;
+    min-height: 20dvh;
 }
 
 #ui_language_select {
@@ -5345,13 +5386,6 @@ body:not(.movingUI) .drawer-content.maximized {
 
 /* Jank mobile support for gallery and future draggables */
 @media screen and (max-width: 1000px) {
-    #gallery {
-        display: block;
-        width: 100vw;
-        height: 100vh;
-        z-index: 9999;
-    }
-
     .draggable {
         display: block;
         width: 100vw;
@@ -5399,6 +5433,7 @@ body:not(.movingUI) .drawer-content.maximized {
 .popup:has(.faPicker) {
     /* Fix height for fa picker popup, otherwise search is making it resize weirdly */
     height: 70%;
+
     .popup-content {
         display: flex;
         flex-direction: column;
@@ -5408,7 +5443,8 @@ body:not(.movingUI) .drawer-content.maximized {
 .faPicker-container {
     display: flex;
     flex-direction: column;
-    overflow: hidden;;
+    overflow: hidden;
+    ;
 }
 
 .faQuery-container {
@@ -5418,26 +5454,41 @@ body:not(.movingUI) .drawer-content.maximized {
 .faPicker {
     flex: 1 1 auto;
     overflow: auto;
-	gap: 1em;
+    gap: 1em;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(3.5em, 1fr));
 
-	.menu_button {
-		aspect-ratio: 1 / 1;
-		font-size: 2em;
-		height: 1lh;
-		line-height: 1.2;
-		padding: 0.25em;
-		width: unset;
-		box-sizing: content-box;
+    .menu_button {
+        aspect-ratio: 1 / 1;
+        font-size: 2em;
+        height: 1lh;
+        line-height: 1.2;
+        padding: 0.25em;
+        width: unset;
+        box-sizing: content-box;
+
         &.hidden {
             display: none;
         }
-	}
+    }
 }
 
 .faPicker:not(:has(:not(.hidden)))::after {
     content: 'No icons found';
     color: var(--SmartThemeBodyColor);
     opacity: 0.7;
+    width: max-content;
+}
+
+#AdvancedFormatting .autoSetHeight {
+    overflow-wrap: anywhere;
+}
+
+#InstructSequencesColumn summary {
+    font-size: 0.95em;
+    cursor: pointer;
+}
+
+#InstructSequencesColumn details:not(:last-of-type) {
+    margin-bottom: 5px;
 }

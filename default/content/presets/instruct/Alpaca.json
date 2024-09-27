@@ -1,5 +1,4 @@
 {
-    "system_prompt": "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n",
     "input_sequence": "### Instruction:",
     "output_sequence": "### Response:",
     "last_output_sequence": "",
@@ -7,8 +6,7 @@
     "stop_sequence": "",
     "wrap": true,
     "macro": true,
-    "names": false,
-    "names_force_groups": true,
+    "names_behavior": "force",
     "activation_regex": "",
     "system_sequence_prefix": "",
     "system_sequence_suffix": "",

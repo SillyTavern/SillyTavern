@@ -37,6 +37,7 @@ util.inspect.defaultOptions.depth = 4;
 const userModule = require('./src/users');
 const basicAuthMiddleware = require('./src/middleware/basicAuth');
 const whitelistMiddleware = require('./src/middleware/whitelist');
+const initRequestProxy = require('./src/request-proxy');
 const contentManager = require('./src/endpoints/content-manager');
 const {
     getVersion,
@@ -74,6 +75,10 @@ const DEFAULT_AVOID_LOCALHOST = false;
 
 const DEFAULT_AUTORUN_HOSTNAME = 'auto';
 const DEFAULT_AUTORUN_PORT = -1;
+
+const DEFAULT_PROXY_ENABLED = false;
+const DEFAULT_PROXY_URL = '';
+const DEFAULT_PROXY_BYPASS = [];
 
 const cliArguments = yargs(hideBin(process.argv))
     .usage('Usage: <your-start-script> <command> [options]')
@@ -145,6 +150,18 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'boolean',
         default: null,
         describe: 'Enables basic authentication',
+    }).option('requestProxyEnabled', {
+        type: 'boolean',
+        default: null,
+        describe: 'Enables a use of proxy for outgoing requests',
+    }).option('requestProxyUrl', {
+        type: 'string',
+        default: null,
+        describe: 'Request proxy URL (HTTP or SOCKS protocols)',
+    }).option('requestProxyBypass', {
+        type: 'array',
+        default: null,
+        describe: 'Request proxy bypass list (space separated list of hosts)',
     }).parseSync();
 
 // change all relative paths
@@ -180,6 +197,10 @@ const autorunPortOverride = cliArguments.autorunPortOverride ?? getConfigValue('
 const dnsPreferIPv6 = cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', DEFAULT_PREFER_IPV6);
 
 const avoidLocalhost = cliArguments.avoidLocalhost ?? getConfigValue('avoidLocalhost', DEFAULT_AVOID_LOCALHOST);
+
+const proxyEnabled = cliArguments.requestProxyEnabled ?? getConfigValue('requestProxy.enabled', DEFAULT_PROXY_ENABLED);
+const proxyUrl = cliArguments.requestProxyUrl ?? getConfigValue('requestProxy.url', DEFAULT_PROXY_URL);
+const proxyBypass = cliArguments.requestProxyBypass ?? getConfigValue('requestProxy.bypass', DEFAULT_PROXY_BYPASS);
 
 if (dnsPreferIPv6) {
     // Set default DNS resolution order to IPv6 first
@@ -589,6 +610,9 @@ app.use('/api/search', require('./src/endpoints/search').router);
 // Ooba/OpenAI text completions
 app.use('/api/backends/text-completions', require('./src/endpoints/backends/text-completions').router);
 
+// OpenRouter
+app.use('/api/openrouter', require('./src/endpoints/openrouter').router);
+
 // KoboldAI
 app.use('/api/backends/kobold', require('./src/endpoints/backends/kobold').router);
 
@@ -662,6 +686,9 @@ const preSetupTasks = async function () {
         console.error('Uncaught exception:', err);
         exitProcess();
     });
+
+    // Add request proxy.
+    initRequestProxy({ enabled: proxyEnabled, url: proxyUrl, bypass: proxyBypass });
 };
 
 /**
@@ -905,6 +932,7 @@ async function verifySecuritySettings() {
 userModule.initUserStorage(dataRoot)
     .then(userModule.ensurePublicDirectoriesExist)
     .then(userModule.migrateUserData)
+    .then(userModule.migrateSystemPrompts)
     .then(verifySecuritySettings)
     .then(preSetupTasks)
     .finally(startServer);

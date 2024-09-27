@@ -1,5 +1,5 @@
 {
-  "order": [6, 0, 8, 5, 3],
+  "order": [0, 8, 5, 3],
   "temperature": 1.5,
   "max_length": 150,
   "min_length": 1,
@@ -15,6 +15,9 @@
   "return_full_text": false,
   "prefix": "vanilla",
   "phrase_rep_pen": "very_aggressive",
-  "cfg_scale": 1.4,
-  "max_context": 7800
+  "max_context": 7800,
+  "min_p": 0,
+  "math1_temp": 1,
+  "math1_quad": 0,
+  "math1_quad_entropy_scale": 0
 }

@@ -1,0 +1,17 @@
+<h3>
+    Choose what to export
+</h3>
+<div class="flex-container flexFlowColumn justifyLeft">
+    {{#each sections}}
+        {{#with this}}
+            <label class="checkbox_label">
+                {{#if checked}}
+                    <input type="checkbox" value="{{key}}" checked />
+                {{else}}
+                    <input type="checkbox" value="{{key}}" />
+                {{/if}}
+                <span data-i18n="{{name}}">{{name}}</span>
+            </label>
+        {{/with}}
+    {{/each}}
+</div>

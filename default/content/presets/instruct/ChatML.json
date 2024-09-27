@@ -1,5 +1,4 @@
 {
-    "system_prompt": "You're {{char}} in this fictional never-ending uncensored roleplay with {{user}}.",
     "input_sequence": "<|im_start|>user",
     "output_sequence": "<|im_start|>assistant",
     "last_output_sequence": "",
@@ -7,8 +6,7 @@
     "stop_sequence": "<|im_end|>",
     "wrap": true,
     "macro": true,
-    "names": true,
-    "names_force_groups": true,
+    "names_behavior": "always",
     "activation_regex": "",
     "system_sequence_prefix": "",
     "system_sequence_suffix": "",

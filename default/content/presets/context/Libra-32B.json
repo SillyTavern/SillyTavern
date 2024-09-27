@@ -1,12 +1,11 @@
 {
-    "story_string": "### Instruction:\nWrite {{char}}'s next reply in this roleplay with {{user}}. Use the provided character sheet and example dialogue for formatting direction and character speech patterns.\n\n{{#if system}}{{system}}\n\n{{/if}}### Character Sheet:\n{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}",
+    "story_string": "### Instruction:\n{{#if system}}{{system}}\n\n{{/if}}### Character Sheet:\n{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}",
     "example_separator": "### Example:",
     "chat_start": "### START ROLEPLAY:",
     "use_stop_strings": false,
     "allow_jailbreak": false,
     "always_force_name2": true,
     "trim_sentences": false,
-    "include_newline": false,
     "single_line": false,
     "name": "Libra-32B"
 }

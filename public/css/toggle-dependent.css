@@ -28,8 +28,8 @@ body.hideChatAvatars .mesAvatarWrapper .avatar {
     display: none !important;
 }
 
-body.hideChatAvatars .last_mes {
-    padding-bottom: 40px !important;
+body.hideChatAvatars .last_mes:not(.smallSysMes) {
+    padding-bottom: 20px !important;
 }
 
 body.square-avatars .avatar,
@@ -454,4 +454,8 @@ body.expandMessageActions .mes .mes_buttons .extraMesButtonsHint {
 
 #smooth_streaming:checked~#smooth_streaming_speed_control {
     display: block;
+}
+
+.mdhotkey_icon {
+    opacity: 0.6;
 }

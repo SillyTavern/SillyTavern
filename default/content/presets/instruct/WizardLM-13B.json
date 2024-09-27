@@ -1,5 +1,4 @@
 {
-    "system_prompt": "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions.\n\nWrite {{char}}'s next detailed reply in a fictional roleplay chat between {{user}} and {{char}}.",
     "input_sequence": "USER: ",
     "output_sequence": "ASSISTANT: ",
     "last_output_sequence": "",
@@ -7,8 +6,7 @@
     "stop_sequence": "",
     "wrap": true,
     "macro": true,
-    "names": false,
-    "names_force_groups": true,
+    "names_behavior": "force",
     "activation_regex": "",
     "system_sequence_prefix": "",
     "system_sequence_suffix": "",

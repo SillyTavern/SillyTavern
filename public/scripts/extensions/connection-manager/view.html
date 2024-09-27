@@ -1,0 +1,10 @@
+<ul>
+    {{#each profile}}
+    <li><strong data-i18n="{{@key}}">{{@key}}:</strong>&nbsp;{{this}}</li>
+    {{/each}}
+</ul>
+{{#if omitted}}
+<div class="margin5">
+    <strong data-i18n="Omitted Settings:">Omitted Settings:</strong>&nbsp;<span>{{omitted}}</span>
+</div>
+{{/if}}

@@ -184,16 +184,10 @@
                     <a href="https://pollinations.ai">Pollinations.ai</a>
                 </p>
                 <div class="flex-container">
-                    <label class="flex1 checkbox_label" for="sd_pollinations_enhance">
+                    <label class="flex1 checkbox_label" for="sd_pollinations_enhance" title="Enables prompt enhancing (passes prompts through an LLM to add detail).">
                         <input id="sd_pollinations_enhance" type="checkbox" />
                         <span data-i18n="Enhance">
                             Enhance
-                        </span>
-                    </label>
-                    <label class="flex1 checkbox_label" for="sd_pollinations_refine">
-                        <input id="sd_pollinations_refine" type="checkbox" />
-                        <span data-i18n="Refine">
-                            Refine
                         </span>
                     </label>
                 </div>
@@ -355,7 +349,7 @@
                 </div>
             </div>
 
-            <div class="flex-container marginTopBot5" data-sd-source="auto,vlad,extras,horde,drawthings,comfy">
+            <div class="flex-container marginTopBot5" data-sd-source="auto,vlad,extras,horde,drawthings">
                 <label class="flex1 checkbox_label">
                     <input id="sd_restore_faces" type="checkbox" />
                     <small data-i18n="Restore Faces">Restore Faces</small>
@@ -408,16 +402,16 @@
                 </div>
             </div>
             <label for="sd_prompt_prefix" data-i18n="Common prompt prefix">Common prompt prefix</label>
-            <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" data-i18n="[placeholder]sd_prompt_prefix_placeholder" placeholder="Use {prompt} to specify where the generated prompt will be inserted"></textarea>
+            <textarea id="sd_prompt_prefix" class="text_pole textarea_compact autoSetHeight" data-i18n="[placeholder]sd_prompt_prefix_placeholder" placeholder="Use {prompt} to specify where the generated prompt will be inserted"></textarea>
             <label for="sd_negative_prompt" data-i18n="Negative common prompt prefix">Negative common prompt prefix</label>
-            <textarea id="sd_negative_prompt" class="text_pole textarea_compact"></textarea>
+            <textarea id="sd_negative_prompt" class="text_pole textarea_compact autoSetHeight"></textarea>
             <div id="sd_character_prompt_block">
                 <label for="sd_character_prompt" data-i18n="Character-specific prompt prefix">Character-specific prompt prefix</label>
                 <small data-i18n="Won't be used in groups.">Won't be used in groups.</small>
-                <textarea id="sd_character_prompt" class="text_pole textarea_compact" data-i18n="[placeholder]sd_character_prompt_placeholder" placeholder="Any characteristics that describe the currently selected character. Will be added after a common prompt prefix.&#10;Example: female, green eyes, brown hair, pink shirt"></textarea>
+                <textarea id="sd_character_prompt" class="text_pole textarea_compact autoSetHeight" data-i18n="[placeholder]sd_character_prompt_placeholder" placeholder="Any characteristics that describe the currently selected character. Will be added after a common prompt prefix.&#10;Example: female, green eyes, brown hair, pink shirt"></textarea>
                 <label for="sd_character_negative_prompt" data-i18n="Character-specific negative prompt prefix">Character-specific negative prompt prefix</label>
                 <small data-i18n="Won't be used in groups.">Won't be used in groups.</small>
-                <textarea id="sd_character_negative_prompt" class="text_pole textarea_compact" data-i18n="[placeholder]sd_character_negative_prompt_placeholder" placeholder="Any characteristics that should not appear for the selected character. Will be added after a negative common prompt prefix.&#10;Example: jewellery, shoes, glasses"></textarea>
+                <textarea id="sd_character_negative_prompt" class="text_pole textarea_compact autoSetHeight" data-i18n="[placeholder]sd_character_negative_prompt_placeholder" placeholder="Any characteristics that should not appear for the selected character. Will be added after a negative common prompt prefix.&#10;Example: jewellery, shoes, glasses"></textarea>
                 <label for="sd_character_prompt_share" class="checkbox_label flexWrap marginTop5">
                     <input id="sd_character_prompt_share" type="checkbox" />
                     <span data-i18n="Shareable">

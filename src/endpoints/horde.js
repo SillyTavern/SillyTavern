@@ -6,6 +6,7 @@ const { readSecret, SECRET_KEYS } = require('./secrets');
 const { jsonParser } = require('../express-common');
 
 const ANONYMOUS_KEY = '0000000000';
+const HORDE_TEXT_MODEL_METADATA_URL = 'https://raw.githubusercontent.com/db0/AI-Horde-text-model-reference/main/db.json';
 const cache = new Cache(60 * 1000);
 const router = express.Router();
 
@@ -23,10 +24,9 @@ async function getClientAgent() {
  * @returns {Promise<AIHorde>} AIHorde client
  */
 async function getHordeClient() {
-    const ai_horde = new AIHorde({
+    return new AIHorde({
         client_agent: await getClientAgent(),
     });
-    return ai_horde;
 }
 
 /**
@@ -79,10 +79,24 @@ router.post('/text-workers', jsonParser, async (request, response) => {
     }
 });
 
+async function getHordeTextModelMetadata() {
+    const response = await fetch(HORDE_TEXT_MODEL_METADATA_URL);
+    return await response.json();
+}
+
+async function mergeModelsAndMetadata(models, metadata) {
+    return models.map(model => {
+        const metadataModel = metadata[model.name];
+        if (!metadataModel) {
+            return  { ...model, is_whitelisted: false };
+        }
+        return { ...model, ...metadataModel, is_whitelisted: true };
+    });
+}
+
 router.post('/text-models', jsonParser, async (request, response) => {
     try {
         const cachedModels = cache.get('models');
-
         if (cachedModels && !request.body.force) {
             return response.send(cachedModels);
         }
@@ -94,7 +108,17 @@ router.post('/text-models', jsonParser, async (request, response) => {
             },
         });
 
-        const data = await fetchResult.json();
+        let data = await fetchResult.json();
+
+        // attempt to fetch and merge models metadata
+        try {
+            const metadata = await getHordeTextModelMetadata();
+            data = await mergeModelsAndMetadata(data, metadata);
+        }
+        catch (error) {
+            console.error('Failed to fetch metadata:', error);
+        }
+
         cache.set('models', data);
         return response.send(data);
     } catch (error) {
@@ -310,6 +334,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
         console.log('Stable Horde request:', request.body);
 
         const ai_horde = await getHordeClient();
+        // noinspection JSCheckFunctionSignatures -- see @ts-ignore - use_gfpgan
         const generation = await ai_horde.postAsyncImageGenerate(
             {
                 prompt: `${request.body.prompt} ### ${request.body.negative_prompt}`,
