@@ -7853,8 +7853,8 @@ function openAlternateGreetings() {
         updateAlternateGreetingsHintVisibility(template);
     });
 
-    updateAlternateGreetingsHintVisibility(template);
     popup.show();
+    updateAlternateGreetingsHintVisibility(template);
 }
 
 /**
