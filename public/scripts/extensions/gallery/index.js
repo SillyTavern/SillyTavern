@@ -26,9 +26,11 @@ let paginationVisiblePages = 10;
 let paginationMaxLinesPerPage = 2;
 let galleryMaxRows = 3;
 
+// Remove all draggables associated with the gallery
 $('#movingDivs').on('click', '.dragClose', function () {
-    const relatedId = $(this).data('related-id');  // Get the ID of the related draggable
-    $(`#movingDivs > .draggable[id="${relatedId}"]`).remove();  // Remove the associated draggable
+    const relatedId = $(this).data('related-id');
+    if (!relatedId) return;
+    $(`#movingDivs > .draggable[id="${relatedId}"]`).remove();
 });
 
 const CUSTOM_GALLERY_REMOVED_EVENT = 'galleryRemoved';
