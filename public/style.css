@@ -5386,13 +5386,6 @@ body:not(.movingUI) .drawer-content.maximized {
 
 /* Jank mobile support for gallery and future draggables */
 @media screen and (max-width: 1000px) {
-    #gallery {
-        display: block;
-        width: 100vw;
-        height: 100vh;
-        z-index: 9999;
-    }
-
     .draggable {
         display: block;
         width: 100vw;
