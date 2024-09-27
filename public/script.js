@@ -2576,7 +2576,7 @@ export function getStoppingStrings(isImpersonate, isContinue) {
         result.unshift('\n');
     }
 
-    return result.filter(onlyUnique);
+    return result.filter(x => x).filter(onlyUnique);
 }
 
 /**
