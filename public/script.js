@@ -936,6 +936,8 @@ async function firstLoadInit() {
     initTextGenModels();
     initOpenAI();
     initSystemPrompts();
+    initExtensions();
+    initExtensionSlashCommands();
     await initPresetManager();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
@@ -957,8 +959,6 @@ async function firstLoadInit() {
     initCfg();
     initLogprobs();
     initInputMarkdown();
-    initExtensions();
-    initExtensionSlashCommands();
     doDailyExtensionUpdatesCheck();
     await hideLoader();
     await fixViewport();
