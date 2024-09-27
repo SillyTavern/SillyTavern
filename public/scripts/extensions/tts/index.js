@@ -92,7 +92,7 @@ const ttsProviders = {
     Edge: EdgeTtsProvider,
     ElevenLabs: ElevenLabsTtsProvider,
     GSVI: GSVITtsProvider,
-    GptSovitsV2: GptSovitsV2Provider,
+    'GPT-SoVITS-V2 (Unofficial)': GptSovitsV2Provider,
     Novel: NovelTtsProvider,
     OpenAI: OpenAITtsProvider,
     'OpenAI Compatible': OpenAICompatibleTtsProvider,

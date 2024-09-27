@@ -1,4 +1,4 @@
-import { getPreviewString, saveTtsProviderSettings } from './index.js';
+import { saveTtsProviderSettings } from './index.js';
 
 export { GptSovitsV2Provider };
 
@@ -42,7 +42,7 @@ class GptSovitsV2Provider {
         lang: 'auto',
         streaming: false,
         text_lang: 'zh',
-        prompt_lang:"zh",
+        prompt_lang: 'zh',
 
     };
 
@@ -178,7 +178,7 @@ class GptSovitsV2Provider {
         console.info(`Generating new TTS for voice_id ${voiceId}`);
 
         function replaceSpeaker(text) {
-            return text.replace(/\[.*?\]/gu, "");
+            return text.replace(/\[.*?\]/gu, '');
         }
 
         let prompt_text = replaceSpeaker(voiceId);
@@ -187,15 +187,15 @@ class GptSovitsV2Provider {
 
         const params = {
             text: inputText,
-            prompt_text:prompt_text,
-            ref_audio_path:"./参考音频/"+voiceId+".wav",
+            prompt_text: prompt_text,
+            ref_audio_path: './参考音频/' + voiceId + '.wav',
             text_lang: this.settings.text_lang,
             prompt_lang: this.settings.prompt_lang,
-            text_split_method:"cut5",
-            batch_size:1,
-            media_type:"ogg",
-            streaming_mode:"true",
-          };
+            text_split_method: 'cut5',
+            batch_size: 1,
+            media_type: 'ogg',
+            streaming_mode: 'true',
+        };
 
 
         const url = `${this.settings.provider_endpoint}/`;
