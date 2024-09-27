@@ -266,37 +266,173 @@ export async function loadAphroditeModels(data) {
 }
 
 export async function loadFeatherlessModels(data) {
+    const searchBar = document.getElementById('model_search_bar');
+    const modelCardBlock = document.getElementById('model_card_block');
+    const paginationContainer = $('#model_pagination_container');
+    const sortOrderSelect = document.getElementById('model_sort_order');
+    const classSelect = document.getElementById('class_selection');
+    const storageKey = 'Models_PerPage';
+
+    // Store the original models data for search and filtering
+    let originalModels = [];
+
     if (!Array.isArray(data)) {
         console.error('Invalid Featherless models data', data);
         return;
     }
 
+    // Sort the data by model id (default A-Z)
     data.sort((a, b) => a.id.localeCompare(b.id));
-    featherlessModels = data;
+    originalModels = data;  // Store the original data for search
 
-    if (!data.find(x => x.id === textgen_settings.featherless_model)) {
-        textgen_settings.featherless_model = data[0]?.id || '';
+    // Populate class select options with unique classes
+    populateClassSelection(data);
+
+    // Retrieve the stored number of items per page or default to 5
+    const perPage = Number(localStorage.getItem(storageKey)) || 5;
+
+    // Initialize pagination with the full set of models
+    setupPagination(originalModels, perPage);
+
+    // Function to set up pagination (also used for filtered results)
+    function setupPagination(models, perPage) {
+        paginationContainer.pagination({
+            dataSource: models,
+            pageSize: perPage,
+            sizeChangerOptions: [5, 10, 25, 50, 100, 250, 500, 1000],
+            pageRange: 1,
+            pageNumber: 1,
+            showPageNumbers: true,
+            showSizeChanger: true,
+            prevText: '<',
+            nextText: '>',
+            formatNavigator: function (currentPage, totalPage) {
+                return 'Page ' + currentPage + ' of ' + totalPage;
+            },
+            showNavigator: true,
+            callback: function (modelsOnPage) {
+                // Clear the model card block before adding new cards
+                modelCardBlock.innerHTML = '';
+
+                // Loop through the models for the current page and create cards
+                modelsOnPage.forEach(model => {
+                    const card = document.createElement('div');
+                    card.classList.add('model-card');
+
+                    const modelNameContainer = document.createElement('div');
+                    modelNameContainer.classList.add('model-name-container');
+
+                    const modelTitle = document.createElement('div');
+                    modelTitle.classList.add('model-title');
+                    modelTitle.textContent = model.id;
+                    modelNameContainer.appendChild(modelTitle);
+
+                    const detailsContainer = document.createElement('div');
+                    detailsContainer.classList.add('details-container');
+
+                    const modelClassDiv = document.createElement('div');
+                    modelClassDiv.classList.add('model-class');
+                    modelClassDiv.textContent = `Class: ${model.model_class || 'N/A'}`;
+
+                    const contextLengthDiv = document.createElement('div');
+                    contextLengthDiv.classList.add('model-context-length');
+                    contextLengthDiv.textContent = `Context Length: ${model.context_length}`;
+
+                    detailsContainer.appendChild(modelClassDiv);
+                    detailsContainer.appendChild(contextLengthDiv);
+
+                    card.appendChild(modelNameContainer);
+                    card.appendChild(detailsContainer);
+
+                    // Append the card to the container
+                    modelCardBlock.appendChild(card);
+
+                    // Check if this card is the currently selected model
+                    if (model.id === selectedModelId) {
+                        card.classList.add('selected');  // Keep the selected class if it's the same model
+                    }
+
+                    // Add click event listener to the card
+                    card.addEventListener('click', function() {
+                        // Remove the selected class from all other cards
+                        document.querySelectorAll('.model-card').forEach(c => c.classList.remove('selected'));
+
+                        // Add the selected class to the clicked card
+                        card.classList.add('selected');
+
+                        // Call the onFeatherlessModelSelect function with the selected model ID
+                        onFeatherlessModelSelect(model.id);
+                    });
+                });
+            },
+            afterSizeSelectorChange: function (e) {
+                const newPerPage = e.target.value;
+                localStorage.setItem('Models_PerPage', newPerPage);  // Save the new value in localStorage
+                setupPagination(models, Number(newPerPage));   // Reinitialize pagination with the new per page value
+            },
+        });
     }
 
-    $('#featherless_model').empty();
-    for (const model of data) {
-        const option = document.createElement('option');
-        option.value = model.id;
-        option.text = model.id;
-        option.selected = model.id === textgen_settings.featherless_model;
-        $('#featherless_model').append(option);
+    // Add event listener for input on the search bar
+    searchBar.addEventListener('input', function() {
+        applyFiltersAndSort();
+    });
+
+    // Add event listener for the sort order select
+    sortOrderSelect.addEventListener('change', function() {
+        applyFiltersAndSort();
+    });
+
+    // Add event listener for the class select
+    classSelect.addEventListener('change', function() {
+        applyFiltersAndSort();
+    });
+
+    // Function to populate class selection dropdown
+    function populateClassSelection(models) {
+        const uniqueClasses = [...new Set(models.map(model => model.model_class).filter(Boolean))];  // Get unique class names
+        uniqueClasses.forEach(className => {
+            const option = document.createElement('option');
+            option.value = className;
+            option.textContent = className;
+            classSelect.appendChild(option);
+        });
+    }
+
+    // Function to apply sorting and filtering based on user input
+    function applyFiltersAndSort() {
+        const searchQuery = searchBar.value.toLowerCase();
+        const selectedSortOrder = sortOrderSelect.value;
+        const selectedClass = classSelect.value;
+
+        // Filter the models based on the search query and selected class
+        let filteredModels = originalModels.filter(model => {
+            const matchesSearch = model.id.toLowerCase().includes(searchQuery);
+            const matchesClass = selectedClass ? model.model_class === selectedClass : true;
+            return matchesSearch && matchesClass;
+        });
+
+        // Sort the filtered models based on selected sort order (A-Z or Z-A)
+        if (selectedSortOrder === 'asc') {
+            filteredModels.sort((a, b) => a.id.localeCompare(b.id));
+        } else if (selectedSortOrder === 'desc') {
+            filteredModels.sort((a, b) => b.id.localeCompare(a.id));
+        }
+
+        // Reinitialize pagination with the filtered and sorted models
+        setupPagination(filteredModels, Number(localStorage.getItem(storageKey)) || perPage);
     }
 }
 
-function onFeatherlessModelSelect() {
-    const modelId = String($('#featherless_model').val());
+let selectedModelId = null;
+function onFeatherlessModelSelect(modelId) {
+    // Find the selected model and set the settings
+    const model = featherlessModels.find(x => x.id === modelId);
     textgen_settings.featherless_model = modelId;
     $('#api_button_textgenerationwebui').trigger('click');
-    const model = featherlessModels.find(x => x.id === modelId);
     setGenerationParamsFromPreset({ max_length: model.context_length });
+    selectedModelId = modelId;  // Store the selected model ID
 }
-
-
 function onMancerModelSelect() {
     const modelId = String($('#mancer_model').val());
     textgen_settings.mancer_model = modelId;

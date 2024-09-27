@@ -5478,3 +5478,112 @@ body:not(.movingUI) .drawer-content.maximized {
 #InstructSequencesColumn details:not(:last-of-type) {
     margin-bottom: 5px;
 }
+
+#user_avatar_block {
+    display: flex;
+    flex-wrap: wrap;  /* Ensures cards go to the next row if there's not enough space */
+    gap: 10px;  /* Adds space between cards */
+}
+
+/* Main structure for the model cards */
+.model-card {
+    display: flex;
+    justify-content: space-between;  /* Align the title and details across the card */
+    align-items: center;  /* Center align the items vertically */
+    padding: 15px;  /* Padding around the content */
+    border: 1px solid #333;  /* Border for the card */
+    border-radius: 8px;  /* Rounded corners for the card */
+    background-color: #222;  /* Card background color */
+    color: #fff;  /* Text color */
+    margin: 10px;  /* Space between cards */
+    width: calc(100% - 20px);  /* Full width minus margin */
+    box-sizing: border-box;  /* Include padding and border in the width */
+    transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out, border 0.2s ease-in-out;
+}
+
+.model-card:hover {
+    transform: scale(1.05);  /* Grow the card slightly on hover */
+    background-color: #444;  /* Highlight background on hover */
+    transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;  /* Smooth transition */
+}
+
+/* Highlight the selected model card */
+.model-card.selected {
+    border: 2px solid #00f;  /* Add a blue border to indicate selection */
+    background-color: #333;  /* Slightly darker background for selected state */
+}
+
+/* Model title information */
+.model-info {
+    flex: 1;  /* Take up the remaining space */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;  /* Ellipsis for overflow text */
+}
+
+.model-title {
+    font-size: 16px;
+    font-weight: bold;  /* Bold text for the model title */
+}
+
+/* Model details section */
+.model-details {
+    display: flex;
+    flex-direction: column;  /* Stack class and context length vertically */
+    align-items: flex-end;  /* Align details to the end (right) */
+    text-align: right;  /* Right-aligned text for class and context length */
+    min-width: 120px;  /* Minimum width to prevent excessive squeezing */
+}
+
+.model-class, .model-context-length {
+    font-size: 14px;  /* Smaller font size for details */
+}
+
+.model-class {
+    margin-bottom: 5px;  /* Space between class and context length */
+}
+
+/* Grid-view layout for the card container */
+#model_card_block.grid-view {
+    display: flex;
+    flex-wrap: wrap;  /* Cards wrap onto new lines when necessary */
+    gap: 15px;  /* Space between grid items */
+    justify-content: flex-start;  /* Align cards to the left */
+}
+
+/* Grid-view card */
+#model_card_block.grid-view .model-card {
+    flex-direction: column; /* Stack title, class, and context length vertically for grid */
+    flex: 1 1 calc(33.33% - 30px); /* 3 cards per row with spacing */
+    margin-bottom: 10px;
+}
+
+/* Ensure the search bar takes most of the width */
+#model_search_bar {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+/* Sort dropdown should be auto-sized based on its content */
+#model_sort_order {
+    width: auto;  /* Set the width of the dropdown to its content size */
+    flex-shrink: 0;  /* Prevent it from shrinking */
+}
+
+/* Grid toggle button */
+#model_grid_toggle {
+    flex-shrink: 0;
+    width: auto;  /* Keep default button size */
+    cursor: pointer;
+}
+
+#featherless_selection
+{
+    display: flex;
+    width: auto;
+}
+#class_selection
+{
+    display: flex;
+    width: auto;
+}

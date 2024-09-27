@@ -2263,6 +2263,34 @@
                                 <div data-for="api_key_featherless" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
                                     For privacy reasons, your API key will be hidden after you reload the page.
                                 </div>
+                                <hr>
+                                <h4 data-i18n="Featherless Model">Featherless Model Selection</h4>
+                                <div id="Model-management-block" class="flex-container wide100p flexGap10">
+                                    <div class="flex1 overflowHidden wide100p">
+                                        <div class="flex-container marginBot10 alignitemscenter">
+                                            <input id="model_search_bar" class="text_pole width100p flex1 margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search...">
+                                            <select id="model_sort_order" class="margin0">
+                                                <option value="search" data-i18n="Search" hidden>A-Z</option>
+                                                <option value="asc">A-Z</option>
+                                                <option value="desc">Z-A</option>
+                                            </select>
+                                            <select id="featherless_selection">
+                                                <option value="" disabled selected data-i18n="category">category</option>
+                                                <option value="Favorite" data-i18n="Top">Favorite</option>
+                                                <option value="Top" data-i18n="Top">Top</option>
+                                                <option value="New" data-i18n="New">New</option>
+                                                <option value="All" data-i18n="All">All</option>
+                                            </select>
+                                            <select id="class_selection">
+                                                <option value="" selected data-i18n="class">All Classes</option>
+                                            </select>
+                                            <div id="model_pagination_container" class="flex1"></div>
+                                            <i id="model_grid_toggle" class="fa-solid fa-table-cells-large menu_button" data-i18n="[title]Toggle grid view" title="Toggle grid view"></i>
+                                        </div>
+                                        <div id="model_card_block" data-i18n="[no_desc_text]No model description" no_desc_text="[No description]"></div>
+
+                                    </div>
+                                </div>
                                 <select id="featherless_model">
                                     <option value="" data-i18n="-- Connect to the API --">
                                         -- Connect to the API --
