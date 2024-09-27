@@ -87,6 +87,7 @@ const ttsProviders = {
     AllTalk: AllTalkTtsProvider,
     Azure: AzureTtsProvider,
     Coqui: CoquiTtsProvider,
+    'CosyVoice (Unofficial)': CosyVoiceProvider,
     Edge: EdgeTtsProvider,
     ElevenLabs: ElevenLabsTtsProvider,
     GSVI: GSVITtsProvider,
@@ -99,7 +100,6 @@ const ttsProviders = {
     System: SystemTtsProvider,
     VITS: VITSTtsProvider,
     XTTSv2: XTTSTtsProvider,
-    CosyVoice: CosyVoiceProvider,
 };
 let ttsProvider;
 let ttsProviderName;

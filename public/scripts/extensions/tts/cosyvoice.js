@@ -1,4 +1,4 @@
-import { getPreviewString, saveTtsProviderSettings } from './index.js';
+import { saveTtsProviderSettings } from './index.js';
 
 export { CosyVoiceProvider };
 
@@ -111,14 +111,14 @@ class CosyVoiceProvider {
 
     async getVoice(voiceName) {
 
-      
+
 
         if (this.voices.length == 0) {
             this.voices = await this.fetchTtsVoiceObjects();
         }
 
-        
-        
+
+
         const match = this.voices.filter(
             v => v.name == voiceName,
         )[0];
@@ -129,7 +129,7 @@ class CosyVoiceProvider {
         return match;
     }
 
- 
+
 
     async generateTts(text, voiceId) {
         const response = await this.fetchTtsGeneration(text, voiceId);
@@ -168,11 +168,11 @@ class CosyVoiceProvider {
         console.info(`Generating new TTS for voice_id ${voiceId}`);
 
         const streaming = this.settings.streaming;
-   
+
         const params = {
             text: inputText,
             speaker: voiceId,
-          };
+        };
 
         if (streaming) {
             params['streaming'] = 1;
@@ -197,7 +197,7 @@ class CosyVoiceProvider {
         return response;
     }
 
- 
+
 
     // Interface not used
     async fetchTtsFromHistory(history_item_id) {
