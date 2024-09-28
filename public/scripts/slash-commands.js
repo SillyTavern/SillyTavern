@@ -182,7 +182,7 @@ export function initDefaultSlashCommands() {
             if (args.preferCurrent instanceof SlashCommandClosure || Array.isArray(args.preferCurrent)) throw new Error('preferCurrent cannot be a closure or array');
             if (args.quiet instanceof SlashCommandClosure || Array.isArray(args.quiet)) throw new Error('quiet cannot be a closure or array');
 
-            const char = findChar({ name: name, filteredByTags: validateArrayArgString(args.tag, 'tag'), preferCurrentChar: isTrueBoolean(args.preferCurrent), quiet: isTrueBoolean(args.quiet) });
+            const char = findChar({ name: name, filteredByTags: validateArrayArgString(args.tag, 'tag'), preferCurrentChar: !isFalseBoolean(args.preferCurrent), quiet: isTrueBoolean(args.quiet) });
             return char?.avatar ?? '';
         },
         returns: 'the avatar key (unique identifier) of the character',
@@ -3229,17 +3229,6 @@ export function validateArrayArg(arg, name, { allowUndefined = true } = {}) {
 export function findChar({ name = null, allowAvatar = true, insensitive = true, filteredByTags = null, preferCurrentChar = true, quiet = false } = {}) {
     const matches = (char) => (allowAvatar && char.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name);
 
-    // Get the current character(s)
-    const currentChars = selected_group ? groups.find(group => group.id === selected_group)?.members.map(member => characters.find(char => char.avatar === member)) : [characters[this_chid]];
-
-    // If we have a current char and prefer it, return that if it matches - unless tags are provided, they have precedence
-    if (preferCurrentChar && !filteredByTags) {
-        const preferredChar = currentChars.find(matches);
-        if (preferredChar) {
-            return preferredChar;
-        }
-    }
-
     // Filter characters by tags if provided
     let filteredCharacters = characters;
     if (filteredByTags) {
@@ -3247,6 +3236,23 @@ export function findChar({ name = null, allowAvatar = true, insensitive = true, 
             const charTags = getTagsList(char.avatar, false);
             return filteredByTags.every(tagName => charTags.some(x => x.name == tagName));
         });
+    }
+
+    // Get the current character(s)
+    /** @type {any[]} */
+    const currentChars = selected_group ? groups.find(group => group.id === selected_group)?.members.map(member => filteredCharacters.find(char => char.avatar === member))
+        : [filteredCharacters.find(char => characters[this_chid]?.avatar === char.avatar)];
+
+    // If we have a current char and prefer it, return that if it matches
+    if (preferCurrentChar) {
+        const preferredCharSearch = currentChars.filter(matches);
+        if (preferredCharSearch.length > 1) {
+            if (!quiet) toastr.warning(`Multiple characters found for name "${name}" and given conditions.`);
+            else console.warn(`Multiple characters found for name "${name}". Returning the first match.`);
+        }
+        if (preferredCharSearch.length) {
+            return preferredCharSearch[0];
+        }
     }
 
     // If allowAvatar is true, search by avatar first
