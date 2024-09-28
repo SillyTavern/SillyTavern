@@ -50,6 +50,9 @@ const observer = new MutationObserver(mutations => {
  * @returns {string} Translated and formatted string
  */
 export function t(strings, ...values) {
+    if (strings == 'Select Horde models') {
+    console.log('strings = ' + strings);
+    }
     let str = strings.reduce((result, string, i) => result + string + (values[i] !== undefined ? `\${${i}}` : ''), '');
     let translatedStr = translate(str);
 

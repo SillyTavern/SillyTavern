@@ -10,6 +10,7 @@ import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashComm
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from '../../slash-commands/SlashCommandScope.js';
 import { collapseSpaces, getUniqueName, isFalseBoolean, uuidv4 } from '../../utils.js';
+import { t } from '../../i18n.js';
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
@@ -250,7 +251,7 @@ async function deleteConnectionProfile() {
     }
 
     const name = extension_settings.connectionManager.profiles[index].name;
-    const confirm = await Popup.show.confirm('Are you sure you want to delete the selected profile?', name);
+    const confirm = await Popup.show.confirm(t`Are you sure you want to delete the selected profile?`, name);
 
     if (!confirm) {
         return;
@@ -360,7 +361,7 @@ async function renderDetailsContent(detailsContent) {
         const template = await renderExtensionTemplateAsync(MODULE_NAME, 'view', { profile: profileForDisplay });
         detailsContent.innerHTML = template;
     } else {
-        detailsContent.textContent = 'No profile selected';
+        detailsContent.textContent = t`No profile selected`;
     }
 }
 
@@ -481,7 +482,7 @@ async function renderDetailsContent(detailsContent) {
             return;
         }
 
-        const newName = await Popup.show.input('Enter a new name', null, profile.name, { rows: 2 });
+        const newName = await Popup.show.input(t`Enter a new name`, null, profile.name, { rows: 2 });
         if (!newName) {
             return;
         }
