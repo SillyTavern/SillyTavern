@@ -68,6 +68,10 @@ const LLAMACPP_DEFAULT_ORDER = [
     'temperature',
 ];
 const OOBA_DEFAULT_ORDER = [
+    'repetition_penalty',
+    'presence_penalty',
+    'frequency_penalty',
+    'dry',
     'temperature',
     'dynamic_temperature',
     'quadratic_sampling',
@@ -81,6 +85,8 @@ const OOBA_DEFAULT_ORDER = [
     'min_p',
     'mirostat',
     'xtc',
+    'encoder_repetition_penalty',
+    'no_repeat_ngram',
 ];
 const BIAS_KEY = '#textgenerationwebui_api-settings';
 
