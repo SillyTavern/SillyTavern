@@ -1,6 +1,6 @@
 <a name="readme-top"></a>
 
-[English](readme.md) | [中文](readme-zh_cn.md) | [日本語](readme-ja_jp.md) | Русский
+[English](readme.md) | [German](readme-de-de.md) | [中文](readme-zh_cn.md) | [日本語](readme-ja_jp.md) | Русский
 
 ![][cover]
 
