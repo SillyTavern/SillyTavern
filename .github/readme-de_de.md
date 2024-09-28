@@ -1,3 +1,7 @@
+> [!IMPORTANT]  
+> Die hier veröffentlichten Informationen sind möglicherweise veraltet oder unvollständig. Für aktuelle Informationen nutzen Sie bitte die englische Version.
+> Letztes Update dieser README: 28.9.2024
+
 <a name="readme-top"></a>
 
 [Englisch](readme.md) | Deutsch | [中文](readme-zh_cn.md) | [日本語](readme-ja_jp.md) | [Русский](readme-ru_ru.md)
