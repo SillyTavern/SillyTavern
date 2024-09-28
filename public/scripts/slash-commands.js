@@ -180,8 +180,9 @@ export function initDefaultSlashCommands() {
         callback: (args, name) => {
             if (typeof name !== 'string') throw new Error('name must be a string');
             if (args.preferCurrent instanceof SlashCommandClosure || Array.isArray(args.preferCurrent)) throw new Error('preferCurrent cannot be a closure or array');
+            if (args.quiet instanceof SlashCommandClosure || Array.isArray(args.quiet)) throw new Error('quiet cannot be a closure or array');
 
-            const char = findChar({ name: name, filteredByTags: validateArrayArgString(args.tag, 'tag'), preferCurrentChar: isTrueBoolean(args.preferCurrent) });
+            const char = findChar({ name: name, filteredByTags: validateArrayArgString(args.tag, 'tag'), preferCurrentChar: isTrueBoolean(args.preferCurrent), quiet: isTrueBoolean(args.quiet) });
             return char?.avatar ?? '';
         },
         returns: 'the avatar key (unique identifier) of the character',
@@ -198,6 +199,13 @@ export function initDefaultSlashCommands() {
                 description: 'Prefer current character or characters in a group, if multiple characters match',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
                 defaultValue: 'true',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: 'Do not show warning if multiple charactrers are found',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
             }),
         ],
         unnamedArgumentList: [
