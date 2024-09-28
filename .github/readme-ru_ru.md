@@ -7,7 +7,7 @@
 
 <div align="center">
 
-[English](readme.md) | [中文](readme-zh_cn.md) | [日本語](readme-ja_jp.md) | Русский
+[English](readme.md) | [German](readme-de_de.md) | [中文](readme-zh_cn.md) | [日本語](readme-ja_jp.md) | Русский
 
 [![GitHub Stars](https://img.shields.io/github/stars/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/network)
