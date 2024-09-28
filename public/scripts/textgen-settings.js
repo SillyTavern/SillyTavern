@@ -812,6 +812,10 @@ function showTypeSpecificControls(type) {
  * @returns {void}
  */
 function insertMissingArrayItems(source, target) {
+    if (source === target || !Array.isArray(source) || !Array.isArray(target)) {
+        return;
+    }
+
     for (const item of source) {
         if (!target.includes(item)) {
             const index = source.indexOf(item);
