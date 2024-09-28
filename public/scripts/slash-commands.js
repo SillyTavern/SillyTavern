@@ -71,6 +71,7 @@ import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCom
 import { SlashCommandDebugController } from './slash-commands/SlashCommandDebugController.js';
 import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
 import { SlashCommandExecutionError } from './slash-commands/SlashCommandExecutionError.js';
+import { getTagsList } from './tags.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -172,6 +173,65 @@ export function initDefaultSlashCommands() {
             </ul>
         </div>
     `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'char-find',
+        aliases: ['findchar'],
+        callback: (args, name) => {
+            if (typeof name !== 'string') throw new Error('name must be a string');
+            if (args.preferCurrent instanceof SlashCommandClosure || Array.isArray(args.preferCurrent)) throw new Error('preferCurrent cannot be a closure or array');
+
+            const char = findChar({ name: name, filteredByTags: validateArrayArgString(args.tag, 'tag'), preferCurrentChar: isTrueBoolean(args.preferCurrent) });
+            return char?.avatar ?? '';
+        },
+        returns: 'the avatar key (unique identifier) of the character',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'tag',
+                description: 'Supply one or more tags to filter down to the correct character for the provided name, if multiple characters have the same name.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.tags('assigned'),
+                acceptsMultiple: true,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'preferCurrent',
+                description: 'Prefer current character or characters in a group, if multiple characters match',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Character name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.characters('character'),
+                forceEnum: false,
+            }),
+        ],
+        helpString: `
+        <div>
+            Searches for a character and returns its avatar key.
+        </div>
+        <div>
+            This can be used to choose the correct character for something like <code>/sendas</code> or other commands in need of a character name
+            if you have multiple characters with the same name.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/char-find name="Chloe"</code></pre>
+                    Returns the avatar key for "Chloe".
+                </li>
+                <li>
+                    <pre><code>/search name="Chloe" tag="friend"</code></pre>
+                    Returns the avatar key for the character "Chloe" that is tagged with "friend".
+                    This is useful if you for example have multiple characters named "Chloe", and the others are "foe", "goddess", or anything else,
+                    so you can actually select the character you are looking for.
+                </li>
+            </ul>
+        </div>
+        `,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sendas',
@@ -3117,41 +3177,93 @@ async function setNarratorName(_, text) {
 }
 
 /**
+ * Checks if an argument is a string array (or undefined), and if not, throws an error
+ * @param {string|SlashCommandClosure|(string|SlashCommandClosure)[]|undefined} arg The named argument to check
+ * @param {string} name The name of the argument for the error message
+ * @param {object} [options={}] - The optional arguments
+ * @param {boolean} [options.allowUndefined=false] - Whether the argument can be undefined
+ * @throws {Error} If the argument is not an array
+ * @returns {string[]}
+ */
+export function validateArrayArgString(arg, name, { allowUndefined = true } = {}) {
+    if (arg === undefined) {
+        if (allowUndefined) return undefined;
+        throw new Error(`Argument "${name}" is undefined, but must be a string array`);
+    }
+    if (!Array.isArray(arg)) throw new Error(`Argument "${name}" must be an array`);
+    if (!arg.every(x => typeof x === 'string')) throw new Error(`Argument "${name}" must be an array of strings`);
+    return arg;
+}
+
+/**
+ * Checks if an argument is a string or closure array (or undefined), and if not, throws an error
+ * @param {string|SlashCommandClosure|(string|SlashCommandClosure)[]|undefined} arg The named argument to check
+ * @param {string} name The name of the argument for the error message
+ * @param {object} [options={}] - The optional arguments
+ * @param {boolean} [options.allowUndefined=false] - Whether the argument can be undefined
+ * @throws {Error} If the argument is not an array of strings or closures
+ * @returns {(string|SlashCommandClosure)[]}
+ */
+export function validateArrayArg(arg, name, { allowUndefined = true } = {}) {
+    if (arg === undefined) {
+        if (allowUndefined) return [];
+        throw new Error(`Argument "${name}" is undefined, but must be an array of strings or closures`);
+    }
+    if (!Array.isArray(arg)) throw new Error(`Argument "${name}" must be an array`);
+    if (!arg.every(x => typeof x === 'string' || x instanceof SlashCommandClosure)) throw new Error(`Argument "${name}" must be an array of strings or closures`);
+    return arg;
+}
+
+/**
  * Finds a character by name, with optional filtering and precedence for avatars
- * @param {string} name - The name to search for
  * @param {object} [options={}] - The options for the search
+ * @param {string?} [options.name=null] - The name to search for
  * @param {boolean} [options.allowAvatar=false] - Whether to allow searching by avatar
  * @param {boolean} [options.insensitive=true] - Whether the search should be case insensitive
  * @param {string[]?} [options.filteredByTags=null] - Tags to filter characters by
- * @param {any?} [options.preferCurrentChar=null] - The current character to prefer
+ * @param {boolean} [options.preferCurrentChar=false] - Whether to prefer the current character(s)
+ * @param {boolean} [options.quiet=false] - Whether to suppress warnings
  * @returns {any?} - The found character or null if not found
  */
-export function findCharByName(name, { allowAvatar = false, insensitive = true, filteredByTags = null, preferCurrentChar = null } = {}) {
-    const matches = (char) => (allowAvatar && char.avatar === name) || insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name;
+export function findChar({ name = null, allowAvatar = false, insensitive = true, filteredByTags = null, preferCurrentChar = false, quiet = false } = {}) {
+    const matches = (char) => (allowAvatar && char.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name);
+
+    // Get the current character(s)
+    const currentChars = selected_group ? groups.find(group => group.id === selected_group)?.members.map(member => characters.find(char => char.avatar === member)) : [characters[this_chid]];
 
     // If we have a current char and prefer it, return that if it matches - unless tags are provided, they have precedence
-    if (preferCurrentChar && !filteredByTags && matches(preferCurrentChar)) {
-        return preferCurrentChar;
+    if (preferCurrentChar && !filteredByTags) {
+        const preferredChar = currentChars.find(matches);
+        if (preferredChar) {
+            return preferredChar;
+        }
     }
 
     // Filter characters by tags if provided
     let filteredCharacters = characters;
     if (filteredByTags) {
-        filteredCharacters = characters.filter(char => filteredByTags.every(tag => char.tags.includes(tag)));
+        filteredCharacters = characters.filter(char => {
+            const charTags = getTagsList(char.avatar, false);
+            return filteredByTags.every(tagName => charTags.some(x => x.name == tagName));
+        });
     }
 
     // If allowAvatar is true, search by avatar first
-    if (allowAvatar) {
+    if (allowAvatar && name) {
         const characterByAvatar = filteredCharacters.find(char => char.avatar === name);
         if (characterByAvatar) {
             return characterByAvatar;
         }
     }
 
-    // Search for a matching character by name
-    let character = filteredCharacters.find(matches);
+    // Search for matching characters by name
+    const matchingCharacters = name ? filteredCharacters.filter(matches) : filteredCharacters;
+    if (matchingCharacters.length > 1) {
+        if (!quiet) toastr.warning(`Multiple characters found for name "${name}" and given conditions.`);
+        else console.warn(`Multiple characters found for name "${name}". Returning the first match.`);
+    }
 
-    return character;
+    return matchingCharacters[0] || null;
 }
 
 export async function sendMessageAs(args, text) {
