@@ -2241,6 +2241,10 @@ textarea::placeholder {
     height: fit-content;
 }
 
+select.text_pole {
+    padding-right: 20px;
+}
+
 
 .chat_injections_list:empty {
     width: 100%;
