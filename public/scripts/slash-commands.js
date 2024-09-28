@@ -252,13 +252,6 @@ export function initDefaultSlashCommands() {
                 enumProvider: commonEnumProviders.characters('character'),
             }),
             SlashCommandNamedArgument.fromProps({
-                name: 'tag',
-                description: 'Supply one or more tags to filter down to the correct character for the provided name, if multiple characters have the same name. (does not apply to the avatar argument)',
-                typeList: [ARGUMENT_TYPE.STRING],
-                enumProvider: commonEnumProviders.tagsForChar('all'),
-                acceptsMultiple: true,
-            }),
-            SlashCommandNamedArgument.fromProps({
                 name: 'compact',
                 description: 'Use compact layout',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
@@ -3218,14 +3211,14 @@ export function validateArrayArg(arg, name, { allowUndefined = true } = {}) {
  * Finds a character by name, with optional filtering and precedence for avatars
  * @param {object} [options={}] - The options for the search
  * @param {string?} [options.name=null] - The name to search for
- * @param {boolean} [options.allowAvatar=false] - Whether to allow searching by avatar
+ * @param {boolean} [options.allowAvatar=true] - Whether to allow searching by avatar
  * @param {boolean} [options.insensitive=true] - Whether the search should be case insensitive
  * @param {string[]?} [options.filteredByTags=null] - Tags to filter characters by
- * @param {boolean} [options.preferCurrentChar=false] - Whether to prefer the current character(s)
+ * @param {boolean} [options.preferCurrentChar=true] - Whether to prefer the current character(s)
  * @param {boolean} [options.quiet=false] - Whether to suppress warnings
  * @returns {any?} - The found character or null if not found
  */
-export function findChar({ name = null, allowAvatar = false, insensitive = true, filteredByTags = null, preferCurrentChar = false, quiet = false } = {}) {
+export function findChar({ name = null, allowAvatar = true, insensitive = true, filteredByTags = null, preferCurrentChar = true, quiet = false } = {}) {
     const matches = (char) => (allowAvatar && char.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name);
 
     // Get the current character(s)
@@ -3304,19 +3297,18 @@ export async function sendMessageAs(args, text) {
     const isSystem = bias && !removeMacros(mesText).length;
     const compact = isTrueBoolean(args?.compact);
 
-    const chatCharacter = this_chid !== undefined ? characters[this_chid] : null;
-    const isNeutralCharacter = !chatCharacter && name2 === neutralCharacterName && name === neutralCharacterName;
+    const character = findChar({ name: name });
 
-    const character = findCharByName(name, { filteredByTags: args?.tags, preferCurrentChar: chatCharacter });
-
-    const avatarCharacter = args.avatar ? findCharByName(args.avatar) : character;
+    const avatarCharacter = args.avatar ? findChar({ name: args.avatar }) : character;
     if (args.avatar && !avatarCharacter) {
         toastr.warning(`Character for avatar ${args.avatar} not found`);
         return '';
     }
 
+    const isNeutralCharacter = !character && name2 === neutralCharacterName && name === neutralCharacterName;
+
     let force_avatar, original_avatar;
-    if (chatCharacter === avatarCharacter || isNeutralCharacter) {
+    if (character === avatarCharacter || isNeutralCharacter) {
         // If the targeted character is the currently selected one in a solo chat, we don't need to force any avatars
     }
     else if (avatarCharacter && avatarCharacter.avatar !== 'none') {
