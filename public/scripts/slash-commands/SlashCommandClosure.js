@@ -417,8 +417,8 @@ export class SlashCommandClosure {
                     currentValue.push(value);
                     args[name] = currentValue;
                 } else {
-                    // If there is nothing in there, just assign it as singular value, until multiple values are found
-                    args[name] = value;
+                    // If there is nothing in there, we create an array with that singular value
+                    args[name] = [value];
                 }
             } else {
                 args[name] !== undefined && console.debug(`Named argument assigned multiple times: ${name}`);
