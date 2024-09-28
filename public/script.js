@@ -7877,7 +7877,7 @@ function addAlternateGreeting(template, greeting, index, getArray, popup) {
         event.preventDefault();
         event.stopPropagation();
 
-        if (confirm('Are you sure you want to delete this alternate greeting?')) {
+        if (confirm(t`Are you sure you want to delete this alternate greeting?`)) {
             const array = getArray();
             array.splice(index, 1);
 
@@ -10727,10 +10727,12 @@ jQuery(async function () {
         if ($(e.target).hasClass('text_pole')) {
             return;
         }
-        var icon = $(this).find('.inline-drawer-icon');
+        const drawer = $(this).closest('.inline-drawer');
+        const icon = drawer.find('.inline-drawer-icon');
+        const drawerContent = drawer.find('.inline-drawer-content');
         icon.toggleClass('down up');
         icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');
-        $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle({
+        drawerContent.stop().slideToggle({
             complete: () => {
                 $(this).css('height', '');
             },
@@ -10738,7 +10740,7 @@ jQuery(async function () {
 
         // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
         if (!CSS.supports('field-sizing', 'content')) {
-            $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(async function () {
+            drawerContent.find('textarea.autoSetHeight').each(async function () {
                 await resetScrollHeight($(this));
                 return;
             });

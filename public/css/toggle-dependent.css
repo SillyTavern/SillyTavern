@@ -459,3 +459,7 @@ body.expandMessageActions .mes .mes_buttons .extraMesButtonsHint {
 .mdhotkey_icon {
     opacity: 0.6;
 }
+
+label[for="trim_spaces"]:has(input:checked) i.warning {
+    display: none;
+}

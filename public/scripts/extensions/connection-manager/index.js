@@ -10,6 +10,7 @@ import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashComm
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from '../../slash-commands/SlashCommandScope.js';
 import { collapseSpaces, getUniqueName, isFalseBoolean, uuidv4 } from '../../utils.js';
+import { t } from '../../i18n.js';
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
@@ -284,7 +285,7 @@ async function deleteConnectionProfile() {
     }
 
     const name = extension_settings.connectionManager.profiles[index].name;
-    const confirm = await Popup.show.confirm('Are you sure you want to delete the selected profile?', name);
+    const confirm = await Popup.show.confirm(t`Are you sure you want to delete the selected profile?`, name);
 
     if (!confirm) {
         return;
@@ -398,7 +399,7 @@ async function renderDetailsContent(detailsContent) {
         const template = await renderExtensionTemplateAsync(MODULE_NAME, 'view', templateParams);
         detailsContent.innerHTML = template;
     } else {
-        detailsContent.textContent = 'No profile selected';
+        detailsContent.textContent = t`No profile selected`;
     }
 }
 
@@ -518,7 +519,6 @@ async function renderDetailsContent(detailsContent) {
             console.log('No profile selected');
             return;
         }
-
         if (!Array.isArray(profile.exclude)) {
             profile.exclude = [];
         }
@@ -534,7 +534,7 @@ async function renderDetailsContent(detailsContent) {
         const template = $(await renderExtensionTemplateAsync(MODULE_NAME, 'edit', { name: profile.name, settings }));
         const newName = await callGenericPopup(template, POPUP_TYPE.INPUT, profile.name, {
             customButtons: [{
-                text: 'Save and Update',
+                text: t`Save and Update`,
                 classes: ['popup-button-ok'],
                 result: POPUP_RESULT.AFFIRMATIVE,
                 action: () => {
