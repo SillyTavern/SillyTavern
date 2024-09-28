@@ -7877,7 +7877,7 @@ function addAlternateGreeting(template, greeting, index, getArray, popup) {
         event.preventDefault();
         event.stopPropagation();
 
-        if (confirm('Are you sure you want to delete this alternate greeting?')) {
+        if (confirm(t`Are you sure you want to delete this alternate greeting?`)) {
             const array = getArray();
             array.splice(index, 1);
 
