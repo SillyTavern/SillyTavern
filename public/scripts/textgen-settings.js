@@ -68,6 +68,10 @@ const LLAMACPP_DEFAULT_ORDER = [
     'temperature',
 ];
 const OOBA_DEFAULT_ORDER = [
+    'repetition_penalty',
+    'presence_penalty',
+    'frequency_penalty',
+    'dry',
     'temperature',
     'dynamic_temperature',
     'quadratic_sampling',
@@ -80,6 +84,9 @@ const OOBA_DEFAULT_ORDER = [
     'top_a',
     'min_p',
     'mirostat',
+    'xtc',
+    'encoder_repetition_penalty',
+    'no_repeat_ngram',
 ];
 const BIAS_KEY = '#textgenerationwebui_api-settings';
 
@@ -798,6 +805,25 @@ function showTypeSpecificControls(type) {
     });
 }
 
+/**
+ * Inserts missing items from the source array into the target array.
+ * @param {any[]} source - Source array
+ * @param {any[]} target - Target array
+ * @returns {void}
+ */
+function insertMissingArrayItems(source, target) {
+    if (source === target || !Array.isArray(source) || !Array.isArray(target)) {
+        return;
+    }
+
+    for (const item of source) {
+        if (!target.includes(item)) {
+            const index = source.indexOf(item);
+            target.splice(index, 0, item);
+        }
+    }
+}
+
 function setSettingByName(setting, value, trigger) {
     if (value === null || value === undefined) {
         return;
@@ -812,6 +838,7 @@ function setSettingByName(setting, value, trigger) {
 
     if ('sampler_priority' === setting) {
         value = Array.isArray(value) ? value : OOBA_DEFAULT_ORDER;
+        insertMissingArrayItems(OOBA_DEFAULT_ORDER, value);
         sortOobaItemsByOrder(value);
         settings.sampler_priority = value;
         return;
