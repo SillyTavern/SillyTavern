@@ -257,6 +257,10 @@ async function sendMakerSuiteRequest(request, response) {
     };
 
     function getGeminiBody() {
+        if (!Array.isArray(generationConfig.stopSequences) || !generationConfig.stopSequences.length) {
+            delete generationConfig.stopSequences;
+        }
+
         const should_use_system_prompt = (model.includes('gemini-1.5-flash') || model.includes('gemini-1.5-pro')) && request.body.use_makersuite_sysprompt;
         const prompt = convertGooglePrompt(request.body.messages, model, should_use_system_prompt, request.body.char_name, request.body.user_name);
         let body = {
@@ -538,7 +542,8 @@ async function sendCohereRequest(request, response) {
         const connectors = [];
         const tools = [];
 
-        if (request.body.websearch) {
+        const canDoWebSearch = !String(request.body.model).includes('c4ai-aya');
+        if (request.body.websearch && canDoWebSearch) {
             connectors.push({
                 id: 'web-search',
             });
@@ -964,6 +969,7 @@ router.post('/generate', jsonParser, function (request, response) {
         'model': request.body.model,
         'temperature': request.body.temperature,
         'max_tokens': request.body.max_tokens,
+        'max_completion_tokens': request.body.max_completion_tokens,
         'stream': request.body.stream,
         'presence_penalty': request.body.presence_penalty,
         'frequency_penalty': request.body.frequency_penalty,

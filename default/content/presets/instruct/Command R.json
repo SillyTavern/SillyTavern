@@ -1,5 +1,4 @@
 {
-    "system_prompt": "Write {{char}}'s next reply in this fictional roleplay with {{user}}.",
     "input_sequence": "<|START_OF_TURN_TOKEN|><|USER_TOKEN|>",
     "output_sequence": "<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>",
     "first_output_sequence": "",
@@ -9,8 +8,7 @@
     "stop_sequence": "<|END_OF_TURN_TOKEN|>",
     "wrap": false,
     "macro": true,
-    "names": true,
-    "names_force_groups": true,
+    "names_behavior": "always",
     "activation_regex": "",
     "skip_examples": false,
     "output_suffix": "<|END_OF_TURN_TOKEN|>",

@@ -32,6 +32,7 @@ import {
 import {
     instruct_presets,
     loadInstructMode,
+    names_behavior_types,
     selectInstructPreset,
 } from './instruct-mode.js';
 
@@ -49,6 +50,7 @@ import { AUTOCOMPLETE_SELECT_KEY, AUTOCOMPLETE_WIDTH } from './autocomplete/Auto
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { POPUP_TYPE, callGenericPopup } from './popup.js';
+import { loadSystemPrompts } from './sysprompt.js';
 
 export {
     loadPowerUserSettings,
@@ -74,11 +76,6 @@ const maxContextStep = 64;
 const defaultStoryString = '{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}\'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}';
 const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
-
-export const ui_mode = {
-    SIMPLE: 0,
-    POWER: 1,
-};
 
 const avatar_styles = {
     ROUND: 0,
@@ -111,13 +108,13 @@ export const persona_description_positions = {
 };
 
 let power_user = {
+    charListGrid: false,
     tokenizer: tokenizers.BEST_MATCH,
     token_padding: 64,
     collapse_newlines: false,
     pin_examples: false,
     strip_examples: false,
     trim_sentences: false,
-    include_newline: false,
     always_force_name2: false,
     user_prompt_bias: '',
     show_user_prompt_bias: true,
@@ -132,7 +129,6 @@ let power_user = {
     smooth_streaming: false,
     smooth_streaming_speed: 50,
 
-    ui_mode: ui_mode.POWER,
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
@@ -205,15 +201,14 @@ let power_user = {
     relaxed_api_urls: false,
     world_import_dialog: true,
     enable_auto_select_input: false,
+    enable_md_hotkeys: false,
     tag_import_setting: tag_import_setting.ASK,
     disable_group_trimming: false,
     single_line: false,
 
-    default_instruct: '',
     instruct: {
         enabled: false,
         preset: 'Alpaca',
-        system_prompt: 'Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}\'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n',
         input_sequence: '### Instruction:',
         input_suffix: '',
         output_sequence: '### Response:',
@@ -228,8 +223,7 @@ let power_user = {
         stop_sequence: '',
         wrap: true,
         macro: true,
-        names: false,
-        names_force_groups: true,
+        names_behavior: names_behavior_types.FORCE,
         activation_regex: '',
         bind_to_context: false,
         user_alignment_message: '',
@@ -238,7 +232,6 @@ let power_user = {
         separator_sequence: '',
     },
 
-    default_context: 'Default',
     context: {
         preset: 'Default',
         story_string: defaultStoryString,
@@ -247,6 +240,12 @@ let power_user = {
         use_stop_strings: true,
         allow_jailbreak: false,
         names_as_stop_strings: true,
+    },
+
+    sysprompt: {
+        enabled: true,
+        name: 'Neutral - Chat',
+        content: 'Write {{char}}\'s next reply in a fictional chat between {{char}} and {{user}}.',
     },
 
     personas: {},
@@ -305,7 +304,6 @@ export let context_presets = [];
 const storage_keys = {
     auto_connect_legacy: 'AutoConnectEnabled',
     auto_load_chat_legacy: 'AutoLoadChatEnabled',
-    hideChatAvatars_legacy: 'hideChatAvatarsEnabled',
 
     storyStringValidationCache: 'StoryStringValidationCache',
 };
@@ -322,7 +320,6 @@ const contextControls = [
     // Existing power user settings
     { id: 'always-force-name2-checkbox', property: 'always_force_name2', isCheckbox: true, isGlobalSetting: true, defaultValue: true },
     { id: 'trim_sentences_checkbox', property: 'trim_sentences', isCheckbox: true, isGlobalSetting: true, defaultValue: false },
-    { id: 'include_newline_checkbox', property: 'include_newline', isCheckbox: true, isGlobalSetting: true, defaultValue: false },
     { id: 'single_line', property: 'single_line', isCheckbox: true, isGlobalSetting: true, defaultValue: false },
 ];
 
@@ -330,12 +327,6 @@ let browser_has_focus = true;
 const debug_functions = [];
 
 const setHotswapsDebounced = debounce(favsToHotswap);
-
-export function switchSimpleMode() {
-    $('[data-newbie-hidden]').each(function () {
-        $(this).toggleClass('displayNone', power_user.ui_mode === ui_mode.SIMPLE);
-    });
-}
 
 function playMessageSound() {
     if (!power_user.play_message_sound) {
@@ -1040,7 +1031,7 @@ function applyChatWidth(type) {
     $('#chat_width_slider_counter').val(power_user.chat_width);
 }
 
-async function applyThemeColor(type) {
+function applyThemeColor(type) {
     if (type === 'main') {
         document.documentElement.style.setProperty('--SmartThemeBodyColor', power_user.main_text_color);
         const color = power_user.main_text_color.split('(')[1].split(')')[0].split(',');
@@ -1081,7 +1072,7 @@ async function applyThemeColor(type) {
     }
 }
 
-async function applyCustomCSS() {
+function applyCustomCSS() {
     $('#customCSS').val(power_user.custom_css);
     var styleId = 'custom-style';
     var style = document.getElementById(styleId);
@@ -1094,20 +1085,20 @@ async function applyCustomCSS() {
     style.innerHTML = power_user.custom_css;
 }
 
-async function applyBlurStrength() {
+function applyBlurStrength() {
     document.documentElement.style.setProperty('--blurStrength', String(power_user.blur_strength));
     $('#blur_strength_counter').val(power_user.blur_strength);
     $('#blur_strength').val(power_user.blur_strength);
 }
 
-async function applyShadowWidth() {
+function applyShadowWidth() {
     document.documentElement.style.setProperty('--shadowWidth', String(power_user.shadow_width));
     $('#shadow_width_counter').val(power_user.shadow_width);
     $('#shadow_width').val(power_user.shadow_width);
 
 }
 
-async function applyFontScale(type) {
+function applyFontScale(type) {
     //this is to allow forced setting on page load, theme swap, etc
     if (type === 'forced') {
         document.documentElement.style.setProperty('--fontScale', String(power_user.font_scale));
@@ -1122,7 +1113,7 @@ async function applyFontScale(type) {
     $('#font_scale').val(power_user.font_scale);
 }
 
-async function applyTheme(name) {
+function applyTheme(name) {
     const theme = themes.find(x => x.name == name);
 
     if (!theme) {
@@ -1142,61 +1133,61 @@ async function applyTheme(name) {
         { key: 'border_color', selector: '#border-color-picker', type: 'border' },
         {
             key: 'blur_strength',
-            action: async () => {
-                await applyBlurStrength();
+            action: () => {
+                applyBlurStrength();
             },
         },
         {
             key: 'custom_css',
-            action: async () => {
-                await applyCustomCSS();
+            action: () => {
+                applyCustomCSS();
             },
         },
         {
             key: 'shadow_width',
-            action: async () => {
-                await applyShadowWidth();
+            action: () => {
+                applyShadowWidth();
             },
         },
         {
             key: 'font_scale',
-            action: async () => {
-                await applyFontScale('forced');
+            action: () => {
+                applyFontScale('forced');
             },
         },
         {
             key: 'fast_ui_mode',
-            action: async () => {
+            action: () => {
                 switchUiMode();
             },
         },
         {
             key: 'waifuMode',
-            action: async () => {
+            action: () => {
                 switchWaifuMode();
             },
         },
         {
             key: 'chat_display',
-            action: async () => {
+            action: () => {
                 applyChatDisplay();
             },
         },
         {
             key: 'avatar_style',
-            action: async () => {
+            action: () => {
                 applyAvatarStyle();
             },
         },
         {
             key: 'noShadows',
-            action: async () => {
+            action: () => {
                 applyNoShadows();
             },
         },
         {
             key: 'chat_width',
-            action: async () => {
+            action: () => {
                 // If chat width is not set, set it to 50
                 if (!power_user.chat_width) {
                     power_user.chat_width = 50;
@@ -1206,88 +1197,88 @@ async function applyTheme(name) {
         },
         {
             key: 'timer_enabled',
-            action: async () => {
+            action: () => {
                 switchTimer();
             },
         },
         {
             key: 'timestamps_enabled',
-            action: async () => {
+            action: () => {
                 switchTimestamps();
             },
         },
         {
             key: 'timestamp_model_icon',
-            action: async () => {
+            action: () => {
                 switchIcons();
             },
         },
         {
             key: 'message_token_count_enabled',
-            action: async () => {
+            action: () => {
                 switchTokenCount();
             },
         },
         {
             key: 'mesIDDisplay_enabled',
-            action: async () => {
+            action: () => {
                 switchMesIDDisplay();
             },
         },
         {
             key: 'hideChatAvatars_enabled',
-            action: async () => {
+            action: () => {
                 switchHideChatAvatars();
             },
         },
         {
             key: 'expand_message_actions',
-            action: async () => {
+            action: () => {
                 switchMessageActions();
             },
         },
         {
             key: 'enableZenSliders',
-            action: async () => {
+            action: () => {
                 switchMessageActions();
             },
         },
         {
             key: 'enableLabMode',
-            action: async () => {
+            action: () => {
                 switchMessageActions();
             },
         },
         {
             key: 'hotswap_enabled',
-            action: async () => {
+            action: () => {
                 switchHotswap();
             },
         },
         {
             key: 'bogus_folders',
-            action: async () => {
+            action: () => {
                 $('#bogus_folders').prop('checked', power_user.bogus_folders);
                 printCharactersDebounced();
             },
         },
         {
             key: 'zoomed_avatar_magnification',
-            action: async () => {
+            action: () => {
                 $('#zoomed_avatar_magnification').prop('checked', power_user.zoomed_avatar_magnification);
                 printCharactersDebounced();
             },
         },
         {
             key: 'reduced_motion',
-            action: async () => {
+            action: () => {
                 $('#reduced_motion').prop('checked', power_user.reduced_motion);
                 switchReducedMotion();
             },
         },
         {
             key: 'compact_input_area',
-            action: async () => {
+            action: () => {
                 $('#compact_input_area').prop('checked', power_user.compact_input_area);
                 switchCompactInputArea();
             },
@@ -1298,8 +1289,8 @@ async function applyTheme(name) {
         if (theme[key] !== undefined) {
             power_user[key] = theme[key];
             if (selector) $(selector).attr('color', power_user[key]);
-            if (type) await applyThemeColor(type);
-            if (action) await action();
+            if (type) applyThemeColor(type);
+            if (action) action();
         } else {
             if (selector) { $(selector).attr('color', 'rgba(0,0,0,0)'); }
             console.debug(`Empty theme key: ${key}`);
@@ -1427,7 +1418,6 @@ async function loadPowerUserSettings(settings, data) {
     // These are still local storage. Delete in 1.12.7
     const autoLoadChat = localStorage.getItem(storage_keys.auto_load_chat_legacy);
     const autoConnect = localStorage.getItem(storage_keys.auto_connect_legacy);
-    const hideChatAvatars = localStorage.getItem(storage_keys.hideChatAvatars_legacy);
 
     if (autoLoadChat) {
         power_user.auto_load_chat = autoLoadChat === 'true';
@@ -1437,11 +1427,6 @@ async function loadPowerUserSettings(settings, data) {
     if (autoConnect) {
         power_user.auto_connect = autoConnect === 'true';
         localStorage.removeItem(storage_keys.auto_connect_legacy);
-    }
-
-    if (hideChatAvatars) {
-        power_user.hideChatAvatars_enabled = hideChatAvatars === 'true';
-        localStorage.removeItem(storage_keys.hideChatAvatars_legacy);
     }
 
     if (power_user.chat_display === '') {
@@ -1470,6 +1455,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#relaxed_api_urls').prop('checked', power_user.relaxed_api_urls);
     $('#world_import_dialog').prop('checked', power_user.world_import_dialog);
     $('#enable_auto_select_input').prop('checked', power_user.enable_auto_select_input);
+    $('#enable_md_hotkeys').prop('checked', power_user.enable_md_hotkeys);
     $('#trim_spaces').prop('checked', power_user.trim_spaces);
     $('#continue_on_send').prop('checked', power_user.continue_on_send);
     $('#quick_continue').prop('checked', power_user.quick_continue);
@@ -1481,7 +1467,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#auto_swipe_minimum_length').val(power_user.auto_swipe_minimum_length);
     $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(', '));
     $('#auto_swipe_blacklist_threshold').val(power_user.auto_swipe_blacklist_threshold);
-    $('#custom_stopping_strings').val(power_user.custom_stopping_strings);
+    $('#custom_stopping_strings').text(power_user.custom_stopping_strings);
     $('#custom_stopping_strings_macro').prop('checked', power_user.custom_stopping_strings_macro);
     $('#fuzzy_search_checkbox').prop('checked', power_user.fuzzy_search);
     $('#persona_show_notifications').prop('checked', power_user.persona_show_notifications);
@@ -1503,7 +1489,6 @@ async function loadPowerUserSettings(settings, data) {
     $('#collapse-newlines-checkbox').prop('checked', power_user.collapse_newlines);
     $('#always-force-name2-checkbox').prop('checked', power_user.always_force_name2);
     $('#trim_sentences_checkbox').prop('checked', power_user.trim_sentences);
-    $('#include_newline_checkbox').prop('checked', power_user.include_newline);
     $('#render_formulas').prop('checked', power_user.render_formulas);
     $('#disable_group_trimming').prop('checked', power_user.disable_group_trimming);
     $('#markdown_escape_strings').val(power_user.markdown_escape_strings);
@@ -1511,7 +1496,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#waifuMode').prop('checked', power_user.waifuMode);
     $('#movingUImode').prop('checked', power_user.movingUI);
     $('#noShadowsmode').prop('checked', power_user.noShadows);
-    $('#start_reply_with').val(power_user.user_prompt_bias);
+    $('#start_reply_with').text(power_user.user_prompt_bias);
     $('#chat-show-reply-prefix-checkbox').prop('checked', power_user.show_user_prompt_bias);
     $('#auto_continue_enabled').prop('checked', power_user.auto_continue.enabled);
     $('#auto_continue_allow_chat_completions').prop('checked', power_user.auto_continue.allow_chat_completions);
@@ -1586,7 +1571,6 @@ async function loadPowerUserSettings(settings, data) {
     $('#bot-mes-blur-tint-color-picker').attr('color', power_user.bot_mes_blur_tint_color);
     $('#shadow-color-picker').attr('color', power_user.shadow_color);
     $('#border-color-picker').attr('color', power_user.border_color);
-    $('#ui_mode_select').val(power_user.ui_mode).find(`option[value="${power_user.ui_mode}"]`).attr('selected', true);
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
     $('#auto-connect-checkbox').prop('checked', power_user.auto_connect);
     $('#auto-load-chat-checkbox').prop('checked', power_user.auto_load_chat);
@@ -1613,28 +1597,29 @@ async function loadPowerUserSettings(settings, data) {
     switchReducedMotion();
     switchCompactInputArea();
     reloadMarkdownProcessor(power_user.render_formulas);
-    loadInstructMode(data);
+    await loadInstructMode(data);
     await loadContextSettings();
+    await loadSystemPrompts(data);
     loadMaxContextUnlocked();
     switchWaifuMode();
     switchSpoilerMode();
     loadMovingUIState();
     loadCharListState();
-    switchSimpleMode();
+    toggleMDHotkeyIconDisplay();
 }
 
-async function loadCharListState() {
-    if (document.querySelector('.character_select') !== null) {
-        console.debug('setting charlist state to...');
-        if (power_user.charListGrid === true) {
-            console.debug('..to grid');
-            $('#charListGridToggle').trigger('click');
-        } else { console.debug('..to list'); }
+function toggleMDHotkeyIconDisplay() {
+    if (power_user.enable_md_hotkeys) {
+        $('.mdhotkey_location').each(function () {
+            $(this).parent().append('<i class="fa-brands fa-markdown mdhotkey_icon"></i>');
+        });
     } else {
-        console.debug('charlist not ready yet');
-        await delay(100);
-        loadCharListState();
+        $('.mdhotkey_icon').remove();
     }
+}
+
+function loadCharListState() {
+    document.body.classList.toggle('charListGrid', power_user.charListGrid);
 }
 
 function loadMovingUIState() {
@@ -1763,6 +1748,7 @@ async function loadContextSettings() {
         } else {
             $element.val(power_user.context[control.property]);
         }
+        console.log(`Setting ${$element.prop('id')} to ${power_user.context[control.property]}`);
 
         // If the setting already exists, no need to duplicate it
         // TODO: Maybe check the power_user object for the setting instead of a flag?
@@ -1773,11 +1759,11 @@ async function loadContextSettings() {
             } else {
                 power_user.context[control.property] = value;
             }
-
-            saveSettingsDebounced();
-            if (!control.isCheckbox) {
-                await resetScrollHeight($element);
+            console.log(`Setting ${$element.prop('id')} to ${value}`);
+            if (!CSS.supports('field-sizing', 'content') && $(this).is('textarea')) {
+                await resetScrollHeight($(this));
             }
+            saveSettingsDebounced();
         });
     });
 
@@ -1791,7 +1777,7 @@ async function loadContextSettings() {
     });
 
     $('#context_presets').on('change', function () {
-        const name = String($(this).find(':selected').val());
+        const name = String($(this).find(':selected').text());
         const preset = context_presets.find(x => x.name === name);
 
         if (!preset) {
@@ -1816,9 +1802,8 @@ async function loadContextSettings() {
                         .prop('checked', control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
                         .trigger('input');
                 } else {
-                    $element
-                        .val(control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
-                        .trigger('input');
+                    $element.val(control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property]);
+                    $element.trigger('input');
                 }
             }
         });
@@ -1828,35 +1813,14 @@ async function loadContextSettings() {
             for (const instruct_preset of instruct_presets) {
                 // If instruct preset matches the context template
                 if (instruct_preset.name === name) {
-                    selectInstructPreset(instruct_preset.name);
+                    selectInstructPreset(instruct_preset.name, { isAuto: true });
                     break;
                 }
             }
         }
 
-        highlightDefaultContext();
         saveSettingsDebounced();
     });
-
-    $('#context_set_default').on('click', function () {
-        if (power_user.context.preset !== power_user.default_context) {
-            power_user.default_context = power_user.context.preset;
-            $(this).addClass('default');
-            toastr.info(`Default context template set to ${power_user.default_context}`);
-
-            highlightDefaultContext();
-
-            saveSettingsDebounced();
-        }
-    });
-
-    highlightDefaultContext();
-}
-
-function highlightDefaultContext() {
-    $('#context_set_default').toggleClass('default', power_user.default_context === power_user.context.preset);
-    $('#context_set_default').toggleClass('disabled', power_user.default_context === power_user.context.preset);
-    $('#context_delete_preset').toggleClass('disabled', power_user.default_context === power_user.context.preset);
 }
 
 /**
@@ -2180,7 +2144,7 @@ async function deleteTheme() {
         power_user.theme = themes[0]?.name;
         saveSettingsDebounced();
         if (power_user.theme) {
-            await applyTheme(power_user.theme);
+            applyTheme(power_user.theme);
         }
         toastr.success('Theme deleted.');
     }
@@ -3086,19 +3050,6 @@ $(document).ready(() => {
     // if trim sentences is unchecked, include newline must be unchecked
     $('#trim_sentences_checkbox').change(function () {
         power_user.trim_sentences = !!$(this).prop('checked');
-        if (!$(this).prop('checked')) {
-            $('#include_newline_checkbox').prop('checked', false);
-            power_user.include_newline = false;
-        }
-        saveSettingsDebounced();
-    });
-
-    $('#include_newline_checkbox').change(function () {
-        power_user.include_newline = !!$(this).prop('checked');
-        if ($(this).prop('checked')) {
-            $('#trim_sentences_checkbox').prop('checked', true);
-            power_user.trim_sentences = true;
-        }
         saveSettingsDebounced();
     });
 
@@ -3250,21 +3201,21 @@ $(document).ready(() => {
         const applyMode = data?.forced ? 'forced' : 'normal';
         power_user.font_scale = Number(e.target.value);
         $('#font_scale_counter').val(power_user.font_scale);
-        await applyFontScale(applyMode);
+        applyFontScale(applyMode);
         saveSettingsDebounced();
     });
 
     $('input[name="blur_strength"]').on('input', async function (e) {
         power_user.blur_strength = Number(e.target.value);
         $('#blur_strength_counter').val(power_user.blur_strength);
-        await applyBlurStrength();
+        applyBlurStrength();
         saveSettingsDebounced();
     });
 
     $('input[name="shadow_width"]').on('input', async function (e) {
         power_user.shadow_width = Number(e.target.value);
         $('#shadow_width_counter').val(power_user.shadow_width);
-        await applyShadowWidth();
+        applyShadowWidth();
         saveSettingsDebounced();
     });
 
@@ -3640,6 +3591,13 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $('#enable_md_hotkeys').on('input', function () {
+        const value = !!$(this).prop('checked');
+        power_user.enable_md_hotkeys = value;
+        toggleMDHotkeyIconDisplay();
+        saveSettingsDebounced();
+    });
+
     $('#spoiler_free_mode').on('input', function () {
         power_user.spoiler_free_mode = !!$(this).prop('checked');
         switchSpoilerMode();
@@ -3652,7 +3610,7 @@ $(document).ready(() => {
     });
 
     $('#custom_stopping_strings').on('input', function () {
-        power_user.custom_stopping_strings = String($(this).val());
+        power_user.custom_stopping_strings = String($(this).val()).trim();
         saveSettingsDebounced();
     });
 
@@ -3684,13 +3642,6 @@ $(document).ready(() => {
 
     $('#debug_menu').on('click', function () {
         showDebugMenu();
-    });
-
-    $('#ui_mode_select').on('change', function () {
-        const value = $(this).find(':selected').val();
-        power_user.ui_mode = Number(value);
-        switchSimpleMode();
-        saveSettingsDebounced();
     });
 
     $('#bogus_folders').on('input', function () {

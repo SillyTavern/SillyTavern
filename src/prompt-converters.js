@@ -267,11 +267,14 @@ function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '
         'gemini-1.5-flash',
         'gemini-1.5-flash-latest',
         'gemini-1.5-flash-001',
+        'gemini-1.5-flash-002',
         'gemini-1.5-flash-exp-0827',
         'gemini-1.5-flash-8b-exp-0827',
+        'gemini-1.5-flash-8b-exp-0924',
         'gemini-1.5-pro',
         'gemini-1.5-pro-latest',
         'gemini-1.5-pro-001',
+        'gemini-1.5-pro-002',
         'gemini-1.5-pro-exp-0801',
         'gemini-1.5-pro-exp-0827',
         'gemini-1.0-pro-vision-latest',
@@ -335,10 +338,12 @@ function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '
                 if (part.type === 'text') {
                     parts.push({ text: part.text });
                 } else if (part.type === 'image_url' && isMultimodal) {
+                    const mimeType = part.image_url.url.split(';')[0].split(':')[1];
+                    const base64Data = part.image_url.url.split(',')[1];
                     parts.push({
                         inlineData: {
-                            mimeType: 'image/png',
-                            data: part.image_url.url,
+                            mimeType: mimeType,
+                            data: base64Data,
                         },
                     });
                     hasImage = true;

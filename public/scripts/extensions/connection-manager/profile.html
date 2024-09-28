@@ -1,0 +1,22 @@
+<div>
+    <h2 data-i18n="Creating a Connection Profile">
+        Creating a Connection Profile
+    </h2>
+    <div class="justifyLeft flex-container flexFlowColumn flexNoGap">
+        {{#each profile}}
+        <label class="checkbox_label">
+            <input type="checkbox" value="{{@key}}" name="exclude" checked>
+            <span><strong data-i18n="{{@key}}">{{@key}}:</strong>&nbsp;{{this}}</span>
+        </label>
+        {{/each}}
+    </div>
+    <div class="marginTop5">
+        <small>
+            <b>Hint:</b>
+            <i>Click on the setting name to omit it from the profile.</i>
+        </small>
+    </div>
+    <h3 data-i18n="Enter a name:">
+        Enter a name:
+    </h3>
+</div>

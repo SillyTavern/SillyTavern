@@ -1,5 +1,4 @@
 {
-    "system_prompt": "Write {{char}}'s next reply in this fictional roleplay with {{user}}.",
     "input_sequence": "<|user|>\n",
     "output_sequence": "<|assistant|>\n",
     "first_output_sequence": "",
@@ -9,8 +8,7 @@
     "stop_sequence": "<|end|>",
     "wrap": false,
     "macro": true,
-    "names": true,
-    "names_force_groups": true,
+    "names_behavior": "always",
     "activation_regex": "",
     "skip_examples": false,
     "output_suffix": "<|end|>\n",

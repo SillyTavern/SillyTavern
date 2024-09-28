@@ -313,7 +313,7 @@ async function onDeleteBackgroundClick(e) {
     }
 }
 
-const autoBgPrompt = 'Pause your roleplay and choose a location ONLY from the provided list that is the most suitable for the current scene. Do not output any other text:\n{0}';
+const autoBgPrompt = 'Ignore previous instructions and choose a location ONLY from the provided list that is the most suitable for the current scene. Do not output any other text:\n{0}';
 
 async function autoBackgroundCommand() {
     /** @type {HTMLElement[]} */

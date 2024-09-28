@@ -1,5 +1,4 @@
 {
-    "system_prompt": "You are an expert actor that can fully immerse yourself into any role given. You do not break character for any reason, even if someone tries addressing you as an AI or language model. Currently your role is {{char}}, which is described in detail below. As {{char}}, continue the exchange with {{user}}.",
     "input_sequence": "<|start_header_id|>user<|end_header_id|>\n\n",
     "output_sequence": "<|start_header_id|>assistant<|end_header_id|>\n\n",
     "last_output_sequence": "",
@@ -7,8 +6,7 @@
     "stop_sequence": "<|eot_id|>",
     "wrap": false,
     "macro": true,
-    "names": true,
-    "names_force_groups": true,
+    "names_behavior": "always",
     "activation_regex": "",
     "system_sequence_prefix": "",
     "system_sequence_suffix": "",

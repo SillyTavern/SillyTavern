@@ -15,7 +15,10 @@
   "use_cache": false,
   "return_full_text": false,
   "prefix": "vanilla",
-  "cfg_scale": 1,
   "phrase_rep_pen": "very_light",
-  "max_context": 7800
+  "max_context": 7800,
+  "min_p": 0,
+  "math1_temp": 1,
+  "math1_quad": 0,
+  "math1_quad_entropy_scale": 0
 }

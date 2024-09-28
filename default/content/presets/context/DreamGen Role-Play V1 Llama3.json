@@ -6,7 +6,6 @@
     "allow_jailbreak": false,
     "always_force_name2": false,
     "trim_sentences": true,
-    "include_newline": false,
     "single_line": false,
     "name": "DreamGen Role-Play V1 Llama3"
 }

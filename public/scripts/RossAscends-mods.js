@@ -296,7 +296,7 @@ export async function favsToHotswap() {
 
     //helpful instruction message if no characters are favorited
     if (favs.length == 0) {
-        container.html(`<small><span><i class="fa-solid fa-star"></i>${DOMPurify.sanitize(container.attr('no_favs'))}</span></small>`);
+        container.html(`<small><span><i class="fa-solid fa-star"></i>&nbsp;${DOMPurify.sanitize(container.attr('no_favs'))}</span></small>`);
         return;
     }
 
@@ -711,6 +711,18 @@ export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea, deboun
 
 // ---------------------------------------------------
 
+export function addSafariPatch() {
+    const userAgent = getParsedUA();
+    console.debug('User Agent', userAgent);
+    const isMobileSafari = /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isDesktopSafari = userAgent?.browser?.name === 'Safari' && userAgent?.platform?.type === 'desktop';
+    const isIOS = userAgent?.os?.name === 'iOS';
+
+    if (isIOS || isMobileSafari || isDesktopSafari) {
+        document.body.classList.add('safari');
+    }
+}
+
 export function initRossMods() {
     // initial status check
     setTimeout(() => {
@@ -725,14 +737,14 @@ export function initRossMods() {
         RA_autoconnect();
     }
 
-    const userAgent = getParsedUA();
-    console.debug('User Agent', userAgent);
-    const isMobileSafari = /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isDesktopSafari = userAgent?.browser?.name === 'Safari' && userAgent?.platform?.type === 'desktop';
-    const isIOS = userAgent?.os?.name === 'iOS';
-
-    if (isIOS || isMobileSafari || isDesktopSafari) {
-        document.body.classList.add('safari');
+    if (isMobile()) {
+        const fixFunkyPositioning = () => {
+            console.debug('[Mobile] Device viewport change detected.');
+            document.documentElement.style.position = 'fixed';
+            requestAnimationFrame(() => document.documentElement.style.position = '');
+        };
+        window.addEventListener('resize', fixFunkyPositioning);
+        window.addEventListener('orientationchange', fixFunkyPositioning);
     }
 
     $('#main_api').change(function () {
@@ -894,13 +906,15 @@ export function initRossMods() {
 
     restoreUserInput();
 
-    //Regenerate if user swipes on the last mesage in chat
-
+    // Swipe gestures (see: https://www.npmjs.com/package/swiped-events)
     document.addEventListener('swiped-left', function (e) {
         if (power_user.gestures === false) {
             return;
         }
-        if ($('.mes_edit_buttons, .drawer-content, #character_popup, #dialogue_popup, #WorldInfo, #right-nav-panel, #left-nav-panel, #select_chat_popup, #floatingPrompt').is(':visible')) {
+        if (Popup.util.isPopupOpen()) {
+            return;
+        }
+        if (!$(e.target).closest('#sheld').length) {
             return;
         }
         var SwipeButR = $('.swipe_right:last');
@@ -915,7 +929,10 @@ export function initRossMods() {
         if (power_user.gestures === false) {
             return;
         }
-        if ($('.mes_edit_buttons, .drawer-content, #character_popup, #dialogue_popup, #WorldInfo, #right-nav-panel, #left-nav-panel, #select_chat_popup, #floatingPrompt').is(':visible')) {
+        if (Popup.util.isPopupOpen()) {
+            return;
+        }
+        if (!$(e.target).closest('#sheld').length) {
             return;
         }
         var SwipeButL = $('.swipe_left:last');
