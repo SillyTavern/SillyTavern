@@ -1310,7 +1310,7 @@
                                         </div>
                                     </div>
 
-                                    <div data-tg-type="koboldcpp, aphrodite, tabby" id="xtc_block" class="wide100p">
+                                    <div data-tg-type="koboldcpp, aphrodite, tabby, ooba" id="xtc_block" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Exclude Top Choices (XTC)">Exclude Top Choices (XTC)</label>
                                             <a href="https://github.com/oobabooga/text-generation-webui/pull/6335" target="_blank">
@@ -1679,6 +1679,10 @@
                                             Ooba only. Determines the order of samplers.
                                         </div>
                                         <div id="sampler_priority_container" class="prompt_order">
+                                            <div data-name="repetition_penalty" draggable="true"><span>Repetition Penalty</span><small></small></div>
+                                            <div data-name="presence_penalty" draggable="true"><span>Presence Penalty</span><small></small></div>
+                                            <div data-name="frequency_penalty" draggable="true"><span>Frequency Penalty</span><small></small></div>
+                                            <div data-name="dry" draggable="true"><span>DRY</span><small></small></div>
                                             <div data-name="temperature" draggable="true"><span>Temperature</span><small></small></div>
                                             <div data-name="dynamic_temperature" draggable="true"><span>Dynamic Temperature</span><small></small></div>
                                             <div data-name="quadratic_sampling" draggable="true"><span>Quadratic / Smooth Sampling</span><small></small></div>
@@ -1691,6 +1695,9 @@
                                             <div data-name="top_a" draggable="true"><span>Top A</span><small></small></div>
                                             <div data-name="min_p" draggable="true"><span>Min P</span><small></small></div>
                                             <div data-name="mirostat" draggable="true"><span>Mirostat</span><small></small></div>
+                                            <div data-name="xtc" draggable="true"><span>XTC</span><small></small></div>
+                                            <div data-name="encoder_repetition_penalty" draggable="true"><span>Encoder Repetition Penalty</span><small></small></div>
+                                            <div data-name="no_repeat_ngram" draggable="true"><span>No Repeat Ngram</span><small></small></div>
                                         </div>
                                         <div id="textgenerationwebui_default_order" class="menu_button menu_button_icon">
                                             <span data-i18n="Load default order">Load default order</span>
