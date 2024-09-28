@@ -2440,14 +2440,6 @@ export function scrollChatToBottom() {
     if (power_user.auto_scroll_chat_to_bottom) {
         let position = chatElement[0].scrollHeight;
 
-        if (power_user.waifuMode) {
-            const lastMessage = chatElement.find('.mes').last();
-            if (lastMessage.length) {
-                const lastMessagePosition = lastMessage.position().top;
-                position = chatElement.scrollTop() + lastMessagePosition;
-            }
-        }
-
         chatElement.scrollTop(position);
     }
 }
