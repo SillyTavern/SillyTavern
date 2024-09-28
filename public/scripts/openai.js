@@ -1777,7 +1777,8 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
         generate_data['human_sysprompt_message'] = substituteParams(oai_settings.human_sysprompt_message);
         // Don't add a prefill on quiet gens (summarization)
-        if (!isQuiet && !isContinue) {
+        console.log(isContinue && oai_settings.continue_prefill);
+        if (!isQuiet && !(isContinue && oai_settings.continue_prefill)) {
             generate_data['assistant_prefill'] = isImpersonate ? substituteParams(oai_settings.assistant_impersonation) : substituteParams(oai_settings.assistant_prefill);
         }
     }
