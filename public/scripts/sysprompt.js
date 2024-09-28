@@ -143,7 +143,7 @@ function selectSystemPromptCallback(args, name) {
         foundName = result[0].item;
     }
 
-    $select.val(foundName).trigger('input');
+    $select.val(foundName).trigger('change');
     !quiet && toastr.success(`System prompt "${foundName}" selected`);
     return foundName;
 }

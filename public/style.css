@@ -3154,6 +3154,26 @@ grammarly-extension {
     align-items: center;
 }
 
+.alternate_greeting details {
+    padding: 2px;
+}
+
+.alternate_greeting summary {
+    list-style-position: outside;
+    margin-left: 1em;
+    padding-left: 1em;
+}
+
+.alternate_greeting textarea {
+    field-sizing: content;
+    max-height: 50dvh;
+}
+
+.alternate_greeting summary::marker,
+.alternate_greeting summary strong {
+    cursor: pointer;
+}
+
 #rm_characters_block .form_create_bottom_buttons_block {
     justify-content: space-evenly !important;
     flex-grow: 0;
@@ -3245,8 +3265,9 @@ grammarly-extension {
 }
 
 .wide_dialogue_popup {
-    aspect-ratio: 1 / 1;
-    width: unset !important;
+    /* FIXME: Chrome 129 broke max-height for aspect-ratio sized elements */
+    /* aspect-ratio: 1 / 1; */
+    /* width: unset !important; */
     min-width: var(--sheldWidth);
 }
 
@@ -5365,13 +5386,6 @@ body:not(.movingUI) .drawer-content.maximized {
 
 /* Jank mobile support for gallery and future draggables */
 @media screen and (max-width: 1000px) {
-    #gallery {
-        display: block;
-        width: 100vw;
-        height: 100vh;
-        z-index: 9999;
-    }
-
     .draggable {
         display: block;
         width: 100vw;

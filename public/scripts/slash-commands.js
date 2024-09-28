@@ -3469,7 +3469,7 @@ function getModelOptions(quiet) {
             case 'openai':
                 return oai_settings.chat_completion_source;
             default:
-                return nullResult;
+                return null;
         }
     }
 

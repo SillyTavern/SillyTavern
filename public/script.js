@@ -158,7 +158,7 @@ import {
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
-import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
+import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, initExtensions, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, executeSlashCommands, executeSlashCommandsOnChatInput, executeSlashCommandsWithOptions, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, registerSlashCommand, stopScriptExecution } from './scripts/slash-commands.js';
 import {
     tag_map,
@@ -244,6 +244,7 @@ import { commonEnumProviders, enumIcons } from './scripts/slash-commands/SlashCo
 import { initInputMarkdown } from './scripts/input-md-formatting.js';
 import { AbortReason } from './scripts/util/AbortReason.js';
 import { initSystemPrompts } from './scripts/sysprompt.js';
+import { registerExtensionSlashCommands as initExtensionSlashCommands } from './scripts/extensions-slashcommands.js';
 
 //exporting functions and vars for mods
 export {
@@ -935,6 +936,8 @@ async function firstLoadInit() {
     initTextGenModels();
     initOpenAI();
     initSystemPrompts();
+    initExtensions();
+    initExtensionSlashCommands();
     await initPresetManager();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
@@ -2573,7 +2576,7 @@ export function getStoppingStrings(isImpersonate, isContinue) {
         result.unshift('\n');
     }
 
-    return result.filter(onlyUnique);
+    return result.filter(x => x).filter(onlyUnique);
 }
 
 /**
@@ -4863,7 +4866,7 @@ export function getMaxContextSize(overrideResponseLength = null) {
             this_max_context = Math.min(max_context, 8192);
 
             // Added special tokens and whatnot
-            this_max_context -= 1;
+            this_max_context -= 10;
         }
 
         this_max_context = this_max_context - (overrideResponseLength || amount_gen);
@@ -7390,7 +7393,7 @@ function onScenarioOverrideRemoveClick() {
  */
 export function callPopup(text, type, inputValue = '', { okButton, rows, wide, wider, large, allowHorizontalScrolling, allowVerticalScrolling, cropAspect } = {}) {
     function getOkButtonText() {
-        if (['text', 'alternate_greeting', 'char_not_selected'].includes(popup_type)) {
+        if (['text', 'char_not_selected'].includes(popup_type)) {
             $dialoguePopupCancel.css('display', 'none');
             return okButton ?? 'Ok';
         } else if (['delete_extension'].includes(popup_type)) {
@@ -7827,24 +7830,42 @@ function openAlternateGreetings() {
 
     const template = $('#alternate_greetings_template .alternate_grettings').clone();
     const getArray = () => menu_type == 'create' ? create_save.alternate_greetings : characters[chid].data.alternate_greetings;
+    const popup = new Popup(template, POPUP_TYPE.TEXT, '', {
+        wide: true,
+        large: true,
+        allowVerticalScrolling: true,
+        onClose: async () => {
+            if (menu_type !== 'create') {
+                await createOrEditCharacter();
+            }
+        }
+    });
 
     for (let index = 0; index < getArray().length; index++) {
-        addAlternateGreeting(template, getArray()[index], index, getArray);
+        addAlternateGreeting(template, getArray()[index], index, getArray, popup);
     }
 
     template.find('.add_alternate_greeting').on('click', function () {
         const array = getArray();
         const index = array.length;
         array.push('');
-        addAlternateGreeting(template, '', index, getArray);
+        addAlternateGreeting(template, '', index, getArray, popup);
         updateAlternateGreetingsHintVisibility(template);
     });
 
+    popup.show();
     updateAlternateGreetingsHintVisibility(template);
-    callPopup(template, 'alternate_greeting', '', { wide: true, large: true });
 }
 
-function addAlternateGreeting(template, greeting, index, getArray) {
+/**
+ * Adds an alternate greeting to the template.
+ * @param {JQuery<HTMLElement>} template
+ * @param {string} greeting
+ * @param {number} index
+ * @param {() => any[]} getArray
+ * @param {Popup} popup
+ */
+function addAlternateGreeting(template, greeting, index, getArray, popup) {
     const greetingBlock = $('#alternate_greeting_form_template .alternate_greeting').clone();
     greetingBlock.find('.alternate_greeting_text').on('input', async function () {
         const value = $(this).val();
@@ -7852,11 +7873,16 @@ function addAlternateGreeting(template, greeting, index, getArray) {
         array[index] = value;
     }).val(greeting);
     greetingBlock.find('.greeting_index').text(index + 1);
-    greetingBlock.find('.delete_alternate_greeting').on('click', async function () {
+    greetingBlock.find('.delete_alternate_greeting').on('click', async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
         if (confirm(t`Are you sure you want to delete this alternate greeting?`)) {
             const array = getArray();
             array.splice(index, 1);
+
             // We need to reopen the popup to update the index numbers
+            await popup.complete(POPUP_RESULT.AFFIRMATIVE);
             openAlternateGreetings();
         }
     });
@@ -9573,9 +9599,6 @@ jQuery(async function () {
                     hideLoader();
                 }, 2000);
             }
-        }
-        if (popup_type == 'alternate_greeting' && menu_type !== 'create') {
-            createOrEditCharacter();
         }
 
         if (dialogueResolve) {

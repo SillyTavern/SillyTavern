@@ -1719,7 +1719,6 @@
     "Model": "Модель",
     "Proxy Preset": "Пресет для прокси",
     "Enter a name:": "Введите название:",
-    "Enter a new name": "Введите новое название",
     "Are you sure you want to delete the selected profile?": "Вы точно хотите удалить выбранный профиль?",
     "instruct_enabled": "Включить Instruct-режим",
     "Instruct Template": "Шаблон Instruct-режима",
@@ -1746,5 +1745,7 @@
     "Any contents here will replace the default Post-History Instructions used for this character. (v2 spec: post_history_instructions)": "Содержимое этого поля заменит стандартные Инструкции после истории, применяемые для этого персонажа. (v2 spec: post_history_instructions)",
     "None (disabled)": "Нигде (откл.)",
     "Markdown Hotkeys": "Горячие клавиши для разметки",
-    "markdown_hotkeys_desc": "Включить горячие клавиши для вставки символов разметки в некоторых полях ввода. См. '/help hotkeys'."
+    "markdown_hotkeys_desc": "Включить горячие клавиши для вставки символов разметки в некоторых полях ввода. См. '/help hotkeys'.",
+    "Save and Update": "Сохранить и обновить",
+    "Profile name:": "Название профиля:"
 }

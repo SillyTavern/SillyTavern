@@ -4,6 +4,7 @@ import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique } from '.
 import { EdgeTtsProvider } from './edge.js';
 import { ElevenLabsTtsProvider } from './elevenlabs.js';
 import { SileroTtsProvider } from './silerotts.js';
+import { GptSovitsV2Provider } from './gpt-sovits-v2.js';
 import { CoquiTtsProvider } from './coqui.js';
 import { SystemTtsProvider } from './system.js';
 import { NovelTtsProvider } from './novel.js';
@@ -15,6 +16,7 @@ import { VITSTtsProvider } from './vits.js';
 import { GSVITtsProvider } from './gsvi.js';
 import { SBVits2TtsProvider } from './sbvits2.js';
 import { AllTalkTtsProvider } from './alltalk.js';
+import { CosyVoiceProvider } from './cosyvoice.js';
 import { SpeechT5TtsProvider } from './speecht5.js';
 import { AzureTtsProvider } from './azure.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -86,9 +88,11 @@ const ttsProviders = {
     AllTalk: AllTalkTtsProvider,
     Azure: AzureTtsProvider,
     Coqui: CoquiTtsProvider,
+    'CosyVoice (Unofficial)': CosyVoiceProvider,
     Edge: EdgeTtsProvider,
     ElevenLabs: ElevenLabsTtsProvider,
     GSVI: GSVITtsProvider,
+    'GPT-SoVITS-V2 (Unofficial)': GptSovitsV2Provider,
     Novel: NovelTtsProvider,
     OpenAI: OpenAITtsProvider,
     'OpenAI Compatible': OpenAICompatibleTtsProvider,
