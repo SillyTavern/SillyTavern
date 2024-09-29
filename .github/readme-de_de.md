@@ -105,7 +105,7 @@ Um eine allgemeine Vorstellung davon zu bekommen, wie man Charakterkarten defini
 
 ## Erweiterungen
 
-SillyTavern hat Unterstützung für Erweiterungen.
+SillyTavern unterstützt Erweiterungen.
 
 * Emotionale Ausdrucksformen von Charakteren (Sprites)
 * Automatische Zusammenfassung des Chatverlaufs
