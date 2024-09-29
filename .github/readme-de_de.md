@@ -25,7 +25,7 @@ Wir haben eine [Dokumentationswebsite](https://docs.sillytavern.app/), um die me
 
 ## Was ist SillyTavern?
 
-SillyTavern (oder ST für kurz) ist eine lokal installierte Benutzeroberfläche, die es dir ermöglicht, mit Textgenerations-LLMs, Bildgenerierungsmaschinen und TTS-Sprachmodellen zu interagieren.
+SillyTavern (oder ST abgekürtz) ist eine lokal installierte Benutzeroberfläche, die es dir ermöglicht, mit Textgenerations-LLMs, Bildgenerierungsmaschinen und TTS-Sprachmodellen zu interagieren.
 
 Angefangen im Februar 2023 als Fork von TavernAI 1.2.8 hat SillyTavern nun über 100 Mitwirkende und 2 Jahre unabhängiger Entwicklung hinter sich und dient weiterhin als führende Software für versierte KI-Hobbyisten.
 
