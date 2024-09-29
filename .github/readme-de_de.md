@@ -132,12 +132,12 @@ Tutorials zur Nutzung findest du in der [Dokumentation](https://docs.sillytavern
 1. Installiere [NodeJS](https://nodejs.org/en) (die neueste LTS-Version wird empfohlen).
 2. Installiere [Git für Windows](https://gitforwindows.org/).
 3. Öffne den Windows-Explorer (`Win+E`).
-4. Durchsuche oder erstelle einen Ordner, der nicht von Windows kontrolliert oder überwacht wird. (z.B.: C:\MySpecialFolder\)
+4. Gehe zu oder erstelle einen Ordner, der nicht von Windows kontrolliert oder überwacht wird. (z.B.: C:\MySpecialFolder\)
 5. Öffne ein Eingabeaufforderungsfenster in diesem Ordner, indem du in die 'Adressleiste' oben klickst, `cmd` eingibst und Enter drückst.
 6. Sobald das schwarze Fenster (Eingabeaufforderung) erscheint, gib EINE der folgenden Optionen ein und drücke Enter:
 
-* für den Release-Zweig: `git clone https://github.com/SillyTavern/SillyTavern -b release`
-* für den Staging-Zweig: `git clone https://github.com/SillyTavern/SillyTavern -b staging`
+* für den Release-Branch: `git clone https://github.com/SillyTavern/SillyTavern -b release`
+* für den Staging-Branch: `git clone https://github.com/SillyTavern/SillyTavern -b staging`
 
 7. Sobald alles geklont ist, doppelklicke auf `Start.bat`, damit NodeJS seine Anforderungen installiert.
 8. Der Server wird dann gestartet, und SillyTavern wird in deinem Browser geöffnet.
@@ -149,8 +149,8 @@ Tutorials zur Nutzung findest du in der [Dokumentation](https://docs.sillytavern
 1. Installiere [NodeJS](https://nodejs.org/en) (die neueste LTS-Version wird empfohlen).
 2. Installiere [GitHub Desktop](https://central.github.com/deployments/desktop/desktop/latest/win32).
 3. Klicke nach der Installation von GitHub Desktop auf `Ein Repository aus dem Internet klonen....` (Hinweis: Du **musst kein** GitHub-Konto für diesen Schritt erstellen).
-4. Klicke im Menü auf den Tab URL, gib diese URL ein `https://github.com/SillyTavern/SillyTavern` und klicke auf Klonen. Du kannst den lokalen Pfad ändern, um festzulegen, wo SillyTavern heruntergeladen werden soll.
-5. Um SillyTavern zu öffnen, durchsuche mit dem Windows-Explorer den Ordner, in den du das Repository geklont hast. Standardmäßig wird das Repository hier geklont: `C:\Users\[Dein Windows-Benutzername]\Documents\GitHub\SillyTavern`.
+4. Klicke im Menü auf den Tab URL, gib diese URL ein `https://github.com/SillyTavern/SillyTavern` und klicke auf Klonen. Du kannst den lokalen Pfad ändern, um festzulegen, wohin SillyTavern heruntergeladen werden soll.
+5. Um SillyTavern zu öffnen, durchsuche mit dem Windows-Explorer den Ordner, in den du das Repository geklont hast. Standardmäßig wird das Repository hier hin geklont: `C:\Users\[Dein Windows-Benutzername]\Documents\GitHub\SillyTavern`.
 6. Doppelklicke auf die Datei `start.bat`. (Hinweis: Der Teil `.bat` des Dateinamens könnte von deinem Betriebssystem verborgen sein. In diesem Fall sieht es aus wie eine Datei namens "`Start`". Dies ist die Datei, auf die du doppelklickst, um SillyTavern auszuführen.)
 7. Nach dem Doppelklicken sollte ein großes schwarzes Konsolenfenster erscheinen, und SillyTavern beginnt, das zu installieren, was es zum Betrieb benötigt.
 8. Nach dem Installationsprozess sollte das Konsolenfenster so aussehen, und ein SillyTavern-Tab sollte in deinem Browser geöffnet sein.
@@ -158,13 +158,13 @@ Tutorials zur Nutzung findest du in der [Dokumentation](https://docs.sillytavern
 
 ## 🐧 Linux & 🍎 MacOS
 
-Für MacOS / Linux werden all diese Schritte in einem Terminal durchgeführt.
+Für MacOS/Linux werden all diese Schritte in einem Terminal durchgeführt.
 
 1. Installiere git und nodeJS (die Methode zur Durchführung hängt von deinem Betriebssystem ab).
 2. Klone das Repository.
 
-* für den Release-Zweig: `git clone https://github.com/SillyTavern/SillyTavern -b release`
-* für den Staging-Zweig: `git clone https://github.com/SillyTavern/SillyTavern -b staging`
+* für den Release-Branch: `git clone https://github.com/SillyTavern/SillyTavern -b release`
+* für den Staging-Branch: `git clone https://github.com/SillyTavern/SillyTavern -b staging`
 
 3. `cd SillyTavern`, um in den Installationsordner zu navigieren.
 4. Führe das Skript `start.sh` mit einem dieser Befehle aus:
@@ -199,7 +199,7 @@ git clone https://github.com/SillyTavern/SillyTavern-Launcher.git && cd SillyTav
 git clone https://github.com/SillyTavern/SillyTavern-Launcher.git && cd SillyTavern-Launcher
 ```
 
-3. Starte das installer.sh mit:
+3. Starte die installer.sh mit:
 
 ```shell
 chmod +x install.sh && ./install.sh
@@ -231,7 +231,7 @@ brew install git
 git clone https://github.com/SillyTavern/SillyTavern-Launcher.git && cd SillyTavern-Launcher
 ```
 
-4. Starte das installer.sh mit:
+4. Starte die installer.sh mit:
 
 ```shell
 chmod +x install.sh && ./install.sh
@@ -247,11 +247,11 @@ chmod +x launcher.sh && ./launcher.sh
 
 Diese Anweisungen setzen voraus, dass du Docker installiert hast, auf deine Befehlszeile für die Installation von Containern zugreifen kannst und mit deren allgemeiner Funktionsweise vertraut bist.
 
-### Bild selbst bauen
+### Image selbst bauen
 
-Wir haben einen umfassenden Leitfaden zur Nutzung von SillyTavern in Docker [hier](http://docs.sillytavern.app/installation/docker/) der Installationen auf Windows, macOS und Linux abdeckt! Lies ihn, wenn du das Bild selbst bauen möchtest.
+Wir haben einen umfassenden Leitfaden zur Nutzung von SillyTavern in Docker [hier](http://docs.sillytavern.app/installation/docker/) der die Installationen auf Windows, macOS und Linux abdeckt! Lies ihn, wenn du das Image selbst bauen möchtest.
 
-### Verwendung des GitHub Container Registry (am einfachsten)
+### Verwendung der GitHub Container Registry (am einfachsten)
 
 Du benötigst zwei zwingende Verzeichniszuordnungen und eine Portzuordnung, um SillyTavern funktionsfähig zu machen. Ersetze in dem Befehl deine Auswahl an den folgenden Stellen:
 
@@ -270,7 +270,7 @@ Du benötigst zwei zwingende Verzeichniszuordnungen und eine Portzuordnung, um S
 ##### Zusätzliche Einstellungen
 
 * [DockerNet] - Das Docker-Netzwerk, mit dem der Container erstellt werden soll. Wenn du nicht weißt, was das ist, sieh dir die [offizielle Docker-Dokumentation](https://docs.docker.com/reference/cli/docker/network/) an.
-* [version] - Auf der rechten Seite dieser GitHub-Seite siehst du "Packages". Wähle das Paket "sillytavern" und du siehst die Bildversionen. Das Bild-Tag "latest" hält dich auf dem Laufenden mit dem aktuellen Release. Du kannst auch "staging" und "release" Tags nutzen, die auf die nächtlichen Bilder der jeweiligen Zweige verweisen, aber das könnte unangemessen sein, wenn du Erweiterungen verwendest, die möglicherweise kaputt sind und Zeit benötigen, um aktualisiert zu werden.
+* [version] - Auf der rechten Seite dieser GitHub-Seite siehst du "Packages". Wähle das Paket "sillytavern" und du siehst die Imageversionen. Das Image-Tag "latest" hält dich auf dem Laufenden mit dem aktuellen Release. Du kannst auch "staging" und "release" Tags nutzen, die auf die nightly images der jeweiligen Zweige verweisen, aber das könnte unangemessen sein, wenn du Erweiterungen verwendest, die möglicherweise kaputt sind und Zeit benötigen, um aktualisiert zu werden.
 
 #### Installationsbefehl
 
@@ -304,80 +304,141 @@ Um die Ansicht deiner Schlüssel zu aktivieren:
 2. Starte den SillyTavern-Server neu.
 3. Klicke auf den Link 'Verborgene API-Schlüssel anzeigen' in der unteren rechten Ecke des API-Verbindungsfeldes.
 
-## Befehlszeilenargumente
-
-Du kannst Befehlszeilenargumente beim Starten des SillyTavern-Servers übergeben, um einige Einstellungen in `config.yaml` zu überschreiben.
-
-### Beispiele
-
-```shell
-node server.js --port 8000 --listen false
-# oder
-npm run start -- --port 8000 --listen false
-# oder (nur Windows)
-Start.bat --port 8000 --listen false
-```
-
-### Unterstützte Argumente
-
-| Option                  | Beschreibung                                                                                          | Typ      |
-|-------------------------|------------------------------------------------------------------------------------------------------|----------|
-| `--version`             | Zeigt die Versionsnummer an                                                                          | boolean  |
-| `--enableIPv6`          | Aktiviert IPv6.                                                                                      | boolean  |
-| `--enableIPv4`          | Aktiviert IPv4.                                                                                      | boolean  |
-| `--port`                | Setzt den Port, unter dem SillyTavern läuft. Wenn nicht angegeben, wird auf die YAML-Konfiguration 'port' zurückgegriffen. | number   |
-| `--dnsPreferIPv6`       | Bevorzugt IPv6 für DNS. Wenn nicht angegeben, wird auf die YAML-Konfiguration 'preferIPv6' zurückgegriffen. | boolean  |
-| `--autorun`             | Startet SillyTavern automatisch im Browser. Wenn nicht angegeben, wird auf die YAML-Konfiguration 'autorun' zurückgegriffen. | boolean  |
-| `--autorunHostname`     | Der Autorun-Hostname, wahrscheinlich am besten auf 'auto' belassen.                                  | string   |
-| `--autorunPortOverride` | Überschreibt den Port für den Autorun.                                                               | string   |
-| `--listen`              | SillyTavern hört auf allen Netzwerk-Schnittstellen. Wenn nicht angegeben, wird auf die YAML-Konfiguration 'listen' zurückgegriffen. | boolean  |
-| `--corsProxy`           | Aktiviert den CORS-Proxy. Wenn nicht angegeben, wird auf die YAML-Konfiguration 'enableCorsProxy' zurückgegriffen. | boolean  |
-| `--disableCsrf`         | Deaktiviert den CSRF-Schutz                                                                           | boolean  |
-| `--ssl`                 | Aktiviert SSL                                                                                         | boolean  |
-| `--certPath`            | Pfad zu deiner Zertifikatsdatei.                                                                     | string   |
-| `--keyPath`             | Pfad zu deiner privaten Schlüsseldatei.                                                              | string   |
-| `--whitelist`           | Aktiviert den Whitelist-Modus                                                                         | boolean  |
-| `--dataRoot`            | Wurzelverzeichnis für die Datenspeicherung                                                            | string   |
-| `--avoidLocalhost`      | Vermeidet die Verwendung von 'localhost' für den Autorun im Automatikmodus.                         | boolean  |
-| `--basicAuthMode`       | Aktiviert die Basis-Authentifizierung                                                                  | boolean  |
-| `--requestProxyEnabled` | Aktiviert die Verwendung eines Proxys für ausgehende Anfragen                                         | boolean  |
-| `--requestProxyUrl`     | Proxy-URL für Anfragen (HTTP oder SOCKS-Protokolle)                                                  | string   |
-| `--requestProxyBypass`  | Liste zum Umgehen des Proxys (durch Leerzeichen getrennte Liste von Hosts)                           | array    |
-
 ## Remote-Verbindungen
 
-In den meisten Fällen ist dies für Personen gedacht, die SillyTavern auf ihren Mobiltelefonen nutzen möchten, während ihr PC den ST-Server im selben WLAN-Netzwerk betreibt. Es kann jedoch auch verwendet werden, um Remote-Verbindungen von überall zu ermöglichen.
+In den meisten Fällen ist dies für Personen gedacht, die SillyTavern auf ihren Mobiltelefonen nutzen möchten, während ihr PC den ST-Server im selben WLAN-Netzwerk betreibt.
 
-Lies den ausführlichen Leitfaden zur Einrichtung von Remote-Verbindungen in den [Docs](https://docs.sillytavern.app/usage/remoteconnections/).
+Es kann jedoch auch verwendet werden, um Remote-Verbindungen von überall zu ermöglichen.
 
-Du möchtest vielleicht auch die SillyTavern-Benutzerprofile mit (optionalem) Passwortschutz konfigurieren: [Benutzer](https://docs.sillytavern.app/installation/st-1.12.0-migration-guide/#users).
+**WICHTIG: Lies die offizielle Anleitung, wenn du SillyTavern-Benutzerkonten mit (optionalem) Kennwortschutz konfigurieren möchtest: [Benutzer](https://docs.sillytavern.app/installation/st-1.12.0-migration-guide/#users).**
+
+### 1. Verwalten von Whitelist-IPs
+
+* Erstelle in deinem SillyTavern-Basisinstallationsordner eine neue Textdatei mit dem Namen `whitelist.txt`.
+
+* Öffne die Datei in einem Texteditor und füge eine Liste der IPs hinzu, mit denen du eine Verbindung herstellen darfst.
+
+*Es werden sowohl einzelne IPs als auch Platzhalter-IP-Bereiche akzeptiert. Beispiele:*
+
+```txt
+192.168.0.1
+192.168.0.20
+```
+
+oder
+
+```txt
+192.168.0.*
+```
+
+(Der obige Platzhalter-IP-Bereich ermöglicht jedem Gerät im lokalen Netzwerk eine Verbindung)
+
+CIDR-Masken werden ebenfalls akzeptiert (z.B. 10.0.0.0/24).
+
+* Speichere die Datei `whitelist.txt`.
+
+* Starte deinen ST-Server neu.
+
+Jetzt können Geräte mit der in der Datei angegebenen IP eine Verbindung herstellen.
+
+*Hinweis: `config.yaml` hat auch ein `whitelist`-Array, das du auf die gleiche Weise verwenden kannst, aber dieses Array wird ignoriert, wenn `whitelist.txt` vorhanden ist.*
+
+### 2. IP für den ST-Hostcomputer abrufen
+
+Nachdem die Whitelist eingerichtet wurde, benötigst du die IP des ST-Hostgeräts.
+
+Wenn sich das ST-Hostgerät im selben WLAN-Netzwerk befindet, verwende die interne WLAN-IP des ST-Hosts:
+
+* Für Windows: Windows-Taste > `cmd.exe` in die Suchleiste eingeben > `ipconfig` in die Konsole eingeben, Eingabetaste drücken > nach `IPv4`-Eintrag suchen.
+
+Wenn du (oder jemand anderes) eine Verbindung zu deinem gehosteten ST herstellen möchte, ohne sich im selben Netzwerk zu befinden, benötigst du die öffentliche IP Ihres ST-Hostgeräts.
+
+* Während du das ST-Hostgerät verwendest, rufe [diese Seite](https://whatismyipaddress.com/) auf und suche nach `IPv4`. Dies ist, was du verwenden würdest, um eine Verbindung vom Remote-Gerät herzustellen.
+
+### 3. Verbinde das Remote-Gerät mit dem ST-Host-Rechner
+
+Welche IP du auch immer für deine Situation erhalten hast, gib diese IP-Adresse und Portnummer in den Webbrowser des Remote-Geräts ein.
+
+Eine typische Adresse für einen ST-Host im selben WLAN-Netzwerk würde so aussehen:
+
+`http://192.168.0.5:8000`
+
+Verwende http://, NICHT https://
+
+### Öffne dein ST für alle IPs
+
+Wir empfehlen dies nicht, aber du kannst `config.yaml` öffnen und `whitelistMode` zu `false` ändern.
+
+Du musst `whitelist.txt` im SillyTavern-Basisinstallationsordner entfernen (oder umbenennen), falls vorhanden.
+
+Dies ist normalerweise eine unsichere Vorgehensweise, daher musst du dabei einen Benutzernamen und ein Passwort festlegen.
+
+Benutzername und Passwort werden in `config.yaml` festgelegt.
+
+Nach dem Neustart deines ST-Servers kann jedes Gerät unabhängig von seiner IP-Adresse eine Verbindung herstellen, solange es den Benutzernamen und das Passwort kennt.
+
+### Immer noch keine Verbindung möglich?
+
+* Erstelle eine eingehende/ausgehende Firewall-Regel für den Port, der in „config.yaml“ zu finden ist. Verwechsle dies NICHT mit der Portweiterleitung auf deinem Router, sonst könnte jemand deine Chat-Protokolle finden, und das ist ein großes No-Go.
+* Aktiviere den Profiltyp Privates Netzwerk unter Einstellungen > Netzwerk und Internet > Ethernet. Dies ist SEHR wichtig für Windows 11, sonst könntest du selbst mit den oben genannten Firewall-Regeln keine Verbindung herstellen.
 
 ## Leistungsprobleme?
 
-1. Deaktiviere den Unschärfe-Effekt und aktiviere die reduzierte Bewegung im Benutzer-Settings-Panel (Kategorie UI-Themen-Umschalter).
-2. Wenn du das Streaming von Antworten verwendest, setze die Streaming-FPS auf einen niedrigeren Wert (10-15 FPS werden empfohlen).
-3. Stelle sicher, dass der Browser die GPU-Beschleunigung für das Rendering aktiviert hat.
+### DO's: 
+
+1. Sende Pull Requests.
+2. Sende Funktionsvorschläge und Problemberichte unter Verwendung etablierter Vorlagen.
+3. Lies die Readme-Datei und die integrierte Dokumentation, bevor du etwas fragst.
+
+### DONT's:
+1. Biete Geldspenden an.
+2. Sende Fehlerberichte, ohne einen Kontext bereitzustellen.
+3. Stelle Fragen, die bereits unzählige Male beantwortet wurden.
+
+## Wo finde ich die alten Hintergründe?
+
+Wir wechseln zu einer Richtlinie, die ausschließlich 100 % Originalinhalte verwendet, daher wurden alte Hintergrundbilder aus diesem Repository entfernt.
+
+Du findest sie hier archiviert:
+
+<https://files.catbox.moe/1xevnc.zip>
+
+
+
 
 ## Lizenz und Danksagungen
 
-**Dieses Programm wird in der Hoffnung verteilt, dass es nützlich ist,  
-aber OHNE IRGENDEINE GARANTIE; nicht einmal die stillschweigende Garantie der  
+**Dieses Programm wird in der Hoffnung verbreitet, dass es nützlich ist,  
+aber OHNE JEGLICHE GARANTIE; nicht einmal die stillschweigende Garantie der  
 MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK. Siehe die  
 GNU Affero General Public License für weitere Details.**
 
-* [TavernAI](https://github.com/TavernAI/TavernAI) 1.2.8 von Humi: MIT-Lizenz
-* Teile des TavernAITurbo-Mods von CncAnon wurden mit Genehmigung verwendet
-* Visual Novel-Modus inspiriert von der Arbeit von PepperTaco (<https://github.com/peppertaco/Tavern/>)
-* Noto Sans Schriftart von Google (OFL-Lizenz)
-* Symbolthema von Font Awesome <https://fontawesome.com> (Symbole: CC BY 4.0, Schriftarten: SIL OFL 1.1, Code: MIT-Lizenz)
-* Standardinhalt von @OtisAlejandro (Seraphina-Charakter und Lorebuch) und @kallmeflocc (10K Discord-Benutzer Feierhintergrund)
-* Docker-Leitfaden von [@mrguymiah](https://github.com/mrguymiah) und [@Bronya-Rand](https://github.com/Bronya-Rand)
-
-## Top-Beitragszahler
-
-[![Contributors](https://contrib.rocks/image?repo=SillyTavern/SillyTavern)](https://github.com/SillyTavern/SillyTavern/graphs/contributors)
+* TAI-Basis von Humi: MIT
+* Cohees Modifikationen und abgeleiteter Code: AGPL v3
+* RossAscends' Ergänzungen: AGPL v3
+* Teile von CncAnons TavernAITurbo-Mod: Unbekannte Lizenz
+* kingbris verschiedene Commits und Vorschläge (<https://github.com/bdashore3>)
+* city_units Erweiterungen und verschiedene QoL-Funktionen (<https://github.com/city-unit>)
+* StefanDanielSchwarzs verschiedene Commits und Fehlerberichte (<https://github.com/StefanDanielSchwarz>)
+* Waifu-Modus inspiriert durch die Arbeit von PepperTaco (<https://github.com/peppertaco/Tavern/>)
+* Danke an die Pygmalion University für die tollen Tester und coolen Funktionsvorschläge!
+* Danke, oobabooga, für das Kompilieren von Voreinstellungen für TextGen
+* KoboldAI-Voreinstellungen von KAI Lite: <https://lite.koboldai.net/>
+* Noto Sans-Schriftart von Google (OFL-Lizenz)
+* Symboldesign von Font Awesome <https://fontawesome.com> (Symbole: CC BY 4.0, Schriftarten: SIL OFL 1.1, Code: MIT-Lizenz)
+* AI Horde-Clientbibliothek von ZeldaFan0225: <https://github.com/ZeldaFan0225/ai_horde>
+* Linux-Startskript von AlpinDale
+* Danke, paniphons, für das Bereitstellen eines FAQ-Dokuments
+* 10.000 Discord-Benutzer-Feierhintergrund von @kallmeflocc
+* Standardinhalte (Charaktere und Überlieferungsbücher) bereitgestellt von @OtisAlejandro, @RossAscends und @kallmeflocc
+* Koreanische Übersetzung von @doloroushyeonse
+* k_euler_a-Unterstützung für Horde von <https://github.com/Teashrock>
+* Chinesische Übersetzung von [@XXpE3](https://github.com/XXpE3), 中文 ISSUES 可以联系 @XXpE3
+* Docker-Anleitung von [@mrguymiah](https://github.com/mrguymiah) und [@Bronya-Rand](https://github.com/Bronya-Rand)
 
 <!-- LINK GROUP -->
-[cover]: https://github.com/user-attachments/assets/01a6ae9a-16aa-45f2-8bff-32b5dc587e44
+[back-to-top]: https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square
+[cover]: https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4
 [discord-link]: https://discord.gg/sillytavern
+[discord-shield]: https://img.shields.io/discord/1100685673633153084?color=5865F2&label=discord&labelColor=black&logo=discord&logoColor=white&style=flat-square
 [discord-shield-badge]: https://img.shields.io/discord/1100685673633153084?color=5865F2&label=discord&labelColor=black&logo=discord&logoColor=white&style=for-the-badge
