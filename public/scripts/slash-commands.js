@@ -3667,11 +3667,17 @@ function setPromptEntryCallback(args, targetState) {
     const prompts = promptManager.serviceSettings.prompts;
 
     function parseArgs(arg) {
+        // Arg is already an array
+        if (Array.isArray(arg)) {
+            return arg;
+        }
         const list = [];
         try {
+            // Arg is a JSON-stringified array
             const parsedArg = JSON.parse(arg);
             list.push(...Array.isArray(parsedArg) ? parsedArg : [arg]);
         } catch {
+            // Arg is a string
             list.push(arg);
         }
         return list;
