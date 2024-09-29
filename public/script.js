@@ -959,7 +959,7 @@ async function firstLoadInit() {
     initCfg();
     initLogprobs();
     initInputMarkdown();
-    initScrapers();
+    await initScrapers();
     doDailyExtensionUpdatesCheck();
     await hideLoader();
     await fixViewport();
