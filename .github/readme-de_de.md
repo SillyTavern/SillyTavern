@@ -32,7 +32,7 @@ Angefangen im Februar 2023 als Fork von TavernAI 1.2.8 hat SillyTavern nun über
 ## Unsere Vision
 
 1. Wir möchten die Nutzer mit so viel Nutzen und Kontrolle über ihre LLM-Prompts wie möglich ausstatten. Die steile Lernkurve ist Teil des Spaßes!
-2. Wir bieten keine Online- oder gehosteten Dienste an, noch verfolgen wir programmgesteuert Benutzerdaten.
+2. Wir bieten weder Online- oder gehosteten Dienste an, noch verfolgen wir programmgesteuert Benutzerdaten.
 3. SillyTavern ist ein Herzensprojekt, das von einer engagierten Community von LLM-Enthusiasten unterstützt wird, und wird immer kostenlos und Open Source sein.
 
 ## Zweige
