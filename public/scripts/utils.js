@@ -2125,7 +2125,7 @@ export async function showFontAwesomePicker(customList = null) {
  * @returns {any?} - The found character or null if not found
  */
 export function findChar({ name = null, allowAvatar = true, insensitive = true, filteredByTags = null, preferCurrentChar = true, quiet = false } = {}) {
-    const matches = (char) => (allowAvatar && char.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name);
+    const matches = (char) => !name || (allowAvatar && char.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name);
 
     // Filter characters by tags if provided
     let filteredCharacters = characters;
@@ -2145,8 +2145,8 @@ export function findChar({ name = null, allowAvatar = true, insensitive = true, 
     if (preferCurrentChar) {
         const preferredCharSearch = currentChars.filter(matches);
         if (preferredCharSearch.length > 1) {
-            if (!quiet) toastr.warning(`Multiple characters found for name "${name}" and given conditions.`);
-            else console.warn(`Multiple characters found for name "${name}". Returning the first match.`);
+            if (!quiet) toastr.warning('Multiple characters found for given conditions.');
+            else console.warn('Multiple characters found for given conditions. Returning the first match.');
         }
         if (preferredCharSearch.length) {
             return preferredCharSearch[0];
@@ -2164,8 +2164,8 @@ export function findChar({ name = null, allowAvatar = true, insensitive = true, 
     // Search for matching characters by name
     const matchingCharacters = name ? filteredCharacters.filter(matches) : filteredCharacters;
     if (matchingCharacters.length > 1) {
-        if (!quiet) toastr.warning(`Multiple characters found for name "${name}" and given conditions.`);
-        else console.warn(`Multiple characters found for name "${name}". Returning the first match.`);
+        if (!quiet) toastr.warning('Multiple characters found for given conditions.');
+        else console.warn('Multiple characters found for given conditions. Returning the first match.');
     }
 
     return matchingCharacters[0] || null;
