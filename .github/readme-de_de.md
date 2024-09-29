@@ -98,7 +98,7 @@ Um eine allgemeine Vorstellung davon zu bekommen, wie man Charakterkarten defini
 * Erweiterte Texteinstellungen mit vielen von der Community erstellten Voreinstellungen
 * Unterstützung für World Info: erstelle reichhaltige Lore oder speichere Tokens auf deiner Charakterkarte
 * Gruppenchats: Multi-Bot-Räume für Charaktere, die mit dir und/oder untereinander sprechen
-* Reichhaltige UI-Anpassungsoptionen: Themenfarben, Hintergrundbilder, benutzerdefiniertes CSS und mehr
+* Reichhaltige UI-Anpassungsoptionen: Themes zur Farbenwahl, Hintergrundbilder, benutzerdefiniertes CSS und mehr
 * Benutzer-Personas: Lass die KI ein wenig über dich wissen, um die Immersion zu erhöhen
 * Eingebaute RAG-Unterstützung: Füge Dokumente zu deinen Chats hinzu, auf die die KI verweisen kann
 * Umfangreiches Chat-Befehlsunterstützungssystem und eigene [Scripting-Engine](https://docs.sillytavern.app/usage/st-script/)
