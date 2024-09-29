@@ -304,107 +304,59 @@ Um die Ansicht deiner Schlüssel zu aktivieren:
 2. Starte den SillyTavern-Server neu.
 3. Klicke auf den Link 'Verborgene API-Schlüssel anzeigen' in der unteren rechten Ecke des API-Verbindungsfeldes.
 
-## Remote-Verbindungen
+## Befehlszeilenargumente
 
-In den meisten Fällen ist dies für Personen gedacht, die SillyTavern auf ihren Mobiltelefonen nutzen möchten, während ihr PC den ST-Server im selben WLAN-Netzwerk betreibt.
+Sie können Befehlszeilenargumente an den Start des SillyTavern-Servers übergeben, um einige Einstellungen in `config.yaml` zu überschreiben.
 
-Es kann jedoch auch verwendet werden, um Remote-Verbindungen von überall zu ermöglichen.
+### Beispiele
 
-**WICHTIG: Lies die offizielle Anleitung, wenn du SillyTavern-Benutzerkonten mit (optionalem) Kennwortschutz konfigurieren möchtest: [Benutzer](https://docs.sillytavern.app/installation/st-1.12.0-migration-guide/#users).**
-
-### 1. Verwalten von Whitelist-IPs
-
-* Erstelle in deinem SillyTavern-Basisinstallationsordner eine neue Textdatei mit dem Namen `whitelist.txt`.
-
-* Öffne die Datei in einem Texteditor und füge eine Liste der IPs hinzu, mit denen du eine Verbindung herstellen darfst.
-
-*Es werden sowohl einzelne IPs als auch Platzhalter-IP-Bereiche akzeptiert. Beispiele:*
-
-```txt
-192.168.0.1
-192.168.0.20
+```shell
+node server.js --port 8000 --listen false
+# oder
+npm run start -- --port 8000 --listen false
+# oder (nur Windows)
+Start.bat --port 8000 --listen false
 ```
 
-oder
+### Unterstützte Argumente
 
-```txt
-192.168.0.*
-```
+| Option | Beschreibung | Typ |
+|-------------------------|----------------------------------------------------------------------------------------------------|----------|
+| `--version` | Versionsnummer anzeigen | boolean |
+| `--enableIPv6` | Aktiviert IPv6. | boolean |
+| `--enableIPv4` | Aktiviert IPv4. | boolean |
+| `--port` | Legt den Port fest, unter dem SillyTavern ausgeführt wird. Wenn nicht angegeben, wird auf YAML-Konfiguration „Port“ zurückgegriffen. | number |
+| „--dnsPreferIPv6“ | Bevorzugt IPv6 für DNS. Wenn nicht angegeben, wird auf YAML-Konfiguration „preferIPv6“ zurückgegriffen. | boolean |
+| „--autorun“ | Startet SillyTavern automatisch im Browser. Wenn nicht angegeben, wird auf YAML-Konfiguration „autorun“ zurückgegriffen.| boolean |
+| „--autorunHostname“ | Der Autorun-Hostname, am besten auf „auto“ belassen. | string |
+| „--autorunPortOverride“ | Überschreibt den Port für Autorun. | string |
+| „--listen“ | SillyTavern lauscht auf allen Netzwerkschnittstellen. Wenn nicht angegeben, wird auf YAML-Konfiguration „listen“ zurückgegriffen.| boolean |
+| „--corsProxy“ | Aktiviert CORS-Proxy. Wenn nicht angegeben, wird auf YAML-Konfiguration „enableCorsProxy“ zurückgegriffen. | boolean |
+| `--disableCsrf` | Deaktiviert CSRF-Schutz | boolean |
+| `--ssl` | Aktiviert SSL | boolean |
+| `--certPath` | Pfad zu Ihrer Zertifikatsdatei. | string |
+| `--keyPath` | Pfad zu Ihrer privaten Schlüsseldatei. | string |
+| `--whitelist` | Aktiviert den Whitelist-Modus | boolean |
+| `--dataRoot` | Stammverzeichnis für Datenspeicherung | string |
+| `--avoidLocalhost` | Vermeidet die Verwendung von „localhost“ für Autorun im Auto-Modus. | boolean |
+| `--basicAuthMode` | Aktiviert die grundlegende Authentifizierung | boolean |
+| `--requestProxyEnabled` | Aktiviert die Verwendung eines Proxys für ausgehende Anfragen | boolean |
+| `--requestProxyUrl` | Proxy-URL anfordern (HTTP- oder SOCKS-Protokolle) | string |
+| `--requestProxyBypass` | Proxy-Bypass-Liste anfordern (durch Leerzeichen getrennte Liste von Hosts) | Array |
 
-(Der obige Platzhalter-IP-Bereich ermöglicht jedem Gerät im lokalen Netzwerk eine Verbindung)
+## Remoteverbindungen
 
-CIDR-Masken werden ebenfalls akzeptiert (z.B. 10.0.0.0/24).
+Dies ist in den meisten Fällen für Personen gedacht, die SillyTavern auf ihren Mobiltelefonen verwenden möchten, während ihr PC den ST-Server im selben WLAN-Netzwerk betreibt. Es kann jedoch auch verwendet werden, um Remoteverbindungen von überall her zu ermöglichen.
 
-* Speichere die Datei `whitelist.txt`.
+Lies die ausführliche Anleitung zum Einrichten von Remoteverbindungen in den [Docs](https://docs.sillytavern.app/usage/remoteconnections/).
 
-* Starte deinen ST-Server neu.
-
-Jetzt können Geräte mit der in der Datei angegebenen IP eine Verbindung herstellen.
-
-*Hinweis: `config.yaml` hat auch ein `whitelist`-Array, das du auf die gleiche Weise verwenden kannst, aber dieses Array wird ignoriert, wenn `whitelist.txt` vorhanden ist.*
-
-### 2. IP für den ST-Hostcomputer abrufen
-
-Nachdem die Whitelist eingerichtet wurde, benötigst du die IP des ST-Hostgeräts.
-
-Wenn sich das ST-Hostgerät im selben WLAN-Netzwerk befindet, verwende die interne WLAN-IP des ST-Hosts:
-
-* Für Windows: Windows-Taste > `cmd.exe` in die Suchleiste eingeben > `ipconfig` in die Konsole eingeben, Eingabetaste drücken > nach `IPv4`-Eintrag suchen.
-
-Wenn du (oder jemand anderes) eine Verbindung zu deinem gehosteten ST herstellen möchte, ohne sich im selben Netzwerk zu befinden, benötigst du die öffentliche IP Ihres ST-Hostgeräts.
-
-* Während du das ST-Hostgerät verwendest, rufe [diese Seite](https://whatismyipaddress.com/) auf und suche nach `IPv4`. Dies ist, was du verwenden würdest, um eine Verbindung vom Remote-Gerät herzustellen.
-
-### 3. Verbinde das Remote-Gerät mit dem ST-Host-Rechner
-
-Welche IP du auch immer für deine Situation erhalten hast, gib diese IP-Adresse und Portnummer in den Webbrowser des Remote-Geräts ein.
-
-Eine typische Adresse für einen ST-Host im selben WLAN-Netzwerk würde so aussehen:
-
-`http://192.168.0.5:8000`
-
-Verwende http://, NICHT https://
-
-### Öffne dein ST für alle IPs
-
-Wir empfehlen dies nicht, aber du kannst `config.yaml` öffnen und `whitelistMode` zu `false` ändern.
-
-Du musst `whitelist.txt` im SillyTavern-Basisinstallationsordner entfernen (oder umbenennen), falls vorhanden.
-
-Dies ist normalerweise eine unsichere Vorgehensweise, daher musst du dabei einen Benutzernamen und ein Passwort festlegen.
-
-Benutzername und Passwort werden in `config.yaml` festgelegt.
-
-Nach dem Neustart deines ST-Servers kann jedes Gerät unabhängig von seiner IP-Adresse eine Verbindung herstellen, solange es den Benutzernamen und das Passwort kennt.
-
-### Immer noch keine Verbindung möglich?
-
-* Erstelle eine eingehende/ausgehende Firewall-Regel für den Port, der in „config.yaml“ zu finden ist. Verwechsle dies NICHT mit der Portweiterleitung auf deinem Router, sonst könnte jemand deine Chat-Protokolle finden, und das ist ein großes No-Go.
-* Aktiviere den Profiltyp Privates Netzwerk unter Einstellungen > Netzwerk und Internet > Ethernet. Dies ist SEHR wichtig für Windows 11, sonst könntest du selbst mit den oben genannten Firewall-Regeln keine Verbindung herstellen.
+Möglicherweise möchtest du SillyTavern-Benutzerprofile auch mit (optionalem) Kennwortschutz konfigurieren: [Benutzer](https://docs.sillytavern.app/installation/st-1.12.0-migration-guide/#users).
 
 ## Leistungsprobleme?
 
-### DO's: 
-
-1. Sende Pull Requests.
-2. Sende Funktionsvorschläge und Problemberichte unter Verwendung etablierter Vorlagen.
-3. Lies die Readme-Datei und die integrierte Dokumentation, bevor du etwas fragst.
-
-### DONT's:
-1. Biete Geldspenden an.
-2. Sende Fehlerberichte, ohne einen Kontext bereitzustellen.
-3. Stelle Fragen, die bereits unzählige Male beantwortet wurden.
-
-## Wo finde ich die alten Hintergründe?
-
-Wir wechseln zu einer Richtlinie, die ausschließlich 100 % Originalinhalte verwendet, daher wurden alte Hintergrundbilder aus diesem Repository entfernt.
-
-Du findest sie hier archiviert:
-
-<https://files.catbox.moe/1xevnc.zip>
-
-
-
+1. Deaktiviere den Unschärfeeffekt und aktiviere "Verringerte Bewegung" im Bedienfeld "Benutzereinstellungen" (UI-Design schaltet Kategorie um).
+2. Wenn du Response Streaming verwendest, stelle die Streaming-FPS auf einen niedrigeren Wert ein (10-15 FPS werden empfohlen).
+3. Stelle sicher, dass der Browser die GPU-Beschleunigung zum Rendern verwenden kann.
 
 ## Lizenz und Danksagungen
 
@@ -413,32 +365,19 @@ aber OHNE JEGLICHE GARANTIE; nicht einmal die stillschweigende Garantie der
 MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK. Siehe die  
 GNU Affero General Public License für weitere Details.**
 
-* TAI-Basis von Humi: MIT
-* Cohees Modifikationen und abgeleiteter Code: AGPL v3
-* RossAscends' Ergänzungen: AGPL v3
-* Teile von CncAnons TavernAITurbo-Mod: Unbekannte Lizenz
-* kingbris verschiedene Commits und Vorschläge (<https://github.com/bdashore3>)
-* city_units Erweiterungen und verschiedene QoL-Funktionen (<https://github.com/city-unit>)
-* StefanDanielSchwarzs verschiedene Commits und Fehlerberichte (<https://github.com/StefanDanielSchwarz>)
-* Waifu-Modus inspiriert durch die Arbeit von PepperTaco (<https://github.com/peppertaco/Tavern/>)
-* Danke an die Pygmalion University für die tollen Tester und coolen Funktionsvorschläge!
-* Danke, oobabooga, für das Kompilieren von Voreinstellungen für TextGen
-* KoboldAI-Voreinstellungen von KAI Lite: <https://lite.koboldai.net/>
+* [TavernAI](https://github.com/TavernAI/TavernAI) 1.2.8 von Humi: MIT-Lizenz
+* Teile von CncAnons TavernAITurbo-Mod werden mit Genehmigung verwendet
+* Visual Novel-Modus inspiriert von der Arbeit von PepperTaco (<https://github.com/peppertaco/Tavern/>)
 * Noto Sans-Schriftart von Google (OFL-Lizenz)
 * Symboldesign von Font Awesome <https://fontawesome.com> (Symbole: CC BY 4.0, Schriftarten: SIL OFL 1.1, Code: MIT-Lizenz)
-* AI Horde-Clientbibliothek von ZeldaFan0225: <https://github.com/ZeldaFan0225/ai_horde>
-* Linux-Startskript von AlpinDale
-* Danke, paniphons, für das Bereitstellen eines FAQ-Dokuments
-* 10.000 Discord-Benutzer-Feierhintergrund von @kallmeflocc
-* Standardinhalte (Charaktere und Überlieferungsbücher) bereitgestellt von @OtisAlejandro, @RossAscends und @kallmeflocc
-* Koreanische Übersetzung von @doloroushyeonse
-* k_euler_a-Unterstützung für Horde von <https://github.com/Teashrock>
-* Chinesische Übersetzung von [@XXpE3](https://github.com/XXpE3), 中文 ISSUES 可以联系 @XXpE3
+* Standardinhalt von @OtisAlejandro (Seraphina-Charakter und Lorebook) und @kallmeflocc (10.000 Discord-Benutzer-Feierhintergrund)
 * Docker-Anleitung von [@mrguymiah](https://github.com/mrguymiah) und [@Bronya-Rand](https://github.com/Bronya-Rand)
 
+## Top Contributors
+
+[![Contributors](https://contrib.rocks/image?repo=SillyTavern/SillyTavern)](https://github.com/SillyTavern/SillyTavern/graphs/contributors)
+
 <!-- LINK GROUP -->
-[back-to-top]: https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square
-[cover]: https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4
+[cover]: https://github.com/user-attachments/assets/01a6ae9a-16aa-45f2-8bff-32b5dc587e44
 [discord-link]: https://discord.gg/sillytavern
-[discord-shield]: https://img.shields.io/discord/1100685673633153084?color=5865F2&label=discord&labelColor=black&logo=discord&logoColor=white&style=flat-square
 [discord-shield-badge]: https://img.shields.io/discord/1100685673633153084?color=5865F2&label=discord&labelColor=black&logo=discord&logoColor=white&style=for-the-badge
