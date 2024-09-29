@@ -13,6 +13,7 @@ import { isValidUrl } from './utils.js';
  * @property {string} description
  * @property {string} iconClass
  * @property {boolean} iconAvailable
+ * @property {() => Promise<void>} [init=null]
  * @property {() => Promise<boolean>} isAvailable
  * @property {() => Promise<File[]>} scrape
  */
@@ -40,6 +41,10 @@ export class ScraperManager {
         if (ScraperManager.#scrapers.some(s => s.id === scraper.id)) {
             console.warn(`Scraper with ID ${scraper.id} already registered`);
             return;
+        }
+
+        if (scraper.init) {
+            scraper.init();
         }
 
         ScraperManager.#scrapers.push(scraper);
@@ -462,7 +467,9 @@ class YouTubeScraper {
         this.description = 'Download a transcript from a YouTube video.';
         this.iconClass = 'fa-brands fa-youtube';
         this.iconAvailable = true;
+    }
 
+    async init() {
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'yt-script',
             callback: async (args, url) => {
@@ -564,9 +571,11 @@ class YouTubeScraper {
     }
 }
 
-ScraperManager.registerDataBankScraper(new FileScraper());
-ScraperManager.registerDataBankScraper(new Notepad());
-ScraperManager.registerDataBankScraper(new WebScraper());
-ScraperManager.registerDataBankScraper(new MediaWikiScraper());
-ScraperManager.registerDataBankScraper(new FandomScraper());
-ScraperManager.registerDataBankScraper(new YouTubeScraper());
+export function initScrapers() {
+    ScraperManager.registerDataBankScraper(new FileScraper());
+    ScraperManager.registerDataBankScraper(new Notepad());
+    ScraperManager.registerDataBankScraper(new WebScraper());
+    ScraperManager.registerDataBankScraper(new MediaWikiScraper());
+    ScraperManager.registerDataBankScraper(new FandomScraper());
+    ScraperManager.registerDataBankScraper(new YouTubeScraper());
+}

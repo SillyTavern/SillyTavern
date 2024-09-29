@@ -55,7 +55,7 @@ import { autoSelectPersona, retriggerFirstMessageOnEmptyChat, setPersonaLockStat
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer } from './tokenizers.js';
-import { debounce, delay, equalsIgnoreCaseAndAccents, isFalseBoolean, isTrueBoolean, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
+import { debounce, delay, equalsIgnoreCaseAndAccents, findChar, isFalseBoolean, isTrueBoolean, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { background_settings } from './backgrounds.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
@@ -68,10 +68,8 @@ import { SlashCommandNamedArgumentAssignment } from './slash-commands/SlashComma
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
-import { SlashCommandDebugController } from './slash-commands/SlashCommandDebugController.js';
 import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
 import { SlashCommandExecutionError } from './slash-commands/SlashCommandExecutionError.js';
-import { getTagsList } from './tags.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -2969,29 +2967,6 @@ async function deleteMessagesByNameCallback(_, name) {
     return '';
 }
 
-function findCharacterIndex(name) {
-    const matchTypes = [
-        (a, b) => a === b,
-        (a, b) => a.startsWith(b),
-        (a, b) => a.includes(b),
-    ];
-
-    const exactAvatarMatch = characters.findIndex(x => x.avatar === name);
-
-    if (exactAvatarMatch !== -1) {
-        return exactAvatarMatch;
-    }
-
-    for (const matchType of matchTypes) {
-        const index = characters.findIndex(x => matchType(x.name.toLowerCase(), name.toLowerCase()));
-        if (index !== -1) {
-            return index;
-        }
-    }
-
-    return -1;
-}
-
 async function goToCharacterCallback(_, name) {
     if (!name) {
         console.warn('WARN: No character name provided for /go command');
@@ -3236,77 +3211,6 @@ export function getNameAndAvatarForMessage(character, name = null) {
         force_avatar: force_avatar,
         original_avatar: original_avatar,
     };
-}
-
-/**
- * Finds a character by name, with optional filtering and precedence for avatars
- * @param {object} [options={}] - The options for the search
- * @param {string?} [options.name=null] - The name to search for
- * @param {boolean} [options.allowAvatar=true] - Whether to allow searching by avatar
- * @param {boolean} [options.insensitive=true] - Whether the search should be case insensitive
- * @param {string[]?} [options.filteredByTags=null] - Tags to filter characters by
- * @param {boolean} [options.preferCurrentChar=true] - Whether to prefer the current character(s)
- * @param {boolean} [options.quiet=false] - Whether to suppress warnings
- * @returns {any?} - The found character or null if not found
- */
-export function findChar({ name = null, allowAvatar = true, insensitive = true, filteredByTags = null, preferCurrentChar = true, quiet = false } = {}) {
-    const matches = (char) => (allowAvatar && char.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name);
-
-    // Filter characters by tags if provided
-    let filteredCharacters = characters;
-    if (filteredByTags) {
-        filteredCharacters = characters.filter(char => {
-            const charTags = getTagsList(char.avatar, false);
-            return filteredByTags.every(tagName => charTags.some(x => x.name == tagName));
-        });
-    }
-
-    // Get the current character(s)
-    /** @type {any[]} */
-    const currentChars = selected_group ? groups.find(group => group.id === selected_group)?.members.map(member => filteredCharacters.find(char => char.avatar === member))
-        : [filteredCharacters.find(char => characters[this_chid]?.avatar === char.avatar)];
-
-    // If we have a current char and prefer it, return that if it matches
-    if (preferCurrentChar) {
-        const preferredCharSearch = currentChars.filter(matches);
-        if (preferredCharSearch.length > 1) {
-            if (!quiet) toastr.warning(`Multiple characters found for name "${name}" and given conditions.`);
-            else console.warn(`Multiple characters found for name "${name}". Returning the first match.`);
-        }
-        if (preferredCharSearch.length) {
-            return preferredCharSearch[0];
-        }
-    }
-
-    // If allowAvatar is true, search by avatar first
-    if (allowAvatar && name) {
-        const characterByAvatar = filteredCharacters.find(char => char.avatar === name);
-        if (characterByAvatar) {
-            return characterByAvatar;
-        }
-    }
-
-    // Search for matching characters by name
-    const matchingCharacters = name ? filteredCharacters.filter(matches) : filteredCharacters;
-    if (matchingCharacters.length > 1) {
-        if (!quiet) toastr.warning(`Multiple characters found for name "${name}" and given conditions.`);
-        else console.warn(`Multiple characters found for name "${name}". Returning the first match.`);
-    }
-
-    return matchingCharacters[0] || null;
-}
-
-/**
- * Gets the index of a character based on the character object
- * @param {object} char - The character object to find the index for
- * @throws {Error} If the character is not found
- * @returns {number} The index of the character in the characters array
- */
-export function getCharIndex(char) {
-    if (!char) throw new Error('Character is undefined');
-    const index = characters.findIndex(c => c.avatar === char.avatar);
-    if (index === -1) throw new Error(`Character not found: ${char.avatar}`);
-    return index;
 }
 
 export async function sendMessageAs(args, text) {
