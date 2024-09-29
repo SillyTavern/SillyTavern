@@ -26,6 +26,7 @@ import { debounce_timeout } from './constants.js';
 import { INTERACTABLE_CONTROL_CLASS } from './keyboard.js';
 import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { renderTemplateAsync } from './templates.js';
+import { findChar } from './slash-commands.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -507,7 +508,7 @@ export function getTagKeyForEntityElement(element) {
  */
 export function searchCharByName(charName, { suppressLogging = false } = {}) {
     const entity = charName
-        ? (characters.find(x => x.name === charName) || groups.find(x => x.name == charName))
+        ? (findChar({ name: charName }) || groups.find(x => equalsIgnoreCaseAndAccents(x.name, charName)))
         : (selected_group ? groups.find(x => x.id == selected_group) : characters[this_chid]);
     const key = getTagKeyForEntity(entity);
     if (!key) {
@@ -1861,8 +1862,9 @@ function registerTagsSlashCommands() {
             return String(result);
         },
         namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({ name: 'name',
-                description: 'Character name',
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
                 enumProvider: commonEnumProviders.characters(),
@@ -1907,7 +1909,7 @@ function registerTagsSlashCommands() {
         },
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({ name: 'name',
-                description: 'Character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
                 enumProvider: commonEnumProviders.characters(),
@@ -1950,7 +1952,7 @@ function registerTagsSlashCommands() {
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
-                description: 'Character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
                 enumProvider: commonEnumProviders.characters(),
@@ -1993,7 +1995,7 @@ function registerTagsSlashCommands() {
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
-                description: 'Character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
                 enumProvider: commonEnumProviders.characters(),

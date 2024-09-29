@@ -12,6 +12,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { isFunctionCallingSupported } from '../../openai.js';
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { findChar } from '../../slash-commands.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -2105,14 +2106,20 @@ function migrateSettings() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'lastsprite',
-        callback: (_, value) => lastExpression[String(value).trim()] ?? '',
+        callback: (_, name) => {
+            if (typeof name !== 'string') throw new Error('name must be a string');
+            const char = findChar({ name: name });
+            const sprite = lastExpression[char?.name ?? name] ?? '';
+            return sprite;
+        },
         returns: 'the last set sprite / expression for the named character.',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: commonEnumProviders.characters('character'),
+                forceEnum: true,
             }),
         ],
         helpString: 'Returns the last set sprite / expression for the named character.',

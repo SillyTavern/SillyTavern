@@ -210,7 +210,7 @@ export function initDefaultSlashCommands() {
         ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'Character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumProvider: commonEnumProviders.characters('character'),
                 forceEnum: false,
@@ -700,7 +700,7 @@ export function initDefaultSlashCommands() {
         aliases: ['addmember', 'memberadd'],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: () => selected_group ? commonEnumProviders.characters('character')() : [],
@@ -2810,26 +2810,23 @@ async function removeGroupMemberCallback(_, arg) {
     return '';
 }
 
-async function addGroupMemberCallback(_, arg) {
+async function addGroupMemberCallback(_, name) {
     if (!selected_group) {
         toastr.warning('Cannot run /memberadd command outside of a group chat.');
         return '';
     }
 
-    if (!arg) {
+    if (!name) {
         console.warn('WARN: No argument provided for /memberadd command');
         return '';
     }
 
-    arg = arg.trim();
-    const chid = findCharacterIndex(arg);
-
-    if (chid === -1) {
-        console.warn(`WARN: No character found for argument ${arg}`);
+    const character = findChar({ name: name, preferCurrentChar: false });
+    if (!character) {
+        console.warn(`WARN: No character found for argument ${name}`);
         return '';
     }
 
-    const character = characters[chid];
     const group = groups.find(x => x.id === selected_group);
 
     if (!group || !Array.isArray(group.members)) {
