@@ -2530,8 +2530,13 @@ async function askCharacter(args, text) {
             return;
         }
 
-        setCharacterId(prevChId);
-        setCharacterName(characters[prevChId].name);
+        if (prevChId !== undefined) {
+            setCharacterId(prevChId);
+            setCharacterName(characters[prevChId].name);
+        } else {
+            setCharacterId(undefined);
+            setCharacterName(neutralCharacterName);
+        }
 
         // Only force the new avatar if the character name is the same
         // This skips if an error was fired
