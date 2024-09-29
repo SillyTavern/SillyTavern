@@ -289,6 +289,7 @@ export function initDefaultSlashCommands() {
                 <li>
                     <pre><code>/sendas name="Chloe" avatar="BigBadBoss" Hehehe, I am the big bad evil, fear me.</code></pre>
                     will send a message as the character "Chloe", but utilizing the avatar from a character named "BigBadBoss".
+                </li>
             </ul>
         </div>
         <div>
