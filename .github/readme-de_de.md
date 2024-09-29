@@ -101,7 +101,7 @@ Um eine allgemeine Vorstellung davon zu bekommen, wie man Charakterkarten defini
 * Reichhaltige UI-Anpassungsoptionen: Themes zur Farbenwahl, Hintergrundbilder, benutzerdefiniertes CSS und mehr
 * Benutzer-Personas: Lass die KI ein wenig über dich wissen, um die Immersion zu erhöhen
 * Eingebaute RAG-Unterstützung: Füge Dokumente zu deinen Chats hinzu, auf die die KI verweisen kann
-* Umfangreiches Chat-Befehlsunterstützungssystem und eigene [Scripting-Engine](https://docs.sillytavern.app/usage/st-script/)
+* Umfangreiches "Chat-Befehle"-System und eigene [Scripting-Engine](https://docs.sillytavern.app/usage/st-script/)
 
 ## Erweiterungen
 
