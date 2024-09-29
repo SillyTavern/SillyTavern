@@ -247,7 +247,7 @@ export function initDefaultSlashCommands() {
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
-                description: 'Character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: commonEnumProviders.characters('character'),
@@ -255,7 +255,7 @@ export function initDefaultSlashCommands() {
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'avatar',
-                description: 'Character avatar override (Can be either avatar filename or just the character name to pull the avatar from)',
+                description: 'Character avatar override (Can be either avatar key or just the character name to pull the avatar from)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumProvider: commonEnumProviders.characters('character'),
             }),
@@ -288,6 +288,9 @@ export function initDefaultSlashCommands() {
                     <pre><code>/sendas name="Chloe" Hello, guys!</code></pre>
                     will send "Hello, guys!" from "Chloe".
                 </li>
+                <li>
+                    <pre><code>/sendas name="Chloe" avatar="BigBadBoss" Hehehe, I am the big bad evil, fear me.</code></pre>
+                    will send a message as the character "Chloe", but utilizing the avatar from a character named "BigBadBoss".
             </ul>
         </div>
         <div>
@@ -509,7 +512,7 @@ export function initDefaultSlashCommands() {
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
-                description: 'character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: commonEnumProviders.characters('character'),
@@ -2558,25 +2561,21 @@ async function askCharacter(args, text) {
         return '';
     }
 
-    let name = '';
-
-    if (args?.name) {
-        name = args.name.trim();
-
-        if (!name) {
-            toastr.warning('You must specify a name of the character to ask.');
-            return '';
-        }
+    if (!args.name) {
+        toastr.warning('You must specify a name of the character to ask.');
+        return '';
     }
 
     const prevChId = this_chid;
 
     // Find the character
-    const chId = characters.findIndex((e) => e.name === name || e.avatar === name);
-    if (!characters[chId] || chId === -1) {
+    const character = findChar({ name: args?.name });
+    if (!character) {
         toastr.error('Character not found.');
         return '';
     }
+
+    const chId = getCharIndex(character);
 
     if (text) {
         const mesText = getRegexedString(text.trim(), regex_placement.SLASH_COMMAND);
@@ -2588,19 +2587,9 @@ async function askCharacter(args, text) {
     // Override character and send a user message
     setCharacterId(String(chId));
 
-    const character = characters[chId];
-    let force_avatar, original_avatar;
+    const { name, force_avatar, original_avatar } = getNameAndAvatarForMessage(character, args?.name);
 
-    if (character && character.avatar !== 'none') {
-        force_avatar = getThumbnailUrl('avatar', character.avatar);
-        original_avatar = character.avatar;
-    }
-    else {
-        force_avatar = default_avatar;
-        original_avatar = default_avatar;
-    }
-
-    setCharacterName(character.name);
+    setCharacterName(name);
 
     const restoreCharacter = () => {
         if (String(this_chid) !== String(chId)) {
@@ -2613,7 +2602,7 @@ async function askCharacter(args, text) {
         // Only force the new avatar if the character name is the same
         // This skips if an error was fired
         const lastMessage = chat[chat.length - 1];
-        if (lastMessage && lastMessage?.name === character.name) {
+        if (lastMessage && lastMessage?.name === name) {
             lastMessage.force_avatar = force_avatar;
             lastMessage.original_avatar = original_avatar;
         }
@@ -2624,7 +2613,7 @@ async function askCharacter(args, text) {
     // Run generate and restore previous character
     try {
         eventSource.once(event_types.MESSAGE_RECEIVED, restoreCharacter);
-        toastr.info(`Asking ${character.name} something...`);
+        toastr.info(`Asking ${name} something...`);
         askResult = await Generate('ask_command');
     } catch (error) {
         restoreCharacter();
@@ -3215,6 +3204,41 @@ export function validateArrayArg(arg, name, { allowUndefined = true } = {}) {
     return arg;
 }
 
+
+/**
+ * Retrieves the name and avatar information for a message
+ *
+ * The name of the character will always have precendence over the one given as argument. If you want to specify a different name for the message,
+ * explicitly implement this in the code using this.
+ *
+ * @param {object?} character - The character object to get the avatar data for
+ * @param {string?} name - The name to get the avatar data for
+ * @returns {{name: string, force_avatar: string, original_avatar: string}} An object containing the name for the message, forced avatar URL, and original avatar
+ */
+export function getNameAndAvatarForMessage(character, name = null) {
+    const isNeutralCharacter = !character && name2 === neutralCharacterName && name === neutralCharacterName;
+    const currentChar = characters[this_chid];
+
+    let force_avatar, original_avatar;
+    if (character?.avatar === currentChar?.avatar || isNeutralCharacter) {
+        // If the targeted character is the currently selected one in a solo chat, we don't need to force any avatars
+    }
+    else if (character && character.avatar !== 'none') {
+        force_avatar = getThumbnailUrl('avatar', character.avatar);
+        original_avatar = character.avatar;
+    }
+    else {
+        force_avatar = default_avatar;
+        original_avatar = default_avatar;
+    }
+
+    return {
+        name: character?.name || name,
+        force_avatar: force_avatar,
+        original_avatar: original_avatar,
+    };
+}
+
 /**
  * Finds a character by name, with optional filtering and precedence for avatars
  * @param {object} [options={}] - The options for the search
@@ -3273,6 +3297,19 @@ export function findChar({ name = null, allowAvatar = true, insensitive = true, 
     return matchingCharacters[0] || null;
 }
 
+/**
+ * Gets the index of a character based on the character object
+ * @param {object} char - The character object to find the index for
+ * @throws {Error} If the character is not found
+ * @returns {number} The index of the character in the characters array
+ */
+export function getCharIndex(char) {
+    if (!char) throw new Error('Character is undefined');
+    const index = characters.findIndex(c => c.avatar === char.avatar);
+    if (index === -1) throw new Error(`Character not found: ${char.avatar}`);
+    return index;
+}
+
 export async function sendMessageAs(args, text) {
     if (!text) {
         return '';
@@ -3319,23 +3356,10 @@ export async function sendMessageAs(args, text) {
         return '';
     }
 
-    const isNeutralCharacter = !character && name2 === neutralCharacterName && name === neutralCharacterName;
-
-    let force_avatar, original_avatar;
-    if (character === avatarCharacter || isNeutralCharacter) {
-        // If the targeted character is the currently selected one in a solo chat, we don't need to force any avatars
-    }
-    else if (avatarCharacter && avatarCharacter.avatar !== 'none') {
-        force_avatar = getThumbnailUrl('avatar', avatarCharacter.avatar);
-        original_avatar = avatarCharacter.avatar;
-    }
-    else {
-        force_avatar = default_avatar;
-        original_avatar = default_avatar;
-    }
+    const { name: nameForMessage, force_avatar, original_avatar } = getNameAndAvatarForMessage(avatarCharacter, name);
 
     const message = {
-        name: character?.name || name,
+        name: nameForMessage,
         is_user: false,
         is_system: isSystem,
         send_date: getMessageTimeStamp(),
