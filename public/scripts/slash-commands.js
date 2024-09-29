@@ -461,12 +461,14 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'go',
         callback: goToCharacterCallback,
+        returns: 'The character/group name',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: commonEnumProviders.characters('all'),
+                forceEnum: true,
             }),
         ],
         helpString: 'Opens up a chat with the character or group by its name',
@@ -531,7 +533,7 @@ export function initDefaultSlashCommands() {
         namedArgumentList: [],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: commonEnumProviders.characters('character'),
@@ -936,7 +938,7 @@ export function initDefaultSlashCommands() {
             ),
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
-                description: 'in-prompt name for instruct mode',
+                description: 'in-prompt character name for instruct mode (or unique character identifier (avatar key), which will be used as name)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: 'System',
                 enumProvider: () => [...commonEnumProviders.characters('character')(), new SlashCommandEnumValue('System', null, enumTypes.enum, enumIcons.assistant)],
@@ -2373,7 +2375,8 @@ async function generateCallback(args, value) {
 
         setEphemeralStopStrings(resolveVariable(args?.stop));
         const name = args?.name;
-        const result = await generateQuietPrompt(value, quietToLoud, false, '', name, length);
+        const char = findChar({ name: name });
+        const result = await generateQuietPrompt(value, quietToLoud, false, '', char?.name ?? name, length);
         return result;
     } catch (err) {
         console.error('Error on /gen generation', err);
@@ -2895,7 +2898,7 @@ function findPersonaByName(name) {
     }
 
     for (const persona of Object.entries(power_user.personas)) {
-        if (persona[1].toLowerCase() === name.toLowerCase()) {
+        if (equalsIgnoreCaseAndAccents(persona[1], name)) {
             return persona[0];
         }
     }
@@ -2938,7 +2941,9 @@ async function deleteMessagesByNameCallback(_, name) {
         return;
     }
 
-    name = name.trim();
+    // Search for a matching character to get the real name, or take the name provided
+    const character = findChar({ name: name });
+    name = character?.name || name;
 
     const messagesToDelete = [];
     chat.forEach((value) => {
@@ -2996,31 +3001,28 @@ async function goToCharacterCallback(_, name) {
         return;
     }
 
-    name = name.trim();
-    const characterIndex = findCharacterIndex(name);
-
-    if (characterIndex !== -1) {
-        await openChat(new String(characterIndex));
-        setActiveCharacter(characters[characterIndex]?.avatar);
+    const character = findChar({ name: name });
+    if (character) {
+        const chid = getCharIndex(character);
+        await openChat(new String(chid));
+        setActiveCharacter(character.avatar);
         setActiveGroup(null);
-        return characters[characterIndex]?.name;
-    } else {
-        const group = groups.find(it => it.name.toLowerCase() == name.toLowerCase());
-        if (group) {
-            await openGroupById(group.id);
-            setActiveCharacter(null);
-            setActiveGroup(group.id);
-            return group.name;
-        } else {
-            console.warn(`No matches found for name "${name}"`);
-            return '';
-        }
+        return character.name;
     }
+    const group = groups.find(it => equalsIgnoreCaseAndAccents(it.name, name));
+    if (group) {
+        await openGroupById(group.id);
+        setActiveCharacter(null);
+        setActiveGroup(group.id);
+        return group.name;
+    }
+    console.warn(`No matches found for name "${name}"`);
+    return '';
 }
 
-async function openChat(id) {
+async function openChat(chid) {
     resetSelectedGroup();
-    setCharacterId(id);
+    setCharacterId(chid);
     await delay(1);
     await reloadCurrentChat();
 }
