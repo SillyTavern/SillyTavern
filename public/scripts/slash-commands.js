@@ -3260,10 +3260,10 @@ export async function sendMessageAs(args, text) {
         return '';
     }
 
-    const { name: nameForMessage, force_avatar, original_avatar } = getNameAndAvatarForMessage(avatarCharacter, name);
+    const { name: avatarCharName, force_avatar, original_avatar } = getNameAndAvatarForMessage(avatarCharacter, name);
 
     const message = {
-        name: nameForMessage,
+        name: character?.name || name || avatarCharName,
         is_user: false,
         is_system: isSystem,
         send_date: getMessageTimeStamp(),
