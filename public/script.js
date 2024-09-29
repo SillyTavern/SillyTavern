@@ -83,6 +83,7 @@ import {
     resetMovableStyles,
     forceCharacterEditorTokenize,
     applyPowerUserSettings,
+    switchSwipeNumAllMessages,
 } from './scripts/power-user.js';
 
 import {
@@ -2368,9 +2369,20 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     addCopyToCodeBlocks(newMessage);
 
+    //const currentMessage = $('#chat').children().filter(`[mesid="${chat.length - 1}"]`);
+
+    // Set the swipes counter for past messages, only visible if 'Show Sipes on All Message' is enabled
+    if (!params.isUser && newMessageId !== 0) {
+        const swipesNum = chat[newMessageId].swipes?.length;
+        const swipeId = chat[newMessageId].swipe_id + 1;
+        newMessage.find('.swipes-counter').text(`${swipeId}\u200B/\u200b${swipesNum}`);
+    }
+
+
     if (showSwipes) {
         $('#chat .mes').last().addClass('last_mes');
-        $('#chat .mes').eq(-2).removeClass('last_mes');
+        $('#chat .mes').eq(-2).removeClass('last_mes')
+            .find('.swipe_right').removeClass('fa-chevron-right'); //otherwise it stays looking like it did when it was last_mes
         hideSwipeButtons();
         showSwipeButtons();
     }
@@ -7489,19 +7501,25 @@ export function showSwipeButtons() {
     //console.log((chat[chat.length - 1]));
     if ((chat[chat.length - 1].swipes.length - swipeId) === 1) {
         //console.log('highlighting R swipe');
-        currentMessage.children('.swipe_right').css('opacity', '0.7');
+
+        //chevron was moved out of hardcode in HTML to class toggle dependent on last_mes or not
+        //necessary for 'swipe_right' div in past messages to have no chevron if 'show swipes for all messages' is turned on
+        currentMessage.children('.swipe_right').addClass('fa-chevron-right').css('opacity', '0.7');
     }
     //console.log(swipesCounterHTML);
 
-    $('.swipes-counter').text(swipeCounterText);
+    //allows for writing individual swipe counters for past messages
+    $('.last_mes .swipes-counter').text(swipeCounterText);
 
     //console.log(swipeId);
     //console.log(chat[chat.length - 1].swipes.length);
+
+    switchSwipeNumAllMessages();
 }
 
 export function hideSwipeButtons() {
     //console.log('hideswipebuttons entered');
-    $('#chat').find('.swipe_right').css('display', 'none');
+    $('#chat').find('.last_mes .swipe_right').css('display', 'none');
     $('#chat').find('.swipe_left').css('display', 'none');
 }
 
@@ -9395,9 +9413,9 @@ jQuery(async function () {
 
     ///// SWIPE BUTTON CLICKS ///////
 
-    $(document).on('click', '.swipe_right', swipe_right);
-
-    $(document).on('click', '.swipe_left', swipe_left);
+    //limit swiping to only last message clicks
+    $(document).on('click', '.last_mes .swipe_right', swipe_right);
+    $(document).on('click', '.last_mes .swipe_left', swipe_left);
 
     const debouncedCharacterSearch = debounce((searchQuery) => {
         entitiesFilter.setFilterData(FILTER_TYPES.SEARCH, searchQuery);
