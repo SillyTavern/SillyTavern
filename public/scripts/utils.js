@@ -2139,7 +2139,7 @@ export function findChar({ name = null, allowAvatar = true, insensitive = true, 
     // Get the current character(s)
     /** @type {any[]} */
     const currentChars = selected_group ? groups.find(group => group.id === selected_group)?.members.map(member => filteredCharacters.find(char => char.avatar === member))
-        : [filteredCharacters.find(char => characters[this_chid]?.avatar === char.avatar)];
+        : filteredCharacters.filter(char => characters[this_chid]?.avatar === char.avatar);
 
     // If we have a current char and prefer it, return that if it matches
     if (preferCurrentChar) {
