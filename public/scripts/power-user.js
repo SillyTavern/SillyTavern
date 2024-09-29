@@ -471,7 +471,6 @@ function switchCompactInputArea() {
 }
 
 export function switchSwipeNumAllMessages() {
-    console.error('switching branch button initialted, function start!');
     $('#show_swipe_num_all_messages').prop('checked', power_user.show_swipe_num_all_messages);
 
     if (power_user.show_swipe_num_all_messages) {
