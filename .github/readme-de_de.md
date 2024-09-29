@@ -115,7 +115,7 @@ SillyTavern unterstützt Erweiterungen.
 * Websuchfunktionen zum Hinzufügen zusätzlicher realer Kontexte zu deinen Eingabeaufforderungen
 * Viele weitere sind im Menü "Erweiterungen & Assets herunterladen" verfügbar.
 
-Tutorials zur Nutzung findest du in den [Docs](https://docs.sillytavern.app/).
+Tutorials zur Nutzung findest du in der [Dokumentation](https://docs.sillytavern.app/).
 
 # ⌛ Installation
 
