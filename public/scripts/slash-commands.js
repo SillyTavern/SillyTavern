@@ -3107,30 +3107,20 @@ async function setNarratorName(_, text) {
 
 export async function sendMessageAs(args, text) {
     if (!text) {
+        toastr.warning('You must specify text to send as');
         return '';
     }
 
-    let name;
+    let name = args.name?.trim();
     let mesText;
 
-    if (args.name) {
-        name = args.name.trim();
-
-        if (!name && !text) {
-            toastr.warning('You must specify a name and text to send as');
-            return '';
-        }
-    } else {
+    if (!name) {
         const namelessWarningKey = 'sendAsNamelessWarningShown';
         if (localStorage.getItem(namelessWarningKey) !== 'true') {
             toastr.warning('To avoid confusion, please use /sendas name="Character Name"', 'Name defaulted to {{char}}', { timeOut: 10000 });
             localStorage.setItem(namelessWarningKey, 'true');
         }
         name = name2;
-        if (!text) {
-            toastr.warning('You must specify text to send as');
-            return '';
-        }
     }
 
     mesText = text.trim();
