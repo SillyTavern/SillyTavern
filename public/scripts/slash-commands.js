@@ -1929,10 +1929,10 @@ async function listInjectsCallback(args) {
                 return `* **${id}**: <code>${inject.value}</code> (${positionName}, depth: ${inject.depth}, scan: ${inject.scan ?? false}, role: ${inject.role ?? extension_prompt_roles.SYSTEM})`;
             })
             .join('\n');
-        return `### Script injections:\n${injectsStr}`;
+        return `### Script injections:\n${injectsStr || 'No script injections for the current chat'}`;
     };
 
-    return await slashCommandReturnHelper.doReturn(returnType ?? 'popup-html', chat_metadata.script_injects, { objectToStringFunc: buildTextValue });
+    return await slashCommandReturnHelper.doReturn(returnType ?? 'popup-html', chat_metadata.script_injects ?? {}, { objectToStringFunc: buildTextValue });
 }
 
 /**
