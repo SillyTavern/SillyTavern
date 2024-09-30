@@ -3823,6 +3823,8 @@ function applyCommandArguments(args) {
 jQuery(async () => {
     await addSDGenButtons();
 
+    const getSelectEnumProvider = (id, text) => () => Array.from(document.querySelectorAll(`#${id} > [value]`)).map(x => new SlashCommandEnumValue(x.getAttribute('value'), text ? x.textContent : null));
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'imagine',
         returns: 'URL of the generated image, or an empty string if the generation failed',
@@ -3934,7 +3936,7 @@ jQuery(async () => {
                 typeList: [ARGUMENT_TYPE.STRING],
                 acceptsMultiple: false,
                 forceEnum: true,
-                enumProvider: () => Array.from(document.querySelectorAll('#sd_model > [value]')).map(o => new SlashCommandEnumValue(o.getAttribute('value'), o.textContent)),
+                enumProvider: getSelectEnumProvider('sd_model', true),
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'sampler',
@@ -3943,7 +3945,7 @@ jQuery(async () => {
                 typeList: [ARGUMENT_TYPE.STRING],
                 acceptsMultiple: false,
                 forceEnum: true,
-                enumProvider: () => Array.from(document.querySelectorAll('#sd_sampler > [value]')).map(o => new SlashCommandEnumValue(o.getAttribute('value'), o.textContent)),
+                enumProvider: getSelectEnumProvider('sd_sampler', false),
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'scheduler',
@@ -3952,7 +3954,7 @@ jQuery(async () => {
                 typeList: [ARGUMENT_TYPE.STRING],
                 acceptsMultiple: false,
                 forceEnum: true,
-                enumProvider: () => Array.from(document.querySelectorAll('#sd_scheduler > [value]')).map(o => new SlashCommandEnumValue(o.getAttribute('value'), o.textContent)),
+                enumProvider: getSelectEnumProvider('sd_scheduler', false),
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'vae',
@@ -3961,7 +3963,7 @@ jQuery(async () => {
                 typeList: [ARGUMENT_TYPE.STRING],
                 acceptsMultiple: false,
                 forceEnum: true,
-                enumProvider: () => Array.from(document.querySelectorAll('#sd_vae > [value]')).map(o => new SlashCommandEnumValue(o.getAttribute('value'), o.textContent)),
+                enumProvider: getSelectEnumProvider('sd_vae', false),
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'upscaler',
@@ -3970,7 +3972,7 @@ jQuery(async () => {
                 typeList: [ARGUMENT_TYPE.STRING],
                 acceptsMultiple: false,
                 forceEnum: true,
-                enumProvider: () => Array.from(document.querySelectorAll('#sd_hr_upscaler > [value]')).map(o => new SlashCommandEnumValue(o.getAttribute('value'), o.textContent)),
+                enumProvider: getSelectEnumProvider('sd_hr_upscaler', false),
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'hires',
@@ -4038,7 +4040,7 @@ jQuery(async () => {
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: false,
                 forceEnum: true,
-                enumProvider: () => Array.from(document.querySelectorAll('#sd_source > [value]')).map(x => new SlashCommandEnumValue(x.getAttribute('value'), x.textContent)),
+                enumProvider: getSelectEnumProvider('sd_source', true),
             }),
         ],
         helpString: 'If an argument is provided, change the source of the image generation, e.g. <code>/imagine-source comfy</code>. Returns the current source.',
@@ -4070,7 +4072,7 @@ jQuery(async () => {
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: false,
                 forceEnum: true,
-                enumProvider: () => Array.from(document.querySelectorAll('#sd_style > [value]')).map(x => new SlashCommandEnumValue(x.getAttribute('value'), x.textContent)),
+                enumProvider: getSelectEnumProvider('sd_style', false),
             }),
         ],
         helpString: 'If an argument is provided, change the style of the image generation, e.g. <code>/imagine-style MyStyle</code>. Returns the current style.',
@@ -4097,7 +4099,7 @@ jQuery(async () => {
                 description: 'workflow name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: () => Array.from(document.querySelectorAll('#sd_comfy_workflow > [value]')).map(x => x.getAttribute('value')).map(workflow => new SlashCommandEnumValue(workflow)),
+                enumProvider: getSelectEnumProvider('sd_comfy_workflow', false),
             }),
         ],
         helpString: '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <pre><code>/imagine-comfy-workflow MyWorkflow</code></pre>',
