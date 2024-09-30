@@ -2,7 +2,7 @@ import { callPopup, eventSource, event_types, generateRaw, getRequestHeaders, ma
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, power_user } from '../../power-user.js';
-import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence, waitUntilCondition } from '../../utils.js';
+import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence, waitUntilCondition, findChar } from '../../utils.js';
 import { hideMutedSprites } from '../../group-chats.js';
 import { isJsonSchemaSupported } from '../../textgen-settings.js';
 import { debounce_timeout } from '../../constants.js';
@@ -2105,14 +2105,20 @@ function migrateSettings() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'lastsprite',
-        callback: (_, value) => lastExpression[String(value).trim()] ?? '',
+        callback: (_, name) => {
+            if (typeof name !== 'string') throw new Error('name must be a string');
+            const char = findChar({ name: name });
+            const sprite = lastExpression[char?.name ?? name] ?? '';
+            return sprite;
+        },
         returns: 'the last set sprite / expression for the named character.',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: commonEnumProviders.characters('character'),
+                forceEnum: true,
             }),
         ],
         helpString: 'Returns the last set sprite / expression for the named character.',
