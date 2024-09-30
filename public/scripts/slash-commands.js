@@ -1524,21 +1524,21 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'listinjects',
         callback: listInjectsCallback,
-        helpString: 'Lists all script injections for the current chat. Displays injects in a popup by default. Use the <code>format</code> argument to change the output format.',
+        helpString: 'Lists all script injections for the current chat. Displays injects in a popup by default. Use the <code>return</code> argument to change the return type.',
         returns: 'Optionalls the JSON object of script injections',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'return',
                 description: 'The way how you want the return value to be provided',
                 typeList: [ARGUMENT_TYPE.STRING],
-                defaultValue: 'object',
+                defaultValue: 'popup-html',
                 enumList: slashCommandReturnHelper.enumList({ allowPipe: false, allowObject: true, allowChat: true, allowPopup: true, allowTextVersion: false }),
                 forceEnum: true,
             }),
             // TODO remove some day
             SlashCommandNamedArgument.fromProps({
                 name: 'format',
-                description: 'DEPRECATED - use "return" instead - output format',
+                description: '!!! DEPRECATED - use "return" instead !!! output format)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 forceEnum: true,
@@ -1832,7 +1832,6 @@ async function listInjectsCallback(args) {
     }
 
     // Now the actual new return type handling
-
     const buildTextValue = (injects) => {
         const injectsStr = Object.entries(injects)
             .map(([id, inject]) => {
@@ -1844,7 +1843,7 @@ async function listInjectsCallback(args) {
         return `### Script injections:\n${injectsStr}`;
     };
 
-    return await slashCommandReturnHelper.doReturn(returnType ?? 'object', chat_metadata.script_injects, { objectToStringFunc: buildTextValue });
+    return await slashCommandReturnHelper.doReturn(returnType ?? 'popup-html', chat_metadata.script_injects, { objectToStringFunc: buildTextValue });
 }
 
 /**

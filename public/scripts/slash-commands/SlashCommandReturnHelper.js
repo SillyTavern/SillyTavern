@@ -58,7 +58,7 @@ export const slashCommandReturnHelper = {
 
                 if (type.startsWith('popup')) await callGenericPopup(shouldHtml ? makeHtml(stringValue) : escapeHtml(stringValue), POPUP_TYPE.TEXT);
                 if (type.startsWith('chat')) sendSystemMessage(system_message_types.GENERIC, shouldHtml ? makeHtml(stringValue) : escapeHtml(stringValue));
-                if (type.startsWith('toast')) toastr.info(stringValue, null, { escapeHtml: !shouldHtml }); // Toastr handles HTML conversion internally already
+                if (type.startsWith('toast')) toastr.info(shouldHtml ? makeHtml(stringValue) : escapeHtml(stringValue), null, { escapeHtml: !shouldHtml });
 
                 return '';
             }
