@@ -2370,8 +2370,8 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     //const currentMessage = $('#chat').children().filter(`[mesid="${chat.length - 1}"]`);
 
-    // Set the swipes counter for past messages, only visible if 'Show Sipes on All Message' is enabled
-    if (!params.isUser && newMessageId !== 0) {
+    // Set the swipes counter for past messages, only visible if 'Show Swipes on All Message' is enabled
+    if (!params.isUser && newMessageId !== 0 && newMessageId !== chat.length - 1) {
         const swipesNum = chat[newMessageId].swipes?.length;
         const swipeId = chat[newMessageId].swipe_id + 1;
         newMessage.find('.swipes-counter').text(`${swipeId}\u200B/\u200b${swipesNum}`);
@@ -7510,6 +7510,7 @@ export function showSwipeButtons() {
 
     //allows for writing individual swipe counters for past messages
     $('.last_mes .swipes-counter').text(swipeCounterText);
+    $('.last_mes .swipes-counter').show();
 
     //console.log(swipeId);
     //console.log(chat[chat.length - 1].swipes.length);
@@ -7520,6 +7521,7 @@ export function showSwipeButtons() {
 export function hideSwipeButtons() {
     console.error('hideswipebuttons entered');
     $('#chat').find('.swipe_right').hide();
+    $('#chat').find('.last_mes .swipes-counter').hide();
     $('#chat').find('.swipe_left').hide();
 }
 
