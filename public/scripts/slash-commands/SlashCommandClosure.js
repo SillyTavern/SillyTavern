@@ -508,6 +508,14 @@ export class SlashCommandClosure {
                 return v;
             });
         }
+
+        value ??= '';
+
+        // Make sure that if unnamed args are split, it should always return an array
+        if (executor.command.splitUnnamedArgument && !Array.isArray(value)) {
+            value = [value];
+        }
+
         return value;
     }
 
