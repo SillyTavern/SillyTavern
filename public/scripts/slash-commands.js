@@ -55,7 +55,7 @@ import { autoSelectPersona, retriggerFirstMessageOnEmptyChat, setPersonaLockStat
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer } from './tokenizers.js';
-import { debounce, delay, isFalseBoolean, isTrueBoolean, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
+import { debounce, delay, equalsIgnoreCaseAndAccents, findChar, getCharIndex, isFalseBoolean, isTrueBoolean, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { background_settings } from './backgrounds.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
@@ -68,7 +68,6 @@ import { SlashCommandNamedArgumentAssignment } from './slash-commands/SlashComma
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
-import { SlashCommandDebugController } from './slash-commands/SlashCommandDebugController.js';
 import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
 import { SlashCommandExecutionError } from './slash-commands/SlashCommandExecutionError.js';
 export {
@@ -174,20 +173,96 @@ export function initDefaultSlashCommands() {
     `,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'char-find',
+        aliases: ['findchar'],
+        callback: (args, name) => {
+            if (typeof name !== 'string') throw new Error('name must be a string');
+            if (args.preferCurrent instanceof SlashCommandClosure || Array.isArray(args.preferCurrent)) throw new Error('preferCurrent cannot be a closure or array');
+            if (args.quiet instanceof SlashCommandClosure || Array.isArray(args.quiet)) throw new Error('quiet cannot be a closure or array');
+
+            const char = findChar({ name: name, filteredByTags: validateArrayArgString(args.tag, 'tag'), preferCurrentChar: !isFalseBoolean(args.preferCurrent), quiet: isTrueBoolean(args.quiet) });
+            return char?.avatar ?? '';
+        },
+        returns: 'the avatar key (unique identifier) of the character',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'tag',
+                description: 'Supply one or more tags to filter down to the correct character for the provided name, if multiple characters have the same name.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.tags('assigned'),
+                acceptsMultiple: true,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'preferCurrent',
+                description: 'Prefer current character or characters in a group, if multiple characters match',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: 'Do not show warning if multiple charactrers are found',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Character name - or unique character identifier (avatar key)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.characters('character'),
+                forceEnum: false,
+            }),
+        ],
+        helpString: `
+        <div>
+            Searches for a character and returns its avatar key.
+        </div>
+        <div>
+            This can be used to choose the correct character for something like <code>/sendas</code> or other commands in need of a character name
+            if you have multiple characters with the same name.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/char-find name="Chloe"</code></pre>
+                    Returns the avatar key for "Chloe".
+                </li>
+                <li>
+                    <pre><code>/search name="Chloe" tag="friend"</code></pre>
+                    Returns the avatar key for the character "Chloe" that is tagged with "friend".
+                    This is useful if you for example have multiple characters named "Chloe", and the others are "foe", "goddess", or anything else,
+                    so you can actually select the character you are looking for.
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sendas',
         callback: sendMessageAs,
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
-                description: 'Character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: commonEnumProviders.characters('character'),
                 forceEnum: false,
             }),
-            new SlashCommandNamedArgument(
-                'compact', 'Use compact layout', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'avatar',
+                description: 'Character avatar override (Can be either avatar key or just the character name to pull the avatar from)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.characters('character'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'compact',
+                description: 'Use compact layout',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+            }),
             SlashCommandNamedArgument.fromProps({
                 name: 'at',
                 description: 'position to insert the message (index-based, corresponding to message id). If not set, the message will be inserted at the end of the chat.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will insert the message right before the last message in chat.',
@@ -210,6 +285,10 @@ export function initDefaultSlashCommands() {
                 <li>
                     <pre><code>/sendas name="Chloe" Hello, guys!</code></pre>
                     will send "Hello, guys!" from "Chloe".
+                </li>
+                <li>
+                    <pre><code>/sendas name="Chloe" avatar="BigBadBoss" Hehehe, I am the big bad evil, fear me.</code></pre>
+                    will send a message as the character "Chloe", but utilizing the avatar from a character named "BigBadBoss".
                 </li>
             </ul>
         </div>
@@ -381,12 +460,14 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'go',
         callback: goToCharacterCallback,
+        returns: 'The character/group name',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: commonEnumProviders.characters('all'),
+                forceEnum: true,
             }),
         ],
         helpString: 'Opens up a chat with the character or group by its name',
@@ -432,7 +513,7 @@ export function initDefaultSlashCommands() {
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
-                description: 'character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: commonEnumProviders.characters('character'),
@@ -451,7 +532,7 @@ export function initDefaultSlashCommands() {
         namedArgumentList: [],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: commonEnumProviders.characters('character'),
@@ -618,7 +699,7 @@ export function initDefaultSlashCommands() {
         aliases: ['addmember', 'memberadd'],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: () => selected_group ? commonEnumProviders.characters('character')() : [],
@@ -856,7 +937,7 @@ export function initDefaultSlashCommands() {
             ),
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
-                description: 'in-prompt name for instruct mode',
+                description: 'in-prompt character name for instruct mode (or unique character identifier (avatar key), which will be used as name)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: 'System',
                 enumProvider: () => [...commonEnumProviders.characters('character')(), new SlashCommandEnumValue('System', null, enumTypes.enum, enumIcons.assistant)],
@@ -2293,7 +2374,8 @@ async function generateCallback(args, value) {
 
         setEphemeralStopStrings(resolveVariable(args?.stop));
         const name = args?.name;
-        const result = await generateQuietPrompt(value, quietToLoud, false, '', name, length);
+        const char = findChar({ name: name });
+        const result = await generateQuietPrompt(value, quietToLoud, false, '', char?.name ?? name, length);
         return result;
     } catch (err) {
         console.error('Error on /gen generation', err);
@@ -2481,25 +2563,21 @@ async function askCharacter(args, text) {
         return '';
     }
 
-    let name = '';
-
-    if (args?.name) {
-        name = args.name.trim();
-
-        if (!name) {
-            toastr.warning('You must specify a name of the character to ask.');
-            return '';
-        }
+    if (!args.name) {
+        toastr.warning('You must specify a name of the character to ask.');
+        return '';
     }
 
     const prevChId = this_chid;
 
     // Find the character
-    const chId = characters.findIndex((e) => e.name === name || e.avatar === name);
-    if (!characters[chId] || chId === -1) {
+    const character = findChar({ name: args?.name });
+    if (!character) {
         toastr.error('Character not found.');
         return '';
     }
+
+    const chId = getCharIndex(character);
 
     if (text) {
         const mesText = getRegexedString(text.trim(), regex_placement.SLASH_COMMAND);
@@ -2511,19 +2589,9 @@ async function askCharacter(args, text) {
     // Override character and send a user message
     setCharacterId(String(chId));
 
-    const character = characters[chId];
-    let force_avatar, original_avatar;
+    const { name, force_avatar, original_avatar } = getNameAndAvatarForMessage(character, args?.name);
 
-    if (character && character.avatar !== 'none') {
-        force_avatar = getThumbnailUrl('avatar', character.avatar);
-        original_avatar = character.avatar;
-    }
-    else {
-        force_avatar = default_avatar;
-        original_avatar = default_avatar;
-    }
-
-    setCharacterName(character.name);
+    setCharacterName(name);
 
     const restoreCharacter = () => {
         if (String(this_chid) !== String(chId)) {
@@ -2541,7 +2609,7 @@ async function askCharacter(args, text) {
         // Only force the new avatar if the character name is the same
         // This skips if an error was fired
         const lastMessage = chat[chat.length - 1];
-        if (lastMessage && lastMessage?.name === character.name) {
+        if (lastMessage && lastMessage?.name === name) {
             lastMessage.force_avatar = force_avatar;
             lastMessage.original_avatar = original_avatar;
         }
@@ -2552,7 +2620,7 @@ async function askCharacter(args, text) {
     // Run generate and restore previous character
     try {
         eventSource.once(event_types.MESSAGE_RECEIVED, restoreCharacter);
-        toastr.info(`Asking ${character.name} something...`);
+        toastr.info(`Asking ${name} something...`);
         askResult = await Generate('ask_command');
     } catch (error) {
         restoreCharacter();
@@ -2746,26 +2814,23 @@ async function removeGroupMemberCallback(_, arg) {
     return '';
 }
 
-async function addGroupMemberCallback(_, arg) {
+async function addGroupMemberCallback(_, name) {
     if (!selected_group) {
         toastr.warning('Cannot run /memberadd command outside of a group chat.');
         return '';
     }
 
-    if (!arg) {
+    if (!name) {
         console.warn('WARN: No argument provided for /memberadd command');
         return '';
     }
 
-    arg = arg.trim();
-    const chid = findCharacterIndex(arg);
-
-    if (chid === -1) {
-        console.warn(`WARN: No character found for argument ${arg}`);
+    const character = findChar({ name: name, preferCurrentChar: false });
+    if (!character) {
+        console.warn(`WARN: No character found for argument ${name}`);
         return '';
     }
 
-    const character = characters[chid];
     const group = groups.find(x => x.id === selected_group);
 
     if (!group || !Array.isArray(group.members)) {
@@ -2834,7 +2899,7 @@ function findPersonaByName(name) {
     }
 
     for (const persona of Object.entries(power_user.personas)) {
-        if (persona[1].toLowerCase() === name.toLowerCase()) {
+        if (equalsIgnoreCaseAndAccents(persona[1], name)) {
             return persona[0];
         }
     }
@@ -2877,7 +2942,9 @@ async function deleteMessagesByNameCallback(_, name) {
         return;
     }
 
-    name = name.trim();
+    // Search for a matching character to get the real name, or take the name provided
+    const character = findChar({ name: name });
+    name = character?.name || name;
 
     const messagesToDelete = [];
     chat.forEach((value) => {
@@ -2906,60 +2973,34 @@ async function deleteMessagesByNameCallback(_, name) {
     return '';
 }
 
-function findCharacterIndex(name) {
-    const matchTypes = [
-        (a, b) => a === b,
-        (a, b) => a.startsWith(b),
-        (a, b) => a.includes(b),
-    ];
-
-    const exactAvatarMatch = characters.findIndex(x => x.avatar === name);
-
-    if (exactAvatarMatch !== -1) {
-        return exactAvatarMatch;
-    }
-
-    for (const matchType of matchTypes) {
-        const index = characters.findIndex(x => matchType(x.name.toLowerCase(), name.toLowerCase()));
-        if (index !== -1) {
-            return index;
-        }
-    }
-
-    return -1;
-}
-
 async function goToCharacterCallback(_, name) {
     if (!name) {
         console.warn('WARN: No character name provided for /go command');
         return;
     }
 
-    name = name.trim();
-    const characterIndex = findCharacterIndex(name);
-
-    if (characterIndex !== -1) {
-        await openChat(new String(characterIndex));
-        setActiveCharacter(characters[characterIndex]?.avatar);
+    const character = findChar({ name: name });
+    if (character) {
+        const chid = getCharIndex(character);
+        await openChat(new String(chid));
+        setActiveCharacter(character.avatar);
         setActiveGroup(null);
-        return characters[characterIndex]?.name;
-    } else {
-        const group = groups.find(it => it.name.toLowerCase() == name.toLowerCase());
-        if (group) {
-            await openGroupById(group.id);
-            setActiveCharacter(null);
-            setActiveGroup(group.id);
-            return group.name;
-        } else {
-            console.warn(`No matches found for name "${name}"`);
-            return '';
-        }
+        return character.name;
     }
+    const group = groups.find(it => equalsIgnoreCaseAndAccents(it.name, name));
+    if (group) {
+        await openGroupById(group.id);
+        setActiveCharacter(null);
+        setActiveGroup(group.id);
+        return group.name;
+    }
+    console.warn(`No matches found for name "${name}"`);
+    return '';
 }
 
-async function openChat(id) {
+async function openChat(chid) {
     resetSelectedGroup();
-    setCharacterId(id);
+    setCharacterId(chid);
     await delay(1);
     await reloadCurrentChat();
 }
@@ -3105,6 +3146,79 @@ async function setNarratorName(_, text) {
     return '';
 }
 
+/**
+ * Checks if an argument is a string array (or undefined), and if not, throws an error
+ * @param {string|SlashCommandClosure|(string|SlashCommandClosure)[]|undefined} arg The named argument to check
+ * @param {string} name The name of the argument for the error message
+ * @param {object} [options={}] - The optional arguments
+ * @param {boolean} [options.allowUndefined=false] - Whether the argument can be undefined
+ * @throws {Error} If the argument is not an array
+ * @returns {string[]}
+ */
+export function validateArrayArgString(arg, name, { allowUndefined = true } = {}) {
+    if (arg === undefined) {
+        if (allowUndefined) return undefined;
+        throw new Error(`Argument "${name}" is undefined, but must be a string array`);
+    }
+    if (!Array.isArray(arg)) throw new Error(`Argument "${name}" must be an array`);
+    if (!arg.every(x => typeof x === 'string')) throw new Error(`Argument "${name}" must be an array of strings`);
+    return arg;
+}
+
+/**
+ * Checks if an argument is a string or closure array (or undefined), and if not, throws an error
+ * @param {string|SlashCommandClosure|(string|SlashCommandClosure)[]|undefined} arg The named argument to check
+ * @param {string} name The name of the argument for the error message
+ * @param {object} [options={}] - The optional arguments
+ * @param {boolean} [options.allowUndefined=false] - Whether the argument can be undefined
+ * @throws {Error} If the argument is not an array of strings or closures
+ * @returns {(string|SlashCommandClosure)[]}
+ */
+export function validateArrayArg(arg, name, { allowUndefined = true } = {}) {
+    if (arg === undefined) {
+        if (allowUndefined) return [];
+        throw new Error(`Argument "${name}" is undefined, but must be an array of strings or closures`);
+    }
+    if (!Array.isArray(arg)) throw new Error(`Argument "${name}" must be an array`);
+    if (!arg.every(x => typeof x === 'string' || x instanceof SlashCommandClosure)) throw new Error(`Argument "${name}" must be an array of strings or closures`);
+    return arg;
+}
+
+
+/**
+ * Retrieves the name and avatar information for a message
+ *
+ * The name of the character will always have precendence over the one given as argument. If you want to specify a different name for the message,
+ * explicitly implement this in the code using this.
+ *
+ * @param {object?} character - The character object to get the avatar data for
+ * @param {string?} name - The name to get the avatar data for
+ * @returns {{name: string, force_avatar: string, original_avatar: string}} An object containing the name for the message, forced avatar URL, and original avatar
+ */
+export function getNameAndAvatarForMessage(character, name = null) {
+    const isNeutralCharacter = !character && name2 === neutralCharacterName && name === neutralCharacterName;
+    const currentChar = characters[this_chid];
+
+    let force_avatar, original_avatar;
+    if (character?.avatar === currentChar?.avatar || isNeutralCharacter) {
+        // If the targeted character is the currently selected one in a solo chat, we don't need to force any avatars
+    }
+    else if (character && character.avatar !== 'none') {
+        force_avatar = getThumbnailUrl('avatar', character.avatar);
+        original_avatar = character.avatar;
+    }
+    else {
+        force_avatar = default_avatar;
+        original_avatar = default_avatar;
+    }
+
+    return {
+        name: character?.name || name,
+        force_avatar: force_avatar,
+        original_avatar: original_avatar,
+    };
+}
+
 export async function sendMessageAs(args, text) {
     if (!text) {
         return '';
@@ -3143,26 +3257,18 @@ export async function sendMessageAs(args, text) {
     const isSystem = bias && !removeMacros(mesText).length;
     const compact = isTrueBoolean(args?.compact);
 
-    const character = characters.find(x => x.avatar === name) ?? characters.find(x => x.name === name);
-    let force_avatar, original_avatar;
+    const character = findChar({ name: name });
 
-    const chatCharacter = this_chid !== undefined ? characters[this_chid] : null;
-    const isNeutralCharacter = !chatCharacter && name2 === neutralCharacterName && name === neutralCharacterName;
+    const avatarCharacter = args.avatar ? findChar({ name: args.avatar }) : character;
+    if (args.avatar && !avatarCharacter) {
+        toastr.warning(`Character for avatar ${args.avatar} not found`);
+        return '';
+    }
 
-    if (chatCharacter === character || isNeutralCharacter) {
-        // If the targeted character is the currently selected one in a solo chat, we don't need to force any avatars
-    }
-    else if (character && character.avatar !== 'none') {
-        force_avatar = getThumbnailUrl('avatar', character.avatar);
-        original_avatar = character.avatar;
-    }
-    else {
-        force_avatar = default_avatar;
-        original_avatar = default_avatar;
-    }
+    const { name: avatarCharName, force_avatar, original_avatar } = getNameAndAvatarForMessage(avatarCharacter, name);
 
     const message = {
-        name: name,
+        name: character?.name || name || avatarCharName,
         is_user: false,
         is_system: isSystem,
         send_date: getMessageTimeStamp(),
