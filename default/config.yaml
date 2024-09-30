@@ -118,7 +118,6 @@ extras:
   classificationModel: Cohee/distilbert-base-uncased-go-emotions-onnx
   captioningModel: Xenova/vit-gpt2-image-captioning
   embeddingModel: Cohee/jina-embeddings-v2-base-en
-  promptExpansionModel: Cohee/fooocus_expansion-onnx
   speechToTextModel: Xenova/whisper-small
   textToSpeechModel: Xenova/speecht5_tts
 # -- OPENAI CONFIGURATION --
