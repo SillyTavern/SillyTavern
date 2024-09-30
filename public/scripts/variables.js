@@ -679,10 +679,17 @@ function parseNumericSeries(value, scope = null) {
         return [value];
     }
 
-    const values = Array.isArray(value) ? value : value.split(' ');
-    const array = values.map(i => i.trim())
+    /** @type {(string|number)[]} */
+    let values = Array.isArray(value) ? value : value.split(' ');
+
+    // If a JSON array was provided as the only value, convert it to an array
+    if (values.length === 1 && typeof values[0] === 'string' && values[0].startsWith('[')) {
+        values = convertValueType(values[0], 'array');
+    }
+
+    const array = values.map(i => typeof i === 'string' ? i.trim() : i)
         .filter(i => i !== '')
-        .map(i => isNaN(Number(i)) ? Number(resolveVariable(i, scope)) : Number(i))
+        .map(i => isNaN(Number(i)) ? Number(resolveVariable(String(i), scope)) : Number(i))
         .filter(i => !isNaN(i));
 
     return array;
@@ -1599,7 +1606,7 @@ export function registerVariableCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'values to sum',
-                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.LIST],
                 isRequired: true,
                 acceptsMultiple: true,
                 enumProvider: commonEnumProviders.numbersAndVariables,
@@ -1610,13 +1617,18 @@ export function registerVariableCommands() {
         helpString: `
             <div>
                 Performs an addition of the set of values and passes the result down the pipe.
-                Can use variable names.
+            </div>
+            <div>
+                Can use variable names, or a JSON array consisting of numbers and variables (with quotes).
             </div>
             <div>
                 <strong>Example:</strong>
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/add 10 i 30 j</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/add ["count", 15, 2, "i"]</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1629,7 +1641,7 @@ export function registerVariableCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'values to multiply',
-                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.LIST],
                 isRequired: true,
                 acceptsMultiple: true,
                 enumProvider: commonEnumProviders.numbersAndVariables,
@@ -1639,13 +1651,19 @@ export function registerVariableCommands() {
         splitUnnamedArgument: true,
         helpString: `
             <div>
-                Performs a multiplication of the set of values and passes the result down the pipe. Can use variable names.
+                Performs a multiplication of the set of values and passes the result down the pipe.
+            </div>
+            <div>
+                Can use variable names, or a JSON array consisting of numbers and variables (with quotes).
             </div>
             <div>
                 <strong>Examples:</strong>
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/mul 10 i 30 j</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/mul ["count", 15, 2, "i"]</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1658,7 +1676,7 @@ export function registerVariableCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'values to find the max',
-                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.LIST],
                 isRequired: true,
                 acceptsMultiple: true,
                 enumProvider: commonEnumProviders.numbersAndVariables,
@@ -1668,13 +1686,19 @@ export function registerVariableCommands() {
         splitUnnamedArgument: true,
         helpString: `
             <div>
-                Returns the maximum value of the set of values and passes the result down the pipe. Can use variable names.
+                Returns the maximum value of the set of values and passes the result down the pipe.
+            </div>
+            <div>
+                Can use variable names, or a JSON array consisting of numbers and variables (with quotes).
             </div>
             <div>
                 <strong>Examples:</strong>
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/max 10 i 30 j</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/max ["count", 15, 2, "i"]</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1687,7 +1711,7 @@ export function registerVariableCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'values to find the min',
-                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.LIST],
                 isRequired: true,
                 acceptsMultiple: true,
                 enumProvider: commonEnumProviders.numbersAndVariables,
@@ -1698,13 +1722,18 @@ export function registerVariableCommands() {
         helpString: `
             <div>
                 Returns the minimum value of the set of values and passes the result down the pipe.
-                Can use variable names.
+            </div>
+            <div>
+                Can use variable names, or a JSON array consisting of numbers and variables (with quotes).
             </div>
             <div>
                 <strong>Example:</strong>
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/min 10 i 30 j</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/min ["count", 15, 2, "i"]</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1717,7 +1746,7 @@ export function registerVariableCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'values to subtract, starting form the first provided value',
-                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.LIST],
                 isRequired: true,
                 acceptsMultiple: true,
                 enumProvider: commonEnumProviders.numbersAndVariables,
@@ -1728,13 +1757,18 @@ export function registerVariableCommands() {
         helpString: `
             <div>
                 Performs a subtraction of the set of values and passes the result down the pipe.
-                Can use variable names.
+            </div>
+            <div>
+                Can use variable names, or a JSON array consisting of numbers and variables (with quotes).
             </div>
             <div>
                 <strong>Example:</strong>
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/sub i 5</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/sub ["count", 4, "i"]</code></pre>
                     </li>
                 </ul>
             </div>
