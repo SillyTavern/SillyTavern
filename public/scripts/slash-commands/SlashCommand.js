@@ -15,13 +15,13 @@ import { SlashCommandScope } from './SlashCommandScope.js';
  * _abortController:SlashCommandAbortController,
  * _debugController:SlashCommandDebugController,
  * _hasUnnamedArgument:boolean,
- * [id:string]:string|SlashCommandClosure,
+ * [id:string]:string|SlashCommandClosure|(string|SlashCommandClosure)[]|undefined,
  * }} NamedArguments
  */
 
 /**
  * Alternative object for local JSDocs, where you don't need existing pipe, scope, etc. arguments
- * @typedef {{[id:string]:string|SlashCommandClosure}} NamedArgumentsCapture
+ * @typedef {{[id:string]:string|SlashCommandClosure|(string|SlashCommandClosure)[]|undefined}} NamedArgumentsCapture
  */
 
 /**

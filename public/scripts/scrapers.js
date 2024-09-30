@@ -13,6 +13,7 @@ import { isValidUrl } from './utils.js';
  * @property {string} description
  * @property {string} iconClass
  * @property {boolean} iconAvailable
+ * @property {() => Promise<void>} [init=null]
  * @property {() => Promise<boolean>} isAvailable
  * @property {() => Promise<File[]>} scrape
  */
@@ -36,10 +37,14 @@ export class ScraperManager {
      * Register a scraper to be used by the Data Bank.
      * @param {Scraper} scraper Instance of a scraper to register
      */
-    static registerDataBankScraper(scraper) {
+    static async registerDataBankScraper(scraper) {
         if (ScraperManager.#scrapers.some(s => s.id === scraper.id)) {
             console.warn(`Scraper with ID ${scraper.id} already registered`);
             return;
+        }
+
+        if (scraper.init) {
+            await scraper.init();
         }
 
         ScraperManager.#scrapers.push(scraper);
@@ -462,7 +467,9 @@ class YouTubeScraper {
         this.description = 'Download a transcript from a YouTube video.';
         this.iconClass = 'fa-brands fa-youtube';
         this.iconAvailable = true;
+    }
 
+    async init() {
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'yt-script',
             callback: async (args, url) => {
@@ -564,9 +571,11 @@ class YouTubeScraper {
     }
 }
 
-ScraperManager.registerDataBankScraper(new FileScraper());
-ScraperManager.registerDataBankScraper(new Notepad());
-ScraperManager.registerDataBankScraper(new WebScraper());
-ScraperManager.registerDataBankScraper(new MediaWikiScraper());
-ScraperManager.registerDataBankScraper(new FandomScraper());
-ScraperManager.registerDataBankScraper(new YouTubeScraper());
+export async function initScrapers() {
+    await ScraperManager.registerDataBankScraper(new FileScraper());
+    await ScraperManager.registerDataBankScraper(new Notepad());
+    await ScraperManager.registerDataBankScraper(new WebScraper());
+    await ScraperManager.registerDataBankScraper(new MediaWikiScraper());
+    await ScraperManager.registerDataBankScraper(new FandomScraper());
+    await ScraperManager.registerDataBankScraper(new YouTubeScraper());
+}

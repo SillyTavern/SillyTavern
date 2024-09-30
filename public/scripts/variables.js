@@ -669,8 +669,8 @@ function deleteGlobalVariable(name) {
 }
 
 /**
- * Parses a series of numeric values from a string.
- * @param {string} value A space-separated list of numeric values or variable names
+ * Parses a series of numeric values from a string or a string array.
+ * @param {string|string[]} value A space-separated list of numeric values or variable names
  * @param {SlashCommandScope} scope Scope
  * @returns {number[]} An array of numeric values
  */
@@ -679,11 +679,17 @@ function parseNumericSeries(value, scope = null) {
         return [value];
     }
 
-    const array = value
-        .split(' ')
-        .map(i => i.trim())
+    /** @type {(string|number)[]} */
+    let values = Array.isArray(value) ? value : value.split(' ');
+
+    // If a JSON array was provided as the only value, convert it to an array
+    if (values.length === 1 && typeof values[0] === 'string' && values[0].startsWith('[')) {
+        values = convertValueType(values[0], 'array');
+    }
+
+    const array = values.map(i => typeof i === 'string' ? i.trim() : i)
         .filter(i => i !== '')
-        .map(i => isNaN(Number(i)) ? Number(resolveVariable(i, scope)) : Number(i))
+        .map(i => isNaN(Number(i)) ? Number(resolveVariable(String(i), scope)) : Number(i))
         .filter(i => !isNaN(i));
 
     return array;
@@ -703,7 +709,7 @@ function performOperation(value, operation, singleOperand = false, scope = null)
 
         const result = singleOperand ? operation(array[0]) : operation(array);
 
-        if (isNaN(result) || !isFinite(result)) {
+        if (isNaN(result)) {
             return 0;
         }
 
@@ -731,7 +737,7 @@ function maxValuesCallback(args, value) {
 }
 
 function subValuesCallback(args, value) {
-    return performOperation(value, (array) => array[0] - array[1], false, args._scope);
+    return performOperation(value, (array) => array.reduce((a, b) => a - b, array.shift() ?? 0), false, args._scope);
 }
 
 function divValuesCallback(args, value) {
@@ -1595,36 +1601,15 @@ export function registerVariableCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'add',
-        callback: (args, /**@type {string[]}*/value) => addValuesCallback(args, value.join(' ')),
+        callback: (args, value) => addValuesCallback(args, value),
         returns: 'sum of the provided values',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'values to sum',
-                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.LIST],
                 isRequired: true,
                 acceptsMultiple: true,
-                enumProvider: (executor, scope) => {
-                    const vars = commonEnumProviders.variables('all')(executor, scope);
-                    vars.push(
-                        new SlashCommandEnumValue(
-                            'any variable name',
-                            null,
-                            enumTypes.variable,
-                            enumIcons.variable,
-                            (input) => /^\w*$/.test(input),
-                            (input) => input,
-                        ),
-                        new SlashCommandEnumValue(
-                            'any number',
-                            null,
-                            enumTypes.number,
-                            enumIcons.number,
-                            (input) => input == '' || !Number.isNaN(Number(input)),
-                            (input) => input,
-                        ),
-                    );
-                    return vars;
-                },
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
@@ -1632,13 +1617,18 @@ export function registerVariableCommands() {
         helpString: `
             <div>
                 Performs an addition of the set of values and passes the result down the pipe.
-                Can use variable names.
+            </div>
+            <div>
+                Can use variable names, or a JSON array consisting of numbers and variables (with quotes).
             </div>
             <div>
                 <strong>Example:</strong>
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/add 10 i 30 j</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/add ["count", 15, 2, "i"]</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1651,22 +1641,29 @@ export function registerVariableCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'values to multiply',
-                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.LIST],
                 isRequired: true,
                 acceptsMultiple: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
-                Performs a multiplication of the set of values and passes the result down the pipe. Can use variable names.
+                Performs a multiplication of the set of values and passes the result down the pipe.
+            </div>
+            <div>
+                Can use variable names, or a JSON array consisting of numbers and variables (with quotes).
             </div>
             <div>
                 <strong>Examples:</strong>
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/mul 10 i 30 j</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/mul ["count", 15, 2, "i"]</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1679,22 +1676,29 @@ export function registerVariableCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'values to find the max',
-                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.LIST],
                 isRequired: true,
                 acceptsMultiple: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
-                Returns the maximum value of the set of values and passes the result down the pipe. Can use variable names.
+                Returns the maximum value of the set of values and passes the result down the pipe.
+            </div>
+            <div>
+                Can use variable names, or a JSON array consisting of numbers and variables (with quotes).
             </div>
             <div>
                 <strong>Examples:</strong>
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/max 10 i 30 j</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/max ["count", 15, 2, "i"]</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1707,23 +1711,29 @@ export function registerVariableCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'values to find the min',
-                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.LIST],
                 isRequired: true,
                 acceptsMultiple: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Returns the minimum value of the set of values and passes the result down the pipe.
-                Can use variable names.
+            </div>
+            <div>
+                Can use variable names, or a JSON array consisting of numbers and variables (with quotes).
             </div>
             <div>
                 <strong>Example:</strong>
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/min 10 i 30 j</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/min ["count", 15, 2, "i"]</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1735,24 +1745,30 @@ export function registerVariableCommands() {
         returns: 'difference of the provided values',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'values to find the difference',
-                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                description: 'values to subtract, starting form the first provided value',
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.LIST],
                 isRequired: true,
                 acceptsMultiple: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Performs a subtraction of the set of values and passes the result down the pipe.
-                Can use variable names.
+            </div>
+            <div>
+                Can use variable names, or a JSON array consisting of numbers and variables (with quotes).
             </div>
             <div>
                 <strong>Example:</strong>
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/sub i 5</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/sub ["count", 4, "i"]</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1767,17 +1783,18 @@ export function registerVariableCommands() {
                 description: 'dividend',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
             SlashCommandArgument.fromProps({
                 description: 'divisor',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Performs a division of two values and passes the result down the pipe.
@@ -1802,17 +1819,18 @@ export function registerVariableCommands() {
                 description: 'dividend',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
             SlashCommandArgument.fromProps({
                 description: 'divisor',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Performs a modulo operation of two values and passes the result down the pipe.
@@ -1837,17 +1855,18 @@ export function registerVariableCommands() {
                 description: 'base',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
             SlashCommandArgument.fromProps({
                 description: 'exponent',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Performs a power operation of two values and passes the result down the pipe.
@@ -1872,7 +1891,7 @@ export function registerVariableCommands() {
                 description: 'value',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
@@ -1900,7 +1919,7 @@ export function registerVariableCommands() {
                 description: 'value',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
@@ -1929,7 +1948,7 @@ export function registerVariableCommands() {
                 description: 'value',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
@@ -1957,7 +1976,7 @@ export function registerVariableCommands() {
                 description: 'value',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
@@ -1985,7 +2004,7 @@ export function registerVariableCommands() {
                 description: 'value',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
@@ -2013,7 +2032,7 @@ export function registerVariableCommands() {
                 description: 'value',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
