@@ -83,6 +83,7 @@ import {
     resetMovableStyles,
     forceCharacterEditorTokenize,
     applyPowerUserSettings,
+    switchSwipeNumAllMessages,
 } from './scripts/power-user.js';
 
 import {
@@ -7515,7 +7516,7 @@ export function showSwipeButtons() {
     //console.log(swipeId);
     //console.log(chat[chat.length - 1].swipes.length);
 
-    //switchSwipeNumAllMessages();
+    switchSwipeNumAllMessages();
 }
 
 export function hideSwipeButtons() {
