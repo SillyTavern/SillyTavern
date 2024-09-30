@@ -709,7 +709,7 @@ function performOperation(value, operation, singleOperand = false, scope = null)
 
         const result = singleOperand ? operation(array[0]) : operation(array);
 
-        if (isNaN(result) || !isFinite(result)) {
+        if (isNaN(result)) {
             return 0;
         }
 
