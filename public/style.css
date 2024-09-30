@@ -995,6 +995,7 @@ flex-flow: column;
     bottom: 0;
 }
 
+
 .swipes-counter {
     color: var(--SmartThemeBodyColor);
     font-size: 12px;
@@ -2644,6 +2645,11 @@ select option:not(:checked) {
 .world_set,
 .toggleEnabled {
     color: var(--active) !important;
+}
+
+#instruct_enabled_label .menu_button:not(.toggleEnabled),
+#sysprompt_enabled_label .menu_button:not(.toggleEnabled) {
+ color: Red;
 }
 
 .displayBlock {
