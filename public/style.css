@@ -981,19 +981,11 @@ body .panelControlBar {
     font-size: 30px;
     cursor: pointer;
     align-self: center;
-
-}
-.swipe_left{
-position: absolute;
+    position: absolute;
 bottom: 15px;
 flex-flow: column;
 }
 
-.swipeRightBlock {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-}
 
 .swipes-counter {
     color: var(--SmartThemeBodyColor);
