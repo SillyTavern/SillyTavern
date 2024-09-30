@@ -730,7 +730,7 @@ function maxValuesCallback(args, value) {
 }
 
 function subValuesCallback(args, value) {
-    return performOperation(value, (array) => array[0] - array[1], false, args._scope);
+    return performOperation(value, (array) => array.reduce((a, b) => a - b, array.shift() ?? 0), false, args._scope);
 }
 
 function divValuesCallback(args, value) {
@@ -1716,14 +1716,15 @@ export function registerVariableCommands() {
         returns: 'difference of the provided values',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'values to find the difference',
+                description: 'values to subtract, starting form the first provided value',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
                 acceptsMultiple: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Performs a subtraction of the set of values and passes the result down the pipe.
