@@ -153,6 +153,35 @@ export const commonEnumProviders = {
     },
 
     /**
+     * Enum values for numbers and variable names
+     *
+     * Includes all variable names and the ability to specify any number
+     *
+     * @param {SlashCommandExecutor} executor - The executor of the slash command
+     * @param {SlashCommandScope} scope - The scope of the slash command
+     * @returns {SlashCommandEnumValue[]} The enum values
+     */
+    numbersAndVariables: (executor, scope) => [
+        ...commonEnumProviders.variables('all')(executor, scope),
+        new SlashCommandEnumValue(
+            'any variable name',
+            null,
+            enumTypes.variable,
+            enumIcons.variable,
+            (input) => /^\w*$/.test(input),
+            (input) => input,
+        ),
+        new SlashCommandEnumValue(
+            'any number',
+            null,
+            enumTypes.number,
+            enumIcons.number,
+            (input) => input == '' || !Number.isNaN(Number(input)),
+            (input) => input,
+        ),
+    ],
+
+    /**
      * All possible char entities, like characters and groups. Can be filtered down to just one type.
      *
      * @param {('all' | 'character' | 'group')?} [mode='all'] - Which type to return
