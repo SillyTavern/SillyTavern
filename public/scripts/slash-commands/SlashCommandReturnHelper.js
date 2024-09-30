@@ -41,10 +41,13 @@ export const slashCommandReturnHelper = {
      * @param {object|number|string} value The value to return
      * @param {object} [options={}] Options
      * @param {(o: object) => string} [options.objectToStringFunc=null] Function to convert the object to a string, if object was provided and 'object' was not the chosen return type
+     * @param {(o: object) => string} [options.objectToHtmlFunc=null] Analog to 'objectToStringFunc', which will be used here if not provided - but can do a different string layout if HTML is requested
      * @returns {Promise<*>} The processed return value
      */
-    async doReturn(type, value, { objectToStringFunc = o => o?.toString() } = {}) {
-        const stringValue = typeof value !== 'string' ? objectToStringFunc(value) : value;
+    async doReturn(type, value, { objectToStringFunc = o => o?.toString(), objectToHtmlFunc = null } = {}) {
+        const shouldHtml = type.endsWith('html');
+        const actualConverterFunc = shouldHtml && objectToHtmlFunc ? objectToHtmlFunc : objectToStringFunc;
+        const stringValue = typeof value !== 'string' ? actualConverterFunc(value) : value;
 
         switch (type) {
             case 'popup-html':
@@ -53,12 +56,11 @@ export const slashCommandReturnHelper = {
             case 'chat-html':
             case 'toast-text':
             case 'toast-html': {
-                const shouldHtml = type.endsWith('html');
-                const makeHtml = (str) => (new showdown.Converter()).makeHtml(str);
+                const htmlOrNotHtml = shouldHtml ? (new showdown.Converter()).makeHtml(stringValue) : escapeHtml(stringValue);
 
-                if (type.startsWith('popup')) await callGenericPopup(shouldHtml ? makeHtml(stringValue) : escapeHtml(stringValue), POPUP_TYPE.TEXT);
-                if (type.startsWith('chat')) sendSystemMessage(system_message_types.GENERIC, shouldHtml ? makeHtml(stringValue) : escapeHtml(stringValue));
-                if (type.startsWith('toast')) toastr.info(shouldHtml ? makeHtml(stringValue) : escapeHtml(stringValue), null, { escapeHtml: !shouldHtml });
+                if (type.startsWith('popup')) await callGenericPopup(htmlOrNotHtml, POPUP_TYPE.TEXT);
+                if (type.startsWith('chat')) sendSystemMessage(system_message_types.GENERIC, htmlOrNotHtml);
+                if (type.startsWith('toast')) toastr.info(htmlOrNotHtml, null, { escapeHtml: !shouldHtml });
 
                 return '';
             }
