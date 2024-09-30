@@ -478,6 +478,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'send',
         callback: sendUserMessageCallback,
+        returns: 'The text of the sent message',
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'compact',
@@ -2862,16 +2863,17 @@ async function sendUserMessageCallback(args, text) {
         insertAt = chat.length + insertAt;
     }
 
+    let message;
     if ('name' in args) {
         const name = args.name || '';
         const avatar = findPersonaByName(name) || user_avatar;
-        await sendMessageAsUser(text, bias, insertAt, compact, name, avatar);
+        message = await sendMessageAsUser(text, bias, insertAt, compact, name, avatar);
     }
     else {
-        await sendMessageAsUser(text, bias, insertAt, compact);
+        message = await sendMessageAsUser(text, bias, insertAt, compact);
     }
 
-    return '';
+    return message.mes;
 }
 
 async function deleteMessagesByNameCallback(_, name) {
