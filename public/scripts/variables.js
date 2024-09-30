@@ -669,8 +669,8 @@ function deleteGlobalVariable(name) {
 }
 
 /**
- * Parses a series of numeric values from a string.
- * @param {string} value A space-separated list of numeric values or variable names
+ * Parses a series of numeric values from a string or a string array.
+ * @param {string|string[]} value A space-separated list of numeric values or variable names
  * @param {SlashCommandScope} scope Scope
  * @returns {number[]} An array of numeric values
  */
@@ -679,9 +679,8 @@ function parseNumericSeries(value, scope = null) {
         return [value];
     }
 
-    const array = value
-        .split(' ')
-        .map(i => i.trim())
+    const values = Array.isArray(value) ? value : value.split(' ');
+    const array = values.map(i => i.trim())
         .filter(i => i !== '')
         .map(i => isNaN(Number(i)) ? Number(resolveVariable(i, scope)) : Number(i))
         .filter(i => !isNaN(i));
@@ -1595,7 +1594,7 @@ export function registerVariableCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'add',
-        callback: (args, /**@type {string[]}*/value) => addValuesCallback(args, value.join(' ')),
+        callback: (args, value) => addValuesCallback(args, value),
         returns: 'sum of the provided values',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
