@@ -433,6 +433,30 @@ function onFeatherlessModelSelect(modelId) {
     setGenerationParamsFromPreset({ max_length: model.context_length });
     selectedModelId = modelId;  // Store the selected model ID
 }
+
+let isGridView = true;  // Default state set to grid view
+
+// Ensure the correct initial view is applied when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const modelCardBlock = document.getElementById('model_card_block');
+    modelCardBlock.classList.add('grid-view');
+
+    const toggleButton = document.getElementById('model_grid_toggle');
+    toggleButton.addEventListener('click', function() {
+        // Toggle between grid and list view
+        if (isGridView) {
+            modelCardBlock.classList.remove('grid-view');
+            modelCardBlock.classList.add('list-view');
+            this.title = 'Toggle to grid view';
+        } else {
+            modelCardBlock.classList.remove('list-view');
+            modelCardBlock.classList.add('grid-view');
+            this.title = 'Toggle to list view';
+        }
+
+        isGridView = !isGridView;
+    });
+});
 function onMancerModelSelect() {
     const modelId = String($('#mancer_model').val());
     textgen_settings.mancer_model = modelId;
