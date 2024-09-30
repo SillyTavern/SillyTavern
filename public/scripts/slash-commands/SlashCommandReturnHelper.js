@@ -56,7 +56,7 @@ export const slashCommandReturnHelper = {
             case 'chat-html':
             case 'toast-text':
             case 'toast-html': {
-                const htmlOrNotHtml = shouldHtml ? (new showdown.Converter()).makeHtml(stringValue) : escapeHtml(stringValue);
+                const htmlOrNotHtml = shouldHtml ? DOMPurify.sanitize((new showdown.Converter()).makeHtml(stringValue)) : escapeHtml(stringValue);
 
                 if (type.startsWith('popup')) await callGenericPopup(htmlOrNotHtml, POPUP_TYPE.TEXT);
                 if (type.startsWith('chat')) sendSystemMessage(system_message_types.GENERIC, htmlOrNotHtml);
