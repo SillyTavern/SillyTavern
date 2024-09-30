@@ -176,6 +176,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sendas',
         callback: sendMessageAs,
+        returns: 'The text of the sent message',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
@@ -222,6 +223,7 @@ export function initDefaultSlashCommands() {
         name: 'sys',
         callback: sendNarratorMessage,
         aliases: ['nar'],
+        returns: 'The text of the sent message',
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'compact',
@@ -276,6 +278,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'comment',
         callback: sendCommentMessage,
+        returns: 'The text of the sent message',
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'compact',
@@ -2843,7 +2846,7 @@ function findPersonaByName(name) {
 
 async function sendUserMessageCallback(args, text) {
     if (!text) {
-        console.warn('WARN: No text provided for /send command');
+        toastr.warning('You must specify text to send');
         return;
     }
 
@@ -3205,11 +3208,12 @@ export async function sendMessageAs(args, text) {
         await saveChatConditional();
     }
 
-    return '';
+    return message.mes;
 }
 
 export async function sendNarratorMessage(args, text) {
     if (!text) {
+        toastr.warning('You must specify text to send');
         return '';
     }
 
@@ -3258,7 +3262,7 @@ export async function sendNarratorMessage(args, text) {
         await saveChatConditional();
     }
 
-    return '';
+    return message.mes;
 }
 
 export async function promptQuietForLoudResponse(who, text) {
@@ -3304,6 +3308,7 @@ export async function promptQuietForLoudResponse(who, text) {
 
 async function sendCommentMessage(args, text) {
     if (!text) {
+        toastr.warning('You must specify text to send');
         return '';
     }
 
@@ -3346,7 +3351,7 @@ async function sendCommentMessage(args, text) {
         await saveChatConditional();
     }
 
-    return '';
+    return message.mes;
 }
 
 /**
