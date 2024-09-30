@@ -23,7 +23,7 @@ export const slashCommandReturnHelper = {
      */
     enumList: ({ allowPipe = true, allowObject = false, allowChat = false, allowPopup = false, allowTextVersion = true } = {}) => [
         allowPipe && new SlashCommandEnumValue('pipe', 'Return to the pipe for the next command', enumTypes.name, '|'),
-        allowObject && new SlashCommandEnumValue('object', 'Return as an object to the pipe for the next command', enumTypes.variable, enumIcons.dictionary),
+        allowObject && new SlashCommandEnumValue('object', 'Return as an object (or array) to the pipe for the next command', enumTypes.variable, enumIcons.dictionary),
         allowChat && new SlashCommandEnumValue('chat-html', 'Sending a chat message with the return value - Can display HTML', enumTypes.command, enumIcons.message),
         allowChat && allowTextVersion && new SlashCommandEnumValue('chat-text', 'Sending a chat message with the return value - Will only display as text', enumTypes.qr, enumIcons.message),
         allowPopup && new SlashCommandEnumValue('popup-html', 'Showing as a popup with the return value - Can display HTML', enumTypes.command, enumIcons.popup),

@@ -1538,7 +1538,7 @@ export function initDefaultSlashCommands() {
             // TODO remove some day
             SlashCommandNamedArgument.fromProps({
                 name: 'format',
-                description: '!!! DEPRECATED - use "return" instead !!! output format)',
+                description: '!!! DEPRECATED - use "return" instead !!! output format',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 forceEnum: true,
