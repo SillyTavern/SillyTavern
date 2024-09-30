@@ -511,7 +511,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'send',
         callback: sendUserMessageCallback,
-        returns: 'The text of the sent message',
+        returns: 'Optionally the text of the sent message, if specified in the "return" argument',
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'compact',
@@ -533,6 +533,14 @@ export function initDefaultSlashCommands() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{user}}',
                 enumProvider: commonEnumProviders.personas,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'The way how you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'none',
+                enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                forceEnum: true,
             }),
         ],
         unnamedArgumentList: [
@@ -2923,7 +2931,7 @@ async function sendUserMessageCallback(args, text) {
         message = await sendMessageAsUser(text, bias, insertAt, compact);
     }
 
-    return message.mes;
+    return await slashCommandReturnHelper.doReturn(args.return ?? 'none', message, { objectToStringFunc: x => x.mes });
 }
 
 async function deleteMessagesByNameCallback(_, name) {
