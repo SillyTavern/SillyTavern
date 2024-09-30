@@ -323,7 +323,7 @@ async function sendMakerSuiteRequest(request, response) {
             ? (stream ? 'streamGenerateContent' : 'generateContent')
             : (isText ? 'generateText' : 'generateMessage');
 
-        const generateResponse = await fetch(`${apiUrl.origin}/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`, {
+        const generateResponse = await fetch(`${apiUrl}/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {
