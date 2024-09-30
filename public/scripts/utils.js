@@ -1,10 +1,12 @@
 import { getContext } from './extensions.js';
-import { getRequestHeaders } from '../script.js';
+import { characters, getRequestHeaders, this_chid } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
 import { collapseNewlines } from './power-user.js';
 import { debounce_timeout } from './constants.js';
 import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
+import { getTagsList } from './tags.js';
+import { groups, selected_group } from './group-chats.js';
 
 /**
  * Pagination status string template.
@@ -2109,4 +2111,75 @@ export async function showFontAwesomePicker(customList = null) {
         return value;
     }
     return null;
+}
+
+/**
+ * Finds a character by name, with optional filtering and precedence for avatars
+ * @param {object} [options={}] - The options for the search
+ * @param {string?} [options.name=null] - The name to search for
+ * @param {boolean} [options.allowAvatar=true] - Whether to allow searching by avatar
+ * @param {boolean} [options.insensitive=true] - Whether the search should be case insensitive
+ * @param {string[]?} [options.filteredByTags=null] - Tags to filter characters by
+ * @param {boolean} [options.preferCurrentChar=true] - Whether to prefer the current character(s)
+ * @param {boolean} [options.quiet=false] - Whether to suppress warnings
+ * @returns {any?} - The found character or null if not found
+ */
+export function findChar({ name = null, allowAvatar = true, insensitive = true, filteredByTags = null, preferCurrentChar = true, quiet = false } = {}) {
+    const matches = (char) => !name || (allowAvatar && char.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name);
+
+    // Filter characters by tags if provided
+    let filteredCharacters = characters;
+    if (filteredByTags) {
+        filteredCharacters = characters.filter(char => {
+            const charTags = getTagsList(char.avatar, false);
+            return filteredByTags.every(tagName => charTags.some(x => x.name == tagName));
+        });
+    }
+
+    // Get the current character(s)
+    /** @type {any[]} */
+    const currentChars = selected_group ? groups.find(group => group.id === selected_group)?.members.map(member => filteredCharacters.find(char => char.avatar === member))
+        : filteredCharacters.filter(char => characters[this_chid]?.avatar === char.avatar);
+
+    // If we have a current char and prefer it, return that if it matches
+    if (preferCurrentChar) {
+        const preferredCharSearch = currentChars.filter(matches);
+        if (preferredCharSearch.length > 1) {
+            if (!quiet) toastr.warning('Multiple characters found for given conditions.');
+            else console.warn('Multiple characters found for given conditions. Returning the first match.');
+        }
+        if (preferredCharSearch.length) {
+            return preferredCharSearch[0];
+        }
+    }
+
+    // If allowAvatar is true, search by avatar first
+    if (allowAvatar && name) {
+        const characterByAvatar = filteredCharacters.find(char => char.avatar === name);
+        if (characterByAvatar) {
+            return characterByAvatar;
+        }
+    }
+
+    // Search for matching characters by name
+    const matchingCharacters = name ? filteredCharacters.filter(matches) : filteredCharacters;
+    if (matchingCharacters.length > 1) {
+        if (!quiet) toastr.warning('Multiple characters found for given conditions.');
+        else console.warn('Multiple characters found for given conditions. Returning the first match.');
+    }
+
+    return matchingCharacters[0] || null;
+}
+
+/**
+ * Gets the index of a character based on the character object
+ * @param {object} char - The character object to find the index for
+ * @throws {Error} If the character is not found
+ * @returns {number} The index of the character in the characters array
+ */
+export function getCharIndex(char) {
+    if (!char) throw new Error('Character is undefined');
+    const index = characters.findIndex(c => c.avatar === char.avatar);
+    if (index === -1) throw new Error(`Character not found: ${char.avatar}`);
+    return index;
 }
