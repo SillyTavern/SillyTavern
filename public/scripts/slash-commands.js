@@ -71,6 +71,7 @@ import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCom
 import { SlashCommandDebugController } from './slash-commands/SlashCommandDebugController.js';
 import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
 import { SlashCommandExecutionError } from './slash-commands/SlashCommandExecutionError.js';
+import { slashCommandReturnHelper } from './slash-commands/SlashCommandReturnHelper.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -176,7 +177,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sendas',
         callback: sendMessageAs,
-        returns: 'The text of the sent message',
+        returns: 'Optionally the text of the sent message, if specified in the "return" argument',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
@@ -194,6 +195,14 @@ export function initDefaultSlashCommands() {
                 description: 'position to insert the message (index-based, corresponding to message id). If not set, the message will be inserted at the end of the chat.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will insert the message right before the last message in chat.',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'The way how you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'none',
+                enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                forceEnum: true,
             }),
         ],
         unnamedArgumentList: [
@@ -223,7 +232,7 @@ export function initDefaultSlashCommands() {
         name: 'sys',
         callback: sendNarratorMessage,
         aliases: ['nar'],
-        returns: 'The text of the sent message',
+        returns: 'Optionally the text of the sent message, if specified in the "return" argument',
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'compact',
@@ -238,6 +247,14 @@ export function initDefaultSlashCommands() {
                 description: 'position to insert the message (index-based, corresponding to message id). If not set, the message will be inserted at the end of the chat.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will insert the message right before the last message in chat.',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'The way how you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'none',
+                enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                forceEnum: true,
             }),
         ],
         unnamedArgumentList: [
@@ -278,7 +295,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'comment',
         callback: sendCommentMessage,
-        returns: 'The text of the sent message',
+        returns: 'Optionally the text of the sent message, if specified in the "return" argument',
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'compact',
@@ -293,6 +310,14 @@ export function initDefaultSlashCommands() {
                 description: 'position to insert the message (index-based, corresponding to message id). If not set, the message will be inserted at the end of the chat.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will insert the message right before the last message in chat.',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'The way how you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'none',
+                enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                forceEnum: true,
             }),
         ],
         unnamedArgumentList: [
@@ -3210,7 +3235,7 @@ export async function sendMessageAs(args, text) {
         await saveChatConditional();
     }
 
-    return message.mes;
+    return await slashCommandReturnHelper.doReturn(args.return ?? 'none', message, { objectToStringFunc: x => x.mes });
 }
 
 export async function sendNarratorMessage(args, text) {
@@ -3264,7 +3289,7 @@ export async function sendNarratorMessage(args, text) {
         await saveChatConditional();
     }
 
-    return message.mes;
+    return await slashCommandReturnHelper.doReturn(args.return ?? 'none', message, { objectToStringFunc: x => x.mes });
 }
 
 export async function promptQuietForLoudResponse(who, text) {
@@ -3353,7 +3378,7 @@ async function sendCommentMessage(args, text) {
         await saveChatConditional();
     }
 
-    return message.mes;
+    return await slashCommandReturnHelper.doReturn(args.return ?? 'none', message, { objectToStringFunc: x => x.mes });
 }
 
 /**
