@@ -1602,28 +1602,7 @@ export function registerVariableCommands() {
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
                 acceptsMultiple: true,
-                enumProvider: (executor, scope) => {
-                    const vars = commonEnumProviders.variables('all')(executor, scope);
-                    vars.push(
-                        new SlashCommandEnumValue(
-                            'any variable name',
-                            null,
-                            enumTypes.variable,
-                            enumIcons.variable,
-                            (input) => /^\w*$/.test(input),
-                            (input) => input,
-                        ),
-                        new SlashCommandEnumValue(
-                            'any number',
-                            null,
-                            enumTypes.number,
-                            enumIcons.number,
-                            (input) => input == '' || !Number.isNaN(Number(input)),
-                            (input) => input,
-                        ),
-                    );
-                    return vars;
-                },
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
@@ -1653,10 +1632,11 @@ export function registerVariableCommands() {
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
                 acceptsMultiple: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Performs a multiplication of the set of values and passes the result down the pipe. Can use variable names.
@@ -1681,10 +1661,11 @@ export function registerVariableCommands() {
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
                 acceptsMultiple: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Returns the maximum value of the set of values and passes the result down the pipe. Can use variable names.
@@ -1709,10 +1690,11 @@ export function registerVariableCommands() {
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 isRequired: true,
                 acceptsMultiple: true,
-                enumProvider: commonEnumProviders.variables('all'),
+                enumProvider: commonEnumProviders.numbersAndVariables,
                 forceEnum: false,
             }),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Returns the minimum value of the set of values and passes the result down the pipe.
