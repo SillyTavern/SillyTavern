@@ -978,13 +978,21 @@ body .panelControlBar {
     justify-content: center;
     z-index: 9999;
     grid-row-start: 2;
-    grid-column-start: 4;
-    flex-flow: column;
     font-size: 30px;
     cursor: pointer;
     align-self: center;
+
+}
+.swipe_left{
+position: absolute;
+bottom: 15px;
+flex-flow: column;
+}
+
+.swipeRightBlock {
     position: absolute;
-    bottom: 15px;
+    right: 0;
+    bottom: 0;
 }
 
 .swipes-counter {
@@ -994,6 +1002,9 @@ body .panelControlBar {
     font-family: var(--mainFontFamily);
     font-weight: 400;
     align-self: center;
+    min-width: 40px;
+    display: flex;
+    justify-content: center;
 }
 
 .swipe_left {
@@ -1003,6 +1014,7 @@ body .panelControlBar {
 
 .swipe_right {
     right: 5px;
+    align-self:end;
 }
 
 .ui-settings {
@@ -2632,6 +2644,11 @@ select option:not(:checked) {
 .world_set,
 .toggleEnabled {
     color: var(--active) !important;
+}
+
+#instruct_enabled_label .menu_button:not(.toggleEnabled),
+#sysprompt_enabled_label .menu_button:not(.toggleEnabled) {
+ color: Red;
 }
 
 .displayBlock {

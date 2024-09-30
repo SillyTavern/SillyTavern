@@ -3248,25 +3248,26 @@
                         </div>
                     </div>
                     <div id="InstructSettingsColumn" class="flex-container flexNoGap flexFlowColumn flex1">
+                        <h4 class="standoutHeader title_restorable justifySpaceBetween">
+                            <div class="flex-container">
+                                <span data-i18n="Instruct Template">Instruct Template</span>
+                                <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
+                                    <span class="fa-solid fa-circle-question note-link-span"></span>
+                                </a>
+                            </div>
+                            <div class="flex-container">
+                                <label for="instruct_bind_to_context" class="checkbox_label flex1" title="Bind to Context&#10If enabled, Context templates will be automatically selected based on selected Instruct template name or by preference." data-i18n="[title]instruct_bind_to_context">
+                                    <input id="instruct_bind_to_context" type="checkbox" style="display:none;" />
+                                    <small><i class="fa-solid fa-link menu_button margin0"></i></small>
+                                </label>
+                                <label id="instruct_enabled_label"for="instruct_enabled" class="checkbox_label flex1" title="Enable Instruct Mode" data-i18n="[title]instruct_enabled">
+                                    <input id="instruct_enabled" type="checkbox" style="display:none;" />
+                                    <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
+                                </label>
+                            </div>
+                        </h4>
                         <div id="instructSettingsBlock">
-                            <h4 class="standoutHeader title_restorable justifySpaceBetween">
-                                <div class="flex-container">
-                                    <span data-i18n="Instruct Template">Instruct Template</span>
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
-                                        <span class="fa-solid fa-circle-question note-link-span"></span>
-                                    </a>
-                                </div>
-                                <div class="flex-container">
-                                    <label for="instruct_bind_to_context" class="checkbox_label flex1" title="Bind to Context&#10If enabled, Context templates will be automatically selected based on selected Instruct template name or by preference." data-i18n="[title]instruct_bind_to_context">
-                                        <input id="instruct_bind_to_context" type="checkbox" style="display:none;" />
-                                        <small><i class="fa-solid fa-link menu_button margin0"></i></small>
-                                    </label>
-                                    <label for="instruct_enabled" class="checkbox_label flex1" title="Enable Instruct Mode" data-i18n="[title]instruct_enabled">
-                                        <input id="instruct_enabled" type="checkbox" style="display:none;" />
-                                        <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
-                                    </label>
-                                </div>
-                            </h4>
+
 
                             <div class="flex-container" title="Select your current Instruct Template" data-i18n="[title]Select your current Instruct Template">
                                 <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1 text_pole"></select>
@@ -3431,21 +3432,22 @@
                         </div>
                     </div>
                     <div id="SystemPromptColumn" class="flex-container flexNoGap flexFlowColumn flex1">
+                        <h4 class="standoutHeader title_restorable justifySpaceBetween">
+                            <div class="flex-container">
+                                <span data-i18n="System Prompt">System Prompt</span>
+                                <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#system-prompt" class="notes-link" target="_blank">
+                                    <span class="fa-solid fa-circle-question note-link-span"></span>
+                                </a>
+                            </div>
+                            <div class="flex-container">
+                                <label id="sysprompt_enabled_label" for="sysprompt_enabled" class="checkbox_label flex1" title="Enable System Prompt" data-i18n="[title]sysprompt_enabled">
+                                    <input id="sysprompt_enabled" type="checkbox" style="display:none;" />
+                                    <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
+                                </label>
+                            </div>
+                        </h4>
                         <div id="SystemPromptBlock">
-                            <h4 class="standoutHeader title_restorable justifySpaceBetween">
-                                <div class="flex-container">
-                                    <span data-i18n="System Prompt">System Prompt</span>
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#system-prompt" class="notes-link" target="_blank">
-                                        <span class="fa-solid fa-circle-question note-link-span"></span>
-                                    </a>
-                                </div>
-                                <div class="flex-container">
-                                    <label for="sysprompt_enabled" class="checkbox_label flex1" title="Enable System Prompt" data-i18n="[title]sysprompt_enabled">
-                                        <input id="sysprompt_enabled" type="checkbox" style="display:none;" />
-                                        <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
-                                    </label>
-                                </div>
-                            </h4>
+
 
                             <div class="flex-container" title="Select your current System Prompt" data-i18n="[title]Select your current System Prompt">
                                 <select id="sysprompt_select" data-preset-manager-for="sysprompt" class="flex1 text_pole"></select>
@@ -5939,7 +5941,8 @@
                     </div>
                     <div class="mes_bias"></div>
                 </div>
-                <div class="swipe_right fa-solid fa-chevron-right" style="display: none;">
+                <div class="flex-container swipeRightBlock flexFlowColumn flexNoGap">
+                    <div class="swipe_right fa-solid fa-chevron-right" style="display: none;"></div>
                     <div class="swipes-counter"></div>
                 </div>
             </div>
