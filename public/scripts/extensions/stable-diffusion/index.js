@@ -4029,6 +4029,38 @@ jQuery(async () => {
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'imagine-source',
+        aliases: ['sd-source', 'img-source'],
+        returns: 'a name of the current generation source',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'source name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                forceEnum: true,
+                enumProvider: () => Array.from(document.querySelectorAll('#sd_source > [value]')).map(x => new SlashCommandEnumValue(x.getAttribute('value'), x.textContent)),
+            }),
+        ],
+        helpString: 'If an argument is provided, change the source of the image generation, e.g. <code>/imagine-source comfy</code>. Returns the current source.',
+        callback: async (_args, name) => {
+            if (!name) {
+                return extension_settings.sd.source;
+            }
+            const isKnownSource = Object.keys(sources).includes(String(name));
+            if (!isKnownSource) {
+                throw new Error('The value provided is not a valid image generation source.');
+            }
+            const option = document.querySelector(`#sd_source [value="${name}"]`);
+            if (!(option instanceof HTMLOptionElement)) {
+                throw new Error('Could not find the source option in the dropdown.');
+            }
+            option.selected = true;
+            await onSourceChange();
+            return extension_settings.sd.source;
+        },
+    }))
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'imagine-comfy-workflow',
         callback: changeComfyWorkflow,
         aliases: ['icw'],
