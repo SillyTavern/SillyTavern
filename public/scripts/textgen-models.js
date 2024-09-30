@@ -265,12 +265,14 @@ export async function loadAphroditeModels(data) {
     }
 }
 
+let selectedModelId = null;
 export async function loadFeatherlessModels(data) {
     const searchBar = document.getElementById('model_search_bar');
     const modelCardBlock = document.getElementById('model_card_block');
     const paginationContainer = $('#model_pagination_container');
     const sortOrderSelect = document.getElementById('model_sort_order');
     const classSelect = document.getElementById('class_selection');
+    const categoriesSelect = document.getElementById('category_selection');
     const storageKey = 'Models_PerPage';
 
     // Store the original models data for search and filtering
@@ -284,6 +286,7 @@ export async function loadFeatherlessModels(data) {
     // Sort the data by model id (default A-Z)
     data.sort((a, b) => a.id.localeCompare(b.id));
     originalModels = data;  // Store the original data for search
+    featherlessModels = data;
 
     // Populate class select options with unique classes
     populateClassSelection(data);
@@ -324,7 +327,7 @@ export async function loadFeatherlessModels(data) {
 
                     const modelTitle = document.createElement('div');
                     modelTitle.classList.add('model-title');
-                    modelTitle.textContent = model.id;
+                    modelTitle.textContent = model.id.replace(/_/g, '_\u200B');
                     modelNameContainer.appendChild(modelTitle);
 
                     const detailsContainer = document.createElement('div');
@@ -388,6 +391,10 @@ export async function loadFeatherlessModels(data) {
         applyFiltersAndSort();
     });
 
+    categoriesSelect.addEventListener('change', function() {
+        applyFiltersAndSort();
+    });
+
     // Function to populate class selection dropdown
     function populateClassSelection(models) {
         const uniqueClasses = [...new Set(models.map(model => model.model_class).filter(Boolean))];  // Get unique class names
@@ -400,15 +407,26 @@ export async function loadFeatherlessModels(data) {
     }
 
     // Function to apply sorting and filtering based on user input
-    function applyFiltersAndSort() {
+    async function applyFiltersAndSort() {
         const searchQuery = searchBar.value.toLowerCase();
         const selectedSortOrder = sortOrderSelect.value;
         const selectedClass = classSelect.value;
-
+        const selectedCategory = categoriesSelect.value;
+        const featherlessTop = await fetchFeatherlessStats();
+        const featherlessIds = featherlessTop.map(stat => stat.id);
         // Filter the models based on the search query and selected class
         let filteredModels = originalModels.filter(model => {
             const matchesSearch = model.id.toLowerCase().includes(searchQuery);
             const matchesClass = selectedClass ? model.model_class === selectedClass : true;
+            const matchesTop = featherlessIds.includes(model.id);
+
+            if (selectedCategory === 'All') {
+                return matchesSearch && matchesClass;
+            }
+            else if (selectedCategory === 'Top') {
+                return matchesSearch && matchesClass && matchesTop;
+            }
+
             return matchesSearch && matchesClass;
         });
 
@@ -424,14 +442,20 @@ export async function loadFeatherlessModels(data) {
     }
 }
 
-let selectedModelId = null;
+async function fetchFeatherlessStats() {
+    const response = await fetch('https://api.featherless.ai/feather/popular');
+    const data = await response.json();
+    return data.popular;
+}
+
 function onFeatherlessModelSelect(modelId) {
     // Find the selected model and set the settings
     const model = featherlessModels.find(x => x.id === modelId);
+    selectedModelId = modelId;
     textgen_settings.featherless_model = modelId;
     $('#api_button_textgenerationwebui').trigger('click');
     setGenerationParamsFromPreset({ max_length: model.context_length });
-    selectedModelId = modelId;  // Store the selected model ID
+    toastr.info(`Selected model: ${modelId}`, '', { timeOut: 2000 });
 }
 
 let isGridView = true;  // Default state set to grid view

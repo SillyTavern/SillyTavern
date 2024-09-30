@@ -5524,6 +5524,7 @@ body:not(.movingUI) .drawer-content.maximized {
 .model-title {
     font-size: 16px;
     font-weight: bold;  /* Bold text for the model title */
+    overflow: hidden;
 }
 
 /* Model details section */
@@ -5545,6 +5546,7 @@ body:not(.movingUI) .drawer-content.maximized {
 
 /* Grid-view layout for the card container */
 #model_card_block.grid-view {
+    grid-row: 1 / span 2;  /* Span two rows */
     display: flex;
     flex-wrap: wrap;  /* Cards wrap onto new lines when necessary */
     gap: 15px;  /* Space between grid items */
@@ -5554,14 +5556,14 @@ body:not(.movingUI) .drawer-content.maximized {
 /* Grid-view card */
 #model_card_block.grid-view .model-card {
     flex-direction: column; /* Stack title, class, and context length vertically for grid */
-    flex: 1 1 calc(33.33% - 30px); /* 3 cards per row with spacing */
+    flex: 1 1 calc(50% - 30px); /* 3 cards per row with spacing */
     margin-bottom: 10px;
 }
 
 /* Ensure the search bar takes most of the width */
 #model_search_bar {
     flex-grow: 1;
-    min-width: 0;
+    min-width: 10ch;
 }
 
 /* Sort dropdown should be auto-sized based on its content */
@@ -5577,7 +5579,7 @@ body:not(.movingUI) .drawer-content.maximized {
     cursor: pointer;
 }
 
-#featherless_selection
+#category_selection
 {
     display: flex;
     width: auto;
