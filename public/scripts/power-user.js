@@ -472,30 +472,7 @@ function switchCompactInputArea() {
 
 export function switchSwipeNumAllMessages() {
     $('#show_swipe_num_all_messages').prop('checked', power_user.show_swipe_num_all_messages);
-
-    if (power_user.show_swipe_num_all_messages) {
-
-        $('.mes').each(function () {
-            //if the div also has the .lst_mes class, skip the loop for that item
-            if ($(this).hasClass('last_mes')) {
-                return;
-            }
-            //add the cloned button to every .mes .swipe_right EXCLUDING .mes.last_mes
-            $(this).find('.swipe_right').css('display', 'flex');
-        });
-
-    } else if (!power_user.show_swipe_num_all_messages) {
-        $('.mes:not(.last_mes)').each(function () {
-            if ($(this).hasClass('last_mes')) {
-                return;
-            }
-            //add the cloned button back to its original spot
-            $(this).find('.swipe_right').css('display', 'none');
-        });
-
-    }
-
-
+    $('.mes:not(.last_mes) .swipes-counter').toggle(power_user.show_swipe_num_all_messages);
 }
 
 var originalSliderValues = [];

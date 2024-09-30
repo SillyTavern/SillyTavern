@@ -83,7 +83,6 @@ import {
     resetMovableStyles,
     forceCharacterEditorTokenize,
     applyPowerUserSettings,
-    switchSwipeNumAllMessages,
 } from './scripts/power-user.js';
 
 import {
@@ -2381,8 +2380,8 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     if (showSwipes) {
         $('#chat .mes').last().addClass('last_mes');
-        $('#chat .mes').eq(-2).removeClass('last_mes')
-            .find('.swipe_right').removeClass('fa-chevron-right'); //otherwise it stays looking like it did when it was last_mes
+        $('#chat .mes').eq(-2).removeClass('last_mes');
+        //.find('.swipe_right').hide(); //otherwise it stays looking like it did when it was last_mes
         hideSwipeButtons();
         showSwipeButtons();
     }
@@ -7495,16 +7494,17 @@ export function showSwipeButtons() {
     }
     //only show right when generate is off, or when next right swipe would not make a generate happen
     if (is_send_press === false || chat[chat.length - 1].swipes.length >= swipeId) {
-        currentMessage.children('.swipe_right').css('display', 'flex');
-        currentMessage.children('.swipe_right').css('opacity', '0.3');
+        console.error('showingSwipeButtons: showing.');
+        currentMessage.find('.swipe_right').css('display', 'flex');
+        currentMessage.find('.swipe_right').css('opacity', '0.3');
     }
     //console.log((chat[chat.length - 1]));
     if ((chat[chat.length - 1].swipes.length - swipeId) === 1) {
-        //console.log('highlighting R swipe');
+        console.error('highlighting R swipe');
 
         //chevron was moved out of hardcode in HTML to class toggle dependent on last_mes or not
         //necessary for 'swipe_right' div in past messages to have no chevron if 'show swipes for all messages' is turned on
-        currentMessage.children('.swipe_right').addClass('fa-chevron-right').css('opacity', '0.7');
+        currentMessage.find('.swipe_right').css('opacity', '0.7');
     }
     //console.log(swipesCounterHTML);
 
@@ -7514,13 +7514,13 @@ export function showSwipeButtons() {
     //console.log(swipeId);
     //console.log(chat[chat.length - 1].swipes.length);
 
-    switchSwipeNumAllMessages();
+    //switchSwipeNumAllMessages();
 }
 
 export function hideSwipeButtons() {
-    //console.log('hideswipebuttons entered');
-    $('#chat').find('.last_mes .swipe_right').css('display', 'none');
-    $('#chat').find('.swipe_left').css('display', 'none');
+    console.error('hideswipebuttons entered');
+    $('#chat').find('.swipe_right').hide();
+    $('#chat').find('.swipe_left').hide();
 }
 
 /**
@@ -8355,8 +8355,8 @@ const swipe_right = () => {
     }
 
     const currentMessage = $('#chat').children().filter(`[mesid="${chat.length - 1}"]`);
-    let this_div = currentMessage.children('.swipe_right');
-    let this_mes_div = this_div.parent();
+    let this_div = currentMessage.find('.swipe_right');
+    let this_mes_div = this_div.parent().parent();
 
     if (chat[chat.length - 1]['swipe_id'] > chat[chat.length - 1]['swipes'].length) { //if we swipe right while generating (the swipe ID is greater than what we are viewing now)
         chat[chat.length - 1]['swipe_id'] = chat[chat.length - 1]['swipes'].length; //show that message slot (will be '...' while generating)
@@ -8366,7 +8366,7 @@ const swipe_right = () => {
     }
     // handles animated transitions when swipe right, specifically height transitions between messages
     if (run_generate || run_swipe_right) {
-        let this_mes_block = this_mes_div.children('.mes_block').children('.mes_text');
+        let this_mes_block = this_mes_div.find('.mes_block .mes_text');
         const this_mes_div_height = this_mes_div[0].scrollHeight;
         const this_mes_block_height = this_mes_block[0].scrollHeight;
 
