@@ -2481,7 +2481,7 @@ async function askCharacter(args, text) {
     // Not supported in group chats
     // TODO: Maybe support group chats?
     if (selected_group) {
-        toastr.error('Cannot run /ask command in a group chat!');
+        toastr.warning('Cannot run /ask command in a group chat!');
         return '';
     }
 
@@ -2501,7 +2501,7 @@ async function askCharacter(args, text) {
     // Find the character
     const chId = characters.findIndex((e) => e.name === name || e.avatar === name);
     if (!characters[chId] || chId === -1) {
-        toastr.error('Character not found.');
+        toastr.warning('Character not found.');
         return '';
     }
 
