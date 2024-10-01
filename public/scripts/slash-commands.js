@@ -3090,7 +3090,7 @@ async function continueChatCallback(args, prompt) {
             resolve();
         } catch (error) {
             console.error('Error running /continue command:', error);
-            reject();
+            reject(error);
         }
     });
 

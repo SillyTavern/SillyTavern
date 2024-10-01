@@ -27,11 +27,6 @@
                 <span data-i18n="sd_free_extend_txt">Extend free mode prompts</span>
                 <small data-i18n="sd_free_extend_small">(interactive/commands)</small>
             </label>
-            <label for="sd_expand" class="checkbox_label" data-i18n="[title]sd_expand" title="Automatically extend prompts using text generation model">
-                <input id="sd_expand" type="checkbox" />
-                <span data-i18n="sd_expand_txt">Auto-extend prompts</span>
-                <span class="right_menu_button fa-solid fa-triangle-exclamation" data-i18n="[title]sd_expand_warning" title="May produce unexpected results. Manual prompt editing is recommended."></span>
-            </label>
             <label for="sd_snap" class="checkbox_label" data-i18n="[title]sd_snap" title="Snap generation requests with a forced aspect ratio (portraits, backgrounds) to the nearest known resolution, while trying to preserve the absolute pixel counts (recommended for SDXL).">
                 <input id="sd_snap" type="checkbox" />
                 <span data-i18n="sd_snap_txt">Snap auto-adjusted resolutions</span>
@@ -308,7 +303,7 @@
             </div>
 
             <div class="flex-container">
-                <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" data-sd-source="auto,vlad,drawthings">
+                <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" data-sd-source="auto,vlad,drawthings,novel">
                     <small>
                         <span data-i18n="Upscale by">Upscale by</span>
                     </small>
@@ -330,14 +325,6 @@
                     </small>
                     <input class="neo-range-slider" type="range" id="sd_hr_second_pass_steps" name="sd_hr_second_pass_steps" max="{{hr_second_pass_steps_max}}" step="{{hr_second_pass_steps_step}}" value="{{hr_second_pass_steps}}"  >
                     <input class="neo-range-input" type="number" id="sd_hr_second_pass_steps_value" data-for="sd_hr_second_pass_steps" max="{{hr_second_pass_steps_max}}" step="{{hr_second_pass_steps_step}}" value="{{hr_second_pass_steps}}" >
-                </div>
-
-                <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" data-sd-source="novel">
-                    <small>
-                        <span data-i18n="Upscale by">Upscale by</span>
-                    </small>
-                    <input class="neo-range-slider" type="range" id="sd_novel_upscale_ratio" name="sd_novel_upscale_ratio" min="{{novel_upscale_ratio_min}}" max="{{novel_upscale_ratio_max}}" step="{{novel_upscale_ratio_step}}" value="{{novel_upscale_ratio}}" >
-                    <input class="neo-range-input" type="number" id="sd_novel_upscale_ratio_value" data-for="sd_novel_upscale_ratio" min="{{novel_upscale_ratio_min}}" max="{{novel_upscale_ratio_max}}" step="{{novel_upscale_ratio_step}}" value="{{novel_upscale_ratio}}" >
                 </div>
 
                 <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" data-sd-source="auto,vlad,comfy,horde,drawthings,extras">
