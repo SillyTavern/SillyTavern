@@ -2243,7 +2243,9 @@ function ensureSelectionExists(setting, selector) {
     if (!selectElement) {
         return;
     }
-    if (selectElement.selectedOptions.length && !Array.from(selectElement.options).some(option => option.value === extension_settings.sd[setting])) {
+    const options = Array.from(selectElement.options);
+    const value = extension_settings.sd[setting];
+    if (selectElement.selectedOptions.length && !options.some(option => option.value === value)) {
         extension_settings.sd[setting] = selectElement.selectedOptions[0].value;
     }
 }
