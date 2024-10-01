@@ -969,24 +969,29 @@ body .panelControlBar {
 
 /* SWIPE RELATED STYLES*/
 
+.mes {
+    --swipeCounterHeight: 15px;
+    --swipeCounterMargin: 5px;
+}
+
 .swipe_right,
 .swipe_left {
-    height: 40px;
-    width: 40px;
+    width: 25px;
+    height: 25px;
     opacity: 0.3;
     align-items: center;
     justify-content: center;
     z-index: 9999;
     grid-row-start: 2;
-    font-size: 30px;
+    font-size: 20px;
     cursor: pointer;
     align-self: center;
-
 }
-.swipe_left{
-position: absolute;
-bottom: 15px;
-flex-flow: column;
+
+.swipe_left {
+    position: absolute;
+    bottom: calc(var(--swipeCounterHeight) + var(--swipeCounterMargin));
+    flex-flow: column;
 }
 
 .swipeRightBlock {
@@ -995,17 +1000,19 @@ flex-flow: column;
     bottom: 0;
 }
 
-
 .swipes-counter {
     color: var(--SmartThemeBodyColor);
     font-size: 12px;
-    padding: 0;
+    padding: 0 5px;
     font-family: var(--mainFontFamily);
     font-weight: 400;
     align-self: center;
     min-width: 40px;
     display: flex;
     justify-content: center;
+    opacity: 0.7;
+    margin-bottom: var(--swipeCounterMargin);
+    height: var(--swipeCounterHeight);
 }
 
 .swipe_left {
@@ -1015,7 +1022,7 @@ flex-flow: column;
 
 .swipe_right {
     right: 5px;
-    align-self:end;
+    align-self: center;
 }
 
 .ui-settings {
@@ -2649,7 +2656,7 @@ select option:not(:checked) {
 
 #instruct_enabled_label .menu_button:not(.toggleEnabled),
 #sysprompt_enabled_label .menu_button:not(.toggleEnabled) {
- color: Red;
+    color: Red;
 }
 
 .displayBlock {
