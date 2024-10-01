@@ -7528,7 +7528,7 @@ export function showSwipeButtons() {
 }
 
 export function hideSwipeButtons() {
-    console.error('hideswipebuttons entered');
+    // console.error('hideswipebuttons entered');
     $('#chat').find('.swipe_right').hide();
     $('#chat').find('.last_mes .swipes-counter').hide();
     $('#chat').find('.swipe_left').hide();
