@@ -2445,7 +2445,7 @@ function generateFreeModePrompt(trigger, combineNegatives) {
                         return message.original_avatar.replace(/\.[^/.]+$/, '');
                     }
                 }
-                throw new Error('No usable messages found.');
+                return '';
             };
 
             const key = getLastCharacterKey();
