@@ -11,6 +11,7 @@ import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureR
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { slashCommandReturnHelper } from './slash-commands/SlashCommandReturnHelper.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { isFalseBoolean, convertValueType, isTrueBoolean } from './utils.js';
 
@@ -305,7 +306,28 @@ export function replaceVariableMacros(input) {
 }
 
 async function listVariablesCallback(args) {
-    const type = String(args?.format || '').toLowerCase().trim() || 'popup';
+    /** @type {import('./slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} */
+    let returnType = args.return;
+
+    // Old legacy return type handling
+    if (args.format) {
+        toastr.warning(`Legacy argument 'format' with value '${args.format}' is deprecated. Please use 'return' instead. Routing to the correct return type...`, 'Deprecation warning');
+        const type = String(args?.format).toLowerCase().trim();
+        switch (type) {
+            case 'none':
+                returnType = 'none';
+                break;
+            case 'chat':
+                returnType = 'chat-html';
+                break;
+            case 'popup':
+            default:
+                returnType = 'popup-html';
+                break;
+        }
+    }
+
+    // Now the actual new return type handling
     const scope = String(args?.scope || '').toLowerCase().trim() || 'all';
     if (!chat_metadata.variables) {
         chat_metadata.variables = {};
@@ -317,35 +339,24 @@ async function listVariablesCallback(args) {
     const localVariables = includeLocalVariables ? Object.entries(chat_metadata.variables).map(([name, value]) => `${name}: ${value}`) : [];
     const globalVariables = includeGlobalVariables ? Object.entries(extension_settings.variables.global).map(([name, value]) => `${name}: ${value}`) : [];
 
+    const buildTextValue = (_) => {
+        const localVariablesString = localVariables.length > 0 ? localVariables.join('\n\n') : 'No local variables';
+        const globalVariablesString = globalVariables.length > 0 ? globalVariables.join('\n\n') : 'No global variables';
+        const chatName = getCurrentChatId();
+
+        const message = [
+            includeLocalVariables ? `### Local variables (${chatName}):\n${localVariablesString}` : '',
+            includeGlobalVariables ? `### Global variables:\n${globalVariablesString}` : '',
+        ].filter(x => x).join('\n\n');
+        return message;
+    };
+
     const jsonVariables = [
         ...Object.entries(chat_metadata.variables).map(x => ({ key: x[0], value: x[1], scope: 'local' })),
         ...Object.entries(extension_settings.variables.global).map(x => ({ key: x[0], value: x[1], scope: 'global' })),
     ];
 
-    const localVariablesString = localVariables.length > 0 ? localVariables.join('\n\n') : 'No local variables';
-    const globalVariablesString = globalVariables.length > 0 ? globalVariables.join('\n\n') : 'No global variables';
-    const chatName = getCurrentChatId();
-
-    const converter = new showdown.Converter();
-    const message = [
-        includeLocalVariables ? `### Local variables (${chatName}):\n${localVariablesString}` : '',
-        includeGlobalVariables ? `### Global variables:\n${globalVariablesString}` : '',
-    ].filter(x => x).join('\n\n');
-    const htmlMessage = DOMPurify.sanitize(converter.makeHtml(message));
-
-    switch (type) {
-        case 'none':
-            break;
-        case 'chat':
-            sendSystemMessage(system_message_types.GENERIC, htmlMessage);
-            break;
-        case 'popup':
-        default:
-            await callGenericPopup(htmlMessage, POPUP_TYPE.TEXT);
-            break;
-    }
-
-    return JSON.stringify(jsonVariables);
+    return await slashCommandReturnHelper.doReturn(returnType ?? 'popup-html', jsonVariables, { objectToStringFunc: buildTextValue });
 }
 
 /**
@@ -916,7 +927,7 @@ export function registerVariableCommands() {
         name: 'listvar',
         callback: listVariablesCallback,
         aliases: ['listchatvar'],
-        helpString: 'List registered chat variables. Displays variables in a popup by default. Use the <code>format</code> argument to change the output format.',
+        helpString: 'List registered chat variables. Displays variables in a popup by default. Use the <code>return</code> argument to change the return type.',
         returns: 'JSON list of local variables',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
@@ -933,8 +944,17 @@ export function registerVariableCommands() {
                 ],
             }),
             SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'The way how you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'popup-html',
+                enumList: slashCommandReturnHelper.enumList({ allowPipe: false, allowObject: true, allowChat: true, allowPopup: true, allowTextVersion: false }),
+                forceEnum: true,
+            }),
+            // TODO remove some day
+            SlashCommandNamedArgument.fromProps({
                 name: 'format',
-                description: 'output format',
+                description: '!!! DEPRECATED - use "return" instead !!! output format',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 forceEnum: true,

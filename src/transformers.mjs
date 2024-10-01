@@ -31,12 +31,6 @@ const tasks = {
         configField: 'extras.embeddingModel',
         quantized: true,
     },
-    'text-generation': {
-        defaultModel: 'Cohee/fooocus_expansion-onnx',
-        pipeline: null,
-        configField: 'extras.promptExpansionModel',
-        quantized: false,
-    },
     'automatic-speech-recognition': {
         defaultModel: 'Xenova/whisper-small',
         pipeline: null,

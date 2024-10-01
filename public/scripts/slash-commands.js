@@ -70,6 +70,7 @@ import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
 import { SlashCommandExecutionError } from './slash-commands/SlashCommandExecutionError.js';
+import { slashCommandReturnHelper } from './slash-commands/SlashCommandReturnHelper.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -242,6 +243,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sendas',
         callback: sendMessageAs,
+        returns: 'Optionally the text of the sent message, if specified in the "return" argument',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
@@ -268,6 +270,14 @@ export function initDefaultSlashCommands() {
                 description: 'position to insert the message (index-based, corresponding to message id). If not set, the message will be inserted at the end of the chat.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will insert the message right before the last message in chat.',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'The way how you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'none',
+                enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                forceEnum: true,
             }),
         ],
         unnamedArgumentList: [
@@ -301,6 +311,7 @@ export function initDefaultSlashCommands() {
         name: 'sys',
         callback: sendNarratorMessage,
         aliases: ['nar'],
+        returns: 'Optionally the text of the sent message, if specified in the "return" argument',
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'compact',
@@ -315,6 +326,14 @@ export function initDefaultSlashCommands() {
                 description: 'position to insert the message (index-based, corresponding to message id). If not set, the message will be inserted at the end of the chat.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will insert the message right before the last message in chat.',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'The way how you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'none',
+                enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                forceEnum: true,
             }),
         ],
         unnamedArgumentList: [
@@ -355,6 +374,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'comment',
         callback: sendCommentMessage,
+        returns: 'Optionally the text of the sent message, if specified in the "return" argument',
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'compact',
@@ -369,6 +389,14 @@ export function initDefaultSlashCommands() {
                 description: 'position to insert the message (index-based, corresponding to message id). If not set, the message will be inserted at the end of the chat.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will insert the message right before the last message in chat.',
                 typeList: [ARGUMENT_TYPE.NUMBER],
                 enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'The way how you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'none',
+                enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                forceEnum: true,
             }),
         ],
         unnamedArgumentList: [
@@ -509,7 +537,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'ask',
         callback: askCharacter,
-        returns: 'the generated text',
+        returns: 'Optionally the text of the sent message, if specified in the "return" argument',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
@@ -517,6 +545,14 @@ export function initDefaultSlashCommands() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: commonEnumProviders.characters('character'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'The way how you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'pipe',
+                enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                forceEnum: true,
             }),
         ],
         unnamedArgumentList: [
@@ -556,6 +592,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'send',
         callback: sendUserMessageCallback,
+        returns: 'Optionally the text of the sent message, if specified in the "return" argument',
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'compact',
@@ -577,6 +614,14 @@ export function initDefaultSlashCommands() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{user}}',
                 enumProvider: commonEnumProviders.personas,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'The way how you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'none',
+                enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                forceEnum: true,
             }),
         ],
         unnamedArgumentList: [
@@ -1568,12 +1613,21 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'listinjects',
         callback: listInjectsCallback,
-        helpString: 'Lists all script injections for the current chat. Displays injects in a popup by default. Use the <code>format</code> argument to change the output format.',
-        returns: 'JSON object of script injections',
+        helpString: 'Lists all script injections for the current chat. Displays injects in a popup by default. Use the <code>return</code> argument to change the return type.',
+        returns: 'Optionalls the JSON object of script injections',
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'The way how you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'popup-html',
+                enumList: slashCommandReturnHelper.enumList({ allowPipe: false, allowObject: true, allowChat: true, allowPopup: true, allowTextVersion: false }),
+                forceEnum: true,
+            }),
+            // TODO remove some day
+            SlashCommandNamedArgument.fromProps({
                 name: 'format',
-                description: 'output format',
+                description: '!!! DEPRECATED - use "return" instead !!! output format',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 forceEnum: true,
@@ -1842,37 +1896,43 @@ function injectCallback(args, value) {
 }
 
 async function listInjectsCallback(args) {
-    const type = String(args?.format).toLowerCase().trim();
-    if (!chat_metadata.script_injects || !Object.keys(chat_metadata.script_injects).length) {
-        type !== 'none' && toastr.info('No script injections for the current chat');
-        return JSON.stringify({});
+    /** @type {import('./slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} */
+    let returnType = args.return;
+
+    // Old legacy return type handling
+    if (args.format) {
+        toastr.warning(`Legacy argument 'format' with value '${args.format}' is deprecated. Please use 'return' instead. Routing to the correct return type...`, 'Deprecation warning');
+        const type = String(args?.format).toLowerCase().trim();
+        if (!chat_metadata.script_injects || !Object.keys(chat_metadata.script_injects).length) {
+            type !== 'none' && toastr.info('No script injections for the current chat');
+        }
+        switch (type) {
+            case 'none':
+                returnType = 'none';
+                break;
+            case 'chat':
+                returnType = 'chat-html';
+                break;
+            case 'popup':
+            default:
+                returnType = 'popup-html';
+                break;
+        }
     }
 
-    const injects = Object.entries(chat_metadata.script_injects)
-        .map(([id, inject]) => {
-            const position = Object.entries(extension_prompt_types);
-            const positionName = position.find(([_, value]) => value === inject.position)?.[0] ?? 'unknown';
-            return `* **${id}**: <code>${inject.value}</code> (${positionName}, depth: ${inject.depth}, scan: ${inject.scan ?? false}, role: ${inject.role ?? extension_prompt_roles.SYSTEM})`;
-        })
-        .join('\n');
+    // Now the actual new return type handling
+    const buildTextValue = (injects) => {
+        const injectsStr = Object.entries(injects)
+            .map(([id, inject]) => {
+                const position = Object.entries(extension_prompt_types);
+                const positionName = position.find(([_, value]) => value === inject.position)?.[0] ?? 'unknown';
+                return `* **${id}**: <code>${inject.value}</code> (${positionName}, depth: ${inject.depth}, scan: ${inject.scan ?? false}, role: ${inject.role ?? extension_prompt_roles.SYSTEM})`;
+            })
+            .join('\n');
+        return `### Script injections:\n${injectsStr || 'No script injections for the current chat'}`;
+    };
 
-    const converter = new showdown.Converter();
-    const messageText = `### Script injections:\n${injects}`;
-    const htmlMessage = DOMPurify.sanitize(converter.makeHtml(messageText));
-
-    switch (type) {
-        case 'none':
-            break;
-        case 'chat':
-            sendSystemMessage(system_message_types.GENERIC, htmlMessage);
-            break;
-        case 'popup':
-        default:
-            await callGenericPopup(htmlMessage, POPUP_TYPE.TEXT);
-            break;
-    }
-
-    return JSON.stringify(chat_metadata.script_injects);
+    return await slashCommandReturnHelper.doReturn(returnType ?? 'popup-html', chat_metadata.script_injects ?? {}, { objectToStringFunc: buildTextValue });
 }
 
 /**
@@ -2559,7 +2619,7 @@ async function askCharacter(args, text) {
     // Not supported in group chats
     // TODO: Maybe support group chats?
     if (selected_group) {
-        toastr.error('Cannot run /ask command in a group chat!');
+        toastr.warning('Cannot run /ask command in a group chat!');
         return '';
     }
 
@@ -2633,7 +2693,9 @@ async function askCharacter(args, text) {
         }
     }
 
-    return askResult;
+    const message = askResult ? chat[chat.length - 1] : null;
+
+    return await slashCommandReturnHelper.doReturn(args.return ?? 'pipe', message, { objectToStringFunc: x => x.mes });
 }
 
 async function hideMessageCallback(_, arg) {
@@ -2908,7 +2970,7 @@ function findPersonaByName(name) {
 
 async function sendUserMessageCallback(args, text) {
     if (!text) {
-        console.warn('WARN: No text provided for /send command');
+        toastr.warning('You must specify text to send');
         return;
     }
 
@@ -2924,16 +2986,17 @@ async function sendUserMessageCallback(args, text) {
         insertAt = chat.length + insertAt;
     }
 
+    let message;
     if ('name' in args) {
         const name = args.name || '';
         const avatar = findPersonaByName(name) || user_avatar;
-        await sendMessageAsUser(text, bias, insertAt, compact, name, avatar);
+        message = await sendMessageAsUser(text, bias, insertAt, compact, name, avatar);
     }
     else {
-        await sendMessageAsUser(text, bias, insertAt, compact);
+        message = await sendMessageAsUser(text, bias, insertAt, compact);
     }
 
-    return '';
+    return await slashCommandReturnHelper.doReturn(args.return ?? 'none', message, { objectToStringFunc: x => x.mes });
 }
 
 async function deleteMessagesByNameCallback(_, name) {
@@ -3221,30 +3284,20 @@ export function getNameAndAvatarForMessage(character, name = null) {
 
 export async function sendMessageAs(args, text) {
     if (!text) {
+        toastr.warning('You must specify text to send as');
         return '';
     }
 
-    let name;
+    let name = args.name?.trim();
     let mesText;
 
-    if (args.name) {
-        name = args.name.trim();
-
-        if (!name && !text) {
-            toastr.warning('You must specify a name and text to send as');
-            return '';
-        }
-    } else {
+    if (!name) {
         const namelessWarningKey = 'sendAsNamelessWarningShown';
         if (localStorage.getItem(namelessWarningKey) !== 'true') {
             toastr.warning('To avoid confusion, please use /sendas name="Character Name"', 'Name defaulted to {{char}}', { timeOut: 10000 });
             localStorage.setItem(namelessWarningKey, 'true');
         }
         name = name2;
-        if (!text) {
-            toastr.warning('You must specify text to send as');
-            return '';
-        }
     }
 
     mesText = text.trim();
@@ -3321,11 +3374,12 @@ export async function sendMessageAs(args, text) {
         await saveChatConditional();
     }
 
-    return '';
+    return await slashCommandReturnHelper.doReturn(args.return ?? 'none', message, { objectToStringFunc: x => x.mes });
 }
 
 export async function sendNarratorMessage(args, text) {
     if (!text) {
+        toastr.warning('You must specify text to send');
         return '';
     }
 
@@ -3374,7 +3428,7 @@ export async function sendNarratorMessage(args, text) {
         await saveChatConditional();
     }
 
-    return '';
+    return await slashCommandReturnHelper.doReturn(args.return ?? 'none', message, { objectToStringFunc: x => x.mes });
 }
 
 export async function promptQuietForLoudResponse(who, text) {
@@ -3420,6 +3474,7 @@ export async function promptQuietForLoudResponse(who, text) {
 
 async function sendCommentMessage(args, text) {
     if (!text) {
+        toastr.warning('You must specify text to send');
         return '';
     }
 
@@ -3462,7 +3517,7 @@ async function sendCommentMessage(args, text) {
         await saveChatConditional();
     }
 
-    return '';
+    return await slashCommandReturnHelper.doReturn(args.return ?? 'none', message, { objectToStringFunc: x => x.mes });
 }
 
 /**

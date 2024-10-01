@@ -83,6 +83,7 @@ import {
     resetMovableStyles,
     forceCharacterEditorTokenize,
     applyPowerUserSettings,
+    switchSwipeNumAllMessages,
 } from './scripts/power-user.js';
 
 import {
@@ -2368,6 +2369,13 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     }
 
     addCopyToCodeBlocks(newMessage);
+
+    // Set the swipes counter for past messages, only visible if 'Show Swipes on All Message' is enabled
+    if (!params.isUser && newMessageId !== 0 && newMessageId !== chat.length - 1) {
+        const swipesNum = chat[newMessageId].swipes?.length;
+        const swipeId = chat[newMessageId].swipe_id + 1;
+        newMessage.find('.swipes-counter').text(`${swipeId}\u200B/\u200b${swipesNum}`);
+    }
 
     if (showSwipes) {
         $('#chat .mes').last().addClass('last_mes');
@@ -4785,7 +4793,7 @@ export function removeMacros(str) {
  * @param {boolean} [compact] Send as a compact display message.
  * @param {string} [name] Name of the user sending the message. Defaults to name1.
  * @param {string} [avatar] Avatar of the user sending the message. Defaults to user_avatar.
- * @returns {Promise<void>} A promise that resolves when the message is inserted.
+ * @returns {Promise<any>} A promise that resolves to the message when it is inserted.
  */
 export async function sendMessageAsUser(messageText, messageBias, insertAt = null, compact = false, name = name1, avatar = user_avatar) {
     messageText = getRegexedString(messageText, regex_placement.USER_INPUT);
@@ -4832,6 +4840,8 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, chat_id);
         await saveChatConditional();
     }
+
+    return message;
 }
 
 /**
@@ -7469,7 +7479,6 @@ export function showSwipeButtons() {
     //had to add this to make the swipe counter work
     //(copied from the onclick functions for swipe buttons..
     //don't know why the array isn't set for non-swipe messsages in Generate or addOneMessage..)
-
     if (chat[chat.length - 1]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
         chat[chat.length - 1]['swipe_id'] = 0;                        // set it to id 0
         chat[chat.length - 1]['swipes'] = [];                         // empty the array
@@ -7479,32 +7488,36 @@ export function showSwipeButtons() {
     const currentMessage = $('#chat').children().filter(`[mesid="${chat.length - 1}"]`);
     const swipeId = chat[chat.length - 1].swipe_id;
     const swipeCounterText = (`${(swipeId + 1)}\u200B/\u200b${(chat[chat.length - 1].swipes.length)}`);
+    const swipeRight = currentMessage.find('.swipe_right');
+    const swipeLeft = currentMessage.find('.swipe_left');
+    const swipeCounter = currentMessage.find('.swipes-counter');
 
     if (swipeId !== undefined && (chat[chat.length - 1].swipes.length > 1 || swipeId > 0)) {
-        currentMessage.children('.swipe_left').css('display', 'flex');
+        swipeLeft.css('display', 'flex');
     }
     //only show right when generate is off, or when next right swipe would not make a generate happen
     if (is_send_press === false || chat[chat.length - 1].swipes.length >= swipeId) {
-        currentMessage.children('.swipe_right').css('display', 'flex');
-        currentMessage.children('.swipe_right').css('opacity', '0.3');
+        swipeRight.css('display', 'flex').css('opacity', '0.3');
+        swipeCounter.css('opacity', '0.3');
     }
-    //console.log((chat[chat.length - 1]));
     if ((chat[chat.length - 1].swipes.length - swipeId) === 1) {
-        //console.log('highlighting R swipe');
-        currentMessage.children('.swipe_right').css('opacity', '0.7');
+        //chevron was moved out of hardcode in HTML to class toggle dependent on last_mes or not
+        //necessary for 'swipe_right' div in past messages to have no chevron if 'show swipes for all messages' is turned on
+        swipeRight.css('opacity', '0.7');
+        swipeCounter.css('opacity', '0.7');
     }
-    //console.log(swipesCounterHTML);
 
-    $('.swipes-counter').text(swipeCounterText);
+    //allows for writing individual swipe counters for past messages
+    const lastSwipeCounter = $('.last_mes .swipes-counter');
+    lastSwipeCounter.text(swipeCounterText).show();
 
-    //console.log(swipeId);
-    //console.log(chat[chat.length - 1].swipes.length);
+    switchSwipeNumAllMessages();
 }
 
 export function hideSwipeButtons() {
-    //console.log('hideswipebuttons entered');
-    $('#chat').find('.swipe_right').css('display', 'none');
-    $('#chat').find('.swipe_left').css('display', 'none');
+    $('#chat').find('.swipe_right').hide();
+    $('#chat').find('.last_mes .swipes-counter').hide();
+    $('#chat').find('.swipe_left').hide();
 }
 
 /**
@@ -8339,8 +8352,8 @@ const swipe_right = () => {
     }
 
     const currentMessage = $('#chat').children().filter(`[mesid="${chat.length - 1}"]`);
-    let this_div = currentMessage.children('.swipe_right');
-    let this_mes_div = this_div.parent();
+    let this_div = currentMessage.find('.swipe_right');
+    let this_mes_div = this_div.parent().parent();
 
     if (chat[chat.length - 1]['swipe_id'] > chat[chat.length - 1]['swipes'].length) { //if we swipe right while generating (the swipe ID is greater than what we are viewing now)
         chat[chat.length - 1]['swipe_id'] = chat[chat.length - 1]['swipes'].length; //show that message slot (will be '...' while generating)
@@ -8350,7 +8363,7 @@ const swipe_right = () => {
     }
     // handles animated transitions when swipe right, specifically height transitions between messages
     if (run_generate || run_swipe_right) {
-        let this_mes_block = this_mes_div.children('.mes_block').children('.mes_text');
+        let this_mes_block = this_mes_div.find('.mes_block .mes_text');
         const this_mes_div_height = this_mes_div[0].scrollHeight;
         const this_mes_block_height = this_mes_block[0].scrollHeight;
 
@@ -9407,9 +9420,9 @@ jQuery(async function () {
 
     ///// SWIPE BUTTON CLICKS ///////
 
-    $(document).on('click', '.swipe_right', swipe_right);
-
-    $(document).on('click', '.swipe_left', swipe_left);
+    //limit swiping to only last message clicks
+    $(document).on('click', '.last_mes .swipe_right', swipe_right);
+    $(document).on('click', '.last_mes .swipe_left', swipe_left);
 
     const debouncedCharacterSearch = debounce((searchQuery) => {
         entitiesFilter.setFilterData(FILTER_TYPES.SEARCH, searchQuery);
