@@ -7493,29 +7493,33 @@ export function showSwipeButtons() {
     const currentMessage = $('#chat').children().filter(`[mesid="${chat.length - 1}"]`);
     const swipeId = chat[chat.length - 1].swipe_id;
     const swipeCounterText = (`${(swipeId + 1)}\u200B/\u200b${(chat[chat.length - 1].swipes.length)}`);
+    const swipeRight = currentMessage.find('.swipe_right');
+    const swipeLeft = currentMessage.find('.swipe_left');
+    const swipeCounter = currentMessage.find('.swipes-counter');
 
     if (swipeId !== undefined && (chat[chat.length - 1].swipes.length > 1 || swipeId > 0)) {
-        currentMessage.children('.swipe_left').css('display', 'flex');
+        swipeLeft.css('display', 'flex');
     }
     //only show right when generate is off, or when next right swipe would not make a generate happen
     if (is_send_press === false || chat[chat.length - 1].swipes.length >= swipeId) {
-        console.error('showingSwipeButtons: showing.');
-        currentMessage.find('.swipe_right').css('display', 'flex');
-        currentMessage.find('.swipe_right').css('opacity', '0.3');
+        // console.error('showingSwipeButtons: showing.');
+        swipeRight.css('display', 'flex').css('opacity', '0.3');
+        swipeCounter.css('opacity', '0.3');
     }
     //console.log((chat[chat.length - 1]));
     if ((chat[chat.length - 1].swipes.length - swipeId) === 1) {
-        console.error('highlighting R swipe');
+        // console.error('highlighting R swipe');
 
         //chevron was moved out of hardcode in HTML to class toggle dependent on last_mes or not
         //necessary for 'swipe_right' div in past messages to have no chevron if 'show swipes for all messages' is turned on
-        currentMessage.find('.swipe_right').css('opacity', '0.7');
+        swipeRight.css('opacity', '0.7');
+        swipeCounter.css('opacity', '0.7');
     }
     //console.log(swipesCounterHTML);
 
     //allows for writing individual swipe counters for past messages
-    $('.last_mes .swipes-counter').text(swipeCounterText);
-    $('.last_mes .swipes-counter').show();
+    const lastSwipeCounter = $('.last_mes .swipes-counter');
+    lastSwipeCounter.text(swipeCounterText).show();
 
     //console.log(swipeId);
     //console.log(chat[chat.length - 1].swipes.length);

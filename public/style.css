@@ -1010,9 +1010,12 @@ body .panelControlBar {
     min-width: 40px;
     display: flex;
     justify-content: center;
-    opacity: 0.7;
     margin-bottom: var(--swipeCounterMargin);
     height: var(--swipeCounterHeight);
+}
+
+.mes:not(.last_mes) .swipes-counter {
+    opacity: 0.3;
 }
 
 .swipe_left {

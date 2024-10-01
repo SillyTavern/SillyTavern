@@ -472,7 +472,7 @@ function switchCompactInputArea() {
 
 export function switchSwipeNumAllMessages() {
     $('#show_swipe_num_all_messages').prop('checked', power_user.show_swipe_num_all_messages);
-    $('.mes:not(.last_mes) .swipes-counter').toggle(power_user.show_swipe_num_all_messages);
+    $('.mes:not(.last_mes) .swipes-counter').css('opacity', '').toggle(power_user.show_swipe_num_all_messages);
 }
 
 var originalSliderValues = [];
