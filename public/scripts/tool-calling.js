@@ -307,7 +307,7 @@ export class ToolManager {
 
         if (oaiCompat.includes(oai_settings.chat_completion_source)) {
             if (!Array.isArray(toolCalls)) {
-                return;
+                return [];
             }
 
             for (const toolCall of toolCalls) {
@@ -363,7 +363,7 @@ export class ToolManager {
 
     /**
      * Saves function tool invocations to the last user chat message extra metadata.
-     * @param {ToolInvocation[]} invocations
+     * @param {ToolInvocation[]} invocations Successful tool invocations
      */
     static saveFunctionToolInvocations(invocations) {
         for (let index = chat.length - 1; index >= 0; index--) {
@@ -373,7 +373,6 @@ export class ToolManager {
                     message.extra = {};
                 }
                 message.extra.tool_invocations = invocations;
-                debugger;
                 break;
             }
         }

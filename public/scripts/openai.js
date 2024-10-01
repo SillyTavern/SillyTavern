@@ -454,7 +454,8 @@ function setOpenAIMessages(chat) {
         if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
         const name = chat[j]['name'];
         const image = chat[j]?.extra?.image;
-        messages[i] = { 'role': role, 'content': content, name: name, 'image': image };
+        const invocations = chat[j]?.extra?.tool_invocations;
+        messages[i] = { 'role': role, 'content': content, name: name, 'image': image, 'invocations': invocations };
         j++;
     }
 
@@ -702,6 +703,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     }
 
     const imageInlining = isImageInliningSupported();
+    const toolCalling = ToolManager.isFunctionCallingSupported();
 
     // Insert chat messages as long as there is budget available
     const chatPool = [...messages].reverse();
@@ -721,6 +723,24 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
         if (imageInlining && chatPrompt.image) {
             await chatMessage.addImage(chatPrompt.image);
+        }
+
+        if (toolCalling && Array.isArray(chatPrompt.invocations)) {
+            /** @type {import('./tool-calling.js').ToolInvocation[]} */
+            const invocations = chatPrompt.invocations.slice().reverse();
+            const toolCallMessage = new Message('assistant', undefined, 'toolCall-' + chatMessage.identifier);
+            toolCallMessage.setToolCalls(invocations);
+            if (chatCompletion.canAfford(toolCallMessage)) {
+                for (const invocation of invocations) {
+                    const toolResultMessage = new Message('tool', invocation.result, invocation.id);
+                    const canAfford = chatCompletion.canAfford(toolResultMessage) && chatCompletion.canAfford(toolCallMessage);
+                    if (!canAfford) {
+                        break;
+                    }
+                    chatCompletion.insertAtStart(toolResultMessage, 'chatHistory');
+                }
+                chatCompletion.insertAtStart(toolCallMessage, 'chatHistory');
+            }
         }
 
         if (chatCompletion.canAfford(chatMessage)) {
@@ -2193,6 +2213,8 @@ class Message {
     content;
     /** @type {string} */
     name;
+    /** @type {object} */
+    tool_call = null;
 
     /**
      * @constructor
@@ -2215,6 +2237,22 @@ class Message {
         } else {
             this.tokens = 0;
         }
+    }
+
+    /**
+     * Reconstruct the message from a tool invocation.
+     * @param {import('./tool-calling.js').ToolInvocation[]} invocations
+     */
+    setToolCalls(invocations) {
+        this.tool_calls = invocations.map(i => ({
+            id: i.id,
+            type: 'function',
+            function: {
+                arguments: i.parameters,
+                name: i.name,
+            },
+        }));
+        this.tokens = tokenHandler.count({ role: this.role, tool_calls: JSON.stringify(this.tool_calls) });
     }
 
     setName(name) {
@@ -2564,7 +2602,7 @@ export class ChatCompletion {
         this.checkTokenBudget(message, message.identifier);
 
         const index = this.findMessageIndex(identifier);
-        if (message.content) {
+        if (message.content || message.tool_calls) {
             if ('start' === position) this.messages.collection[index].collection.unshift(message);
             else if ('end' === position) this.messages.collection[index].collection.push(message);
             else if (typeof position === 'number') this.messages.collection[index].collection.splice(position, 0, message);
@@ -2633,8 +2671,14 @@ export class ChatCompletion {
         for (let item of this.messages.collection) {
             if (item instanceof MessageCollection) {
                 chat.push(...item.getChat());
-            } else if (item instanceof Message && item.content) {
-                const message = { role: item.role, content: item.content, ...(item.name ? { name: item.name } : {}) };
+            } else if (item instanceof Message && (item.content || item.tool_calls)) {
+                const message = {
+                    role: item.role,
+                    content: item.content,
+                    ...(item.name ? { name: item.name } : {}),
+                    ...(item.tool_calls ? { tool_calls: item.tool_calls } : {}),
+                    ...(item.role === 'tool' ? { tool_call_id: item.identifier } : {}),
+                };
                 chat.push(message);
             } else {
                 this.log(`Skipping invalid or empty message in collection: ${JSON.stringify(item)}`);

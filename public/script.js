@@ -4408,7 +4408,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
             if (ToolManager.isFunctionCallingSupported() && Array.isArray(streamingProcessor.toolCalls) && streamingProcessor.toolCalls.length) {
                 const invocations = await ToolManager.checkFunctionToolCalls(streamingProcessor.toolCalls);
-                if (invocations.length) {
+                if (Array.isArray(invocations) && invocations.length) {
                     const lastMessage = chat[chat.length - 1];
                     const shouldDeleteMessage = ['', '...'].includes(lastMessage?.mes) && ['', '...'].includes(streamingProcessor.result);
                     if (shouldDeleteMessage) {
@@ -4457,7 +4457,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         if (ToolManager.isFunctionCallingSupported()) {
             const invocations = await ToolManager.checkFunctionToolCalls(data);
-            if (invocations.length) {
+            if (Array.isArray(invocations) && invocations.length) {
                 ToolManager.saveFunctionToolInvocations(invocations);
                 return Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName }, dryRun);
             }
