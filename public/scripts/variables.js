@@ -313,9 +313,6 @@ async function listVariablesCallback(args) {
     if (args.format) {
         toastr.warning(`Legacy argument 'format' with value '${args.format}' is deprecated. Please use 'return' instead. Routing to the correct return type...`, 'Deprecation warning');
         const type = String(args?.format).toLowerCase().trim();
-        if (!chat_metadata.script_injects || !Object.keys(chat_metadata.script_injects).length) {
-            type !== 'none' && toastr.info('No script injections for the current chat');
-        }
         switch (type) {
             case 'none':
                 returnType = 'none';
