@@ -5564,12 +5564,14 @@ body:not(.movingUI) .drawer-content.maximized {
 #model_search_bar {
     flex-grow: 1;
     min-width: 10ch;
+    align-self: center;
 }
 
 /* Sort dropdown should be auto-sized based on its content */
 #model_sort_order {
-    width: auto;  /* Set the width of the dropdown to its content size */
-    flex-shrink: 0;  /* Prevent it from shrinking */
+    width: auto;
+    flex-shrink: 0;
+    align-self: center;
 }
 
 /* Grid toggle button */
@@ -5579,13 +5581,30 @@ body:not(.movingUI) .drawer-content.maximized {
     cursor: pointer;
 }
 
-#category_selection
-{
+#category_selection,
+#class_selection {
     display: flex;
     width: auto;
+    align-self: center;
 }
-#class_selection
-{
-    display: flex;
-    width: auto;
+
+/* Media query for mobile devices */
+@media (max-width: 768px) {
+    .model-card {
+        flex-direction: column;  /* Stack content vertically on small screens */
+        align-items: stretch;  /* Stretch items to take full width */
+    }
+
+    .model-info, .model-details {
+        width: 100%;  /* Take full width */
+        text-align: left;  /* Left-align text */
+    }
+
+    #model_search_bar {
+        width: 100%;  /* Take full width on small screens */
+    }
+
+    #model_sort_order, #model_grid_toggle {
+        margin-top: 10px;  /* Add some space above these elements */
+    }
 }

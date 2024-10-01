@@ -412,13 +412,18 @@ export async function loadFeatherlessModels(data) {
         const selectedSortOrder = sortOrderSelect.value;
         const selectedClass = classSelect.value;
         const selectedCategory = categoriesSelect.value;
+
         const featherlessTop = await fetchFeatherlessStats();
         const featherlessIds = featherlessTop.map(stat => stat.id);
-        // Filter the models based on the search query and selected class
+
+        const featherlessNew = await fetchFeatherlessNew();
+        const featherlessNewIds = featherlessNew.map(stat => stat.id);
+
         let filteredModels = originalModels.filter(model => {
             const matchesSearch = model.id.toLowerCase().includes(searchQuery);
             const matchesClass = selectedClass ? model.model_class === selectedClass : true;
             const matchesTop = featherlessIds.includes(model.id);
+            const matchesNew = featherlessNewIds.includes(model.id);
 
             if (selectedCategory === 'All') {
                 return matchesSearch && matchesClass;
@@ -426,8 +431,12 @@ export async function loadFeatherlessModels(data) {
             else if (selectedCategory === 'Top') {
                 return matchesSearch && matchesClass && matchesTop;
             }
-
-            return matchesSearch && matchesClass;
+            else if (selectedCategory === 'New') {
+                return matchesSearch && matchesClass && matchesNew;
+            }
+            else {
+                return null;
+            }
         });
 
         // Sort the filtered models based on selected sort order (A-Z or Z-A)
@@ -448,8 +457,14 @@ async function fetchFeatherlessStats() {
     return data.popular;
 }
 
+async function fetchFeatherlessNew() {
+    const response = await fetch('https://api.featherless.ai/feather/models?sort=-created_at&perPage=10');
+    const data = await response.json();
+    return data.items;
+}
+
 function onFeatherlessModelSelect(modelId) {
-    // Find the selected model and set the settings
+
     const model = featherlessModels.find(x => x.id === modelId);
     selectedModelId = modelId;
     textgen_settings.featherless_model = modelId;
