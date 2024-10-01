@@ -14,7 +14,9 @@ if %errorlevel% neq 0 (
     call git pull --rebase --autostash
     if %errorlevel% neq 0 (
         REM incase there is still something wrong
-        echo There were errors while updating. Please download the latest version manually.
+        echo [91mThere were errors while updating.[0m
+        echo See the update FAQ at https://docs.sillytavern.app/usage/update/#common-update-problems
+        goto end
     )
 )
 set NODE_ENV=production
