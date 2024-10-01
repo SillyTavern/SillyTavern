@@ -70,6 +70,7 @@ import { renderTemplateAsync } from './templates.js';
 import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { Popup, POPUP_RESULT } from './popup.js';
 import { t } from './i18n.js';
+import { ToolManager } from './tool-calling.js';
 
 export {
     openai_messages_count,
@@ -1863,8 +1864,8 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['seed'] = oai_settings.seed;
     }
 
-    if (isFunctionCallingSupported() && !stream) {
-        await registerFunctionTools(type, generate_data);
+    if (!canMultiSwipe && ToolManager.isFunctionCallingSupported()) {
+        await ToolManager.registerFunctionToolsOpenAI(generate_data);
     }
 
     if (isOAI && oai_settings.openai_model.startsWith('o1-')) {
@@ -1911,6 +1912,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         return async function* streamData() {
             let text = '';
             const swipes = [];
+            const toolCalls = [];
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
@@ -1926,7 +1928,9 @@ async function sendOpenAIRequest(type, messages, signal) {
                     text += getStreamingReply(parsed);
                 }
 
-                yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed) };
+                ToolManager.parseToolCalls(toolCalls, parsed);
+
+                yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed), toolCalls: toolCalls };
             }
         };
     }
@@ -1948,145 +1952,8 @@ async function sendOpenAIRequest(type, messages, signal) {
             delay(1).then(() => saveLogprobsForActiveMessage(logprobs, null));
         }
 
-        if (isFunctionCallingSupported()) {
-            await checkFunctionToolCalls(data);
-        }
-
         return data;
     }
-}
-
-/**
- * Register function tools for the next chat completion request.
- * @param {string} type Generation type
- * @param {object} data Generation data
- */
-async function registerFunctionTools(type, data) {
-    let toolChoice = 'auto';
-    const tools = [];
-
-    /**
-     * @type {registerFunctionTool}
-     */
-    const registerFunctionTool = (name, description, parameters, required) => {
-        tools.push({
-            type: 'function',
-            function: {
-                name,
-                description,
-                parameters,
-            },
-        });
-
-        if (required) {
-            toolChoice = 'required';
-        }
-    };
-
-    /**
-     * @type {FunctionToolRegister}
-     */
-    const args = {
-        type,
-        data,
-        registerFunctionTool,
-    };
-
-    await eventSource.emit(event_types.LLM_FUNCTION_TOOL_REGISTER, args);
-
-    if (tools.length) {
-        console.log('Registered function tools:', tools);
-
-        data['tools'] = tools;
-        data['tool_choice'] = toolChoice;
-    }
-}
-
-async function checkFunctionToolCalls(data) {
-    const oaiCompat = [
-        chat_completion_sources.OPENAI,
-        chat_completion_sources.CUSTOM,
-        chat_completion_sources.MISTRALAI,
-        chat_completion_sources.OPENROUTER,
-        chat_completion_sources.GROQ,
-    ];
-    if (oaiCompat.includes(oai_settings.chat_completion_source)) {
-        if (!Array.isArray(data?.choices)) {
-            return;
-        }
-
-        // Find a choice with 0-index
-        const choice = data.choices.find(choice => choice.index === 0);
-
-        if (!choice) {
-            return;
-        }
-
-        const toolCalls = choice.message.tool_calls;
-
-        if (!Array.isArray(toolCalls)) {
-            return;
-        }
-
-        for (const toolCall of toolCalls) {
-            if (typeof toolCall.function !== 'object') {
-                continue;
-            }
-
-            /** @type {FunctionToolCall} */
-            const args = toolCall.function;
-            console.log('Function tool call:', toolCall);
-            await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
-        }
-    }
-
-    if ([chat_completion_sources.CLAUDE].includes(oai_settings.chat_completion_source)) {
-        if (!Array.isArray(data?.content)) {
-            return;
-        }
-
-        for (const content of data.content) {
-            if (content.type === 'tool_use') {
-                /** @type {FunctionToolCall} */
-                const args = { name: content.name, arguments: JSON.stringify(content.input) };
-                await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
-            }
-        }
-    }
-
-    if ([chat_completion_sources.COHERE].includes(oai_settings.chat_completion_source)) {
-        if (!Array.isArray(data?.tool_calls)) {
-            return;
-        }
-
-        for (const toolCall of data.tool_calls) {
-            /** @type {FunctionToolCall} */
-            const args = { name: toolCall.name, arguments: JSON.stringify(toolCall.parameters) };
-            console.log('Function tool call:', toolCall);
-            await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
-        }
-    }
-}
-
-export function isFunctionCallingSupported() {
-    if (main_api !== 'openai') {
-        return false;
-    }
-
-    if (!oai_settings.function_calling) {
-        return false;
-    }
-
-    const supportedSources = [
-        chat_completion_sources.OPENAI,
-        chat_completion_sources.COHERE,
-        chat_completion_sources.CUSTOM,
-        chat_completion_sources.MISTRALAI,
-        chat_completion_sources.CLAUDE,
-        chat_completion_sources.OPENROUTER,
-        chat_completion_sources.GROQ,
-    ];
-    return supportedSources.includes(oai_settings.chat_completion_source);
 }
 
 function getStreamingReply(data) {
@@ -4019,7 +3886,7 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_32k);
         } else if (value === 'text-bison-001') {
             $('#openai_max_context').attr('max', max_8k);
-        // The ultra endpoints are possibly dead:
+            // The ultra endpoints are possibly dead:
         } else if (value.includes('gemini-1.0-ultra') || value === 'gemini-ultra') {
             $('#openai_max_context').attr('max', max_32k);
         } else {

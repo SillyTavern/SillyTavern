@@ -121,18 +121,20 @@ async function sendClaudeRequest(request, response) {
                 ? [{ type: 'text', text: convertedPrompt.systemPrompt, cache_control: { type: 'ephemeral' } }]
                 : convertedPrompt.systemPrompt;
         }
+        /*
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
             // Claude doesn't do prefills on function calls, and doesn't allow empty messages
             if (convertedPrompt.messages.length && convertedPrompt.messages[convertedPrompt.messages.length - 1].role === 'assistant') {
                 convertedPrompt.messages.push({ role: 'user', content: '.' });
             }
             additionalHeaders['anthropic-beta'] = 'tools-2024-05-16';
-            requestBody.tool_choice = { type: request.body.tool_choice === 'required' ? 'any' : 'auto' };
+            requestBody.tool_choice = { type: request.body.tool_choice };
             requestBody.tools = request.body.tools
                 .filter(tool => tool.type === 'function')
                 .map(tool => tool.function)
                 .map(fn => ({ name: fn.name, description: fn.description, input_schema: fn.parameters }));
         }
+        */
         if (enableSystemPromptCache) {
             additionalHeaders['anthropic-beta'] = 'prompt-caching-2024-07-31';
         }
@@ -479,7 +481,7 @@ async function sendMistralAIRequest(request, response) {
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
             requestBody['tools'] = request.body.tools;
-            requestBody['tool_choice'] = request.body.tool_choice === 'required' ? 'any' : 'auto';
+            requestBody['tool_choice'] = request.body.tool_choice;
         }
 
         const config = {
@@ -549,11 +551,13 @@ async function sendCohereRequest(request, response) {
             });
         }
 
+        /*
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
             tools.push(...convertCohereTools(request.body.tools));
             // Can't have both connectors and tools in the same request
             connectors.splice(0, connectors.length);
         }
+        */
 
         // https://docs.cohere.com/reference/chat
         const requestBody = {
@@ -910,18 +914,6 @@ router.post('/generate', jsonParser, function (request, response) {
         apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ);
         headers = {};
         bodyParams = {};
-
-        // 'required' tool choice is not supported by Groq
-        if (request.body.tool_choice === 'required') {
-            if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
-                request.body.tool_choice = request.body.tools.length > 1
-                    ? 'auto' :
-                    { type: 'function', function: { name: request.body.tools[0]?.function?.name } };
-
-            } else {
-                request.body.tool_choice = 'none';
-            }
-        }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZEROONEAI) {
         apiUrl = API_01AI;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.ZEROONEAI);
@@ -958,7 +950,7 @@ router.post('/generate', jsonParser, function (request, response) {
         controller.abort();
     });
 
-    if (!isTextCompletion) {
+    if (!isTextCompletion && Array.isArray(request.body.tools) && request.body.tools.length > 0) {
         bodyParams['tools'] = request.body.tools;
         bodyParams['tool_choice'] = request.body.tool_choice;
     }
