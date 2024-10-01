@@ -384,6 +384,10 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
  * @returns {string} Formatted instruct mode system prompt.
  */
 export function formatInstructModeSystemPrompt(systemPrompt) {
+    if (!systemPrompt) {
+        return '';
+    }
+
     const separator = power_user.instruct.wrap ? '\n' : '';
 
     if (power_user.instruct.system_sequence_prefix) {
