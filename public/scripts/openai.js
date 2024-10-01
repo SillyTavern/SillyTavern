@@ -724,6 +724,12 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
         if (chatCompletion.canAfford(chatMessage)) {
             if (type === 'continue' && oai_settings.continue_prefill && chatPrompt === firstNonInjected) {
+                // in case we are using continue_prefill and the latest message is an assistant message, we want to prepend the users assistant prefill on the message
+                if (chatPrompt.role === 'assistant') {
+                    const collection = new MessageCollection('continuePrefill', new Message(chatMessage.role, substituteParams(oai_settings.assistant_prefill + '\n\n') + chatMessage.content, chatMessage.identifier));
+                    chatCompletion.add(collection, -1);
+                    continue;
+                }
                 const collection = new MessageCollection('continuePrefill', chatMessage);
                 chatCompletion.add(collection, -1);
                 continue;
@@ -1770,8 +1776,8 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['claude_use_sysprompt'] = oai_settings.claude_use_sysprompt;
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
         generate_data['human_sysprompt_message'] = substituteParams(oai_settings.human_sysprompt_message);
-        // Don't add a prefill on quiet gens (summarization)
-        if (!isQuiet) {
+        // Don't add a prefill on quiet gens (summarization) and when using continue prefill.
+        if (!isQuiet && !(isContinue && oai_settings.continue_prefill)) {
             generate_data['assistant_prefill'] = isImpersonate ? substituteParams(oai_settings.assistant_impersonation) : substituteParams(oai_settings.assistant_prefill);
         }
     }
