@@ -2370,8 +2370,6 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     addCopyToCodeBlocks(newMessage);
 
-    //const currentMessage = $('#chat').children().filter(`[mesid="${chat.length - 1}"]`);
-
     // Set the swipes counter for past messages, only visible if 'Show Swipes on All Message' is enabled
     if (!params.isUser && newMessageId !== 0 && newMessageId !== chat.length - 1) {
         const swipesNum = chat[newMessageId].swipes?.length;
@@ -2379,11 +2377,9 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         newMessage.find('.swipes-counter').text(`${swipeId}\u200B/\u200b${swipesNum}`);
     }
 
-
     if (showSwipes) {
         $('#chat .mes').last().addClass('last_mes');
         $('#chat .mes').eq(-2).removeClass('last_mes');
-        //.find('.swipe_right').hide(); //otherwise it stays looking like it did when it was last_mes
         hideSwipeButtons();
         showSwipeButtons();
     }
@@ -7483,7 +7479,6 @@ export function showSwipeButtons() {
     //had to add this to make the swipe counter work
     //(copied from the onclick functions for swipe buttons..
     //don't know why the array isn't set for non-swipe messsages in Generate or addOneMessage..)
-
     if (chat[chat.length - 1]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
         chat[chat.length - 1]['swipe_id'] = 0;                        // set it to id 0
         chat[chat.length - 1]['swipes'] = [];                         // empty the array
@@ -7502,33 +7497,24 @@ export function showSwipeButtons() {
     }
     //only show right when generate is off, or when next right swipe would not make a generate happen
     if (is_send_press === false || chat[chat.length - 1].swipes.length >= swipeId) {
-        // console.error('showingSwipeButtons: showing.');
         swipeRight.css('display', 'flex').css('opacity', '0.3');
         swipeCounter.css('opacity', '0.3');
     }
-    //console.log((chat[chat.length - 1]));
     if ((chat[chat.length - 1].swipes.length - swipeId) === 1) {
-        // console.error('highlighting R swipe');
-
         //chevron was moved out of hardcode in HTML to class toggle dependent on last_mes or not
         //necessary for 'swipe_right' div in past messages to have no chevron if 'show swipes for all messages' is turned on
         swipeRight.css('opacity', '0.7');
         swipeCounter.css('opacity', '0.7');
     }
-    //console.log(swipesCounterHTML);
 
     //allows for writing individual swipe counters for past messages
     const lastSwipeCounter = $('.last_mes .swipes-counter');
     lastSwipeCounter.text(swipeCounterText).show();
 
-    //console.log(swipeId);
-    //console.log(chat[chat.length - 1].swipes.length);
-
     switchSwipeNumAllMessages();
 }
 
 export function hideSwipeButtons() {
-    // console.error('hideswipebuttons entered');
     $('#chat').find('.swipe_right').hide();
     $('#chat').find('.last_mes .swipes-counter').hide();
     $('#chat').find('.swipe_left').hide();
