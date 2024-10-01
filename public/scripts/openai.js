@@ -727,18 +727,20 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
         if (toolCalling && Array.isArray(chatPrompt.invocations)) {
             /** @type {import('./tool-calling.js').ToolInvocation[]} */
-            const invocations = chatPrompt.invocations.slice().reverse();
+            const invocations = chatPrompt.invocations;
             const toolCallMessage = new Message('assistant', undefined, 'toolCall-' + chatMessage.identifier);
             toolCallMessage.setToolCalls(invocations);
             if (chatCompletion.canAfford(toolCallMessage)) {
-                for (const invocation of invocations) {
+                chatCompletion.reserveBudget(toolCallMessage);
+                for (const invocation of invocations.slice().reverse()) {
                     const toolResultMessage = new Message('tool', invocation.result, invocation.id);
-                    const canAfford = chatCompletion.canAfford(toolResultMessage) && chatCompletion.canAfford(toolCallMessage);
+                    const canAfford = chatCompletion.canAfford(toolResultMessage);
                     if (!canAfford) {
                         break;
                     }
                     chatCompletion.insertAtStart(toolResultMessage, 'chatHistory');
                 }
+                chatCompletion.freeBudget(toolCallMessage);
                 chatCompletion.insertAtStart(toolCallMessage, 'chatHistory');
             }
         }
