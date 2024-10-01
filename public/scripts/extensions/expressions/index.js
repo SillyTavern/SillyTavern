@@ -12,6 +12,8 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { isFunctionCallingSupported } from '../../openai.js';
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { slashCommandReturnHelper } from '../../slash-commands/SlashCommandReturnHelper.js';
+import { SlashCommandClosure } from '../../slash-commands/SlashCommandClosure.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -2134,18 +2136,42 @@ function migrateSettings() {
         name: 'classify-expressions',
         aliases: ['expressions'],
         callback: async (args) => {
-            const list = await getExpressionsList();
-            switch (String(args.format).toLowerCase()) {
-                case 'json':
-                    return JSON.stringify(list);
-                default:
-                    return list.join(', ');
+            /** @type {import('../../slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} */
+            // @ts-ignore
+            let returnType = args.return;
+
+            // Old legacy return type handling
+            if (args.format) {
+                toastr.warning(`Legacy argument 'format' with value '${args.format}' is deprecated. Please use 'return' instead. Routing to the correct return type...`, 'Deprecation warning');
+                const type = String(args?.format).toLowerCase().trim();
+                switch (type) {
+                    case 'json':
+                        returnType = 'object';
+                        break;
+                    default:
+                        returnType = 'pipe';
+                        break;
+                }
             }
+
+            // Now the actual new return type handling
+            const list = await getExpressionsList();
+
+            return await slashCommandReturnHelper.doReturn(returnType ?? 'pipe', list, { objectToStringFunc: list => list.join(', ') });
         },
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'The way how you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'pipe',
+                enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                forceEnum: true,
+            }),
+            // TODO remove some day
+            SlashCommandNamedArgument.fromProps({
                 name: 'format',
-                description: 'The format to return the list in: comma-separated plain text or JSON array. Default is plain text.',
+                description: '!!! DEPRECATED - use "return" instead !!! The format to return the list in: comma-separated plain text or JSON array. Default is plain text.',
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumList: [
                     new SlashCommandEnumValue('plain', null, enumTypes.enum, ', '),
