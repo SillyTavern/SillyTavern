@@ -55,7 +55,7 @@ import { autoSelectPersona, retriggerFirstMessageOnEmptyChat, setPersonaLockStat
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer } from './tokenizers.js';
-import { debounce, delay, equalsIgnoreCaseAndAccents, findChar, getCharIndex, isFalseBoolean, isTrueBoolean, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
+import { debounce, delay, equalsIgnoreCaseAndAccents, findChar, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { background_settings } from './backgrounds.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
@@ -3597,11 +3597,12 @@ function setBackgroundCallback(_, bg) {
  * Retrieves the available model options based on the currently selected main API and its subtype
  * @param {boolean} quiet - Whether to suppress toasts
  *
- * @returns {{control: HTMLSelectElement, options: HTMLOptionElement[]}?} An array of objects representing the available model options, or null if not supported
+ * @returns {{control: HTMLSelectElement|HTMLInputElement, options: HTMLOptionElement[]}?} An array of objects representing the available model options, or null if not supported
  */
 function getModelOptions(quiet) {
     const nullResult = { control: null, options: null };
     const modelSelectMap = [
+        { id: 'custom_model_textgenerationwebui', api: 'textgenerationwebui', type: textgen_types.OOBA },
         { id: 'model_togetherai_select', api: 'textgenerationwebui', type: textgen_types.TOGETHERAI },
         { id: 'openrouter_model', api: 'textgenerationwebui', type: textgen_types.OPENROUTER },
         { id: 'model_infermaticai_select', api: 'textgenerationwebui', type: textgen_types.INFERMATICAI },
@@ -3618,7 +3619,7 @@ function getModelOptions(quiet) {
         { id: 'model_ai21_select', api: 'openai', type: chat_completion_sources.AI21 },
         { id: 'model_google_select', api: 'openai', type: chat_completion_sources.MAKERSUITE },
         { id: 'model_mistralai_select', api: 'openai', type: chat_completion_sources.MISTRALAI },
-        { id: 'model_custom_select', api: 'openai', type: chat_completion_sources.CUSTOM },
+        { id: 'custom_model_id', api: 'openai', type: chat_completion_sources.CUSTOM },
         { id: 'model_cohere_select', api: 'openai', type: chat_completion_sources.COHERE },
         { id: 'model_perplexity_select', api: 'openai', type: chat_completion_sources.PERPLEXITY },
         { id: 'model_groq_select', api: 'openai', type: chat_completion_sources.GROQ },
@@ -3649,12 +3650,31 @@ function getModelOptions(quiet) {
 
     const modelSelectControl = document.getElementById(modelSelectItem);
 
-    if (!(modelSelectControl instanceof HTMLSelectElement)) {
+    if (!(modelSelectControl instanceof HTMLSelectElement) && !(modelSelectControl instanceof HTMLInputElement)) {
         !quiet && toastr.error(`Model select control not found: ${main_api}[${apiSubType}]`);
         return nullResult;
     }
 
-    const options = Array.from(modelSelectControl.options).filter(x => x.value);
+    /**
+     * Get options from a HTMLSelectElement or HTMLInputElement with a list.
+     * @param {HTMLSelectElement | HTMLInputElement} control Control containing the options
+     * @returns {HTMLOptionElement[]} Array of options
+     */
+    const getOptions = (control) => {
+        if (control instanceof HTMLSelectElement) {
+            return Array.from(control.options);
+        }
+
+        const valueOption = new Option(control.value, control.value);
+
+        if (control instanceof HTMLInputElement && control.list instanceof HTMLDataListElement) {
+            return [valueOption, ...Array.from(control.list.options)];
+        }
+
+        return [valueOption];
+    };
+
+    const options = getOptions(modelSelectControl).filter(x => x.value).filter(onlyUnique);
     return { control: modelSelectControl, options };
 }
 
@@ -3673,11 +3693,6 @@ function modelCallback(args, model) {
         return '';
     }
 
-    if (!options.length) {
-        !quiet && toastr.warning('No model options found. Check your API settings.');
-        return '';
-    }
-
     model = String(model || '').trim();
 
     if (!model) {
@@ -3685,6 +3700,18 @@ function modelCallback(args, model) {
     }
 
     console.log('Set model to ' + model);
+
+    if (modelSelectControl instanceof HTMLInputElement) {
+        modelSelectControl.value = model;
+        $(modelSelectControl).trigger('input');
+        !quiet && toastr.success(`Model set to "${model}"`);
+        return model;
+    }
+
+    if (!options.length) {
+        !quiet && toastr.warning('No model options found. Check your API settings.');
+        return '';
+    }
 
     let newSelectedOption = null;
 
