@@ -213,6 +213,7 @@ export class ToolManager {
     static #applyToolCallDelta(target, delta) {
         for (const key in delta) {
             if (!delta.hasOwnProperty(key)) continue;
+            if (key === "__proto__" || key === "constructor") continue;
 
             const deltaValue = delta[key];
             const targetValue = target[key];
