@@ -412,11 +412,16 @@ export async function loadFeatherlessModels(data) {
         const selectedSortOrder = sortOrderSelect.value;
         const selectedClass = classSelect.value;
         const selectedCategory = categoriesSelect.value;
+        let featherlessTop = [];
+        let featherlessNew = [];
 
-        const featherlessTop = await fetchFeatherlessStats();
+        if (selectedCategory === 'Top') {
+            featherlessTop = await fetchFeatherlessStats();
+        }
         const featherlessIds = featherlessTop.map(stat => stat.id);
-
-        const featherlessNew = await fetchFeatherlessNew();
+        if(selectedCategory === 'New') {
+            featherlessNew = await fetchFeatherlessNew();
+        }
         const featherlessNewIds = featherlessNew.map(stat => stat.id);
 
         let filteredModels = originalModels.filter(model => {
@@ -435,7 +440,7 @@ export async function loadFeatherlessModels(data) {
                 return matchesSearch && matchesClass && matchesNew;
             }
             else {
-                return null;
+                return matchesSearch;
             }
         });
 
