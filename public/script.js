@@ -3571,7 +3571,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     // Collect messages with usable content
-    let coreChat = chat.filter(x => !x.is_system);
+    const canUseTools = ToolManager.isToolCallingSupported();
+    const canPerformToolCalls = !dryRun && ToolManager.canPerformToolCalls(type);
+    let coreChat = chat.filter(x => !x.is_system || (canUseTools && Array.isArray(x.extra?.tool_invocations)));
     if (type === 'swipe') {
         coreChat.pop();
     }
@@ -4406,8 +4408,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 getMessage = continue_mag + getMessage;
             }
 
-            if (ToolManager.isFunctionCallingSupported() && Array.isArray(streamingProcessor.toolCalls) && streamingProcessor.toolCalls.length) {
-                const invocations = await ToolManager.checkFunctionToolCalls(streamingProcessor.toolCalls);
+            if (canPerformToolCalls && Array.isArray(streamingProcessor.toolCalls) && streamingProcessor.toolCalls.length) {
+                const invocations = await ToolManager.invokeFunctionTools(streamingProcessor.toolCalls);
                 if (Array.isArray(invocations) && invocations.length) {
                     const lastMessage = chat[chat.length - 1];
                     const shouldDeleteMessage = ['', '...'].includes(lastMessage?.mes) && ['', '...'].includes(streamingProcessor.result);
@@ -4455,14 +4457,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             throw new Error(data?.response);
         }
 
-        if (ToolManager.isFunctionCallingSupported()) {
-            const invocations = await ToolManager.checkFunctionToolCalls(data);
-            if (Array.isArray(invocations) && invocations.length) {
-                ToolManager.saveFunctionToolInvocations(invocations);
-                return Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName }, dryRun);
-            }
-        }
-
         //const getData = await response.json();
         let getMessage = extractMessageFromData(data);
         let title = extractTitleFromData(data);
@@ -4500,6 +4494,16 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
             // This relies on `saveReply` having been called to add the message to the chat, so it must be last.
             parseAndSaveLogprobs(data, continue_mag);
+        }
+
+        if (canPerformToolCalls) {
+            const invocations = await ToolManager.invokeFunctionTools(data);
+            if (Array.isArray(invocations) && invocations.length) {
+                const shouldDeleteMessage = ['', '...'].includes(getMessage);
+                shouldDeleteMessage && await deleteLastMessage();
+                ToolManager.saveFunctionToolInvocations(invocations);
+                return Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName }, dryRun);
+            }
         }
 
         if (type !== 'quiet') {

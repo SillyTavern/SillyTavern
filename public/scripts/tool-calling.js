@@ -1,4 +1,4 @@
-import { chat, main_api } from '../script.js';
+import { addOneMessage, chat, main_api, system_avatar, systemUserName } from '../script.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 
 /**
@@ -243,12 +243,12 @@ export class ToolManager {
         }
     }
 
-    static isFunctionCallingSupported() {
-        if (main_api !== 'openai') {
-            return false;
-        }
-
-        if (!oai_settings.function_calling) {
+    /**
+     * Checks if tool calling is supported for the current settings and generation type.
+     * @returns {boolean} Whether tool calling is supported for the given type
+     */
+    static isToolCallingSupported() {
+        if (main_api !== 'openai' || !oai_settings.function_calling) {
             return false;
         }
 
@@ -264,6 +264,22 @@ export class ToolManager {
         return supportedSources.includes(oai_settings.chat_completion_source);
     }
 
+    /**
+     * Checks if tool calls can be performed for the current settings and generation type.
+     * @param {string} type Generation type
+     * @returns {boolean} Whether tool calls can be performed for the given type
+     */
+    static canPerformToolCalls(type) {
+        const noToolCallTypes = ['swipe', 'impersonate', 'quiet', 'continue'];
+        const isSupported = ToolManager.isToolCallingSupported();
+        return isSupported && !noToolCallTypes.includes(type);
+    }
+
+    /**
+     * Utility function to get tool calls from the response data.
+     * @param {any} data Response data
+     * @returns {any[]} Tool calls from the response data
+     */
     static #getToolCallsFromData(data) {
         // Parsed tool calls from streaming data
         if (Array.isArray(data) && data.length > 0) {
@@ -290,15 +306,11 @@ export class ToolManager {
      * @param {any} data Reply data
      * @returns {Promise<ToolInvocation[]>} Successful tool invocations
      */
-    static async checkFunctionToolCalls(data) {
-        if (!ToolManager.isFunctionCallingSupported()) {
-            return [];
-        }
-
+    static async invokeFunctionTools(data) {
         /** @type {ToolInvocation[]} */
         const invocations = [];
         const toolCalls = ToolManager.#getToolCallsFromData(data);
-        const oaiCompat = [
+        const oaiCompatibleSources = [
             chat_completion_sources.OPENAI,
             chat_completion_sources.CUSTOM,
             chat_completion_sources.MISTRALAI,
@@ -306,7 +318,7 @@ export class ToolManager {
             chat_completion_sources.GROQ,
         ];
 
-        if (oaiCompat.includes(oai_settings.chat_completion_source)) {
+        if (oaiCompatibleSources.includes(oai_settings.chat_completion_source)) {
             if (!Array.isArray(toolCalls)) {
                 return [];
             }
@@ -323,7 +335,7 @@ export class ToolManager {
 
                 toastr.info('Invoking function tool: ' + name);
                 const result = await ToolManager.invokeFunctionTool(name, parameters);
-                toastr.info('Function tool result: ' + result);
+                console.log('Function tool result:', result);
 
                 // Save a successful invocation
                 if (result) {
@@ -367,15 +379,19 @@ export class ToolManager {
      * @param {ToolInvocation[]} invocations Successful tool invocations
      */
     static saveFunctionToolInvocations(invocations) {
-        for (let index = chat.length - 1; index >= 0; index--) {
-            const message = chat[index];
-            if (message.is_user) {
-                if (!message.extra || typeof message.extra !== 'object') {
-                    message.extra = {};
-                }
-                message.extra.tool_invocations = invocations;
-                break;
-            }
-        }
+        const toolNames = invocations.map(i => i.name).join(', ');
+        const message = {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_system: true,
+            is_user: false,
+            mes: `Performed tool calls: ${toolNames}`,
+            extra: {
+                isSmallSys: true,
+                tool_invocations: invocations,
+            },
+        };
+        chat.push(message);
+        addOneMessage(message);
     }
 }

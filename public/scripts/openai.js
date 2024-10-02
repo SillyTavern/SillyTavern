@@ -703,7 +703,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     }
 
     const imageInlining = isImageInliningSupported();
-    const toolCalling = ToolManager.isFunctionCallingSupported();
+    const canUseTools = ToolManager.isToolCallingSupported();
 
     // Insert chat messages as long as there is budget available
     const chatPool = [...messages].reverse();
@@ -725,10 +725,10 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             await chatMessage.addImage(chatPrompt.image);
         }
 
-        if (toolCalling && Array.isArray(chatPrompt.invocations)) {
+        if (canUseTools && Array.isArray(chatPrompt.invocations)) {
             /** @type {import('./tool-calling.js').ToolInvocation[]} */
             const invocations = chatPrompt.invocations;
-            const toolCallMessage = new Message('assistant', undefined, 'toolCall-' + chatMessage.identifier);
+            const toolCallMessage = new Message(chatMessage.role, undefined, 'toolCall-' + chatMessage.identifier);
             toolCallMessage.setToolCalls(invocations);
             if (chatCompletion.canAfford(toolCallMessage)) {
                 chatCompletion.reserveBudget(toolCallMessage);
@@ -1285,7 +1285,7 @@ export async function prepareOpenAIMessages({
     const eventData = { chat, dryRun };
     await eventSource.emit(event_types.CHAT_COMPLETION_PROMPT_READY, eventData);
 
-    openai_messages_count = chat.filter(x => x?.role === 'user' || x?.role === 'assistant')?.length || 0;
+    openai_messages_count = chat.filter(x => !x?.tool_calls && (x?.role === 'user' || x?.role === 'assistant'))?.length || 0;
 
     return [chat, promptManager.tokenHandler.counts];
 }
@@ -1886,7 +1886,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['seed'] = oai_settings.seed;
     }
 
-    if (!canMultiSwipe && ToolManager.isFunctionCallingSupported()) {
+    if (!canMultiSwipe && ToolManager.canPerformToolCalls(type)) {
         await ToolManager.registerFunctionToolsOpenAI(generate_data);
     }
 
@@ -2393,13 +2393,20 @@ class MessageCollection {
     }
 
     /**
-     * Get chat in the format of {role, name, content}.
+     * Get chat in the format of {role, name, content, tool_calls}.
      * @returns {Array} Array of objects with role, name, and content properties.
      */
     getChat() {
         return this.collection.reduce((acc, message) => {
-            const name = message.name;
-            if (message.content) acc.push({ role: message.role, ...(name && { name }), content: message.content });
+            if (message.content || message.tool_calls) {
+                acc.push({
+                    role: message.role,
+                    content: message.content,
+                    ...(message.name && { name: message.name }),
+                    ...(message.tool_calls && { tool_calls: message.tool_calls }),
+                    ...(message.role === 'tool' && { tool_call_id: message.identifier }),
+                });
+            }
             return acc;
         }, []);
     }
