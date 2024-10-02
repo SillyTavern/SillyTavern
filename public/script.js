@@ -2374,7 +2374,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     if (!params.isUser && newMessageId !== 0 && newMessageId !== chat.length - 1) {
         const swipesNum = chat[newMessageId].swipes?.length;
         const swipeId = chat[newMessageId].swipe_id + 1;
-        newMessage.find('.swipes-counter').text(`${swipeId}\u200B/\u200b${swipesNum}`);
+        newMessage.find('.swipes-counter').text(formatSwipeCounter(swipeId, swipesNum));
     }
 
     if (showSwipes) {
@@ -7487,7 +7487,7 @@ export function showSwipeButtons() {
 
     const currentMessage = $('#chat').children().filter(`[mesid="${chat.length - 1}"]`);
     const swipeId = chat[chat.length - 1].swipe_id;
-    const swipeCounterText = (`${(swipeId + 1)}\u200B/\u200b${(chat[chat.length - 1].swipes.length)}`);
+    const swipeCounterText = formatSwipeCounter((swipeId + 1), chat[chat.length - 1].swipes.length);
     const swipeRight = currentMessage.find('.swipe_right');
     const swipeLeft = currentMessage.find('.swipe_left');
     const swipeCounter = currentMessage.find('.swipes-counter');
@@ -8164,6 +8164,20 @@ window['SillyTavern'].getContext = function () {
         POPUP_RESULT: POPUP_RESULT,
     };
 };
+
+/**
+ * Formats a counter for a swipe view.
+ * @param {number} current The current number of items.
+ * @param {number} total The total number of items.
+ * @returns {string} The formatted counter.
+ */
+function formatSwipeCounter(current, total) {
+    if (isNaN(current) || isNaN(total)) {
+        return '';
+    }
+
+    return `${current}\u200b/\u200b${total}`;
+}
 
 function swipe_left() {      // when we swipe left..but no generation.
     if (chat.length - 1 === Number(this_edit_mes_id)) {
