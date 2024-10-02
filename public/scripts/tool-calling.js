@@ -342,7 +342,7 @@ export class ToolManager {
 
                 // Save a successful invocation
                 if (result) {
-                    invocations.push({ id, name, result, parameters });
+                    invocations.push({ id, name, parameters, result });
                 }
             }
         }
@@ -383,12 +383,16 @@ export class ToolManager {
      * @returns {string} Formatted message with tool invocations.
      */
     static #formatMessage(invocations) {
-        const toolNames = invocations.map(i => i.name).join(', ');
+        const tryParse = (x) => { try { return JSON.parse(x); } catch { return x; } };
+        const data = structuredClone(invocations);
         const detailsElement = document.createElement('details');
         const summaryElement = document.createElement('summary');
         const preElement = document.createElement('pre');
         const codeElement = document.createElement('code');
-        codeElement.textContent = JSON.stringify(invocations, null, 2);
+        codeElement.classList.add('language-json');
+        data.forEach(i => i.parameters = tryParse(i.parameters));
+        codeElement.textContent = JSON.stringify(data, null, 2);
+        const toolNames = data.map(i => i.name).join(', ');
         summaryElement.textContent = `Performed tool calls: ${toolNames}`;
         preElement.append(codeElement);
         detailsElement.append(summaryElement, preElement);
