@@ -4,6 +4,7 @@ import { textgenerationwebui_settings as textgen_settings, textgen_types } from 
 import { tokenizers } from './tokenizers.js';
 import { renderTemplateAsync } from './templates.js';
 import { POPUP_TYPE, callGenericPopup } from './popup.js';
+import { PAGINATION_TEMPLATE } from './utils.js';
 
 let mancerModels = [];
 let togetherModels = [];
@@ -306,11 +307,11 @@ export async function loadFeatherlessModels(data) {
             pageRange: 1,
             pageNumber: 1,
             showPageNumbers: true,
-            showSizeChanger: true,
+            showSizeChanger: false,
             prevText: '<',
             nextText: '>',
             formatNavigator: function (currentPage, totalPage) {
-                return 'Page ' + currentPage + ' of ' + totalPage;
+                return (currentPage - 1) * perPage + 1  + ' - ' + currentPage * perPage + ' of ' + totalPage * perPage;
             },
             showNavigator: true,
             callback: function (modelsOnPage) {
