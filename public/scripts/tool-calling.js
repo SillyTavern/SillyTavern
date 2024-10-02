@@ -108,6 +108,7 @@ export class ToolManager {
 
         const definition = new ToolDefinition(name, description, parameters, action);
         this.#tools.set(name, definition);
+        console.log('[ToolManager] Registered function tool:', definition);
     }
 
     /**
@@ -121,6 +122,7 @@ export class ToolManager {
         }
 
         this.#tools.delete(name);
+        console.log(`[ToolManager] Unregistered function tool: ${name}`);
     }
 
     /**
@@ -333,8 +335,9 @@ export class ToolManager {
                 const parameters = toolCall.function.arguments;
                 const name = toolCall.function.name;
 
-                toastr.info('Invoking function tool: ' + name);
+                const toast = toastr.info(`Invoking function tool: ${name}`);
                 const result = await ToolManager.invokeFunctionTool(name, parameters);
+                toastr.clear(toast);
                 console.log('Function tool result:', result);
 
                 // Save a successful invocation
@@ -375,17 +378,34 @@ export class ToolManager {
     }
 
     /**
+     * Formats a message with tool invocations.
+     * @param {ToolInvocation[]} invocations Tool invocations.
+     * @returns {string} Formatted message with tool invocations.
+     */
+    static #formatMessage(invocations) {
+        const toolNames = invocations.map(i => i.name).join(', ');
+        const detailsElement = document.createElement('details');
+        const summaryElement = document.createElement('summary');
+        const preElement = document.createElement('pre');
+        const codeElement = document.createElement('code');
+        codeElement.textContent = JSON.stringify(invocations, null, 2);
+        summaryElement.textContent = `Performed tool calls: ${toolNames}`;
+        preElement.append(codeElement);
+        detailsElement.append(summaryElement, preElement);
+        return detailsElement.outerHTML;
+    }
+
+    /**
      * Saves function tool invocations to the last user chat message extra metadata.
      * @param {ToolInvocation[]} invocations Successful tool invocations
      */
     static saveFunctionToolInvocations(invocations) {
-        const toolNames = invocations.map(i => i.name).join(', ');
         const message = {
             name: systemUserName,
             force_avatar: system_avatar,
             is_system: true,
             is_user: false,
-            mes: `Performed tool calls: ${toolNames}`,
+            mes: ToolManager.#formatMessage(invocations),
             extra: {
                 isSmallSys: true,
                 tool_invocations: invocations,
