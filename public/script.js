@@ -4409,14 +4409,12 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             }
 
             if (canPerformToolCalls && Array.isArray(streamingProcessor.toolCalls) && streamingProcessor.toolCalls.length) {
+                const lastMessage = chat[chat.length - 1];
+                const shouldDeleteMessage = ['', '...'].includes(lastMessage?.mes) && ['', '...'].includes(streamingProcessor.result);
+                shouldDeleteMessage && await deleteLastMessage();
                 const invocations = await ToolManager.invokeFunctionTools(streamingProcessor.toolCalls);
                 if (Array.isArray(invocations) && invocations.length) {
-                    const lastMessage = chat[chat.length - 1];
-                    const shouldDeleteMessage = ['', '...'].includes(lastMessage?.mes) && ['', '...'].includes(streamingProcessor.result);
-                    if (shouldDeleteMessage) {
-                        await deleteLastMessage();
-                        streamingProcessor = null;
-                    }
+                    streamingProcessor = null;
                     ToolManager.saveFunctionToolInvocations(invocations);
                     return Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName }, dryRun);
                 }
@@ -4497,10 +4495,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
 
         if (canPerformToolCalls) {
+            const shouldDeleteMessage = ['', '...'].includes(getMessage);
+            shouldDeleteMessage && await deleteLastMessage();
             const invocations = await ToolManager.invokeFunctionTools(data);
             if (Array.isArray(invocations) && invocations.length) {
-                const shouldDeleteMessage = ['', '...'].includes(getMessage);
-                shouldDeleteMessage && await deleteLastMessage();
                 ToolManager.saveFunctionToolInvocations(invocations);
                 return Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName }, dryRun);
             }
