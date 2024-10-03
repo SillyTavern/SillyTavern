@@ -421,6 +421,7 @@ small {
 .mes.smallSysMes pre {
     text-align: initial;
     word-break: break-all;
+    margin-top: 5px;
 }
 
 .mes.smallSysMes summary {

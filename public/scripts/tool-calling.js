@@ -1,5 +1,6 @@
 import { addOneMessage, chat, main_api, system_avatar, systemUserName } from '../script.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
+import { Popup } from './popup.js';
 
 /**
  * @typedef {object} ToolInvocation
@@ -7,6 +8,13 @@ import { chat_completion_sources, oai_settings } from './openai.js';
  * @property {string} name - The name of the tool.
  * @property {string} parameters - The parameters for the tool invocation.
  * @property {string} result - The result of the tool invocation.
+ */
+
+/**
+ * @typedef {object} ToolInvocationResult
+ * @property {ToolInvocation[]} invocations Successful tool invocations
+ * @property {boolean} hadToolCalls Whether any tool calls were found
+ * @property {Error[]} errors Errors that occurred during tool invocation
  */
 
 /**
@@ -129,7 +137,7 @@ export class ToolManager {
      * Invokes a tool by name. Returns the result of the tool's action function.
      * @param {string} name The name of the tool to invoke.
      * @param {object} parameters Function parameters. For example, if the tool requires a "name" parameter, you would pass {name: "value"}.
-     * @returns {Promise<string|null>} The result of the tool's action function. If an error occurs, null is returned. Non-string results are JSON-stringified.
+     * @returns {Promise<string|Error>} The result of the tool's action function. If an error occurs, null is returned. Non-string results are JSON-stringified.
      */
     static async invokeFunctionTool(name, parameters) {
         try {
@@ -143,7 +151,13 @@ export class ToolManager {
             return typeof result === 'string' ? result : JSON.stringify(result);
         } catch (error) {
             console.error(`An error occurred while invoking the tool "${name}":`, error);
-            return null;
+
+            if (error instanceof Error) {
+                error.cause = name;
+                return error;
+            }
+
+            return new Error('Unknown error occurred while invoking the tool.', { cause: name });
         }
     }
 
@@ -306,11 +320,15 @@ export class ToolManager {
     /**
      * Check for function tool calls in the response data and invoke them.
      * @param {any} data Reply data
-     * @returns {Promise<ToolInvocation[]>} Successful tool invocations
+     * @returns {Promise<ToolInvocationResult>} Successful tool invocations
      */
     static async invokeFunctionTools(data) {
-        /** @type {ToolInvocation[]} */
-        const invocations = [];
+        /** @type {ToolInvocationResult} */
+        const result = {
+            invocations: [],
+            hadToolCalls: false,
+            errors: [],
+        };
         const toolCalls = ToolManager.#getToolCallsFromData(data);
         const oaiCompatibleSources = [
             chat_completion_sources.OPENAI,
@@ -322,7 +340,7 @@ export class ToolManager {
 
         if (oaiCompatibleSources.includes(oai_settings.chat_completion_source)) {
             if (!Array.isArray(toolCalls)) {
-                return [];
+                return result;
             }
 
             for (const toolCall of toolCalls) {
@@ -334,16 +352,20 @@ export class ToolManager {
                 const id = toolCall.id;
                 const parameters = toolCall.function.arguments;
                 const name = toolCall.function.name;
+                result.hadToolCalls = true;
 
                 const toast = toastr.info(`Invoking function tool: ${name}`);
-                const result = await ToolManager.invokeFunctionTool(name, parameters);
+                const toolResult = await ToolManager.invokeFunctionTool(name, parameters);
                 toastr.clear(toast);
                 console.log('Function tool result:', result);
 
                 // Save a successful invocation
-                if (result) {
-                    invocations.push({ id, name, parameters, result });
+                if (toolResult instanceof Error) {
+                    result.errors.push(toolResult);
+                    continue;
                 }
+
+                result.invocations.push({ id, name, parameters, result: toolResult });
             }
         }
 
@@ -374,7 +396,7 @@ export class ToolManager {
         }
         */
 
-        return invocations;
+        return result;
     }
 
     /**
@@ -417,5 +439,17 @@ export class ToolManager {
         };
         chat.push(message);
         addOneMessage(message);
+    }
+
+    /**
+     * Shows an error message for tool calls.
+     * @param {Error[]} errors Errors that occurred during tool invocation
+     * @returns {void}
+     */
+    static showToolCallError(errors) {
+        toastr.error('An error occurred while invoking function tools. Click here for more details.', 'Tool Calling', {
+            onclick: () => Popup.show.text('Tool Calling Errors', DOMPurify.sanitize(errors.map(e => `${e.cause}: ${e.message}`).join('<br>'))),
+            timeOut: 5000,
+        });
     }
 }
