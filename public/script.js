@@ -4417,11 +4417,11 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             }
 
             if (canPerformToolCalls && Array.isArray(streamingProcessor.toolCalls) && streamingProcessor.toolCalls.length) {
-                const lastMessage = chat[chat.length - 1];
-                const shouldDeleteMessage = ['', '...'].includes(lastMessage?.mes) && ['', '...'].includes(streamingProcessor.result);
-                shouldDeleteMessage && await deleteLastMessage();
                 const invocationResult = await ToolManager.invokeFunctionTools(streamingProcessor.toolCalls);
                 if (invocationResult.hadToolCalls) {
+                    const lastMessage = chat[chat.length - 1];
+                    const shouldDeleteMessage = ['', '...'].includes(lastMessage?.mes) && ['', '...'].includes(streamingProcessor.result);
+                    shouldDeleteMessage && await deleteLastMessage();
                     if (!invocationResult.invocations.length && shouldDeleteMessage) {
                         ToolManager.showToolCallError(invocationResult.errors);
                         unblockGeneration(type);
@@ -4511,10 +4511,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
 
         if (canPerformToolCalls) {
-            const shouldDeleteMessage = ['', '...'].includes(getMessage);
-            shouldDeleteMessage && await deleteLastMessage();
             const invocationResult = await ToolManager.invokeFunctionTools(data);
             if (invocationResult.hadToolCalls) {
+                const shouldDeleteMessage = ['', '...'].includes(getMessage);
+                shouldDeleteMessage && await deleteLastMessage();
                 if (!invocationResult.invocations.length && shouldDeleteMessage) {
                     ToolManager.showToolCallError(invocationResult.errors);
                     unblockGeneration(type);
