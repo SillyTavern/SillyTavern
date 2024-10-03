@@ -55,6 +55,10 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.MISTRALAI);
         }
 
+        if (request.body.api === 'groq') {
+            key = readSecret(request.user.directories, SECRET_KEYS.GROQ);
+        }
+
         if (!key && !request.body.reverse_proxy && ['custom', 'ooba', 'koboldcpp', 'vllm'].includes(request.body.api) === false) {
             console.log('No key found for API', request.body.api);
             return response.sendStatus(400);
@@ -109,6 +113,10 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (request.body.api === 'zerooneai') {
             apiUrl = 'https://api.01.ai/v1/chat/completions';
+        }
+
+        if (request.body.api === 'groq') {
+            apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
         }
 
         if (request.body.api === 'mistral') {

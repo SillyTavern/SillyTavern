@@ -4196,7 +4196,10 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
-        else if (oai_settings.groq_model.includes('llama-3.1')) {
+        else if (oai_settings.groq_model.includes('llama-3.2') && oai_settings.groq_model.includes('-preview')) {
+            $('#openai_max_context').attr('max', max_8k);
+        }
+        else if (oai_settings.groq_model.includes('llama-3.2') || oai_settings.groq_model.includes('llama-3.1')) {
             $('#openai_max_context').attr('max', max_128k);
         }
         else if (oai_settings.groq_model.includes('llama3-groq')) {

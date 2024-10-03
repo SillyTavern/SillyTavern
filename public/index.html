@@ -2954,16 +2954,31 @@
                             </div>
                             <h4 data-i18n="Groq Model">Groq Model</h4>
                             <select id="model_groq_select">
-                                <option value="llama-3.1-405b-reasoning">llama-3.1-405b-reasoning</option>
-                                <option value="llama-3.1-70b-versatile">llama-3.1-70b-versatile</option>
-                                <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-                                <option value="llama3-groq-70b-8192-tool-use-preview">llama3-groq-70b-8192-tool-use-preview</option>
-                                <option value="llama3-groq-8b-8192-tool-use-preview">llama3-groq-8b-8192-tool-use-preview</option>
-                                <option value="llama3-8b-8192">llama3-8b-8192</option>
-                                <option value="llama3-70b-8192">llama3-70b-8192</option>
-                                <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
-                                <option value="gemma-7b-it">gemma-7b-it</option>
-                                <option value="gemma2-9b-it">gemma2-9b-it</option>
+                                <optgroup label="Llama 3.2">
+                                    <option value="llama-3.2-1b-preview">llama-3.2-1b-preview</option>
+                                    <option value="llama-3.2-3b-preview">llama-3.2-3b-preview</option>
+                                    <option value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview</option>
+                                    <option value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview</option>
+                                </optgroup>
+                                <optgroup label="Llama 3.1">
+                                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                                    <option value="llama-3.1-70b-versatile">llama-3.1-70b-versatile</option>
+                                    <option value="llama-3.1-405b-reasoning">llama-3.1-405b-reasoning</option>
+                                </optgroup>
+                                <optgroup label="Llama 3">
+                                    <option value="llama3-groq-8b-8192-tool-use-preview">llama3-groq-8b-8192-tool-use-preview</option>
+                                    <option value="llama3-groq-70b-8192-tool-use-preview">llama3-groq-70b-8192-tool-use-preview</option>
+                                    <option value="llama3-8b-8192">llama3-8b-8192</option>
+                                    <option value="llama3-70b-8192">llama3-70b-8192</option>
+                                </optgroup>
+                                <optgroup label="Gemma">
+                                    <option value="gemma-7b-it">gemma-7b-it</option>
+                                    <option value="gemma2-9b-it">gemma2-9b-it</option>
+                                </optgroup>
+                                <optgroup label="Other">
+                                    <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                                    <option value="llava-v1.5-7b-4096-preview">llava-v1.5-7b-4096-preview</option>
+                                </optgroup>
                             </select>
                         </div>
                         <div id="perplexity_form" data-source="perplexity">
