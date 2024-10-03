@@ -743,6 +743,8 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
                 chatCompletion.freeBudget(toolCallMessage);
                 chatCompletion.insertAtStart(toolCallMessage, 'chatHistory');
             }
+
+            continue;
         }
 
         if (chatCompletion.canAfford(chatMessage)) {
