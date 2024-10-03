@@ -4,7 +4,7 @@ const fetch = require('node-fetch').default;
 const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY, OPENROUTER_HEADERS } = require('../../constants');
 const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
-const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages, convertMistralMessages, convertCohereTools, convertAI21Messages } = require('../../prompt-converters');
+const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages, convertMistralMessages, convertAI21Messages } = require('../../prompt-converters');
 const CohereStream = require('../../cohere-stream');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
@@ -554,14 +554,6 @@ async function sendCohereRequest(request, response) {
                 id: 'web-search',
             });
         }
-
-        /*
-        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
-            tools.push(...convertCohereTools(request.body.tools));
-            // Can't have both connectors and tools in the same request
-            connectors.splice(0, connectors.length);
-        }
-        */
 
         // https://docs.cohere.com/reference/chat
         const requestBody = {

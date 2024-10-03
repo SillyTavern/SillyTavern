@@ -461,19 +461,6 @@ export class ToolManager {
         }
         */
 
-        /*
-        if ([chat_completion_sources.COHERE].includes(oai_settings.chat_completion_source)) {
-            if (!Array.isArray(data?.tool_calls)) {
-                return;
-            }
-
-            for (const toolCall of data.tool_calls) {
-                const args = { name: toolCall.name, arguments: JSON.stringify(toolCall.parameters) };
-                console.log('Function tool call:', toolCall);
-            }
-        }
-        */
-
         return result;
     }
 
