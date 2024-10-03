@@ -2932,6 +2932,13 @@ class StreamingProcessor {
         }
     }
 
+    #updateMessageBlockVisibility() {
+        if (this.messageDom instanceof HTMLElement && Array.isArray(this.toolCalls) && this.toolCalls.length > 0) {
+            const shouldHide = ['', '...'].includes(this.result);
+            this.messageDom.classList.toggle('displayNone', shouldHide);
+        }
+    }
+
     showMessageButtons(messageId) {
         if (messageId == -1) {
             return;
@@ -2997,6 +3004,7 @@ class StreamingProcessor {
         }
         else {
             this.#checkDomElements(messageId);
+            this.#updateMessageBlockVisibility();
             const currentTime = new Date();
             // Don't waste time calculating token count for streaming
             const currentTokenCount = isFinal && power_user.message_token_count_enabled ? getTokenCount(processedText, 0) : 0;
