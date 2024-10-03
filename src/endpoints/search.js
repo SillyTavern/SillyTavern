@@ -60,6 +60,7 @@ router.post('/transcript', jsonParser, async (request, response) => {
         const RE_XML_TRANSCRIPT = /<text start="([^"]*)" dur="([^"]*)">([^<]*)<\/text>/g;
         const id = request.body.id;
         const lang = request.body.lang;
+        const json = request.body.json;
 
         if (!id) {
             console.log('Id is required for /transcript');
@@ -129,7 +130,9 @@ router.post('/transcript', jsonParser, async (request, response) => {
         // The text is double-encoded
         const transcriptText = transcript.map((line) => he.decode(he.decode(line.text))).join(' ');
 
-        return response.send(transcriptText);
+        return json
+            ? response.json({ transcript: transcriptText, html: videoPageBody })
+            : response.send(transcriptText);
     } catch (error) {
         console.log(error);
         return response.sendStatus(500);
