@@ -278,9 +278,9 @@ export class ToolManager {
             }
 
             for (const toolCallDelta of toolCallDeltas) {
-                const toolCallIndex = (typeof toolCallDelta?.index === 'number') ? toolCallDelta.index : null;
+                const toolCallIndex = (typeof toolCallDelta?.index === 'number') ? toolCallDelta.index : toolCallDeltas.indexOf(toolCallDelta);
 
-                if (toolCallIndex === null) {
+                if (isNaN(toolCallIndex) || toolCallIndex < 0) {
                     continue;
                 }
 
