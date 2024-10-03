@@ -1027,6 +1027,7 @@ export function initRossMods() {
             const editMesDone = $('.mes_edit_done:visible');
             if (editMesDone.length > 0) {
                 console.debug('Accepting edits with Ctrl+Enter');
+                $('#send_textarea').focus();
                 editMesDone.trigger('click');
                 return;
             } else if (is_send_press == false) {
