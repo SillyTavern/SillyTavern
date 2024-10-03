@@ -1885,6 +1885,7 @@ export async function reloadCurrentChat() {
 export async function sendTextareaMessage() {
     if (is_send_press) return;
     if (isExecutingCommandsFromChatInput) return;
+    if (this_edit_mes_id) return; // don't proceed if editing a message
 
     let generateType;
     // "Continue on send" is activated when the user hits "send" (or presses enter) on an empty chat box, and the last
@@ -10002,6 +10003,8 @@ jQuery(async function () {
         }
 
         else if (id == 'option_continue') {
+            if (this_edit_mes_id) return; // don't proceed if editing a message
+
             if (is_send_press == false || fromSlashCommand) {
                 is_send_press = true;
                 Generate('continue', buildOrFillAdditionalArgs());
