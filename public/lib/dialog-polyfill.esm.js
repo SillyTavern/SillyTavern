@@ -562,7 +562,7 @@ dialogPolyfill.DialogManager = function() {
   // actual implementation, the modal dialog stacking is controlled by the
   // top layer, where z-index has no effect.
   this.overlay = document.createElement('div');
-  this.overlay.className = '_dialog_overlay';
+  this.overlay.className = '_poly_dialog_overlay';
   this.overlay.addEventListener('click', function(e) {
     this.forwardTab_ = undefined;
     e.stopPropagation();

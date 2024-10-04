@@ -1,4 +1,4 @@
-dialog {
+.poly_dialog {
   position: absolute;
   left: 0; right: 0;
   width: -moz-fit-content;
@@ -15,22 +15,22 @@ dialog {
   display: block;
 }
 
-dialog:not([open]) {
+.poly_dialog:not([open]) {
   display: none;
 }
 
-dialog + .backdrop {
+.poly_dialog + .backdrop {
   position: fixed;
   top: 0; right: 0; bottom: 0; left: 0;
   background: rgba(0,0,0,0.1);
 }
 
-._dialog_overlay {
+._poly_dialog_overlay {
   position: fixed;
   top: 0; right: 0; bottom: 0; left: 0;
 }
 
-dialog.fixed {
+.poly_dialog.fixed {
   position: fixed;
   top: 50%;
   transform: translate(0, -50%);
