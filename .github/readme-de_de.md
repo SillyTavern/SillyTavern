@@ -52,7 +52,7 @@ Da SillyTavern nur eine Benutzeroberfläche ist, benötigst du Zugriff auf ein L
 
 Die Hardwareanforderungen sind minimal: Es läuft auf allem, was NodeJS 18 oder höher ausführen kann. Wenn du LLM-Inferenz auf deinem lokalen Rechner durchführen möchtest, empfehlen wir eine NVIDIA-Grafikkarte der 3000er-Serie mit mindestens 6 GB VRAM. Überprüfe die Dokumentation deines Backends für weitere Einzelheiten.
 
-### Vorgeschlagene Backends (nicht verbunden)
+### Vorgeschlagene Backends (keine Partnerschaft oder Werbebeziehung)
 
 * [AI Horde](https://aihorde.net/) - verwende Modelle, die von Freiwilligen gehostet werden. Erfordert keine weitere Einrichtung
 * [KoboldCpp](https://github.com/LostRuins/koboldcpp) - ein Favorit der Community, um GGUF-Modelle lokal auszuführen
