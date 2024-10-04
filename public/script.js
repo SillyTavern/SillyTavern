@@ -2328,6 +2328,10 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         newMessage.addClass('smallSysMes');
     }
 
+    if (Array.isArray(mes?.extra?.tool_invocations)) {
+        newMessage.addClass('toolCall');
+    }
+
     //shows or hides the Prompt display button
     let mesIdToFind = type == 'swipe' ? params.mesId - 1 : params.mesId;  //Number(newMessage.attr('mesId'));
 
