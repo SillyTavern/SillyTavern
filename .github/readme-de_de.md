@@ -75,7 +75,7 @@ Oder nimm direkt Kontakt mit den Entwicklern auf:
 ### Ich mag dieses Projekt! Wie kann ich beitragen?
 
 1. Sende Pull-Requests. Lerne, wie du beitragen kannst: [CONTRIBUTING.md](../CONTRIBUTING.md)
-2. Sende Funktionser Vorschläge und Problemmeldungen unter Verwendung der bereitgestellten Vorlagen.
+2. Sende Feature Requests und Issues unter Verwendung der bereitgestellten Vorlagen.
 3. Lies diese gesamte README-Datei und überprüfe zuerst die Dokumentationswebsite, um doppelte Probleme zu vermeiden.
 
 ## Screenshots
