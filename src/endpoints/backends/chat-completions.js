@@ -124,7 +124,6 @@ async function sendClaudeRequest(request, response) {
         } else {
             delete requestBody.system;
         }
-        /*
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
             // Claude doesn't do prefills on function calls, and doesn't allow empty messages
             if (convertedPrompt.messages.length && convertedPrompt.messages[convertedPrompt.messages.length - 1].role === 'assistant') {
@@ -137,7 +136,6 @@ async function sendClaudeRequest(request, response) {
                 .map(tool => tool.function)
                 .map(fn => ({ name: fn.name, description: fn.description, input_schema: fn.parameters }));
         }
-        */
         if (enableSystemPromptCache) {
             additionalHeaders['anthropic-beta'] = 'prompt-caching-2024-07-31';
         }

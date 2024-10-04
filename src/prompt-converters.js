@@ -118,8 +118,27 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
             });
         }
     }
+
     // Now replace all further messages that have the role 'system' with the role 'user'. (or all if we're not using one)
     messages.forEach((message) => {
+        if (message.role === 'assistant' && message.tool_calls) {
+            message.content = message.tool_calls.map((tc) => ({
+                type: 'tool_use',
+                id: tc.id,
+                name: tc.function.name,
+                input: tc.function.arguments,
+            }));
+        }
+
+        if (message.role === 'tool') {
+            message.role = 'user';
+            message.content = [{
+                type: 'tool_result',
+                tool_use_id: message.tool_call_id,
+                content: message.content,
+            }];
+        }
+
         if (message.role === 'system') {
             if (userName && message.name === 'example_user') {
                 message.content = `${userName}: ${message.content}`;
@@ -128,13 +147,80 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
                 message.content = `${charName}: ${message.content}`;
             }
             message.role = 'user';
+
+            // Delete name here so it doesn't get added later
+            delete message.name;
         }
+
+        // Convert everything to an array of it would be easier to work with
+        if (typeof message.content === 'string') {
+            // Take care of name properties since claude messages don't support them
+            if (message.name) {
+                message.content = `${message.name}: ${message.content}`;
+            }
+
+            message.content = [{ type: 'text', text: message.content }];
+        } else if (Array.isArray(message.content)) {
+            message.content = message.content.map((content) => {
+                if (content.type === 'image_url') {
+                    const imageEntry = content?.image_url;
+                    const imageData = imageEntry?.url;
+                    const mimeType = imageData?.split(';')?.[0].split(':')?.[1];
+                    const base64Data = imageData?.split(',')?.[1];
+
+                    return {
+                        type: 'image',
+                        source: {
+                            type: 'base64',
+                            media_type: mimeType,
+                            data: base64Data,
+                        },
+                    };
+                }
+
+                if (content.type === 'text') {
+                    if (message.name) {
+                        content.text = `${message.name}: ${content.text}`;
+                    }
+
+                    return content;
+                }
+
+                return content;
+            });
+        }
+
+        // Remove offending properties
+        delete message.name;
+        delete message.tool_calls;
+        delete message.tool_call_id;
     });
+
+    // Images in assistant messages should be moved to the next user message
+    for (let i = 0; i < messages.length; i++) {
+        if (messages[i].role === 'assistant' && messages[i].content.some(c => c.type === 'image')) {
+            // Find the next user message
+            let j = i + 1;
+            while (j < messages.length && messages[j].role !== 'user') {
+                j++;
+            }
+
+            // Move the images
+            if (j >= messages.length) {
+                // If there is no user message after the assistant message, add a new one
+                messages.splice(i + 1, 0, { role: 'user', content: [] });
+            }
+
+            messages[j].content.push(...messages[i].content.filter(c => c.type === 'image'));
+            messages[i].content = messages[i].content.filter(c => c.type !== 'image');
+        }
+    }
 
     // Shouldn't be conditional anymore, messages api expects the last role to be user unless we're explicitly prefilling
     if (prefillString) {
         messages.push({
             role: 'assistant',
+            // Dangling whitespace are not allowed for prefilling
             content: prefillString.trimEnd(),
         });
     }
@@ -143,49 +229,10 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
     // Also handle multi-modality, holy slop.
     let mergedMessages = [];
     messages.forEach((message) => {
-        const imageEntry = message.content?.[1]?.image_url;
-        const imageData = imageEntry?.url;
-        const mimeType = imageData?.split(';')?.[0].split(':')?.[1];
-        const base64Data = imageData?.split(',')?.[1];
-
-        // Take care of name properties since claude messages don't support them
-        if (message.name) {
-            if (Array.isArray(message.content)) {
-                message.content[0].text = `${message.name}: ${message.content[0].text}`;
-            } else {
-                message.content = `${message.name}: ${message.content}`;
-            }
-            delete message.name;
-        }
-
         if (mergedMessages.length > 0 && mergedMessages[mergedMessages.length - 1].role === message.role) {
-            if (Array.isArray(message.content)) {
-                if (Array.isArray(mergedMessages[mergedMessages.length - 1].content)) {
-                    mergedMessages[mergedMessages.length - 1].content[0].text += '\n\n' + message.content[0].text;
-                } else {
-                    mergedMessages[mergedMessages.length - 1].content += '\n\n' + message.content[0].text;
-                }
-            } else {
-                if (Array.isArray(mergedMessages[mergedMessages.length - 1].content)) {
-                    mergedMessages[mergedMessages.length - 1].content[0].text += '\n\n' + message.content;
-                } else {
-                    mergedMessages[mergedMessages.length - 1].content += '\n\n' + message.content;
-                }
-            }
+            mergedMessages[mergedMessages.length - 1].content.push(...message.content);
         } else {
             mergedMessages.push(message);
-        }
-        if (imageData) {
-            mergedMessages[mergedMessages.length - 1].content = [
-                { type: 'text', text: mergedMessages[mergedMessages.length - 1].content[0]?.text || mergedMessages[mergedMessages.length - 1].content },
-                {
-                    type: 'image', source: {
-                        type: 'base64',
-                        media_type: mimeType,
-                        data: base64Data,
-                    },
-                },
-            ];
         }
     });
 

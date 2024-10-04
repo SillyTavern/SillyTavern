@@ -339,10 +339,9 @@ export class ToolManager {
 
         const supportedSources = [
             chat_completion_sources.OPENAI,
-            //chat_completion_sources.COHERE,
             chat_completion_sources.CUSTOM,
             chat_completion_sources.MISTRALAI,
-            //chat_completion_sources.CLAUDE,
+            chat_completion_sources.CLAUDE,
             chat_completion_sources.OPENROUTER,
             chat_completion_sources.GROQ,
         ];
@@ -372,18 +371,29 @@ export class ToolManager {
         }
 
         // Parsed tool calls from non-streaming data
-        if (!Array.isArray(data?.choices)) {
-            return;
+        if (Array.isArray(data?.choices)) {
+            // Find a choice with 0-index
+            const choice = data.choices.find(choice => choice.index === 0);
+
+            if (choice) {
+                return choice.message.tool_calls;
+            }
         }
 
-        // Find a choice with 0-index
-        const choice = data.choices.find(choice => choice.index === 0);
+        if (Array.isArray(data?.content)) {
+            // Claude tool calls to OpenAI tool calls
+            const content = data.content.filter(c => c.type === 'tool_use').map(c => {
+                return {
+                    id: c.id,
+                    function: {
+                        name: c.name,
+                        arguments: c.input,
+                    },
+                };
+            });
 
-        if (!choice) {
-            return;
+            return content;
         }
-
-        return choice.message.tool_calls;
     }
 
     /**
@@ -407,59 +417,43 @@ export class ToolManager {
             chat_completion_sources.GROQ,
         ];
 
-        if (oaiCompatibleSources.includes(oai_settings.chat_completion_source)) {
-            if (!Array.isArray(toolCalls)) {
-                return result;
-            }
-
-            for (const toolCall of toolCalls) {
-                if (typeof toolCall.function !== 'object') {
-                    continue;
-                }
-
-                console.log('Function tool call:', toolCall);
-                const id = toolCall.id;
-                const parameters = toolCall.function.arguments;
-                const name = toolCall.function.name;
-                const displayName = ToolManager.getDisplayName(name);
-                result.hadToolCalls = true;
-
-                const message = ToolManager.formatToolCallMessage(name, parameters);
-                const toast = message && toastr.info(message, 'Tool Calling', { timeOut: 0 });
-                const toolResult = await ToolManager.invokeFunctionTool(name, parameters);
-                toastr.clear(toast);
-                console.log('Function tool result:', result);
-
-                // Save a successful invocation
-                if (toolResult instanceof Error) {
-                    result.errors.push(toolResult);
-                    continue;
-                }
-
-                const invocation = {
-                    id,
-                    displayName,
-                    name,
-                    parameters,
-                    result: toolResult,
-                };
-                result.invocations.push(invocation);
-            }
+        if (!Array.isArray(toolCalls)) {
+            return result;
         }
 
-        /*
-        if ([chat_completion_sources.CLAUDE].includes(oai_settings.chat_completion_source)) {
-            if (!Array.isArray(data?.content)) {
-                return;
+        for (const toolCall of toolCalls) {
+            if (typeof toolCall.function !== 'object') {
+                continue;
             }
 
-            for (const content of data.content) {
-                if (content.type === 'tool_use') {
-                    const args = { name: content.name, arguments: JSON.stringify(content.input) };
-                }
+            console.log('Function tool call:', toolCall);
+            const id = toolCall.id;
+            const parameters = toolCall.function.arguments;
+            const name = toolCall.function.name;
+            const displayName = ToolManager.getDisplayName(name);
+            result.hadToolCalls = true;
+
+            const message = ToolManager.formatToolCallMessage(name, parameters);
+            const toast = message && toastr.info(message, 'Tool Calling', { timeOut: 0 });
+            const toolResult = await ToolManager.invokeFunctionTool(name, parameters);
+            toastr.clear(toast);
+            console.log('Function tool result:', result);
+
+            // Save a successful invocation
+            if (toolResult instanceof Error) {
+                result.errors.push(toolResult);
+                continue;
             }
+
+            const invocation = {
+                id,
+                displayName,
+                name,
+                parameters,
+                result: toolResult,
+            };
+            result.invocations.push(invocation);
         }
-        */
 
         return result;
     }
@@ -491,6 +485,9 @@ export class ToolManager {
      * @param {ToolInvocation[]} invocations Successful tool invocations
      */
     static saveFunctionToolInvocations(invocations) {
+        if (!Array.isArray(invocations) || invocations.length === 0) {
+            return;
+        }
         const message = {
             name: systemUserName,
             force_avatar: system_avatar,
