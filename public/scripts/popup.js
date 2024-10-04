@@ -1,3 +1,4 @@
+import dialogPolyfill from "../lib/dialog-polyfill.esm.js";
 import { shouldSendOnEnter } from './RossAscends-mods.js';
 import { power_user } from './power-user.js';
 import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
@@ -178,6 +179,7 @@ export class Popup {
         const template = document.querySelector('#popup_template');
         // @ts-ignore
         this.dlg = template.content.cloneNode(true).querySelector('.popup');
+        dialogPolyfill.registerDialog(this.dlg);
         this.body = this.dlg.querySelector('.popup-body');
         this.content = this.dlg.querySelector('.popup-content');
         this.mainInput = this.dlg.querySelector('.popup-input');
