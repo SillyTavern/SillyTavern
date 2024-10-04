@@ -10671,7 +10671,7 @@ jQuery(async function () {
             $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, 'swing', async function () {
                 await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
             });
-            $('.openIcon').toggleClass('closedIcon openIcon');
+            $('.openIcon').not('.drawerPinnedOpen').toggleClass('closedIcon openIcon');
             $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
             icon.toggleClass('openIcon closedIcon');
             drawer.toggleClass('openDrawer closedDrawer');
@@ -10757,7 +10757,7 @@ jQuery(async function () {
                     $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, 'swing', function () {
                         $(this).closest('.drawer-content').removeClass('resizing');
                     });
-                    $('.openIcon').toggleClass('closedIcon openIcon');
+                    $('.openIcon').not('.drawerPinnedOpen').toggleClass('closedIcon openIcon');
                     $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
 
                 }
