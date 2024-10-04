@@ -85,7 +85,7 @@ Oder nimm direkt Kontakt mit den Entwicklern auf:
 
 ## Charakterkarten
 
-SillyTavern basiert auf dem Konzept der "Charakterkarten". Eine Charakterkarte ist eine Sammlung von Eingabeaufforderungen, die das Verhalten des LLM festlegen und erforderlich sind, um anhaltende Gespräche in SillyTavern zu führen. Sie funktionieren ähnlich wie ChatGPTs GPTs oder Poes Bots. Der Inhalt einer Charakterkarte kann alles sein: ein abstraktes Szenario, ein Assistent, der für eine bestimmte Aufgabe maßgeschneidert ist, eine berühmte Persönlichkeit oder ein fiktiver Charakter.
+SillyTavern basiert auf dem Konzept der "Charakterkarten". Eine Charakterkarte ist eine Sammlung von Prompts, die das Verhalten des LLM festlegen und erforderlich sind, um persistente Gespräche in SillyTavern zu führen. Sie funktionieren ähnlich wie ChatGPT's GPTs oder Poe's Bots. Der Inhalt einer Charakterkarte kann alles sein: ein abstraktes Szenario, ein Assistent, der für eine bestimmte Aufgabe maßgeschneidert ist, eine berühmte Persönlichkeit oder ein fiktiver Charakter.
 
 Das Namensfeld ist der einzige erforderliche Eingabewert für die Charakterkarte. Um ein neutrales Gespräch mit dem Sprachmodell zu beginnen, erstelle eine neue Karte, die einfach "Assistent" genannt wird, und lasse die restlichen Felder leer. Für einen thematischeren Chat kannst du dem Sprachmodell verschiedene Hintergrundinformationen, Verhaltensweisen und Schreibmuster sowie ein Szenario geben, um das Gespräch zu beginnen.
 
