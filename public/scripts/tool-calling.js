@@ -19,6 +19,16 @@ import { Popup } from './popup.js';
  */
 
 /**
+ * @typedef {object} ToolRegistration
+ * @property {string} name - The name of the tool.
+ * @property {string} displayName - The display name of the tool.
+ * @property {string} description - A description of the tool.
+ * @property {object} parameters - The parameters for the tool.
+ * @property {function} action - The action to perform when the tool is invoked.
+ * @property {function} formatMessage - A function to format the tool call message.
+ */
+
+/**
  * A class that represents a tool definition.
  */
 class ToolDefinition {
@@ -136,13 +146,7 @@ export class ToolManager {
 
     /**
      * Registers a new tool with the tool registry.
-     * @param {object} tool The tool to register.
-     * @param {string} tool.name The name of the tool.
-     * @param {string} tool.displayName A user-friendly display name for the tool.
-     * @param {string} tool.description A description of what the tool does.
-     * @param {object} tool.parameters A JSON schema for the parameters that the tool accepts.
-     * @param {function} tool.action A function that will be called when the tool is executed.
-     * @param {function} tool.formatMessage A function that will be called to format the tool call toast.
+     * @param {ToolRegistration} tool The tool to register.
      */
     static registerFunctionTool({ name, displayName, description, parameters, action, formatMessage }) {
         // Convert WIP arguments
@@ -201,6 +205,12 @@ export class ToolManager {
         }
     }
 
+    /**
+     * Formats a message for a tool call by name.
+     * @param {string} name The name of the tool to format the message for.
+     * @param {object} parameters Function tool call parameters.
+     * @returns {string} The formatted message for the tool call.
+     */
     static formatToolCallMessage(name, parameters) {
         if (!this.#tools.has(name)) {
             return `Invoked unknown tool: ${name}`;
@@ -295,9 +305,14 @@ export class ToolManager {
         }
     }
 
+    /**
+     * Apply a tool call delta to a target object.
+     * @param {object} target The target object to apply the delta to
+     * @param {object} delta The delta object to apply
+     */
     static #applyToolCallDelta(target, delta) {
         for (const key in delta) {
-            if (!delta.hasOwnProperty(key)) continue;
+            if (!Object.prototype.hasOwnProperty.call(delta, key)) continue;
             if (key === '__proto__' || key === 'constructor') continue;
 
             const deltaValue = delta[key];
@@ -409,13 +424,6 @@ export class ToolManager {
             errors: [],
         };
         const toolCalls = ToolManager.#getToolCallsFromData(data);
-        const oaiCompatibleSources = [
-            chat_completion_sources.OPENAI,
-            chat_completion_sources.CUSTOM,
-            chat_completion_sources.MISTRALAI,
-            chat_completion_sources.OPENROUTER,
-            chat_completion_sources.GROQ,
-        ];
 
         if (!Array.isArray(toolCalls)) {
             return result;
@@ -463,7 +471,7 @@ export class ToolManager {
      * @param {ToolInvocation[]} invocations Tool invocations.
      * @returns {string} Formatted message with tool invocations.
      */
-    static #formatMessage(invocations) {
+    static #formatToolInvocationMessage(invocations) {
         const tryParse = (x) => { try { return JSON.parse(x); } catch { return x; } };
         const data = structuredClone(invocations);
         const detailsElement = document.createElement('details');
@@ -493,7 +501,7 @@ export class ToolManager {
             force_avatar: system_avatar,
             is_system: true,
             is_user: false,
-            mes: ToolManager.#formatMessage(invocations),
+            mes: ToolManager.#formatToolInvocationMessage(invocations),
             extra: {
                 isSmallSys: true,
                 tool_invocations: invocations,
