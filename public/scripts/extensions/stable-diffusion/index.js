@@ -2305,9 +2305,9 @@ async function generatePicture(initiator, args, trigger, message, callback) {
             eventSource.emit(event_types.FORCE_SET_BACKGROUND, { url: imgUrl, path: imagePath });
 
             if (typeof callbackOriginal === 'function') {
-                callbackOriginal(prompt, imagePath, generationType, negativePromptPrefix, initiator);
+                await callbackOriginal(prompt, imagePath, generationType, negativePromptPrefix, initiator);
             } else {
-                sendMessage(prompt, imagePath, generationType, negativePromptPrefix, initiator);
+                await sendMessage(prompt, imagePath, generationType, negativePromptPrefix, initiator);
             }
         };
     }
@@ -2636,7 +2636,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
 
     const filename = `${characterName}_${humanizedDateTime()}`;
     const base64Image = await saveBase64AsFile(result.data, characterName, filename, result.format);
-    callback ? callback(prompt, base64Image, generationType, additionalNegativePrefix, initiator) : sendMessage(prompt, base64Image, generationType, additionalNegativePrefix, initiator);
+    callback
+        ? await callback(prompt, base64Image, generationType, additionalNegativePrefix, initiator)
+        : await sendMessage(prompt, base64Image, generationType, additionalNegativePrefix, initiator);
     return base64Image;
 }
 
