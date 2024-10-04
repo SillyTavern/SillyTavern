@@ -19,6 +19,14 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
     //Prepare messages for claude.
     //When 'Exclude Human/Assistant prefixes' checked, setting messages role to the 'system'(last message is exception).
     if (messages.length > 0) {
+        messages.forEach((m) => {
+            if (!m.content) {
+                m.content = '';
+            }
+            if (m.tool_calls) {
+                m.content += JSON.stringify(m.tool_calls);
+            }
+        });
         if (excludePrefixes) {
             messages.slice(0, -1).forEach(message => message.role = 'system');
         } else {
