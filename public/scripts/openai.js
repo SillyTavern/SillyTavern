@@ -733,7 +733,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             if (chatCompletion.canAfford(toolCallMessage)) {
                 chatCompletion.reserveBudget(toolCallMessage);
                 for (const invocation of invocations.slice().reverse()) {
-                    const toolResultMessage = new Message('tool', invocation.result, invocation.id);
+                    const toolResultMessage = new Message('tool', invocation.result || '[No content]', invocation.id);
                     const canAfford = chatCompletion.canAfford(toolResultMessage);
                     if (!canAfford) {
                         break;
