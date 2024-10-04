@@ -91,7 +91,7 @@ Das Namensfeld ist der einzige erforderliche Eingabewert für die Charakterkarte
 
 Um ein schnelles Gespräch zu führen, ohne eine Charakterkarte auszuwählen, oder um einfach die LLM-Verbindung zu testen, gib einfach dein Prompt in die Eingabezeile auf dem Willkommensbildschirm ein, nachdem du SillyTavern geöffnet hast. Bitte beachte, dass solche Chats vorübergehend sind und nicht gespeichert werden.
 
-Um eine allgemeine Vorstellung davon zu bekommen, wie man Charakterkarten definiert, sieh dir die Standardfigur (Seraphina) an oder lade ausgewählte von der Community erstellte Karten im Menü "Erweiterungen & Assets herunterladen" herunter.
+Um eine allgemeine Vorstellung davon zu bekommen, wie man Charakterkarten definiert, sieh dir die mitgelieferte Charakterkarte (Seraphina) an oder lade ausgewählte von der Community erstellte Karten im Menü "Erweiterungen & Assets herunterladen" herunter.
 
 ## Hauptmerkmale
 
