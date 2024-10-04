@@ -72,7 +72,7 @@ Oder nimm direkt Kontakt mit den Entwicklern auf:
 * Reddit: [/u/RossAscends](https://www.reddit.com/user/RossAscends/), [/u/sillylossy](https://www.reddit.com/user/sillylossy/), [u/Wolfsblvt](https://www.reddit.com/user/Wolfsblvt/)
 * [Erstelle ein GitHub-Issue](https://github.com/SillyTavern/SillyTavern/issues)
 
-### Ich mag dein Projekt! Wie kann ich beitragen?
+### Ich mag dieses Projekt! Wie kann ich beitragen?
 
 1. Sende Pull-Requests. Lerne, wie du beitragen kannst: [CONTRIBUTING.md](../CONTRIBUTING.md)
 2. Sende Funktionser Vorschläge und Problemmeldungen unter Verwendung der bereitgestellten Vorlagen.
