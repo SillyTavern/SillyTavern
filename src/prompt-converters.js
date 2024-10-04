@@ -229,7 +229,7 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
         messages.push({
             role: 'assistant',
             // Dangling whitespace are not allowed for prefilling
-            content: prefillString.trimEnd(),
+            content: [{ type: 'text', text: prefillString.trimEnd() }],
         });
     }
 
