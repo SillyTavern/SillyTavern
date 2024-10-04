@@ -3858,7 +3858,7 @@ function registerFunctionTool() {
                     description: [
                         'The text prompt used to generate the image.',
                         'Must represent an exhaustive description of the desired image that will allow an artist or a photographer to perfectly recreate it.',
-                    ],
+                    ].join(' '),
                 },
             },
             required: [
