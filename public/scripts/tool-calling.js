@@ -256,41 +256,58 @@ export class ToolManager {
      * @returns {void}
      */
     static parseToolCalls(toolCalls, parsed) {
-        if (!Array.isArray(parsed?.choices)) {
-            return;
-        }
-        for (const choice of parsed.choices) {
-            const choiceIndex = (typeof choice.index === 'number') ? choice.index : null;
-            const choiceDelta = choice.delta;
+        if (Array.isArray(parsed?.choices)) {
+            for (const choice of parsed.choices) {
+                const choiceIndex = (typeof choice.index === 'number') ? choice.index : null;
+                const choiceDelta = choice.delta;
 
-            if (choiceIndex === null || !choiceDelta) {
-                continue;
-            }
-
-            const toolCallDeltas = choiceDelta?.tool_calls;
-
-            if (!Array.isArray(toolCallDeltas)) {
-                continue;
-            }
-
-            if (!Array.isArray(toolCalls[choiceIndex])) {
-                toolCalls[choiceIndex] = [];
-            }
-
-            for (const toolCallDelta of toolCallDeltas) {
-                const toolCallIndex = (typeof toolCallDelta?.index === 'number') ? toolCallDelta.index : toolCallDeltas.indexOf(toolCallDelta);
-
-                if (isNaN(toolCallIndex) || toolCallIndex < 0) {
+                if (choiceIndex === null || !choiceDelta) {
                     continue;
                 }
+
+                const toolCallDeltas = choiceDelta?.tool_calls;
+
+                if (!Array.isArray(toolCallDeltas)) {
+                    continue;
+                }
+
+                if (!Array.isArray(toolCalls[choiceIndex])) {
+                    toolCalls[choiceIndex] = [];
+                }
+
+                for (const toolCallDelta of toolCallDeltas) {
+                    const toolCallIndex = (typeof toolCallDelta?.index === 'number') ? toolCallDelta.index : toolCallDeltas.indexOf(toolCallDelta);
+
+                    if (isNaN(toolCallIndex) || toolCallIndex < 0) {
+                        continue;
+                    }
+
+                    if (toolCalls[choiceIndex][toolCallIndex] === undefined) {
+                        toolCalls[choiceIndex][toolCallIndex] = {};
+                    }
+
+                    const targetToolCall = toolCalls[choiceIndex][toolCallIndex];
+
+                    ToolManager.#applyToolCallDelta(targetToolCall, toolCallDelta);
+                }
+            }
+        }
+        if (typeof parsed?.content_block === 'object') {
+            const choiceIndex = 0;
+
+            if (parsed?.content_block?.type === 'tool_use') {
+                if (!Array.isArray(toolCalls[choiceIndex])) {
+                    toolCalls[choiceIndex] = [];
+                }
+
+                const toolCallIndex = toolCalls[choiceIndex].length;
 
                 if (toolCalls[choiceIndex][toolCallIndex] === undefined) {
                     toolCalls[choiceIndex][toolCallIndex] = {};
                 }
 
                 const targetToolCall = toolCalls[choiceIndex][toolCallIndex];
-
-                ToolManager.#applyToolCallDelta(targetToolCall, toolCallDelta);
+                Object.assign(targetToolCall, parsed.content_block);
             }
         }
     }
