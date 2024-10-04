@@ -14,7 +14,6 @@ import { Popup } from './popup.js';
 /**
  * @typedef {object} ToolInvocationResult
  * @property {ToolInvocation[]} invocations Successful tool invocations
- * @property {boolean} hadToolCalls Whether any tool calls were found
  * @property {Error[]} errors Errors that occurred during tool invocation
  */
 
@@ -322,7 +321,7 @@ export class ToolManager {
             const choiceIndex = 0;
             const toolCallIndex = parsed?.index ?? 0;
             const targetToolCall = toolCalls[choiceIndex]?.[toolCallIndex];
-            if (targetToolCall){
+            if (targetToolCall) {
                 if (parsed?.delta?.type === 'input_json_delta') {
                     const jsonDelta = parsed?.delta?.partial_json;
                     if (!targetToolCall[this.#INPUT_DELTA_KEY]) {
@@ -455,6 +454,15 @@ export class ToolManager {
     }
 
     /**
+     * Checks if the response data contains tool calls.
+     * @param {object} data Response data
+     * @returns {boolean} Whether the response data contains tool calls
+     */
+    static hasToolCalls(data) {
+        return Array.isArray(ToolManager.#getToolCallsFromData(data));
+    }
+
+    /**
      * Check for function tool calls in the response data and invoke them.
      * @param {any} data Reply data
      * @returns {Promise<ToolInvocationResult>} Successful tool invocations
@@ -463,7 +471,6 @@ export class ToolManager {
         /** @type {ToolInvocationResult} */
         const result = {
             invocations: [],
-            hadToolCalls: false,
             errors: [],
         };
         const toolCalls = ToolManager.#getToolCallsFromData(data);
@@ -482,7 +489,6 @@ export class ToolManager {
             const parameters = toolCall.function.arguments;
             const name = toolCall.function.name;
             const displayName = ToolManager.getDisplayName(name);
-            result.hadToolCalls = true;
 
             const message = ToolManager.formatToolCallMessage(name, parameters);
             const toast = message && toastr.info(message, 'Tool Calling', { timeOut: 0 });
