@@ -1884,6 +1884,7 @@ export async function reloadCurrentChat() {
 export async function sendTextareaMessage() {
     if (is_send_press) return;
     if (isExecutingCommandsFromChatInput) return;
+    if (this_edit_mes_id) return; // don't proceed if editing a message
 
     let generateType;
     // "Continue on send" is activated when the user hits "send" (or presses enter) on an empty chat box, and the last
@@ -10054,6 +10055,8 @@ jQuery(async function () {
         }
 
         else if (id == 'option_continue') {
+            if (this_edit_mes_id) return; // don't proceed if editing a message
+
             if (is_send_press == false || fromSlashCommand) {
                 is_send_press = true;
                 Generate('continue', buildOrFillAdditionalArgs());
@@ -10720,7 +10723,7 @@ jQuery(async function () {
             $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, 'swing', async function () {
                 await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
             });
-            $('.openIcon').toggleClass('closedIcon openIcon');
+            $('.openIcon').not('.drawerPinnedOpen').toggleClass('closedIcon openIcon');
             $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
             icon.toggleClass('openIcon closedIcon');
             drawer.toggleClass('openDrawer closedDrawer');
@@ -10806,7 +10809,7 @@ jQuery(async function () {
                     $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, 'swing', function () {
                         $(this).closest('.drawer-content').removeClass('resizing');
                     });
-                    $('.openIcon').toggleClass('closedIcon openIcon');
+                    $('.openIcon').not('.drawerPinnedOpen').toggleClass('closedIcon openIcon');
                     $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
 
                 }
