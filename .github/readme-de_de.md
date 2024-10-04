@@ -63,7 +63,7 @@ Die Hardwareanforderungen sind minimal: Es läuft auf allem, was NodeJS 18 oder 
 
 ### Discord-Server
 
-| [![][discord-shield-badge]][discord-link] | [Tritt unserer Discord-Community bei!](https://discord.gg/sillytavern) Erhalte Unterstützung, teile deine Lieblingscharaktere und Eingabeaufforderungen. |
+| [![][discord-shield-badge]][discord-link] | [Tritt unserer Discord-Community bei!](https://discord.gg/sillytavern) Erhalte Unterstützung, teile deine Lieblingscharaktere und Prompts. |
 | :---------------------------------------- | :----------------------------------------------------------------------------------------------------------------- |
 
 Oder nimm direkt Kontakt mit den Entwicklern auf:
