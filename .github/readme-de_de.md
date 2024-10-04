@@ -70,7 +70,7 @@ Oder nimm direkt Kontakt mit den Entwicklern auf:
 
 * Discord: cohee, rossascends, wolfsblvt
 * Reddit: [/u/RossAscends](https://www.reddit.com/user/RossAscends/), [/u/sillylossy](https://www.reddit.com/user/sillylossy/), [u/Wolfsblvt](https://www.reddit.com/user/Wolfsblvt/)
-* [Erstelle ein GitHub-Problem](https://github.com/SillyTavern/SillyTavern/issues)
+* [Erstelle ein GitHub-Issue](https://github.com/SillyTavern/SillyTavern/issues)
 
 ### Ich mag dein Projekt! Wie kann ich beitragen?
 
