@@ -47,7 +47,7 @@ var WIPanelPin = document.getElementById('WI_panel_pin');
 var RightNavPanel = document.getElementById('right-nav-panel');
 var RightNavDrawerIcon = document.getElementById('rightNavDrawerIcon');
 var LeftNavPanel = document.getElementById('left-nav-panel');
-var leftNavDrawerIcon = document.getElementById('leftNavDrawerIcon');
+var LeftNavDrawerIcon = document.getElementById('leftNavDrawerIcon');
 var WorldInfo = document.getElementById('WorldInfo');
 var WIDrawerIcon = document.getElementById('WIDrawerIcon');
 
@@ -782,15 +782,15 @@ export function initRossMods() {
         if ($(LPanelPin).prop('checked') == true) {
             //console.log('adding pin class to Left nav');
             $(LeftNavPanel).addClass('pinnedOpen');
-            $(leftNavDrawerIcon).addClass('drawerPinnedOpen');
+            $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
         } else {
             //console.log('removing pin class from Left nav');
             $(LeftNavPanel).removeClass('pinnedOpen');
-            $(leftNavDrawerIcon).removeClass('drawerPinnedOpen');
+            $(LeftNavDrawerIcon).removeClass('drawerPinnedOpen');
 
             if ($(LeftNavPanel).hasClass('openDrawer') && $('.openDrawer').length > 1) {
                 $(LeftNavPanel).slideToggle(200, 'swing');
-                $(leftNavDrawerIcon).toggleClass('openIcon closedIcon');
+                $(LeftNavDrawerIcon).toggleClass('openIcon closedIcon');
                 $(LeftNavPanel).toggleClass('openDrawer closedDrawer');
             }
         }
@@ -833,12 +833,12 @@ export function initRossMods() {
     if (LoadLocalBool('LNavLockOn') == true) {
         //console.log('setting pin class via local var');
         $(LeftNavPanel).addClass('pinnedOpen');
-        $(leftNavDrawerIcon).addClass('drawerPinnedOpen');
+        $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
     }
     if ($(LPanelPin).prop('checked')) {
         console.debug('setting pin class via checkbox state');
         $(LeftNavPanel).addClass('pinnedOpen');
-        $(leftNavDrawerIcon).addClass('drawerPinnedOpen');
+        $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
     }
 
     // read the state of left Nav Lock and apply to leftnav classlist
