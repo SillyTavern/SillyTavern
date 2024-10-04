@@ -136,6 +136,8 @@ export class ToolManager {
      */
     static #tools = new Map();
 
+    static #INPUT_DELTA_KEY = '__input_json_delta';
+
     /**
      * Returns an Array of all tools that have been registered.
      * @type {ToolDefinition[]}
@@ -304,20 +306,48 @@ export class ToolManager {
         }
         if (typeof parsed?.content_block === 'object') {
             const choiceIndex = 0;
+            const toolCallIndex = parsed?.index ?? 0;
 
             if (parsed?.content_block?.type === 'tool_use') {
                 if (!Array.isArray(toolCalls[choiceIndex])) {
                     toolCalls[choiceIndex] = [];
                 }
-
-                const toolCallIndex = toolCalls[choiceIndex].length;
-
                 if (toolCalls[choiceIndex][toolCallIndex] === undefined) {
                     toolCalls[choiceIndex][toolCallIndex] = {};
                 }
-
                 const targetToolCall = toolCalls[choiceIndex][toolCallIndex];
-                Object.assign(targetToolCall, parsed.content_block);
+                ToolManager.#applyToolCallDelta(targetToolCall, parsed.content_block);
+            }
+        }
+        if (typeof parsed?.delta === 'object') {
+            const choiceIndex = 0;
+            const toolCallIndex = parsed?.index ?? 0;
+            const targetToolCall = toolCalls[choiceIndex]?.[toolCallIndex];
+            if (targetToolCall){
+                if (parsed?.delta?.type === 'input_json_delta') {
+                    const jsonDelta = parsed?.delta?.partial_json;
+                    if (!targetToolCall[this.#INPUT_DELTA_KEY]) {
+                        targetToolCall[this.#INPUT_DELTA_KEY] = '';
+                    }
+                    targetToolCall[this.#INPUT_DELTA_KEY] += jsonDelta;
+                }
+            }
+        }
+        if (parsed?.type === 'content_block_stop') {
+            const choiceIndex = 0;
+            const toolCallIndex = parsed?.index ?? 0;
+            const targetToolCall = toolCalls[choiceIndex]?.[toolCallIndex];
+            if (targetToolCall) {
+                const jsonDeltaString = targetToolCall[this.#INPUT_DELTA_KEY];
+                if (jsonDeltaString) {
+                    try {
+                        const jsonDelta = { input: JSON.parse(jsonDeltaString) };
+                        delete targetToolCall[this.#INPUT_DELTA_KEY];
+                        ToolManager.#applyToolCallDelta(targetToolCall, jsonDelta);
+                    } catch (error) {
+                        console.warn('Failed to apply input JSON delta:', error);
+                    }
+                }
             }
         }
     }
@@ -397,9 +427,12 @@ export class ToolManager {
      * @returns {any[]} Tool calls from the response data
      */
     static #getToolCallsFromData(data) {
+        const isClaudeToolCall = c => Array.isArray(c) ? c.filter(x => x).every(isClaudeToolCall) : c?.input && c?.name && c?.id;
+        const convertClaudeToolCall = c => ({ id: c.id, function: { name: c.name, arguments: c.input } });
+
         // Parsed tool calls from streaming data
-        if (Array.isArray(data) && data.length > 0) {
-            return data[0];
+        if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
+            return isClaudeToolCall(data[0]) ? data[0].filter(x => x).map(convertClaudeToolCall) : data[0];
         }
 
         // Parsed tool calls from non-streaming data
@@ -412,19 +445,13 @@ export class ToolManager {
             }
         }
 
+        // Claude tool calls to OpenAI tool calls
         if (Array.isArray(data?.content)) {
-            // Claude tool calls to OpenAI tool calls
-            const content = data.content.filter(c => c.type === 'tool_use').map(c => {
-                return {
-                    id: c.id,
-                    function: {
-                        name: c.name,
-                        arguments: c.input,
-                    },
-                };
-            });
+            const content = data.content.filter(c => c.type === 'tool_use').map(convertClaudeToolCall);
 
-            return content;
+            if (content) {
+                return content;
+            }
         }
     }
 
