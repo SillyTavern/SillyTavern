@@ -37,12 +37,12 @@ Angefangen im Februar 2023 als Fork von TavernAI 1.2.8 hat SillyTavern nun über
 
 ## Branches
 
-SillyTavern wird mit einem Zweigsystem entwickelt, um ein reibungsloses Erlebnis für alle Nutzer zu gewährleisten.
+SillyTavern wird mit einem Branchsystem entwickelt, um ein reibungsloses Erlebnis für alle Nutzer zu gewährleisten.
 
-* `release` -🌟 **Empfohlen für die meisten Nutzer.** Dies ist der stabilste und empfohlene Zweig, der nur aktualisiert wird, wenn wichtige Versionen veröffentlicht werden. Er ist für die Mehrheit der Nutzer geeignet. Typischerweise einmal im Monat aktualisiert.
-* `staging` - ⚠️ **Nicht für den gelegentlichen Gebrauch empfohlen.** Dieser Zweig enthält die neuesten Funktionen, kann jedoch jederzeit instabil sein. Nur für Power-User und Enthusiasten. Mehrmals täglich aktualisiert.
+* `release` -🌟 **Empfohlen für die meisten Nutzer.** Dies ist der stabilste und empfohlene Branch, der nur aktualisiert wird, wenn wichtige Versionen veröffentlicht werden. Er ist für die Mehrheit der Nutzer geeignet. Typischerweise einmal im Monat aktualisiert.
+* `staging` - ⚠️ **Nicht für den gelegentlichen Gebrauch empfohlen.** Dieser Branch enthält die neuesten Funktionen, kann jedoch jederzeit instabil sein. Nur für Power-User und Enthusiasten. Mehrmals täglich aktualisiert.
 
-Wenn du nicht vertraut mit der Verwendung der git CLI bist oder nicht verstehst, was ein Zweig ist, mach dir keine Sorgen! Der Release-Zweig ist immer die bevorzugte Option für dich.
+Wenn du nicht vertraut mit der Verwendung der git CLI bist oder nicht verstehst, was ein Branch ist, mach dir keine Sorgen! Der Release-Branch ist immer die bevorzugte Option für dich.
 
 ## Was brauche ich zusätzlich zu SillyTavern?
 
@@ -270,7 +270,7 @@ Du benötigst zwei zwingende Verzeichniszuordnungen und eine Portzuordnung, um S
 ##### Zusätzliche Einstellungen
 
 * [DockerNet] - Das Docker-Netzwerk, mit dem der Container erstellt werden soll. Wenn du nicht weißt, was das ist, sieh dir die [offizielle Docker-Dokumentation](https://docs.docker.com/reference/cli/docker/network/) an.
-* [version] - Auf der rechten Seite dieser GitHub-Seite siehst du "Packages". Wähle das Paket "sillytavern" und du siehst die Imageversionen. Das Image-Tag "latest" hält dich auf dem Laufenden mit dem aktuellen Release. Du kannst auch "staging" und "release" Tags nutzen, die auf die nightly images der jeweiligen Zweige verweisen, aber das könnte unangemessen sein, wenn du Erweiterungen verwendest, die möglicherweise kaputt sind und Zeit benötigen, um aktualisiert zu werden.
+* [version] - Auf der rechten Seite dieser GitHub-Seite siehst du "Packages". Wähle das Paket "sillytavern" und du siehst die Imageversionen. Das Image-Tag "latest" hält dich auf dem Laufenden mit dem aktuellen Release. Du kannst auch "staging" und "release" Tags nutzen, die auf die nightly images der jeweiligen Branche verweisen, aber das könnte unangemessen sein, wenn du Erweiterungen verwendest, die möglicherweise kaputt sind und Zeit benötigen, um aktualisiert zu werden.
 
 #### Installationsbefehl
 
