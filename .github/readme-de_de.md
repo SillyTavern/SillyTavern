@@ -56,7 +56,7 @@ Die Hardwareanforderungen sind minimal: Es läuft auf allem, was NodeJS 18 oder 
 
 * [AI Horde](https://aihorde.net/) - verwende Modelle, die von Freiwilligen gehostet werden. Erfordert keine weitere Einrichtung
 * [KoboldCpp](https://github.com/LostRuins/koboldcpp) - ein Favorit der Community, um GGUF-Modelle lokal auszuführen
-* [tabbyAPI](https://github.com/theroyallab/tabbyAPI) - eine beliebte, leichtgewichtige, lokal gehostete exl2 Inferenz-API
+* [tabbyAPI](https://github.com/theroyallab/tabbyAPI) - eine beliebte, portable, speicherplatzoptimierte und lokal gehostete exl2 Inferenz-API
 * [OpenRouter](https://openrouter.ai) - eine einzige API für viele Cloud-Anbieter (OpenAI, Claude, Meta Llama usw.) sowie beliebte Community-Modelle.
 
 ## Fragen oder Vorschläge?
