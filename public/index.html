@@ -1873,6 +1873,10 @@
                                             </div>
                                             <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact autoSetHeight" name="assistant_impersonation" rows="2" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
+                                        <div id="claude_function_prefill_warning">
+                                            <i class="fa-solid fa-circle-info"></i>
+                                            <span>Prefills won't work when function calling is enabled and any tools are registered.</span>
+                                        </div>
                                         <label for="claude_use_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="claude_use_sysprompt" type="checkbox" />
                                             <span data-i18n="Use system prompt (Claude 2.1+ only)">
