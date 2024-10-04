@@ -4009,8 +4009,6 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_2mil);
         } else if (value.includes('gemini-1.5-pro')) {
             $('#openai_max_context').attr('max', max_2mil);
-        } else if (value.match('gemini-1.5-flash-002')) {
-            $('#openai_max_context').attr('max', max_2mil);
         } else if (value.includes('gemini-1.5-flash')) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value.includes('gemini-1.0-pro-vision') || value === 'gemini-pro-vision') {
@@ -4662,6 +4660,7 @@ export function isImageInliningSupported() {
         'gemini-1.5-flash-001',
         'gemini-1.5-flash-002',
         'gemini-1.5-flash-exp-0827',
+        'gemini-1.5-flash-8b',
         'gemini-1.5-flash-8b-exp-0827',
         'gemini-1.5-flash-8b-exp-0924',
         'gemini-1.0-pro-vision-latest',
