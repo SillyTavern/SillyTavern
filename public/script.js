@@ -4420,7 +4420,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 const invocationResult = await ToolManager.invokeFunctionTools(streamingProcessor.toolCalls);
                 if (invocationResult.hadToolCalls) {
                     const lastMessage = chat[chat.length - 1];
-                    const shouldDeleteMessage = ['', '...'].includes(lastMessage?.mes) && ['', '...'].includes(streamingProcessor.result);
+                    const shouldDeleteMessage = ['', '...'].includes(lastMessage?.mes) && ['', '...'].includes(streamingProcessor?.result);
                     shouldDeleteMessage && await deleteLastMessage();
                     if (!invocationResult.invocations.length && shouldDeleteMessage) {
                         ToolManager.showToolCallError(invocationResult.errors);
