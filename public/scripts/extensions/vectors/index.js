@@ -466,13 +466,13 @@ async function ingestDataBankAttachments(source) {
         }
 
         // Download and process the file
-        file.text = await getFileAttachment(file.url);
+        const fileText = await getFileAttachment(file.url);
         console.log(`Vectors: Retrieved file ${file.name} from Data Bank`);
         // Convert kilobytes to string length
         const thresholdLength = settings.size_threshold_db * 1024;
         // Use chunk size from settings if file is larger than threshold
         const chunkSize = file.size > thresholdLength ? settings.chunk_size_db : -1;
-        await vectorizeFile(file.text, file.name, collectionId, chunkSize, settings.overlap_percent_db);
+        await vectorizeFile(fileText, file.name, collectionId, chunkSize, settings.overlap_percent_db);
     }
 
     return dataBankCollectionIds;

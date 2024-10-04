@@ -403,6 +403,7 @@ jQuery(async function () {
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'openai' && (secret_state[SECRET_KEYS.OPENAI] || extension_settings.caption.allow_reverse_proxy)) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'openrouter' && secret_state[SECRET_KEYS.OPENROUTER]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'zerooneai' && secret_state[SECRET_KEYS.ZEROONEAI]) ||
+                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'groq' && secret_state[SECRET_KEYS.GROQ]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'mistral' && (secret_state[SECRET_KEYS.MISTRALAI] || extension_settings.caption.allow_reverse_proxy)) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'google' && (secret_state[SECRET_KEYS.MAKERSUITE] || extension_settings.caption.allow_reverse_proxy)) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'anthropic' && (secret_state[SECRET_KEYS.CLAUDE] || extension_settings.caption.allow_reverse_proxy)) ||

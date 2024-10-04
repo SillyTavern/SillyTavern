@@ -1709,9 +1709,9 @@
                                 <div class="">
                                     <div class="inline-drawer wide100p flexFlowColumn">
                                         <div class="inline-drawer-toggle inline-drawer-header">
-                                            <div class="flex-container alignItemsCenter flexNoGap">
+                                            <div class="flex-container alignItemsCenter">
                                                 <b data-i18n="Character Names Behavior">Character Names Behavior</b>
-                                                <span title="Helps the model to associate messages with characters." data-i18n="[title]Helps the model to associate messages with characters." class="note-link-span fa-solid fa-circle-question"></span>
+                                                <span title="Helps the model to associate messages with characters." data-i18n="[title]Helps the model to associate messages with characters." class="opacity50p fa-solid fa-circle-info"></span>
                                                 <small class="flexBasis100p">(<span id="character_names_display"></span>)</small>
                                             </div>
                                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -1720,25 +1720,22 @@
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_none">
                                                 <input type="radio" id="character_names_none" name="character_names" value="-1">
                                                 <span data-i18n="None">None</span>
-                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Never add character name prefixes. May behave poorly in groups, choose with caution." data-i18n="[title]character_names_none"></i>
-                                                <small class="flexBasis100p" data-i18n="Never add character names.">
-                                                    Never add character names.
+                                                <small class="flexBasis100p" data-i18n="character_names_none">
+                                                    Never add character name prefixes. May behave poorly in groups, choose with caution.
                                                 </small>
                                             </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_default">
                                                 <input type="radio" id="character_names_default" name="character_names" value="0">
                                                 <span data-i18n="Default">Default</span>
-                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Add prefixes for groups and past personas. Otherwise, make sure you provide names in the prompt." data-i18n="[title]character_names_default"></i>
-                                                <small class="flexBasis100p" data-i18n="Don't add character names unless necessary.">
-                                                    Don't add character names unless necessary.
+                                                <small class="flexBasis100p" data-i18n="character_names_default">
+                                                    Add prefixes for groups and past personas. Otherwise, make sure you provide names in the prompt.
                                                 </small>
                                             </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_completion">
                                                 <input type="radio" id="character_names_completion" name="character_names" value="1">
                                                 <span data-i18n="Completion Object">Completion Object</span>
-                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Restrictions apply: only Latin alphanumerics and underscores. Doesn't work for all sources, notably: Claude, MistralAI, Google." data-i18n="[title]character_names_completion"></i>
-                                                <small class="flexBasis100p" data-i18n="Add character names to completion objects.">
-                                                    Add character names to completion objects.
+                                                <small class="flexBasis100p" data-i18n="character_names_completion">
+                                                    Add character names to completion objects. Restrictions apply: only Latin alphanumerics and underscores.
                                                 </small>
                                             </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_content">
@@ -1754,9 +1751,9 @@
                                     </div>
                                     <div class="inline-drawer wide100p flexFlowColumn marginBot10">
                                         <div class="inline-drawer-toggle inline-drawer-header">
-                                            <div class="flex-container alignItemsCenter flexNoGap">
+                                            <div class="flex-container alignItemsCenter">
                                                 <b data-i18n="Continue Postfix">Continue Postfix</b>
-                                                <span data-i18n="[title]The next chunk of the continued message will be appended using this as a separator." title="The next chunk of the continued message will be appended using this as a separator." class="note-link-span fa-solid fa-circle-question"></span>
+                                                <span data-i18n="[title]The next chunk of the continued message will be appended using this as a separator." title="The next chunk of the continued message will be appended using this as a separator." class="opacity50p fa-solid fa-circle-info"></span>
                                                 <small class="flexBasis100p">(<span id="continue_postfix_display"></span>)</small>
                                             </div>
                                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -2891,6 +2888,7 @@
                                         <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro [latest]</option>
                                         <option value="gemini-1.5-pro-001">Gemini 1.5 Pro [001]</option>
                                         <option value="gemini-1.5-pro-002">Gemini 1.5 Pro [002]</option>
+                                        <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8B</option>
                                         <option value="gemini-1.5-flash-exp-0827">Gemini 1.5 Flash Experiment 2024-08-27</option>
                                         <option value="gemini-1.5-flash-8b-exp-0827">Gemini 1.5 Flash 8B Experiment 2024-08-27</option>
                                         <option value="gemini-1.5-flash-8b-exp-0924">Gemini 1.5 Flash 8B Experiment 2024-09-24</option>
@@ -2957,16 +2955,31 @@
                             </div>
                             <h4 data-i18n="Groq Model">Groq Model</h4>
                             <select id="model_groq_select">
-                                <option value="llama-3.1-405b-reasoning">llama-3.1-405b-reasoning</option>
-                                <option value="llama-3.1-70b-versatile">llama-3.1-70b-versatile</option>
-                                <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-                                <option value="llama3-groq-70b-8192-tool-use-preview">llama3-groq-70b-8192-tool-use-preview</option>
-                                <option value="llama3-groq-8b-8192-tool-use-preview">llama3-groq-8b-8192-tool-use-preview</option>
-                                <option value="llama3-8b-8192">llama3-8b-8192</option>
-                                <option value="llama3-70b-8192">llama3-70b-8192</option>
-                                <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
-                                <option value="gemma-7b-it">gemma-7b-it</option>
-                                <option value="gemma2-9b-it">gemma2-9b-it</option>
+                                <optgroup label="Llama 3.2">
+                                    <option value="llama-3.2-1b-preview">llama-3.2-1b-preview</option>
+                                    <option value="llama-3.2-3b-preview">llama-3.2-3b-preview</option>
+                                    <option value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview</option>
+                                    <option value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview</option>
+                                </optgroup>
+                                <optgroup label="Llama 3.1">
+                                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                                    <option value="llama-3.1-70b-versatile">llama-3.1-70b-versatile</option>
+                                    <option value="llama-3.1-405b-reasoning">llama-3.1-405b-reasoning</option>
+                                </optgroup>
+                                <optgroup label="Llama 3">
+                                    <option value="llama3-groq-8b-8192-tool-use-preview">llama3-groq-8b-8192-tool-use-preview</option>
+                                    <option value="llama3-groq-70b-8192-tool-use-preview">llama3-groq-70b-8192-tool-use-preview</option>
+                                    <option value="llama3-8b-8192">llama3-8b-8192</option>
+                                    <option value="llama3-70b-8192">llama3-70b-8192</option>
+                                </optgroup>
+                                <optgroup label="Gemma">
+                                    <option value="gemma-7b-it">gemma-7b-it</option>
+                                    <option value="gemma2-9b-it">gemma2-9b-it</option>
+                                </optgroup>
+                                <optgroup label="Other">
+                                    <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                                    <option value="llava-v1.5-7b-4096-preview">llava-v1.5-7b-4096-preview</option>
+                                </optgroup>
                             </select>
                         </div>
                         <div id="perplexity_form" data-source="perplexity">
@@ -4012,6 +4025,10 @@
                                 <label for="compact_input_area" class="checkbox_label" title="Single-row message input area. Mobile only, no effect on PC." data-i18n="[title]Single-row message input area. Mobile only, no effect on PC">
                                     <input id="compact_input_area" type="checkbox" />
                                     <small data-i18n="Compact Input Area (Mobile)">Compact Input Area</small><i class="fa-solid fa-mobile-screen-button"></i>
+                                </label>
+                                <label for="show_swipe_num_all_messages" class="checkbox_label" title="Display swipe numbers for all messages, not just the last." data-i18n="[title]Display swipe numbers for all messages, not just the last.">
+                                    <input id="show_swipe_num_all_messages" type="checkbox" />
+                                    <small data-i18n="Swipe # for All Messages">Swipe # for All Messages</small><i class="fa-solid fa-mobile-screen-button"></i>
                                 </label>
                                 <label for="hotswapEnabled" class="checkbox_label" title="In the Character Management panel, show quick selection buttons for favorited characters." data-i18n="[title]In the Character Management panel, show quick selection buttons for favorited characters">
                                     <input id="hotswapEnabled" type="checkbox" />
@@ -5941,9 +5958,10 @@
                     </div>
                     <div class="mes_bias"></div>
                 </div>
-                    <div class="swipe_right fa-solid fa-chevron-right" style="display: none;">
-                        <div class="swipes-counter"></div>
-                    </div>
+                <div class="flex-container swipeRightBlock flexFlowColumn flexNoGap">
+                    <div class="swipe_right fa-solid fa-chevron-right" style="display: none;"></div>
+                    <div class="swipes-counter"></div>
+                </div>
             </div>
         </div>
         <div id="group_avatars_template" class="template_element">

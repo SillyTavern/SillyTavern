@@ -269,6 +269,7 @@ function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '
         'gemini-1.5-flash-001',
         'gemini-1.5-flash-002',
         'gemini-1.5-flash-exp-0827',
+        'gemini-1.5-flash-8b',
         'gemini-1.5-flash-8b-exp-0827',
         'gemini-1.5-flash-8b-exp-0924',
         'gemini-1.5-pro',

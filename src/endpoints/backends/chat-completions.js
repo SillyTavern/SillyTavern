@@ -107,6 +107,7 @@ async function sendClaudeRequest(request, response) {
         }
 
         const requestBody = {
+            /** @type {any} */ system: '',
             messages: convertedPrompt.messages,
             model: request.body.model,
             max_tokens: request.body.max_tokens,
@@ -120,6 +121,8 @@ async function sendClaudeRequest(request, response) {
             requestBody.system = enableSystemPromptCache
                 ? [{ type: 'text', text: convertedPrompt.systemPrompt, cache_control: { type: 'ephemeral' } }]
                 : convertedPrompt.systemPrompt;
+        } else {
+            delete requestBody.system;
         }
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
             // Claude doesn't do prefills on function calls, and doesn't allow empty messages
@@ -156,12 +159,13 @@ async function sendClaudeRequest(request, response) {
             forwardFetchResponse(generateResponse, response);
         } else {
             if (!generateResponse.ok) {
-                console.log(color.red(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText}\n${await generateResponse.text()}\n${divider}`));
+                const generateResponseText = await generateResponse.text();
+                console.log(color.red(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText}\n${generateResponseText}\n${divider}`));
                 return response.status(generateResponse.status).send({ error: true });
             }
 
             const generateResponseJson = await generateResponse.json();
-            const responseText = generateResponseJson.content[0].text;
+            const responseText = generateResponseJson?.content?.[0]?.text || '';
             console.log('Claude response:', generateResponseJson);
 
             // Wrap it back to OAI format + save the original content

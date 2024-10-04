@@ -724,6 +724,12 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
         if (chatCompletion.canAfford(chatMessage)) {
             if (type === 'continue' && oai_settings.continue_prefill && chatPrompt === firstNonInjected) {
+                // in case we are using continue_prefill and the latest message is an assistant message, we want to prepend the users assistant prefill on the message
+                if (chatPrompt.role === 'assistant') {
+                    const collection = new MessageCollection('continuePrefill', new Message(chatMessage.role, substituteParams(oai_settings.assistant_prefill + '\n\n') + chatMessage.content, chatMessage.identifier));
+                    chatCompletion.add(collection, -1);
+                    continue;
+                }
                 const collection = new MessageCollection('continuePrefill', chatMessage);
                 chatCompletion.add(collection, -1);
                 continue;
@@ -1767,8 +1773,8 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['claude_use_sysprompt'] = oai_settings.claude_use_sysprompt;
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
         generate_data['human_sysprompt_message'] = substituteParams(oai_settings.human_sysprompt_message);
-        // Don't add a prefill on quiet gens (summarization)
-        if (!isQuiet) {
+        // Don't add a prefill on quiet gens (summarization) and when using continue prefill.
+        if (!isQuiet && !(isContinue && oai_settings.continue_prefill)) {
             generate_data['assistant_prefill'] = isImpersonate ? substituteParams(oai_settings.assistant_impersonation) : substituteParams(oai_settings.assistant_prefill);
         }
     }
@@ -4000,8 +4006,6 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_2mil);
         } else if (value.includes('gemini-1.5-pro')) {
             $('#openai_max_context').attr('max', max_2mil);
-        } else if (value.match('gemini-1.5-flash-002')) {
-            $('#openai_max_context').attr('max', max_2mil);
         } else if (value.includes('gemini-1.5-flash')) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value.includes('gemini-1.0-pro-vision') || value === 'gemini-pro-vision') {
@@ -4187,7 +4191,10 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
-        else if (oai_settings.groq_model.includes('llama-3.1')) {
+        else if (oai_settings.groq_model.includes('llama-3.2') && oai_settings.groq_model.includes('-preview')) {
+            $('#openai_max_context').attr('max', max_8k);
+        }
+        else if (oai_settings.groq_model.includes('llama-3.2') || oai_settings.groq_model.includes('llama-3.1')) {
             $('#openai_max_context').attr('max', max_128k);
         }
         else if (oai_settings.groq_model.includes('llama3-groq')) {
@@ -4650,6 +4657,7 @@ export function isImageInliningSupported() {
         'gemini-1.5-flash-001',
         'gemini-1.5-flash-002',
         'gemini-1.5-flash-exp-0827',
+        'gemini-1.5-flash-8b',
         'gemini-1.5-flash-8b-exp-0827',
         'gemini-1.5-flash-8b-exp-0924',
         'gemini-1.0-pro-vision-latest',
