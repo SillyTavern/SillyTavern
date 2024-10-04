@@ -171,7 +171,6 @@ export class ToolManager {
      */
     static unregisterFunctionTool(name) {
         if (!this.#tools.has(name)) {
-            console.warn(`No tool with the name "${name}" has been registered.`);
             return;
         }
 
