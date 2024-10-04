@@ -8180,6 +8180,8 @@ window['SillyTavern'].getContext = function () {
         unregisterMacro: MacrosParser.unregisterMacro.bind(MacrosParser),
         registerFunctionTool: ToolManager.registerFunctionTool.bind(ToolManager),
         unregisterFunctionTool: ToolManager.unregisterFunctionTool.bind(ToolManager),
+        isToolCallingSupported: ToolManager.isToolCallingSupported.bind(ToolManager),
+        canPerformToolCalls: ToolManager.canPerformToolCalls.bind(ToolManager),
         registerDebugFunction: registerDebugFunction,
         /** @deprecated Use renderExtensionTemplateAsync instead. */
         renderExtensionTemplate: renderExtensionTemplate,
