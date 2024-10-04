@@ -32,6 +32,7 @@ import { debounce_timeout } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { ToolManager } from '../../tool-calling.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'sd';
@@ -62,6 +63,7 @@ const initiators = {
     interactive: 'interactive',
     wand: 'wand',
     swipe: 'swipe',
+    tool: 'tool',
 };
 
 const generationMode = {
@@ -226,6 +228,7 @@ const defaultSettings = {
     multimodal_captioning: false,
     snap: false,
     free_extend: false,
+    function_tool: false,
 
     prompts: promptTemplates,
 
@@ -291,6 +294,10 @@ const defaultSettings = {
 const writePromptFieldsDebounced = debounce(writePromptFields, debounce_timeout.relaxed);
 
 function processTriggers(chat, _, abort) {
+    if (extension_settings.sd.function_tool && ToolManager.isToolCallingSupported()) {
+        return;
+    }
+
     if (!extension_settings.sd.interactive_mode) {
         return;
     }
@@ -447,6 +454,7 @@ async function loadSettings() {
     $('#sd_interactive_visible').prop('checked', extension_settings.sd.interactive_visible);
     $('#sd_stability_style_preset').val(extension_settings.sd.stability_style_preset);
     $('#sd_huggingface_model_id').val(extension_settings.sd.huggingface_model_id);
+    $('#sd_function_tool').prop('checked', extension_settings.sd.function_tool);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -461,6 +469,7 @@ async function loadSettings() {
 
     toggleSourceControls();
     addPromptTemplates();
+    registerFunctionTool();
 
     await loadSettingOptions();
 }
@@ -908,6 +917,12 @@ async function onSourceChange() {
     toggleSourceControls();
     saveSettingsDebounced();
     await loadSettingOptions();
+}
+
+function onFunctionToolInput() {
+    extension_settings.sd.function_tool = !!$(this).prop('checked');
+    saveSettingsDebounced();
+    registerFunctionTool();
 }
 
 async function onOpenAiStyleSelect() {
@@ -3822,6 +3837,44 @@ function applyCommandArguments(args) {
     return currentSettings;
 }
 
+function registerFunctionTool() {
+    if (!extension_settings.sd.function_tool) {
+        return ToolManager.unregisterFunctionTool('GenerateImage');
+    }
+
+    ToolManager.registerFunctionTool({
+        name: 'GenerateImage',
+        displayName: 'Generate Image',
+        description: [
+            'Generate an image from a given text prompt.',
+            'Use when a user asks for an image, a selfie, to picture a scene, etc.',
+        ].join(' '),
+        parameters: Object.freeze({
+            $schema: 'http://json-schema.org/draft-04/schema#',
+            type: 'object',
+            properties: {
+                prompt: {
+                    type: 'string',
+                    description: [
+                        'The text prompt used to generate the image.',
+                        'Must represent an exhaustive description of the desired image that will allow an artist or a photographer to perfectly recreate it.',
+                    ],
+                },
+            },
+            required: [
+                'prompt',
+            ],
+        }),
+        action: async (args) => {
+            if (!isValidState()) throw new Error('Image generation is not configured.');
+            if (!args) throw new Error('Missing arguments');
+            if (!args.prompt) throw new Error('Missing prompt');
+            return generatePicture(initiators.tool, {}, args.prompt);
+        },
+        formatMessage: () => 'Generating an image...',
+    });
+}
+
 jQuery(async () => {
     await addSDGenButtons();
 
@@ -4175,6 +4228,7 @@ jQuery(async () => {
     $('#sd_stability_key').on('click', onStabilityKeyClick);
     $('#sd_stability_style_preset').on('change', onStabilityStylePresetChange);
     $('#sd_huggingface_model_id').on('input', onHFModelInput);
+    $('#sd_function_tool').on('input', onFunctionToolInput);
 
     if (!CSS.supports('field-sizing', 'content')) {
         $('.sd_settings .inline-drawer-toggle').on('click', function () {
