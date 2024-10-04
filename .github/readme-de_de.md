@@ -89,7 +89,7 @@ SillyTavern basiert auf dem Konzept der "Charakterkarten". Eine Charakterkarte i
 
 Das Namensfeld ist der einzige erforderliche Eingabewert für die Charakterkarte. Um ein neutrales Gespräch mit dem LLM zu beginnen, erstelle eine neue Karte, die einfach "Assistent" genannt wird, und lasse die restlichen Felder leer. Für einen thematischeren Chat kannst du dem LLM verschiedene Hintergrundinformationen, Verhaltensweisen und Schreibmuster sowie ein Szenario geben, um das Gespräch zu beginnen.
 
-Um ein schnelles Gespräch zu führen, ohne eine Charakterkarte auszuwählen, oder um einfach die LLM-Verbindung zu testen, gib einfach deine Eingabeaufforderung in die Eingabezeile auf dem Willkommensbildschirm ein, nachdem du SillyTavern geöffnet hast. Bitte beachte, dass solche Chats vorübergehend sind und nicht gespeichert werden.
+Um ein schnelles Gespräch zu führen, ohne eine Charakterkarte auszuwählen, oder um einfach die LLM-Verbindung zu testen, gib einfach dein Prompt in die Eingabezeile auf dem Willkommensbildschirm ein, nachdem du SillyTavern geöffnet hast. Bitte beachte, dass solche Chats vorübergehend sind und nicht gespeichert werden.
 
 Um eine allgemeine Vorstellung davon zu bekommen, wie man Charakterkarten definiert, sieh dir die Standardfigur (Seraphina) an oder lade ausgewählte von der Community erstellte Karten im Menü "Erweiterungen & Assets herunterladen" herunter.
 
