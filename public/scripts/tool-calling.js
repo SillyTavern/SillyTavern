@@ -459,7 +459,8 @@ export class ToolManager {
      * @returns {boolean} Whether the response data contains tool calls
      */
     static hasToolCalls(data) {
-        return Array.isArray(ToolManager.#getToolCallsFromData(data));
+        const toolCalls = ToolManager.#getToolCallsFromData(data);
+        return Array.isArray(toolCalls) && toolCalls.length > 0;
     }
 
     /**
