@@ -93,7 +93,7 @@ Um ein schnelles Gespräch zu führen, ohne eine Charakterkarte auszuwählen, od
 
 Um eine allgemeine Vorstellung davon zu bekommen, wie man Charakterkarten definiert, sieh dir die mitgelieferte Charakterkarte (Seraphina) an oder lade ausgewählte von der Community erstellte Karten im Menü "Erweiterungen & Assets herunterladen" herunter.
 
-## Hauptmerkmale
+## Wichtigste Features
 
 * Erweiterte Texteinstellungen mit vielen von der Community erstellten Voreinstellungen
 * Unterstützung für World Info: erstelle reichhaltige Lore oder speichere Tokens auf deiner Charakterkarte
