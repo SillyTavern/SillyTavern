@@ -293,10 +293,17 @@ DOMPurify.addHook('afterSanitizeAttributes', function (node) {
     }
 });
 
-DOMPurify.addHook('uponSanitizeAttribute', (_, data, config) => {
+DOMPurify.addHook('uponSanitizeAttribute', (node, data, config) => {
     if (!config['MESSAGE_SANITIZE']) {
         return;
     }
+
+    /* Retain the classes on UI elements of messages that interact with the main UI */
+    const permittedNodeTypes = ['BUTTON', 'DIV'];
+    if (config['MESSAGE_ALLOW_SYSTEM_UI'] && node.classList.contains('menu_button') && permittedNodeTypes.includes(node.nodeName)) {
+        return;
+    }
+
     switch (data.attrName) {
         case 'class': {
             if (data.attrValue) {
@@ -650,6 +657,7 @@ async function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
+            uses_system_ui: true,
             mes: await renderTemplateAsync('welcome', { displayVersion }),
         },
         group: {
@@ -1916,9 +1924,10 @@ export async function sendTextareaMessage() {
  * @param {boolean} isSystem If the message was sent by the system
  * @param {boolean} isUser If the message was sent by the user
  * @param {number} messageId Message index in chat array
+ * @param {object} [sanitizerOverrides] DOMPurify sanitizer option overrides
  * @returns {string} HTML string
  */
-export function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
+export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, sanitizerOverrides = {}) {
     if (!mes) {
         return '';
     }
@@ -2029,7 +2038,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     }
 
     /** @type {any} */
-    const config = { MESSAGE_SANITIZE: true, ADD_TAGS: ['custom-style'] };
+    const config = { MESSAGE_SANITIZE: true, ADD_TAGS: ['custom-style'], ...sanitizerOverrides };
     mes = encodeStyleTags(mes);
     mes = DOMPurify.sanitize(mes, config);
     mes = decodeStyleTags(mes);
@@ -2234,6 +2243,18 @@ export function addCopyToCodeBlocks(messageElement) {
 }
 
 
+/**
+ * Adds a single message to the chat.
+ * @param {object} mes Message object
+ * @param {object} [options] Options
+ * @param {string} [options.type='normal'] Message type
+ * @param {number} [options.insertAfter=null] Message ID to insert the new message after
+ * @param {boolean} [options.scroll=true] Whether to scroll to the new message
+ * @param {number} [options.insertBefore=null] Message ID to insert the new message before
+ * @param {number} [options.forceId=null] Force the message ID
+ * @param {boolean} [options.showSwipes=true] Whether to show swipe buttons
+ * @returns {void}
+ */
 export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true } = {}) {
     let messageText = mes['mes'];
     const momentDate = timestampToMoment(mes.send_date);
@@ -2262,7 +2283,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         } else if (this_chid === undefined) {
             avatarImg = system_avatar;
         } else {
-            if (characters[this_chid].avatar != 'none') {
+            if (characters[this_chid].avatar !== 'none') {
                 avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
             } else {
                 avatarImg = default_avatar;
@@ -2277,12 +2298,16 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         avatarImg = mes['force_avatar'];
     }
 
+    // if mes.uses_system_ui is true, set an override on the sanitizer options
+    const sanitizerOverrides = mes.uses_system_ui ? { MESSAGE_ALLOW_SYSTEM_UI: true } : {};
+
     messageText = messageFormatting(
         messageText,
         mes.name,
         isSystem,
         mes.is_user,
         chat.indexOf(mes),
+        sanitizerOverrides,
     );
     const bias = messageFormatting(mes.extra?.bias ?? '', '', false, false, -1);
     let bookmarkLink = mes?.extra?.bookmark_link ?? '';
@@ -2330,7 +2355,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     }
 
     //shows or hides the Prompt display button
-    let mesIdToFind = type == 'swipe' ? params.mesId - 1 : params.mesId;  //Number(newMessage.attr('mesId'));
+    let mesIdToFind = type === 'swipe' ? params.mesId - 1 : params.mesId;  //Number(newMessage.attr('mesId'));
 
     //if we have itemized messages, and the array isn't null..
     if (params.isUser === false && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
@@ -2651,7 +2676,7 @@ export function sendSystemMessage(type, text, extra = {}) {
         newMessage.mes = text;
     }
 
-    if (type == system_message_types.SLASH_COMMANDS) {
+    if (type === system_message_types.SLASH_COMMANDS) {
         newMessage.mes = getSlashCommandsHelp();
     }
 
@@ -2665,7 +2690,7 @@ export function sendSystemMessage(type, text, extra = {}) {
     chat.push(newMessage);
     addOneMessage(newMessage);
     is_send_press = false;
-    if (type == system_message_types.SLASH_COMMANDS) {
+    if (type === system_message_types.SLASH_COMMANDS) {
         const browser = new SlashCommandBrowser();
         const spinner = document.querySelector('#chat .last_mes .custom-slashHelp');
         const parent = spinner.parentElement;
@@ -7854,7 +7879,7 @@ function openAlternateGreetings() {
             if (menu_type !== 'create') {
                 await createOrEditCharacter();
             }
-        }
+        },
     });
 
     for (let index = 0; index < getArray().length; index++) {
@@ -9068,6 +9093,90 @@ async function newAssistantChat() {
 function doTogglePanels() {
     $('#option_settings').trigger('click');
     return '';
+}
+
+/**
+ * Event handler to open a navbar drawer when a drawer open button is clicked.
+ * Handles click events on .drawer-opener elements.
+ * Opens the drawer associated with the clicked button according to the data-target attribute.
+ * @returns {void}
+ */
+function doDrawerOpenClick() {
+    const targetDrawerID = $(this).attr('data-target');
+    const drawer = $(`#${targetDrawerID}`);
+    const drawerToggle = drawer.find('.drawer-toggle');
+    const drawerWasOpenAlready = drawerToggle.parent().find('.drawer-content').hasClass('openDrawer');
+    if (drawerWasOpenAlready || drawer.hasClass('resizing')) { return; }
+    doNavbarIconClick.call(drawerToggle);
+}
+
+/**
+ * Event handler to open or close a navbar drawer when a navbar icon is clicked.
+ * Handles click events on .drawer-toggle elements.
+ * @returns {void}
+ */
+function doNavbarIconClick() {
+    var icon = $(this).find('.drawer-icon');
+    var drawer = $(this).parent().find('.drawer-content');
+    if (drawer.hasClass('resizing')) { return; }
+    var drawerWasOpenAlready = $(this).parent().find('.drawer-content').hasClass('openDrawer');
+    let targetDrawerID = $(this).parent().find('.drawer-content').attr('id');
+    const pinnedDrawerClicked = drawer.hasClass('pinnedOpen');
+
+    if (!drawerWasOpenAlready) { //to open the drawer
+        $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, 'swing', async function () {
+            await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
+        });
+        $('.openIcon').toggleClass('closedIcon openIcon');
+        $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
+        icon.toggleClass('openIcon closedIcon');
+        drawer.toggleClass('openDrawer closedDrawer');
+
+        //console.log(targetDrawerID);
+        if (targetDrawerID === 'right-nav-panel') {
+            $(this).closest('.drawer').find('.drawer-content').addClass('resizing').slideToggle({
+                duration: 200,
+                easing: 'swing',
+                start: function () {
+                    jQuery(this).css('display', 'flex'); //flex needed to make charlist scroll
+                },
+                complete: async function () {
+                    favsToHotswap();
+                    await delay(50);
+                    $(this).closest('.drawer-content').removeClass('resizing');
+                    $('#rm_print_characters_block').trigger('scroll');
+                },
+            });
+        } else {
+            $(this).closest('.drawer').find('.drawer-content').addClass('resizing').slideToggle(200, 'swing', async function () {
+                await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
+            });
+        }
+
+        // Set the height of "autoSetHeight" textareas within the drawer to their scroll height
+        if (!CSS.supports('field-sizing', 'content')) {
+            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(async function () {
+                await resetScrollHeight($(this));
+                return;
+            });
+        }
+
+    } else if (drawerWasOpenAlready) { //to close manually
+        icon.toggleClass('closedIcon openIcon');
+
+        if (pinnedDrawerClicked) {
+            $(drawer).addClass('resizing').slideToggle(200, 'swing', async function () {
+                await delay(50); $(this).removeClass('resizing');
+            });
+        }
+        else {
+            $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, 'swing', async function () {
+                await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
+            });
+        }
+
+        drawer.toggleClass('closedDrawer openDrawer');
+    }
 }
 
 function addDebugFunctions() {
@@ -10659,69 +10768,8 @@ jQuery(async function () {
         stopScriptExecution();
     });
 
-    $('.drawer-toggle').on('click', function () {
-        var icon = $(this).find('.drawer-icon');
-        var drawer = $(this).parent().find('.drawer-content');
-        if (drawer.hasClass('resizing')) { return; }
-        var drawerWasOpenAlready = $(this).parent().find('.drawer-content').hasClass('openDrawer');
-        let targetDrawerID = $(this).parent().find('.drawer-content').attr('id');
-        const pinnedDrawerClicked = drawer.hasClass('pinnedOpen');
-
-        if (!drawerWasOpenAlready) { //to open the drawer
-            $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, 'swing', async function () {
-                await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
-            });
-            $('.openIcon').not('.drawerPinnedOpen').toggleClass('closedIcon openIcon');
-            $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
-            icon.toggleClass('openIcon closedIcon');
-            drawer.toggleClass('openDrawer closedDrawer');
-
-            //console.log(targetDrawerID);
-            if (targetDrawerID === 'right-nav-panel') {
-                $(this).closest('.drawer').find('.drawer-content').addClass('resizing').slideToggle({
-                    duration: 200,
-                    easing: 'swing',
-                    start: function () {
-                        jQuery(this).css('display', 'flex'); //flex needed to make charlist scroll
-                    },
-                    complete: async function () {
-                        favsToHotswap();
-                        await delay(50);
-                        $(this).closest('.drawer-content').removeClass('resizing');
-                        $('#rm_print_characters_block').trigger('scroll');
-                    },
-                });
-            } else {
-                $(this).closest('.drawer').find('.drawer-content').addClass('resizing').slideToggle(200, 'swing', async function () {
-                    await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
-                });
-            }
-
-            // Set the height of "autoSetHeight" textareas within the drawer to their scroll height
-            if (!CSS.supports('field-sizing', 'content')) {
-                $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(async function () {
-                    await resetScrollHeight($(this));
-                    return;
-                });
-            }
-
-        } else if (drawerWasOpenAlready) { //to close manually
-            icon.toggleClass('closedIcon openIcon');
-
-            if (pinnedDrawerClicked) {
-                $(drawer).addClass('resizing').slideToggle(200, 'swing', async function () {
-                    await delay(50); $(this).removeClass('resizing');
-                });
-            }
-            else {
-                $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, 'swing', async function () {
-                    await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
-                });
-            }
-
-            drawer.toggleClass('closedDrawer openDrawer');
-        }
-    });
+    $(document).on('click', '.drawer-opener', doDrawerOpenClick);
+    $('.drawer-toggle').on('click', doNavbarIconClick);
 
     $('html').on('touchstart mousedown', function (e) {
         var clickTarget = $(e.target);
