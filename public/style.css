@@ -1208,8 +1208,9 @@ textarea.autoSetHeight {
 }
 
 input,
-select {
-    font-family: var(--mainFontFamily);
+select,
+button {
+    font-family: var(--mainFontFamily), sans-serif;
     font-size: var(--mainFontSize);
     color: var(--SmartThemeBodyColor);
 }
