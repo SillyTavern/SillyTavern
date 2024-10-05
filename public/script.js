@@ -4485,7 +4485,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
                     streamingProcessor = null;
                     await ToolManager.saveFunctionToolInvocations(invocationResult.invocations);
-                    return Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName }, dryRun);
+                    return Generate('normal', { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName }, dryRun);
                 }
             }
 
@@ -4577,7 +4577,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 }
 
                 await ToolManager.saveFunctionToolInvocations(invocationResult.invocations);
-                return Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName }, dryRun);
+                return Generate('normal', { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName }, dryRun);
             }
         }
 
