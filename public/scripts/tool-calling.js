@@ -1,4 +1,4 @@
-import { addOneMessage, chat, main_api, system_avatar, systemUserName } from '../script.js';
+import { addOneMessage, chat, event_types, eventSource, main_api, saveChatConditional, system_avatar, systemUserName } from '../script.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { Popup } from './popup.js';
 
@@ -542,7 +542,7 @@ export class ToolManager {
      * Saves function tool invocations to the last user chat message extra metadata.
      * @param {ToolInvocation[]} invocations Successful tool invocations
      */
-    static saveFunctionToolInvocations(invocations) {
+    static async saveFunctionToolInvocations(invocations) {
         if (!Array.isArray(invocations) || invocations.length === 0) {
             return;
         }
@@ -558,7 +558,10 @@ export class ToolManager {
             },
         };
         chat.push(message);
+        await eventSource.emit(event_types.TOOL_CALLS_PERFORMED, invocations);
         addOneMessage(message);
+        await eventSource.emit(event_types.TOOL_CALLS_RENDERED, invocations);
+        await saveChatConditional();
     }
 
     /**
