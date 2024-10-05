@@ -87,7 +87,7 @@ async function sendClaudeRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_CLAUDE).toString();
     const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.CLAUDE);
     const divider = '-'.repeat(process.stdout.columns);
-    const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false);
+    const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false) && request.body.model.startsWith('claude-3');
 
     if (!apiKey) {
         console.log(color.red(`Claude API key is missing.\n${divider}`));
@@ -110,7 +110,7 @@ async function sendClaudeRequest(request, response) {
         }
 
         const requestBody = {
-            /** @type {any} */ system: '',
+            /** @type {any} */ system: [],
             messages: convertedPrompt.messages,
             model: request.body.model,
             max_tokens: request.body.max_tokens,
@@ -121,9 +121,11 @@ async function sendClaudeRequest(request, response) {
             stream: request.body.stream,
         };
         if (useSystemPrompt) {
-            requestBody.system = enableSystemPromptCache
-                ? [{ type: 'text', text: convertedPrompt.systemPrompt, cache_control: { type: 'ephemeral' } }]
-                : convertedPrompt.systemPrompt;
+            if (enableSystemPromptCache && Array.isArray(convertedPrompt.systemPrompt) && convertedPrompt.systemPrompt.length) {
+                convertedPrompt.systemPrompt[convertedPrompt.systemPrompt.length - 1]['cache_control'] = { type: 'ephemeral' };
+            }
+
+            requestBody.system = convertedPrompt.systemPrompt;
         } else {
             delete requestBody.system;
         }
@@ -138,6 +140,10 @@ async function sendClaudeRequest(request, response) {
                 .filter(tool => tool.type === 'function')
                 .map(tool => tool.function)
                 .map(fn => ({ name: fn.name, description: fn.description, input_schema: fn.parameters }));
+
+            if (enableSystemPromptCache && requestBody.tools.length) {
+                requestBody.tools[requestBody.tools.length - 1]['cache_control'] = { type: 'ephemeral' };
+            }
         }
         if (enableSystemPromptCache) {
             additionalHeaders['anthropic-beta'] = 'prompt-caching-2024-07-31';

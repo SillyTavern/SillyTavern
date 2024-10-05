@@ -95,7 +95,7 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
  * @param {string}   userName User name
  */
 function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFix, charName = '', userName = '') {
-    let systemPrompt = '';
+    let systemPrompt = [];
     if (useSysPrompt) {
         // Collect all the system messages up until the first instance of a non-system message, and then remove them from the messages array.
         let i;
@@ -114,7 +114,7 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
                     messages[i].content = `${charName}: ${messages[i].content}`;
                 }
             }
-            systemPrompt += `${messages[i].content}\n\n`;
+            systemPrompt.push({ type: 'text', text: messages[i].content });
         }
 
         messages.splice(0, i);
@@ -246,7 +246,7 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
         }
     });
 
-    return { messages: mergedMessages, systemPrompt: systemPrompt.trim() };
+    return { messages: mergedMessages, systemPrompt: systemPrompt };
 }
 
 /**
