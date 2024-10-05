@@ -658,7 +658,7 @@ async function getSystemMessages() {
             is_user: false,
             is_system: true,
             uses_system_ui: true,
-            mes: await renderTemplateAsync('welcome', { displayVersion } ),
+            mes: await renderTemplateAsync('welcome', { displayVersion }),
         },
         group: {
             name: systemUserName,
@@ -9106,7 +9106,7 @@ function doDrawerOpenClick() {
     const drawer = $(`#${targetDrawerID}`);
     const drawerToggle = drawer.find('.drawer-toggle');
     const drawerWasOpenAlready = drawerToggle.parent().find('.drawer-content').hasClass('openDrawer');
-    if (drawerWasOpenAlready || drawer.hasClass('resizing') ) { return; }
+    if (drawerWasOpenAlready || drawer.hasClass('resizing')) { return; }
     doNavbarIconClick.call(drawerToggle);
 }
 
