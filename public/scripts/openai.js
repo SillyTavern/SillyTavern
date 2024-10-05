@@ -199,7 +199,10 @@ const continue_postfix_types = {
 
 const custom_prompt_post_processing_types = {
     NONE: '',
+    /** @deprecated Use MERGE instead. */
     CLAUDE: 'claude',
+    MERGE: 'merge',
+    STRICT: 'strict',
 };
 
 const sensitiveFields = [
@@ -3042,6 +3045,10 @@ function loadOpenAISettings(data, settings) {
 
     setNamesBehaviorControls();
     setContinuePostfixControls();
+
+    if (oai_settings.custom_prompt_post_processing === custom_prompt_post_processing_types.CLAUDE) {
+        oai_settings.custom_prompt_post_processing = custom_prompt_post_processing_types.MERGE;
+    }
 
     $('#chat_completion_source').val(oai_settings.chat_completion_source).trigger('change');
     $('#oai_max_context_unlocked').prop('checked', oai_settings.max_context_unlocked);

@@ -121,6 +121,8 @@ extras:
   speechToTextModel: Xenova/whisper-small
   textToSpeechModel: Xenova/speecht5_tts
 # -- OPENAI CONFIGURATION --
+# A placeholder message to use in strict prompt post-processing mode when the prompt doesn't start with a user message
+promptPlaceholder: "[Start a new chat]"
 openai:
   # Will send a random user ID to OpenAI completion API
   randomizeUserId: false
