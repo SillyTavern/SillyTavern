@@ -392,7 +392,7 @@ async function validateReverseProxy() {
         new URL(oai_settings.reverse_proxy);
     }
     catch (err) {
-        toastr.error('Entered reverse proxy address is not a valid URL');
+        toastr.error(t`Entered reverse proxy address is not a valid URL`);
         setOnlineStatus('no_connection');
         resultCheckStatus();
         throw err;
@@ -403,7 +403,7 @@ async function validateReverseProxy() {
     const confirmation = skipConfirm || await Popup.show.confirm(t`Connecting To Proxy`, await renderTemplateAsync('proxyConnectionWarning', { proxyURL: DOMPurify.sanitize(oai_settings.reverse_proxy) }));
 
     if (!confirmation) {
-        toastr.error('Update or remove your reverse proxy settings.');
+        toastr.error(t`Update or remove your reverse proxy settings.`);
         setOnlineStatus('no_connection');
         resultCheckStatus();
         throw new Error('Proxy connection denied.');
@@ -1259,15 +1259,15 @@ export async function prepareOpenAIMessages({
         await populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt, messages, messageExamples });
     } catch (error) {
         if (error instanceof TokenBudgetExceededError) {
-            toastr.error('An error occurred while counting tokens: Token budget exceeded.');
+            toastr.error(t`An error occurred while counting tokens: Token budget exceeded.`);
             chatCompletion.log('Token budget exceeded.');
-            promptManager.error = 'Not enough free tokens for mandatory prompts. Raise your token Limit or disable custom prompts.';
+            promptManager.error = t`Not enough free tokens for mandatory prompts. Raise your token Limit or disable custom prompts.`;
         } else if (error instanceof InvalidCharacterNameError) {
-            toastr.warning('An error occurred while counting tokens: Invalid character name');
+            toastr.warning(t`An error occurred while counting tokens: Invalid character name`);
             chatCompletion.log('Invalid character name');
-            promptManager.error = 'The name of at least one character contained whitespaces or special characters. Please check your user and character name.';
+            promptManager.error = t`The name of at least one character contained whitespaces or special characters. Please check your user and character name.`;
         } else {
-            toastr.error('An unknown error occurred while counting tokens. Further information may be available in console.');
+            toastr.error(t`An unknown error occurred while counting tokens. Further information may be available in console.`);
             chatCompletion.log('----- Unexpected error while preparing prompts -----');
             chatCompletion.log(error);
             chatCompletion.log(error.stack);
@@ -1321,11 +1321,8 @@ function tryParseStreamingError(response, decoded) {
     }
 }
 
-function checkQuotaError(data) {
-    const errorText = `<h3>Encountered an error while processing your request.<br>
-    Check you have credits available on your
-    <a href="https://platform.openai.com/account/usage" target="_blank">OpenAI account</a>.<br>
-    If you have sufficient credits, please try again later.</h3>`;
+async function checkQuotaError(data) {
+    const errorText = await renderTemplateAsync('quotaError');
 
     if (!data) {
         return;
@@ -1964,11 +1961,11 @@ async function sendOpenAIRequest(type, messages, signal) {
     else {
         const data = await response.json();
 
-        checkQuotaError(data);
+        await checkQuotaError(data);
         checkModerationError(data);
 
         if (data.error) {
-            toastr.error(data.error.message || response.statusText, 'API returned an error');
+            toastr.error(data.error.message || response.statusText, t`API returned an error`);
             throw new Error(data);
         }
 
@@ -2078,7 +2075,7 @@ function parseOpenAITextLogprobs(logprobs) {
 
 function handleWindowError(err) {
     const text = parseWindowError(err);
-    toastr.error(text, 'Window.ai returned an error');
+    toastr.error(text, t`Window.ai returned an error`);
     throw err;
 }
 
@@ -3186,7 +3183,7 @@ async function getStatusOpen() {
 }
 
 function showWindowExtensionError() {
-    toastr.error('Get it here: <a href="https://windowai.io/" target="_blank">windowai.io</a>', 'Extension is not installed', {
+    toastr.error(t`Get it here:` + ' <a href="https://windowai.io/" target="_blank">windowai.io</a>', t`Extension is not installed`, {
         escapeHtml: false,
         timeOut: 0,
         extendedTimeOut: 0,
@@ -3305,7 +3302,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
             if (triggerUi) $('#settings_preset_openai').append(option).trigger('change');
         }
     } else {
-        toastr.error('Failed to save preset');
+        toastr.error(t`Failed to save preset`);
         throw new Error('Failed to save preset');
     }
 }
@@ -3384,7 +3381,7 @@ async function createNewLogitBiasPreset() {
     }
 
     if (name in oai_settings.bias_presets) {
-        toastr.error('Preset name should be unique.');
+        toastr.error(t`Preset name should be unique.`);
         return;
     }
 
@@ -3428,7 +3425,7 @@ async function onPresetImportFileChange(e) {
     try {
         presetBody = JSON.parse(importedFile);
     } catch (err) {
-        toastr.error('Invalid file');
+        toastr.error(t`Invalid file`);
         return;
     }
 
@@ -3469,7 +3466,7 @@ async function onPresetImportFileChange(e) {
     });
 
     if (!savePresetSettings.ok) {
-        toastr.error('Failed to save preset');
+        toastr.error(t`Failed to save preset`);
         return;
     }
 
@@ -3494,7 +3491,7 @@ async function onPresetImportFileChange(e) {
 
 async function onExportPresetClick() {
     if (!oai_settings.preset_settings_openai) {
-        toastr.error('No preset selected');
+        toastr.error(t`No preset selected`);
         return;
     }
 
@@ -3535,12 +3532,12 @@ async function onLogitBiasPresetImportFileChange(e) {
     e.target.value = '';
 
     if (name in oai_settings.bias_presets) {
-        toastr.error('Preset name should be unique.');
+        toastr.error(t`Preset name should be unique.`);
         return;
     }
 
     if (!Array.isArray(importedFile)) {
-        toastr.error('Invalid logit bias preset file.');
+        toastr.error(t`Invalid logit bias preset file.`);
         return;
     }
 
@@ -3599,16 +3596,16 @@ async function onDeletePresetClick() {
     });
 
     if (!response.ok) {
-        toastr.warning('Preset was not deleted from server');
+        toastr.warning(t`Preset was not deleted from server`);
     } else {
-        toastr.success('Preset deleted');
+        toastr.success(t`Preset deleted`);
     }
 
     saveSettingsDebounced();
 }
 
 async function onLogitBiasPresetDeleteClick() {
-    const value = await callPopup('Delete the preset?', 'confirm');
+    const value = await callPopup(t`Delete the preset?`, 'confirm');
 
     if (!value) {
         return;
@@ -4745,7 +4742,7 @@ function runProxyCallback(_, value) {
     const result = fuse.search(value);
 
     if (result.length === 0) {
-        toastr.warning(`Proxy preset "${value}" not found`);
+        toastr.warning(t`Proxy preset '${value}' not found`);
         return '';
     }
 
@@ -4919,7 +4916,7 @@ export function initOpenAI() {
     $('#update_oai_preset').on('click', async function () {
         const name = oai_settings.preset_settings_openai;
         await saveOpenAIPreset(name, oai_settings);
-        toastr.success('Preset updated');
+        toastr.success(t`Preset updated`);
     });
 
     $('#impersonation_prompt_restore').on('click', function () {

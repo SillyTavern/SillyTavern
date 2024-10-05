@@ -314,6 +314,12 @@ input[type='checkbox']:focus-visible {
     display: inline-block;
 }
 
+.mes_text ol,
+.mes_text ul {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
 .mes_text br,
 .mes_bias br {
     content: ' ';
@@ -1218,8 +1224,9 @@ textarea.autoSetHeight {
 }
 
 input,
-select {
-    font-family: var(--mainFontFamily);
+select,
+button {
+    font-family: var(--mainFontFamily), sans-serif;
     font-size: var(--mainFontSize);
     color: var(--SmartThemeBodyColor);
 }
