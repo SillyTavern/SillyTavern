@@ -529,7 +529,10 @@ export class ToolManager {
         const preElement = document.createElement('pre');
         const codeElement = document.createElement('code');
         codeElement.classList.add('language-json');
-        data.forEach(i => i.parameters = tryParse(i.parameters));
+        data.forEach(i => {
+            i.parameters = tryParse(i.parameters);
+            i.result = tryParse(i.result);
+        });
         codeElement.textContent = JSON.stringify(data, null, 2);
         const toolNames = data.map(i => i.displayName || i.name).join(', ');
         summaryElement.textContent = `Tool calls: ${toolNames}`;
