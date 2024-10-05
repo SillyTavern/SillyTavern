@@ -2002,15 +2002,33 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
             });
         }
 
-        mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(".+?")|(\u201C.+?\u201D)/gm, function (match, p1, p2) {
-            if (p1) {
-                return '<q>"' + p1.replace(/"/g, '') + '"</q>';
-            } else if (p2) {
-                return '<q>“' + p2.replace(/\u201C|\u201D/g, '') + '”</q>';
-            } else {
-                return match;
+        mes = mes.replace(
+            /```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(".*?")|(\u201C.*?\u201D)|(\u00AB.*?\u00BB)|(\u300C.*?\u300D)|(\u300E.*?\u300F)|(\uFF02.*?\uFF02)/gm,
+            function (match, p1, p2, p3, p4, p5, p6) {
+                if (p1) {
+                    // English double quotes
+                    return `<q>"${p1.slice(1, -1)}"</q>`;
+                } else if (p2) {
+                    // Curly double quotes “ ”
+                    return `<q>“${p2.slice(1, -1)}”</q>`;
+                } else if (p3) {
+                    // Guillemets « »
+                    return `<q>«${p3.slice(1, -1)}»</q>`;
+                } else if (p4) {
+                    // Corner brackets 「 」
+                    return `<q>「${p4.slice(1, -1)}」</q>`;
+                } else if (p5) {
+                    // White corner brackets 『 』
+                    return `<q>『${p5.slice(1, -1)}』</q>`;
+                } else if (p6) {
+                    // Fullwidth quotes ＂ ＂
+                    return `<q>＂${p6.slice(1, -1)}＂</q>`;
+                } else {
+                    // Return the original match if no quotes are found
+                    return match;
+                }
             }
-        });
+        );
 
         // Restore double quotes in tags
         if (!power_user.encode_tags) {
