@@ -522,8 +522,18 @@ function convertMistralMessages(messages, charName = '', userName = '') {
         lastMsg.prefix = true;
     }
 
+    const sanitizeToolId = (id) => id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 9);
+
     // Doesn't support completion names, so prepend if not already done by the frontend (e.g. for group chats).
     messages.forEach(msg => {
+        if ('tool_calls' in msg && Array.isArray(msg.tool_calls)) {
+            msg.tool_calls.forEach(tool => {
+                tool.id = sanitizeToolId(tool.id);
+            });
+        }
+        if ('tool_call_id' in msg && msg.role === 'tool') {
+            msg.tool_call_id = sanitizeToolId(msg.tool_call_id);
+        }
         if (msg.role === 'system' && msg.name === 'example_assistant') {
             if (charName && !msg.content.startsWith(`${charName}: `)) {
                 msg.content = `${charName}: ${msg.content}`;
