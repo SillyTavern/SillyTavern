@@ -544,6 +544,28 @@ function convertMistralMessages(messages, charName = '', userName = '') {
         }
     });
 
+    // If user role message immediately follows a tool message, append it to the last user message
+    const fixToolMessages = () => {
+        let rerun = true;
+        while (rerun) {
+            rerun = false;
+            messages.forEach((message, i) => {
+                if (i === messages.length - 1) {
+                    return;
+                }
+                if (message.role === 'tool' && messages[i + 1].role === 'user') {
+                    const lastUserMessage = messages.slice(0, i).findLastIndex(m => m.role === 'user' && m.content);
+                    if (lastUserMessage !== -1) {
+                        messages[lastUserMessage].content += '\n\n' + messages[i + 1].content;
+                        messages.splice(i + 1, 1);
+                        rerun = true;
+                    }
+                }
+            });
+        }
+    }
+    fixToolMessages();
+
     // If system role message immediately follows an assistant message, change its role to user
     for (let i = 0; i < messages.length - 1; i++) {
         if (messages[i].role === 'assistant' && messages[i + 1].role === 'system') {
