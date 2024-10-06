@@ -91,11 +91,12 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
  * @param {object[]} messages Array of messages
  * @param {string}   prefillString User determined prefill string
  * @param {boolean}  useSysPrompt See if we want to use a system prompt
+ * @param {boolean}  useTools See if we want to use tools
  * @param {string}   humanMsgFix Add Human message between system prompt and assistant.
  * @param {string}   charName Character name
  * @param {string}   userName User name
  */
-function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFix, charName = '', userName = '') {
+function convertClaudeMessages(messages, prefillString, useSysPrompt, useTools, humanMsgFix, charName = '', userName = '') {
     let systemPrompt = [];
     if (useSysPrompt) {
         // Collect all the system messages up until the first instance of a non-system message, and then remove them from the messages array.
@@ -247,6 +248,26 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
             mergedMessages.push(message);
         }
     });
+
+    if (!useTools) {
+        mergedMessages.forEach((message) => {
+            message.content.forEach((content) => {
+                if (content.type === 'tool_use') {
+                    content.type = 'text';
+                    content.text = JSON.stringify(content.input);
+                    delete content.id;
+                    delete content.name;
+                    delete content.input;
+                }
+                if (content.type === 'tool_result') {
+                    content.type = 'text';
+                    content.text = content.content;
+                    delete content.tool_use_id;
+                    delete content.content;
+                }
+            });
+        });
+    }
 
     return { messages: mergedMessages, systemPrompt: systemPrompt };
 }
