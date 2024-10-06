@@ -89,6 +89,15 @@ function tryParse(str) {
 }
 
 /**
+ * Stringifies an object if it is not already a string.
+ * @param {any} obj The object to stringify
+ * @returns {string} A JSON string representation of the object.
+ */
+function stringify(obj) {
+    return typeof obj === 'string' ? obj : JSON.stringify(obj);
+}
+
+/**
  * A class that represents a tool definition.
  */
 class ToolDefinition {
@@ -571,7 +580,7 @@ export class ToolManager {
                 id,
                 displayName,
                 name,
-                parameters,
+                parameters: stringify(parameters),
                 result: toolResult,
             };
             result.invocations.push(invocation);

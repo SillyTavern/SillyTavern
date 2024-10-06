@@ -131,13 +131,14 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
     }
 
     // Now replace all further messages that have the role 'system' with the role 'user'. (or all if we're not using one)
+    const parse = (str) => typeof str === 'string' ? JSON.parse(str) : str;
     messages.forEach((message) => {
         if (message.role === 'assistant' && message.tool_calls) {
             message.content = message.tool_calls.map((tc) => ({
                 type: 'tool_use',
                 id: tc.id,
                 name: tc.function.name,
-                input: tc.function.arguments,
+                input: parse(tc.function.arguments),
             }));
         }
 
