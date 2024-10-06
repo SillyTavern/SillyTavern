@@ -577,15 +577,15 @@ async function tryAutoLogin(request) {
         return false;
     }
 
-    if (await singler_user_login(request)) {
+    if (await singleUserLogin(request)) {
         return true;
     }
 
-    if (AUTHELIA_AUTH && await authelia_user_login(request)) {
+    if (AUTHELIA_AUTH && await autheliaUserLogin(request)) {
         return true;
     }
 
-    if (PERUSER_BASIC_AUTH && await basic_user_login(request)) {
+    if (PERUSER_BASIC_AUTH && await basicUserLogin(request)) {
         return true;
     }
 
@@ -597,7 +597,7 @@ async function tryAutoLogin(request) {
  * @param {import('express').Request} request Request object
  * @returns {Promise<boolean>} Whether auto-login was performed
  */
-async function singler_user_login(request) {
+async function singleUserLogin(request) {
     if (!request.session) {
         return false;
     }
@@ -619,7 +619,7 @@ async function singler_user_login(request) {
  * @param {import('express').Request} request Request object
  * @returns {Promise<boolean>} Whether auto-login was performed
  */
-async function authelia_user_login(request) {
+async function autheliaUserLogin(request) {
     if (!request.session) {
         return false;
     }
@@ -647,7 +647,7 @@ async function authelia_user_login(request) {
  * @param {import('express').Request} request Request object
  * @returns {Promise<boolean>} Whether auto-login was performed
  */
-async function basic_user_login(request) {
+async function basicUserLogin(request) {
     if (!request.session) {
         return false;
     }
