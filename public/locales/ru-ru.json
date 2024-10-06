@@ -1953,5 +1953,11 @@
     "Delete the template": "Удалить шаблон",
     "Rename current prompt": "Переименовать промпт",
     "Select your current Context Template": "Выберите активный шаблон контекста",
-    "Select your current Instruct Template": "Выберите активный шаблон Instruct-режима"
+    "Select your current Instruct Template": "Выберите активный шаблон Instruct-режима",
+    "and connect to an": "и подключитесь к",
+    "You can add more": "Можете добавить больше",
+    "from other websites": "с других сайтов.",
+    "Go to the": "Загляните в",
+    "to install additional features.": ", чтобы установить разные дополнительные ресурсы.",
+    "or_welcome": "; также доступен"
 }
