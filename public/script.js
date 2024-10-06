@@ -948,6 +948,7 @@ async function firstLoadInit() {
     initSystemPrompts();
     initExtensions();
     initExtensionSlashCommands();
+    ToolManager.initToolSlashCommands();
     await initPresetManager();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
