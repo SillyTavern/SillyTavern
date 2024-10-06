@@ -732,19 +732,15 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             /** @type {import('./tool-calling.js').ToolInvocation[]} */
             const invocations = chatPrompt.invocations;
             const toolCallMessage = new Message(chatMessage.role, undefined, 'toolCall-' + chatMessage.identifier);
+            const toolResultMessages = invocations.slice().reverse().map((invocation) => new Message('tool', invocation.result || '[No content]', invocation.id));
             toolCallMessage.setToolCalls(invocations);
-            if (chatCompletion.canAfford(toolCallMessage)) {
-                chatCompletion.reserveBudget(toolCallMessage);
-                for (const invocation of invocations.slice().reverse()) {
-                    const toolResultMessage = new Message('tool', invocation.result || '[No content]', invocation.id);
-                    const canAfford = chatCompletion.canAfford(toolResultMessage);
-                    if (!canAfford) {
-                        break;
-                    }
-                    chatCompletion.insertAtStart(toolResultMessage, 'chatHistory');
+            if (chatCompletion.canAffordAll([toolCallMessage, ...toolResultMessages])) {
+                for (const resultMessage of toolResultMessages) {
+                    chatCompletion.insertAtStart(resultMessage, 'chatHistory');
                 }
-                chatCompletion.freeBudget(toolCallMessage);
                 chatCompletion.insertAtStart(toolCallMessage, 'chatHistory');
+            } else {
+                break;
             }
 
             continue;
@@ -2650,6 +2646,15 @@ export class ChatCompletion {
      */
     canAfford(message) {
         return 0 <= this.tokenBudget - message.getTokens();
+    }
+
+    /**
+     * Checks if the token budget can afford the tokens of all the specified messages.
+     * @param {Message[]} messages - The messages to check for affordability.
+     * @returns {boolean} True if the budget can afford all the messages, false otherwise.
+     */
+    canAffordAll(messages) {
+        return 0 <= this.tokenBudget - messages.reduce((total, message) => total + message.getTokens(), 0);
     }
 
     /**
