@@ -2029,7 +2029,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
                     // Return the original match if no quotes are found
                     return match;
                 }
-            }
+            },
         );
 
         // Restore double quotes in tags

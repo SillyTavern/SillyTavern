@@ -1715,7 +1715,6 @@ async function sendOpenAIRequest(type, messages, signal) {
     messages = messages.filter(msg => msg && typeof msg === 'object');
 
     let logit_bias = {};
-    const messageId = getNextMessageId(type);
     const isClaude = oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
     const isOpenRouter = oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER;
     const isScale = oai_settings.chat_completion_source == chat_completion_sources.SCALE;

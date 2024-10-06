@@ -563,7 +563,7 @@ function convertMistralMessages(messages, charName = '', userName = '') {
                 }
             });
         }
-    }
+    };
     fixToolMessages();
 
     // If system role message immediately follows an assistant message, change its role to user
