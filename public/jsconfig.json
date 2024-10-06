@@ -8,7 +8,11 @@
         "allowSyntheticDefaultImports": true
     },
     "exclude": [
-        "node_modules"
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/.git/**",
+        "lib/**",
+        "**/*.min.js"
     ],
     "typeAcquisition": {
         "include": [
