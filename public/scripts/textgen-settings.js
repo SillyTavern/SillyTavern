@@ -916,6 +916,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
         /** @type {import('./logprobs.js').TokenLogprobs | null} */
         let logprobs = null;
         const swipes = [];
+        const toolCalls = [];
         while (true) {
             const { done, value } = await reader.read();
             if (done) return;
@@ -934,7 +935,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
                 logprobs = parseTextgenLogprobs(newText, data.choices?.[0]?.logprobs || data?.completion_probabilities);
             }
 
-            yield { text, swipes, logprobs };
+            yield { text, swipes, logprobs, toolCalls };
         }
     };
 }

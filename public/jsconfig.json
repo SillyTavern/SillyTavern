@@ -8,16 +8,16 @@
         "allowSyntheticDefaultImports": true
     },
     "exclude": [
-        "node_modules"
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/.git/**",
+        "lib/**",
+        "**/*.min.js"
     ],
     "typeAcquisition": {
         "include": [
-            "jquery",
             "@popperjs/core",
-            "toastr",
             "showdown",
-            "dompurify",
-            "moment",
             "seedrandom",
             "showdown-katex",
             "droll",

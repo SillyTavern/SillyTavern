@@ -11,15 +11,14 @@
         "resolveJsonModule": true
     },
     "exclude": [
-        "node_modules",
-        "**/node_modules/*",
-        "public/lib",
-        "backups/*",
-        "data/*",
-        "**/dist/*",
-        "dist/*",
-        "cache/*",
-        "src/tokenizers/*",
-        "docker/*",
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/.git/**",
+        "public/lib/**",
+        "backups/**",
+        "data/**",
+        "cache/**",
+        "src/tokenizers/**",
+        "docker/**"
     ]
 }

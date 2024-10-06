@@ -463,3 +463,14 @@ body.expandMessageActions .mes .mes_buttons .extraMesButtonsHint {
 label[for="trim_spaces"]:has(input:checked) i.warning {
     display: none;
 }
+
+#claude_function_prefill_warning {
+    display: none;
+}
+
+#openai_settings:has(#openai_function_calling:checked):has(#claude_assistant_prefill:not(:placeholder-shown), #claude_assistant_impersonation:not(:placeholder-shown)) #claude_function_prefill_warning {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 10px 0;
+}

@@ -70,6 +70,7 @@ import { renderTemplateAsync } from './templates.js';
 import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { Popup, POPUP_RESULT } from './popup.js';
 import { t } from './i18n.js';
+import { ToolManager } from './tool-calling.js';
 
 export {
     openai_messages_count,
@@ -198,7 +199,10 @@ const continue_postfix_types = {
 
 const custom_prompt_post_processing_types = {
     NONE: '',
+    /** @deprecated Use MERGE instead. */
     CLAUDE: 'claude',
+    MERGE: 'merge',
+    STRICT: 'strict',
 };
 
 const sensitiveFields = [
@@ -453,7 +457,8 @@ function setOpenAIMessages(chat) {
         if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
         const name = chat[j]['name'];
         const image = chat[j]?.extra?.image;
-        messages[i] = { 'role': role, 'content': content, name: name, 'image': image };
+        const invocations = chat[j]?.extra?.tool_invocations;
+        messages[i] = { 'role': role, 'content': content, name: name, 'image': image, 'invocations': invocations };
         j++;
     }
 
@@ -701,6 +706,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     }
 
     const imageInlining = isImageInliningSupported();
+    const canUseTools = ToolManager.isToolCallingSupported();
 
     // Insert chat messages as long as there is budget available
     const chatPool = [...messages].reverse();
@@ -720,6 +726,28 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
         if (imageInlining && chatPrompt.image) {
             await chatMessage.addImage(chatPrompt.image);
+        }
+
+        if (canUseTools && Array.isArray(chatPrompt.invocations)) {
+            /** @type {import('./tool-calling.js').ToolInvocation[]} */
+            const invocations = chatPrompt.invocations;
+            const toolCallMessage = new Message(chatMessage.role, undefined, 'toolCall-' + chatMessage.identifier);
+            toolCallMessage.setToolCalls(invocations);
+            if (chatCompletion.canAfford(toolCallMessage)) {
+                chatCompletion.reserveBudget(toolCallMessage);
+                for (const invocation of invocations.slice().reverse()) {
+                    const toolResultMessage = new Message('tool', invocation.result || '[No content]', invocation.id);
+                    const canAfford = chatCompletion.canAfford(toolResultMessage);
+                    if (!canAfford) {
+                        break;
+                    }
+                    chatCompletion.insertAtStart(toolResultMessage, 'chatHistory');
+                }
+                chatCompletion.freeBudget(toolCallMessage);
+                chatCompletion.insertAtStart(toolCallMessage, 'chatHistory');
+            }
+
+            continue;
         }
 
         if (chatCompletion.canAfford(chatMessage)) {
@@ -1262,7 +1290,7 @@ export async function prepareOpenAIMessages({
     const eventData = { chat, dryRun };
     await eventSource.emit(event_types.CHAT_COMPLETION_PROMPT_READY, eventData);
 
-    openai_messages_count = chat.filter(x => x?.role === 'user' || x?.role === 'assistant')?.length || 0;
+    openai_messages_count = chat.filter(x => !x?.tool_calls && (x?.role === 'user' || x?.role === 'assistant'))?.length || 0;
 
     return [chat, promptManager.tokenHandler.counts];
 }
@@ -1687,7 +1715,6 @@ async function sendOpenAIRequest(type, messages, signal) {
     messages = messages.filter(msg => msg && typeof msg === 'object');
 
     let logit_bias = {};
-    const messageId = getNextMessageId(type);
     const isClaude = oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
     const isOpenRouter = oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER;
     const isScale = oai_settings.chat_completion_source == chat_completion_sources.SCALE;
@@ -1860,8 +1887,8 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['seed'] = oai_settings.seed;
     }
 
-    if (isFunctionCallingSupported() && !stream) {
-        await registerFunctionTools(type, generate_data);
+    if (!canMultiSwipe && ToolManager.canPerformToolCalls(type)) {
+        await ToolManager.registerFunctionToolsOpenAI(generate_data);
     }
 
     if (isOAI && oai_settings.openai_model.startsWith('o1-')) {
@@ -1908,6 +1935,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         return async function* streamData() {
             let text = '';
             const swipes = [];
+            const toolCalls = [];
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
@@ -1923,7 +1951,9 @@ async function sendOpenAIRequest(type, messages, signal) {
                     text += getStreamingReply(parsed);
                 }
 
-                yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed) };
+                ToolManager.parseToolCalls(toolCalls, parsed);
+
+                yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed), toolCalls: toolCalls };
             }
         };
     }
@@ -1945,145 +1975,8 @@ async function sendOpenAIRequest(type, messages, signal) {
             delay(1).then(() => saveLogprobsForActiveMessage(logprobs, null));
         }
 
-        if (isFunctionCallingSupported()) {
-            await checkFunctionToolCalls(data);
-        }
-
         return data;
     }
-}
-
-/**
- * Register function tools for the next chat completion request.
- * @param {string} type Generation type
- * @param {object} data Generation data
- */
-async function registerFunctionTools(type, data) {
-    let toolChoice = 'auto';
-    const tools = [];
-
-    /**
-     * @type {registerFunctionTool}
-     */
-    const registerFunctionTool = (name, description, parameters, required) => {
-        tools.push({
-            type: 'function',
-            function: {
-                name,
-                description,
-                parameters,
-            },
-        });
-
-        if (required) {
-            toolChoice = 'required';
-        }
-    };
-
-    /**
-     * @type {FunctionToolRegister}
-     */
-    const args = {
-        type,
-        data,
-        registerFunctionTool,
-    };
-
-    await eventSource.emit(event_types.LLM_FUNCTION_TOOL_REGISTER, args);
-
-    if (tools.length) {
-        console.log('Registered function tools:', tools);
-
-        data['tools'] = tools;
-        data['tool_choice'] = toolChoice;
-    }
-}
-
-async function checkFunctionToolCalls(data) {
-    const oaiCompat = [
-        chat_completion_sources.OPENAI,
-        chat_completion_sources.CUSTOM,
-        chat_completion_sources.MISTRALAI,
-        chat_completion_sources.OPENROUTER,
-        chat_completion_sources.GROQ,
-    ];
-    if (oaiCompat.includes(oai_settings.chat_completion_source)) {
-        if (!Array.isArray(data?.choices)) {
-            return;
-        }
-
-        // Find a choice with 0-index
-        const choice = data.choices.find(choice => choice.index === 0);
-
-        if (!choice) {
-            return;
-        }
-
-        const toolCalls = choice.message.tool_calls;
-
-        if (!Array.isArray(toolCalls)) {
-            return;
-        }
-
-        for (const toolCall of toolCalls) {
-            if (typeof toolCall.function !== 'object') {
-                continue;
-            }
-
-            /** @type {FunctionToolCall} */
-            const args = toolCall.function;
-            console.log('Function tool call:', toolCall);
-            await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
-        }
-    }
-
-    if ([chat_completion_sources.CLAUDE].includes(oai_settings.chat_completion_source)) {
-        if (!Array.isArray(data?.content)) {
-            return;
-        }
-
-        for (const content of data.content) {
-            if (content.type === 'tool_use') {
-                /** @type {FunctionToolCall} */
-                const args = { name: content.name, arguments: JSON.stringify(content.input) };
-                await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
-            }
-        }
-    }
-
-    if ([chat_completion_sources.COHERE].includes(oai_settings.chat_completion_source)) {
-        if (!Array.isArray(data?.tool_calls)) {
-            return;
-        }
-
-        for (const toolCall of data.tool_calls) {
-            /** @type {FunctionToolCall} */
-            const args = { name: toolCall.name, arguments: JSON.stringify(toolCall.parameters) };
-            console.log('Function tool call:', toolCall);
-            await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
-        }
-    }
-}
-
-export function isFunctionCallingSupported() {
-    if (main_api !== 'openai') {
-        return false;
-    }
-
-    if (!oai_settings.function_calling) {
-        return false;
-    }
-
-    const supportedSources = [
-        chat_completion_sources.OPENAI,
-        chat_completion_sources.COHERE,
-        chat_completion_sources.CUSTOM,
-        chat_completion_sources.MISTRALAI,
-        chat_completion_sources.CLAUDE,
-        chat_completion_sources.OPENROUTER,
-        chat_completion_sources.GROQ,
-    ];
-    return supportedSources.includes(oai_settings.chat_completion_source);
 }
 
 function getStreamingReply(data) {
@@ -2323,6 +2216,8 @@ class Message {
     content;
     /** @type {string} */
     name;
+    /** @type {object} */
+    tool_call = null;
 
     /**
      * @constructor
@@ -2345,6 +2240,22 @@ class Message {
         } else {
             this.tokens = 0;
         }
+    }
+
+    /**
+     * Reconstruct the message from a tool invocation.
+     * @param {import('./tool-calling.js').ToolInvocation[]} invocations
+     */
+    setToolCalls(invocations) {
+        this.tool_calls = invocations.map(i => ({
+            id: i.id,
+            type: 'function',
+            function: {
+                arguments: i.parameters,
+                name: i.name,
+            },
+        }));
+        this.tokens = tokenHandler.count({ role: this.role, tool_calls: JSON.stringify(this.tool_calls) });
     }
 
     setName(name) {
@@ -2483,13 +2394,20 @@ class MessageCollection {
     }
 
     /**
-     * Get chat in the format of {role, name, content}.
+     * Get chat in the format of {role, name, content, tool_calls}.
      * @returns {Array} Array of objects with role, name, and content properties.
      */
     getChat() {
         return this.collection.reduce((acc, message) => {
-            const name = message.name;
-            if (message.content) acc.push({ role: message.role, ...(name && { name }), content: message.content });
+            if (message.content || message.tool_calls) {
+                acc.push({
+                    role: message.role,
+                    content: message.content,
+                    ...(message.name && { name: message.name }),
+                    ...(message.tool_calls && { tool_calls: message.tool_calls }),
+                    ...(message.role === 'tool' && { tool_call_id: message.identifier }),
+                });
+            }
             return acc;
         }, []);
     }
@@ -2694,7 +2612,7 @@ export class ChatCompletion {
         this.checkTokenBudget(message, message.identifier);
 
         const index = this.findMessageIndex(identifier);
-        if (message.content) {
+        if (message.content || message.tool_calls) {
             if ('start' === position) this.messages.collection[index].collection.unshift(message);
             else if ('end' === position) this.messages.collection[index].collection.push(message);
             else if (typeof position === 'number') this.messages.collection[index].collection.splice(position, 0, message);
@@ -2763,8 +2681,14 @@ export class ChatCompletion {
         for (let item of this.messages.collection) {
             if (item instanceof MessageCollection) {
                 chat.push(...item.getChat());
-            } else if (item instanceof Message && item.content) {
-                const message = { role: item.role, content: item.content, ...(item.name ? { name: item.name } : {}) };
+            } else if (item instanceof Message && (item.content || item.tool_calls)) {
+                const message = {
+                    role: item.role,
+                    content: item.content,
+                    ...(item.name ? { name: item.name } : {}),
+                    ...(item.tool_calls ? { tool_calls: item.tool_calls } : {}),
+                    ...(item.role === 'tool' ? { tool_call_id: item.identifier } : {}),
+                };
                 chat.push(message);
             } else {
                 this.log(`Skipping invalid or empty message in collection: ${JSON.stringify(item)}`);
@@ -3117,6 +3041,10 @@ function loadOpenAISettings(data, settings) {
 
     setNamesBehaviorControls();
     setContinuePostfixControls();
+
+    if (oai_settings.custom_prompt_post_processing === custom_prompt_post_processing_types.CLAUDE) {
+        oai_settings.custom_prompt_post_processing = custom_prompt_post_processing_types.MERGE;
+    }
 
     $('#chat_completion_source').val(oai_settings.chat_completion_source).trigger('change');
     $('#oai_max_context_unlocked').prop('checked', oai_settings.max_context_unlocked);
@@ -4014,7 +3942,7 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_32k);
         } else if (value === 'text-bison-001') {
             $('#openai_max_context').attr('max', max_8k);
-        // The ultra endpoints are possibly dead:
+            // The ultra endpoints are possibly dead:
         } else if (value.includes('gemini-1.0-ultra') || value === 'gemini-ultra') {
             $('#openai_max_context').attr('max', max_32k);
         } else {
