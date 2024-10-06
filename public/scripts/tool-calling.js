@@ -211,6 +211,12 @@ export class ToolManager {
     static #INPUT_DELTA_KEY = '__input_json_delta';
 
     /**
+     * The maximum number of times to recurse when parsing tool calls.
+     * @type {number}
+     */
+    static RECURSE_LIMIT = 5;
+
+    /**
      * Returns an Array of all tools that have been registered.
      * @type {ToolDefinition[]}
      */
