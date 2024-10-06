@@ -67,6 +67,7 @@ const initiators = {
 };
 
 const generationMode = {
+    TOOL: -2,
     MESSAGE: -1,
     CHARACTER: 0,
     USER: 1,
@@ -89,6 +90,7 @@ const multimodalMap = {
 };
 
 const modeLabels = {
+    [generationMode.TOOL]: 'Function Tool Prompt Description',
     [generationMode.MESSAGE]: 'Chat Message Template',
     [generationMode.CHARACTER]: 'Character ("Yourself")',
     [generationMode.FACE]: 'Portrait ("Your Face")',
@@ -126,8 +128,12 @@ const messageTrigger = {
 };
 
 const promptTemplates = {
-    // Not really a prompt template, rather an outcome message template
+    // Not really a prompt template, rather an outcome message template and function tool prompt
     [generationMode.MESSAGE]: '[{{char}} sends a picture that contains: {{prompt}}].',
+    [generationMode.TOOL]: [
+        'The text prompt used to generate the image.',
+        'Must represent an exhaustive description of the desired image that will allow an artist or a photographer to perfectly recreate it.',
+    ].join(' '),
     [generationMode.CHARACTER]: 'In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase \'full body portrait,\'',
     //face-specific prompt
     [generationMode.FACE]: 'In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, facial features and expressions, occupation, hair and hair accessories (if any), what they are wearing on their upper body (if anything). Do not describe anything below their neck. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase \'close up facial portrait,\'',
@@ -533,6 +539,9 @@ function addPromptTemplates() {
             .on('click', () => {
                 textarea.val(promptTemplates[name]);
                 extension_settings.sd.prompts[name] = promptTemplates[name];
+                if (String(name) === String(generationMode.TOOL)) {
+                    registerFunctionTool();
+                }
                 saveSettingsDebounced();
             });
         const container = $('<div></div>')
@@ -3857,10 +3866,7 @@ function registerFunctionTool() {
             properties: {
                 prompt: {
                     type: 'string',
-                    description: [
-                        'The text prompt used to generate the image.',
-                        'Must represent an exhaustive description of the desired image that will allow an artist or a photographer to perfectly recreate it.',
-                    ].join(' '),
+                    description: extension_settings.sd.prompts[generationMode.TOOL] || promptTemplates[generationMode.TOOL],
                 },
             },
             required: [
@@ -3871,7 +3877,8 @@ function registerFunctionTool() {
             if (!isValidState()) throw new Error('Image generation is not configured.');
             if (!args) throw new Error('Missing arguments');
             if (!args.prompt) throw new Error('Missing prompt');
-            return generatePicture(initiators.tool, {}, args.prompt);
+            const url = await generatePicture(initiators.tool, {}, args.prompt);
+            return encodeURI(url);
         },
         formatMessage: () => 'Generating an image...',
     });
