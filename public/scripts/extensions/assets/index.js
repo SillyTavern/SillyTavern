@@ -184,6 +184,7 @@ function downloadAssetsList(url) {
                         const url = isValidUrl(asset['url']) ? asset['url'] : '';
                         const title = assetType === 'extension' ? `Extension repo/guide: ${url}` : 'Preview in browser';
                         const previewIcon = (assetType === 'extension' || assetType === 'character') ? 'fa-arrow-up-right-from-square' : 'fa-headphones-simple';
+                        const toolTag = assetType === 'extension' && asset['tool'];
 
                         const assetBlock = $('<i></i>')
                             .append(element)
@@ -193,11 +194,19 @@ function downloadAssetsList(url) {
                                             <a class="asset_preview" href="${url}" target="_blank" title="${title}">
                                                 <i class="fa-solid fa-sm ${previewIcon}"></i>
                                             </a>
+                                            ${toolTag ? '<span class="tag" title="Adds a function tool"><i class="fa-solid fa-sm fa-wrench"></i> Tool</span>' : ''}
                                         </span>
                                         <small class="asset-description">
                                             ${description}
                                         </small>
                                      </div>`);
+
+                        assetBlock.find('.tag').on('click', function (e) {
+                            const a = document.createElement('a');
+                            a.href = 'https://docs.sillytavern.app/for-contributors/function-calling/';
+                            a.target = '_blank';
+                            a.click();
+                        });
 
                         if (assetType === 'character') {
                             if (asset.highlight) {
@@ -354,7 +363,7 @@ async function openCharacterBrowser(forceDefault) {
     for (const character of characters.sort((a, b) => a.name.localeCompare(b.name))) {
         const listElement = template.find(character.highlight ? '.contestWinnersList' : '.featuredCharactersList');
         const characterElement = $(await renderExtensionTemplateAsync(MODULE_NAME, 'character', character));
-        const downloadButton  = characterElement.find('.characterAssetDownloadButton');
+        const downloadButton = characterElement.find('.characterAssetDownloadButton');
         const checkMark = characterElement.find('.characterAssetCheckMark');
         const isInstalled = isAssetInstalled('character', character.id);
 
