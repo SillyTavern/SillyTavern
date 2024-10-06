@@ -545,7 +545,7 @@ function convertMistralMessages(messages, charName = '', userName = '') {
         lastMsg.prefix = true;
     }
 
-    const sanitizeToolId = (id) => crypto.hash('sha512', id, 'hex').slice(0, 9);
+    const sanitizeToolId = (id) => crypto.createHash('sha512').update(id).digest('hex').slice(0, 9);
 
     // Doesn't support completion names, so prepend if not already done by the frontend (e.g. for group chats).
     messages.forEach(msg => {
