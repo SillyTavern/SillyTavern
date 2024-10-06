@@ -158,7 +158,7 @@ class ToolDefinition {
                 description: this.#description,
                 parameters: this.#parameters,
             },
-            toString: function() {
+            toString: function () {
                 return `<div><b>${this.function.name}</b></div><div><small>${this.function.description}</small></div><pre class="justifyLeft wordBreakAll"><code class="flex padding5">${JSON.stringify(this.function.parameters, null, 2)}</code></pre><hr>`;
             },
         };
@@ -581,6 +581,19 @@ export class ToolManager {
     }
 
     /**
+     * Groups tool names by count.
+     * @param {string[]} toolNames Tool names
+     * @returns {string} Grouped tool names
+     */
+    static #groupToolNames(toolNames) {
+        const toolCounts = toolNames.reduce((acc, name) => {
+            acc[name] = (acc[name] || 0) + 1;
+            return acc;
+        }, {});
+        return Object.entries(toolCounts).map(([name, count]) => count > 1 ? `${name} (${count})` : name).join(', ');
+    }
+
+    /**
      * Formats a message with tool invocations.
      * @param {ToolInvocation[]} invocations Tool invocations.
      * @returns {string} Formatted message with tool invocations.
@@ -597,8 +610,8 @@ export class ToolManager {
             i.result = tryParse(i.result);
         });
         codeElement.textContent = JSON.stringify(data, null, 2);
-        const toolNames = data.map(i => i.displayName || i.name).join(', ');
-        summaryElement.textContent = `Tool calls: ${toolNames}`;
+        const toolNames = data.map(i => i.displayName || i.name);
+        summaryElement.textContent = `Tool calls: ${this.#groupToolNames(toolNames)}`;
         preElement.append(codeElement);
         detailsElement.append(summaryElement, preElement);
         return detailsElement.outerHTML;
