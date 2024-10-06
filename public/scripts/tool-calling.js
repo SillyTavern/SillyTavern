@@ -158,8 +158,8 @@ class ToolDefinition {
                 description: this.#description,
                 parameters: this.#parameters,
             },
-            toString: (/** @type {ToolDefinitionOpenAI} */ tool) => {
-                return `${tool?.function?.name} - ${tool?.function?.description}\n${JSON.stringify(tool?.function?.parameters, null, 2)}`;
+            toString: function() {
+                return `<div><b>${this.function.name}</b></div><div><small>${this.function.description}</small></div><pre class="justifyLeft wordBreakAll"><code class="flex padding5">${JSON.stringify(this.function.parameters, null, 2)}</code></pre><hr>`;
             },
         };
     }
@@ -666,7 +666,7 @@ export class ToolManager {
             callback: async (args) => {
                 /** @type {any} */
                 const returnType = String(args?.return ?? 'popup-html').trim().toLowerCase();
-                const objectToStringFunc = (tool) => tool.toString();
+                const objectToStringFunc = (tools) => Array.isArray(tools) ? tools.map(x => x.toString()).join('\n\n') : tools.toString();
                 const tools = ToolManager.tools.map(tool => tool.toFunctionOpenAI());
                 return await slashCommandReturnHelper.doReturn(returnType ?? 'popup-html', tools ?? [], { objectToStringFunc });
             },
