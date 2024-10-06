@@ -1,5 +1,6 @@
 require('./polyfill.js');
 const { getConfigValue } = require('./util.js');
+const crypto = require('crypto');
 
 const PROMPT_PLACEHOLDER = getConfigValue('promptPlaceholder', 'Let\'s get started.');
 
@@ -522,7 +523,7 @@ function convertMistralMessages(messages, charName = '', userName = '') {
         lastMsg.prefix = true;
     }
 
-    const sanitizeToolId = (id) => id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 9);
+    const sanitizeToolId = (id) => crypto.hash('sha512', id, 'base64').slice(0, 9);
 
     // Doesn't support completion names, so prepend if not already done by the frontend (e.g. for group chats).
     messages.forEach(msg => {
