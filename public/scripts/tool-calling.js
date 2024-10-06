@@ -487,7 +487,7 @@ export class ToolManager {
      * @returns {boolean} Whether tool calls can be performed for the given type
      */
     static canPerformToolCalls(type) {
-        const noToolCallTypes = ['swipe', 'impersonate', 'quiet', 'continue'];
+        const noToolCallTypes = ['impersonate', 'quiet', 'continue'];
         const isSupported = ToolManager.isToolCallingSupported();
         return isSupported && !noToolCallTypes.includes(type);
     }
