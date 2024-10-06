@@ -1,5 +1,4 @@
 // Global namespace modules
-declare var DOMPurify;
 declare var droll;
 declare var Handlebars;
 declare var hljs;

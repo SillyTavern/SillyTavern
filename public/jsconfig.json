@@ -16,12 +16,8 @@
     ],
     "typeAcquisition": {
         "include": [
-            "jquery",
             "@popperjs/core",
-            "toastr",
             "showdown",
-            "dompurify",
-            "moment",
             "seedrandom",
             "showdown-katex",
             "droll",
