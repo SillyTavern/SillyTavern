@@ -51,6 +51,19 @@ requestProxy:
 enableUserAccounts: false
 # Enable discreet login mode: hides user list on the login screen
 enableDiscreetLogin: false
+# Enable's authlia based auto login. Only enable this if you
+# have setup and installed Authelia as a middle-ware on your
+# reverse proxy
+# https://www.authelia.com/
+# This will use auto login to an account with the same username
+# as that used for authlia. (Ensure the username in authlia
+# is an exact match with that in sillytavern)
+autheliaAuth: false
+# If `basicAuthMode` and this are enabled then
+# the username and passwords for basic auth are the same as those
+# for the individual accounts
+perUserBasicAuth: false
+
 # User session timeout *in seconds* (defaults to 24 hours).
 ## Set to a positive number to expire session after a certain time of inactivity
 ## Set to 0 to expire session when the browser is closed

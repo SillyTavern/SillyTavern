@@ -19,6 +19,8 @@ const { readSecret, writeSecret } = require('./endpoints/secrets');
 const KEY_PREFIX = 'user:';
 const AVATAR_PREFIX = 'avatar:';
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
+const AUTHELIA_AUTH = getConfigValue('autheliaAuth', false);
+const PERUSER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false);
 const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
 
 /**
@@ -575,6 +577,31 @@ async function tryAutoLogin(request) {
         return false;
     }
 
+    if (await singler_user_login(request)) {
+        return true;
+    }
+
+    if (AUTHELIA_AUTH && await authelia_user_login(request)) {
+        return true;
+    }
+
+    if (PERUSER_BASIC_AUTH && await basic_user_login(request)) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Tries auto-login if there is only one user and it's not password protected.
+ * @param {import('express').Request} request Request object
+ * @returns {Promise<boolean>} Whether auto-login was performed
+ */
+async function singler_user_login(request) {
+    if (!request.session) {
+        return false;
+    }
+
     const userHandles = await getAllUserHandles();
     if (userHandles.length === 1) {
         const user = await storage.getItem(toKey(userHandles[0]));
@@ -583,7 +610,78 @@ async function tryAutoLogin(request) {
             return true;
         }
     }
+    return false;
+}
 
+/**
+ * Tries auto-login with authlia trusted headers.
+ * https://www.authelia.com/integration/trusted-header-sso/introduction/
+ * @param {import('express').Request} request Request object
+ * @returns {Promise<boolean>} Whether auto-login was performed
+ */
+async function authelia_user_login(request) {
+    if (!request.session) {
+        return false;
+    }
+
+    const remote_user = request.get("Remote-User");
+    if (!remote_user) {
+        return false;
+    }
+
+    const userHandles = await getAllUserHandles();
+    for (const userHandle of userHandles) {
+        if (remote_user == userHandle) {
+            const user = await storage.getItem(toKey(userHandle));
+            if (user) {
+                request.session.handle = userHandle;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Tries auto-login with basic auth username.
+ * @param {import('express').Request} request Request object
+ * @returns {Promise<boolean>} Whether auto-login was performed
+ */
+async function basic_user_login(request) {
+    if (!request.session) {
+        return false;
+    }
+
+    const auth_header = request.get("Authorization");
+    if (!auth_header) {
+        return false;
+    }
+
+    const parts = auth_header.split(' ');
+    if (!parts || parts.length < 2 || parts[0].toLowerCase() != "basic") {
+        return false;
+    }
+
+    const b64auth = parts[1];
+    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
+
+    const userHandles = await getAllUserHandles();
+    for (const userHandle of userHandles) {
+        if (login == userHandle) {
+            const user = await storage.getItem(toKey(userHandle));
+            // Verify pass again here just to be sure
+            if (user && user.password && user.password === getPasswordHash(password, user.salt)) {
+                request.session.handle = userHandle;
+                return true;
+            }
+            else if (user && !user.password && !password) {
+                // Login to an account without password
+                request.session.handle = userHandle;
+                return true;
+            }
+        }
+    }
+    
     return false;
 }
 
