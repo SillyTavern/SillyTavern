@@ -31,7 +31,6 @@ const basicAuthMiddleware = async function (request, response, callback) {
         .toString('utf8')
         .split(':');
 
-    
     if (! PERUSER_BASIC_AUTH && username === config.basicAuthUser.username && password === config.basicAuthUser.password) {
         return callback();
     } else if (PERUSER_BASIC_AUTH) {

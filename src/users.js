@@ -624,7 +624,7 @@ async function authelia_user_login(request) {
         return false;
     }
 
-    const remote_user = request.get("Remote-User");
+    const remote_user = request.get('Remote-User');
     if (!remote_user) {
         return false;
     }
@@ -652,18 +652,18 @@ async function basic_user_login(request) {
         return false;
     }
 
-    const auth_header = request.get("Authorization");
+    const auth_header = request.get('Authorization');
     if (!auth_header) {
         return false;
     }
 
     const parts = auth_header.split(' ');
-    if (!parts || parts.length < 2 || parts[0].toLowerCase() != "basic") {
+    if (!parts || parts.length < 2 || parts[0].toLowerCase() != 'basic') {
         return false;
     }
 
     const b64auth = parts[1];
-    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
+    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
 
     const userHandles = await getAllUserHandles();
     for (const userHandle of userHandles) {
@@ -681,7 +681,7 @@ async function basic_user_login(request) {
             }
         }
     }
-    
+
     return false;
 }
 
