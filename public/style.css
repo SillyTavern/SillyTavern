@@ -5481,105 +5481,95 @@ body:not(.movingUI) .drawer-content.maximized {
 
 #user_avatar_block {
     display: flex;
-    flex-wrap: wrap;  /* Ensures cards go to the next row if there's not enough space */
-    gap: 10px;  /* Adds space between cards */
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 /* Main structure for the model cards */
 .model-card {
     display: flex;
-    justify-content: space-between;  /* Align the title and details across the card */
-    align-items: center;  /* Center align the items vertically */
-    padding: 15px;  /* Padding around the content */
-    border: 1px solid #333;  /* Border for the card */
-    border-radius: 8px;  /* Rounded corners for the card */
-    background-color: #222;  /* Card background color */
-    color: #fff;  /* Text color */
-    margin: 7px;  /* Space between cards */
-    width: calc(100% - 7px);  /* Full width minus margin */
-    box-sizing: border-box;  /* Include padding and border in the width */
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background-color: #222;
+    color: #fff;
+    margin: 7px;
+    width: calc(100% - 7px);
+    box-sizing: border-box;
     transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out, border 0.2s ease-in-out;
 }
 
 .model-card:hover {
-    transform: scale(1.02);  /* Grow the card slightly on hover */
-    background-color: #444;  /* Highlight background on hover */
+    transform: scale(1.02);
+    background-color: #444;
     transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;  /* Smooth transition */
 }
 
-/* Highlight the selected model card */
 .model-card.selected {
-    border: 2px solid var(--okGreen70a);  /* Add a blue border to indicate selection */
-    background-color: var(--okGreen70a);  /* Slightly darker background for selected state */
+    border: 2px solid var(--okGreen70a);
+    background-color: var(--okGreen70a);
 }
 
-/* Model title information */
 .model-info {
-    flex: 1;  /* Take up the remaining space */
+    flex: 1;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;  /* Ellipsis for overflow text */
+    text-overflow: ellipsis;
 }
 
 .model-title {
-    font-size: 16px;
-    font-weight: bold;  /* Bold text for the model title */
+    font-size: --mainFontSize;
+    font-weight: bold;
     overflow: hidden;
 }
 
-/* Model details section */
 .model-details {
     display: flex;
-    flex-direction: column;  /* Stack class and context length vertically */
-    align-items: flex-end;  /* Align details to the end (right) */
-    text-align: right;  /* Right-aligned text for class and context length */
-    min-width: 120px;  /* Minimum width to prevent excessive squeezing */
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    min-width: 120px;
 }
 
 .model-class, .model-context-length {
-    font-size: 14px;  /* Smaller font size for details */
+    font-size: calc(--mainFontSize - 3);
 }
 
 .model-class {
-    margin-bottom: 5px;  /* Space between class and context length */
+    margin-bottom: 5px;
 }
 
-/* Grid-view layout for the card container */
 #model_card_block.grid-view {
-    /* grid-row: 1 / span 2;  Span two rows */
     grid-template-columns: repeat(2, 1fr);
     display: flex;
-    flex-wrap: wrap;  /* Cards wrap onto new lines when necessary */
-    gap: 5px;  /* Space between grid items */
-    justify-content: flex-start;  /* Align cards to the left */
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: flex-start;
 }
 
 /* Grid-view card */
 #model_card_block.grid-view .model-card {
-    flex-direction: column; /* Stack title, class, and context length vertically for grid */
-    flex: 1 1 calc(50% - 30px); /* 3 cards per row with spacing */
-    /* margin-bottom: 10px; */
+    flex-direction: column;
+    flex: 1 1 calc(50% - 30px);
 }
 
-/* Ensure the search bar takes most of the width */
 #model_search_bar {
     width: 15ch;
     flex-grow: 0;
-    /* min-width: 10ch; */
     align-self: center;
 }
 
-/* Sort dropdown should be auto-sized based on its content */
 #model_sort_order {
     width: auto;
     flex-shrink: 0;
     align-self: center;
 }
 
-/* Grid toggle button */
 #model_grid_toggle {
     flex-shrink: 0;
-    width: auto;  /* Keep default button size */
+    width: auto;
     cursor: pointer;
 }
 
@@ -5590,23 +5580,22 @@ body:not(.movingUI) .drawer-content.maximized {
     align-self: center;
 }
 
-/* Media query for mobile devices */
 @media (max-width: 768px) {
     .model-card {
-        flex-direction: column;  /* Stack content vertically on small screens */
-        align-items: stretch;  /* Stretch items to take full width */
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .model-info, .model-details {
-        width: 100%;  /* Take full width */
-        text-align: left;  /* Left-align text */
+        width: 100%;
+        text-align: left;
     }
 
     #model_search_bar {
-        width: 100%;  /* Take full width on small screens */
+        width: 100%;
     }
 
     #model_sort_order, #model_grid_toggle {
-        margin-top: 10px;  /* Add some space above these elements */
+        margin-top: 10px;
     }
 }
