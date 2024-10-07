@@ -5495,22 +5495,22 @@ body:not(.movingUI) .drawer-content.maximized {
     border-radius: 8px;  /* Rounded corners for the card */
     background-color: #222;  /* Card background color */
     color: #fff;  /* Text color */
-    margin: 10px;  /* Space between cards */
-    width: calc(100% - 20px);  /* Full width minus margin */
+    margin: 7px;  /* Space between cards */
+    width: calc(100% - 7px);  /* Full width minus margin */
     box-sizing: border-box;  /* Include padding and border in the width */
     transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out, border 0.2s ease-in-out;
 }
 
 .model-card:hover {
-    transform: scale(1.025);  /* Grow the card slightly on hover */
+    transform: scale(1.02);  /* Grow the card slightly on hover */
     background-color: #444;  /* Highlight background on hover */
     transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;  /* Smooth transition */
 }
 
 /* Highlight the selected model card */
 .model-card.selected {
-    border: 2px solid #00f;  /* Add a blue border to indicate selection */
-    background-color: #333;  /* Slightly darker background for selected state */
+    border: 2px solid var(--okGreen70a);  /* Add a blue border to indicate selection */
+    background-color: var(--okGreen70a);  /* Slightly darker background for selected state */
 }
 
 /* Model title information */
@@ -5550,7 +5550,7 @@ body:not(.movingUI) .drawer-content.maximized {
     grid-template-columns: repeat(2, 1fr);
     display: flex;
     flex-wrap: wrap;  /* Cards wrap onto new lines when necessary */
-    gap: 15px;  /* Space between grid items */
+    gap: 5px;  /* Space between grid items */
     justify-content: flex-start;  /* Align cards to the left */
 }
 
@@ -5558,7 +5558,7 @@ body:not(.movingUI) .drawer-content.maximized {
 #model_card_block.grid-view .model-card {
     flex-direction: column; /* Stack title, class, and context length vertically for grid */
     flex: 1 1 calc(50% - 30px); /* 3 cards per row with spacing */
-    margin-bottom: 10px;
+    /* margin-bottom: 10px; */
 }
 
 /* Ensure the search bar takes most of the width */

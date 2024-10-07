@@ -293,7 +293,7 @@ export async function loadFeatherlessModels(data) {
     populateClassSelection(data);
 
     // Retrieve the stored number of items per page or default to 5
-    const perPage = Number(localStorage.getItem(storageKey)) || 5;
+    const perPage = Number(localStorage.getItem(storageKey)) || 6;
 
     // Initialize pagination with the full set of models
     setupPagination(originalModels, perPage);
@@ -303,7 +303,7 @@ export async function loadFeatherlessModels(data) {
         paginationContainer.pagination({
             dataSource: models,
             pageSize: perPage,
-            sizeChangerOptions: [5, 10, 25, 50, 100, 250, 500, 1000],
+            sizeChangerOptions: [6, 10, 26, 50, 100, 250, 500, 1000],
             pageRange: 1,
             pageNumber: 1,
             showPageNumbers: true,
@@ -450,6 +450,10 @@ export async function loadFeatherlessModels(data) {
             filteredModels.sort((a, b) => a.id.localeCompare(b.id));
         } else if (selectedSortOrder === 'desc') {
             filteredModels.sort((a, b) => b.id.localeCompare(a.id));
+        } else if (selectedSortOrder === 'date_asc') {
+            filteredModels.sort((a, b) => a.updated_at.localeCompare(b.updated_at));
+        } else if (selectedSortOrder === 'date_desc') {
+            filteredModels.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
         }
 
         // Reinitialize pagination with the filtered and sorted models
