@@ -569,6 +569,7 @@ function shouldRedirectToLogin(request) {
 
 /**
  * Tries auto-login if there is only one user and it's not password protected.
+ * or another configured method such authlia or basic
  * @param {import('express').Request} request Request object
  * @returns {Promise<boolean>} Whether auto-login was performed
  */
@@ -577,16 +578,19 @@ async function tryAutoLogin(request) {
         return false;
     }
 
-    if (await singleUserLogin(request)) {
-        return true;
-    }
+    console.warn(request.session.noauto);
+    if (!request.query.noauto) {
+        if (await singleUserLogin(request)) {
+            return true;
+        }
 
-    if (AUTHELIA_AUTH && await autheliaUserLogin(request)) {
-        return true;
-    }
+        if (AUTHELIA_AUTH && await autheliaUserLogin(request)) {
+            return true;
+        }
 
-    if (PERUSER_BASIC_AUTH && await basicUserLogin(request)) {
-        return true;
+        if (PERUSER_BASIC_AUTH && await basicUserLogin(request)) {
+            return true;
+        }
     }
 
     return false;
