@@ -6798,7 +6798,10 @@ function updateMessage(div) {
     text = getRegexedString(
         text,
         regexPlacement,
-        { characterOverride: mes.extra?.type === 'narrator' ? undefined : mes.name },
+        {
+            characterOverride: mes.extra?.type === 'narrator' ? undefined : mes.name,
+            isEdit: true,
+        },
     );
 
 
