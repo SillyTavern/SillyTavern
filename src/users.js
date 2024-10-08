@@ -20,7 +20,7 @@ const KEY_PREFIX = 'user:';
 const AVATAR_PREFIX = 'avatar:';
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
 const AUTHELIA_AUTH = getConfigValue('autheliaAuth', false);
-const PERUSER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false);
+const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false);
 const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
 
 /**
@@ -588,7 +588,7 @@ async function tryAutoLogin(request) {
             return true;
         }
 
-        if (PERUSER_BASIC_AUTH && await basicUserLogin(request)) {
+        if (PER_USER_BASIC_AUTH && await basicUserLogin(request)) {
             return true;
         }
     }

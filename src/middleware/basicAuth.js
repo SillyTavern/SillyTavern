@@ -6,7 +6,7 @@ const { getAllUserHandles, toKey, getPasswordHash } = require('../users.js');
 const { getConfig, getConfigValue } = require('../util.js');
 const storage = require('node-persist');
 
-const PERUSER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false);
+const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false);
 
 const unauthorizedResponse = (res) => {
     res.set('WWW-Authenticate', 'Basic realm="SillyTavern", charset="UTF-8"');
@@ -31,9 +31,9 @@ const basicAuthMiddleware = async function (request, response, callback) {
         .toString('utf8')
         .split(':');
 
-    if (! PERUSER_BASIC_AUTH && username === config.basicAuthUser.username && password === config.basicAuthUser.password) {
+    if (! PER_USER_BASIC_AUTH && username === config.basicAuthUser.username && password === config.basicAuthUser.password) {
         return callback();
-    } else if (PERUSER_BASIC_AUTH) {
+    } else if (PER_USER_BASIC_AUTH) {
         const userHandles = await getAllUserHandles();
         for (const userHandle of userHandles) {
             if (username == userHandle) {

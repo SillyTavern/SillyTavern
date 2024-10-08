@@ -65,7 +65,7 @@ const DEFAULT_WHITELIST = true;
 const DEFAULT_ACCOUNTS = false;
 const DEFAULT_CSRF_DISABLED = false;
 const DEFAULT_BASIC_AUTH = false;
-const DEFAULT_PERUSER_BASIC_AUTH = false;
+const DEFAULT_PER_USER_BASIC_AUTH = false;
 
 const DEFAULT_ENABLE_IPV6 = false;
 const DEFAULT_ENABLE_IPV4 = true;
@@ -185,7 +185,7 @@ const enableWhitelist = cliArguments.whitelist ?? getConfigValue('whitelistMode'
 const dataRoot = cliArguments.dataRoot ?? getConfigValue('dataRoot', './data');
 const disableCsrf = cliArguments.disableCsrf ?? getConfigValue('disableCsrfProtection', DEFAULT_CSRF_DISABLED);
 const basicAuthMode = cliArguments.basicAuthMode ?? getConfigValue('basicAuthMode', DEFAULT_BASIC_AUTH);
-const PERUSER_BASIC_AUTH = getConfigValue('perUserBasicAuth', DEFAULT_PERUSER_BASIC_AUTH);
+const perUserBasicAuth = getConfigValue('perUserBasicAuth', DEFAULT_PER_USER_BASIC_AUTH);
 const enableAccounts = getConfigValue('enableUserAccounts', DEFAULT_ACCOUNTS);
 
 const uploadsPath = path.join(dataRoot, require('./src/constants').UPLOADS_DIRECTORY);
@@ -758,7 +758,7 @@ const postSetupTasks = async function (v6Failed, v4Failed) {
     }
 
     if (basicAuthMode) {
-        if (!PERUSER_BASIC_AUTH) {
+        if (!perUserBasicAuth) {
             const basicAuthUser = getConfigValue('basicAuthUser', {});
             if (!basicAuthUser?.username || !basicAuthUser?.password) {
                 console.warn(color.yellow('Basic Authentication is enabled, but username or password is not set or empty!'));
