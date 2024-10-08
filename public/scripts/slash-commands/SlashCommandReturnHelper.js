@@ -58,7 +58,7 @@ export const slashCommandReturnHelper = {
             case 'toast-html': {
                 const htmlOrNotHtml = shouldHtml ? DOMPurify.sanitize((new showdown.Converter()).makeHtml(stringValue)) : escapeHtml(stringValue);
 
-                if (type.startsWith('popup')) await callGenericPopup(htmlOrNotHtml, POPUP_TYPE.TEXT);
+                if (type.startsWith('popup')) await callGenericPopup(htmlOrNotHtml, POPUP_TYPE.TEXT, '', { allowVerticalScrolling: true, wide: true });
                 if (type.startsWith('chat')) sendSystemMessage(system_message_types.GENERIC, htmlOrNotHtml);
                 if (type.startsWith('toast')) toastr.info(htmlOrNotHtml, null, { escapeHtml: !shouldHtml });
 

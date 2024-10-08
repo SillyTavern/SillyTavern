@@ -17,7 +17,7 @@
 
 .select2-container .select2-selection .select2-selection__clear {
     color: var(--SmartThemeBodyColor);
-    font-size: 24px;
+    font-size: 20px;
     padding: 0;
     position: absolute;
     right: 5px;
@@ -50,6 +50,7 @@
     padding: revert;
     border-right: 1px solid var(--SmartThemeBorderColor);
     font-size: 1.1em;
+    line-height: 1;
 }
 
 .select2-container .select2-selection--multiple .select2-selection__choice__display {

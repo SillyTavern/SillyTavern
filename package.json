@@ -85,8 +85,9 @@
     },
     "main": "server.js",
     "devDependencies": {
+        "@types/dompurify": "^3.0.5",
         "@types/jquery": "^3.5.29",
-        "eslint": "^8.57.0",
-        "jquery": "^3.6.4"
+        "@types/toastr": "^2.1.43",
+        "eslint": "^8.57.0"
     }
 }

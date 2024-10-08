@@ -424,6 +424,16 @@ small {
     text-align: center;
 }
 
+.mes.smallSysMes pre {
+    text-align: initial;
+    word-break: break-all;
+    margin-top: 5px;
+}
+
+.mes.smallSysMes summary {
+    cursor: pointer;
+}
+
 .mes.smallSysMes .mes_text p:last-child {
     margin: 0;
 }

@@ -1,5 +1,4 @@
 // Global namespace modules
-declare var DOMPurify;
 declare var droll;
 declare var Handlebars;
 declare var hljs;
@@ -1364,45 +1363,4 @@ declare namespace moment {
 
 declare global {
   const moment: typeof moment;
-}
-
-/**
- * Callback data for the `LLM_FUNCTION_TOOL_REGISTER` event type that is triggered when a function tool can be registered.
- */
-interface FunctionToolRegister {
-    /**
-     * The type of generation that is being used
-     */
-    type?: string;
-    /**
-     * Generation data, including messages and sampling parameters
-     */
-    data: Record<string, object>;
-    /**
-     * Callback to register an LLM function tool.
-     */
-    registerFunctionTool: typeof registerFunctionTool;
-}
-
-/**
- * Callback data for the `LLM_FUNCTION_TOOL_REGISTER` event type that is triggered when a function tool is registered.
- * @param name Name of the function tool to register
- * @param description Description of the function tool
- * @param params JSON schema for the parameters of the function tool
- * @param required Whether the function tool should be forced to be used
- */
-declare function registerFunctionTool(name: string, description: string, params: object, required: boolean): Promise<void>;
-
-/**
- * Callback data for the `LLM_FUNCTION_TOOL_CALL` event type that is triggered when a function tool is called.
- */
-interface FunctionToolCall {
-    /**
-     * Name of the function tool to call
-     */
-    name: string;
-    /**
-     * JSON object with the parameters to pass to the function tool
-     */
-    arguments: string;
 }

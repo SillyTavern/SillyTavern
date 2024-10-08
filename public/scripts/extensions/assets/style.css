@@ -164,3 +164,12 @@
     gap: 5px;
     align-items: center;
 }
+
+.asset-name .tag {
+    gap: 5px;
+    align-items: baseline;
+    font-size: calc(var(--mainFontSize)* 0.8);
+    cursor: pointer;
+    opacity: 0.9;
+    margin-left: 2px;
+}

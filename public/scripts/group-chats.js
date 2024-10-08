@@ -70,12 +70,12 @@ import {
     animation_duration,
     depth_prompt_role_default,
     shouldAutoContinue,
-    this_chid,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { isExternalMediaAllowed } from './chats.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
+import { t } from './i18n.js';
 
 export {
     selected_group,

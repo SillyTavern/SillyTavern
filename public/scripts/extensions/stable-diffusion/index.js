@@ -32,6 +32,7 @@ import { debounce_timeout } from '../../constants.js';
 import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { ToolManager } from '../../tool-calling.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'sd';
@@ -62,9 +63,11 @@ const initiators = {
     interactive: 'interactive',
     wand: 'wand',
     swipe: 'swipe',
+    tool: 'tool',
 };
 
 const generationMode = {
+    TOOL: -2,
     MESSAGE: -1,
     CHARACTER: 0,
     USER: 1,
@@ -87,6 +90,7 @@ const multimodalMap = {
 };
 
 const modeLabels = {
+    [generationMode.TOOL]: 'Function Tool Prompt Description',
     [generationMode.MESSAGE]: 'Chat Message Template',
     [generationMode.CHARACTER]: 'Character ("Yourself")',
     [generationMode.FACE]: 'Portrait ("Your Face")',
@@ -124,8 +128,12 @@ const messageTrigger = {
 };
 
 const promptTemplates = {
-    // Not really a prompt template, rather an outcome message template
+    // Not really a prompt template, rather an outcome message template and function tool prompt
     [generationMode.MESSAGE]: '[{{char}} sends a picture that contains: {{prompt}}].',
+    [generationMode.TOOL]: [
+        'The text prompt used to generate the image.',
+        'Must represent an exhaustive description of the desired image that will allow an artist or a photographer to perfectly recreate it.',
+    ].join(' '),
     [generationMode.CHARACTER]: 'In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase \'full body portrait,\'',
     //face-specific prompt
     [generationMode.FACE]: 'In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, facial features and expressions, occupation, hair and hair accessories (if any), what they are wearing on their upper body (if anything). Do not describe anything below their neck. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase \'close up facial portrait,\'',
@@ -226,6 +234,7 @@ const defaultSettings = {
     multimodal_captioning: false,
     snap: false,
     free_extend: false,
+    function_tool: false,
 
     prompts: promptTemplates,
 
@@ -291,6 +300,10 @@ const defaultSettings = {
 const writePromptFieldsDebounced = debounce(writePromptFields, debounce_timeout.relaxed);
 
 function processTriggers(chat, _, abort) {
+    if (extension_settings.sd.function_tool && ToolManager.isToolCallingSupported()) {
+        return;
+    }
+
     if (!extension_settings.sd.interactive_mode) {
         return;
     }
@@ -447,6 +460,7 @@ async function loadSettings() {
     $('#sd_interactive_visible').prop('checked', extension_settings.sd.interactive_visible);
     $('#sd_stability_style_preset').val(extension_settings.sd.stability_style_preset);
     $('#sd_huggingface_model_id').val(extension_settings.sd.huggingface_model_id);
+    $('#sd_function_tool').prop('checked', extension_settings.sd.function_tool);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -461,6 +475,7 @@ async function loadSettings() {
 
     toggleSourceControls();
     addPromptTemplates();
+    registerFunctionTool();
 
     await loadSettingOptions();
 }
@@ -524,6 +539,9 @@ function addPromptTemplates() {
             .on('click', () => {
                 textarea.val(promptTemplates[name]);
                 extension_settings.sd.prompts[name] = promptTemplates[name];
+                if (String(name) === String(generationMode.TOOL)) {
+                    registerFunctionTool();
+                }
                 saveSettingsDebounced();
             });
         const container = $('<div></div>')
@@ -908,6 +926,12 @@ async function onSourceChange() {
     toggleSourceControls();
     saveSettingsDebounced();
     await loadSettingOptions();
+}
+
+function onFunctionToolInput() {
+    extension_settings.sd.function_tool = !!$(this).prop('checked');
+    saveSettingsDebounced();
+    registerFunctionTool();
 }
 
 async function onOpenAiStyleSelect() {
@@ -2290,9 +2314,9 @@ async function generatePicture(initiator, args, trigger, message, callback) {
             eventSource.emit(event_types.FORCE_SET_BACKGROUND, { url: imgUrl, path: imagePath });
 
             if (typeof callbackOriginal === 'function') {
-                callbackOriginal(prompt, imagePath, generationType, negativePromptPrefix, initiator);
+                await callbackOriginal(prompt, imagePath, generationType, negativePromptPrefix, initiator);
             } else {
-                sendMessage(prompt, imagePath, generationType, negativePromptPrefix, initiator);
+                await sendMessage(prompt, imagePath, generationType, negativePromptPrefix, initiator);
             }
         };
     }
@@ -2621,7 +2645,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
 
     const filename = `${characterName}_${humanizedDateTime()}`;
     const base64Image = await saveBase64AsFile(result.data, characterName, filename, result.format);
-    callback ? callback(prompt, base64Image, generationType, additionalNegativePrefix, initiator) : sendMessage(prompt, base64Image, generationType, additionalNegativePrefix, initiator);
+    callback
+        ? await callback(prompt, base64Image, generationType, additionalNegativePrefix, initiator)
+        : await sendMessage(prompt, base64Image, generationType, additionalNegativePrefix, initiator);
     return base64Image;
 }
 
@@ -3822,6 +3848,42 @@ function applyCommandArguments(args) {
     return currentSettings;
 }
 
+function registerFunctionTool() {
+    if (!extension_settings.sd.function_tool) {
+        return ToolManager.unregisterFunctionTool('GenerateImage');
+    }
+
+    ToolManager.registerFunctionTool({
+        name: 'GenerateImage',
+        displayName: 'Generate Image',
+        description: [
+            'Generate an image from a given text prompt.',
+            'Use when a user asks for an image, a selfie, to picture a scene, etc.',
+        ].join(' '),
+        parameters: Object.freeze({
+            $schema: 'http://json-schema.org/draft-04/schema#',
+            type: 'object',
+            properties: {
+                prompt: {
+                    type: 'string',
+                    description: extension_settings.sd.prompts[generationMode.TOOL] || promptTemplates[generationMode.TOOL],
+                },
+            },
+            required: [
+                'prompt',
+            ],
+        }),
+        action: async (args) => {
+            if (!isValidState()) throw new Error('Image generation is not configured.');
+            if (!args) throw new Error('Missing arguments');
+            if (!args.prompt) throw new Error('Missing prompt');
+            const url = await generatePicture(initiators.tool, {}, args.prompt);
+            return encodeURI(url);
+        },
+        formatMessage: () => 'Generating an image...',
+    });
+}
+
 jQuery(async () => {
     await addSDGenButtons();
 
@@ -4175,6 +4237,7 @@ jQuery(async () => {
     $('#sd_stability_key').on('click', onStabilityKeyClick);
     $('#sd_stability_style_preset').on('change', onStabilityStylePresetChange);
     $('#sd_huggingface_model_id').on('input', onHFModelInput);
+    $('#sd_function_tool').on('input', onFunctionToolInput);
 
     if (!CSS.supports('field-sizing', 'content')) {
         $('.sd_settings .inline-drawer-toggle').on('click', function () {

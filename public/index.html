@@ -1873,6 +1873,10 @@
                                             </div>
                                             <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact autoSetHeight" name="assistant_impersonation" rows="2" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
+                                        <div id="claude_function_prefill_warning">
+                                            <i class="fa-solid fa-circle-info"></i>
+                                            <span>Prefills won't work when function calling is enabled and any tools are registered.</span>
+                                        </div>
                                         <label for="claude_use_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="claude_use_sysprompt" type="checkbox" />
                                             <span data-i18n="Use system prompt (Claude 2.1+ only)">
@@ -3098,7 +3102,8 @@
                             <h4 data-i18n="Prompt Post-Processing">Prompt Post-Processing</h4>
                             <select id="custom_prompt_post_processing" class="text_pole" title="Applies additional processing to the prompt before sending it to the API." data-i18n="[title]Applies additional processing to the prompt before sending it to the API.">
                                 <option data-i18n="prompt_post_processing_none" value="">None</option>
-                                <option value="claude">Claude</option>
+                                <option value="merge">Merge consecutive roles</option>
+                                <option value="strict">Strict (user first, alternating roles)</option>
                             </select>
                         </form>
                         <div id="01ai_form" data-source="01ai">

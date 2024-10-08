@@ -4,7 +4,7 @@ const fetch = require('node-fetch').default;
 const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY, OPENROUTER_HEADERS } = require('../../constants');
 const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
-const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages, convertMistralMessages, convertCohereTools, convertAI21Messages } = require('../../prompt-converters');
+const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages, convertMistralMessages, convertAI21Messages, mergeMessages } = require('../../prompt-converters');
 const CohereStream = require('../../cohere-stream');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
@@ -31,8 +31,11 @@ const API_AI21 = 'https://api.ai21.com/studio/v1';
  */
 function postProcessPrompt(messages, type, charName, userName) {
     switch (type) {
+        case 'merge':
         case 'claude':
-            return convertClaudeMessages(messages, '', false, '', charName, userName).messages;
+            return mergeMessages(messages, charName, userName, false);
+        case 'strict':
+            return mergeMessages(messages, charName, userName, true);
         default:
             return messages;
     }
@@ -84,7 +87,7 @@ async function sendClaudeRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_CLAUDE).toString();
     const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.CLAUDE);
     const divider = '-'.repeat(process.stdout.columns);
-    const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false);
+    const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false) && request.body.model.startsWith('claude-3');
 
     if (!apiKey) {
         console.log(color.red(`Claude API key is missing.\n${divider}`));
@@ -98,8 +101,9 @@ async function sendClaudeRequest(request, response) {
             controller.abort();
         });
         const additionalHeaders = {};
+        const useTools = request.body.model.startsWith('claude-3') && Array.isArray(request.body.tools) && request.body.tools.length > 0;
         const useSystemPrompt = (request.body.model.startsWith('claude-2') || request.body.model.startsWith('claude-3')) && request.body.claude_use_sysprompt;
-        const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, request.body.human_sysprompt_message, request.body.char_name, request.body.user_name);
+        const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, request.body.human_sysprompt_message, request.body.char_name, request.body.user_name);
         // Add custom stop sequences
         const stopSequences = [];
         if (Array.isArray(request.body.stop)) {
@@ -107,7 +111,7 @@ async function sendClaudeRequest(request, response) {
         }
 
         const requestBody = {
-            /** @type {any} */ system: '',
+            /** @type {any} */ system: [],
             messages: convertedPrompt.messages,
             model: request.body.model,
             max_tokens: request.body.max_tokens,
@@ -118,23 +122,29 @@ async function sendClaudeRequest(request, response) {
             stream: request.body.stream,
         };
         if (useSystemPrompt) {
-            requestBody.system = enableSystemPromptCache
-                ? [{ type: 'text', text: convertedPrompt.systemPrompt, cache_control: { type: 'ephemeral' } }]
-                : convertedPrompt.systemPrompt;
+            if (enableSystemPromptCache && Array.isArray(convertedPrompt.systemPrompt) && convertedPrompt.systemPrompt.length) {
+                convertedPrompt.systemPrompt[convertedPrompt.systemPrompt.length - 1]['cache_control'] = { type: 'ephemeral' };
+            }
+
+            requestBody.system = convertedPrompt.systemPrompt;
         } else {
             delete requestBody.system;
         }
-        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+        if (useTools) {
             // Claude doesn't do prefills on function calls, and doesn't allow empty messages
             if (convertedPrompt.messages.length && convertedPrompt.messages[convertedPrompt.messages.length - 1].role === 'assistant') {
                 convertedPrompt.messages.push({ role: 'user', content: '.' });
             }
             additionalHeaders['anthropic-beta'] = 'tools-2024-05-16';
-            requestBody.tool_choice = { type: request.body.tool_choice === 'required' ? 'any' : 'auto' };
+            requestBody.tool_choice = { type: request.body.tool_choice };
             requestBody.tools = request.body.tools
                 .filter(tool => tool.type === 'function')
                 .map(tool => tool.function)
                 .map(fn => ({ name: fn.name, description: fn.description, input_schema: fn.parameters }));
+
+            if (enableSystemPromptCache && requestBody.tools.length) {
+                requestBody.tools[requestBody.tools.length - 1]['cache_control'] = { type: 'ephemeral' };
+            }
         }
         if (enableSystemPromptCache) {
             additionalHeaders['anthropic-beta'] = 'prompt-caching-2024-07-31';
@@ -483,7 +493,7 @@ async function sendMistralAIRequest(request, response) {
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
             requestBody['tools'] = request.body.tools;
-            requestBody['tool_choice'] = request.body.tool_choice === 'required' ? 'any' : 'auto';
+            requestBody['tool_choice'] = request.body.tool_choice;
         }
 
         const config = {
@@ -551,12 +561,6 @@ async function sendCohereRequest(request, response) {
             connectors.push({
                 id: 'web-search',
             });
-        }
-
-        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
-            tools.push(...convertCohereTools(request.body.tools));
-            // Can't have both connectors and tools in the same request
-            connectors.splice(0, connectors.length);
         }
 
         // https://docs.cohere.com/reference/chat
@@ -908,24 +912,12 @@ router.post('/generate', jsonParser, function (request, response) {
         apiKey = readSecret(request.user.directories, SECRET_KEYS.PERPLEXITY);
         headers = {};
         bodyParams = {};
-        request.body.messages = postProcessPrompt(request.body.messages, 'claude', request.body.char_name, request.body.user_name);
+        request.body.messages = postProcessPrompt(request.body.messages, 'strict', request.body.char_name, request.body.user_name);
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
         apiUrl = API_GROQ;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ);
         headers = {};
         bodyParams = {};
-
-        // 'required' tool choice is not supported by Groq
-        if (request.body.tool_choice === 'required') {
-            if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
-                request.body.tool_choice = request.body.tools.length > 1
-                    ? 'auto' :
-                    { type: 'function', function: { name: request.body.tools[0]?.function?.name } };
-
-            } else {
-                request.body.tool_choice = 'none';
-            }
-        }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZEROONEAI) {
         apiUrl = API_01AI;
         apiKey = readSecret(request.user.directories, SECRET_KEYS.ZEROONEAI);
@@ -962,7 +954,7 @@ router.post('/generate', jsonParser, function (request, response) {
         controller.abort();
     });
 
-    if (!isTextCompletion) {
+    if (!isTextCompletion && Array.isArray(request.body.tools) && request.body.tools.length > 0) {
         bodyParams['tools'] = request.body.tools;
         bodyParams['tool_choice'] = request.body.tool_choice;
     }

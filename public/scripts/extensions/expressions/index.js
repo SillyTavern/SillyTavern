@@ -9,7 +9,6 @@ import { debounce_timeout } from '../../constants.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
-import { isFunctionCallingSupported } from '../../openai.js';
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { slashCommandReturnHelper } from '../../slash-commands/SlashCommandReturnHelper.js';
@@ -21,7 +20,6 @@ const UPDATE_INTERVAL = 2000;
 const STREAMING_UPDATE_INTERVAL = 10000;
 const TALKINGCHECK_UPDATE_INTERVAL = 500;
 const DEFAULT_FALLBACK_EXPRESSION = 'joy';
-const FUNCTION_NAME = 'set_emotion';
 const DEFAULT_LLM_PROMPT = 'Ignore previous instructions. Classify the emotion of the last message. Output just one word, e.g. "joy" or "anger". Choose only one of the following labels: {{labels}}';
 const DEFAULT_EXPRESSIONS = [
     'talkinghead',
@@ -1017,10 +1015,6 @@ async function getLlmPrompt(labels) {
         return '';
     }
 
-    if (isFunctionCallingSupported()) {
-        return '';
-    }
-
     const labelsString = labels.map(x => `"${x}"`).join(', ');
     const prompt = substituteParamsExtended(String(extension_settings.expressions.llmPrompt), { labels: labelsString });
     return prompt;
@@ -1054,41 +1048,6 @@ function parseLlmResponse(emotionResponse, labels) {
     }
 
     throw new Error('Could not parse emotion response ' + emotionResponse);
-}
-
-/**
- * Registers the function tool for the LLM API.
- * @param {FunctionToolRegister} args Function tool register arguments.
- */
-function onFunctionToolRegister(args) {
-    if (inApiCall && extension_settings.expressions.api === EXPRESSION_API.llm && isFunctionCallingSupported()) {
-        // Only trigger on quiet mode
-        if (args.type !== 'quiet') {
-            return;
-        }
-
-        const emotions = DEFAULT_EXPRESSIONS.filter((e) => e != 'talkinghead');
-        const jsonSchema = {
-            $schema: 'http://json-schema.org/draft-04/schema#',
-            type: 'object',
-            properties: {
-                emotion: {
-                    type: 'string',
-                    enum: emotions,
-                    description: `One of the following: ${JSON.stringify(emotions)}`,
-                },
-            },
-            required: [
-                'emotion',
-            ],
-        };
-        args.registerFunctionTool(
-            FUNCTION_NAME,
-            substituteParams('Sets the label that best describes the current emotional state of {{char}}. Only select one of the enumerated values.'),
-            jsonSchema,
-            true,
-        );
-    }
 }
 
 function onTextGenSettingsReady(args) {
@@ -1164,18 +1123,9 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
 
                 const expressionsList = await getExpressionsList();
                 const prompt = substituteParamsExtended(customPrompt, { labels: expressionsList }) || await getLlmPrompt(expressionsList);
-                let functionResult = null;
                 eventSource.once(event_types.TEXT_COMPLETION_SETTINGS_READY, onTextGenSettingsReady);
-                eventSource.once(event_types.LLM_FUNCTION_TOOL_REGISTER, onFunctionToolRegister);
-                eventSource.once(event_types.LLM_FUNCTION_TOOL_CALL, (/** @type {FunctionToolCall} */ args) => {
-                    if (args.name !== FUNCTION_NAME) {
-                        return;
-                    }
-
-                    functionResult = args?.arguments;
-                });
                 const emotionResponse = await generateRaw(text, main_api, false, false, prompt);
-                return parseLlmResponse(functionResult || emotionResponse, expressionsList);
+                return parseLlmResponse(emotionResponse, expressionsList);
             }
             // Extras
             default: {

@@ -44,9 +44,9 @@ function getScopedRegex() {
  * @param {regex_placement} placement The placement of the string
  * @param {RegexParams} params The parameters to use for the regex script
  * @returns {string} The regexed string
- * @typedef {{characterOverride?: string, isMarkdown?: boolean, isPrompt?: boolean, depth?: number }} RegexParams The parameters to use for the regex script
+ * @typedef {{characterOverride?: string, isMarkdown?: boolean, isPrompt?: boolean, isEdit?: boolean, depth?: number }} RegexParams The parameters to use for the regex script
  */
-function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt, depth } = {}) {
+function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt, isEdit, depth } = {}) {
     // WTF have you passed me?
     if (typeof rawString !== 'string') {
         console.warn('getRegexedString: rawString is not a string. Returning empty string.');
@@ -68,6 +68,11 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
             // Script applies to all cases when neither "only"s are true, but there's no need to do it when `isMarkdown`, the as source (chat history) should already be changed beforehand
             (!script.markdownOnly && !script.promptOnly && !isMarkdown)
         ) {
+            if (isEdit && !script.runOnEdit) {
+                console.debug(`getRegexedString: Skipping script ${script.scriptName} because it does not run on edit`);
+                return;
+            }
+
             // Check if the depth is within the min/max depth
             if (typeof depth === 'number' && depth >= 0) {
                 if (!isNaN(script.minDepth) && script.minDepth !== null && script.minDepth >= 0 && depth < script.minDepth) {
