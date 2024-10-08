@@ -329,7 +329,7 @@ class PresetManager {
      * @returns {any} Preset value
      */
     findPreset(name) {
-        return $(this.select).find('option').filter(function() {
+        return $(this.select).find('option').filter(function () {
             return $(this).text() === name;
         }).val();
     }
@@ -355,7 +355,7 @@ class PresetManager {
      * @param {string} value Preset option value
      */
     selectPreset(value) {
-        const option = $(this.select).filter(function() {
+        const option = $(this.select).filter(function () {
             return $(this).val() === value;
         });
         option.prop('selected', true);
@@ -422,7 +422,7 @@ class PresetManager {
 
         this.updateList(name, preset);
     }
-    
+
     async renamePreset(newName) {
         const oldName = this.getSelectedPresetName();
         try {
@@ -619,10 +619,10 @@ class PresetManager {
         } else {
             delete preset_names[nameToDelete];
         }
-        
+
         // switch in UI only when deleting currently selected preset
         const switchPresets = !name || this.getSelectedPresetName() == name;
-        
+
         if (Object.keys(preset_names).length && switchPresets) {
             const nextPresetName = Object.keys(preset_names)[0];
             const newValue = preset_names[nextPresetName];
@@ -739,7 +739,8 @@ async function waitForConnection() {
 export async function initPresetManager() {
     eventSource.on(event_types.CHAT_CHANGED, autoSelectPreset);
     registerPresetManagers();
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'preset',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'preset',
         callback: presetCommandCallback,
         returns: 'current preset',
         unnamedArgumentList: [
@@ -791,7 +792,7 @@ export async function initPresetManager() {
 
         await presetManager.savePresetAs();
     });
-    
+
     $(document).on('click', '[data-preset-manager-rename]', async function () {
         const apiId = $(this).data('preset-manager-rename');
         const presetManager = getPresetManager(apiId);
@@ -800,17 +801,17 @@ export async function initPresetManager() {
             console.warn(`Preset Manager not found for API: ${apiId}`);
             return;
         }
-        
+
         const popupHeader = !presetManager.isAdvancedFormatting() ? t`Rename preset` : t`Rename template`;
-        const oldName = name;
+        const oldName = presetManager.getSelectedPresetName();
         const newName = await Popup.show.input(popupHeader, t`Enter a new name:`, oldName);
-        if (oldName === newName || !newName) {
+        if (!newName || oldName === newName) {
             console.debug(!presetManager.isAdvancedFormatting() ? 'Preset rename cancelled' : 'Template rename cancelled');
             return;
         }
-        
+
         await presetManager.renamePreset(newName);
-        
+
         const successToast = !presetManager.isAdvancedFormatting() ? t`Preset renamed` : t`Template renamed`;
         toastr.success(successToast);
     });
