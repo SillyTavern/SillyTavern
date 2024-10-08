@@ -34,6 +34,7 @@ import {
     textgenerationwebui_settings as textgen_settings,
 } from './textgen-settings.js';
 import { download, parseJsonFile, waitUntilCondition } from './utils.js';
+import { t } from './i18n.js';
 
 const presetManagers = {};
 
@@ -194,32 +195,32 @@ class PresetManager {
      */
     static async performMasterImport(data, fileName) {
         if (!data || typeof data !== 'object') {
-            toastr.error('Invalid data provided for master import');
+            toastr.error(t`Invalid data provided for master import`);
             return;
         }
 
         // Check for legacy file imports
         // 1. Instruct Template
         if (this.isPossiblyInstructData(data)) {
-            toastr.info('Importing instruct template...', 'Instruct template detected');
+            toastr.info(t`Importing instruct template...`, t`Instruct template detected`);
             return await getPresetManager('instruct').savePreset(data.name, data);
         }
 
         // 2. Context Template
         if (this.isPossiblyContextData(data)) {
-            toastr.info('Importing as context template...', 'Context template detected');
+            toastr.info(t`Importing as context template...`, t`Context template detected`);
             return await getPresetManager('context').savePreset(data.name, data);
         }
 
         // 3. System Prompt
         if (this.isPossiblySystemPromptData(data)) {
-            toastr.info('Importing as system prompt...', 'System prompt detected');
+            toastr.info(t`Importing as system prompt...`, t`System prompt detected`);
             return await getPresetManager('sysprompt').savePreset(data.name, data);
         }
 
         // 4. Text Completion settings
         if (this.isPossiblyTextCompletionData(data)) {
-            toastr.info('Importing as settings preset...', 'Text Completion settings detected');
+            toastr.info(t`Importing as settings preset...`, t`Text Completion settings detected`);
             return await getPresetManager('textgenerationwebui').savePreset(fileName, data);
         }
 
@@ -231,7 +232,7 @@ class PresetManager {
         }
 
         if (validSections.length === 0) {
-            toastr.error('No valid sections found in imported data');
+            toastr.error(t`No valid sections found in imported data`);
             return;
         }
 
@@ -242,8 +243,8 @@ class PresetManager {
 
         const html = $(await renderTemplateAsync('masterImport', { sections: sectionNames }));
         const popup = new Popup(html, POPUP_TYPE.CONFIRM, '', {
-            okButton: 'Import',
-            cancelButton: 'Cancel',
+            okButton: t`Import`,
+            cancelButton: t`Cancel`,
         });
 
         const result = await popup.show();
@@ -257,7 +258,7 @@ class PresetManager {
         const confirmedSections = html.find('input:checked').map((_, el) => el instanceof HTMLInputElement && el.value).get();
 
         if (confirmedSections.length === 0) {
-            toastr.info('No sections selected for import');
+            toastr.info(t`No sections selected for import`);
             return;
         }
 
@@ -270,7 +271,7 @@ class PresetManager {
             }
         }
 
-        toastr.success(`Imported ${importedSections.length} settings: ${importedSections.join(', ')}`);
+        toastr.success(t`Imported ${importedSections.length} settings: ${importedSections.join(', ')}`);
     }
 
     /**
@@ -285,8 +286,8 @@ class PresetManager {
         const html = $(await renderTemplateAsync('masterExport', { sections: sectionNames }));
 
         const popup = new Popup(html, POPUP_TYPE.CONFIRM, '', {
-            okButton: 'Export',
-            cancelButton: 'Cancel',
+            okButton: t`Export`,
+            cancelButton: t`Cancel`,
         });
 
         const result = await popup.show();
@@ -300,7 +301,7 @@ class PresetManager {
         const data = {};
 
         if (confirmedSections.length === 0) {
-            toastr.info('No sections selected for export');
+            toastr.info(t`No sections selected for export`);
             return;
         }
 
@@ -328,7 +329,7 @@ class PresetManager {
      * @returns {any} Preset value
      */
     findPreset(name) {
-        return $(this.select).find('option').filter(function() {
+        return $(this.select).find('option').filter(function () {
             return $(this).text() === name;
         }).val();
     }
@@ -354,7 +355,7 @@ class PresetManager {
      * @param {string} value Preset option value
      */
     selectPreset(value) {
-        const option = $(this.select).filter(function() {
+        const option = $(this.select).filter(function () {
             return $(this).val() === value;
         });
         option.prop('selected', true);
@@ -366,21 +367,21 @@ class PresetManager {
         console.log(selected);
 
         if (selected.val() == 'gui') {
-            toastr.info('Cannot update GUI preset');
+            toastr.info(t`Cannot update GUI preset`);
             return;
         }
 
         const name = selected.text();
         await this.savePreset(name);
 
-        const successToast = !this.isAdvancedFormatting() ? 'Preset updated' : 'Template updated';
+        const successToast = !this.isAdvancedFormatting() ? t`Preset updated` : t`Template updated`;
         toastr.success(successToast);
     }
 
     async savePresetAs() {
         const inputValue = this.getSelectedPresetName();
-        const popupText = !this.isAdvancedFormatting() ? '<h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>' : '';
-        const headerText = !this.isAdvancedFormatting() ? 'Preset name:' : 'Template name:';
+        const popupText = !this.isAdvancedFormatting() ? '<h4>' + t`Hint: Use a character/group name to bind preset to a specific chat.` + '</h4>' : '';
+        const headerText = !this.isAdvancedFormatting() ? t`Preset name:` : t`Template name:`;
         const name = await Popup.show.input(headerText, popupText, inputValue);
         if (!name) {
             console.log('Preset name not provided');
@@ -389,7 +390,7 @@ class PresetManager {
 
         await this.savePreset(name);
 
-        const successToast = !this.isAdvancedFormatting() ? 'Preset saved' : 'Template saved';
+        const successToast = !this.isAdvancedFormatting() ? t`Preset saved` : t`Template saved`;
         toastr.success(successToast);
     }
 
@@ -411,7 +412,7 @@ class PresetManager {
         });
 
         if (!response.ok) {
-            toastr.error('Check the server connection and reload the page to prevent data loss.', 'Preset could not be saved');
+            toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Preset could not be saved`);
             console.error('Preset could not be saved', response);
             throw new Error('Preset could not be saved');
         }
@@ -420,6 +421,19 @@ class PresetManager {
         name = data.name;
 
         this.updateList(name, preset);
+    }
+
+    async renamePreset(newName) {
+        const oldName = this.getSelectedPresetName();
+        try {
+            await this.savePreset(newName);
+            await this.deletePreset(oldName);
+        } catch (error) {
+            toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Preset could not be renamed`);
+            console.error('Preset could not be renamed', error);
+            throw new Error('Preset could not be renamed');
+        }
+
     }
 
     getPresetList() {
@@ -585,13 +599,14 @@ class PresetManager {
         return settings;
     }
 
-    async deleteCurrentPreset() {
+    // pass no arguments to delete current preset
+    async deletePreset(name) {
         const { preset_names, presets } = this.getPresetList();
-        const value = this.getSelectedPreset();
-        const nameToDelete = this.getSelectedPresetName();
+        const value = name ? (this.isKeyedApi() ? this.findPreset(name) : name) : this.getSelectedPreset();
+        const nameToDelete = name || this.getSelectedPresetName();
 
         if (value == 'gui') {
-            toastr.info('Cannot delete GUI preset');
+            toastr.info(t`Cannot delete GUI preset`);
             return;
         }
 
@@ -605,7 +620,10 @@ class PresetManager {
             delete preset_names[nameToDelete];
         }
 
-        if (Object.keys(preset_names).length) {
+        // switch in UI only when deleting currently selected preset
+        const switchPresets = !name || this.getSelectedPresetName() == name;
+
+        if (Object.keys(preset_names).length && switchPresets) {
             const nextPresetName = Object.keys(preset_names)[0];
             const newValue = preset_names[nextPresetName];
             $(this.select).find(`option[value="${newValue}"]`).attr('selected', 'true');
@@ -629,7 +647,7 @@ class PresetManager {
         });
 
         if (!response.ok) {
-            const errorToast = !this.isAdvancedFormatting() ? 'Failed to restore default preset' : 'Failed to restore default template';
+            const errorToast = !this.isAdvancedFormatting() ? t`Failed to restore default preset` : t`Failed to restore default template`;
             toastr.error(errorToast);
             return;
         }
@@ -721,7 +739,8 @@ async function waitForConnection() {
 export async function initPresetManager() {
     eventSource.on(event_types.CHAT_CHANGED, autoSelectPreset);
     registerPresetManagers();
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'preset',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'preset',
         callback: presetCommandCallback,
         returns: 'current preset',
         unnamedArgumentList: [
@@ -774,6 +793,29 @@ export async function initPresetManager() {
         await presetManager.savePresetAs();
     });
 
+    $(document).on('click', '[data-preset-manager-rename]', async function () {
+        const apiId = $(this).data('preset-manager-rename');
+        const presetManager = getPresetManager(apiId);
+
+        if (!presetManager) {
+            console.warn(`Preset Manager not found for API: ${apiId}`);
+            return;
+        }
+
+        const popupHeader = !presetManager.isAdvancedFormatting() ? t`Rename preset` : t`Rename template`;
+        const oldName = presetManager.getSelectedPresetName();
+        const newName = await Popup.show.input(popupHeader, t`Enter a new name:`, oldName);
+        if (!newName || oldName === newName) {
+            console.debug(!presetManager.isAdvancedFormatting() ? 'Preset rename cancelled' : 'Template rename cancelled');
+            return;
+        }
+
+        await presetManager.renamePreset(newName);
+
+        const successToast = !presetManager.isAdvancedFormatting() ? t`Preset renamed` : t`Template renamed`;
+        toastr.success(successToast);
+    });
+
     $(document).on('click', '[data-preset-manager-export]', async function () {
         const apiId = $(this).data('preset-manager-export');
         const presetManager = getPresetManager(apiId);
@@ -816,7 +858,7 @@ export async function initPresetManager() {
         data['name'] = name;
 
         await presetManager.savePreset(name, data);
-        const successToast = !presetManager.isAdvancedFormatting() ? 'Preset imported' : 'Template imported';
+        const successToast = !presetManager.isAdvancedFormatting() ? t`Preset imported` : t`Template imported`;
         toastr.success(successToast);
         e.target.value = null;
     });
@@ -830,19 +872,19 @@ export async function initPresetManager() {
             return;
         }
 
-        const headerText = !presetManager.isAdvancedFormatting() ? 'Delete this preset?' : 'Delete this template?';
-        const confirm = await Popup.show.confirm(headerText, 'This action is irreversible and your current settings will be overwritten.');
+        const headerText = !presetManager.isAdvancedFormatting() ? t`Delete this preset?` : t`Delete this template?`;
+        const confirm = await Popup.show.confirm(headerText, t`This action is irreversible and your current settings will be overwritten.`);
         if (!confirm) {
             return;
         }
 
-        const result = await presetManager.deleteCurrentPreset();
+        const result = await presetManager.deletePreset();
 
         if (result) {
-            const successToast = !presetManager.isAdvancedFormatting() ? 'Preset deleted' : 'Template deleted';
+            const successToast = !presetManager.isAdvancedFormatting() ? t`Preset deleted` : t`Template deleted`;
             toastr.success(successToast);
         } else {
-            const warningToast = !presetManager.isAdvancedFormatting() ? 'Preset was not deleted from server' : 'Template was not deleted from server';
+            const warningToast = !presetManager.isAdvancedFormatting() ? t`Preset was not deleted from server` : t`Template was not deleted from server`;
             toastr.warning(warningToast);
         }
 
@@ -862,7 +904,7 @@ export async function initPresetManager() {
         const data = await presetManager.getDefaultPreset(name);
 
         if (name == 'gui') {
-            toastr.info('Cannot restore GUI preset');
+            toastr.info(t`Cannot restore GUI preset`);
             return;
         }
 
@@ -872,37 +914,37 @@ export async function initPresetManager() {
 
         if (data.isDefault) {
             if (Object.keys(data.preset).length === 0) {
-                const errorToast = !presetManager.isAdvancedFormatting() ? 'Default preset cannot be restored' : 'Default template cannot be restored';
+                const errorToast = !presetManager.isAdvancedFormatting() ? t`Default preset cannot be restored` : t`Default template cannot be restored`;
                 toastr.error(errorToast);
                 return;
             }
 
             const confirmText = !presetManager.isAdvancedFormatting()
-                ? 'Resetting a <b>default preset</b> will restore the default settings.'
-                : 'Resetting a <b>default template</b> will restore the default settings.';
-            const confirm = await Popup.show.confirm('Are you sure?', confirmText);
+                ? t`Resetting a <b>default preset</b> will restore the default settings.`
+                : t`Resetting a <b>default template</b> will restore the default settings.`;
+            const confirm = await Popup.show.confirm(t`Are you sure?`, confirmText);
             if (!confirm) {
                 return;
             }
 
-            await presetManager.deleteCurrentPreset();
+            await presetManager.deletePreset();
             await presetManager.savePreset(name, data.preset);
             const option = presetManager.findPreset(name);
             presetManager.selectPreset(option);
-            const successToast = !presetManager.isAdvancedFormatting() ? 'Default preset restored' : 'Default template restored';
+            const successToast = !presetManager.isAdvancedFormatting() ? t`Default preset restored` : t`Default template restored`;
             toastr.success(successToast);
         } else {
             const confirmText = !presetManager.isAdvancedFormatting()
-                ? 'Resetting a <b>custom preset</b> will restore to the last saved state.'
-                : 'Resetting a <b>custom template</b> will restore to the last saved state.';
-            const confirm = await Popup.show.confirm('Are you sure?', confirmText);
+                ? t`Resetting a <b>custom preset</b> will restore to the last saved state.`
+                : t`Resetting a <b>custom template</b> will restore to the last saved state.`;
+            const confirm = await Popup.show.confirm(t`Are you sure?`, confirmText);
             if (!confirm) {
                 return;
             }
 
             const option = presetManager.findPreset(name);
             presetManager.selectPreset(option);
-            const successToast = !presetManager.isAdvancedFormatting() ? 'Preset restored' : 'Template restored';
+            const successToast = !presetManager.isAdvancedFormatting() ? t`Preset restored` : t`Template restored`;
             toastr.success(successToast);
         }
     });

@@ -6755,7 +6755,7 @@ export async function saveSettings(type) {
             eventSource.emit(event_types.SETTINGS_UPDATED);
         },
         error: function (jqXHR, exception) {
-            toastr.error(t`Check the server connection and reload the page to prevent data loss.t`, t`Settings could not be saved`);
+            toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Settings could not be saved`);
             console.log(exception);
             console.log(jqXHR);
         },
