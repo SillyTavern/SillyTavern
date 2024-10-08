@@ -3858,7 +3858,7 @@ function registerFunctionTool() {
         displayName: 'Generate Image',
         description: [
             'Generate an image from a given text prompt.',
-            'Use when a user asks for an image, a selfie, to picture a scene, etc.',
+            'Use when a user asks to generate an image, imagine a concept or an item, send a picture of a scene, a selfie, etc.',
         ].join(' '),
         parameters: Object.freeze({
             $schema: 'http://json-schema.org/draft-04/schema#',
