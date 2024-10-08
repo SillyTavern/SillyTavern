@@ -36,12 +36,12 @@ const basicAuthMiddleware = async function (request, response, callback) {
     } else if (PER_USER_BASIC_AUTH) {
         const userHandles = await getAllUserHandles();
         for (const userHandle of userHandles) {
-            if (username == userHandle) {
+            if (username === userHandle) {
                 const user = await storage.getItem(toKey(userHandle));
-                if (user && (user.password && user.password === getPasswordHash(password, user.salt))) {
+                if (user && user.enabled && (user.password && user.password === getPasswordHash(password, user.salt))) {
                     return callback();
                 }
-                else if (user && !user.password && !password) {
+                else if (user && user.enabled && !user.password && !password) {
                     // Login to an account without password
                     return callback();
                 }
