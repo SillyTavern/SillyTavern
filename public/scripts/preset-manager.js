@@ -602,7 +602,7 @@ class PresetManager {
     // pass no arguments to delete current preset
     async deletePreset(name) {
         const { preset_names, presets } = this.getPresetList();
-        const value = name ? this.isKeyedApi() ? this.findPreset(name) : name : this.getSelectedPreset();
+        const value = name ? (this.isKeyedApi() ? this.findPreset(name) : name) : this.getSelectedPreset();
         const nameToDelete = name || this.getSelectedPresetName();
 
         if (value == 'gui') {
