@@ -571,9 +571,10 @@ function shouldRedirectToLogin(request) {
  * Tries auto-login if there is only one user and it's not password protected.
  * or another configured method such authlia or basic
  * @param {import('express').Request} request Request object
+ * @param {boolean} basicAuthMode If Basic auth mode is enabled
  * @returns {Promise<boolean>} Whether auto-login was performed
  */
-async function tryAutoLogin(request) {
+async function tryAutoLogin(request, basicAuthMode) {
     if (!ENABLE_ACCOUNTS || request.user || !request.session) {
         return false;
     }
@@ -587,7 +588,7 @@ async function tryAutoLogin(request) {
             return true;
         }
 
-        if (PER_USER_BASIC_AUTH && await basicUserLogin(request)) {
+        if (basicAuthMode && PER_USER_BASIC_AUTH && await basicUserLogin(request)) {
             return true;
         }
     }

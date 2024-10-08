@@ -363,7 +363,7 @@ app.get('/login', async (request, response) => {
     }
 
     try {
-        const autoLogin = await userModule.tryAutoLogin(request);
+        const autoLogin = await userModule.tryAutoLogin(request, basicAuthMode);
 
         if (autoLogin) {
             return response.redirect('/');
