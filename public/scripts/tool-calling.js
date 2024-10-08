@@ -381,6 +381,22 @@ export class ToolManager {
                 }
             }
         }
+        const cohereToolEvents = ['message-start', 'tool-call-start', 'tool-call-delta', 'tool-call-end'];
+        if (cohereToolEvents.includes(parsed?.type) && typeof parsed?.delta?.message === 'object') {
+            const choiceIndex = 0;
+            const toolCallIndex = parsed?.index ?? 0;
+
+            if (!Array.isArray(toolCalls[choiceIndex])) {
+                toolCalls[choiceIndex] = [];
+            }
+
+            if (toolCalls[choiceIndex][toolCallIndex] === undefined) {
+                toolCalls[choiceIndex][toolCallIndex] = {};
+            }
+
+            const targetToolCall = toolCalls[choiceIndex][toolCallIndex];
+            ToolManager.#applyToolCallDelta(targetToolCall, parsed.delta.message);
+        }
         if (typeof parsed?.content_block === 'object') {
             const choiceIndex = 0;
             const toolCallIndex = parsed?.index ?? 0;
@@ -483,6 +499,7 @@ export class ToolManager {
             chat_completion_sources.CLAUDE,
             chat_completion_sources.OPENROUTER,
             chat_completion_sources.GROQ,
+            chat_completion_sources.COHERE,
         ];
         return supportedSources.includes(oai_settings.chat_completion_source);
     }
@@ -509,7 +526,15 @@ export class ToolManager {
 
         // Parsed tool calls from streaming data
         if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
-            return isClaudeToolCall(data[0]) ? data[0].filter(x => x).map(convertClaudeToolCall) : data[0];
+            if (isClaudeToolCall(data[0])) {
+                return data[0].filter(x => x).map(convertClaudeToolCall);
+            }
+
+            if (typeof data[0]?.[0]?.tool_calls === 'object') {
+                return Array.isArray(data[0]?.[0]?.tool_calls) ? data[0][0].tool_calls : [data[0][0].tool_calls];
+            }
+
+            return data[0];
         }
 
         // Parsed tool calls from non-streaming data
@@ -529,6 +554,11 @@ export class ToolManager {
             if (content) {
                 return content;
             }
+        }
+
+        // Cohere tool calls
+        if (typeof data?.message?.tool_calls === 'object') {
+            return Array.isArray(data?.message?.tool_calls) ? data.message.tool_calls : [data.message.tool_calls];
         }
     }
 

@@ -155,5 +155,9 @@ claude:
   # (e.g {{random}} macro or lorebooks not as in-chat injections).
   # Otherwise, you'll just waste money on cache misses.
   enableSystemPromptCache: false
+# -- COHERE API CONFIGURATION --
+cohere:
+  # A placeholder prompt to be used when the message array doesn't end with a user message
+  userPlaceholder: "Continue"
 # -- SERVER PLUGIN CONFIGURATION --
 enableServerPlugins: false
