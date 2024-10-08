@@ -31,7 +31,7 @@ const basicAuthMiddleware = async function (request, response, callback) {
         .toString('utf8')
         .split(':');
 
-    if (! PER_USER_BASIC_AUTH && username === config.basicAuthUser.username && password === config.basicAuthUser.password) {
+    if (!PER_USER_BASIC_AUTH && username === config.basicAuthUser.username && password === config.basicAuthUser.password) {
         return callback();
     } else if (PER_USER_BASIC_AUTH) {
         const userHandles = await getAllUserHandles();
