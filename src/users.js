@@ -578,7 +578,6 @@ async function tryAutoLogin(request) {
         return false;
     }
 
-    console.warn(request.session.noauto);
     if (!request.query.noauto) {
         if (await singleUserLogin(request)) {
             return true;
