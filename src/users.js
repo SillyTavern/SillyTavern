@@ -635,7 +635,7 @@ async function autheliaUserLogin(request) {
 
     const userHandles = await getAllUserHandles();
     for (const userHandle of userHandles) {
-        if (remoteUser == userHandle) {
+        if (remoteUser === userHandle) {
             const user = await storage.getItem(toKey(userHandle));
             if (user && user.enabled) {
                 request.session.handle = userHandle;
@@ -671,7 +671,7 @@ async function basicUserLogin(request) {
 
     const userHandles = await getAllUserHandles();
     for (const userHandle of userHandles) {
-        if (login == userHandle) {
+        if (login === userHandle) {
             const user = await storage.getItem(toKey(userHandle));
             // Verify pass again here just to be sure
             if (user && user.enabled && user.password && user.password === getPasswordHash(password, user.salt)) {
