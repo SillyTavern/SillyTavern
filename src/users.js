@@ -655,13 +655,13 @@ async function basicUserLogin(request) {
         return false;
     }
 
-    const auth_header = request.get('Authorization');
-    if (!auth_header) {
+    const authHeader = request.get('Authorization');
+    if (!authHeader) {
         return false;
     }
 
-    const parts = auth_header.split(' ');
-    if (!parts || parts.length < 2 || parts[0].toLowerCase() != 'basic') {
+    const parts = authHeader.split(' ');
+    if (!parts || parts.length < 2 || parts[0].toLowerCase() !== 'basic') {
         return false;
     }
 
