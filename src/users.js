@@ -628,14 +628,14 @@ async function autheliaUserLogin(request) {
         return false;
     }
 
-    const remote_user = request.get('Remote-User');
-    if (!remote_user) {
+    const remoteUser = request.get('Remote-User');
+    if (!remoteUser) {
         return false;
     }
 
     const userHandles = await getAllUserHandles();
     for (const userHandle of userHandles) {
-        if (remote_user == userHandle) {
+        if (remoteUser == userHandle) {
             const user = await storage.getItem(toKey(userHandle));
             if (user) {
                 request.session.handle = userHandle;
