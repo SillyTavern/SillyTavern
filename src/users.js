@@ -674,11 +674,11 @@ async function basicUserLogin(request) {
         if (login == userHandle) {
             const user = await storage.getItem(toKey(userHandle));
             // Verify pass again here just to be sure
-            if (user && user.password && user.password === getPasswordHash(password, user.salt)) {
+            if (user && user.enabled && user.password && user.password === getPasswordHash(password, user.salt)) {
                 request.session.handle = userHandle;
                 return true;
             }
-            else if (user && !user.password && !password) {
+            else if (user && user.enabled && !user.password && !password) {
                 // Login to an account without password
                 request.session.handle = userHandle;
                 return true;
