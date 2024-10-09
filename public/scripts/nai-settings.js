@@ -245,7 +245,7 @@ function loadNovelSettingsUi(ui_settings) {
     $('#temp_novel').val(ui_settings.temperature);
     $('#temp_counter_novel').val(Number(ui_settings.temperature).toFixed(2));
     $('#rep_pen_novel').val(ui_settings.repetition_penalty);
-    $('#rep_pen_counter_novel').val(Number(ui_settings.repetition_penalty).toFixed(2));
+    $('#rep_pen_counter_novel').val(Number(ui_settings.repetition_penalty).toFixed(3));
     $('#rep_pen_size_novel').val(ui_settings.repetition_penalty_range);
     $('#rep_pen_size_counter_novel').val(Number(ui_settings.repetition_penalty_range).toFixed(0));
     $('#rep_pen_slope_novel').val(ui_settings.repetition_penalty_slope);
@@ -298,8 +298,8 @@ const sliders = [
     {
         sliderId: '#rep_pen_novel',
         counterId: '#rep_pen_counter_novel',
-        format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.repetition_penalty = Number(val).toFixed(2); },
+        format: (val) => Number(val).toFixed(3),
+        setValue: (val) => { nai_settings.repetition_penalty = Number(val).toFixed(3); },
     },
     {
         sliderId: '#rep_pen_size_novel',
