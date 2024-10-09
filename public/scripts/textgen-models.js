@@ -267,6 +267,7 @@ export async function loadAphroditeModels(data) {
 }
 
 let selectedModelId = null;
+let currentPage = 1;
 export async function loadFeatherlessModels(data) {
     const searchBar = document.getElementById('model_search_bar');
     const modelCardBlock = document.getElementById('model_card_block');
@@ -293,32 +294,30 @@ export async function loadFeatherlessModels(data) {
     populateClassSelection(data);
 
     // Retrieve the stored number of items per page or default to 5
-    const perPage = Number(localStorage.getItem(storageKey)) || 6;
+    const perPage = Number(localStorage.getItem(storageKey)) || 10;
 
     // Initialize pagination with the full set of models
     setupPagination(originalModels, perPage);
 
     // Function to set up pagination (also used for filtered results)
-    function setupPagination(models, perPage) {
+    function setupPagination(models, perPage, pageNumber = currentPage) {
         paginationContainer.pagination({
             dataSource: models,
             pageSize: perPage,
+            pageNumber: pageNumber,
             sizeChangerOptions: [6, 10, 26, 50, 100, 250, 500, 1000],
             pageRange: 1,
-            pageNumber: 1,
             showPageNumbers: true,
             showSizeChanger: false,
             prevText: '<',
             nextText: '>',
             formatNavigator: function (currentPage, totalPage) {
-                return (currentPage - 1) * perPage + 1  + ' - ' + currentPage * perPage + ' of ' + totalPage * perPage;
+                return (currentPage - 1) * perPage + 1 + ' - ' + currentPage * perPage + ' of ' + totalPage * perPage;
             },
             showNavigator: true,
-            callback: function (modelsOnPage) {
-                // Clear the model card block before adding new cards
+            callback: function (modelsOnPage, pagination) {
                 modelCardBlock.innerHTML = '';
 
-                // Loop through the models for the current page and create cards
                 modelsOnPage.forEach(model => {
                     const card = document.createElement('div');
                     card.classList.add('model-card');
@@ -342,40 +341,42 @@ export async function loadFeatherlessModels(data) {
                     contextLengthDiv.classList.add('model-context-length');
                     contextLengthDiv.textContent = `Context Length: ${model.context_length}`;
 
+                    const dateAddedDiv = document.createElement('div');
+                    dateAddedDiv.classList.add('model-date-added');
+                    dateAddedDiv.textContent = `Added On: ${new Date(model.updated_at).toLocaleDateString()}`;
+
                     detailsContainer.appendChild(modelClassDiv);
                     detailsContainer.appendChild(contextLengthDiv);
+                    detailsContainer.appendChild(dateAddedDiv);
 
                     card.appendChild(modelNameContainer);
                     card.appendChild(detailsContainer);
 
-                    // Append the card to the container
                     modelCardBlock.appendChild(card);
 
-                    // Check if this card is the currently selected model
                     if (model.id === selectedModelId) {
-                        card.classList.add('selected');  // Keep the selected class if it's the same model
+                        card.classList.add('selected');
                     }
 
-                    // Add click event listener to the card
                     card.addEventListener('click', function() {
-                        // Remove the selected class from all other cards
                         document.querySelectorAll('.model-card').forEach(c => c.classList.remove('selected'));
-
-                        // Add the selected class to the clicked card
                         card.classList.add('selected');
-
-                        // Call the onFeatherlessModelSelect function with the selected model ID
                         onFeatherlessModelSelect(model.id);
                     });
                 });
+
+                // Update the current page value whenever the page changes
+                currentPage = pagination.pageNumber;
             },
             afterSizeSelectorChange: function (e) {
                 const newPerPage = e.target.value;
-                localStorage.setItem('Models_PerPage', newPerPage);  // Save the new value in localStorage
-                setupPagination(models, Number(newPerPage));   // Reinitialize pagination with the new per page value
+                localStorage.setItem('Models_PerPage', newPerPage);
+                setupPagination(models, Number(newPerPage), currentPage); // Use the stored current page number
             },
         });
     }
+
+
 
     // Add event listener for input on the search bar
     searchBar.addEventListener('input', function() {
@@ -399,6 +400,7 @@ export async function loadFeatherlessModels(data) {
     // Function to populate class selection dropdown
     function populateClassSelection(models) {
         const uniqueClasses = [...new Set(models.map(model => model.model_class).filter(Boolean))];  // Get unique class names
+        uniqueClasses.sort((a, b) => a.localeCompare(b));
         uniqueClasses.forEach(className => {
             const option = document.createElement('option');
             option.value = className;
@@ -420,7 +422,7 @@ export async function loadFeatherlessModels(data) {
             featherlessTop = await fetchFeatherlessStats();
         }
         const featherlessIds = featherlessTop.map(stat => stat.id);
-        if(selectedCategory === 'New') {
+        if (selectedCategory === 'New') {
             featherlessNew = await fetchFeatherlessNew();
         }
         const featherlessNewIds = featherlessNew.map(stat => stat.id);
@@ -445,7 +447,6 @@ export async function loadFeatherlessModels(data) {
             }
         });
 
-        // Sort the filtered models based on selected sort order (A-Z or Z-A)
         if (selectedSortOrder === 'asc') {
             filteredModels.sort((a, b) => a.id.localeCompare(b.id));
         } else if (selectedSortOrder === 'desc') {
@@ -456,9 +457,10 @@ export async function loadFeatherlessModels(data) {
             filteredModels.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
         }
 
-        // Reinitialize pagination with the filtered and sorted models
-        setupPagination(filteredModels, Number(localStorage.getItem(storageKey)) || perPage);
+        setupPagination(filteredModels, Number(localStorage.getItem(storageKey)) || perPage, currentPage);
     }
+
+
 }
 
 async function fetchFeatherlessStats() {
@@ -480,15 +482,14 @@ function onFeatherlessModelSelect(modelId) {
     textgen_settings.featherless_model = modelId;
     $('#api_button_textgenerationwebui').trigger('click');
     setGenerationParamsFromPreset({ max_length: model.context_length });
-    toastr.info(`Selected model: ${modelId}`, '', { timeOut: 2000 });
 }
 
-let isGridView = true;  // Default state set to grid view
+let isGridView = false;  // Default state set to grid view
 
 // Ensure the correct initial view is applied when the page loads
 document.addEventListener('DOMContentLoaded', function() {
     const modelCardBlock = document.getElementById('model_card_block');
-    modelCardBlock.classList.add('grid-view');
+    modelCardBlock.classList.add('list-view');
 
     const toggleButton = document.getElementById('model_grid_toggle');
     toggleButton.addEventListener('click', function() {
