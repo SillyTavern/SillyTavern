@@ -51,6 +51,19 @@ requestProxy:
 enableUserAccounts: false
 # Enable discreet login mode: hides user list on the login screen
 enableDiscreetLogin: false
+# Enable's authlia based auto login. Only enable this if you
+# have setup and installed Authelia as a middle-ware on your
+# reverse proxy
+# https://www.authelia.com/
+# This will use auto login to an account with the same username
+# as that used for authlia. (Ensure the username in authlia
+# is an exact match with that in sillytavern)
+autheliaAuth: false
+# If `basicAuthMode` and this are enabled then
+# the username and passwords for basic auth are the same as those
+# for the individual accounts
+perUserBasicAuth: false
+
 # User session timeout *in seconds* (defaults to 24 hours).
 ## Set to a positive number to expire session after a certain time of inactivity
 ## Set to 0 to expire session when the browser is closed
@@ -110,9 +123,6 @@ enableExtensionsAutoUpdate: true
 # Additional model tokenizers can be downloaded on demand.
 # Disabling will fallback to another locally available tokenizer.
 enableDownloadableTokenizers: true
-# Vector storage settings
-vectors:
-  enableModelScopes: false
 # Extension settings
 extras:
   # Disables automatic model download from HuggingFace
@@ -121,10 +131,11 @@ extras:
   classificationModel: Cohee/distilbert-base-uncased-go-emotions-onnx
   captioningModel: Xenova/vit-gpt2-image-captioning
   embeddingModel: Cohee/jina-embeddings-v2-base-en
-  promptExpansionModel: Cohee/fooocus_expansion-onnx
   speechToTextModel: Xenova/whisper-small
   textToSpeechModel: Xenova/speecht5_tts
 # -- OPENAI CONFIGURATION --
+# A placeholder message to use in strict prompt post-processing mode when the prompt doesn't start with a user message
+promptPlaceholder: "[Start a new chat]"
 openai:
   # Will send a random user ID to OpenAI completion API
   randomizeUserId: false

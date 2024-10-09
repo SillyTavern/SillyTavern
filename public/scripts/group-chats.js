@@ -70,12 +70,12 @@ import {
     animation_duration,
     depth_prompt_role_default,
     shouldAutoContinue,
-    this_chid,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { isExternalMediaAllowed } from './chats.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
+import { t } from './i18n.js';
 
 export {
     selected_group,
@@ -189,8 +189,8 @@ async function validateGroup(group) {
     group.members = group.members.filter(member => {
         const character = characters.find(x => x.avatar === member || x.name === member);
         if (!character) {
-            const msg = `Warning: Listed member ${member} does not exist as a character. It will be removed from the group.`;
-            toastr.warning(msg, 'Group Validation');
+            const msg = t`Warning: Listed member ${member} does not exist as a character. It will be removed from the group.`;
+            toastr.warning(msg, t`Group Validation`);
             console.warn(msg);
             dirty = true;
         }
@@ -522,7 +522,7 @@ async function saveGroupChat(groupId, shouldSaveGroup) {
     });
 
     if (!response.ok) {
-        toastr.error('Check the server connection and reload the page to prevent data loss.', 'Group Chat could not be saved');
+        toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Group Chat could not be saved`);
         console.error('Group chat could not be saved', response);
         return;
     }
@@ -837,7 +837,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             activatedMembers = activateSwipe(group.members);
 
             if (activatedMembers.length === 0) {
-                toastr.warning('Deleted group member swiped. To get a reply, add them back to the group.');
+                toastr.warning(t`Deleted group member swiped. To get a reply, add them back to the group.`);
                 throw new Error('Deleted group member swiped');
             }
         }
@@ -1368,15 +1368,15 @@ function isGroupMemberDisabled(avatarId) {
 
 async function onDeleteGroupClick() {
     if (!openGroupId) {
-        toastr.warning('Currently no group selected.');
+        toastr.warning(t`Currently no group selected.`);
         return;
     }
     if (is_group_generating) {
-        toastr.warning('Not so fast! Wait for the characters to stop typing before deleting the group.');
+        toastr.warning(t`Not so fast! Wait for the characters to stop typing before deleting the group.`);
         return;
     }
 
-    const confirm = await Popup.show.confirm('Delete the group?', '<p>This will also delete all your chats with that group. If you want to delete a single conversation, select a "View past chats" option in the lower left menu.</p>');
+    const confirm = await Popup.show.confirm(t`Delete the group?`, '<p>' + t`This will also delete all your chats with that group. If you want to delete a single conversation, select a "View past chats" option in the lower left menu.` + '</p>');
     if (confirm) {
         deleteGroup(openGroupId);
     }
@@ -1630,7 +1630,7 @@ function updateFavButtonState(state) {
 
 export async function openGroupById(groupId) {
     if (isChatSaving) {
-        toastr.info('Please wait until the chat is saved before switching characters.', 'Your chat is still saving...');
+        toastr.info(t`Please wait until the chat is saved before switching characters.`, t`Your chat is still saving...`);
         return;
     }
 
@@ -1659,7 +1659,7 @@ export async function openGroupById(groupId) {
 
 function openCharacterDefinition(characterSelect) {
     if (is_group_generating) {
-        toastr.warning('Can\'t peek a character while group reply is being generated');
+        toastr.warning(t`Can't peek a character while group reply is being generated`);
         console.warn('Can\'t peek a character def while group reply is being generated');
         return;
     }
@@ -1908,7 +1908,7 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId) {
     });
 
     if (!response.ok) {
-        toastr.error('Check the server connection and reload the page to prevent data loss.', 'Group chat could not be saved');
+        toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Group chat could not be saved`);
         console.error('Group chat could not be saved', response);
     }
 }

@@ -108,9 +108,21 @@ function getDelay(s) {
  * @returns {AsyncGenerator<{data: object, chunk: string}>} The parsed data and the chunk to be sent.
  */
 async function* parseStreamData(json) {
+    // Cohere
+    if (typeof json.delta.message === 'object' && ['tool-plan-delta', 'content-delta'].includes(json.type)) {
+        const text = json?.delta?.message?.content?.text ?? '';
+        for (let i = 0; i < text.length; i++) {
+            const str = json.delta.message.content.text[i];
+            yield {
+                data: { ...json, delta: { message: { content: { text: str } } } },
+                chunk: str,
+            };
+        }
+        return;
+    }
     // Claude
-    if (typeof json.delta === 'object') {
-        if (typeof json.delta.text === 'string' && json.delta.text.length > 0) {
+    if (typeof json.delta === 'object' && typeof json.delta.text === 'string') {
+        if (json.delta.text.length > 0) {
             for (let i = 0; i < json.delta.text.length; i++) {
                 const str = json.delta.text[i];
                 yield {

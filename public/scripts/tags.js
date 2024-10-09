@@ -15,7 +15,7 @@ import {
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
-import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents, removeFromArray, getFreeName, debounce } from './utils.js';
+import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents, removeFromArray, getFreeName, debounce, findChar } from './utils.js';
 import { power_user } from './power-user.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -50,7 +50,6 @@ export {
     removeTagFromMap,
 };
 
-/** @typedef {import('../scripts/popup.js').Popup} Popup */
 /** @typedef {import('../script.js').Character} Character */
 
 const CHARACTER_FILTER_SELECTOR = '#rm_characters_block .rm_tag_filter';
@@ -507,7 +506,7 @@ export function getTagKeyForEntityElement(element) {
  */
 export function searchCharByName(charName, { suppressLogging = false } = {}) {
     const entity = charName
-        ? (characters.find(x => x.name === charName) || groups.find(x => x.name == charName))
+        ? (findChar({ name: charName }) || groups.find(x => equalsIgnoreCaseAndAccents(x.name, charName)))
         : (selected_group ? groups.find(x => x.id == selected_group) : characters[this_chid]);
     const key = getTagKeyForEntity(entity);
     if (!key) {
@@ -1861,8 +1860,9 @@ function registerTagsSlashCommands() {
             return String(result);
         },
         namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({ name: 'name',
-                description: 'Character name',
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
                 enumProvider: commonEnumProviders.characters(),
@@ -1907,7 +1907,7 @@ function registerTagsSlashCommands() {
         },
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({ name: 'name',
-                description: 'Character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
                 enumProvider: commonEnumProviders.characters(),
@@ -1950,7 +1950,7 @@ function registerTagsSlashCommands() {
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
-                description: 'Character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
                 enumProvider: commonEnumProviders.characters(),
@@ -1993,7 +1993,7 @@ function registerTagsSlashCommands() {
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
-                description: 'Character name',
+                description: 'Character name - or unique character identifier (avatar key)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{char}}',
                 enumProvider: commonEnumProviders.characters(),

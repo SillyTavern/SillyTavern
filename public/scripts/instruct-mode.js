@@ -384,6 +384,10 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
  * @returns {string} Formatted instruct mode system prompt.
  */
 export function formatInstructModeSystemPrompt(systemPrompt) {
+    if (!systemPrompt) {
+        return '';
+    }
+
     const separator = power_user.instruct.wrap ? '\n' : '';
 
     if (power_user.instruct.system_sequence_prefix) {
@@ -550,11 +554,9 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
  * @param {string} name Preset name.
  */
 function selectMatchingContextTemplate(name) {
-    let foundMatch = false;
     for (const context_preset of context_presets) {
         // If context template matches the instruct preset
         if (context_preset.name === name) {
-            foundMatch = true;
             selectContextPreset(context_preset.name, { isAuto: true });
             break;
         }

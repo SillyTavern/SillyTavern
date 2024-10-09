@@ -22,6 +22,72 @@ const visitHeaders = {
     'Sec-Fetch-User': '?1',
 };
 
+/**
+ * Extract the transcript of a YouTube video
+ * @param {string} videoPageBody HTML of the video page
+ * @param {string} lang Language code
+ * @returns {Promise<string>} Transcript text
+ */
+async function extractTranscript(videoPageBody, lang) {
+    const he = require('he');
+    const RE_XML_TRANSCRIPT = /<text start="([^"]*)" dur="([^"]*)">([^<]*)<\/text>/g;
+    const splittedHTML = videoPageBody.split('"captions":');
+
+    if (splittedHTML.length <= 1) {
+        if (videoPageBody.includes('class="g-recaptcha"')) {
+            throw new Error('Too many requests');
+        }
+        if (!videoPageBody.includes('"playabilityStatus":')) {
+            throw new Error('Video is not available');
+        }
+        throw new Error('Transcript not available');
+    }
+
+    const captions = (() => {
+        try {
+            return JSON.parse(splittedHTML[1].split(',"videoDetails')[0].replace('\n', ''));
+        } catch (e) {
+            return undefined;
+        }
+    })()?.['playerCaptionsTracklistRenderer'];
+
+    if (!captions) {
+        throw new Error('Transcript disabled');
+    }
+
+    if (!('captionTracks' in captions)) {
+        throw new Error('Transcript not available');
+    }
+
+    if (lang && !captions.captionTracks.some(track => track.languageCode === lang)) {
+        throw new Error('Transcript not available in this language');
+    }
+
+    const transcriptURL = (lang ? captions.captionTracks.find(track => track.languageCode === lang) : captions.captionTracks[0]).baseUrl;
+    const transcriptResponse = await fetch(transcriptURL, {
+        headers: {
+            ...(lang && { 'Accept-Language': lang }),
+            'User-Agent': visitHeaders['User-Agent'],
+        },
+    });
+
+    if (!transcriptResponse.ok) {
+        throw new Error('Transcript request failed');
+    }
+
+    const transcriptBody = await transcriptResponse.text();
+    const results = [...transcriptBody.matchAll(RE_XML_TRANSCRIPT)];
+    const transcript = results.map((result) => ({
+        text: result[3],
+        duration: parseFloat(result[2]),
+        offset: parseFloat(result[1]),
+        lang: lang ?? captions.captionTracks[0].languageCode,
+    }));
+    // The text is double-encoded
+    const transcriptText = transcript.map((line) => he.decode(he.decode(line.text))).join(' ');
+    return transcriptText;
+}
+
 router.post('/serpapi', jsonParser, async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.SERPAPI);
@@ -56,10 +122,9 @@ router.post('/serpapi', jsonParser, async (request, response) => {
  */
 router.post('/transcript', jsonParser, async (request, response) => {
     try {
-        const he = require('he');
-        const RE_XML_TRANSCRIPT = /<text start="([^"]*)" dur="([^"]*)">([^<]*)<\/text>/g;
         const id = request.body.id;
         const lang = request.body.lang;
+        const json = request.body.json;
 
         if (!id) {
             console.log('Id is required for /transcript');
@@ -74,62 +139,18 @@ router.post('/transcript', jsonParser, async (request, response) => {
         });
 
         const videoPageBody = await videoPageResponse.text();
-        const splittedHTML = videoPageBody.split('"captions":');
 
-        if (splittedHTML.length <= 1) {
-            if (videoPageBody.includes('class="g-recaptcha"')) {
-                throw new Error('Too many requests');
+        try {
+            const transcriptText = await extractTranscript(videoPageBody, lang);
+            return json
+                ? response.json({ transcript: transcriptText, html: videoPageBody })
+                : response.send(transcriptText);
+        } catch (error) {
+            if (json) {
+                return response.json({ html: videoPageBody, transcript: '' });
             }
-            if (!videoPageBody.includes('"playabilityStatus":')) {
-                throw new Error('Video is not available');
-            }
-            throw new Error('Transcript not available');
+            throw error;
         }
-
-        const captions = (() => {
-            try {
-                return JSON.parse(splittedHTML[1].split(',"videoDetails')[0].replace('\n', ''));
-            } catch (e) {
-                return undefined;
-            }
-        })()?.['playerCaptionsTracklistRenderer'];
-
-        if (!captions) {
-            throw new Error('Transcript disabled');
-        }
-
-        if (!('captionTracks' in captions)) {
-            throw new Error('Transcript not available');
-        }
-
-        if (lang && !captions.captionTracks.some(track => track.languageCode === lang)) {
-            throw new Error('Transcript not available in this language');
-        }
-
-        const transcriptURL = (lang ? captions.captionTracks.find(track => track.languageCode === lang) : captions.captionTracks[0]).baseUrl;
-        const transcriptResponse = await fetch(transcriptURL, {
-            headers: {
-                ...(lang && { 'Accept-Language': lang }),
-                'User-Agent': visitHeaders['User-Agent'],
-            },
-        });
-
-        if (!transcriptResponse.ok) {
-            throw new Error('Transcript request failed');
-        }
-
-        const transcriptBody = await transcriptResponse.text();
-        const results = [...transcriptBody.matchAll(RE_XML_TRANSCRIPT)];
-        const transcript = results.map((result) => ({
-            text: result[3],
-            duration: parseFloat(result[2]),
-            offset: parseFloat(result[1]),
-            lang: lang ?? captions.captionTracks[0].languageCode,
-        }));
-        // The text is double-encoded
-        const transcriptText = transcript.map((line) => he.decode(he.decode(line.text))).join(' ');
-
-        return response.send(transcriptText);
     } catch (error) {
         console.log(error);
         return response.sendStatus(500);

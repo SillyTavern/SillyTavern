@@ -1,6 +1,6 @@
 import { event_types, eventSource, main_api, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
-import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
+import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from '../../slash-commands/SlashCommandAbortController.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
@@ -10,6 +10,7 @@ import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashComm
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from '../../slash-commands/SlashCommandScope.js';
 import { collapseSpaces, getUniqueName, isFalseBoolean, uuidv4 } from '../../utils.js';
+import { t } from '../../i18n.js';
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
@@ -135,6 +136,7 @@ const profilesProvider = () => [
  * @property {string} [context] Context Template
  * @property {string} [instruct-state] Instruct Mode
  * @property {string} [tokenizer] Tokenizer
+ * @property {string[]} [exclude] Commands to exclude
  */
 
 /**
@@ -171,8 +173,13 @@ function findProfileByName(value) {
 async function readProfileFromCommands(mode, profile, cleanUp = false) {
     const commands = mode === 'cc' ? CC_COMMANDS : TC_COMMANDS;
     const opposingCommands = mode === 'cc' ? TC_COMMANDS : CC_COMMANDS;
+    const excludeList = Array.isArray(profile.exclude) ? profile.exclude : [];
     for (const command of commands) {
         try {
+            if (excludeList.includes(command)) {
+                continue;
+            }
+
             const args = getNamedArguments();
             const result = await SlashCommandParser.commands[command].callback(args, '');
             if (result) {
@@ -208,15 +215,37 @@ async function readProfileFromCommands(mode, profile, cleanUp = false) {
 async function createConnectionProfile(forceName = null) {
     const mode = main_api === 'openai' ? 'cc' : 'tc';
     const id = uuidv4();
+    /** @type {ConnectionProfile} */
     const profile = {
         id,
         mode,
+        exclude: [],
     };
 
     await readProfileFromCommands(mode, profile);
 
     const profileForDisplay = makeFancyProfile(profile);
-    const template = await renderExtensionTemplateAsync(MODULE_NAME, 'profile', { profile: profileForDisplay });
+    const template = $(await renderExtensionTemplateAsync(MODULE_NAME, 'profile', { profile: profileForDisplay }));
+    template.find('input[name="exclude"]').on('input', function () {
+        const fancyName = String($(this).val());
+        const keyName = Object.entries(FANCY_NAMES).find(x => x[1] === fancyName)?.[0];
+        if (!keyName) {
+            console.warn('Key not found for fancy name:', fancyName);
+            return;
+        }
+
+        if (!Array.isArray(profile.exclude)) {
+            profile.exclude = [];
+        }
+
+        const excludeState = !$(this).prop('checked');
+        if (excludeState) {
+            profile.exclude.push(keyName);
+        } else {
+            const index = profile.exclude.indexOf(keyName);
+            index !== -1 && profile.exclude.splice(index, 1);
+        }
+    });
     const isNameTaken = (n) => extension_settings.connectionManager.profiles.some(p => p.name === n);
     const suggestedName = getUniqueName(collapseSpaces(`${profile.api ?? ''} ${profile.model ?? ''} - ${profile.preset ?? ''}`), isNameTaken);
     const name = forceName ?? await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName, { rows: 2 });
@@ -230,7 +259,13 @@ async function createConnectionProfile(forceName = null) {
         return null;
     }
 
-    profile.name = name;
+    if (Array.isArray(profile.exclude)) {
+        for (const command of profile.exclude) {
+            delete profile[command];
+        }
+    }
+
+    profile.name = String(name);
     return profile;
 }
 
@@ -250,7 +285,7 @@ async function deleteConnectionProfile() {
     }
 
     const name = extension_settings.connectionManager.profiles[index].name;
-    const confirm = await Popup.show.confirm('Are you sure you want to delete the selected profile?', name);
+    const confirm = await Popup.show.confirm(t`Are you sure you want to delete the selected profile?`, name);
 
     if (!confirm) {
         return;
@@ -357,10 +392,14 @@ async function renderDetailsContent(detailsContent) {
     const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
     if (profile) {
         const profileForDisplay = makeFancyProfile(profile);
-        const template = await renderExtensionTemplateAsync(MODULE_NAME, 'view', { profile: profileForDisplay });
+        const templateParams = { profile: profileForDisplay };
+        if (Array.isArray(profile.exclude) && profile.exclude.length > 0) {
+            templateParams.omitted = profile.exclude.map(e => FANCY_NAMES[e]).join(', ');
+        }
+        const template = await renderExtensionTemplateAsync(MODULE_NAME, 'view', templateParams);
         detailsContent.innerHTML = template;
     } else {
-        detailsContent.textContent = 'No profile selected';
+        detailsContent.textContent = t`No profile selected`;
     }
 }
 
@@ -472,29 +511,71 @@ async function renderDetailsContent(detailsContent) {
         await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, NONE);
     });
 
-    const renameButton = document.getElementById('rename_connection_profile');
-    renameButton.addEventListener('click', async () => {
+    const editButton = document.getElementById('edit_connection_profile');
+    editButton.addEventListener('click', async () => {
         const selectedProfile = extension_settings.connectionManager.selectedProfile;
         const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
         if (!profile) {
             console.log('No profile selected');
             return;
         }
+        if (!Array.isArray(profile.exclude)) {
+            profile.exclude = [];
+        }
 
-        const newName = await Popup.show.input('Enter a new name', null, profile.name, { rows: 2 });
+        let saveChanges = false;
+        const sortByViewOrder = (a, b) => Object.keys(FANCY_NAMES).indexOf(a) - Object.keys(FANCY_NAMES).indexOf(b);
+        const commands = profile.mode === 'cc' ? CC_COMMANDS : TC_COMMANDS;
+        const settings = commands.slice().sort(sortByViewOrder).reduce((acc, command) => {
+            const fancyName = FANCY_NAMES[command];
+            acc[fancyName] = !profile.exclude.includes(command);
+            return acc;
+        }, {});
+        const template = $(await renderExtensionTemplateAsync(MODULE_NAME, 'edit', { name: profile.name, settings }));
+        const newName = await callGenericPopup(template, POPUP_TYPE.INPUT, profile.name, {
+            customButtons: [{
+                text: t`Save and Update`,
+                classes: ['popup-button-ok'],
+                result: POPUP_RESULT.AFFIRMATIVE,
+                action: () => {
+                    saveChanges = true;
+                },
+            }],
+        });
+
         if (!newName) {
             return;
         }
 
-        if (extension_settings.connectionManager.profiles.some(p => p.name === newName)) {
+        if (profile.name !== newName && extension_settings.connectionManager.profiles.some(p => p.name === newName)) {
             toastr.error('A profile with the same name already exists.');
             return;
         }
 
-        profile.name = newName;
+        const newExcludeList = template.find('input[name="exclude"]:not(:checked)').map(function () {
+            return Object.entries(FANCY_NAMES).find(x => x[1] === String($(this).val()))?.[0];
+        }).get();
+
+        if (newExcludeList.length !== profile.exclude.length || !newExcludeList.every(e => profile.exclude.includes(e))) {
+            profile.exclude = newExcludeList;
+            for (const command of newExcludeList) {
+                delete profile[command];
+            }
+            if (saveChanges) {
+                await updateConnectionProfile(profile);
+            } else {
+                toastr.info('Press "Update" to record them into the profile.', 'Included settings list updated');
+            }
+        }
+
+        if (profile.name !== newName) {
+            toastr.success('Connection profile renamed.');
+            profile.name = String(newName);
+        }
+
         saveSettingsDebounced();
         renderConnectionProfiles(profiles);
-        toastr.success('Connection profile renamed', '', { timeOut: 1500 });
+        await renderDetailsContent(detailsContent);
     });
 
     /** @type {HTMLElement} */

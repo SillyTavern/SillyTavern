@@ -1,3 +1,4 @@
+import { event_types, eventSource, saveSettingsDebounced } from '../../../script.js';
 import { deleteAttachment, getDataBankAttachments, getDataBankAttachmentsForSource, getFileAttachment, uploadFileAttachmentToServer } from '../../chats.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
@@ -196,7 +197,27 @@ async function enableDataBankAttachment(args, value) {
     return '';
 }
 
+function cleanUpAttachments() {
+    let shouldSaveSettings = false;
+    if (extension_settings.character_attachments) {
+        Object.values(extension_settings.character_attachments).flat().filter(a => a.text).forEach(a => {
+            shouldSaveSettings = true;
+            delete a.text;
+        });
+    }
+    if (Array.isArray(extension_settings.attachments)) {
+        extension_settings.attachments.filter(a => a.text).forEach(a => {
+            shouldSaveSettings = true;
+            delete a.text;
+        });
+    }
+    if (shouldSaveSettings) {
+        saveSettingsDebounced();
+    }
+}
+
 jQuery(async () => {
+    eventSource.on(event_types.APP_READY, cleanUpAttachments);
     const manageButton = await renderExtensionTemplateAsync('attachments', 'manage-button', {});
     const attachButton = await renderExtensionTemplateAsync('attachments', 'attach-button', {});
     $('#data_bank_wand_container').append(manageButton);

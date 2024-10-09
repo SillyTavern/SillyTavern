@@ -1,5 +1,5 @@
 import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration } from '../script.js';
-import { hideLoader, showLoader } from './loader.js';
+import { showLoader } from './loader.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { renderTemplate, renderTemplateAsync } from './templates.js';
 import { isSubsetOf, setValueByPath } from './utils.js';
@@ -14,7 +14,9 @@ export {
     ModuleWorkerWrapper,
 };
 
+/** @type {string[]} */
 export let extensionNames = [];
+
 let manifests = {};
 const defaultUrl = 'http://localhost:5100';
 
@@ -241,7 +243,7 @@ function onEnableExtensionClick() {
     enableExtension(name, false);
 }
 
-async function enableExtension(name, reload = true) {
+export async function enableExtension(name, reload = true) {
     extension_settings.disabledExtensions = extension_settings.disabledExtensions.filter(x => x !== name);
     stateChanged = true;
     await saveSettings();
@@ -252,7 +254,7 @@ async function enableExtension(name, reload = true) {
     }
 }
 
-async function disableExtension(name, reload = true) {
+export async function disableExtension(name, reload = true) {
     extension_settings.disabledExtensions.push(name);
     stateChanged = true;
     await saveSettings();
@@ -1041,7 +1043,9 @@ export async function openThirdPartyExtensionMenu(suggestUrl = '') {
     await installExtension(url);
 }
 
-jQuery(async function () {
+
+
+export async function initExtensions() {
     await addExtensionsButtonAndMenu();
     $('#extensionsMenuButton').css('display', 'flex');
 
@@ -1060,4 +1064,4 @@ jQuery(async function () {
      * @listens #third_party_extension_button#click - The click event of the '#third_party_extension_button' element.
      */
     $('#third_party_extension_button').on('click', () => openThirdPartyExtensionMenu());
-});
+}

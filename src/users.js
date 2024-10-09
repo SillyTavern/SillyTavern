@@ -19,6 +19,8 @@ const { readSecret, writeSecret } = require('./endpoints/secrets');
 const KEY_PREFIX = 'user:';
 const AVATAR_PREFIX = 'avatar:';
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
+const AUTHELIA_AUTH = getConfigValue('autheliaAuth', false);
+const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false);
 const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
 
 /**
@@ -567,11 +569,40 @@ function shouldRedirectToLogin(request) {
 
 /**
  * Tries auto-login if there is only one user and it's not password protected.
+ * or another configured method such authlia or basic
+ * @param {import('express').Request} request Request object
+ * @param {boolean} basicAuthMode If Basic auth mode is enabled
+ * @returns {Promise<boolean>} Whether auto-login was performed
+ */
+async function tryAutoLogin(request, basicAuthMode) {
+    if (!ENABLE_ACCOUNTS || request.user || !request.session) {
+        return false;
+    }
+
+    if (!request.query.noauto) {
+        if (await singleUserLogin(request)) {
+            return true;
+        }
+
+        if (AUTHELIA_AUTH && await autheliaUserLogin(request)) {
+            return true;
+        }
+
+        if (basicAuthMode && PER_USER_BASIC_AUTH && await basicUserLogin(request)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Tries auto-login if there is only one user and it's not password protected.
  * @param {import('express').Request} request Request object
  * @returns {Promise<boolean>} Whether auto-login was performed
  */
-async function tryAutoLogin(request) {
-    if (!ENABLE_ACCOUNTS || request.user || !request.session) {
+async function singleUserLogin(request) {
+    if (!request.session) {
         return false;
     }
 
@@ -581,6 +612,75 @@ async function tryAutoLogin(request) {
         if (user && !user.password) {
             request.session.handle = userHandles[0];
             return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Tries auto-login with authlia trusted headers.
+ * https://www.authelia.com/integration/trusted-header-sso/introduction/
+ * @param {import('express').Request} request Request object
+ * @returns {Promise<boolean>} Whether auto-login was performed
+ */
+async function autheliaUserLogin(request) {
+    if (!request.session) {
+        return false;
+    }
+
+    const remoteUser = request.get('Remote-User');
+    if (!remoteUser) {
+        return false;
+    }
+
+    const userHandles = await getAllUserHandles();
+    for (const userHandle of userHandles) {
+        if (remoteUser === userHandle) {
+            const user = await storage.getItem(toKey(userHandle));
+            if (user && user.enabled) {
+                request.session.handle = userHandle;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Tries auto-login with basic auth username.
+ * @param {import('express').Request} request Request object
+ * @returns {Promise<boolean>} Whether auto-login was performed
+ */
+async function basicUserLogin(request) {
+    if (!request.session) {
+        return false;
+    }
+
+    const authHeader = request.headers.authorization;
+
+    if (!authHeader) {
+        return false;
+    }
+
+    const [scheme, credentials] = authHeader.split(' ');
+
+    if (scheme !== 'Basic' || !credentials) {
+        return false;
+    }
+
+    const [username, password] = Buffer.from(credentials, 'base64')
+        .toString('utf8')
+        .split(':');
+
+    const userHandles = await getAllUserHandles();
+    for (const userHandle of userHandles) {
+        if (username === userHandle) {
+            const user = await storage.getItem(toKey(userHandle));
+            // Verify pass again here just to be sure
+            if (user && user.enabled && user.password && user.password === getPasswordHash(password, user.salt)) {
+                request.session.handle = userHandle;
+                return true;
+            }
         }
     }
 

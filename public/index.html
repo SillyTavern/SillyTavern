@@ -595,17 +595,6 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="cohere">
-                                    <label for="websearch_toggle" title="Enable Cohere web-search connector" data-i18n="[title]Enable Cohere web-search connector" class="checkbox_label widthFreeExpand">
-                                        <input id="websearch_toggle" type="checkbox" />
-                                        <span data-i18n="Web-search">Web-search</span>
-                                    </label>
-                                    <div class="toggle-description justifyLeft">
-                                        <span data-i18n="Allow the model to use the web-search connector.">
-                                            Allow the model to use the web-search connector.
-                                        </span>
-                                    </div>
-                                </div>
                                 <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq,01ai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
@@ -1310,7 +1299,7 @@
                                         </div>
                                     </div>
 
-                                    <div data-tg-type="koboldcpp, aphrodite" id="xtc_block" class="wide100p">
+                                    <div data-tg-type="koboldcpp, aphrodite, tabby, ooba" id="xtc_block" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Exclude Top Choices (XTC)">Exclude Top Choices (XTC)</label>
                                             <a href="https://github.com/oobabooga/text-generation-webui/pull/6335" target="_blank">
@@ -1679,6 +1668,10 @@
                                             Ooba only. Determines the order of samplers.
                                         </div>
                                         <div id="sampler_priority_container" class="prompt_order">
+                                            <div data-name="repetition_penalty" draggable="true"><span>Repetition Penalty</span><small></small></div>
+                                            <div data-name="presence_penalty" draggable="true"><span>Presence Penalty</span><small></small></div>
+                                            <div data-name="frequency_penalty" draggable="true"><span>Frequency Penalty</span><small></small></div>
+                                            <div data-name="dry" draggable="true"><span>DRY</span><small></small></div>
                                             <div data-name="temperature" draggable="true"><span>Temperature</span><small></small></div>
                                             <div data-name="dynamic_temperature" draggable="true"><span>Dynamic Temperature</span><small></small></div>
                                             <div data-name="quadratic_sampling" draggable="true"><span>Quadratic / Smooth Sampling</span><small></small></div>
@@ -1691,6 +1684,9 @@
                                             <div data-name="top_a" draggable="true"><span>Top A</span><small></small></div>
                                             <div data-name="min_p" draggable="true"><span>Min P</span><small></small></div>
                                             <div data-name="mirostat" draggable="true"><span>Mirostat</span><small></small></div>
+                                            <div data-name="xtc" draggable="true"><span>XTC</span><small></small></div>
+                                            <div data-name="encoder_repetition_penalty" draggable="true"><span>Encoder Repetition Penalty</span><small></small></div>
+                                            <div data-name="no_repeat_ngram" draggable="true"><span>No Repeat Ngram</span><small></small></div>
                                         </div>
                                         <div id="textgenerationwebui_default_order" class="menu_button menu_button_icon">
                                             <span data-i18n="Load default order">Load default order</span>
@@ -1702,9 +1698,9 @@
                                 <div class="">
                                     <div class="inline-drawer wide100p flexFlowColumn">
                                         <div class="inline-drawer-toggle inline-drawer-header">
-                                            <div class="flex-container alignItemsCenter flexNoGap">
+                                            <div class="flex-container alignItemsCenter">
                                                 <b data-i18n="Character Names Behavior">Character Names Behavior</b>
-                                                <span title="Helps the model to associate messages with characters." data-i18n="[title]Helps the model to associate messages with characters." class="note-link-span fa-solid fa-circle-question"></span>
+                                                <span title="Helps the model to associate messages with characters." data-i18n="[title]Helps the model to associate messages with characters." class="opacity50p fa-solid fa-circle-info"></span>
                                                 <small class="flexBasis100p">(<span id="character_names_display"></span>)</small>
                                             </div>
                                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -1713,25 +1709,22 @@
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_none">
                                                 <input type="radio" id="character_names_none" name="character_names" value="-1">
                                                 <span data-i18n="None">None</span>
-                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Never add character name prefixes. May behave poorly in groups, choose with caution." data-i18n="[title]character_names_none"></i>
-                                                <small class="flexBasis100p" data-i18n="Never add character names.">
-                                                    Never add character names.
+                                                <small class="flexBasis100p" data-i18n="character_names_none">
+                                                    Never add character name prefixes. May behave poorly in groups, choose with caution.
                                                 </small>
                                             </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_default">
                                                 <input type="radio" id="character_names_default" name="character_names" value="0">
                                                 <span data-i18n="Default">Default</span>
-                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Add prefixes for groups and past personas. Otherwise, make sure you provide names in the prompt." data-i18n="[title]character_names_default"></i>
-                                                <small class="flexBasis100p" data-i18n="Don't add character names unless necessary.">
-                                                    Don't add character names unless necessary.
+                                                <small class="flexBasis100p" data-i18n="character_names_default">
+                                                    Add prefixes for groups and past personas. Otherwise, make sure you provide names in the prompt.
                                                 </small>
                                             </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_completion">
                                                 <input type="radio" id="character_names_completion" name="character_names" value="1">
                                                 <span data-i18n="Completion Object">Completion Object</span>
-                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Restrictions apply: only Latin alphanumerics and underscores. Doesn't work for all sources, notably: Claude, MistralAI, Google." data-i18n="[title]character_names_completion"></i>
-                                                <small class="flexBasis100p" data-i18n="Add character names to completion objects.">
-                                                    Add character names to completion objects.
+                                                <small class="flexBasis100p" data-i18n="character_names_completion">
+                                                    Add character names to completion objects. Restrictions apply: only Latin alphanumerics and underscores.
                                                 </small>
                                             </label>
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_content">
@@ -1747,9 +1740,9 @@
                                     </div>
                                     <div class="inline-drawer wide100p flexFlowColumn marginBot10">
                                         <div class="inline-drawer-toggle inline-drawer-header">
-                                            <div class="flex-container alignItemsCenter flexNoGap">
+                                            <div class="flex-container alignItemsCenter">
                                                 <b data-i18n="Continue Postfix">Continue Postfix</b>
-                                                <span data-i18n="[title]The next chunk of the continued message will be appended using this as a separator." title="The next chunk of the continued message will be appended using this as a separator." class="note-link-span fa-solid fa-circle-question"></span>
+                                                <span data-i18n="[title]The next chunk of the continued message will be appended using this as a separator." title="The next chunk of the continued message will be appended using this as a separator." class="opacity50p fa-solid fa-circle-info"></span>
                                                 <small class="flexBasis100p">(<span id="continue_postfix_display"></span>)</small>
                                             </div>
                                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -1868,6 +1861,10 @@
                                                 <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="claude_assistant_impersonation" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                             </div>
                                             <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact autoSetHeight" name="assistant_impersonation" rows="2" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                        </div>
+                                        <div id="claude_function_prefill_warning">
+                                            <i class="fa-solid fa-circle-info"></i>
+                                            <span>Prefills won't work when function calling is enabled and any tools are registered.</span>
                                         </div>
                                         <label for="claude_use_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="claude_use_sysprompt" type="checkbox" />
@@ -2446,14 +2443,15 @@
                                     <h4>
                                         <span data-i18n="Tabby Model">Tabby Model</span>
                                     </h4>
-                                    <b>
-                                        EXPERIMENTAL FEATURE. USE AT YOUR OWN RISK. DON'T ASK FOR SUPPORT ON THIS.
-                                    </b>
                                     <select id="tabby_model">
                                         <option value="" data-i18n="-- Connect to the API --">
                                             -- Connect to the API --
                                         </option>
                                     </select>
+                                    <div class="marginTopBot5">
+                                        <i class="fa-solid fa-flask"></i>
+                                        <span>Experimental feature. Use at your own risk.</span>
+                                    </div>
                                     <div class="marginTopBot5">
                                         <small>
                                             <i class="fa-solid fa-lightbulb"></i>
@@ -2828,22 +2826,10 @@
                                     <span data-i18n="Allow fallback providers">Allow fallback providers</span>
                                 </label>
                             </div>
-                            <div class="marginTopBot5">
-                                <label for="openrouter_force_instruct" class="checkbox_label">
-                                    <input id="openrouter_force_instruct" type="checkbox" />
-                                    <span class="flex-container alignItemsBaseline" title="This option is outdated and will be removed in the future. To use instruct formatting, please switch to OpenRouter under Text Completion API instead." data-i18n="[title]openrouter_force_instruct">
-                                        <i class="fa-solid fa-circle-exclamation neutral_warning"></i>
-                                        <b data-i18n="LEGACY">LEGACY</b>
-                                    </span>
-                                    <span data-i18n="Force Instruct Mode formatting">Force Instruct Mode formatting</span>
-                                </label>
-                                <div class="toggle-description justifyLeft wide100p">
-                                    <span data-i18n="Force_Instruct_Mode_formatting_Description">
-                                        If both Instruct Mode and this are enabled, the prompt will be formatted by SillyTavern using the current
-                                        advanced formatting settings (except instruct System Prompt). If disabled, the prompt will be formatted by OpenRouter.
-                                    </span>
-                                </div>
-                            </div>
+                            <small class="marginTopBot5">
+                                <i class="fa-solid fa-lightbulb"></i>
+                                <span>To use instruct formatting, switch to OpenRouter under Text Completion API.</span>
+                            </small>
                         </form>
                         <form id="scale_form" data-source="scale" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <div id="normal_scale_form">
@@ -2925,10 +2911,14 @@
                                         <option value="gemini-1.5-pro-exp-0827">Gemini 1.5 Pro Experiment 2024-08-27</option>
                                         <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro [latest]</option>
                                         <option value="gemini-1.5-pro-001">Gemini 1.5 Pro [001]</option>
+                                        <option value="gemini-1.5-pro-002">Gemini 1.5 Pro [002]</option>
+                                        <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8B</option>
                                         <option value="gemini-1.5-flash-exp-0827">Gemini 1.5 Flash Experiment 2024-08-27</option>
                                         <option value="gemini-1.5-flash-8b-exp-0827">Gemini 1.5 Flash 8B Experiment 2024-08-27</option>
+                                        <option value="gemini-1.5-flash-8b-exp-0924">Gemini 1.5 Flash 8B Experiment 2024-09-24</option>
                                         <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash [latest]</option>
                                         <option value="gemini-1.5-flash-001">Gemini 1.5 Flash [001]</option>
+                                        <option value="gemini-1.5-flash-002">Gemini 1.5 Flash [002]</option>
                                         <option value="gemini-1.0-pro-latest">Gemini 1.0 Pro [latest]</option>
                                         <option value="gemini-1.0-pro-001">Gemini 1.0 Pro (Tuning) [001]</option>
                                         <option value="gemini-1.0-pro-vision-latest">Gemini 1.0 Pro Vision [latest]</option>
@@ -2989,16 +2979,31 @@
                             </div>
                             <h4 data-i18n="Groq Model">Groq Model</h4>
                             <select id="model_groq_select">
-                                <option value="llama-3.1-405b-reasoning">llama-3.1-405b-reasoning</option>
-                                <option value="llama-3.1-70b-versatile">llama-3.1-70b-versatile</option>
-                                <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-                                <option value="llama3-groq-70b-8192-tool-use-preview">llama3-groq-70b-8192-tool-use-preview</option>
-                                <option value="llama3-groq-8b-8192-tool-use-preview">llama3-groq-8b-8192-tool-use-preview</option>
-                                <option value="llama3-8b-8192">llama3-8b-8192</option>
-                                <option value="llama3-70b-8192">llama3-70b-8192</option>
-                                <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
-                                <option value="gemma-7b-it">gemma-7b-it</option>
-                                <option value="gemma2-9b-it">gemma2-9b-it</option>
+                                <optgroup label="Llama 3.2">
+                                    <option value="llama-3.2-1b-preview">llama-3.2-1b-preview</option>
+                                    <option value="llama-3.2-3b-preview">llama-3.2-3b-preview</option>
+                                    <option value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview</option>
+                                    <option value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview</option>
+                                </optgroup>
+                                <optgroup label="Llama 3.1">
+                                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                                    <option value="llama-3.1-70b-versatile">llama-3.1-70b-versatile</option>
+                                    <option value="llama-3.1-405b-reasoning">llama-3.1-405b-reasoning</option>
+                                </optgroup>
+                                <optgroup label="Llama 3">
+                                    <option value="llama3-groq-8b-8192-tool-use-preview">llama3-groq-8b-8192-tool-use-preview</option>
+                                    <option value="llama3-groq-70b-8192-tool-use-preview">llama3-groq-70b-8192-tool-use-preview</option>
+                                    <option value="llama3-8b-8192">llama3-8b-8192</option>
+                                    <option value="llama3-70b-8192">llama3-70b-8192</option>
+                                </optgroup>
+                                <optgroup label="Gemma">
+                                    <option value="gemma-7b-it">gemma-7b-it</option>
+                                    <option value="gemma2-9b-it">gemma2-9b-it</option>
+                                </optgroup>
+                                <optgroup label="Other">
+                                    <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                                    <option value="llava-v1.5-7b-4096-preview">llava-v1.5-7b-4096-preview</option>
+                                </optgroup>
                             </select>
                         </div>
                         <div id="perplexity_form" data-source="perplexity">
@@ -3117,7 +3122,8 @@
                             <h4 data-i18n="Prompt Post-Processing">Prompt Post-Processing</h4>
                             <select id="custom_prompt_post_processing" class="text_pole" title="Applies additional processing to the prompt before sending it to the API." data-i18n="[title]Applies additional processing to the prompt before sending it to the API.">
                                 <option data-i18n="prompt_post_processing_none" value="">None</option>
-                                <option value="claude">Claude</option>
+                                <option value="merge">Merge consecutive roles</option>
+                                <option value="strict">Strict (user first, alternating roles)</option>
                             </select>
                         </form>
                         <div id="01ai_form" data-source="01ai">
@@ -3192,9 +3198,10 @@
                             </h4>
                             <div class="flex-container" title="Select your current Context Template" data-i18n="[title]Select your current Context Template">
                                 <select id="context_presets" data-preset-manager-for="context" class="flex1 text_pole"></select>
-                                <div class="flex-container justifyCenter">
+                                <div class="flex-container justifyCenter gap3px">
                                     <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
                                     <i data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current template" data-i18n="[title]Update current template"></i>
+                                    <i data-preset-manager-rename="context" class="menu_button fa-pencil fa-solid" title="Rename current template" data-i18n="[title]Rename current template"></i>
                                     <i data-preset-manager-new="context" class="menu_button fa-solid fa-file-circle-plus" title="Save template as" data-i18n="[title]Save template as"></i>
                                     <i data-preset-manager-import="context" class="displayNone menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
                                     <i data-preset-manager-export="context" class="displayNone menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
@@ -3254,6 +3261,7 @@
                                     <label class="checkbox_label" for="trim_spaces">
                                         <input id="trim_spaces" type="checkbox" />
                                         <small data-i18n="Trim spaces">Trim spaces</small>
+                                        <i class="fa-sm fa-solid fa-exclamation-triangle warning" title="Disabling is not recommended." data-i18n="[title]Disabling is not recommended."></i>
                                     </label>
                                     <label class="checkbox_label" for="trim_sentences_checkbox">
                                         <input id="trim_sentences_checkbox" type="checkbox" />
@@ -3279,31 +3287,33 @@
                         </div>
                     </div>
                     <div id="InstructSettingsColumn" class="flex-container flexNoGap flexFlowColumn flex1">
+                        <h4 class="standoutHeader title_restorable justifySpaceBetween">
+                            <div class="flex-container">
+                                <span data-i18n="Instruct Template">Instruct Template</span>
+                                <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
+                                    <span class="fa-solid fa-circle-question note-link-span"></span>
+                                </a>
+                            </div>
+                            <div class="flex-container">
+                                <label for="instruct_bind_to_context" class="checkbox_label flex1" title="Bind to Context&#10If enabled, Context templates will be automatically selected based on selected Instruct template name or by preference." data-i18n="[title]instruct_bind_to_context">
+                                    <input id="instruct_bind_to_context" type="checkbox" style="display:none;" />
+                                    <small><i class="fa-solid fa-link menu_button margin0"></i></small>
+                                </label>
+                                <label id="instruct_enabled_label"for="instruct_enabled" class="checkbox_label flex1" title="Enable Instruct Mode" data-i18n="[title]instruct_enabled">
+                                    <input id="instruct_enabled" type="checkbox" style="display:none;" />
+                                    <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
+                                </label>
+                            </div>
+                        </h4>
                         <div id="instructSettingsBlock">
-                            <h4 class="standoutHeader title_restorable justifySpaceBetween">
-                                <div class="flex-container">
-                                    <span data-i18n="Instruct Template">Instruct Template</span>
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
-                                        <span class="fa-solid fa-circle-question note-link-span"></span>
-                                    </a>
-                                </div>
-                                <div class="flex-container">
-                                    <label for="instruct_bind_to_context" class="checkbox_label flex1" title="Bind to Context&#10If enabled, Context templates will be automatically selected based on selected Instruct template name or by preference." data-i18n="[title]instruct_bind_to_context">
-                                        <input id="instruct_bind_to_context" type="checkbox" style="display:none;" />
-                                        <small><i class="fa-solid fa-link menu_button margin0"></i></small>
-                                    </label>
-                                    <label for="instruct_enabled" class="checkbox_label flex1" title="Enable Instruct Mode" data-i18n="[title]instruct_enabled">
-                                        <input id="instruct_enabled" type="checkbox" style="display:none;" />
-                                        <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
-                                    </label>
-                                </div>
-                            </h4>
+
 
                             <div class="flex-container" title="Select your current Instruct Template" data-i18n="[title]Select your current Instruct Template">
                                 <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1 text_pole"></select>
-                                <div class="flex-container margin0 justifyCenter">
+                                <div class="flex-container margin0 justifyCenter gap3px">
                                     <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
                                     <i data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current template" data-i18n="[title]Update current template"></i>
+                                    <i data-preset-manager-rename="instruct" class="menu_button fa-pencil fa-solid" title="Rename current template" data-i18n="[title]Rename current template"></i>
                                     <i data-preset-manager-new="instruct" class="menu_button fa-solid fa-file-circle-plus" title="Save template as" data-i18n="[title]Save template as"></i>
                                     <i data-preset-manager-import="instruct" class="displayNone menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
                                     <i data-preset-manager-export="instruct" class="displayNone menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
@@ -3314,7 +3324,7 @@
                             <label>
                                 <small>
                                     <span data-i18n="Activation Regex">Activation Regex</span>
-                                    <span class="fa-solid fa-circle-question" title="When connecting to an API or choosing a model, automatically activate this Instruct Template if the model name matches the provided regular expression."></span>
+                                    <span class="fa-solid fa-circle-question" data-i18n="[title]instruct_template_activation_regex_desc" title="When connecting to an API or choosing a model, automatically activate this Instruct Template if the model name matches the provided regular expression."></span>
                                 </small>
                             </label>
                             <div>
@@ -3355,7 +3365,7 @@
                             </h4>
                             <!-- We keep one auto-open so the user would know what is going on in the picked template -->
                             <details open>
-                                <summary>User Message Sequences</summary>
+                                <summary data-i18n="User Message Sequences">User Message Sequences</summary>
                                 <div class="flex-container">
                                     <div class="flexAuto" title="Inserted before a User message and as a last prompt line when impersonating." data-i18n="[title]Inserted before a User message and as a last prompt line when impersonating.">
                                         <small data-i18n="User Prefix">User Message Prefix</small>
@@ -3368,7 +3378,7 @@
                                 </div>
                             </details>
                             <details open>
-                                <summary>Assistant Message Sequences</summary>
+                                <summary data-i18n="Assistant Message Sequences">Assistant Message Sequences</summary>
                                 <div class="flex-container">
                                     <div class="flexAuto" title="Inserted before an Assistant message and as a last prompt line when generating an AI reply." data-i18n="[title]Inserted before an Assistant message and as a last prompt line when generating an AI reply.">
                                         <small data-i18n="Assistant Prefix">Assistant Message Prefix</small>
@@ -3381,7 +3391,7 @@
                                 </div>
                             </details>
                             <details>
-                                <summary>System Message Sequences</summary>
+                                <summary data-i18n="System Message Sequences">System Message Sequences</summary>
                                 <div class="flex-container">
                                     <div class="flexAuto" id="instruct_system_sequence_block" title="Inserted before a System (added by slash commands or extensions) message." data-i18n="[title]Inserted before a System (added by slash commands or extensions) message.">
                                         <small data-i18n="System Prefix">System Message Prefix</small>
@@ -3400,7 +3410,7 @@
                                 </div>
                             </details>
                             <details>
-                                <summary>System Prompt Sequences</summary>
+                                <summary data-i18n="System Prompt Sequences">System Prompt Sequences</summary>
                                 <div class="flex-container">
                                     <div class="flexAuto" title="Inserted before a System prompt." data-i18n="[title]Inserted before a System prompt.">
                                         <label for="instruct_system_sequence_prefix">
@@ -3462,27 +3472,29 @@
                         </div>
                     </div>
                     <div id="SystemPromptColumn" class="flex-container flexNoGap flexFlowColumn flex1">
+                        <h4 class="standoutHeader title_restorable justifySpaceBetween">
+                            <div class="flex-container">
+                                <span data-i18n="System Prompt">System Prompt</span>
+                                <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#system-prompt" class="notes-link" target="_blank">
+                                    <span class="fa-solid fa-circle-question note-link-span"></span>
+                                </a>
+                            </div>
+                            <div class="flex-container">
+                                <label id="sysprompt_enabled_label" for="sysprompt_enabled" class="checkbox_label flex1" title="Enable System Prompt" data-i18n="[title]sysprompt_enabled">
+                                    <input id="sysprompt_enabled" type="checkbox" style="display:none;" />
+                                    <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
+                                </label>
+                            </div>
+                        </h4>
                         <div id="SystemPromptBlock">
-                            <h4 class="standoutHeader title_restorable justifySpaceBetween">
-                                <div class="flex-container">
-                                    <span data-i18n="System Prompt">System Prompt</span>
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#system-prompt" class="notes-link" target="_blank">
-                                        <span class="fa-solid fa-circle-question note-link-span"></span>
-                                    </a>
-                                </div>
-                                <div class="flex-container">
-                                    <label for="sysprompt_enabled" class="checkbox_label flex1" title="Enable System Prompt" data-i18n="[title]sysprompt_enabled">
-                                        <input id="sysprompt_enabled" type="checkbox" style="display:none;" />
-                                        <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
-                                    </label>
-                                </div>
-                            </h4>
+
 
                             <div class="flex-container" title="Select your current System Prompt" data-i18n="[title]Select your current System Prompt">
                                 <select id="sysprompt_select" data-preset-manager-for="sysprompt" class="flex1 text_pole"></select>
-                                <div class="flex-container margin0 justifyCenter">
+                                <div class="flex-container margin0 justifyCenter gap3px">
                                     <input type="file" hidden data-preset-manager-file="sysprompt" accept=".json, .settings">
                                     <i data-preset-manager-update="sysprompt" class="menu_button fa-solid fa-save" title="Update current prompt" data-i18n="[title]Update current prompt"></i>
+                                    <i data-preset-manager-rename="sysprompt" class="menu_button fa-pencil fa-solid" title="Rename current prompt" data-i18n="[title]Rename current prompt"></i>
                                     <i data-preset-manager-new="sysprompt" class="menu_button fa-solid fa-file-circle-plus" title="Save prompt as" data-i18n="[title]Save prompt as"></i>
                                     <i data-preset-manager-import="sysprompt" class="displayNone menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
                                     <i data-preset-manager-export="sysprompt" class="displayNone menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
@@ -4042,6 +4054,10 @@
                                     <input id="compact_input_area" type="checkbox" />
                                     <small data-i18n="Compact Input Area (Mobile)">Compact Input Area</small><i class="fa-solid fa-mobile-screen-button"></i>
                                 </label>
+                                <label for="show_swipe_num_all_messages" class="checkbox_label" title="Display swipe numbers for all messages, not just the last." data-i18n="[title]Display swipe numbers for all messages, not just the last.">
+                                    <input id="show_swipe_num_all_messages" type="checkbox" />
+                                    <small data-i18n="Swipe # for All Messages">Swipe # for All Messages</small><i class="fa-solid fa-mobile-screen-button"></i>
+                                </label>
                                 <label for="hotswapEnabled" class="checkbox_label" title="In the Character Management panel, show quick selection buttons for favorited characters." data-i18n="[title]In the Character Management panel, show quick selection buttons for favorited characters">
                                     <input id="hotswapEnabled" type="checkbox" />
                                     <small data-i18n="Characters Hotswap">Characters Hotswap</small>
@@ -4164,7 +4180,7 @@
                                 <input id="enable_auto_select_input" type="checkbox" />
                                 <small data-i18n="Auto-select Input Text">Auto-select Input Text</small>
                             </label>
-                            <label class="checkbox_label alignItemsCenter" for="enable_md_hotkeys" title="Enable hotkeys for inserting markdown format characters in certain text input boxes. See '/help hotkeys'.">
+                            <label class="checkbox_label alignItemsCenter" for="enable_md_hotkeys" data-i18n="[title]markdown_hotkeys_desc" title="Enable hotkeys for inserting markdown format characters in certain text input boxes. See '/help hotkeys'.">
                                 <input id="enable_md_hotkeys" type="checkbox" />
                                 <small>
                                     <span data-i18n="Markdown Hotkeys">Markdown Hotkeys</span>
@@ -5476,7 +5492,7 @@
                                             <textarea class="text_pole" rows="1" name="comment" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
                                         </div>
                                         <!-- <span class="world_entry_form_position_value"></span> -->
-                                        <select data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal🔗 Vectorized❌ Disabled" title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;🔗 Vectorized&#13;❌ Disabled" name="entryStateSelector" class="text_pole widthNatural margin0">
+                                        <select data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal🔗 Vectorized" title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;🔗 Vectorized" name="entryStateSelector" class="text_pole widthNatural margin0">
                                             <option value="constant" title="Constant" data-i18n="[title]WI_Entry_Status_Constant">🔵</option>
                                             <option value="normal" title="Normal" data-i18n="[title]WI_Entry_Status_Normal">🟢</option>
                                             <option value="vectorized" title="Vectorized" data-i18n="[title]WI_Entry_Status_Vectorized">🔗</option>
@@ -5970,7 +5986,8 @@
                     </div>
                     <div class="mes_bias"></div>
                 </div>
-                <div class="swipe_right fa-solid fa-chevron-right" style="display: none;">
+                <div class="flex-container swipeRightBlock flexFlowColumn flexNoGap">
+                    <div class="swipe_right fa-solid fa-chevron-right" style="display: none;"></div>
                     <div class="swipes-counter"></div>
                 </div>
             </div>
@@ -6129,7 +6146,10 @@
             <div class="alternate_grettings flexFlowColumn flex-container">
                 <div class="title_restorable">
                     <h3><span data-i18n="Alternate Greetings" class="mdhotkey_location">Alternate Greetings</span></h3>
-                    <div title="Add" class="menu_button fa-solid fa-plus add_alternate_greeting" data-i18n="[title]Add"></div>
+                    <div class="menu_button menu_button_icon add_alternate_greeting">
+                        <i class="fa-solid fa-plus"></i>
+                        <span data-i18n="Add">Add</span>
+                    </div>
                 </div>
                 <small class="justifyLeft" data-i18n="Alternate_Greetings_desc">
                     These will be displayed as swipes on the first message when starting a new chat.
@@ -6145,11 +6165,18 @@
         </div>
         <div id="alternate_greeting_form_template" class="template_element">
             <div class="alternate_greeting">
-                <div class="title_restorable">
-                    <strong><span data-i18n="Alternate Greeting #">Alternate Greeting #</span><span class="greeting_index"></span></strong>
-                    <div class="menu_button fa-solid fa-trash-alt delete_alternate_greeting"></div>
-                </div>
-                <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text mdHotkeys" value="" autocomplete="off" rows="16"></textarea>
+                <details open>
+                    <summary>
+                        <div class="title_restorable">
+                            <strong><span data-i18n="Alternate Greeting #">Alternate Greeting #</span><span class="greeting_index"></span></strong>
+                            <div class="menu_button menu_button_icon delete_alternate_greeting">
+                                <i class="fa-solid fa-trash-alt"></i>
+                                <span data-i18n="Delete">Delete</span>
+                            </div>
+                        </div>
+                    </summary>
+                    <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text mdHotkeys" value="" autocomplete="off" rows="12"></textarea>
+                </details>
             </div>
         </div>
 
@@ -6637,7 +6664,7 @@
     <script src="lib/popper.js"></script>
     <script src="lib/purify.min.js"></script>
     <script src="lib/highlight.min.js"></script>
-    <script src="lib/moment.min.js"></script>
+    <script src="lib/moment-with-locales.min.js"></script>
     <script src="lib/cropper.min.js"></script>
     <script src="lib/jquery-cropper.min.js"></script>
     <script src="lib/toastr.min.js"></script>
