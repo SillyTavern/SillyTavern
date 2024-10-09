@@ -5,7 +5,6 @@ const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY, OPENROUTER_HEADERS } = require('../../constants');
 const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
 const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages, convertMistralMessages, convertAI21Messages, mergeMessages } = require('../../prompt-converters');
-const CohereStream = require('../../cohere-stream');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
 const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sentencepieceTokenizers, TEXT_COMPLETION_MODELS } = require('../tokenizers');
@@ -13,7 +12,8 @@ const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sente
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
 const API_MISTRAL = 'https://api.mistral.ai/v1';
-const API_COHERE = 'https://api.cohere.ai/v1';
+const API_COHERE_V1 = 'https://api.cohere.ai/v1';
+const API_COHERE_V2 = 'https://api.cohere.ai/v2';
 const API_PERPLEXITY = 'https://api.perplexity.ai';
 const API_GROQ = 'https://api.groq.com/openai/v1';
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
@@ -553,13 +553,14 @@ async function sendCohereRequest(request, response) {
 
     try {
         const convertedHistory = convertCohereMessages(request.body.messages, request.body.char_name, request.body.user_name);
-        const connectors = [];
         const tools = [];
 
-        const canDoWebSearch = !String(request.body.model).includes('c4ai-aya');
-        if (request.body.websearch && canDoWebSearch) {
-            connectors.push({
-                id: 'web-search',
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            tools.push(...request.body.tools);
+            tools.forEach(tool => {
+                if (tool?.function?.parameters?.$schema) {
+                    delete tool.function.parameters.$schema;
+                }
             });
         }
 
@@ -567,9 +568,7 @@ async function sendCohereRequest(request, response) {
         const requestBody = {
             stream: Boolean(request.body.stream),
             model: request.body.model,
-            message: convertedHistory.userPrompt,
-            preamble: convertedHistory.systemPrompt,
-            chat_history: convertedHistory.chatHistory,
+            messages: convertedHistory.chatHistory,
             temperature: request.body.temperature,
             max_tokens: request.body.max_tokens,
             k: request.body.top_k,
@@ -578,16 +577,13 @@ async function sendCohereRequest(request, response) {
             stop_sequences: request.body.stop,
             frequency_penalty: request.body.frequency_penalty,
             presence_penalty: request.body.presence_penalty,
-            prompt_truncation: 'AUTO_PRESERVE_ORDER',
-            connectors: connectors,
             documents: [],
             tools: tools,
-            search_queries_only: false,
         };
 
         const canDoSafetyMode = String(request.body.model).endsWith('08-2024');
         if (canDoSafetyMode) {
-            requestBody.safety_mode = 'NONE';
+            requestBody.safety_mode = 'OFF';
         }
 
         console.log('Cohere request:', requestBody);
@@ -603,11 +599,11 @@ async function sendCohereRequest(request, response) {
             timeout: 0,
         };
 
-        const apiUrl = API_COHERE + '/chat';
+        const apiUrl = API_COHERE_V2 + '/chat';
 
         if (request.body.stream) {
-            const stream = await global.fetch(apiUrl, config);
-            parseCohereStream(stream, request, response);
+            const stream = await fetch(apiUrl, config);
+            forwardFetchResponse(stream, response);
         } else {
             const generateResponse = await fetch(apiUrl, config);
             if (!generateResponse.ok) {
@@ -658,7 +654,7 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         headers = {};
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COHERE) {
-        api_url = API_COHERE;
+        api_url = API_COHERE_V1;
         api_key_openai = readSecret(request.user.directories, SECRET_KEYS.COHERE);
         headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZEROONEAI) {
