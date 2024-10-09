@@ -294,7 +294,7 @@ function convertCohereMessages(messages, charName = '', userName = '') {
                 msg.content = messages[index - 1].content;
                 messages.splice(index - 1, 1);
             } else {
-                msg.content = `I'm going to call the tool for that: ${msg.tool_calls.map(tc => tc?.function?.name).join(', ')}`;
+                msg.content = `I'm going to call a tool for that: ${msg.tool_calls.map(tc => tc?.function?.name).join(', ')}`;
             }
         }
         // No names support (who would've thought)
@@ -317,12 +317,8 @@ function convertCohereMessages(messages, charName = '', userName = '') {
     });
 
     // A prompt should end with a user/tool message
-    if (!['user', 'tool'].includes(messages[messages.length - 1].role)) {
-        const userPlaceholder = getConfigValue('cohere.userPlaceholder', PROMPT_PLACEHOLDER || 'Continue');
-        messages.push({
-            role: 'user',
-            content: userPlaceholder,
-        });
+    if (messages.length && !['user', 'tool'].includes(messages[messages.length - 1].role)) {
+        messages[messages.length - 1].role = 'user';
     }
 
     return { chatHistory: messages };
