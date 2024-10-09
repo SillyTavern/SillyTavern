@@ -292,10 +292,10 @@ export class ToolManager {
 
             if (error instanceof Error) {
                 error.cause = name;
-                return error;
+                return error.toString();
             }
 
-            return new Error('Unknown error occurred while invoking the tool.', { cause: name });
+            return new Error('Unknown error occurred while invoking the tool.', { cause: name }).toString();
         }
     }
 
