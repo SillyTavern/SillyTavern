@@ -678,11 +678,6 @@ async function basicUserLogin(request) {
                 request.session.handle = userHandle;
                 return true;
             }
-            else if (user && user.enabled && !user.password && !password) {
-                // Login to an account without password
-                request.session.handle = userHandle;
-                return true;
-            }
         }
     }
 

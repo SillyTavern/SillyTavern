@@ -43,10 +43,6 @@ const basicAuthMiddleware = async function (request, response, callback) {
                 if (user && user.enabled && (user.password && user.password === getPasswordHash(password, user.salt))) {
                     return callback();
                 }
-                else if (user && user.enabled && !user.password && !password) {
-                    // Login to an account without password
-                    return callback();
-                }
             }
         }
     }
