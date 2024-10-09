@@ -1973,11 +1973,11 @@ async function sendOpenAIRequest(type, messages, signal) {
 }
 
 function getStreamingReply(data) {
-    if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
+    if (oai_settings.chat_completion_source === chat_completion_sources.CLAUDE) {
         return data?.delta?.text || '';
-    } else if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
+    } else if (oai_settings.chat_completion_source === chat_completion_sources.MAKERSUITE) {
         return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    } else if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
+    } else if (oai_settings.chat_completion_source === chat_completion_sources.COHERE) {
         return data?.delta?.message?.content?.text || data?.delta?.message?.tool_plan || '';
     } else {
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
