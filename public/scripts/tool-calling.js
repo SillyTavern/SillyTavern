@@ -365,6 +365,9 @@ export class ToolManager {
      * @returns {void}
      */
     static parseToolCalls(toolCalls, parsed) {
+        if (!this.isToolCallingSupported()) {
+            return;
+        }
         if (Array.isArray(parsed?.choices)) {
             for (const choice of parsed.choices) {
                 const choiceIndex = (typeof choice.index === 'number') ? choice.index : null;
