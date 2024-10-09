@@ -758,7 +758,9 @@ const postSetupTasks = async function (v6Failed, v4Failed) {
     }
 
     if (basicAuthMode) {
-        if (!perUserBasicAuth) {
+        if (perUserBasicAuth && !enableAccounts) {
+            console.error(color.red('Per-user basic authentication is enabled, but user accounts are disabled. This configuration may be insecure.'));
+        } else if (!perUserBasicAuth) {
             const basicAuthUser = getConfigValue('basicAuthUser', {});
             if (!basicAuthUser?.username || !basicAuthUser?.password) {
                 console.warn(color.yellow('Basic Authentication is enabled, but username or password is not set or empty!'));
