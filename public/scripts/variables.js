@@ -849,25 +849,25 @@ function sortArrayObjectCallback(args, value) {
     if (typeof value == 'string') {
         try {
             parsedValue = JSON.parse(value);
-        } catch { 
-          // return the original input if it was invalid
-          return value;
+        } catch {
+            // return the original input if it was invalid
+            return value;
         }
     } else {
-        parsedValue = value
+        parsedValue = value;
     }
     if (Array.isArray(parsedValue)) {
         // always sort lists by value
-        parsedValue.sort(customSortComparitor)
+        parsedValue.sort(customSortComparitor);
     } else if (typeof parsedValue == 'object') {
         let keysort = args.keysort;
         if (isFalseBoolean(keysort)) {
-            parsedValue = Object.keys(parsedValue).sort(function(a,b){return customSortComparitor(parsedValue[a], parsedValue[b])});
+            parsedValue = Object.keys(parsedValue).sort(function (a, b) { return customSortComparitor(parsedValue[a], parsedValue[b]); });
         } else {
             parsedValue = Object.keys(parsedValue).sort(customSortComparitor);
         }
     }
-    return JSON.stringify(parsedValue);    
+    return JSON.stringify(parsedValue);
 }
 
 /**
