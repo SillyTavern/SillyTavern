@@ -2309,14 +2309,14 @@ async function generatePicture(initiator, args, trigger, message, callback) {
 
     if (generationType == generationMode.BACKGROUND) {
         const callbackOriginal = callback;
-        callback = async function (prompt, imagePath, generationType) {
+        callback = async function (prompt, imagePath, generationType, _negativePromptPrefix, _initiator, prefixedPrompt) {
             const imgUrl = `url("${encodeURI(imagePath)}")`;
             eventSource.emit(event_types.FORCE_SET_BACKGROUND, { url: imgUrl, path: imagePath });
 
             if (typeof callbackOriginal === 'function') {
-                await callbackOriginal(prompt, imagePath, generationType, negativePromptPrefix, initiator);
+                await callbackOriginal(prompt, imagePath, generationType, negativePromptPrefix, initiator, prefixedPrompt);
             } else {
-                await sendMessage(prompt, imagePath, generationType, negativePromptPrefix, initiator);
+                await sendMessage(prompt, imagePath, generationType, negativePromptPrefix, initiator, prefixedPrompt);
             }
         };
     }
@@ -2646,8 +2646,8 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
     const filename = `${characterName}_${humanizedDateTime()}`;
     const base64Image = await saveBase64AsFile(result.data, characterName, filename, result.format);
     callback
-        ? await callback(prompt, base64Image, generationType, additionalNegativePrefix, initiator)
-        : await sendMessage(prompt, base64Image, generationType, additionalNegativePrefix, initiator);
+        ? await callback(prompt, base64Image, generationType, additionalNegativePrefix, initiator, prefixedPrompt)
+        : await sendMessage(prompt, base64Image, generationType, additionalNegativePrefix, initiator, prefixedPrompt);
     return base64Image;
 }
 
@@ -3435,12 +3435,13 @@ async function onComfyDeleteWorkflowClick() {
  * @param {number} generationType Generation type of the image
  * @param {string} additionalNegativePrefix Additional negative prompt used for the image generation
  * @param {string} initiator The initiator of the image generation
+ * @param {string} prefixedPrompt Prompt with an attached specific prefix
  */
-async function sendMessage(prompt, image, generationType, additionalNegativePrefix, initiator) {
+async function sendMessage(prompt, image, generationType, additionalNegativePrefix, initiator, prefixedPrompt) {
     const context = getContext();
     const name = context.groupId ? systemUserName : context.name2;
     const template = extension_settings.sd.prompts[generationMode.MESSAGE] || '{{prompt}}';
-    const messageText = substituteParamsExtended(template, { char: name, prompt: prompt });
+    const messageText = substituteParamsExtended(template, { char: name, prompt: prompt, prefixedPrompt: prefixedPrompt });
     const message = {
         name: name,
         is_user: false,
