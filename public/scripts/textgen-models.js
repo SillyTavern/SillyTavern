@@ -266,8 +266,7 @@ export async function loadAphroditeModels(data) {
     }
 }
 
-// Page -1 will be initialized from a selected model.
-let currentPage = -1;
+let featherlessCurrentPage = 1;
 export async function loadFeatherlessModels(data) {
     const searchBar = document.getElementById('model_search_bar');
     const modelCardBlock = document.getElementById('model_card_block');
@@ -298,11 +297,11 @@ export async function loadFeatherlessModels(data) {
 
     // Initialize pagination with the full set of models
     const selectedModelPage = (data.findIndex(x => x.id === textgen_settings.featherless_model) / perPage) + 1;
-    currentPage = currentPage === -1 && selectedModelPage > 0 ? selectedModelPage : 1;
+    featherlessCurrentPage = selectedModelPage > 0 ? selectedModelPage : 1;
     setupPagination(originalModels, perPage);
 
     // Function to set up pagination (also used for filtered results)
-    function setupPagination(models, perPage, pageNumber = currentPage) {
+    function setupPagination(models, perPage, pageNumber = featherlessCurrentPage) {
         paginationContainer.pagination({
             dataSource: models,
             pageSize: perPage,
@@ -368,15 +367,21 @@ export async function loadFeatherlessModels(data) {
                 });
 
                 // Update the current page value whenever the page changes
-                currentPage = pagination.pageNumber;
+                featherlessCurrentPage = pagination.pageNumber;
             },
             afterSizeSelectorChange: function (e) {
                 const newPerPage = e.target.value;
                 localStorage.setItem('Models_PerPage', newPerPage);
-                setupPagination(models, Number(newPerPage), currentPage); // Use the stored current page number
+                setupPagination(models, Number(newPerPage), featherlessCurrentPage); // Use the stored current page number
             },
         });
     }
+
+    // Unset previously added listeners
+    $(searchBar).off('input');
+    $(sortOrderSelect).off('change');
+    $(classSelect).off('change');
+    $(categoriesSelect).off('change');
 
     // Add event listener for input on the search bar
     searchBar.addEventListener('input', function () {
@@ -463,7 +468,7 @@ export async function loadFeatherlessModels(data) {
             filteredModels.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
         }
 
-        setupPagination(filteredModels, Number(localStorage.getItem(storageKey)) || perPage, currentPage);
+        setupPagination(filteredModels, Number(localStorage.getItem(storageKey)) || perPage, featherlessCurrentPage);
     }
 
     // Required to keep the /model command function
@@ -497,7 +502,7 @@ function onFeatherlessModelSelect(modelId) {
     setGenerationParamsFromPreset({ max_length: model.context_length });
 }
 
-let isGridView = false;  // Default state set to grid view
+let featherlessIsGridView = false;  // Default state set to grid view
 
 // Ensure the correct initial view is applied when the page loads
 document.addEventListener('DOMContentLoaded', function () {
@@ -507,7 +512,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const toggleButton = document.getElementById('model_grid_toggle');
     toggleButton.addEventListener('click', function () {
         // Toggle between grid and list view
-        if (isGridView) {
+        if (featherlessIsGridView) {
             modelCardBlock.classList.remove('grid-view');
             modelCardBlock.classList.add('list-view');
             this.title = 'Toggle to grid view';
@@ -517,7 +522,7 @@ document.addEventListener('DOMContentLoaded', function () {
             this.title = 'Toggle to list view';
         }
 
-        isGridView = !isGridView;
+        featherlessIsGridView = !featherlessIsGridView;
     });
 });
 function onMancerModelSelect() {
@@ -881,6 +886,7 @@ export function initTextGenModels() {
     $('#aphrodite_model').on('change', onAphroditeModelSelect);
     $('#tabby_download_model').on('click', downloadTabbyModel);
     $('#tabby_model').on('change', onTabbyModelSelect);
+    $('#featherless_model').on('change', () => onFeatherlessModelSelect(String($('#featherless_model').val())));
 
     const providersSelect = $('.openrouter_providers');
     for (const provider of OPENROUTER_PROVIDERS) {
