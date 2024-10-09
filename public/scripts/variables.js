@@ -836,6 +836,14 @@ function randValuesCallback(from, to, args) {
     return value;
 }
 
+function customSortComparitor(a, b) {
+    if (typeof a != typeof b) {
+        a = typeof a;
+        b = typeof b;
+    }
+    return a > b ? 1 : a < b ? -1 : 0;
+}
+
 function sortArrayObjectCallback(args, value) {
     let parsedValue;
     if (typeof value == 'string') {
@@ -850,13 +858,13 @@ function sortArrayObjectCallback(args, value) {
     }
     if (Array.isArray(parsedValue)) {
         // always sort lists by value
-        parsedValue.sort()
+        parsedValue.sort(customSortComparitor)
     } else if (typeof parsedValue == 'object') {
         let keysort = args.keysort;
         if (isFalseBoolean(keysort)) {
-            parsedValue = Object.keys(parsedValue).sort(function(a,b){return parsedValue[a]-parsedValue[b]});
+            parsedValue = Object.keys(parsedValue).sort(function(a,b){return customSortComparitor(parsedValue[a], parsedValue[b])});
         } else {
-            parsedValue = Object.keys(parsedValue).sort();
+            parsedValue = Object.keys(parsedValue).sort(customSortComparitor);
         }
     }
     return JSON.stringify(parsedValue);    
