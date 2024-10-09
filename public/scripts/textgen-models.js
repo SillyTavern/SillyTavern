@@ -266,8 +266,8 @@ export async function loadAphroditeModels(data) {
     }
 }
 
-let selectedModelId = null;
-let currentPage = 1;
+// Page -1 will be initialized from a selected model.
+let currentPage = -1;
 export async function loadFeatherlessModels(data) {
     const searchBar = document.getElementById('model_search_bar');
     const modelCardBlock = document.getElementById('model_card_block');
@@ -297,6 +297,8 @@ export async function loadFeatherlessModels(data) {
     const perPage = Number(localStorage.getItem(storageKey)) || 10;
 
     // Initialize pagination with the full set of models
+    const selectedModelPage = (data.findIndex(x => x.id === textgen_settings.featherless_model) / perPage) + 1;
+    currentPage = currentPage === -1 && selectedModelPage > 0 ? selectedModelPage : 1;
     setupPagination(originalModels, perPage);
 
     // Function to set up pagination (also used for filtered results)
@@ -354,11 +356,11 @@ export async function loadFeatherlessModels(data) {
 
                     modelCardBlock.appendChild(card);
 
-                    if (model.id === selectedModelId) {
+                    if (model.id === textgen_settings.featherless_model) {
                         card.classList.add('selected');
                     }
 
-                    card.addEventListener('click', function() {
+                    card.addEventListener('click', function () {
                         document.querySelectorAll('.model-card').forEach(c => c.classList.remove('selected'));
                         card.classList.add('selected');
                         onFeatherlessModelSelect(model.id);
@@ -376,24 +378,22 @@ export async function loadFeatherlessModels(data) {
         });
     }
 
-
-
     // Add event listener for input on the search bar
-    searchBar.addEventListener('input', function() {
+    searchBar.addEventListener('input', function () {
         applyFiltersAndSort();
     });
 
     // Add event listener for the sort order select
-    sortOrderSelect.addEventListener('change', function() {
+    sortOrderSelect.addEventListener('change', function () {
         applyFiltersAndSort();
     });
 
     // Add event listener for the class select
-    classSelect.addEventListener('change', function() {
+    classSelect.addEventListener('change', function () {
         applyFiltersAndSort();
     });
 
-    categoriesSelect.addEventListener('change', function() {
+    categoriesSelect.addEventListener('change', function () {
         applyFiltersAndSort();
     });
 
@@ -411,6 +411,12 @@ export async function loadFeatherlessModels(data) {
 
     // Function to apply sorting and filtering based on user input
     async function applyFiltersAndSort() {
+        if (!(searchBar instanceof HTMLInputElement) ||
+            !(sortOrderSelect instanceof HTMLSelectElement) ||
+            !(classSelect instanceof HTMLSelectElement) ||
+            !(categoriesSelect instanceof HTMLSelectElement)) {
+            return;
+        }
         const searchQuery = searchBar.value.toLowerCase();
         const selectedSortOrder = sortOrderSelect.value;
         const selectedClass = classSelect.value;
@@ -460,7 +466,15 @@ export async function loadFeatherlessModels(data) {
         setupPagination(filteredModels, Number(localStorage.getItem(storageKey)) || perPage, currentPage);
     }
 
-
+    // Required to keep the /model command function
+    $('#featherless_model').empty();
+    for (const model of data) {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.featherless_model;
+        $('#featherless_model').append(option);
+    }
 }
 
 async function fetchFeatherlessStats() {
@@ -476,10 +490,9 @@ async function fetchFeatherlessNew() {
 }
 
 function onFeatherlessModelSelect(modelId) {
-
     const model = featherlessModels.find(x => x.id === modelId);
-    selectedModelId = modelId;
     textgen_settings.featherless_model = modelId;
+    $('#featherless_model').val(modelId);
     $('#api_button_textgenerationwebui').trigger('click');
     setGenerationParamsFromPreset({ max_length: model.context_length });
 }
@@ -487,12 +500,12 @@ function onFeatherlessModelSelect(modelId) {
 let isGridView = false;  // Default state set to grid view
 
 // Ensure the correct initial view is applied when the page loads
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const modelCardBlock = document.getElementById('model_card_block');
     modelCardBlock.classList.add('list-view');
 
     const toggleButton = document.getElementById('model_grid_toggle');
-    toggleButton.addEventListener('click', function() {
+    toggleButton.addEventListener('click', function () {
         // Toggle between grid and list view
         if (isGridView) {
             modelCardBlock.classList.remove('grid-view');
@@ -675,20 +688,6 @@ function getAphroditeModelTemplate(option) {
     return $((`
         <div class="flex-container flexFlowColumn">
             <div><strong>${DOMPurify.sanitize(model.id)}</strong></div>
-        </div>
-    `));
-}
-
-function getFeatherlessModelTemplate(option) {
-    const model = featherlessModels.find(x => x.id === option?.element?.value);
-
-    if (!option.id || !model) {
-        return option.text;
-    }
-
-    return $((`
-        <div class="flex-container flexFlowColumn">
-            <div><strong>${DOMPurify.sanitize(model.name)}</strong> | <span>${model.context_length || '???'} tokens</span></div>
         </div>
     `));
 }
@@ -880,7 +879,6 @@ export function initTextGenModels() {
     $('#ollama_download_model').on('click', downloadOllamaModel);
     $('#vllm_model').on('change', onVllmModelSelect);
     $('#aphrodite_model').on('change', onAphroditeModelSelect);
-    $('#featherless_model').on('change', onFeatherlessModelSelect);
     $('#tabby_download_model').on('click', downloadTabbyModel);
     $('#tabby_model').on('change', onTabbyModelSelect);
 
@@ -954,13 +952,6 @@ export function initTextGenModels() {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getAphroditeModelTemplate,
-        });
-        $('#featherless_model').select2({
-            placeholder: 'Select a model',
-            searchInputPlaceholder: 'Search models...',
-            searchInputCssClass: 'text_pole',
-            width: '100%',
-            templateResult: getFeatherlessModelTemplate,
         });
         providersSelect.select2({
             sorter: data => data.sort((a, b) => a.text.localeCompare(b.text)),
