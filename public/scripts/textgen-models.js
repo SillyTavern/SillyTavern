@@ -268,13 +268,13 @@ export async function loadAphroditeModels(data) {
 
 let featherlessCurrentPage = 1;
 export async function loadFeatherlessModels(data) {
-    const searchBar = document.getElementById('model_search_bar');
-    const modelCardBlock = document.getElementById('model_card_block');
-    const paginationContainer = $('#model_pagination_container');
-    const sortOrderSelect = document.getElementById('model_sort_order');
-    const classSelect = document.getElementById('class_selection');
-    const categoriesSelect = document.getElementById('category_selection');
-    const storageKey = 'Models_PerPage';
+    const searchBar = document.getElementById('featherless_model_search_bar');
+    const modelCardBlock = document.getElementById('featherless_model_card_block');
+    const paginationContainer = $('#featherless_model_pagination_container');
+    const sortOrderSelect = document.getElementById('featherless_model_sort_order');
+    const classSelect = document.getElementById('featherless_class_selection');
+    const categoriesSelect = document.getElementById('featherless_category_selection');
+    const storageKey = 'FeatherlessModels_PerPage';
 
     // Store the original models data for search and filtering
     let originalModels = [];
@@ -506,10 +506,10 @@ let featherlessIsGridView = false;  // Default state set to grid view
 
 // Ensure the correct initial view is applied when the page loads
 document.addEventListener('DOMContentLoaded', function () {
-    const modelCardBlock = document.getElementById('model_card_block');
+    const modelCardBlock = document.getElementById('featherless_model_card_block');
     modelCardBlock.classList.add('list-view');
 
-    const toggleButton = document.getElementById('model_grid_toggle');
+    const toggleButton = document.getElementById('featherless_model_grid_toggle');
     toggleButton.addEventListener('click', function () {
         // Toggle between grid and list view
         if (featherlessIsGridView) {
