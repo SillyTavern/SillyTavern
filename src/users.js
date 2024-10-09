@@ -656,22 +656,25 @@ async function basicUserLogin(request) {
         return false;
     }
 
-    const authHeader = request.get('Authorization');
+    const authHeader = request.headers.authorization;
+
     if (!authHeader) {
         return false;
     }
 
-    const parts = authHeader.split(' ');
-    if (!parts || parts.length < 2 || parts[0].toLowerCase() !== 'basic') {
+    const [scheme, credentials] = authHeader.split(' ');
+
+    if (scheme !== 'Basic' || !credentials) {
         return false;
     }
 
-    const b64auth = parts[1];
-    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+    const [username, password] = Buffer.from(credentials, 'base64')
+        .toString('utf8')
+        .split(':');
 
     const userHandles = await getAllUserHandles();
     for (const userHandle of userHandles) {
-        if (login === userHandle) {
+        if (username === userHandle) {
             const user = await storage.getItem(toKey(userHandle));
             // Verify pass again here just to be sure
             if (user && user.enabled && user.password && user.password === getPasswordHash(password, user.salt)) {
