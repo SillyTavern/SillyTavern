@@ -31,8 +31,8 @@ import { slashCommandReturnHelper } from './slash-commands/SlashCommandReturnHel
  * @property {string} description - A description of the tool.
  * @property {object} parameters - The parameters for the tool.
  * @property {function} action - The action to perform when the tool is invoked.
- * @property {function} formatMessage - A function to format the tool call message.
- * @property {function} shouldRegister - A function to determine if the tool should be registered.
+ * @property {function} [formatMessage] - A function to format the tool call message.
+ * @property {function} [shouldRegister] - A function to determine if the tool should be registered.
  */
 
 /**
@@ -194,11 +194,11 @@ class ToolDefinition {
     /**
      * Formats a message with the tool invocation.
      * @param {object} parameters The parameters to pass to the tool.
-     * @returns {string} The formatted message.
+     * @returns {Promise<string>} The formatted message.
      */
-    formatMessage(parameters) {
+    async formatMessage(parameters) {
         return typeof this.#formatMessage === 'function'
-            ? this.#formatMessage(parameters)
+            ? await this.#formatMessage(parameters)
             : `Invoking tool: ${this.#displayName || this.#name}`;
     }
 
@@ -303,9 +303,9 @@ export class ToolManager {
      * Formats a message for a tool call by name.
      * @param {string} name The name of the tool to format the message for.
      * @param {object} parameters Function tool call parameters.
-     * @returns {string} The formatted message for the tool call.
+     * @returns {Promise<string>} The formatted message for the tool call.
      */
-    static formatToolCallMessage(name, parameters) {
+    static async formatToolCallMessage(name, parameters) {
         if (!this.#tools.has(name)) {
             return `Invoked unknown tool: ${name}`;
         }
@@ -313,7 +313,7 @@ export class ToolManager {
         try {
             const tool = this.#tools.get(name);
             const formatParameters = typeof parameters === 'string' ? JSON.parse(parameters) : parameters;
-            return tool.formatMessage(formatParameters);
+            return await tool.formatMessage(formatParameters);
         } catch (error) {
             console.error(`[ToolManager] An error occurred while formatting the tool call message for "${name}":`, error);
             return `Invoking tool: ${name}`;
@@ -590,7 +590,7 @@ export class ToolManager {
             const name = toolCall.function.name;
             const displayName = ToolManager.getDisplayName(name);
 
-            const message = ToolManager.formatToolCallMessage(name, parameters);
+            const message = await ToolManager.formatToolCallMessage(name, parameters);
             const toast = message && toastr.info(message, 'Tool Calling', { timeOut: 0 });
             const toolResult = await ToolManager.invokeFunctionTool(name, parameters);
             toastr.clear(toast);
@@ -878,6 +878,7 @@ export class ToolManager {
                     parameters: JSON.parse(parameters ?? '{}'),
                     action: actionFunc,
                     formatMessage: formatMessageFunc,
+                    shouldRegister: async () => true, // TODO: Implement shouldRegister
                 });
 
                 return '';
