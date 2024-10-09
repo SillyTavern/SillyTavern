@@ -2260,7 +2260,37 @@
                                 <div data-for="api_key_featherless" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
                                     For privacy reasons, your API key will be hidden after you reload the page.
                                 </div>
-                                <select id="featherless_model">
+                                <hr>
+                                <h4 data-i18n="Featherless Model Selection">Featherless Model Selection</h4>
+                                <div class="flex-container wide100p flexGap10">
+                                    <div class="flex1 overflowHidden wide100p">
+                                        <div class="flex-container marginBot10 alignitemscenter">
+                                            <input id="featherless_model_search_bar" class="text_pole width100p flex1 margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search...">
+                                            <select id="featherless_model_sort_order" class="margin0 text_pole">
+                                                <option value="search" data-i18n="Search" hidden>A-Z</option>
+                                                <option value="asc">A-Z</option>
+                                                <option value="desc">Z-A</option>
+                                                <option value="date_asc">Date Asc</option>
+                                                <option value="date_desc">Date Desc</option>
+                                            </select>
+                                            <select id="featherless_category_selection" class="text_pole">
+                                                <option value="" disabled selected data-i18n="category">category</option>
+                                                <!-- <option value="Favorite" data-i18n="Top">Favorite</option> -->
+                                                <option value="Top" data-i18n="Top">Top</option>
+                                                <option value="New" data-i18n="New">New</option>
+                                                <option value="All" data-i18n="All">All</option>
+                                            </select>
+                                            <select id="featherless_class_selection" class="text_pole">
+                                                <option value="" selected data-i18n="class">All Classes</option>
+                                            </select>
+                                            <div id="featherless_model_pagination_container" class="flex1"></div>
+                                            <i id="featherless_model_grid_toggle" class="fa-solid fa-table-cells-large menu_button" data-i18n="[title]Toggle grid view" title="Toggle grid view"></i>
+                                        </div>
+                                        <div id="featherless_model_card_block" data-i18n="[no_desc_text]No model description" no_desc_text="[No description]"></div>
+                                    </div>
+                                </div>
+                                <!-- Do not remove. Needed for the /model command to function -->
+                                <select id="featherless_model" class="displayNone">
                                     <option value="" data-i18n="-- Connect to the API --">
                                         -- Connect to the API --
                                     </option>

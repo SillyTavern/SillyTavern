@@ -193,6 +193,7 @@ const settings = {
     openrouter_allow_fallbacks: true,
     xtc_threshold: 0.1,
     xtc_probability: 0,
+    featherless_model: '',
 };
 
 export let textgenerationwebui_banned_in_macros = [];
