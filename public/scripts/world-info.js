@@ -313,7 +313,7 @@ class WorldInfoBuffer {
     /**
      * Get the externally activated version of the entry, if there is one.
      * @param {object} entry WI entry to check
-     * @returns {object|null} the external version if the entry is forcefully activated, null otherwise
+     * @returns {object|undefined} the external version if the entry is forcefully activated, undefined otherwise
      */
     getExternallyActivated(entry) {
         // Entries could be copied with structuredClone, so we need to compare them by string representation
