@@ -8,6 +8,7 @@ import * as path from 'node:path';
 import * as util from 'node:util';
 import * as net from 'node:net';
 import * as dns from 'node:dns';
+import { fileURLToPath } from 'node:url';
 
 // cli/fs related library imports
 import open from 'open';
@@ -214,7 +215,7 @@ const cliArguments = yargs(hideBin(process.argv))
     }).parseSync();
 
 // change all relative paths
-const serverDirectory = import.meta.dirname;
+const serverDirectory = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
 console.log(`Node version: ${process.version}. Running in ${process.env.NODE_ENV} environment. Server directory: ${serverDirectory}`);
 process.chdir(serverDirectory);
 
