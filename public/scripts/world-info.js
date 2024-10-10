@@ -1680,8 +1680,8 @@ export function sortWorldInfoEntries(data, { customSort = null } = {}) {
     } else if (sortRule === 'priority') {
         // First constant, then normal, then disabled.
         primarySort = (a, b) => {
-            const aValue = a.constant ? 0 : a.disable ? 2 : 1;
-            const bValue = b.constant ? 0 : b.disable ? 2 : 1;
+            const aValue = a.disable ? 2 : a.constant ? 0 : 1;
+            const bValue = b.disable ? 2 : b.constant ? 0 : 1;
             return aValue - bValue;
         };
     } else {
