@@ -613,6 +613,12 @@ body .panelControlBar {
     min-width: 55px;
     justify-content: flex-end;
     gap: 0px;
+    opacity:0;
+    transition: all 250ms;
+}
+
+.zoomed_avatar:hover .panelControlBar {
+    opacity:1;
 }
 
 .panelControlBar .drag-grabber {
