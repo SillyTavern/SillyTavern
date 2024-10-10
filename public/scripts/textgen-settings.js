@@ -1328,7 +1328,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         params = Object.assign(params, llamaCppParams);
     }
 
-    eventSource.emitAndWait(event_types.TEXT_COMPLETION_SETTINGS_READY, params);
+    eventSource.emitAndWait(event_types.TEXT_COMPLETION_SETTINGS_READY, params, type);
 
     // Grammar conflicts with with json_schema
     if (settings.type === LLAMACPP) {

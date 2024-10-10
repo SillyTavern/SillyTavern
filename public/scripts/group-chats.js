@@ -66,7 +66,6 @@ import {
     setExternalAbortController,
     baseChatReplace,
     depth_prompt_depth_default,
-    loadItemizedPrompts,
     animation_duration,
     depth_prompt_role_default,
     shouldAutoContinue,
@@ -76,6 +75,7 @@ import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { isExternalMediaAllowed } from './chats.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
+import { loadItemizedPrompts } from './prompt-itemization.js';
 
 export {
     selected_group,

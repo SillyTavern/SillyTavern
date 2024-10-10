@@ -11,7 +11,7 @@ import {
     getCharacters,
     chat,
     saveChatConditional,
-    saveItemizedPrompts,
+
 } from '../script.js';
 import { humanizedDateTime, getMessageTimeStamp } from './RossAscends-mods.js';
 import {
@@ -37,6 +37,7 @@ import {
     getUniqueName,
     isTrueBoolean,
 } from './utils.js';
+import { saveItemizedPrompts } from './prompt-itemization.js';
 
 const bookmarkNameToken = 'Checkpoint #';
 

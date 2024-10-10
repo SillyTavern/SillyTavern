@@ -1,9 +1,29 @@
-<h3 class="flex-container justifyCenter alignitemscenter">
-    Prompt Itemization
-    <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button" title="Show Raw Prompt" data-i18n="[title]Show Raw Prompt"></div>
-    <div id="copyPromptToClipboard" class="fa-solid fa-copy menu_button" title="Copy Prompt" data-i18n="[title]Copy Prompt"></div>
-    <div id="diffPrevPrompt" class="fa-solid fa-code-compare menu_button" title="Show Prompt Differences" data-i18n="[title]Show Prompt Differences"></div>
-</h3>
+<div class="flex-container justifyCenter alignitemscenter">
+    <h3 class="justifyCenter">Prompt Itemization</h3>
+    <button id="showRawPrompt" class="menu_button" title="Show Raw Prompt" data-i18n="[title]Show Raw Prompt">
+        <i class="fa-solid fa-square-poll-horizontal"></i>
+        <span class="sr-only" data-i18n="Show Raw Prompt">Show Raw Prompt</span>
+    </button>
+    <button id="showGenerationSettings" class="menu_button" title="Show Raw Request" data-i18n="[title]Show Raw Request">
+        <i class="fa-solid fa-code"></i>
+        <i class="fa-regular fa-message"></i>
+        <span class="sr-only" data-i18n="Show Raw Request">Show Raw Request</span>
+    </button>
+    <button id="showGenerationResponse" class="menu_button" title="Show Raw Response" data-i18n="[title]Show Raw Response">
+        <i class="fa-solid fa-code"></i>
+        <i class="fa-regular fa-reply"></i>
+        <span class="sr-only" data-i18n="Show Raw Response">Show Raw Response</span>
+    </button>
+    <button id="copyPromptToClipboard" class="menu_button" title="Copy Prompt" data-i18n="[title]Copy Prompt">
+        <i class="fa-solid fa-copy"></i>
+        <span class="sr-only" data-i18n="Copy Prompt">Copy Prompt</span>
+    </button>
+    <button id="diffPrevPrompt" class="menu_button" title="Show Prompt Differences"
+            data-i18n="[title]Show Prompt Differences">
+        <i class="fa-solid fa-code-compare"></i>
+        <span class="sr-only" data-i18n="Show Prompt Differences">Show Prompt Differences</span>
+    </button>
+</div>
 API/Model Used: {{mainApiFriendlyName}} {{#if apiUsed}}({{apiUsed}}){{/if}} {{#if modelUsed}}&ndash; {{modelUsed}}{{/if}}<br>
 Tokenizer: {{selectedTokenizer}}<br>
 <span class="tokenItemizingSubclass">
