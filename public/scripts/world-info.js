@@ -1678,34 +1678,11 @@ export function sortWorldInfoEntries(data, { customSort = null } = {}) {
             return aValue - bValue;
         };
     } else if (sortRule === 'priority') {
-        // First constant, then normal, then disabled, then by comment.
+        // First constant, then normal, then disabled.
         primarySort = (a, b) => {
-            // Determine priority based on disable and constant flags
-            const aPriority = a.disable ? 2 : a.constant ? 0 : 1;
-            const bPriority = b.disable ? 2 : b.constant ? 0 : 1;
-
-            // Compare priorities first
-            if (aPriority !== bPriority) {
-                return aPriority - bPriority;
-            }
-
-            // Normalize comments for comparison, handling null/undefined
-            const commentA = a.comment ? a.comment.toLowerCase() : '';
-            const commentB = b.comment ? b.comment.toLowerCase() : '';
-
-            // Assign constant values for further comparison
-            const constantA = a.constant ? 0 : 1;
-            const constantB = b.constant ? 0 : 1;
-
-            // If priorities are equal, compare constants
-            if (aPriority === bPriority) {
-                if (constantA !== constantB) {
-                    return constantA - constantB;
-                }
-            }
-
-            // Finally, compare comments alphabetically
-            return commentA.localeCompare(commentB);
+            const aValue = a.disable ? 2 : a.constant ? 0 : 1;
+            const bValue = b.disable ? 2 : b.constant ? 0 : 1;
+            return aValue - bValue;
         };
     } else {
         primarySort = (a, b) => {
