@@ -1,4 +1,4 @@
-import * as crypto from 'node:crypto';
+import crypto from 'node:crypto';
 
 import storage from 'node-persist';
 import express from 'express';

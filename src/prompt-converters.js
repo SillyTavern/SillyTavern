@@ -1,4 +1,4 @@
-import * as crypto from 'node:crypto';
+import crypto from 'node:crypto';
 import polyfill from './polyfill.js';
 import { getConfigValue } from './util.js';
 

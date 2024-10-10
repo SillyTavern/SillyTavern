@@ -1,6 +1,6 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import * as url from 'node:url';
+import fs from 'node:fs';
+import path from 'node:path';
+import url from 'node:url';
 
 import express from 'express';
 import { getConfigValue } from './util.js';

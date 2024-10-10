@@ -1,5 +1,5 @@
-import * as path from 'node:path';
-import * as fs from 'node:fs';
+import path from 'node:path';
+import fs from 'node:fs';
 import { finished } from 'node:stream/promises';
 
 import mime from 'mime-types';

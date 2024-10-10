@@ -1,6 +1,6 @@
-import * as path from 'node:path';
+import path from 'node:path';
 import { promises as fsPromises } from 'node:fs';
-import * as crypto from 'node:crypto';
+import crypto from 'node:crypto';
 
 import storage from 'node-persist';
 import express from 'express';

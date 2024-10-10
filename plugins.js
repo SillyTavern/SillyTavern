@@ -3,8 +3,8 @@
 // 1. node plugins.js update
 // 2. node plugins.js install <plugin-git-url>
 // More operations coming soon.
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { default as git } from 'simple-git';

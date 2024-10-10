@@ -1,8 +1,8 @@
 // Native Node Modules
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import * as crypto from 'node:crypto';
-import * as os from 'node:os';
+import path from 'node:path';
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import os from 'node:os';
 import { Buffer } from 'node:buffer';
 
 // Express and other dependencies

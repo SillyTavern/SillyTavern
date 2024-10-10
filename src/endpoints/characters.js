@@ -1,7 +1,7 @@
-import * as path from 'node:path';
-import * as fs from 'node:fs';
+import path from 'node:path';
+import fs from 'node:fs';
 import { promises as fsPromises } from 'node:fs';
-import * as readline from 'node:readline';
+import readline from 'node:readline';
 import { Buffer } from 'node:buffer';
 
 import express from 'express';

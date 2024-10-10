@@ -1,4 +1,4 @@
-import * as https from 'node:https';
+import https from 'node:https';
 import { createRequire } from 'node:module';
 import { Buffer } from 'node:buffer';
 

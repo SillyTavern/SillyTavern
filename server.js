@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 // native node modules
-import * as fs from 'node:fs';
-import * as http from 'node:http';
-import * as https from 'node:https';
-import * as path from 'node:path';
-import * as util from 'node:util';
-import * as net from 'node:net';
-import * as dns from 'node:dns';
+import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
+import path from 'node:path';
+import util from 'node:util';
+import net from 'node:net';
+import dns from 'node:dns';
 import { fileURLToPath } from 'node:url';
 
 // cli/fs related library imports
@@ -440,7 +440,6 @@ app.use(multerMonkeyPatch);
 // User data mount
 app.use('/', userModule.router);
 // Private endpoints
-
 app.use('/api/users', usersPrivateRouter);
 // Admin endpoints
 app.use('/api/users', usersAdminRouter);

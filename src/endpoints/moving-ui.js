@@ -1,4 +1,4 @@
-import * as  path from 'node:path';
+import path from 'node:path';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';

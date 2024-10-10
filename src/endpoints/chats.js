@@ -1,6 +1,6 @@
-import * as  fs from 'node:fs';
-import * as path from 'node:path';
-import * as readline from 'node:readline';
+import fs from 'node:fs';
+import path from 'node:path';
+import readline from 'node:readline';
 
 import express from 'express';
 import sanitize from 'sanitize-filename';

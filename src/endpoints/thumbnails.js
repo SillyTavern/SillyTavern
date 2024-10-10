@@ -1,6 +1,6 @@
-import * as fs from 'node:fs';
-import * as fsPromises from 'node:fs/promises';
-import * as path from 'node:path';
+import fs from 'node:fs';
+import { promises as fsPromises } from 'node:fs';
+import path from 'node:path';
 
 import mime from 'mime-types';
 import express from 'express';

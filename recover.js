@@ -1,4 +1,4 @@
-import * as fs from 'node:fs';
+import fs from 'node:fs';
 import yaml from 'yaml';
 import storage from 'node-persist';
 import * as users from './src/users.js';

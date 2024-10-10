@@ -1,10 +1,10 @@
 /**
  * Scripts to be done before starting the server for the first time.
  */
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import * as crypto from 'node:crypto';
-import * as yaml from 'yaml';
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import yaml from 'yaml';
 import _ from 'lodash';
 import { createRequire } from 'node:module';
 
