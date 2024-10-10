@@ -17,7 +17,7 @@ async function getCohereBatchVector(texts, isQuery, directories, model) {
         throw new Error('No API key found');
     }
 
-    const response = await fetch('https://api.cohere.ai/v1/embed', {
+    const response = await fetch('https://api.cohere.ai/v2/embed', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -26,6 +26,7 @@ async function getCohereBatchVector(texts, isQuery, directories, model) {
         body: JSON.stringify({
             texts: texts,
             model: model,
+            embedding_types: ['float'],
             input_type: isQuery ? 'search_query' : 'search_document',
             truncate: 'END',
         }),
@@ -38,12 +39,12 @@ async function getCohereBatchVector(texts, isQuery, directories, model) {
     }
 
     const data = await response.json();
-    if (!Array.isArray(data?.embeddings)) {
+    if (!Array.isArray(data?.embeddings?.float)) {
         console.log('API response was not an array');
         throw new Error('API response was not an array');
     }
 
-    return data.embeddings;
+    return data.embeddings.float;
 }
 
 /**

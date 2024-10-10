@@ -277,38 +277,9 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, useTools, 
  * @param {object[]} messages Array of messages
  * @param {string}   charName Character name
  * @param {string}   userName User name
- * @returns {{systemPrompt: string, chatHistory: object[], userPrompt: string}} Prompt for Cohere
+ * @returns {{chatHistory: object[]}} Prompt for Cohere
  */
 function convertCohereMessages(messages, charName = '', userName = '') {
-    const roleMap = {
-        'system': 'SYSTEM',
-        'user': 'USER',
-        'assistant': 'CHATBOT',
-    };
-    let systemPrompt = '';
-
-    // Collect all the system messages up until the first instance of a non-system message, and then remove them from the messages array.
-    let i;
-    for (i = 0; i < messages.length; i++) {
-        if (messages[i].role !== 'system') {
-            break;
-        }
-        // Append example names if not already done by the frontend (e.g. for group chats).
-        if (userName && messages[i].name === 'example_user') {
-            if (!messages[i].content.startsWith(`${userName}: `)) {
-                messages[i].content = `${userName}: ${messages[i].content}`;
-            }
-        }
-        if (charName && messages[i].name === 'example_assistant') {
-            if (!messages[i].content.startsWith(`${charName}: `)) {
-                messages[i].content = `${charName}: ${messages[i].content}`;
-            }
-        }
-        systemPrompt += `${messages[i].content}\n\n`;
-    }
-
-    messages.splice(0, i);
-
     if (messages.length === 0) {
         messages.unshift({
             role: 'user',
@@ -316,17 +287,41 @@ function convertCohereMessages(messages, charName = '', userName = '') {
         });
     }
 
-    const lastNonSystemMessageIndex = messages.findLastIndex(msg => msg.role === 'user' || msg.role === 'assistant');
-    const userPrompt = messages.slice(lastNonSystemMessageIndex).map(msg => msg.content).join('\n\n') || PROMPT_PLACEHOLDER;
-
-    const chatHistory = messages.slice(0, lastNonSystemMessageIndex).map(msg => {
-        return {
-            role: roleMap[msg.role] || 'USER',
-            message: msg.content,
-        };
+    messages.forEach((msg, index) => {
+        // Tool calls require an assistent primer
+        if (Array.isArray(msg.tool_calls)) {
+            if (index > 0 && messages[index - 1].role === 'assistant') {
+                msg.content = messages[index - 1].content;
+                messages.splice(index - 1, 1);
+            } else {
+                msg.content = `I'm going to call a tool for that: ${msg.tool_calls.map(tc => tc?.function?.name).join(', ')}`;
+            }
+        }
+        // No names support (who would've thought)
+        if (msg.name) {
+            if (msg.role == 'system' && msg.name == 'example_assistant') {
+                if (charName && !msg.content.startsWith(`${charName}: `)) {
+                    msg.content = `${charName}: ${msg.content}`;
+                }
+            }
+            if (msg.role == 'system' && msg.name == 'example_user') {
+                if (userName && !msg.content.startsWith(`${userName}: `)) {
+                    msg.content = `${userName}: ${msg.content}`;
+                }
+            }
+            if (msg.role !== 'system' && !msg.content.startsWith(`${msg.name}: `)) {
+                msg.content = `${msg.name}: ${msg.content}`;
+            }
+            delete msg.name;
+        }
     });
 
-    return { systemPrompt: systemPrompt.trim(), chatHistory, userPrompt };
+    // A prompt should end with a user/tool message
+    if (messages.length && !['user', 'tool'].includes(messages[messages.length - 1].role)) {
+        messages[messages.length - 1].role = 'user';
+    }
+
+    return { chatHistory: messages };
 }
 
 /**

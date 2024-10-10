@@ -5547,3 +5547,129 @@ body:not(.movingUI) .drawer-content.maximized {
 #InstructSequencesColumn details:not(:last-of-type) {
     margin-bottom: 5px;
 }
+
+#user_avatar_block {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Main structure for the model cards */
+.model-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background-color: #222;
+    color: #fff;
+    margin: 7px;
+    width: calc(100% - 7px);
+    box-sizing: border-box;
+    transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out, border 0.2s ease-in-out;
+}
+
+.model-card .details-container {
+    text-align: right;
+}
+
+.model-card:hover {
+    transform: scale(1.01);
+    background-color: #444;
+    transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;  /* Smooth transition */
+}
+
+.model-card.selected {
+    border: 2px solid var(--okGreen70a);
+    background-color: var(--okGreen70a);
+}
+
+.model-info {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.model-title {
+    font-size: 13px;
+    font-weight: bold;
+    overflow: hidden;
+}
+
+.model-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    min-width: 120px;
+}
+
+.model-class, .model-context-length, .model-date-added {
+    font-size: 10px;
+}
+
+.model-class, .model-context-length {
+    margin-bottom: 5px;
+}
+
+#featherless_model_pagination_container .paginationjs-nav {
+    min-width: max-content;
+}
+
+#featherless_model_card_block.grid-view {
+    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-wrap: wrap;
+    /* gap: 3px; */
+    justify-content: flex-start;
+}
+
+/* Grid-view card */
+#featherless_model_card_block.grid-view .model-card {
+    flex-direction: column;
+    flex: 1 1 calc(50% - 30px);
+}
+
+#featherless_model_search_bar {
+    width: 15ch;
+    flex-grow: 0;
+    align-self: center;
+}
+
+#featherless_model_sort_order {
+    width: auto;
+    flex-shrink: 0;
+    align-self: center;
+}
+
+#featherless_model_grid_toggle {
+    flex-shrink: 0;
+    width: auto;
+    cursor: pointer;
+}
+
+#featherless_category_selection,
+#featherless_class_selection {
+    display: flex;
+    width: auto;
+    align-self: center;
+}
+
+@media (max-width: 768px) {
+    .model-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .model-info, .model-details, .model-date-added {
+        width: 100%;
+        text-align: left;
+    }
+
+    #featherless_model_search_bar {
+        width: 100%;
+    }
+
+}

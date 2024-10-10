@@ -836,6 +836,40 @@ function randValuesCallback(from, to, args) {
     return value;
 }
 
+function customSortComparitor(a, b) {
+    if (typeof a != typeof b) {
+        a = typeof a;
+        b = typeof b;
+    }
+    return a > b ? 1 : a < b ? -1 : 0;
+}
+
+function sortArrayObjectCallback(args, value) {
+    let parsedValue;
+    if (typeof value == 'string') {
+        try {
+            parsedValue = JSON.parse(value);
+        } catch {
+            // return the original input if it was invalid
+            return value;
+        }
+    } else {
+        parsedValue = value;
+    }
+    if (Array.isArray(parsedValue)) {
+        // always sort lists by value
+        parsedValue.sort(customSortComparitor);
+    } else if (typeof parsedValue == 'object') {
+        let keysort = args.keysort;
+        if (isFalseBoolean(keysort)) {
+            parsedValue = Object.keys(parsedValue).sort(function (a, b) { return customSortComparitor(parsedValue[a], parsedValue[b]); });
+        } else {
+            parsedValue = Object.keys(parsedValue).sort(customSortComparitor);
+        }
+    }
+    return JSON.stringify(parsedValue);
+}
+
 /**
  * Declare a new variable in the current scope.
  * @param {NamedArguments} args Named arguments.
@@ -2104,6 +2138,51 @@ export function registerVariableCommands() {
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/len Lorem ipsum | /echo</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'sort',
+        callback: sortArrayObjectCallback,
+        returns: 'the sorted list or dictionary keys',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({ name: 'keysort',
+                description: 'whether to sort by key or value; ignored for lists',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: ['true', 'false'],
+                defaultValue: 'true',
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'value',
+                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY],
+                isRequired: true,
+                forceEnum: false,
+            }),
+        ],
+        helpString: `
+            <div>
+                Sorts a list or dictionary in ascending order and passes the result down the pipe.
+                <ul>
+                    <li>
+                        For lists, returns the list sorted by value.
+                    </li>
+                    <li>
+                        For dictionaries, returns the ordered list of keys after sorting. Setting keysort=false means keys are sorted by associated value.
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/sort [5,3,4,1,2] | /echo</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/sort keysort=false {"a": 1, "d": 3, "c": 2, "b": 5} | /echo</code></pre>
                     </li>
                 </ul>
             </div>
