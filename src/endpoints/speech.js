@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import express from 'express';
 import wavefile from 'wavefile';
 import { jsonParser } from '../express-common.js';

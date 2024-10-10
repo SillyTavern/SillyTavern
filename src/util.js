@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as http2 from 'node:http2';
 import { Readable } from 'node:stream';
 import { createRequire } from 'node:module';
+import { Buffer } from 'node:buffer';
 
 import yaml from 'yaml';
 import { sync as commandExistsSync } from 'command-exists';

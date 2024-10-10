@@ -59,7 +59,7 @@ const EXPORTABLE_KEYS = [
 
 /**
  * Writes a secret to the secrets file
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {string} key Secret key
  * @param {string} value Secret value
  */
@@ -79,7 +79,7 @@ export function writeSecret(directories, key, value) {
 
 /**
  * Deletes a secret from the secrets file
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {string} key Secret key
  * @returns
  */
@@ -98,7 +98,7 @@ export function deleteSecret(directories, key) {
 
 /**
  * Reads a secret from the secrets file
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {string} key Secret key
  * @returns {string} Secret value
  */
@@ -116,7 +116,7 @@ export function readSecret(directories, key) {
 
 /**
  * Reads the secret state from the secrets file
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @returns {object} Secret state
  */
 export function readSecretState(directories) {
@@ -139,7 +139,7 @@ export function readSecretState(directories) {
 
 /**
  * Reads all secrets from the secrets file
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @returns {Record<string, string> | undefined} Secrets
  */
 export function getAllSecrets(directories) {

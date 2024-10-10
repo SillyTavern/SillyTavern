@@ -22,10 +22,10 @@ export const router = express.Router();
 
 router.post('/get', requireAdminMiddleware, jsonParser, async (_request, response) => {
     try {
-        /** @type {import('../users').User[]} */
+        /** @type {import('../users.js').User[]} */
         const users = await storage.values(x => x.key.startsWith(KEY_PREFIX));
 
-        /** @type {Promise<import('../users').UserViewModel>[]} */
+        /** @type {Promise<import('../users.js').UserViewModel>[]} */
         const viewModelPromises = users
             .map(user => new Promise(resolve => {
                 getUserAvatar(user.handle).then(avatar =>
@@ -62,7 +62,7 @@ router.post('/disable', requireAdminMiddleware, jsonParser, async (request, resp
             return response.status(400).json({ error: 'Cannot disable yourself' });
         }
 
-        /** @type {import('../users').User} */
+        /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
 
         if (!user) {
@@ -86,7 +86,7 @@ router.post('/enable', requireAdminMiddleware, jsonParser, async (request, respo
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        /** @type {import('../users').User} */
+        /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
 
         if (!user) {
@@ -110,7 +110,7 @@ router.post('/promote', requireAdminMiddleware, jsonParser, async (request, resp
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        /** @type {import('../users').User} */
+        /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
 
         if (!user) {
@@ -139,7 +139,7 @@ router.post('/demote', requireAdminMiddleware, jsonParser, async (request, respo
             return response.status(400).json({ error: 'Cannot demote yourself' });
         }
 
-        /** @type {import('../users').User} */
+        /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
 
         if (!user) {

@@ -79,7 +79,7 @@ function getFiles(dir, files = []) {
 
 /**
  * Ensure that the asset folders exist.
- * @param {import('../users').UserDirectoryList} directories - The user's directories
+ * @param {import('../users.js').UserDirectoryList} directories - The user's directories
  */
 function ensureFoldersExist(directories) {
     const folderPath = path.join(directories.assets);

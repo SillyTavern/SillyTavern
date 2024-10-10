@@ -2,6 +2,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { promises as fsPromises } from 'node:fs';
 import * as readline from 'node:readline';
+import { Buffer } from 'node:buffer';
 
 import express from 'express';
 import sanitize from 'sanitize-filename';
@@ -188,7 +189,7 @@ const calculateDataSize = (data) => {
  * processCharacter - Process a given character, read its data and calculate its statistics.
  *
  * @param  {string} item The name of the character.
- * @param  {import('../users').UserDirectoryList} directories User directories
+ * @param  {import('../users.js').UserDirectoryList} directories User directories
  * @return {Promise<object>}     A Promise that resolves when the character processing is done.
  */
 const processCharacter = async (item, directories) => {
@@ -232,7 +233,7 @@ const processCharacter = async (item, directories) => {
 /**
  * Convert a character object to Spec V2 format.
  * @param {object} jsonObject Character object
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {boolean} hoistDate Will set the chat and create_date fields to the current date if they are missing
  * @returns {object} Character object in Spec V2 format
  */
@@ -252,7 +253,7 @@ function getCharaCardV2(jsonObject, directories, hoistDate = true) {
 /**
  * Convert a character object to Spec V2 format.
  * @param {object} char Character object
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @returns {object} Character object in Spec V2 format
  */
 function convertToV2(char, directories) {
@@ -342,7 +343,7 @@ function readFromV2(char) {
 /**
  * Format character data to Spec V2 format.
  * @param {object} data Character data
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @returns
  */
 function charaFormatData(data, directories) {
@@ -1081,7 +1082,7 @@ router.post('/chats', jsonParser, async function (request, response) {
 /**
  * Gets the name for the uploaded PNG file.
  * @param {string} file File name
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @returns {string} - The name for the uploaded PNG file
  */
 function getPngName(file, directories) {

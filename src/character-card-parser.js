@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { Buffer } from 'node:buffer';
 
 import encode from 'png-chunks-encode';
 import extract from 'png-chunks-extract';

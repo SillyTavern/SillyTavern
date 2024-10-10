@@ -8,7 +8,7 @@ import { TEXTGEN_TYPES } from '../constants.js';
  * @param {string} apiUrl - The API URL
  * @param {string} model - The model to use
  * @param {boolean} keep - Keep the model loaded in memory
- * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
 export async function getOllamaBatchVector(texts, apiUrl, model, keep, directories) {
@@ -26,7 +26,7 @@ export async function getOllamaBatchVector(texts, apiUrl, model, keep, directori
  * @param {string} apiUrl - The API URL
  * @param {string} model - The model to use
  * @param {boolean} keep - Keep the model loaded in memory
- * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[]>} - The vector for the text
  */
 export async function getOllamaVector(text, apiUrl, model, keep, directories) {

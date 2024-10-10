@@ -5,7 +5,7 @@ const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 /**
  * Gets the vector for the given text from gecko model
  * @param {string[]} texts - The array of texts to get the vector for
- * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
 export async function getMakerSuiteBatchVector(texts, directories) {
@@ -16,7 +16,7 @@ export async function getMakerSuiteBatchVector(texts, directories) {
 /**
  * Gets the vector for the given text from Gemini API text-embedding-004 model
  * @param {string} text - The text to get the vector for
- * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[]>} - The vector for the text
  */
 export async function getMakerSuiteVector(text, directories) {

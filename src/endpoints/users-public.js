@@ -26,10 +26,10 @@ router.post('/list', async (_request, response) => {
             return response.sendStatus(204);
         }
 
-        /** @type {import('../users').User[]} */
+        /** @type {import('../users.js').User[]} */
         const users = await storage.values(x => x.key.startsWith(KEY_PREFIX));
 
-        /** @type {Promise<import('../users').UserViewModel>[]} */
+        /** @type {Promise<import('../users.js').UserViewModel>[]} */
         const viewModelPromises = users
             .filter(x => x.enabled)
             .map(user => new Promise(async (resolve) => {
@@ -63,7 +63,7 @@ router.post('/login', jsonParser, async (request, response) => {
         const ip = getIpFromRequest(request);
         await loginLimiter.consume(ip);
 
-        /** @type {import('../users').User} */
+        /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
 
         if (!user) {
@@ -111,7 +111,7 @@ router.post('/recover-step1', jsonParser, async (request, response) => {
         const ip = getIpFromRequest(request);
         await recoverLimiter.consume(ip);
 
-        /** @type {import('../users').User} */
+        /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
 
         if (!user) {
@@ -148,7 +148,7 @@ router.post('/recover-step2', jsonParser, async (request, response) => {
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        /** @type {import('../users').User} */
+        /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
         const ip = getIpFromRequest(request);
 

@@ -2,6 +2,7 @@
  * When applied, this middleware will ensure the request contains the required header for basic authentication and only
  * allow access to the endpoint after successful authentication.
  */
+import { Buffer } from 'node:buffer';
 import storage from 'node-persist';
 import { getAllUserHandles, toKey, getPasswordHash } from '../users.js';
 import { getConfig, getConfigValue } from '../util.js';

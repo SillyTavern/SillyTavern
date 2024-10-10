@@ -11,7 +11,7 @@ import { jsonParser } from '../express-common.js';
 /**
  * Gets the folder and extension for the preset settings based on the API source ID.
  * @param {string} apiId API source ID
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @returns {object} Object containing the folder and extension for the preset settings
  */
 function getPresetSettingsByAPI(apiId, directories) {

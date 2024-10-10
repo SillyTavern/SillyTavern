@@ -72,7 +72,7 @@ router.post('/change-avatar', jsonParser, async (request, response) => {
             return response.status(400).json({ error: 'Invalid data URL' });
         }
 
-        /** @type {import('../users').User} */
+        /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
 
         if (!user) {
@@ -101,7 +101,7 @@ router.post('/change-password', jsonParser, async (request, response) => {
             return response.status(403).json({ error: 'Unauthorized' });
         }
 
-        /** @type {import('../users').User} */
+        /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
 
         if (!user) {
@@ -189,7 +189,7 @@ router.post('/change-name', jsonParser, async (request, response) => {
             return response.status(403).json({ error: 'Unauthorized' });
         }
 
-        /** @type {import('../users').User} */
+        /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
 
         if (!user) {

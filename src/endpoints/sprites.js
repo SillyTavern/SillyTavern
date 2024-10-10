@@ -11,7 +11,7 @@ import { jsonParser, urlencodedParser } from '../express-common.js';
 
 /**
  * Gets the path to the sprites folder for the provided character name
- * @param {import('../users').UserDirectoryList} directories - User directories
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
  * @param {string} name - The name of the character
  * @param {boolean} isSubfolder - Whether the name contains a subfolder
  * @returns {string | null} The path to the sprites folder. Null if the name is invalid.
@@ -42,7 +42,7 @@ function getSpritesPath(directories, name, isSubfolder) {
  * Imports base64 encoded sprites from RisuAI character data.
  * The sprites are saved in the character's sprites folder.
  * The additionalAssets and emotions are removed from the data.
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {object} data RisuAI character data
  * @returns {void}
  */

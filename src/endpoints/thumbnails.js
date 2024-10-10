@@ -18,7 +18,7 @@ const pngFormat = getConfigValue('avatarThumbnailsPng', false);
 
 /**
  * Gets a path to thumbnail folder based on the type.
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {'bg' | 'avatar'} type Thumbnail type
  * @returns {string} Path to the thumbnails folder
  */
@@ -39,7 +39,7 @@ function getThumbnailFolder(directories, type) {
 
 /**
  * Gets a path to the original images folder based on the type.
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {'bg' | 'avatar'} type Thumbnail type
  * @returns {string} Path to the original images folder
  */
@@ -60,7 +60,7 @@ function getOriginalFolder(directories, type) {
 
 /**
  * Removes the generated thumbnail from the disk.
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {'bg' | 'avatar'} type Type of the thumbnail
  * @param {string} file Name of the file
  */
@@ -77,7 +77,7 @@ export function invalidateThumbnail(directories, type, file) {
 
 /**
  * Generates a thumbnail for the given file.
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {'bg' | 'avatar'} type Type of the thumbnail
  * @param {string} file Name of the file
  * @returns

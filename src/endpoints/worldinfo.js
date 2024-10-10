@@ -9,7 +9,7 @@ import { jsonParser, urlencodedParser } from '../express-common.js';
 
 /**
  * Reads a World Info file and returns its contents
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {string} worldInfoName Name of the World Info file
  * @param {boolean} allowDummy If true, returns an empty object if the file doesn't exist
  * @returns {object} World Info file contents

@@ -39,7 +39,7 @@ const SOURCES = [
  * @param {Object} sourceSettings - Settings for the source, if it needs any
  * @param {string} text - The text to get the vector for
  * @param {boolean} isQuery - If the text is a query for embedding search
- * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[]>} - The vector for the text
  */
 async function getVector(source, sourceSettings, text, isQuery, directories) {
@@ -75,7 +75,7 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
  * @param {Object} sourceSettings - Settings for the source, if it needs any
  * @param {string[]} texts - The array of texts to get the vector for
  * @param {boolean} isQuery - If the text is a query for embedding search
- * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
 async function getBatchVector(source, sourceSettings, texts, isQuery, directories) {
@@ -195,7 +195,7 @@ function getModelScope(sourceSettings) {
 
 /**
  * Gets the index for the vector collection
- * @param {import('../users').UserDirectoryList} directories - User directories
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
  * @param {object} sourceSettings - The model for the source
@@ -215,7 +215,7 @@ async function getIndex(directories, collectionId, source, sourceSettings) {
 
 /**
  * Inserts items into the vector collection
- * @param {import('../users').UserDirectoryList} directories - User directories
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
  * @param {Object} sourceSettings - Settings for the source, if it needs any
@@ -239,7 +239,7 @@ async function insertVectorItems(directories, collectionId, source, sourceSettin
 
 /**
  * Gets the hashes of the items in the vector collection
- * @param {import('../users').UserDirectoryList} directories - User directories
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
  * @param {Object} sourceSettings - Settings for the source, if it needs any
@@ -256,7 +256,7 @@ async function getSavedHashes(directories, collectionId, source, sourceSettings)
 
 /**
  * Deletes items from the vector collection by hash
- * @param {import('../users').UserDirectoryList} directories - User directories
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
  * @param {Object} sourceSettings - Settings for the source, if it needs any
@@ -277,7 +277,7 @@ async function deleteVectorItems(directories, collectionId, source, sourceSettin
 
 /**
  * Gets the hashes of the items in the vector collection that match the search text
- * @param {import('../users').UserDirectoryList} directories - User directories
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
  * @param {Object} sourceSettings - Settings for the source, if it needs any
@@ -298,7 +298,7 @@ async function queryCollection(directories, collectionId, source, sourceSettings
 
 /**
  * Queries multiple collections for the given search queries. Returns the overall top K results.
- * @param {import('../users').UserDirectoryList} directories - User directories
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
  * @param {string[]} collectionIds - The collection IDs to query
  * @param {string} source - The source of the vector
  * @param {Object} sourceSettings - Settings for the source, if it needs any

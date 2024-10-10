@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as crypto from 'node:crypto';
 import * as os from 'node:os';
+import { Buffer } from 'node:buffer';
 
 // Express and other dependencies
 import storage from 'node-persist';
@@ -93,7 +94,7 @@ const STORAGE_KEYS = {
 
 /**
  * Ensures that the content directories exist.
- * @returns {Promise<import('./users').UserDirectoryList[]>} - The list of user directories
+ * @returns {Promise<import('./users.js').UserDirectoryList[]>} - The list of user directories
  */
 export async function ensurePublicDirectoriesExist() {
     for (const dir of Object.values(PUBLIC_DIRECTORIES)) {
@@ -116,7 +117,7 @@ export async function ensurePublicDirectoriesExist() {
 
 /**
  * Gets a list of all user directories.
- * @returns {Promise<import('./users').UserDirectoryList[]>} - The list of user directories
+ * @returns {Promise<import('./users.js').UserDirectoryList[]>} - The list of user directories
  */
 export async function getUserDirectoriesList() {
     const userHandles = await getAllUserHandles();

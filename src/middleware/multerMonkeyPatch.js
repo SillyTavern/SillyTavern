@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer';
+
 /**
  * Decodes a file name from Latin1 to UTF-8.
  * @param {string} str Input string

@@ -7,7 +7,7 @@ import { TEXTGEN_TYPES } from '../constants.js';
  * @param {string[]} texts - The array of texts to get the vectors for
  * @param {string} apiUrl - The API URL
  * @param {string} model - The model to use
- * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
 export async function getVllmBatchVector(texts, apiUrl, model, directories) {
@@ -49,7 +49,7 @@ export async function getVllmBatchVector(texts, apiUrl, model, directories) {
  * @param {string} text - The text to get the vector for
  * @param {string} apiUrl - The API URL
  * @param {string} model - The model to use
- * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[]>} - The vector for the text
  */
 export async function getVllmVector(text, apiUrl, model, directories) {

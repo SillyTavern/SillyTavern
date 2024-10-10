@@ -1,5 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
+import { Buffer } from 'node:buffer';
 
 import { pipeline, env, RawImage, Pipeline } from 'sillytavern-transformers';
 import { getConfigValue } from './util.js';

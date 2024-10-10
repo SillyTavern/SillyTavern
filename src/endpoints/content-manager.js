@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { Buffer } from 'node:buffer';
 
 import express from 'express';
 import fetch from 'node-fetch';
@@ -50,7 +51,7 @@ export const CONTENT_TYPES = {
 
 /**
  * Gets the default presets from the content directory.
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @returns {object[]} Array of default presets
  */
 export function getDefaultPresets(directories) {
@@ -97,7 +98,7 @@ export function getDefaultPresetFile(filename) {
 /**
  * Seeds content for a user.
  * @param {ContentItem[]} contentIndex Content index
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {string[]} forceCategories List of categories to force check (even if content check is skipped)
  * @returns {Promise<boolean>} Whether any content was added
  */
@@ -156,7 +157,7 @@ async function seedContentForUser(contentIndex, directories, forceCategories) {
 
 /**
  * Checks for new content and seeds it for all users.
- * @param {import('../users').UserDirectoryList[]} directoriesList List of user directories
+ * @param {import('../users.js').UserDirectoryList[]} directoriesList List of user directories
  * @param {string[]} forceCategories List of categories to force check (even if content check is skipped)
  * @returns {Promise<void>}
  */
@@ -258,7 +259,7 @@ export function getContentOfType(type, format) {
 /**
  * Gets the target directory for the specified asset type.
  * @param {ContentType} type Asset type
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @returns {string | null} Target directory
  */
 function getTargetByType(type, directories) {

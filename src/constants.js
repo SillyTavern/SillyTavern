@@ -8,7 +8,7 @@ export const PUBLIC_DIRECTORIES = {
 export const SETTINGS_FILE = 'settings.json';
 
 /**
- * @type {import('./users').UserDirectoryList}
+ * @type {import('./users.js').UserDirectoryList}
  * @readonly
  * @enum {string}
  */
@@ -45,7 +45,7 @@ export const USER_DIRECTORY_TEMPLATE = Object.freeze({
 });
 
 /**
- * @type {import('./users').User}
+ * @type {import('./users.js').User}
  * @readonly
  */
 export const DEFAULT_USER = Object.freeze({
