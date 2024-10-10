@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import yaml from 'yaml';
 import storage from 'node-persist';
-import * as users from './src/users';
+import * as users from './src/users.js';
 
 const userAccount = process.argv[2];
 const userPassword = process.argv[3];
