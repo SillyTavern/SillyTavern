@@ -1,9 +1,10 @@
-import * as http from 'node:http';
-import * as https from 'node:https';
-
+import { createRequire } from 'node:module';
 import { ProxyAgent } from 'proxy-agent';
 import { isValidUrl, color } from './util.js';
 
+const require = createRequire(import.meta.url);
+const http = require('http');
+const https = require('https');
 const LOG_HEADER = '[Request Proxy]';
 
 /**
