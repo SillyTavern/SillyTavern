@@ -16,7 +16,7 @@ import { AVATAR_WIDTH, AVATAR_HEIGHT } from '../constants.js';
 import { jsonParser, urlencodedParser } from '../express-common.js';
 import { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer } from '../util.js';
 import { TavernCardValidator } from '../validator/TavernCardValidator.js';
-import * as characterCardParser from '../character-card-parser.js';
+import { parse, write } from '../character-card-parser.js';
 import { readWorldInfoFile } from './worldinfo.js';
 import { invalidateThumbnail } from './thumbnails.js';
 import { importRisuSprites } from './sprites.js';
@@ -38,7 +38,7 @@ async function readCharacterData(inputFile, inputFormat = 'png') {
         return characterDataCache.get(cacheKey);
     }
 
-    const result = characterCardParser.parse(inputFile, inputFormat);
+    const result = parse(inputFile, inputFormat);
     characterDataCache.set(cacheKey, result);
     return result;
 }
@@ -77,7 +77,7 @@ async function writeCharacterData(inputFile, data, outputFile, request, crop = u
         const inputImage = await getInputImage();
 
         // Get the chunks
-        const outputImage = characterCardParser.write(inputImage, data);
+        const outputImage = write(inputImage, data);
         const outputImagePath = path.join(request.user.directories.characters, `${outputFile}.png`);
 
         writeFileAtomicSync(outputImagePath, outputImage);

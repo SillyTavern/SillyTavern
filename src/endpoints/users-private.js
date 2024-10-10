@@ -8,9 +8,8 @@ import express from 'express';
 import { jsonParser } from '../express-common.js';
 import { getUserAvatar, toKey, getPasswordHash, getPasswordSalt, createBackupArchive, ensurePublicDirectoriesExist, toAvatarKey } from '../users.js';
 import { SETTINGS_FILE } from '../constants.js';
-import * as contentManager from './content-manager.js';
+import { checkForNewContent, CONTENT_TYPES } from './content-manager.js';
 import { color, Cache } from '../util.js';
-import { checkForNewContent } from './content-manager.js';
 
 const RESET_CACHE = new Cache(5 * 60 * 1000);
 
@@ -168,7 +167,7 @@ router.post('/reset-settings', jsonParser, async (request, response) => {
 
         const pathToFile = path.join(request.user.directories.root, SETTINGS_FILE);
         await fsPromises.rm(pathToFile, { force: true });
-        await contentManager.checkForNewContent([request.user.directories], [contentManager.CONTENT_TYPES.SETTINGS]);
+        await checkForNewContent([request.user.directories], [CONTENT_TYPES.SETTINGS]);
 
         return response.sendStatus(204);
     } catch (error) {

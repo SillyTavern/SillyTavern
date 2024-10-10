@@ -36,13 +36,27 @@ util.inspect.defaultOptions.maxStringLength = null;
 util.inspect.defaultOptions.depth = 4;
 
 // local library imports
-import * as loader from './src/plugin-loader.js';
-import * as userModule from './src/users.js';
+import{ loadPlugins } from './src/plugin-loader.js';
+import {
+    initUserStorage,
+    getCsrfSecret,
+    getCookieSecret,
+    getCookieSessionName,
+    getAllEnabledUsers,
+    ensurePublicDirectoriesExist,
+    getUserDirectoriesList,
+    migrateSystemPrompts,
+    migrateUserData,
+    requireLoginMiddleware,
+    setUserDataMiddleware,
+    shouldRedirectToLogin,
+    tryAutoLogin,
+    router as userDataRouter,
+} from './src/users.js';
 import basicAuthMiddleware from './src/middleware/basicAuth.js';
 import whitelistMiddleware from './src/middleware/whitelist.js';
 import multerMonkeyPatch from './src/middleware/multerMonkeyPatch.js';
 import initRequestProxy from './src/request-proxy.js';
-import * as contentManager from './src/endpoints/content-manager.js';
 import {
     getVersion,
     getConfigValue,
@@ -81,7 +95,7 @@ import { router as worldInfoRouter } from './src/endpoints/worldinfo.js';
 import { router as statsRouter, init as statsInit, onExit as statsOnExit } from './src/endpoints/stats.js';
 import { router as backgroundsRouter } from './src/endpoints/backgrounds.js';
 import { router as spritesRouter } from './src/endpoints/sprites.js';
-import { router as contentManagerRouter } from './src/endpoints/content-manager.js';
+import { router as contentManagerRouter, checkForNewContent } from './src/endpoints/content-manager.js';
 import { router as settingsRouter, init as settingsInit } from './src/endpoints/settings.js';
 import { router as stableDiffusionRouter } from './src/endpoints/stable-diffusion.js';
 import { router as hordeRouter } from './src/endpoints/horde.js';
@@ -349,21 +363,21 @@ function getSessionCookieAge() {
 }
 
 app.use(cookieSession({
-    name: userModule.getCookieSessionName(),
+    name: getCookieSessionName(),
     sameSite: 'strict',
     httpOnly: true,
     maxAge: getSessionCookieAge(),
-    secret: userModule.getCookieSecret(),
+    secret: getCookieSecret(),
 }));
 
-app.use(userModule.setUserDataMiddleware);
+app.use(setUserDataMiddleware);
 
 // CSRF Protection //
 if (!disableCsrf) {
-    const COOKIES_SECRET = userModule.getCookieSecret();
+    const COOKIES_SECRET = getCookieSecret();
 
     const { generateToken, doubleCsrfProtection } = doubleCsrf({
-        getSecret: userModule.getCsrfSecret,
+        getSecret: getCsrfSecret,
         cookieName: 'X-CSRF-Token',
         cookieOptions: {
             httpOnly: true,
@@ -394,7 +408,7 @@ if (!disableCsrf) {
 // Static files
 // Host index page
 app.get('/', (request, response) => {
-    if (userModule.shouldRedirectToLogin(request)) {
+    if (shouldRedirectToLogin(request)) {
         const query = request.url.split('?')[1];
         const redirectUrl = query ? `/login?${query}` : '/login';
         return response.redirect(redirectUrl);
@@ -411,7 +425,7 @@ app.get('/login', async (request, response) => {
     }
 
     try {
-        const autoLogin = await userModule.tryAutoLogin(request, basicAuthMode);
+        const autoLogin = await tryAutoLogin(request, basicAuthMode);
 
         if (autoLogin) {
             return response.redirect('/');
@@ -430,7 +444,7 @@ app.use(express.static(process.cwd() + '/public', {}));
 app.use('/api/users', usersPublicRouter);
 
 // Everything below this line requires authentication
-app.use(userModule.requireLoginMiddleware);
+app.use(requireLoginMiddleware);
 app.get('/api/ping', (_, response) => response.sendStatus(204));
 
 // File uploads
@@ -438,7 +452,7 @@ app.use(multer({ dest: uploadsPath, limits: { fieldSize: 10 * 1024 * 1024 } }).s
 app.use(multerMonkeyPatch);
 
 // User data mount
-app.use('/', userModule.router);
+app.use('/', userDataRouter);
 // Private endpoints
 app.use('/api/users', usersPrivateRouter);
 // Admin endpoints
@@ -625,15 +639,15 @@ const preSetupTasks = async function () {
     }
     console.log();
 
-    const directories = await userModule.getUserDirectoriesList();
-    await contentManager.checkForNewContent(directories);
+    const directories = await getUserDirectoriesList();
+    await checkForNewContent(directories);
     await ensureThumbnailCache();
     cleanUploads();
 
     await settingsInit();
     await statsInit();
 
-    const cleanupPlugins = await loadPlugins();
+    const cleanupPlugins = await initializePlugins();
     const consoleTitle = process.title;
 
     let isExiting = false;
@@ -740,10 +754,10 @@ const postSetupTasks = async function (v6Failed, v4Failed) {
  * Loads server plugins from a directory.
  * @returns {Promise<Function>} Function to be run on server exit
  */
-async function loadPlugins() {
+async function initializePlugins() {
     try {
         const pluginDirectory = path.join(serverDirectory, 'plugins');
-        const cleanupPlugins = await loader.loadPlugins(app, pluginDirectory);
+        const cleanupPlugins = await loadPlugins(app, pluginDirectory);
         return cleanupPlugins;
     } catch {
         console.log('Plugin loading failed.');
@@ -883,7 +897,7 @@ async function verifySecuritySettings() {
         logSecurityAlert('Your SillyTavern is currently insecurely open to the public. Enable whitelisting, basic authentication or user accounts.');
     }
 
-    const users = await userModule.getAllEnabledUsers();
+    const users = await getAllEnabledUsers();
     const unprotectedUsers = users.filter(x => !x.password);
     const unprotectedAdminUsers = unprotectedUsers.filter(x => x.admin);
 
@@ -901,10 +915,10 @@ async function verifySecuritySettings() {
 }
 
 // User storage module needs to be initialized before starting the server
-userModule.initUserStorage(dataRoot)
-    .then(userModule.ensurePublicDirectoriesExist)
-    .then(userModule.migrateUserData)
-    .then(userModule.migrateSystemPrompts)
+initUserStorage(dataRoot)
+    .then(ensurePublicDirectoriesExist)
+    .then(migrateUserData)
+    .then(migrateSystemPrompts)
     .then(verifySecuritySettings)
     .then(preSetupTasks)
     .finally(startServer);

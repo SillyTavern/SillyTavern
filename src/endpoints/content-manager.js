@@ -5,15 +5,16 @@ import { Buffer } from 'node:buffer';
 import express from 'express';
 import fetch from 'node-fetch';
 import sanitize from 'sanitize-filename';
+import { sync as writeFileAtomicSync } from  'write-file-atomic';
 
 import { getConfigValue, color } from '../util.js';
 import { jsonParser } from '../express-common.js';
-import { sync as writeFileAtomicSync } from  'write-file-atomic';
+import { write } from '../character-card-parser.js';
+
 const contentDirectory = path.join(process.cwd(), 'default/content');
 const scaffoldDirectory = path.join(process.cwd(), 'default/scaffold');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
 const scaffoldIndexPath = path.join(scaffoldDirectory, 'index.json');
-import * as characterCardParser from '../character-card-parser.js';
 
 const WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES = getConfigValue('whitelistImportDomains', []);
 
@@ -397,7 +398,7 @@ async function downloadPygmalionCharacter(id) {
         const avatarResult = await fetch(avatarUrl);
         const avatarBuffer = await avatarResult.buffer();
 
-        const cardBuffer = characterCardParser.write(avatarBuffer, JSON.stringify(characterData));
+        const cardBuffer = write(avatarBuffer, JSON.stringify(characterData));
 
         return {
             buffer: cardBuffer,
