@@ -10,7 +10,7 @@ import * as net from 'node:net';
 import * as dns from 'node:dns';
 
 // cli/fs related library imports
-import * as open from 'open';
+import open from 'open';
 import yargs from 'yargs/yargs';
 import { hideBin } from 'yargs/helpers';
 
