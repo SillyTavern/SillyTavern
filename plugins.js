@@ -3,11 +3,12 @@
 // 1. node plugins.js update
 // 2. node plugins.js install <plugin-git-url>
 // More operations coming soon.
-const { default: git } = require('simple-git');
-const fs = require('fs');
-const path = require('path');
-const { color } = require('./src/util');
+import { default as git } from 'simple-git';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { color } from './src/util.js';
 
+const __dirname = import.meta.dirname;
 process.chdir(__dirname);
 const pluginsPath = './plugins';
 

@@ -1,24 +1,24 @@
-const path = require('path');
-const fs = require('fs');
-const fsPromises = require('fs').promises;
-const readline = require('readline');
-const express = require('express');
-const sanitize = require('sanitize-filename');
-const writeFileAtomicSync = require('write-file-atomic').sync;
-const yaml = require('yaml');
-const _ = require('lodash');
-const mime = require('mime-types');
+import * as path from 'node:path';
+import * as fs from 'node:fs';
+import { promises as fsPromises } from 'node:fs';
+import * as readline from 'node:readline';
 
-const jimp = require('jimp');
+import express from 'express';
+import sanitize from 'sanitize-filename';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
+import yaml from 'yaml';
+import _ from 'lodash';
+import mime from 'mime-types';
+import jimp from 'jimp';
 
-const { AVATAR_WIDTH, AVATAR_HEIGHT } = require('../constants');
-const { jsonParser, urlencodedParser } = require('../express-common');
-const { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer } = require('../util');
-const { TavernCardValidator } = require('../validator/TavernCardValidator');
-const characterCardParser = require('../character-card-parser.js');
-const { readWorldInfoFile } = require('./worldinfo');
-const { invalidateThumbnail } = require('./thumbnails');
-const { importRisuSprites } = require('./sprites');
+import { AVATAR_WIDTH, AVATAR_HEIGHT } from '../constants.js';
+import { jsonParser, urlencodedParser } from '../express-common.js';
+import { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer } from '../util.js';
+import { TavernCardValidator } from '../validator/TavernCardValidator.js';
+import * as characterCardParser from '../character-card-parser.js';
+import { readWorldInfoFile } from './worldinfo.js';
+import { invalidateThumbnail } from './thumbnails.js';
+import { importRisuSprites } from './sprites.js';
 const defaultAvatarPath = './public/img/ai4.png';
 
 // KV-store for parsed character data
@@ -715,7 +715,7 @@ async function importFromPng(uploadPath, { request }, preservedFileName) {
     return '';
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/create', urlencodedParser, async function (request, response) {
     try {
@@ -1231,5 +1231,3 @@ router.post('/export', jsonParser, async function (request, response) {
         response.sendStatus(500);
     }
 });
-
-module.exports = { router };

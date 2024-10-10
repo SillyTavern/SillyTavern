@@ -1,6 +1,6 @@
-const fetch = require('node-fetch').default;
-const { setAdditionalHeadersByType } = require('../additional-headers');
-const { TEXTGEN_TYPES } = require('../constants');
+import fetch from 'node-fetch';
+import { setAdditionalHeadersByType } from '../additional-headers.js';
+import { TEXTGEN_TYPES } from '../constants.js';
 
 /**
  * Gets the vector for the given text from VLLM
@@ -10,7 +10,7 @@ const { TEXTGEN_TYPES } = require('../constants');
  * @param {import('../users').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-async function getVllmBatchVector(texts, apiUrl, model, directories) {
+export async function getVllmBatchVector(texts, apiUrl, model, directories) {
     const url = new URL(apiUrl);
     url.pathname = '/v1/embeddings';
 
@@ -52,12 +52,7 @@ async function getVllmBatchVector(texts, apiUrl, model, directories) {
  * @param {import('../users').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[]>} - The vector for the text
  */
-async function getVllmVector(text, apiUrl, model, directories) {
+export async function getVllmVector(text, apiUrl, model, directories) {
     const vectors = await getVllmBatchVector([text], apiUrl, model, directories);
     return vectors[0];
 }
-
-module.exports = {
-    getVllmBatchVector,
-    getVllmVector,
-};

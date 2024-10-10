@@ -1,16 +1,18 @@
-const fs = require('fs');
-const path = require('path');
-const express = require('express');
-const fetch = require('node-fetch').default;
-const sanitize = require('sanitize-filename');
-const { getConfigValue, color } = require('../util');
-const { jsonParser } = require('../express-common');
-const writeFileAtomicSync = require('write-file-atomic').sync;
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+import express from 'express';
+import fetch from 'node-fetch';
+import sanitize from 'sanitize-filename';
+
+import { getConfigValue, color } from '../util.js';
+import { jsonParser } from '../express-common.js';
+import { sync as writeFileAtomicSync } from  'write-file-atomic';
 const contentDirectory = path.join(process.cwd(), 'default/content');
 const scaffoldDirectory = path.join(process.cwd(), 'default/scaffold');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
 const scaffoldIndexPath = path.join(scaffoldDirectory, 'index.json');
-const characterCardParser = require('../character-card-parser.js');
+import * as characterCardParser from '../character-card-parser.js';
 
 const WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES = getConfigValue('whitelistImportDomains', []);
 
@@ -26,7 +28,7 @@ const WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES = getConfigValue('whitelistImportDo
  * @typedef {string} ContentType
  * @enum {string}
  */
-const CONTENT_TYPES = {
+export const CONTENT_TYPES = {
     SETTINGS: 'settings',
     CHARACTER: 'character',
     SPRITES: 'sprites',
@@ -51,7 +53,7 @@ const CONTENT_TYPES = {
  * @param {import('../users').UserDirectoryList} directories User directories
  * @returns {object[]} Array of default presets
  */
-function getDefaultPresets(directories) {
+export function getDefaultPresets(directories) {
     try {
         const contentIndex = getContentIndex();
         const presets = [];
@@ -76,7 +78,7 @@ function getDefaultPresets(directories) {
  * @param {string} filename Name of the file to get
  * @returns {object | null} JSON object or null if the file doesn't exist
  */
-function getDefaultPresetFile(filename) {
+export function getDefaultPresetFile(filename) {
     try {
         const contentPath = path.join(contentDirectory, filename);
 
@@ -158,7 +160,7 @@ async function seedContentForUser(contentIndex, directories, forceCategories) {
  * @param {string[]} forceCategories List of categories to force check (even if content check is skipped)
  * @returns {Promise<void>}
  */
-async function checkForNewContent(directoriesList, forceCategories = []) {
+export async function checkForNewContent(directoriesList, forceCategories = []) {
     try {
         const contentCheckSkip = getConfigValue('skipContentCheck', false);
         if (contentCheckSkip && forceCategories?.length === 0) {
@@ -224,7 +226,7 @@ function getContentIndex() {
  * @param {'json'|'string'|'raw'} format Format of content
  * @returns {string[]|Buffer[]} Array of content
  */
-function getContentOfType(type, format) {
+export function getContentOfType(type, format) {
     const contentIndex = getContentIndex();
     const indexItems = contentIndex.filter((item) => item.type === type && item.folder);
     const files = [];
@@ -618,7 +620,7 @@ function isHostWhitelisted(host) {
     return WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES.includes(host);
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/importURL', jsonParser, async (request, response) => {
     if (!request.body.url) {
@@ -753,12 +755,3 @@ router.post('/importUUID', jsonParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
-
-module.exports = {
-    CONTENT_TYPES,
-    checkForNewContent,
-    getDefaultPresets,
-    getDefaultPresetFile,
-    getContentOfType,
-    router,
-};

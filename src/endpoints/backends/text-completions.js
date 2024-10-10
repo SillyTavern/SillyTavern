@@ -1,14 +1,23 @@
-const express = require('express');
-const fetch = require('node-fetch').default;
-const _ = require('lodash');
-const Readable = require('stream').Readable;
+import { Readable } from 'node:stream';
+import fetch from 'node-fetch';
+import express from 'express';
+import _ from 'lodash';
 
-const { jsonParser } = require('../../express-common');
-const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS, INFERMATICAI_KEYS, OPENROUTER_KEYS, VLLM_KEYS, DREAMGEN_KEYS, FEATHERLESS_KEYS } = require('../../constants');
-const { forwardFetchResponse, trimV1, getConfigValue } = require('../../util');
-const { setAdditionalHeaders } = require('../../additional-headers');
+import { jsonParser } from '../../express-common.js';
+import {
+    TEXTGEN_TYPES,
+    TOGETHERAI_KEYS,
+    OLLAMA_KEYS,
+    INFERMATICAI_KEYS,
+    OPENROUTER_KEYS,
+    VLLM_KEYS,
+    DREAMGEN_KEYS,
+    FEATHERLESS_KEYS,
+} from '../../constants.js';
+import { forwardFetchResponse, trimV1, getConfigValue } from '../../util.js';
+import { setAdditionalHeaders } from '../../additional-headers.js';
 
-const router = express.Router();
+export const router = express.Router();
 
 /**
  * Special boy's steaming routine. Wrap this abomination into proper SSE stream.
@@ -641,5 +650,3 @@ tabby.post('/download', jsonParser, async function (request, response) {
 router.use('/ollama', ollama);
 router.use('/llamacpp', llamacpp);
 router.use('/tabby', tabby);
-
-module.exports = { router };

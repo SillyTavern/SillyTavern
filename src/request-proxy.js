@@ -1,7 +1,8 @@
-const http = require('node:http');
-const https = require('node:https');
+import * as http from 'node:http';
+import * as https from 'node:https';
 
-const { isValidUrl, color } = require('./util.js');
+import { ProxyAgent } from 'proxy-agent';
+import { isValidUrl, color } from './util.js';
 
 const LOG_HEADER = '[Request Proxy]';
 
@@ -13,10 +14,8 @@ const LOG_HEADER = '[Request Proxy]';
  * @property {string} url Proxy URL.
  * @property {string[]} bypass List of URLs to bypass proxy.
  */
-function initRequestProxy({ enabled, url, bypass }) {
+export default function initRequestProxy({ enabled, url, bypass }) {
     try {
-        const { ProxyAgent } = require('proxy-agent');
-
         // No proxy is enabled, so return
         if (!enabled) {
             return;
@@ -52,5 +51,3 @@ function initRequestProxy({ enabled, url, bypass }) {
         console.error(color.red(LOG_HEADER), 'Failed to initialize request proxy:', error);
     }
 }
-
-module.exports = initRequestProxy;

@@ -1,6 +1,6 @@
-const { TEXTGEN_TYPES, OPENROUTER_HEADERS, FEATHERLESS_HEADERS } = require('./constants');
-const { SECRET_KEYS, readSecret } = require('./endpoints/secrets');
-const { getConfigValue } = require('./util');
+import { TEXTGEN_TYPES, OPENROUTER_HEADERS, FEATHERLESS_HEADERS } from './constants.js';
+import { SECRET_KEYS, readSecret } from './endpoints/secrets.js';
+import { getConfigValue } from './util.js';
 
 /**
  * Gets the headers for the Mancer API.
@@ -172,7 +172,7 @@ function getHuggingFaceHeaders(directories) {
     }) : {};
 }
 
-function getOverrideHeaders(urlHost) {
+export function getOverrideHeaders(urlHost) {
     const requestOverrides = getConfigValue('requestOverrides', []);
     const overrideHeaders = requestOverrides?.find((e) => e.hosts?.includes(urlHost))?.headers;
     if (overrideHeaders && urlHost) {
@@ -188,7 +188,7 @@ function getOverrideHeaders(urlHost) {
  * @param {object} args New request arguments
  * @param {string|null} server API server for new request
  */
-function setAdditionalHeaders(request, args, server) {
+export function setAdditionalHeaders(request, args, server) {
     setAdditionalHeadersByType(args.headers, request.body.api_type, server, request.user.directories);
 }
 
@@ -199,7 +199,7 @@ function setAdditionalHeaders(request, args, server) {
  * @param {string|null} server API server for new request
  * @param {import('./users').UserDirectoryList} directories User directories
  */
-function setAdditionalHeadersByType(requestHeaders, type, server, directories) {
+export function setAdditionalHeadersByType(requestHeaders, type, server, directories) {
     const headerGetters = {
         [TEXTGEN_TYPES.MANCER]: getMancerHeaders,
         [TEXTGEN_TYPES.VLLM]: getVllmHeaders,
@@ -234,9 +234,3 @@ function setAdditionalHeadersByType(requestHeaders, type, server, directories) {
 
     Object.assign(requestHeaders, headers);
 }
-
-module.exports = {
-    getOverrideHeaders,
-    setAdditionalHeaders,
-    setAdditionalHeadersByType,
-};

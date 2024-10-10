@@ -1,10 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-const express = require('express');
-const sanitize = require('sanitize-filename');
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
-const { jsonParser } = require('../express-common');
-const { clientRelativePath, removeFileExtension, getImages } = require('../util');
+import express from 'express';
+import sanitize from 'sanitize-filename';
+
+import { jsonParser } from '../express-common.js';
+import { clientRelativePath, removeFileExtension, getImages } from '../util.js';
 
 /**
  * Ensure the directory for the provided file path exists.
@@ -21,7 +22,7 @@ function ensureDirectoryExistence(filePath) {
     fs.mkdirSync(dirname);
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 /**
  * Endpoint to handle image uploads.
@@ -89,5 +90,3 @@ router.post('/list/:folder', (request, response) => {
         return response.status(500).send({ error: 'Unable to retrieve files' });
     }
 });
-
-module.exports = { router };

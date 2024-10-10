@@ -7,4 +7,4 @@ if (!Array.prototype.findLastIndex) {
     };
 }
 
-module.exports = {};
+export default () => {};

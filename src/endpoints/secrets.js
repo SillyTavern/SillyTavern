@@ -1,12 +1,13 @@
-const fs = require('fs');
-const path = require('path');
-const express = require('express');
-const { getConfigValue } = require('../util');
-const writeFileAtomicSync = require('write-file-atomic').sync;
-const { jsonParser } = require('../express-common');
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
-const SECRETS_FILE = 'secrets.json';
-const SECRET_KEYS = {
+import express from 'express';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
+import { getConfigValue } from '../util.js';
+import { jsonParser } from '../express-common.js';
+
+export const SECRETS_FILE = 'secrets.json';
+export const SECRET_KEYS = {
     HORDE: 'api_key_horde',
     MANCER: 'api_key_mancer',
     VLLM: 'api_key_vllm',
@@ -62,7 +63,7 @@ const EXPORTABLE_KEYS = [
  * @param {string} key Secret key
  * @param {string} value Secret value
  */
-function writeSecret(directories, key, value) {
+export function writeSecret(directories, key, value) {
     const filePath = path.join(directories.root, SECRETS_FILE);
 
     if (!fs.existsSync(filePath)) {
@@ -82,7 +83,7 @@ function writeSecret(directories, key, value) {
  * @param {string} key Secret key
  * @returns
  */
-function deleteSecret(directories, key) {
+export function deleteSecret(directories, key) {
     const filePath = path.join(directories.root, SECRETS_FILE);
 
     if (!fs.existsSync(filePath)) {
@@ -101,7 +102,7 @@ function deleteSecret(directories, key) {
  * @param {string} key Secret key
  * @returns {string} Secret value
  */
-function readSecret(directories, key) {
+export function readSecret(directories, key) {
     const filePath = path.join(directories.root, SECRETS_FILE);
 
     if (!fs.existsSync(filePath)) {
@@ -118,7 +119,7 @@ function readSecret(directories, key) {
  * @param {import('../users').UserDirectoryList} directories User directories
  * @returns {object} Secret state
  */
-function readSecretState(directories) {
+export function readSecretState(directories) {
     const filePath = path.join(directories.root, SECRETS_FILE);
 
     if (!fs.existsSync(filePath)) {
@@ -141,7 +142,7 @@ function readSecretState(directories) {
  * @param {import('../users').UserDirectoryList} directories User directories
  * @returns {Record<string, string> | undefined} Secrets
  */
-function getAllSecrets(directories) {
+export function getAllSecrets(directories) {
     const filePath = path.join(directories.root, SECRETS_FILE);
 
     if (!fs.existsSync(filePath)) {
@@ -154,7 +155,7 @@ function getAllSecrets(directories) {
     return secrets;
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/write', jsonParser, (request, response) => {
     const key = request.body.key;
@@ -218,13 +219,3 @@ router.post('/find', jsonParser, (request, response) => {
         return response.sendStatus(500);
     }
 });
-
-module.exports = {
-    writeSecret,
-    readSecret,
-    deleteSecret,
-    readSecretState,
-    getAllSecrets,
-    SECRET_KEYS,
-    router,
-};

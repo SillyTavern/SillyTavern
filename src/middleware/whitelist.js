@@ -1,9 +1,9 @@
-const path = require('path');
-const fs = require('fs');
-const ipMatching = require('ip-matching');
+import * as path from 'node:path';
+import * as fs from 'node:fs';
+import ipMatching from 'ip-matching';
 
-const { getIpFromRequest } = require('../express-common');
-const { color, getConfigValue } = require('../util');
+import { getIpFromRequest } from '../express-common.js';
+import { color, getConfigValue } from '../util.js';
 
 const whitelistPath = path.join(process.cwd(), './whitelist.txt');
 const enableForwardedWhitelist = getConfigValue('enableForwardedWhitelist', false);
@@ -50,7 +50,7 @@ function getForwardedIp(req) {
  * @param {boolean} listen If listen mode is enabled via config or command line
  * @returns {import('express').RequestHandler} The middleware function
  */
-function whitelistMiddleware(whitelistMode, listen) {
+export default function whitelistMiddleware(whitelistMode, listen) {
     return function (req, res, next) {
         const clientIp = getIpFromRequest(req);
         const forwardedIp = getForwardedIp(req);
@@ -82,5 +82,3 @@ function whitelistMiddleware(whitelistMode, listen) {
         next();
     };
 }
-
-module.exports = whitelistMiddleware;

@@ -1,9 +1,10 @@
-const { readSecret, SECRET_KEYS } = require('./secrets');
-const fetch = require('node-fetch').default;
-const express = require('express');
-const { jsonParser } = require('../express-common');
+import fetch from 'node-fetch';
+import express from 'express';
 
-const router = express.Router();
+import { readSecret, SECRET_KEYS } from './secrets.js';
+import { jsonParser } from '../express-common.js';
+
+export const router = express.Router();
 
 router.post('/caption-image', jsonParser, async (request, response) => {
     try {
@@ -64,5 +65,3 @@ router.post('/caption-image', jsonParser, async (request, response) => {
         response.status(500).send('Internal server error');
     }
 });
-
-module.exports = { router };

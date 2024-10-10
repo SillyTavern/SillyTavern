@@ -1,10 +1,22 @@
-const vectra = require('vectra');
-const path = require('path');
-const fs = require('fs');
-const express = require('express');
-const sanitize = require('sanitize-filename');
-const { jsonParser } = require('../express-common');
-const { getConfigValue } = require('../util');
+import * as path from 'node:path';
+import * as fs from 'node:fs';
+
+import vectra from 'vectra';
+import express from 'express';
+import sanitize from 'sanitize-filename';
+
+import { jsonParser } from '../express-common.js';
+import { getConfigValue } from '../util.js';
+
+import { getNomicAIBatchVector, getNomicAIVector } from '../vectors/nomicai-vectors.js';
+import { getOpenAIVector, getOpenAIBatchVector } from '../vectors/openai-vectors.js';
+import { getTransformersVector, getTransformersBatchVector } from '../vectors/embedding.js';
+import { getExtrasVector, getExtrasBatchVector } from '../vectors/extras-vectors.js';
+import { getMakerSuiteVector, getMakerSuiteBatchVector } from '../vectors/makersuite-vectors.js';
+import { getCohereVector, getCohereBatchVector } from '../vectors/cohere-vectors.js';
+import { getLlamaCppVector, getLlamaCppBatchVector } from '../vectors/llamacpp-vectors.js';
+import { getVllmVector, getVllmBatchVector } from '../vectors/vllm-vectors.js';
+import { getOllamaVector, getOllamaBatchVector } from '../vectors/ollama-vectors.js';
 
 // Don't forget to add new sources to the SOURCES array
 const SOURCES = [
@@ -33,25 +45,25 @@ const SOURCES = [
 async function getVector(source, sourceSettings, text, isQuery, directories) {
     switch (source) {
         case 'nomicai':
-            return require('../vectors/nomicai-vectors').getNomicAIVector(text, source, directories);
+            return getNomicAIVector(text, source, directories);
         case 'togetherai':
         case 'mistral':
         case 'openai':
-            return require('../vectors/openai-vectors').getOpenAIVector(text, source, directories, sourceSettings.model);
+            return getOpenAIVector(text, source, directories, sourceSettings.model);
         case 'transformers':
-            return require('../vectors/embedding').getTransformersVector(text);
+            return getTransformersVector(text);
         case 'extras':
-            return require('../vectors/extras-vectors').getExtrasVector(text, sourceSettings.extrasUrl, sourceSettings.extrasKey);
+            return getExtrasVector(text, sourceSettings.extrasUrl, sourceSettings.extrasKey);
         case 'palm':
-            return require('../vectors/makersuite-vectors').getMakerSuiteVector(text, directories);
+            return getMakerSuiteVector(text, directories);
         case 'cohere':
-            return require('../vectors/cohere-vectors').getCohereVector(text, isQuery, directories, sourceSettings.model);
+            return getCohereVector(text, isQuery, directories, sourceSettings.model);
         case 'llamacpp':
-            return require('../vectors/llamacpp-vectors').getLlamaCppVector(text, sourceSettings.apiUrl, directories);
+            return getLlamaCppVector(text, sourceSettings.apiUrl, directories);
         case 'vllm':
-            return require('../vectors/vllm-vectors').getVllmVector(text, sourceSettings.apiUrl, sourceSettings.model, directories);
+            return getVllmVector(text, sourceSettings.apiUrl, sourceSettings.model, directories);
         case 'ollama':
-            return require('../vectors/ollama-vectors').getOllamaVector(text, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories);
+            return getOllamaVector(text, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories);
     }
 
     throw new Error(`Unknown vector source ${source}`);
@@ -74,33 +86,33 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
     for (let batch of batches) {
         switch (source) {
             case 'nomicai':
-                results.push(...await require('../vectors/nomicai-vectors').getNomicAIBatchVector(batch, source, directories));
+                results.push(...await getNomicAIBatchVector(batch, source, directories));
                 break;
             case 'togetherai':
             case 'mistral':
             case 'openai':
-                results.push(...await require('../vectors/openai-vectors').getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
+                results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
                 break;
             case 'transformers':
-                results.push(...await require('../vectors/embedding').getTransformersBatchVector(batch));
+                results.push(...await getTransformersBatchVector(batch));
                 break;
             case 'extras':
-                results.push(...await require('../vectors/extras-vectors').getExtrasBatchVector(batch, sourceSettings.extrasUrl, sourceSettings.extrasKey));
+                results.push(...await getExtrasBatchVector(batch, sourceSettings.extrasUrl, sourceSettings.extrasKey));
                 break;
             case 'palm':
-                results.push(...await require('../vectors/makersuite-vectors').getMakerSuiteBatchVector(batch, directories));
+                results.push(...await getMakerSuiteBatchVector(batch, directories));
                 break;
             case 'cohere':
-                results.push(...await require('../vectors/cohere-vectors').getCohereBatchVector(batch, isQuery, directories, sourceSettings.model));
+                results.push(...await getCohereBatchVector(batch, isQuery, directories, sourceSettings.model));
                 break;
             case 'llamacpp':
-                results.push(...await require('../vectors/llamacpp-vectors').getLlamaCppBatchVector(batch, sourceSettings.apiUrl, directories));
+                results.push(...await getLlamaCppBatchVector(batch, sourceSettings.apiUrl, directories));
                 break;
             case 'vllm':
-                results.push(...await require('../vectors/vllm-vectors').getVllmBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, directories));
+                results.push(...await getVllmBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, directories));
                 break;
             case 'ollama':
-                results.push(...await require('../vectors/ollama-vectors').getOllamaBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories));
+                results.push(...await getOllamaBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories));
                 break;
             default:
                 throw new Error(`Unknown vector source ${source}`);
@@ -359,7 +371,7 @@ async function regenerateCorruptedIndexErrorHandler(req, res, error) {
     return res.sendStatus(500);
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/query', jsonParser, async (req, res) => {
     try {
@@ -495,5 +507,3 @@ router.post('/purge', jsonParser, async (req, res) => {
         return res.sendStatus(500);
     }
 });
-
-module.exports = { router };

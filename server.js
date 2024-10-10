@@ -1,32 +1,33 @@
 #!/usr/bin/env node
 
 // native node modules
-const fs = require('fs');
-const http = require('http');
-const https = require('https');
-const path = require('path');
-const util = require('util');
+import * as fs from 'node:fs';
+import * as http from 'node:http';
+import * as https from 'node:https';
+import * as path from 'node:path';
+import * as util from 'node:util';
+import * as net from 'node:net';
+import * as dns from 'node:dns';
 
 // cli/fs related library imports
-const open = require('open');
-const yargs = require('yargs/yargs');
-const { hideBin } = require('yargs/helpers');
+import * as open from 'open';
+import yargs from 'yargs/yargs';
+import { hideBin } from 'yargs/helpers';
 
 // express/server related library imports
-const cors = require('cors');
-const doubleCsrf = require('csrf-csrf').doubleCsrf;
-const express = require('express');
-const compression = require('compression');
-const cookieParser = require('cookie-parser');
-const cookieSession = require('cookie-session');
-const multer = require('multer');
-const responseTime = require('response-time');
-const helmet = require('helmet').default;
+import cors from 'cors';
+import { doubleCsrf } from 'csrf-csrf';
+import express from 'express';
+import compression from 'compression';
+import cookieParser from 'cookie-parser';
+import cookieSession from 'cookie-session';
+import multer from 'multer';
+import responseTime from 'response-time';
+import helmet from 'helmet';
+import bodyParser from 'body-parser';
 
 // net related library imports
-const net = require('net');
-const dns = require('dns');
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
@@ -34,20 +35,67 @@ util.inspect.defaultOptions.maxStringLength = null;
 util.inspect.defaultOptions.depth = 4;
 
 // local library imports
-const userModule = require('./src/users');
-const basicAuthMiddleware = require('./src/middleware/basicAuth');
-const whitelistMiddleware = require('./src/middleware/whitelist');
-const initRequestProxy = require('./src/request-proxy');
-const contentManager = require('./src/endpoints/content-manager');
-const {
+import * as loader from './src/plugin-loader.js';
+import * as userModule from './src/users.js';
+import basicAuthMiddleware from './src/middleware/basicAuth.js';
+import whitelistMiddleware from './src/middleware/whitelist.js';
+import multerMonkeyPatch from './src/middleware/multerMonkeyPatch.js';
+import initRequestProxy from './src/request-proxy.js';
+import * as contentManager from './src/endpoints/content-manager.js';
+import {
     getVersion,
     getConfigValue,
     color,
     forwardFetchResponse,
     removeColorFormatting,
     getSeparator,
-} = require('./src/util');
-const { ensureThumbnailCache } = require('./src/endpoints/thumbnails');
+} from './src/util.js';
+import { UPLOADS_DIRECTORY } from './src/constants.js';
+import { ensureThumbnailCache } from './src/endpoints/thumbnails.js';
+
+// Routers
+import { router as usersPublicRouter } from './src/endpoints/users-public.js';
+import { router as usersPrivateRouter } from './src/endpoints/users-private.js';
+import { router as usersAdminRouter } from './src/endpoints/users-admin.js';
+import { router as movingUIRouter } from './src/endpoints/moving-ui.js';
+import { router as imagesRouter } from './src/endpoints/images.js';
+import { router as quickRepliesRouter } from './src/endpoints/quick-replies.js';
+import { router as avatarsRouter } from './src/endpoints/avatars.js';
+import { router as themesRouter } from './src/endpoints/themes.js';
+import { router as openAiRouter } from './src/endpoints/openai.js';
+import { router as googleRouter } from './src/endpoints/google.js';
+import { router as anthropicRouter } from './src/endpoints/anthropic.js';
+import { router as tokenizersRouter } from './src/endpoints/tokenizers.js';
+import { router as presetsRouter } from './src/endpoints/presets.js';
+import { router as secretsRouter } from './src/endpoints/secrets.js';
+import { router as thumbnailRouter } from './src/endpoints/thumbnails.js';
+import { router as novelAiRouter } from './src/endpoints/novelai.js';
+import { router as extensionsRouter } from './src/endpoints/extensions.js';
+import { router as assetsRouter } from './src/endpoints/assets.js';
+import { router as filesRouter } from './src/endpoints/files.js';
+import { router as charactersRouter } from './src/endpoints/characters.js';
+import { router as chatsRouter } from './src/endpoints/chats.js';
+import { router as groupsRouter } from './src/endpoints/groups.js';
+import { router as worldInfoRouter } from './src/endpoints/worldinfo.js';
+import { router as statsRouter, init as statsInit, onExit as statsOnExit } from './src/endpoints/stats.js';
+import { router as backgroundsRouter } from './src/endpoints/backgrounds.js';
+import { router as spritesRouter } from './src/endpoints/sprites.js';
+import { router as contentManagerRouter } from './src/endpoints/content-manager.js';
+import { router as settingsRouter, init as settingsInit } from './src/endpoints/settings.js';
+import { router as stableDiffusionRouter } from './src/endpoints/stable-diffusion.js';
+import { router as hordeRouter } from './src/endpoints/horde.js';
+import { router as vectorsRouter } from './src/endpoints/vectors.js';
+import { router as translateRouter } from './src/endpoints/translate.js';
+import { router as classifyRouter } from './src/endpoints/classify.js';
+import { router as captionRouter } from './src/endpoints/caption.js';
+import { router as searchRouter } from './src/endpoints/search.js';
+import { router as openRouterRouter } from './src/endpoints/openrouter.js';
+import { router as chatCompletionsRouter } from './src/endpoints/backends/chat-completions.js';
+import { router as koboldRouter } from './src/endpoints/backends/kobold.js';
+import { router as textCompletionsRouter } from './src/endpoints/backends/text-completions.js';
+import { router as scaleAltRouter } from './src/endpoints/backends/scale-alt.js';
+import { router as speechRouter } from './src/endpoints/speech.js';
+import { router as azureRouter } from './src/endpoints/azure.js';
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
 // https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
@@ -166,8 +214,8 @@ const cliArguments = yargs(hideBin(process.argv))
     }).parseSync();
 
 // change all relative paths
-console.log(`Node version: ${process.version}. Running in ${process.env.NODE_ENV} environment.`);
-const serverDirectory = __dirname;
+const serverDirectory = import.meta.dirname;
+console.log(`Node version: ${process.version}. Running in ${process.env.NODE_ENV} environment. Server directory: ${serverDirectory}`);
 process.chdir(serverDirectory);
 
 const app = express();
@@ -188,7 +236,7 @@ const basicAuthMode = cliArguments.basicAuthMode ?? getConfigValue('basicAuthMod
 const perUserBasicAuth = getConfigValue('perUserBasicAuth', DEFAULT_PER_USER_BASIC_AUTH);
 const enableAccounts = getConfigValue('enableUserAccounts', DEFAULT_ACCOUNTS);
 
-const uploadsPath = path.join(dataRoot, require('./src/constants').UPLOADS_DIRECTORY);
+const uploadsPath = path.join(dataRoot, UPLOADS_DIRECTORY);
 
 const enableIPv6 = cliArguments.enableIPv6 ?? getConfigValue('protocol.ipv6', DEFAULT_ENABLE_IPV6);
 const enableIPv4 = cliArguments.enableIPv4 ?? getConfigValue('protocol.ipv4', DEFAULT_ENABLE_IPV4);
@@ -232,7 +280,6 @@ if (listen && basicAuthMode) app.use(basicAuthMiddleware);
 app.use(whitelistMiddleware(enableWhitelist, listen));
 
 if (enableCorsProxy) {
-    const bodyParser = require('body-parser');
     app.use(bodyParser.json({
         limit: '200mb',
     }));
@@ -379,7 +426,7 @@ app.get('/login', async (request, response) => {
 app.use(express.static(process.cwd() + '/public', {}));
 
 // Public API
-app.use('/api/users', require('./src/endpoints/users-public').router);
+app.use('/api/users', usersPublicRouter);
 
 // Everything below this line requires authentication
 app.use(userModule.requireLoginMiddleware);
@@ -387,14 +434,15 @@ app.get('/api/ping', (_, response) => response.sendStatus(204));
 
 // File uploads
 app.use(multer({ dest: uploadsPath, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
-app.use(require('./src/middleware/multerMonkeyPatch'));
+app.use(multerMonkeyPatch);
 
 // User data mount
 app.use('/', userModule.router);
 // Private endpoints
-app.use('/api/users', require('./src/endpoints/users-private').router);
+
+app.use('/api/users', usersPrivateRouter);
 // Admin endpoints
-app.use('/api/users', require('./src/endpoints/users-admin').router);
+app.use('/api/users', usersAdminRouter);
 
 app.get('/version', async function (_, response) {
     const data = await getVersion();
@@ -509,126 +557,45 @@ redirect('/api/serpapi/search', '/api/search/serpapi');
 redirect('/api/serpapi/visit', '/api/search/visit');
 redirect('/api/serpapi/transcript', '/api/search/transcript');
 
-// Moving UI
-app.use('/api/moving-ui', require('./src/endpoints/moving-ui').router);
-
-// Image management
-app.use('/api/images', require('./src/endpoints/images').router);
-
-// Quick reply management
-app.use('/api/quick-replies', require('./src/endpoints/quick-replies').router);
-
-// Avatar management
-app.use('/api/avatars', require('./src/endpoints/avatars').router);
-
-// Theme management
-app.use('/api/themes', require('./src/endpoints/themes').router);
-
-// OpenAI API
-app.use('/api/openai', require('./src/endpoints/openai').router);
-
-//Google API
-app.use('/api/google', require('./src/endpoints/google').router);
-
-//Anthropic API
-app.use('/api/anthropic', require('./src/endpoints/anthropic').router);
-
-// Tokenizers
-app.use('/api/tokenizers', require('./src/endpoints/tokenizers').router);
-
-// Preset management
-app.use('/api/presets', require('./src/endpoints/presets').router);
-
-// Secrets managemenet
-app.use('/api/secrets', require('./src/endpoints/secrets').router);
-
-// Thumbnail generation. These URLs are saved in chat, so this route cannot be renamed!
-app.use('/thumbnail', require('./src/endpoints/thumbnails').router);
-
-// NovelAI generation
-app.use('/api/novelai', require('./src/endpoints/novelai').router);
-
-// Third-party extensions
-app.use('/api/extensions', require('./src/endpoints/extensions').router);
-
-// Asset management
-app.use('/api/assets', require('./src/endpoints/assets').router);
-
-// File management
-app.use('/api/files', require('./src/endpoints/files').router);
-
-// Character management
-app.use('/api/characters', require('./src/endpoints/characters').router);
-
-// Chat management
-app.use('/api/chats', require('./src/endpoints/chats').router);
-
-// Group management
-app.use('/api/groups', require('./src/endpoints/groups').router);
-
-// World info management
-app.use('/api/worldinfo', require('./src/endpoints/worldinfo').router);
-
-// Stats calculation
-const statsEndpoint = require('./src/endpoints/stats');
-app.use('/api/stats', statsEndpoint.router);
-
-// Background management
-app.use('/api/backgrounds', require('./src/endpoints/backgrounds').router);
-
-// Character sprite management
-app.use('/api/sprites', require('./src/endpoints/sprites').router);
-
-// Custom content management
-app.use('/api/content', require('./src/endpoints/content-manager').router);
-
-// Settings load/store
-const settingsEndpoint = require('./src/endpoints/settings');
-app.use('/api/settings', settingsEndpoint.router);
-
-// Stable Diffusion generation
-app.use('/api/sd', require('./src/endpoints/stable-diffusion').router);
-
-// LLM and SD Horde generation
-app.use('/api/horde', require('./src/endpoints/horde').router);
-
-// Vector storage DB
-app.use('/api/vector', require('./src/endpoints/vectors').router);
-
-// Chat translation
-app.use('/api/translate', require('./src/endpoints/translate').router);
-
-// Emotion classification
-app.use('/api/extra/classify', require('./src/endpoints/classify').router);
-
-// Image captioning
-app.use('/api/extra/caption', require('./src/endpoints/caption').router);
-
-// Web search and scraping
-app.use('/api/search', require('./src/endpoints/search').router);
-
-// The different text generation APIs
-
-// Ooba/OpenAI text completions
-app.use('/api/backends/text-completions', require('./src/endpoints/backends/text-completions').router);
-
-// OpenRouter
-app.use('/api/openrouter', require('./src/endpoints/openrouter').router);
-
-// KoboldAI
-app.use('/api/backends/kobold', require('./src/endpoints/backends/kobold').router);
-
-// OpenAI chat completions
-app.use('/api/backends/chat-completions', require('./src/endpoints/backends/chat-completions').router);
-
-// Scale (alt method)
-app.use('/api/backends/scale-alt', require('./src/endpoints/backends/scale-alt').router);
-
-// Speech (text-to-speech and speech-to-text)
-app.use('/api/speech', require('./src/endpoints/speech').router);
-
-// Azure TTS
-app.use('/api/azure', require('./src/endpoints/azure').router);
+app.use('/api/moving-ui', movingUIRouter);
+app.use('/api/images', imagesRouter);
+app.use('/api/quick-replies', quickRepliesRouter);
+app.use('/api/avatars', avatarsRouter);
+app.use('/api/themes', themesRouter);
+app.use('/api/openai', openAiRouter);
+app.use('/api/google', googleRouter);
+app.use('/api/anthropic', anthropicRouter);
+app.use('/api/tokenizers', tokenizersRouter);
+app.use('/api/presets', presetsRouter);
+app.use('/api/secrets', secretsRouter);
+app.use('/thumbnail', thumbnailRouter);
+app.use('/api/novelai', novelAiRouter);
+app.use('/api/extensions', extensionsRouter);
+app.use('/api/assets', assetsRouter);
+app.use('/api/files', filesRouter);
+app.use('/api/characters', charactersRouter);
+app.use('/api/chats', chatsRouter);
+app.use('/api/groups', groupsRouter);
+app.use('/api/worldinfo', worldInfoRouter);
+app.use('/api/stats', statsRouter);
+app.use('/api/backgrounds', backgroundsRouter);
+app.use('/api/sprites', spritesRouter);
+app.use('/api/content', contentManagerRouter);
+app.use('/api/settings', settingsRouter);
+app.use('/api/sd', stableDiffusionRouter);
+app.use('/api/horde', hordeRouter);
+app.use('/api/vector', vectorsRouter);
+app.use('/api/translate', translateRouter);
+app.use('/api/extra/classify', classifyRouter);
+app.use('/api/extra/caption', captionRouter);
+app.use('/api/search', searchRouter);
+app.use('/api/backends/text-completions', textCompletionsRouter);
+app.use('/api/openrouter', openRouterRouter);
+app.use('/api/backends/kobold', koboldRouter);
+app.use('/api/backends/chat-completions', chatCompletionsRouter);
+app.use('/api/backends/scale-alt', scaleAltRouter);
+app.use('/api/speech', speechRouter);
+app.use('/api/azure', azureRouter);
 
 const tavernUrlV6 = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
@@ -663,8 +630,8 @@ const preSetupTasks = async function () {
     await ensureThumbnailCache();
     cleanUploads();
 
-    await settingsEndpoint.init();
-    await statsEndpoint.init();
+    await settingsInit();
+    await statsInit();
 
     const cleanupPlugins = await loadPlugins();
     const consoleTitle = process.title;
@@ -673,7 +640,7 @@ const preSetupTasks = async function () {
     const exitProcess = async () => {
         if (isExiting) return;
         isExiting = true;
-        statsEndpoint.onExit();
+        await statsOnExit();
         if (typeof cleanupPlugins === 'function') {
             await cleanupPlugins();
         }
@@ -776,7 +743,6 @@ const postSetupTasks = async function (v6Failed, v4Failed) {
 async function loadPlugins() {
     try {
         const pluginDirectory = path.join(serverDirectory, 'plugins');
-        const loader = require('./src/plugin-loader');
         const cleanupPlugins = await loader.loadPlugins(app, pluginDirectory);
         return cleanupPlugins;
     } catch {

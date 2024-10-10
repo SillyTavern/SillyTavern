@@ -1,5 +1,5 @@
-const fetch = require('node-fetch').default;
-const { SECRET_KEYS, readSecret } = require('../endpoints/secrets');
+import fetch from 'node-fetch';
+import { SECRET_KEYS, readSecret } from '../endpoints/secrets.js';
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 
 /**
@@ -8,7 +8,7 @@ const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
  * @param {import('../users').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-async function getMakerSuiteBatchVector(texts, directories) {
+export async function getMakerSuiteBatchVector(texts, directories) {
     const promises = texts.map(text => getMakerSuiteVector(text, directories));
     return await Promise.all(promises);
 }
@@ -19,7 +19,7 @@ async function getMakerSuiteBatchVector(texts, directories) {
  * @param {import('../users').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[]>} - The vector for the text
  */
-async function getMakerSuiteVector(text, directories) {
+export async function getMakerSuiteVector(text, directories) {
     const key = readSecret(directories, SECRET_KEYS.MAKERSUITE);
 
     if (!key) {
@@ -56,8 +56,3 @@ async function getMakerSuiteVector(text, directories) {
     // noinspection JSValidateTypes
     return data['embedding']['values'];
 }
-
-module.exports = {
-    getMakerSuiteVector,
-    getMakerSuiteBatchVector,
-};

@@ -1,5 +1,5 @@
-const fetch = require('node-fetch').default;
-const { SECRET_KEYS, readSecret } = require('../endpoints/secrets');
+import fetch from 'node-fetch';
+import { SECRET_KEYS, readSecret } from '../endpoints/secrets.js';
 
 const SOURCES = {
     'nomicai': {
@@ -16,7 +16,7 @@ const SOURCES = {
  * @param {import('../users').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-async function getNomicAIBatchVector(texts, source, directories) {
+export async function getNomicAIBatchVector(texts, source, directories) {
     const config = SOURCES[source];
 
     if (!config) {
@@ -67,12 +67,7 @@ async function getNomicAIBatchVector(texts, source, directories) {
  * @param {import('../users').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[]>} - The vector for the text
  */
-async function getNomicAIVector(text, source, directories) {
+export async function getNomicAIVector(text, source, directories) {
     const vectors = await getNomicAIBatchVector([text], source, directories);
     return vectors[0];
 }
-
-module.exports = {
-    getNomicAIVector,
-    getNomicAIBatchVector,
-};

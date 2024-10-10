@@ -1,5 +1,5 @@
-const fetch = require('node-fetch').default;
-const { SECRET_KEYS, readSecret } = require('../endpoints/secrets');
+import fetch from 'node-fetch';
+import { SECRET_KEYS, readSecret } from '../endpoints/secrets.js';
 
 const SOURCES = {
     'togetherai': {
@@ -27,7 +27,7 @@ const SOURCES = {
  * @param {string} model - The model to use for the embedding
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-async function getOpenAIBatchVector(texts, source, directories, model = '') {
+export async function getOpenAIBatchVector(texts, source, directories, model = '') {
     const config = SOURCES[source];
 
     if (!config) {
@@ -83,12 +83,7 @@ async function getOpenAIBatchVector(texts, source, directories, model = '') {
  * @param {string} model - The model to use for the embedding
  * @returns {Promise<number[]>} - The vector for the text
  */
-async function getOpenAIVector(text, source, directories, model = '') {
+export async function getOpenAIVector(text, source, directories, model = '') {
     const vectors = await getOpenAIBatchVector([text], source, directories, model);
     return vectors[0];
 }
-
-module.exports = {
-    getOpenAIVector,
-    getOpenAIBatchVector,
-};

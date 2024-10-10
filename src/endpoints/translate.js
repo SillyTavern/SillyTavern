@@ -1,10 +1,16 @@
-const fetch = require('node-fetch').default;
-const https = require('https');
-const express = require('express');
-const iconv = require('iconv-lite');
-const { readSecret, SECRET_KEYS } = require('./secrets');
-const { getConfigValue, uuidv4 } = require('../util');
-const { jsonParser } = require('../express-common');
+import * as https from 'node:https';
+import { createRequire } from 'node:module';
+import fetch from 'node-fetch';
+import express from 'express';
+import iconv from 'iconv-lite';
+import bingTranslateApi from 'bing-translate-api';
+
+const require = createRequire(import.meta.url);
+const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
+
+import { readSecret, SECRET_KEYS } from './secrets.js';
+import { getConfigValue, uuidv4 } from '../util.js';
+import { jsonParser } from '../express-common.js';
 
 const DEEPLX_URL_DEFAULT = 'http://127.0.0.1:1188/translate';
 const ONERING_URL_DEFAULT = 'http://127.0.0.1:4990/translate';
@@ -23,7 +29,7 @@ function decodeBuffer(buffer) {
     }
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/libre', jsonParser, async (request, response) => {
     const key = readSecret(request.user.directories, SECRET_KEYS.LIBRE);
@@ -82,7 +88,6 @@ router.post('/libre', jsonParser, async (request, response) => {
 
 router.post('/google', jsonParser, async (request, response) => {
     try {
-        const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
         const text = request.body.text;
         const lang = request.body.lang;
 
@@ -386,7 +391,6 @@ router.post('/deeplx', jsonParser, async (request, response) => {
 });
 
 router.post('/bing', jsonParser, async (request, response) => {
-    const bingTranslateApi = require('bing-translate-api');
     const text = request.body.text;
     let lang = request.body.lang;
 
@@ -408,5 +412,3 @@ router.post('/bing', jsonParser, async (request, response) => {
         return response.sendStatus(500);
     });
 });
-
-module.exports = { router };

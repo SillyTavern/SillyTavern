@@ -1,10 +1,11 @@
-const fsPromises = require('fs').promises;
-const storage = require('node-persist');
-const express = require('express');
-const lodash = require('lodash');
-const { jsonParser } = require('../express-common');
-const { checkForNewContent } = require('./content-manager');
-const {
+import { promises as fsPromises } from 'node:fs';
+
+import storage from 'node-persist';
+import express from 'express';
+import lodash from 'lodash';
+import { jsonParser } from '../express-common.js';
+import { checkForNewContent } from './content-manager.js';
+import {
     KEY_PREFIX,
     toKey,
     requireAdminMiddleware,
@@ -14,10 +15,10 @@ const {
     getPasswordHash,
     getUserDirectories,
     ensurePublicDirectoriesExist,
-} = require('../users');
-const { DEFAULT_USER } = require('../constants');
+} from '../users.js';
+import { DEFAULT_USER } from '../constants.js';
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/get', requireAdminMiddleware, jsonParser, async (_request, response) => {
     try {
@@ -249,7 +250,3 @@ router.post('/slugify', requireAdminMiddleware, jsonParser, async (request, resp
         return response.sendStatus(500);
     }
 });
-
-module.exports = {
-    router,
-};

@@ -1,11 +1,12 @@
 /**
  * Scripts to be done before starting the server for the first time.
  */
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const yaml = require('yaml');
-const _ = require('lodash');
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as crypto from 'node:crypto';
+import * as yaml from 'yaml';
+import _ from 'lodash';
+import { createRequire } from 'node:module';
 
 /**
  * Colorizes console output.
@@ -59,6 +60,7 @@ function convertConfig() {
 
         try {
             console.log(color.blue('Converting config.conf to config.yaml. Your old config.conf will be renamed to config.conf.bak'));
+            const require = createRequire(import.meta.url);
             const config = require(path.join(process.cwd(), './config.conf'));
             fs.copyFileSync('./config.conf', './config.conf.bak');
             fs.rmSync('./config.conf');
@@ -75,7 +77,7 @@ function convertConfig() {
  * Compares the current config.yaml with the default config.yaml and adds any missing values.
  */
 function addMissingConfigValues() {
-    try  {
+    try {
         const defaultConfig = yaml.parse(fs.readFileSync(path.join(process.cwd(), './default/config.yaml'), 'utf8'));
         let config = yaml.parse(fs.readFileSync(path.join(process.cwd(), './config.yaml'), 'utf8'));
 

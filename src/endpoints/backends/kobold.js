@@ -1,13 +1,13 @@
-const express = require('express');
-const fetch = require('node-fetch').default;
-const fs = require('fs');
+import * as fs from 'node:fs';
+import express from 'express';
+import fetch from 'node-fetch';
 
-const { jsonParser, urlencodedParser } = require('../../express-common');
-const { forwardFetchResponse, delay } = require('../../util');
-const { getOverrideHeaders, setAdditionalHeaders, setAdditionalHeadersByType } = require('../../additional-headers');
-const { TEXTGEN_TYPES } = require('../../constants');
+import { jsonParser, urlencodedParser } from '../../express-common.js';
+import { forwardFetchResponse, delay } from '../../util.js';
+import { getOverrideHeaders, setAdditionalHeaders, setAdditionalHeadersByType } from '../../additional-headers.js';
+import { TEXTGEN_TYPES } from '../../constants.js';
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/generate', jsonParser, async function (request, response_generate) {
     if (!request.body) return response_generate.sendStatus(400);
@@ -237,5 +237,3 @@ router.post('/transcribe-audio', urlencodedParser, async function (request, resp
         response.status(500).send('Internal server error');
     }
 });
-
-module.exports = { router };

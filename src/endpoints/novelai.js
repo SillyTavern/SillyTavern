@@ -1,9 +1,11 @@
-const fetch = require('node-fetch').default;
-const express = require('express');
-const util = require('util');
-const { readSecret, SECRET_KEYS } = require('./secrets');
-const { readAllChunks, extractFileFromZipBuffer, forwardFetchResponse } = require('../util');
-const { jsonParser } = require('../express-common');
+import * as util from 'node:util';
+
+import fetch from 'node-fetch';
+import express from 'express';
+
+import { readSecret, SECRET_KEYS } from './secrets.js';
+import { readAllChunks, extractFileFromZipBuffer, forwardFetchResponse } from '../util.js';
+import { jsonParser } from '../express-common.js';
 
 const API_NOVELAI = 'https://api.novelai.net';
 const TEXT_NOVELAI = 'https://text.novelai.net';
@@ -110,7 +112,7 @@ function getRepPenaltyWhitelist(model) {
     return null;
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/status', jsonParser, async function (req, res) {
     if (!req.body) return res.sendStatus(400);
@@ -432,5 +434,3 @@ router.post('/generate-voice', jsonParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
-
-module.exports = { router };

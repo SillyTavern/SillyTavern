@@ -1,8 +1,8 @@
-const fs = require('fs');
+import fs from 'node:fs';
 
-const encode = require('png-chunks-encode');
-const extract = require('png-chunks-extract');
-const PNGtext = require('png-chunk-text');
+import encode from 'png-chunks-encode';
+import extract from 'png-chunks-extract';
+import PNGtext from 'png-chunk-text';
 
 /**
  * Writes Character metadata to a PNG image buffer.
@@ -11,7 +11,7 @@ const PNGtext = require('png-chunk-text');
  * @param {string} data Character data to write
  * @returns {Buffer} PNG image buffer with metadata
  */
-const write = (image, data) => {
+export const write = (image, data) => {
     const chunks = extract(image);
     const tEXtChunks = chunks.filter(chunk => chunk.name === 'tEXt');
 
@@ -36,7 +36,9 @@ const write = (image, data) => {
 
         const base64EncodedData = Buffer.from(JSON.stringify(v3Data), 'utf8').toString('base64');
         chunks.splice(-1, 0, PNGtext.encode('ccv3', base64EncodedData));
-    } catch (error) { }
+    } catch (error) {
+        // Ignore errors when adding v3 chunk
+    }
 
     const newBuffer = Buffer.from(encode(chunks));
     return newBuffer;
@@ -48,7 +50,7 @@ const write = (image, data) => {
  * @param {Buffer} image PNG image buffer
  * @returns {string} Character data
  */
-const read = (image) => {
+export const read = (image) => {
     const chunks = extract(image);
 
     const textChunks = chunks.filter((chunk) => chunk.name === 'tEXt').map((chunk) => PNGtext.decode(chunk.data));
@@ -80,7 +82,7 @@ const read = (image) => {
  * @param {string} format File format
  * @returns {string} Character data
  */
-const parse = (cardUrl, format) => {
+export const parse = (cardUrl, format) => {
     let fileFormat = format === undefined ? 'png' : format;
 
     switch (fileFormat) {
@@ -93,8 +95,3 @@ const parse = (cardUrl, format) => {
     throw new Error('Unsupported format');
 };
 
-module.exports = {
-    parse,
-    write,
-    read,
-};

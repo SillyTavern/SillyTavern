@@ -1,7 +1,7 @@
-const yaml = require('yaml');
-const fs = require('fs');
-const storage = require('node-persist');
-const users = require('./src/users');
+import * as fs from 'node:fs';
+import yaml from 'yaml';
+import storage from 'node-persist';
+import * as users from './src/users';
 
 const userAccount = process.argv[2];
 const userPassword = process.argv[3];

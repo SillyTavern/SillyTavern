@@ -1,4 +1,4 @@
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 
 /**
  * Gets the vector for the given text from SillyTavern-extras
@@ -7,7 +7,7 @@ const fetch = require('node-fetch').default;
  * @param {string} apiKey - The Extras API key, or empty string if API key not enabled
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-async function getExtrasBatchVector(texts, apiUrl, apiKey) {
+export async function getExtrasBatchVector(texts, apiUrl, apiKey) {
     return getExtrasVectorImpl(texts, apiUrl, apiKey);
 }
 
@@ -18,7 +18,7 @@ async function getExtrasBatchVector(texts, apiUrl, apiKey) {
  * @param {string} apiKey - The Extras API key, or empty string if API key not enabled
  * @returns {Promise<number[]>} - The vector for the text
  */
-async function getExtrasVector(text, apiUrl, apiKey) {
+export async function getExtrasVector(text, apiUrl, apiKey) {
     return getExtrasVectorImpl(text, apiUrl, apiKey);
 }
 
@@ -71,8 +71,3 @@ async function getExtrasVectorImpl(text, apiUrl, apiKey) {
 
     return vector;
 }
-
-module.exports = {
-    getExtrasVector,
-    getExtrasBatchVector,
-};

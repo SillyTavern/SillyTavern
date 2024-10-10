@@ -1,5 +1,5 @@
-const fetch = require('node-fetch').default;
-const { SECRET_KEYS, readSecret } = require('../endpoints/secrets');
+import fetch from 'node-fetch';
+import { SECRET_KEYS, readSecret } from '../endpoints/secrets.js';
 
 /**
  * Gets the vector for the given text batch from an OpenAI compatible endpoint.
@@ -9,7 +9,7 @@ const { SECRET_KEYS, readSecret } = require('../endpoints/secrets');
  * @param {string} model - The model to use for the embedding
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-async function getCohereBatchVector(texts, isQuery, directories, model) {
+export async function getCohereBatchVector(texts, isQuery, directories, model) {
     const key = readSecret(directories, SECRET_KEYS.COHERE);
 
     if (!key) {
@@ -55,12 +55,8 @@ async function getCohereBatchVector(texts, isQuery, directories, model) {
  * @param {string} model - The model to use for the embedding
  * @returns {Promise<number[]>} - The vector for the text
  */
-async function getCohereVector(text, isQuery, directories, model) {
+export async function getCohereVector(text, isQuery, directories, model) {
     const vectors = await getCohereBatchVector([text], isQuery, directories, model);
     return vectors[0];
 }
 
-module.exports = {
-    getCohereBatchVector,
-    getCohereVector,
-};

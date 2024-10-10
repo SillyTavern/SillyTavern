@@ -1,7 +1,8 @@
+import path from 'node:path';
+import fs from 'node:fs';
+
 import { pipeline, env, RawImage, Pipeline } from 'sillytavern-transformers';
 import { getConfigValue } from './util.js';
-import path from 'path';
-import fs from 'fs';
 
 configureTransformers();
 
@@ -50,7 +51,7 @@ const tasks = {
  * @param {string} image Base64-encoded image
  * @returns {Promise<RawImage|null>} Object representing the image
  */
-async function getRawImage(image) {
+export async function getRawImage(image) {
     try {
         const buffer = Buffer.from(image, 'base64');
         const byteArray = new Uint8Array(buffer);
@@ -116,7 +117,7 @@ async function migrateCacheToDataDir() {
  * @param {string} forceModel The model to use for the pipeline, if any
  * @returns {Promise<Pipeline>} Pipeline for the task
  */
-async function getPipeline(task, forceModel = '') {
+export async function getPipeline(task, forceModel = '') {
     await migrateCacheToDataDir();
 
     if (tasks[task].pipeline) {
@@ -138,6 +139,6 @@ async function getPipeline(task, forceModel = '') {
 }
 
 export default {
-    getPipeline,
     getRawImage,
+    getPipeline,
 };

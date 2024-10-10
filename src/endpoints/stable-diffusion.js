@@ -1,13 +1,15 @@
-const express = require('express');
-const fetch = require('node-fetch').default;
-const sanitize = require('sanitize-filename');
-const { getBasicAuthHeader, delay, getHexString } = require('../util.js');
-const fs = require('fs');
-const path = require('path');
-const writeFileAtomicSync = require('write-file-atomic').sync;
-const { jsonParser } = require('../express-common');
-const { readSecret, SECRET_KEYS } = require('./secrets.js');
-const FormData = require('form-data');
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+import express from 'express';
+import fetch from 'node-fetch';
+import sanitize from 'sanitize-filename';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
+import FormData from 'form-data';
+
+import { getBasicAuthHeader, delay, getHexString } from '../util.js';
+import { jsonParser } from '../express-common.js';
+import { readSecret, SECRET_KEYS } from './secrets.js';
 
 /**
  * Gets the comfy workflows.
@@ -21,7 +23,7 @@ function getComfyWorkflows(directories) {
         .sort(Intl.Collator().compare);
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/ping', jsonParser, async (request, response) => {
     try {
@@ -993,5 +995,3 @@ router.use('/pollinations', pollinations);
 router.use('/stability', stability);
 router.use('/blockentropy', blockentropy);
 router.use('/huggingface', huggingface);
-
-module.exports = { router };

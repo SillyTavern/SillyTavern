@@ -1,15 +1,16 @@
-const crypto = require('crypto');
-const storage = require('node-persist');
-const express = require('express');
-const { RateLimiterMemory, RateLimiterRes } = require('rate-limiter-flexible');
-const { jsonParser, getIpFromRequest } = require('../express-common');
-const { color, Cache, getConfigValue } = require('../util');
-const { KEY_PREFIX, getUserAvatar, toKey, getPasswordHash, getPasswordSalt } = require('../users');
+import * as crypto from 'node:crypto';
+
+import storage from 'node-persist';
+import express from 'express';
+import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
+import { jsonParser, getIpFromRequest } from '../express-common.js';
+import { color, Cache, getConfigValue } from '../util.js';
+import { KEY_PREFIX, getUserAvatar, toKey, getPasswordHash, getPasswordSalt } from '../users.js';
 
 const DISCREET_LOGIN = getConfigValue('enableDiscreetLogin', false);
 const MFA_CACHE = new Cache(5 * 60 * 1000);
 
-const router = express.Router();
+export const router = express.Router();
 const loginLimiter = new RateLimiterMemory({
     points: 5,
     duration: 60,
@@ -193,7 +194,3 @@ router.post('/recover-step2', jsonParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
-
-module.exports = {
-    router,
-};

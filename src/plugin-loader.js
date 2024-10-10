@@ -1,8 +1,9 @@
-const fs = require('fs');
-const path = require('path');
-const url = require('url');
-const express = require('express');
-const { getConfigValue } = require('./util');
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as url from 'node:url';
+
+import express from 'express';
+import { getConfigValue } from './util.js';
 const enableServerPlugins = getConfigValue('enableServerPlugins', false);
 
 /**
@@ -32,7 +33,7 @@ const isESModule = (file) => path.extname(file) === '.mjs';
  * @returns {Promise<Function>} Promise that resolves when all plugins are loaded. Resolves to a "cleanup" function to
  * be called before the server shuts down.
  */
-async function loadPlugins(app, pluginsPath) {
+export async function loadPlugins(app, pluginsPath) {
     const exitHooks = [];
     const emptyFn = () => {};
 
@@ -217,7 +218,3 @@ async function initPlugin(app, plugin, exitHooks) {
 
     return true;
 }
-
-module.exports = {
-    loadPlugins,
-};

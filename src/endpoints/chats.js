@@ -1,13 +1,14 @@
-const fs = require('fs');
-const path = require('path');
-const readline = require('readline');
-const express = require('express');
-const sanitize = require('sanitize-filename');
-const writeFileAtomicSync = require('write-file-atomic').sync;
-const _ = require('lodash');
+import * as  fs from 'node:fs';
+import * as path from 'node:path';
+import * as readline from 'node:readline';
 
-const { jsonParser, urlencodedParser } = require('../express-common');
-const { getConfigValue, humanizedISO8601DateTime, tryParse, generateTimestamp, removeOldBackups } = require('../util');
+import express from 'express';
+import sanitize from 'sanitize-filename';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
+import _ from 'lodash';
+
+import { jsonParser, urlencodedParser } from '../express-common.js';
+import { getConfigValue, humanizedISO8601DateTime, tryParse, generateTimestamp, removeOldBackups } from '../util.js';
 
 /**
  * Saves a chat to the backups directory.
@@ -188,7 +189,7 @@ function flattenChubChat(userName, characterName, lines) {
     return (lines ?? []).map(convert).join('\n');
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/save', jsonParser, function (request, response) {
     try {
@@ -514,5 +515,3 @@ router.post('/group/save', jsonParser, (request, response) => {
     getBackupFunction(request.user.profile.handle)(request.user.directories.backups, String(id), jsonlData);
     return response.send({ ok: true });
 });
-
-module.exports = { router };

@@ -14,7 +14,7 @@ function decodeFileName(str) {
  * @param {import('express').Response} _res Response
  * @param {import('express').NextFunction} next Next middleware
  */
-function multerMonkeyPatch(req, _res, next) {
+export default function multerMonkeyPatch(req, _res, next) {
     try {
         if (req.file) {
             req.file.originalname = decodeFileName(req.file.originalname);
@@ -26,5 +26,3 @@ function multerMonkeyPatch(req, _res, next) {
         next();
     }
 }
-
-module.exports = multerMonkeyPatch;
