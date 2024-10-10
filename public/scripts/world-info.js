@@ -3864,12 +3864,6 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
                 continue;
             }
 
-            if (buffer.getExternallyActivated(entry)) {
-                log('externally activated');
-                activatedNow.add(buffer.getExternallyActivated(entry));
-                continue;
-            }
-
             if (entry.decorators.includes('@@activate')) {
                 log('activated by @@activate decorator');
                 activatedNow.add(entry);
@@ -3878,6 +3872,12 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
 
             if (entry.decorators.includes('@@dont_activate')) {
                 log('suppressed by @@dont_activate decorator');
+                continue;
+            }
+
+            if (buffer.getExternallyActivated(entry)) {
+                log('externally activated');
+                activatedNow.add(buffer.getExternallyActivated(entry));
                 continue;
             }
 
