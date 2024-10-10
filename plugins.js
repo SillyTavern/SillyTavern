@@ -16,6 +16,14 @@ const pluginsPath = './plugins';
 
 const command = process.argv[2];
 
+if (!command) {
+    console.log('Usage: node plugins.js <command>');
+    console.log('Commands:');
+    console.log('  update - Update all installed plugins');
+    console.log('  install <plugin-git-url> - Install plugin from a Git URL');
+    process.exit(1);
+}
+
 if (command === 'update') {
     console.log(color.magenta('Updating all plugins'));
     updatePlugins();
