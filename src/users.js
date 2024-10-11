@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import os from 'node:os';
+import process from 'node:process';
 import { Buffer } from 'node:buffer';
 
 // Express and other dependencies

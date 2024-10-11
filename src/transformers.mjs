@@ -1,5 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
+import process from 'node:process';
 import { Buffer } from 'node:buffer';
 
 import { pipeline, env, RawImage, Pipeline } from 'sillytavern-transformers';

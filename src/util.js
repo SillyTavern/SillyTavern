@@ -1,6 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import http2 from 'node:http2';
+import process from 'node:process';
 import { Readable } from 'node:stream';
 import { createRequire } from 'node:module';
 import { Buffer } from 'node:buffer';

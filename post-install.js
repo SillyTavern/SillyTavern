@@ -4,6 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import process from 'node:process';
 import yaml from 'yaml';
 import _ from 'lodash';
 import { createRequire } from 'node:module';

@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import process from 'node:process';
 import yaml from 'yaml';
 import storage from 'node-persist';
 import {

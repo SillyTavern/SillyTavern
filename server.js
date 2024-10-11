@@ -8,6 +8,7 @@ import path from 'node:path';
 import util from 'node:util';
 import net from 'node:net';
 import dns from 'node:dns';
+import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 // cli/fs related library imports

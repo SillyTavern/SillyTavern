@@ -1,3 +1,4 @@
+import process from 'node:process';
 import { createRequire } from 'node:module';
 import { ProxyAgent } from 'proxy-agent';
 import { isValidUrl, color } from './util.js';
