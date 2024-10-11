@@ -1,8 +1,5 @@
 import crypto from 'node:crypto';
-import polyfill from './polyfill.js';
 import { getConfigValue } from './util.js';
-
-polyfill();
 
 const PROMPT_PLACEHOLDER = getConfigValue('promptPlaceholder', 'Let\'s get started.');
 
