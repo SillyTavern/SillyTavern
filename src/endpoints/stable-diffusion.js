@@ -7,7 +7,7 @@ import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import FormData from 'form-data';
 
-import { getBasicAuthHeader, delay, getHexString } from '../util.js';
+import { getBasicAuthHeader, delay } from '../util.js';
 import { jsonParser } from '../express-common.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
 
