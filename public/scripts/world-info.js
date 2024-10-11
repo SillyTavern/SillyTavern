@@ -316,7 +316,6 @@ class WorldInfoBuffer {
      * @returns {object|undefined} the external version if the entry is forcefully activated, undefined otherwise
      */
     getExternallyActivated(entry) {
-        // Entries could be copied with structuredClone, so we need to compare them by string representation
         return WorldInfoBuffer.externalActivations.get(`${entry.world}.${entry.uid}`);
     }
 
@@ -870,7 +869,7 @@ export function setWorldInfoSettings(settings, data) {
     eventSource.on(event_types.WORLDINFO_FORCE_ACTIVATE, (entries) => {
         for (const entry of entries) {
             if (!Object.hasOwn(entry, 'world') || !Object.hasOwn(entry, 'uid')) {
-                console.error('WORLDINFO_FORCE_ACTIVATE requires all entries to have both world and uid fields, entry IGNORED');
+                console.error('[WI] WORLDINFO_FORCE_ACTIVATE requires all entries to have both world and uid fields, entry IGNORED', entry);
             } else {
                 WorldInfoBuffer.externalActivations.set(`${entry.world}.${entry.uid}`, entry);
             }
