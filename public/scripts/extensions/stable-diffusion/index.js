@@ -2675,8 +2675,7 @@ async function generateTogetherAIImage(prompt, negativePrompt, signal) {
     });
 
     if (result.ok) {
-        const data = await result.json();
-        return { format: 'jpg', data: data?.output?.choices?.[0]?.image_base64 };
+        return await result.json();
     } else {
         const text = await result.text();
         throw new Error(text);
