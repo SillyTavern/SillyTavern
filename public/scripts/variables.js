@@ -514,7 +514,8 @@ export function parseBooleanOperands(args) {
             return '';
         }
 
-        const operandNumber = Number(operand);
+        // parseFloat will return NaN for spaces.
+        const operandNumber = parseFloat(operand);
 
         if (!isNaN(operandNumber)) {
             return operandNumber;

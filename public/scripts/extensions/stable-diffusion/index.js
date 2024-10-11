@@ -2208,10 +2208,9 @@ function processReply(str) {
 
     str = str.replaceAll('"', '');
     str = str.replaceAll('“', '');
-    str = str.replaceAll('.', ',');
     str = str.replaceAll('\n', ', ');
     str = str.normalize('NFD');
-    str = str.replace(/[^a-zA-Z0-9,:_(){}<>[\]\-']+/g, ' ');
+    str = str.replace(/[^a-zA-Z0-9\.,:_(){}<>[\]\-']+/g, ' ');
     str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
     str = str.trim();
 
@@ -2675,8 +2674,7 @@ async function generateTogetherAIImage(prompt, negativePrompt, signal) {
     });
 
     if (result.ok) {
-        const data = await result.json();
-        return { format: 'jpg', data: data?.output?.choices?.[0]?.image_base64 };
+        return await result.json();
     } else {
         const text = await result.text();
         throw new Error(text);
