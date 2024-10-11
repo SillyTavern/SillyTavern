@@ -749,7 +749,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
                 // in case we are using continue_prefill and the latest message is an assistant message, we want to prepend the users assistant prefill on the message
                 if (chatPrompt.role === 'assistant') {
                     const continueMessage = await Message.createAsync(chatMessage.role, substituteParams(oai_settings.assistant_prefill + '\n\n') + chatMessage.content, chatMessage.identifier);
-                    const collection = new MessageCollection('continuePrefill', );
+                    const collection = new MessageCollection('continuePrefill', continueMessage);
                     chatCompletion.add(collection, -1);
                     continue;
                 }
