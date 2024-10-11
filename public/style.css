@@ -613,8 +613,11 @@ body .panelControlBar {
     min-width: 55px;
     justify-content: flex-end;
     gap: 0px;
-    opacity:0;
     transition: all 250ms;
+}
+
+.zoomed_avatar .panelControlBar {
+opacity:0;
 }
 
 .zoomed_avatar:hover .panelControlBar {
