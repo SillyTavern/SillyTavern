@@ -998,6 +998,15 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
         chatCompletion.insert(Message.fromPrompt(prompt), 'main', prompt.position);
     }
 
+    // Pre-allocation of tokens for tool data
+    if (ToolManager.canPerformToolCalls(type)) {
+        const toolData = {};
+        await ToolManager.registerFunctionToolsOpenAI(toolData);
+        const toolMessage = [{ role: 'user', content: JSON.stringify(toolData) }];
+        const toolTokens = tokenHandler.count(toolMessage);
+        chatCompletion.reserveBudget(toolTokens);
+    }
+
     // Add in-chat injections
     messages = populationInjectionPrompts(absolutePrompts, messages);
 
