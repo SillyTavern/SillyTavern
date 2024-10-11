@@ -607,10 +607,9 @@ together.post('/generate', jsonParser, async (request, response) => {
 
         console.log('TogetherAI request:', request.body);
 
-        const result = await fetch('https://api.together.xyz/api/inference', {
+        const result = await fetch('https://api.together.xyz/v1/images/generations', {
             method: 'POST',
             body: JSON.stringify({
-                request_type: 'image-model-inference',
                 prompt: request.body.prompt,
                 negative_prompt: request.body.negative_prompt,
                 height: request.body.height,
@@ -620,8 +619,6 @@ together.post('/generate', jsonParser, async (request, response) => {
                 n: 1,
                 // Limited to 10000 on playground, works fine with more.
                 seed: request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 10_000_000),
-                // Don't know if that's supposed to be random or not. It works either way.
-                sessionKey: getHexString(40),
             }),
             headers: {
                 'Content-Type': 'application/json',
@@ -630,19 +627,22 @@ together.post('/generate', jsonParser, async (request, response) => {
         });
 
         if (!result.ok) {
-            console.log('TogetherAI returned an error.');
+            console.log('TogetherAI returned an error.', { body: await result.text() });
             return response.sendStatus(500);
         }
 
         const data = await result.json();
         console.log('TogetherAI response:', data);
 
-        if (data.status !== 'finished') {
-            console.log('TogetherAI job failed.');
-            return response.sendStatus(500);
+        const choice = data?.data?.[0];
+        let b64_json = choice.b64_json;
+
+        if (!b64_json) {
+            const buffer = await (await fetch(choice.url)).buffer();
+            b64_json = buffer.toString('base64');
         }
 
-        return response.send(data);
+        return response.send({ format: 'jpg', data: b64_json });
     } catch (error) {
         console.log(error);
         return response.sendStatus(500);
