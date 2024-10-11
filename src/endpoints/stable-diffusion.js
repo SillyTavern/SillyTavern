@@ -637,7 +637,7 @@ together.post('/generate', jsonParser, async (request, response) => {
         const choice = data?.data?.[0];
         let b64_json = choice.b64_json;
 
-        if(! b64_json) {
+        if (!b64_json) {
             const buffer = await (await fetch(choice.url)).buffer();
             b64_json = buffer.toString('base64');
         }
