@@ -61,14 +61,15 @@ function convertConfig() {
 
         try {
             console.log(color.blue('Converting config.conf to config.yaml. Your old config.conf will be renamed to config.conf.bak'));
+            fs.renameSync('./config.conf', './config.conf.cjs'); // Force loading as CommonJS
             const require = createRequire(import.meta.url);
-            const config = require(path.join(process.cwd(), './config.conf'));
-            fs.copyFileSync('./config.conf', './config.conf.bak');
-            fs.rmSync('./config.conf');
+            const config = require(path.join(process.cwd(), './config.conf.cjs'));
+            fs.copyFileSync('./config.conf.cjs', './config.conf.bak');
+            fs.rmSync('./config.conf.cjs');
             fs.writeFileSync('./config.yaml', yaml.stringify(config));
             console.log(color.green('Conversion successful. Please check your config.yaml and fix it if necessary.'));
         } catch (error) {
-            console.error(color.red('FATAL: Config conversion failed. Please check your config.conf file and try again.'));
+            console.error(color.red('FATAL: Config conversion failed. Please check your config.conf file and try again.'), error);
             return;
         }
     }
