@@ -130,9 +130,9 @@ const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
  */
 class WorldInfoBuffer {
     /**
-     * @type {object[]} Array of entries that need to be activated no matter what
+     * @type {Map<string, object>} Map of entries that need to be activated no matter what
      */
-    static externalActivations = [];
+    static externalActivations = new Map();
 
     /**
      * @type {string[]} Array of messages sorted by ascending depth
@@ -311,20 +311,19 @@ class WorldInfoBuffer {
     }
 
     /**
-     * Check if the current entry is externally activated.
+     * Get the externally activated version of the entry, if there is one.
      * @param {object} entry WI entry to check
-     * @returns {boolean} True if the entry is forcefully activated
+     * @returns {object|undefined} the external version if the entry is forcefully activated, undefined otherwise
      */
-    isExternallyActivated(entry) {
-        // Entries could be copied with structuredClone, so we need to compare them by string representation
-        return WorldInfoBuffer.externalActivations.some(x => JSON.stringify(x) === JSON.stringify(entry));
+    getExternallyActivated(entry) {
+        return WorldInfoBuffer.externalActivations.get(`${entry.world}.${entry.uid}`);
     }
 
     /**
      * Clean-up the external effects for entries.
      */
     resetExternalEffects() {
-        WorldInfoBuffer.externalActivations.splice(0, WorldInfoBuffer.externalActivations.length);
+        WorldInfoBuffer.externalActivations = new Map();
     }
 
     /**
@@ -751,7 +750,7 @@ export async function getWorldInfoPrompt(chat, maxContext, isDryRun) {
     worldInfoString = worldInfoBefore + worldInfoAfter;
 
     if (!isDryRun && activatedWorldInfo.allActivatedEntries && activatedWorldInfo.allActivatedEntries.size > 0) {
-        const arg = Array.from(activatedWorldInfo.allActivatedEntries);
+        const arg = Array.from(activatedWorldInfo.allActivatedEntries.values());
         await eventSource.emit(event_types.WORLD_INFO_ACTIVATED, arg);
     }
 
@@ -868,7 +867,14 @@ export function setWorldInfoSettings(settings, data) {
     });
 
     eventSource.on(event_types.WORLDINFO_FORCE_ACTIVATE, (entries) => {
-        WorldInfoBuffer.externalActivations.push(...entries);
+        for (const entry of entries) {
+            if (!Object.hasOwn(entry, 'world') || !Object.hasOwn(entry, 'uid')) {
+                console.error('[WI] WORLDINFO_FORCE_ACTIVATE requires all entries to have both world and uid fields, entry IGNORED', entry);
+            } else {
+                WorldInfoBuffer.externalActivations.set(`${entry.world}.${entry.uid}`, entry);
+                console.log('[WI] WORLDINFO_FORCE_ACTIVATE added entry', entry);
+            }
+        }
     });
 
     // Add slash commands
@@ -3724,7 +3730,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
     let scanState = scan_state.INITIAL;
     let token_budget_overflowed = false;
     let count = 0;
-    let allActivatedEntries = new Set();
+    let allActivatedEntries = new Map();
     let failedProbabilityChecks = new Set();
     let allActivatedText = '';
 
@@ -3789,7 +3795,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
             }
 
             // Already processed, considered and then skipped entries should still be skipped
-            if (failedProbabilityChecks.has(entry) || allActivatedEntries.has(entry)) {
+            if (failedProbabilityChecks.has(entry) || allActivatedEntries.has(`${entry.world}.${entry.uid}`)) {
                 continue;
             }
 
@@ -3869,15 +3875,15 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
                 continue;
             }
 
-            // Now do checks for immediate activations
-            if (entry.constant) {
-                log('activated because of constant');
-                activatedNow.add(entry);
+            if (buffer.getExternallyActivated(entry)) {
+                log('externally activated');
+                activatedNow.add(buffer.getExternallyActivated(entry));
                 continue;
             }
 
-            if (buffer.isExternallyActivated(entry)) {
-                log('externally activated');
+            // Now do checks for immediate activations
+            if (entry.constant) {
+                log('activated because of constant');
                 activatedNow.add(entry);
                 continue;
             }
@@ -4039,7 +4045,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
                 break;
             }
 
-            allActivatedEntries.add(entry);
+            allActivatedEntries.set(`${entry.world}.${entry.uid}`, entry);
             console.debug(`[WI] Entry ${entry.uid} activation successful, adding to prompt`, entry);
         }
 
@@ -4123,7 +4129,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
 
     // Appends from insertion order 999 to 1. Use unshift for this purpose
     // TODO (kingbri): Change to use WI Anchor positioning instead of separate top/bottom arrays
-    [...allActivatedEntries].sort(sortFn).forEach((entry) => {
+    [...allActivatedEntries.values()].sort(sortFn).forEach((entry) => {
         const regexDepth = entry.position === world_info_position.atDepth ? (entry.depth ?? DEFAULT_DEPTH) : null;
         const content = getRegexedString(entry.content, regex_placement.WORLD_INFO, { depth: regexDepth, isMarkdown: false, isPrompt: true });
 
@@ -4182,14 +4188,14 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
     }
 
-    !isDryRun && timedEffects.setTimedEffects(Array.from(allActivatedEntries));
+    !isDryRun && timedEffects.setTimedEffects(Array.from(allActivatedEntries.values()));
     buffer.resetExternalEffects();
     timedEffects.cleanUp();
 
-    console.log(`[WI] Adding ${allActivatedEntries.size} entries to prompt`, Array.from(allActivatedEntries));
+    console.log(`[WI] Adding ${allActivatedEntries.size} entries to prompt`, Array.from(allActivatedEntries.values()));
     console.debug('[WI] --- DONE ---');
 
-    return { worldInfoBefore, worldInfoAfter, EMEntries, WIDepthEntries, allActivatedEntries };
+    return { worldInfoBefore, worldInfoAfter, EMEntries, WIDepthEntries, allActivatedEntries: new Set(allActivatedEntries.values()) };
 }
 
 /**
@@ -4291,7 +4297,7 @@ function filterGroupsByTimedEffects(groups, timedEffects, removeEntry) {
 /**
  * Filters entries by inclusion groups.
  * @param {object[]} newEntries Entries activated on current recursion level
- * @param {Set<object>} allActivatedEntries Set of all activated entries
+ * @param {Map<string, object>} allActivatedEntries Map of all activated entries
  * @param {WorldInfoBuffer} buffer The buffer to use for scanning
  * @param {number} scanState The current scan state
  * @param {WorldInfoTimedEffects} timedEffects The timed effects currently active
@@ -4339,7 +4345,7 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanSt
             continue;
         }
 
-        if (Array.from(allActivatedEntries).some(x => x.group === key)) {
+        if (Array.from(allActivatedEntries.values()).some(x => x.group === key)) {
             console.debug(`[WI] Skipping inclusion group check, group '${key}' was already activated`);
             // We need to forcefully deactivate all other entries in the group
             removeAllBut(group, null, false);
