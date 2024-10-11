@@ -135,7 +135,7 @@ function createDefaultFiles() {
 function getMd5Hash(data) {
     return crypto
         .createHash('md5')
-        .update(data)
+        .update(new Uint8Array(data))
         .digest('hex');
 }
 
