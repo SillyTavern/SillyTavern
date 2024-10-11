@@ -54,6 +54,7 @@ export async function getOllamaVector(text, apiUrl, model, keep, directories) {
         throw new Error(`Ollama: Failed to get vector for text: ${response.statusText} ${responseText}`);
     }
 
+    /** @type {any} */
     const data = await response.json();
 
     if (!Array.isArray(data?.embedding)) {

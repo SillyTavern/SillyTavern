@@ -380,6 +380,7 @@ async function downloadPygmalionCharacter(id) {
         throw new Error('Failed to download character');
     }
 
+    /** @type {any} */
     const jsonData = await result.json();
     const characterData = jsonData?.character;
 
@@ -472,6 +473,7 @@ async function downloadJannyCharacter(uuid) {
     });
 
     if (result.ok) {
+        /** @type {any} */
         const downloadResult = await result.json();
         if (downloadResult.status === 'ok') {
             const imageResult = await fetch(downloadResult.downloadUrl);

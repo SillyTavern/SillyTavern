@@ -68,7 +68,7 @@ router.post('/upload', jsonParser, async (request, response) => {
 
         ensureDirectoryExistence(pathToNewFile);
         const imageBuffer = Buffer.from(base64Data, 'base64');
-        await fs.promises.writeFile(pathToNewFile, imageBuffer);
+        await fs.promises.writeFile(pathToNewFile, new Uint8Array(imageBuffer));
         response.send({ path: clientRelativePath(request.user.directories.root, pathToNewFile) });
     } catch (error) {
         console.log(error);

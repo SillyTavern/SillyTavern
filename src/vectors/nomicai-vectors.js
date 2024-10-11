@@ -51,6 +51,7 @@ export async function getNomicAIBatchVector(texts, source, directories) {
         throw new Error('API request failed');
     }
 
+    /** @type {any} */
     const data = await response.json();
     if (!Array.isArray(data?.embeddings)) {
         console.log('API response was not an array');

@@ -78,6 +78,7 @@ router.post('/libre', jsonParser, async (request, response) => {
             return response.sendStatus(result.status);
         }
 
+        /** @type {any} */
         const json = await result.json();
         console.log('Translated text: ' + json.translatedText);
 
@@ -158,7 +159,6 @@ router.post('/yandex', jsonParser, async (request, response) => {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -167,6 +167,7 @@ router.post('/yandex', jsonParser, async (request, response) => {
             return response.sendStatus(500);
         }
 
+        /** @type {any} */
         const json = await result.json();
         const translated = json.text.join();
         console.log('Translated text: ' + translated);
@@ -264,7 +265,6 @@ router.post('/deepl', jsonParser, async (request, response) => {
                 'Authorization': `DeepL-Auth-Key ${key}`,
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -273,6 +273,7 @@ router.post('/deepl', jsonParser, async (request, response) => {
             return response.sendStatus(result.status);
         }
 
+        /** @type {any} */
         const json = await result.json();
         console.log('Translated text: ' + json.translations[0].text);
 
@@ -317,7 +318,6 @@ router.post('/onering', jsonParser, async (request, response) => {
 
         const result = await fetch(fetchUrl, {
             method: 'GET',
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -326,6 +326,7 @@ router.post('/onering', jsonParser, async (request, response) => {
             return response.sendStatus(result.status);
         }
 
+        /** @type {any} */
         const data = await result.json();
         console.log('Translated text: ' + data.result);
 
@@ -373,7 +374,6 @@ router.post('/deeplx', jsonParser, async (request, response) => {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
             },
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -382,6 +382,7 @@ router.post('/deeplx', jsonParser, async (request, response) => {
             return response.sendStatus(result.status);
         }
 
+        /** @type {any} */
         const json = await result.json();
         console.log('Translated text: ' + json.data);
 

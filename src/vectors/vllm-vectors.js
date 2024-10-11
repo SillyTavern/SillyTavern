@@ -31,6 +31,7 @@ export async function getVllmBatchVector(texts, apiUrl, model, directories) {
         throw new Error(`VLLM: Failed to get vector for text: ${response.statusText} ${responseText}`);
     }
 
+    /** @type {any} */
     const data = await response.json();
 
     if (!Array.isArray(data?.data)) {

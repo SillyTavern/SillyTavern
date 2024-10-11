@@ -70,7 +70,6 @@ router.post('/generate', jsonParser, async function (request, response) {
                 'Content-Type': 'application/json',
                 'cookie': `_jwt=${cookie}`,
             },
-            timeout: 0,
             body: JSON.stringify(body),
         });
 
@@ -80,6 +79,7 @@ router.post('/generate', jsonParser, async function (request, response) {
             return response.status(500).send({ error: { message: result.statusText } });
         }
 
+        /** @type {any} */
         const data = await result.json();
         const output = data?.result?.data?.json?.outputs?.[0] || '';
 

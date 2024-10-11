@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import process from 'node:process';
 import { Buffer } from 'node:buffer';
 
-import { pipeline, env, RawImage, Pipeline } from 'sillytavern-transformers';
+import { pipeline, env, RawImage } from 'sillytavern-transformers';
 import { getConfigValue } from './util.js';
 
 configureTransformers();
@@ -117,7 +117,7 @@ async function migrateCacheToDataDir() {
  * Gets the transformers.js pipeline for a given task.
  * @param {import('sillytavern-transformers').PipelineType} task The task to get the pipeline for
  * @param {string} forceModel The model to use for the pipeline, if any
- * @returns {Promise<Pipeline>} Pipeline for the task
+ * @returns {Promise<import('sillytavern-transformers').Pipeline>} The transformers.js pipeline
  */
 export async function getPipeline(task, forceModel = '') {
     await migrateCacheToDataDir();
@@ -137,6 +137,7 @@ export async function getPipeline(task, forceModel = '') {
     const instance = await pipeline(task, model, { cache_dir: cacheDir, quantized: tasks[task].quantized ?? true, local_files_only: localOnly });
     tasks[task].pipeline = instance;
     tasks[task].currentModel = model;
+    // @ts-ignore
     return instance;
 }
 

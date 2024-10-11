@@ -40,7 +40,6 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -49,6 +48,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             return response.status(result.status).send({ error: true });
         }
 
+        /** @type {any} */
         const data = await result.json();
         console.log('Multimodal captioning response', data);
 

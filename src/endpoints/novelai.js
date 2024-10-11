@@ -252,7 +252,7 @@ router.post('/generate', jsonParser, async function (req, res) {
     try {
         const baseURL = (req.body.model.includes('kayra') || req.body.model.includes('erato')) ? TEXT_NOVELAI : API_NOVELAI;
         const url = req.body.streaming ? `${baseURL}/ai/generate-stream` : `${baseURL}/ai/generate`;
-        const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
+        const response = await fetch(url, { method: 'POST', ...args });
 
         if (req.body.streaming) {
             // Pipe remote SSE stream to Express response
@@ -274,6 +274,7 @@ router.post('/generate', jsonParser, async function (req, res) {
                 return res.status(response.status).send({ error: { message } });
             }
 
+            /** @type {any} */
             const data = await response.json();
             console.log('NovelAI Output', data?.output);
             return res.send(data);
@@ -416,7 +417,6 @@ router.post('/generate-voice', jsonParser, async (request, response) => {
                 'Authorization': `Bearer ${token}`,
                 'Accept': 'audio/mpeg',
             },
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -426,7 +426,7 @@ router.post('/generate-voice', jsonParser, async (request, response) => {
         }
 
         const chunks = await readAllChunks(result.body);
-        const buffer = Buffer.concat(chunks);
+        const buffer = Buffer.concat(chunks.map(chunk => new Uint8Array(chunk)));
         response.setHeader('Content-Type', 'audio/mpeg');
         return response.send(buffer);
     }

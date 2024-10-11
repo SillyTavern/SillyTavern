@@ -13,7 +13,7 @@ import PNGtext from 'png-chunk-text';
  * @returns {Buffer} PNG image buffer with metadata
  */
 export const write = (image, data) => {
-    const chunks = extract(image);
+    const chunks = extract(new Uint8Array(image));
     const tEXtChunks = chunks.filter(chunk => chunk.name === 'tEXt');
 
     // Remove existing tEXt chunks
@@ -52,7 +52,7 @@ export const write = (image, data) => {
  * @returns {string} Character data
  */
 export const read = (image) => {
-    const chunks = extract(image);
+    const chunks = extract(new Uint8Array(image));
 
     const textChunks = chunks.filter((chunk) => chunk.name === 'tEXt').map((chunk) => PNGtext.decode(chunk.data));
 

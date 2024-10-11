@@ -441,17 +441,21 @@ export function forwardFetchResponse(from, to) {
     to.statusCode = statusCode;
     to.statusMessage = statusText;
 
-    from.body.pipe(to);
+    if (from.body && to.socket) {
+        from.body.pipe(to);
 
-    to.socket.on('close', function () {
-        if (from.body instanceof Readable) from.body.destroy(); // Close the remote stream
-        to.end(); // End the Express response
-    });
+        to.socket.on('close', function () {
+            if (from.body instanceof Readable) from.body.destroy(); // Close the remote stream
+            to.end(); // End the Express response
+        });
 
-    from.body.on('end', function () {
-        console.log('Streaming request finished');
+        from.body.on('end', function () {
+            console.log('Streaming request finished');
+            to.end();
+        });
+    } else {
         to.end();
-    });
+    }
 }
 
 /**

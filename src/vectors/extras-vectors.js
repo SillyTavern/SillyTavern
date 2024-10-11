@@ -66,6 +66,7 @@ async function getExtrasVectorImpl(text, apiUrl, apiKey) {
         throw new Error('Extras request failed');
     }
 
+    /** @type {any} */
     const data = await response.json();
     const vector = data.embedding;  // `embedding`: number[] (one text item), or number[][] (multiple text items).
 

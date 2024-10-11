@@ -96,7 +96,7 @@ router.post('/generate', jsonParser, async function (request, response_generate)
     for (let i = 0; i < MAX_RETRIES; i++) {
         try {
             const url = request.body.streaming ? `${request.body.api_server}/extra/generate/stream` : `${request.body.api_server}/v1/generate`;
-            const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
+            const response = await fetch(url, { method: 'POST', ...args });
 
             if (request.body.streaming) {
                 // Pipe remote SSE stream to Express response
@@ -156,6 +156,7 @@ router.post('/status', jsonParser, async function (request, response) {
 
     const result = {};
 
+    /** @type {any} */
     const [koboldUnitedResponse, koboldExtraResponse, koboldModelResponse] = await Promise.all([
         // We catch errors both from the response not having a successful HTTP status and from JSON parsing failing
 

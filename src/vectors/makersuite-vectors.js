@@ -52,6 +52,7 @@ export async function getMakerSuiteVector(text, directories) {
         throw new Error('Google AI Studio request failed');
     }
 
+    /** @type {any} */
     const data = await response.json();
     // noinspection JSValidateTypes
     return data['embedding']['values'];

@@ -42,7 +42,6 @@ router.post('/caption-image', jsonParser, async (request, response) => {
                 'anthropic-version': '2023-06-01',
                 'x-api-key': request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.CLAUDE),
             },
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -51,6 +50,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             return response.status(result.status).send({ error: true });
         }
 
+        /** @type {any} */
         const generateResponseJson = await result.json();
         const caption = generateResponseJson.content[0].text;
         console.log('Claude response:', generateResponseJson);

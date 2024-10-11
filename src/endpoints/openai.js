@@ -154,7 +154,6 @@ router.post('/caption-image', jsonParser, async (request, response) => {
                 ...headers,
             },
             body: JSON.stringify(body),
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -163,6 +162,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             return response.status(500).send(text);
         }
 
+        /** @type {any} */
         const data = await result.json();
         console.log('Multimodal captioning response', data);
         const caption = data?.choices[0]?.message?.content;
@@ -284,7 +284,6 @@ router.post('/generate-image', jsonParser, async (request, response) => {
                 Authorization: `Bearer ${key}`,
             },
             body: JSON.stringify(request.body),
-            timeout: 0,
         });
 
         if (!result.ok) {
