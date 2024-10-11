@@ -872,6 +872,7 @@ export function setWorldInfoSettings(settings, data) {
                 console.error('[WI] WORLDINFO_FORCE_ACTIVATE requires all entries to have both world and uid fields, entry IGNORED', entry);
             } else {
                 WorldInfoBuffer.externalActivations.set(`${entry.world}.${entry.uid}`, entry);
+                console.log('[WI] WORLDINFO_FORCE_ACTIVATE added entry', entry);
             }
         }
     });
