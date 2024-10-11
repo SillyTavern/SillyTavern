@@ -381,7 +381,6 @@ if (!disableCsrf) {
         getSecret: getCsrfSecret,
         cookieName: 'X-CSRF-Token',
         cookieOptions: {
-            httpOnly: true,
             sameSite: 'strict',
             secure: false,
         },
@@ -831,7 +830,7 @@ function createHttpsServer(url) {
             }, app);
         server.on('error', reject);
         server.on('listening', resolve);
-        server.listen(url.port || 443, url.hostname);
+        server.listen(Number(url.port || 443), url.hostname);
     });
 }
 
@@ -846,7 +845,7 @@ function createHttpServer(url) {
         const server = http.createServer(app);
         server.on('error', reject);
         server.on('listening', resolve);
-        server.listen(url.port || 80, url.hostname);
+        server.listen(Number(url.port || 80), url.hostname);
     });
 }
 
