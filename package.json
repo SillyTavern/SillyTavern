@@ -97,6 +97,7 @@
         "@types/lodash": "^4.17.10",
         "@types/mime-types": "^2.1.4",
         "@types/multer": "^1.4.12",
+        "@types/node": "^18.19.55",
         "@types/node-persist": "^3.1.8",
         "@types/png-chunk-text": "^1.0.3",
         "@types/png-chunks-encode": "^1.0.2",
