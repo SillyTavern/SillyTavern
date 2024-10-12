@@ -2307,6 +2307,11 @@ class Message {
         this.tokens = await tokenHandler.countAsync({ role: this.role, content: this.content, name: this.name });
     }
 
+    /**
+     * Adds an image to the message.
+     * @param {string} image Image URL or Data URL.
+     * @returns {Promise<void>}
+     */
     async addImage(image) {
         const textContent = this.content;
         const isDataUrl = isDataURL(image);
@@ -2401,7 +2406,7 @@ class Message {
      * @param {Object} prompt - The prompt object.
      * @returns {Promise<Message>} A new instance of Message.
      */
-    static async fromPromptAsync(prompt) {
+    static fromPromptAsync(prompt) {
         return Message.createAsync(prompt.role, prompt.content, prompt.identifier);
     }
 
