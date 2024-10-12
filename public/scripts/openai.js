@@ -811,8 +811,7 @@ async function populateDialogueExamples(prompts, chatCompletion, messageExamples
                 chatMessages.push(chatMessage);
             }
 
-            const canAffordBlock = chatCompletion.canAfford(newExampleChat) && chatCompletion.canAffordAll(chatMessages);
-            if (!canAffordBlock) {
+            if (!chatCompletion.canAffordAll([newExampleChat, ...chatMessages])) {
                 break;
             }
 
