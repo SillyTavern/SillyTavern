@@ -1,8 +1,10 @@
+import { Buffer } from 'node:buffer';
 import fetch from 'node-fetch';
 import express from 'express';
+import { speak, languages } from 'google-translate-api-x';
 
 import { readSecret, SECRET_KEYS } from './secrets.js';
-import { jsonParser }  from '../express-common.js';
+import { jsonParser } from '../express-common.js';
 import { GEMINI_SAFETY } from '../constants.js';
 
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
@@ -65,6 +67,28 @@ router.post('/caption-image', jsonParser, async (request, response) => {
         return response.json({ caption });
     } catch (error) {
         console.error(error);
+        response.status(500).send('Internal server error');
+    }
+});
+
+router.post('/list-voices', (_, response) => {
+    return response.json(languages);
+});
+
+router.post('/generate-voice', jsonParser, async (request, response) => {
+    try {
+        const text = request.body.text;
+        const voice = request.body.voice ?? 'en';
+
+        const result = await speak(text, { to: voice, forceBatch: false });
+        const buffer = Array.isArray(result)
+            ? Buffer.concat(result.map(x => new Uint8Array(Buffer.from(x.toString(), 'base64'))))
+            : Buffer.from(result.toString(), 'base64');
+
+        response.setHeader('Content-Type', 'audio/mpeg');
+        return response.send(buffer);
+    } catch (error) {
+        console.error('Google Translate TTS generation failed', error);
         response.status(500).send('Internal server error');
     }
 });
