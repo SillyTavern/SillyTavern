@@ -468,6 +468,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
             position: entry.position == 0 ? 'before_char' : 'after_char',
             use_regex: true, // ST keys are always regex
             extensions: {
+                ...entry.extensions,
                 position: entry.position,
                 exclude_recursion: entry.excludeRecursion,
                 display_index: entry.displayIndex,
