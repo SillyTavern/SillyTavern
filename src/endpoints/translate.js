@@ -1,14 +1,9 @@
 import https from 'node:https';
-import { createRequire } from 'node:module';
-import { Buffer } from 'node:buffer';
 
 import fetch from 'node-fetch';
 import express from 'express';
-import iconv from 'iconv-lite';
 import bingTranslateApi from 'bing-translate-api';
-
-const require = createRequire(import.meta.url);
-const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
+import googleTranslateApi from 'google-translate-api-x';
 
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { getConfigValue, uuidv4 } from '../util.js';
@@ -16,20 +11,6 @@ import { jsonParser } from '../express-common.js';
 
 const DEEPLX_URL_DEFAULT = 'http://127.0.0.1:1188/translate';
 const ONERING_URL_DEFAULT = 'http://127.0.0.1:4990/translate';
-
-/**
- * Tries to decode a Node.js Buffer to a string using iconv-lite for UTF-8.
- * @param {Buffer} buffer Node.js Buffer
- * @returns {string} Decoded string
- */
-function decodeBuffer(buffer) {
-    try {
-        return iconv.decode(buffer, 'utf-8');
-    } catch (error) {
-        console.log('Failed to decode buffer:', error);
-        return buffer.toString('utf-8');
-    }
-}
 
 export const router = express.Router();
 
@@ -100,31 +81,12 @@ router.post('/google', jsonParser, async (request, response) => {
 
         console.log('Input text: ' + text);
 
-        const url = generateRequestUrl(text, { to: lang });
+        const result = await googleTranslateApi(text, { to: lang, forceBatch: false });
+        const translatedText = Array.isArray(result) ? result.map(x => x.text).join('') : result.text;
 
-        https.get(url, (resp) => {
-            const data = [];
-
-            resp.on('data', (chunk) => {
-                data.push(chunk);
-            });
-
-            resp.on('end', () => {
-                try {
-                    const decodedData = decodeBuffer(Buffer.concat(data));
-                    const result = normaliseResponse(JSON.parse(decodedData));
-                    console.log('Translated text: ' + result.text);
-                    response.setHeader('Content-Type', 'text/plain; charset=utf-8');
-                    return response.send(result.text);
-                } catch (error) {
-                    console.log('Translation error', error);
-                    return response.sendStatus(500);
-                }
-            });
-        }).on('error', (err) => {
-            console.log('Translation error: ' + err.message);
-            return response.sendStatus(500);
-        });
+        response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        console.log('Translated text: ' + translatedText);
+        return response.send(translatedText);
     } catch (error) {
         console.log('Translation error', error);
         return response.sendStatus(500);
