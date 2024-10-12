@@ -1,12 +1,13 @@
-const { readSecret, SECRET_KEYS } = require('./secrets');
-const fetch = require('node-fetch').default;
-const express = require('express');
-const { jsonParser } = require('../express-common');
-const { GEMINI_SAFETY } = require('../constants');
+import fetch from 'node-fetch';
+import express from 'express';
+
+import { readSecret, SECRET_KEYS } from './secrets.js';
+import { jsonParser }  from '../express-common.js';
+import { GEMINI_SAFETY } from '../constants.js';
 
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/caption-image', jsonParser, async (request, response) => {
     try {
@@ -39,7 +40,6 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -48,6 +48,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             return response.status(result.status).send({ error: true });
         }
 
+        /** @type {any} */
         const data = await result.json();
         console.log('Multimodal captioning response', data);
 
@@ -67,5 +68,3 @@ router.post('/caption-image', jsonParser, async (request, response) => {
         response.status(500).send('Internal server error');
     }
 });
-
-module.exports = { router };

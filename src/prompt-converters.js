@@ -1,6 +1,5 @@
-require('./polyfill.js');
-const { getConfigValue } = require('./util.js');
-const crypto = require('crypto');
+import crypto from 'node:crypto';
+import { getConfigValue } from './util.js';
 
 const PROMPT_PLACEHOLDER = getConfigValue('promptPlaceholder', 'Let\'s get started.');
 
@@ -17,7 +16,7 @@ const PROMPT_PLACEHOLDER = getConfigValue('promptPlaceholder', 'Let\'s get start
  * @returns {string} Prompt for Claude
  * @copyright Prompt Conversion script taken from RisuAI by kwaroran (GPLv3).
  */
-function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSysPromptSupport, useSystemPrompt, addSysHumanMsg, excludePrefixes) {
+export function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSysPromptSupport, useSystemPrompt, addSysHumanMsg, excludePrefixes) {
 
     //Prepare messages for claude.
     //When 'Exclude Human/Assistant prefixes' checked, setting messages role to the 'system'(last message is exception).
@@ -96,7 +95,7 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
  * @param {string}   charName Character name
  * @param {string}   userName User name
  */
-function convertClaudeMessages(messages, prefillString, useSysPrompt, useTools, humanMsgFix, charName = '', userName = '') {
+export function convertClaudeMessages(messages, prefillString, useSysPrompt, useTools, humanMsgFix, charName = '', userName = '') {
     let systemPrompt = [];
     if (useSysPrompt) {
         // Collect all the system messages up until the first instance of a non-system message, and then remove them from the messages array.
@@ -279,7 +278,7 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, useTools, 
  * @param {string}   userName User name
  * @returns {{chatHistory: object[]}} Prompt for Cohere
  */
-function convertCohereMessages(messages, charName = '', userName = '') {
+export function convertCohereMessages(messages, charName = '', userName = '') {
     if (messages.length === 0) {
         messages.unshift({
             role: 'user',
@@ -333,7 +332,7 @@ function convertCohereMessages(messages, charName = '', userName = '') {
  * @param {string} userName User name
  * @returns {{contents: *[], system_instruction: {parts: {text: string}}}} Prompt for Google MakerSuite models
  */
-function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '', userName = '') {
+export function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '', userName = '') {
     // This is a 1x1 transparent PNG
     const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
@@ -456,7 +455,7 @@ function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '
  * @param {string} charName Character name
  * @param {string} userName User name
  */
-function convertAI21Messages(messages, charName = '', userName = '') {
+export function convertAI21Messages(messages, charName = '', userName = '') {
     if (!Array.isArray(messages)) {
         return [];
     }
@@ -528,7 +527,7 @@ function convertAI21Messages(messages, charName = '', userName = '') {
  * @param {string} charName Character name
  * @param {string} userName User name
  */
-function convertMistralMessages(messages, charName = '', userName = '') {
+export function convertMistralMessages(messages, charName = '', userName = '') {
     if (!Array.isArray(messages)) {
         return [];
     }
@@ -612,7 +611,7 @@ function convertMistralMessages(messages, charName = '', userName = '') {
  * @param {boolean} strict Enable strict mode: only allow one system message at the start, force user first message
  * @returns {any[]} Merged messages
  */
-function mergeMessages(messages, charName, userName, strict) {
+export function mergeMessages(messages, charName, userName, strict) {
     let mergedMessages = [];
 
     // Remove names from the messages
@@ -686,7 +685,7 @@ function mergeMessages(messages, charName, userName, strict) {
  * @param {object[]} messages Array of messages
  * @returns {string} Prompt for Text Completion API
  */
-function convertTextCompletionPrompt(messages) {
+export function convertTextCompletionPrompt(messages) {
     if (typeof messages === 'string') {
         return messages;
     }
@@ -705,14 +704,3 @@ function convertTextCompletionPrompt(messages) {
     });
     return messageStrings.join('\n') + '\nassistant:';
 }
-
-module.exports = {
-    convertClaudePrompt,
-    convertClaudeMessages,
-    convertGooglePrompt,
-    convertTextCompletionPrompt,
-    convertCohereMessages,
-    convertMistralMessages,
-    convertAI21Messages,
-    mergeMessages,
-};

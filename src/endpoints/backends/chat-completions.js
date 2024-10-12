@@ -1,13 +1,41 @@
-const express = require('express');
-const fetch = require('node-fetch').default;
+import process from 'node:process';
+import express from 'express';
+import fetch from 'node-fetch';
 
-const { jsonParser } = require('../../express-common');
-const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY, OPENROUTER_HEADERS } = require('../../constants');
-const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
-const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages, convertMistralMessages, convertAI21Messages, mergeMessages } = require('../../prompt-converters');
+import { jsonParser } from '../../express-common.js';
+import {
+    CHAT_COMPLETION_SOURCES,
+    GEMINI_SAFETY,
+    BISON_SAFETY,
+    OPENROUTER_HEADERS,
+} from '../../constants.js';
+import {
+    forwardFetchResponse,
+    getConfigValue,
+    tryParse,
+    uuidv4,
+    mergeObjectWithYaml,
+    excludeKeysByYaml,
+    color,
+} from '../../util.js';
+import {
+    convertClaudeMessages,
+    convertGooglePrompt,
+    convertTextCompletionPrompt,
+    convertCohereMessages,
+    convertMistralMessages,
+    convertAI21Messages,
+    mergeMessages,
+} from '../../prompt-converters.js';
 
-const { readSecret, SECRET_KEYS } = require('../secrets');
-const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sentencepieceTokenizers, TEXT_COMPLETION_MODELS } = require('../tokenizers');
+import { readSecret, SECRET_KEYS } from '../secrets.js';
+import {
+    getTokenizerModel,
+    getSentencepiceTokenizer,
+    getTiktokenTokenizer,
+    sentencepieceTokenizers,
+    TEXT_COMPLETION_MODELS,
+} from '../tokenizers.js';
 
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
@@ -38,43 +66,6 @@ function postProcessPrompt(messages, type, charName, userName) {
             return mergeMessages(messages, charName, userName, true);
         default:
             return messages;
-    }
-}
-
-/**
- * Ollama strikes back. Special boy #2's steaming routine.
- * Wrap this abomination into proper SSE stream, again.
- * @param {Response} jsonStream JSON stream
- * @param {import('express').Request} request Express request
- * @param {import('express').Response} response Express response
- * @returns {Promise<any>} Nothing valuable
- */
-async function parseCohereStream(jsonStream, request, response) {
-    try {
-        const stream = new CohereStream({ stream: jsonStream.body, eventShape: { type: 'json', messageTerminator: '\n' } });
-
-        for await (const json of stream.iterMessages()) {
-            if (json.message) {
-                const message = json.message || 'Unknown error';
-                const chunk = { error: { message: message } };
-                response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-            } else if (json.event_type === 'text-generation') {
-                const text = json.text || '';
-                const chunk = { choices: [{ text }] };
-                response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-            }
-        }
-
-        console.log('Streaming request finished');
-        response.write('data: [DONE]\n\n');
-        response.end();
-    } catch (error) {
-        console.log('Error forwarding streaming response:', error);
-        if (!response.headersSent) {
-            return response.status(500).send({ error: true });
-        } else {
-            return response.end();
-        }
     }
 }
 
@@ -161,7 +152,6 @@ async function sendClaudeRequest(request, response) {
                 'x-api-key': apiKey,
                 ...additionalHeaders,
             },
-            timeout: 0,
         });
 
         if (request.body.stream) {
@@ -174,6 +164,7 @@ async function sendClaudeRequest(request, response) {
                 return response.status(generateResponse.status).send({ error: true });
             }
 
+            /** @type {any} */
             const generateResponseJson = await generateResponse.json();
             const responseText = generateResponseJson?.content?.[0]?.text || '';
             console.log('Claude response:', generateResponseJson);
@@ -221,7 +212,6 @@ async function sendScaleRequest(request, response) {
                 'Content-Type': 'application/json',
                 'Authorization': `Basic ${apiKey}`,
             },
-            timeout: 0,
         });
 
         if (!generateResponse.ok) {
@@ -229,6 +219,7 @@ async function sendScaleRequest(request, response) {
             return response.status(500).send({ error: true });
         }
 
+        /** @type {any} */
         const generateResponseJson = await generateResponse.json();
         console.log('Scale response:', generateResponseJson);
 
@@ -344,7 +335,6 @@ async function sendMakerSuiteRequest(request, response) {
                 'Content-Type': 'application/json',
             },
             signal: controller.signal,
-            timeout: 0,
         });
         // have to do this because of their busted ass streaming endpoint
         if (stream) {
@@ -363,6 +353,7 @@ async function sendMakerSuiteRequest(request, response) {
                 return response.status(generateResponse.status).send({ error: true });
             }
 
+            /** @type {any} */
             const generateResponseJson = await generateResponse.json();
 
             const candidates = generateResponseJson?.candidates;
@@ -626,7 +617,7 @@ async function sendCohereRequest(request, response) {
     }
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/status', jsonParser, async function (request, response_getstatus_openai) {
     if (!request.body) return response_getstatus_openai.sendStatus(400);
@@ -685,6 +676,7 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         });
 
         if (response.ok) {
+            /** @type {any} */
             const data = await response.json();
             response_getstatus_openai.send(data);
 
@@ -988,7 +980,6 @@ router.post('/generate', jsonParser, function (request, response) {
         },
         body: JSON.stringify(requestBody),
         signal: controller.signal,
-        timeout: 0,
     };
 
     console.log(requestBody);
@@ -1014,6 +1005,7 @@ router.post('/generate', jsonParser, function (request, response) {
             }
 
             if (fetchResponse.ok) {
+                /** @type {any} */
                 let json = await fetchResponse.json();
                 response.send(json);
                 console.log(json);
@@ -1069,6 +1061,3 @@ router.post('/generate', jsonParser, function (request, response) {
     }
 });
 
-module.exports = {
-    router,
-};

@@ -1,13 +1,15 @@
-const path = require('path');
-const fs = require('fs');
-const mime = require('mime-types');
-const express = require('express');
-const sanitize = require('sanitize-filename');
-const fetch = require('node-fetch').default;
-const { finished } = require('stream/promises');
-const { UNSAFE_EXTENSIONS } = require('../constants');
-const { jsonParser } = require('../express-common');
-const { clientRelativePath } = require('../util');
+import path from 'node:path';
+import fs from 'node:fs';
+import { finished } from 'node:stream/promises';
+
+import mime from 'mime-types';
+import express from 'express';
+import sanitize from 'sanitize-filename';
+import fetch from 'node-fetch';
+
+import { UNSAFE_EXTENSIONS } from '../constants.js';
+import { jsonParser } from '../express-common.js';
+import { clientRelativePath } from '../util.js';
 
 const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d', 'vrm', 'character', 'temp'];
 
@@ -16,7 +18,7 @@ const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d', 'vrm', 'character'
  * @param {string} inputFilename Input filename
  * @returns {{error: boolean, message?: string}} Whether validation failed, and why if so
  */
-function validateAssetFileName(inputFilename) {
+export function validateAssetFileName(inputFilename) {
     if (!/^[a-zA-Z0-9_\-.]+$/.test(inputFilename)) {
         return {
             error: true,
@@ -77,7 +79,7 @@ function getFiles(dir, files = []) {
 
 /**
  * Ensure that the asset folders exist.
- * @param {import('../users').UserDirectoryList} directories - The user's directories
+ * @param {import('../users.js').UserDirectoryList} directories - The user's directories
  */
 function ensureFoldersExist(directories) {
     const folderPath = path.join(directories.assets);
@@ -93,7 +95,7 @@ function ensureFoldersExist(directories) {
     }
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 /**
  * HTTP POST handler function to retrieve name of all files of a given folder path.
@@ -366,5 +368,3 @@ router.post('/character', jsonParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
-
-module.exports = { router, validateAssetFileName };

@@ -1,7 +1,13 @@
-const yaml = require('yaml');
-const fs = require('fs');
-const storage = require('node-persist');
-const users = require('./src/users');
+import fs from 'node:fs';
+import process from 'node:process';
+import yaml from 'yaml';
+import storage from 'node-persist';
+import {
+    initUserStorage,
+    getPasswordSalt,
+    getPasswordHash,
+    toKey,
+} from './src/users.js';
 
 const userAccount = process.argv[2];
 const userPassword = process.argv[3];
@@ -22,7 +28,7 @@ async function initStorage() {
         process.exit(1);
     }
 
-    await users.initUserStorage(dataRoot);
+    await initUserStorage(dataRoot);
 }
 
 async function main() {
@@ -31,22 +37,22 @@ async function main() {
     /**
      * @type {import('./src/users').User}
      */
-    const user = await storage.get(users.toKey(userAccount));
+    const user = await storage.get(toKey(userAccount));
 
     if (!user) {
         console.error(`User "${userAccount}" not found.`);
         process.exit(1);
     }
 
-    if (!user.enabled)  {
+    if (!user.enabled) {
         console.log('User is disabled. Enabling...');
         user.enabled = true;
     }
 
     if (userPassword) {
         console.log('Setting new password...');
-        const salt = users.getPasswordSalt();
-        const passwordHash = users.getPasswordHash(userPassword, salt);
+        const salt = getPasswordSalt();
+        const passwordHash = getPasswordHash(userPassword, salt);
         user.password = passwordHash;
         user.salt = salt;
     } else {
@@ -55,7 +61,7 @@ async function main() {
         user.salt = '';
     }
 
-    await storage.setItem(users.toKey(userAccount), user);
+    await storage.setItem(toKey(userAccount), user);
     console.log('User recovered. A program will exit now.');
 }
 

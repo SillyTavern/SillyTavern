@@ -1,10 +1,12 @@
-const path = require('path');
-const fs = require('fs');
-const express = require('express');
-const { default: simpleGit } = require('simple-git');
-const sanitize = require('sanitize-filename');
-const { PUBLIC_DIRECTORIES } = require('../constants');
-const { jsonParser } = require('../express-common');
+import path from 'node:path';
+import fs from 'node:fs';
+
+import express from 'express';
+import sanitize from 'sanitize-filename';
+import { default as simpleGit } from 'simple-git';
+
+import { PUBLIC_DIRECTORIES } from '../constants.js';
+import { jsonParser } from '../express-common.js';
 
 /**
  * This function extracts the extension information from the manifest file.
@@ -47,7 +49,7 @@ async function checkIfRepoIsUpToDate(extensionPath) {
     };
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 /**
  * HTTP POST handler function to clone a git repository from a provided URL, read the extension manifest,
@@ -240,5 +242,3 @@ router.get('/discover', jsonParser, function (request, response) {
 
     return response.send(extensions);
 });
-
-module.exports = { router };

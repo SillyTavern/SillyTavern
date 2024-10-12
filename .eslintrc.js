@@ -16,6 +16,9 @@ module.exports = {
             env: {
                 node: true,
             },
+            parserOptions: {
+                sourceType: 'module',
+            },
         },
         {
             files: ['src/**/*.mjs'],

@@ -3,15 +3,27 @@
 // 1. node plugins.js update
 // 2. node plugins.js install <plugin-git-url>
 // More operations coming soon.
-const { default: git } = require('simple-git');
-const fs = require('fs');
-const path = require('path');
-const { color } = require('./src/util');
+import fs from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 
+import { default as git } from 'simple-git';
+import { color } from './src/util.js';
+
+const __dirname = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
 process.chdir(__dirname);
 const pluginsPath = './plugins';
 
 const command = process.argv[2];
+
+if (!command) {
+    console.log('Usage: node plugins.js <command>');
+    console.log('Commands:');
+    console.log('  update - Update all installed plugins');
+    console.log('  install <plugin-git-url> - Install plugin from a Git URL');
+    process.exit(1);
+}
 
 if (command === 'update') {
     console.log(color.magenta('Updating all plugins'));

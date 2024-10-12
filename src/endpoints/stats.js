@@ -1,14 +1,15 @@
-const fs = require('fs');
-const path = require('path');
-const express = require('express');
-const writeFileAtomic = require('write-file-atomic');
-const crypto = require('crypto');
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+
+import express from 'express';
+import writeFileAtomic from 'write-file-atomic';
 
 const readFile = fs.promises.readFile;
 const readdir = fs.promises.readdir;
 
-const { jsonParser } = require('../express-common');
-const { getAllUserHandles, getUserDirectories } = require('../users');
+import { jsonParser } from '../express-common.js';
+import { getAllUserHandles, getUserDirectories } from '../users.js';
 
 const STATS_FILE = 'stats.json';
 
@@ -146,7 +147,7 @@ async function collectAndCreateStats(chatsPath, charactersPath) {
  * @param {string} chatsPath Path to the directory containing the chat files.
  * @param {string} charactersPath Path to the directory containing the character files.
  */
-async function recreateStats(handle, chatsPath, charactersPath) {
+export async function recreateStats(handle, chatsPath, charactersPath) {
     console.log('Collecting and creating stats for user:', handle);
     const stats = await collectAndCreateStats(chatsPath, charactersPath);
     STATS.set(handle, stats);
@@ -157,7 +158,7 @@ async function recreateStats(handle, chatsPath, charactersPath) {
  * Loads the stats file into memory. If the file doesn't exist or is invalid,
  * initializes stats by collecting and creating them for each character.
  */
-async function init() {
+export async function init() {
     try {
         const userHandles = await getAllUserHandles();
         for (const handle of userHandles) {
@@ -209,7 +210,7 @@ async function saveStatsToFile() {
  * Attempts to save charStats to a file and then terminates the process.
  * If an error occurs during the file write, it logs the error before exiting.
  */
-async function onExit() {
+export async function onExit() {
     try {
         await saveStatsToFile();
     } catch (err) {
@@ -434,7 +435,7 @@ function calculateTotalGenTimeAndWordCount(
     };
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 /**
  * Handle a POST request to get the stats object
@@ -465,10 +466,3 @@ router.post('/update', jsonParser, function (request, response) {
     setCharStats(request.user.profile.handle, request.body);
     return response.sendStatus(200);
 });
-
-module.exports = {
-    router,
-    recreateStats,
-    init,
-    onExit,
-};

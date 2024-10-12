@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer';
+
 /**
  * Decodes a file name from Latin1 to UTF-8.
  * @param {string} str Input string
@@ -14,7 +16,7 @@ function decodeFileName(str) {
  * @param {import('express').Response} _res Response
  * @param {import('express').NextFunction} next Next middleware
  */
-function multerMonkeyPatch(req, _res, next) {
+export default function multerMonkeyPatch(req, _res, next) {
     try {
         if (req.file) {
             req.file.originalname = decodeFileName(req.file.originalname);
@@ -26,5 +28,3 @@ function multerMonkeyPatch(req, _res, next) {
         next();
     }
 }
-
-module.exports = multerMonkeyPatch;

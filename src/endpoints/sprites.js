@@ -1,16 +1,17 @@
+import fs from 'node:fs';
+import path from 'node:path';
 
-const fs = require('fs');
-const path = require('path');
-const express = require('express');
-const mime = require('mime-types');
-const sanitize = require('sanitize-filename');
-const writeFileAtomicSync = require('write-file-atomic').sync;
-const { getImageBuffers } = require('../util');
-const { jsonParser, urlencodedParser } = require('../express-common');
+import express from 'express';
+import mime from 'mime-types';
+import sanitize from 'sanitize-filename';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
+
+import { getImageBuffers } from '../util.js';
+import { jsonParser, urlencodedParser } from '../express-common.js';
 
 /**
  * Gets the path to the sprites folder for the provided character name
- * @param {import('../users').UserDirectoryList} directories - User directories
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
  * @param {string} name - The name of the character
  * @param {boolean} isSubfolder - Whether the name contains a subfolder
  * @returns {string | null} The path to the sprites folder. Null if the name is invalid.
@@ -41,11 +42,11 @@ function getSpritesPath(directories, name, isSubfolder) {
  * Imports base64 encoded sprites from RisuAI character data.
  * The sprites are saved in the character's sprites folder.
  * The additionalAssets and emotions are removed from the data.
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {object} data RisuAI character data
  * @returns {void}
  */
-function importRisuSprites(directories, data) {
+export function importRisuSprites(directories, data) {
     try {
         const name = data?.data?.name;
         const risuData = data?.data?.extensions?.risuai;
@@ -106,7 +107,7 @@ function importRisuSprites(directories, data) {
     }
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 router.get('/get', jsonParser, function (request, response) {
     const name = String(request.query.name);
@@ -259,8 +260,3 @@ router.post('/upload', urlencodedParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
-
-module.exports = {
-    router,
-    importRisuSprites,
-};

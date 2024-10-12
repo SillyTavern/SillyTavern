@@ -1,9 +1,11 @@
-const fetch = require('node-fetch').default;
-const express = require('express');
-const { readSecret, SECRET_KEYS } = require('./secrets');
-const { jsonParser } = require('../express-common');
+import fetch from 'node-fetch';
+import express from 'express';
 
-const router = express.Router();
+import { decode } from 'html-entities';
+import { readSecret, SECRET_KEYS } from './secrets.js';
+import { jsonParser } from '../express-common.js';
+
+export const router = express.Router();
 
 // Cosplay as Chrome
 const visitHeaders = {
@@ -29,7 +31,6 @@ const visitHeaders = {
  * @returns {Promise<string>} Transcript text
  */
 async function extractTranscript(videoPageBody, lang) {
-    const he = require('he');
     const RE_XML_TRANSCRIPT = /<text start="([^"]*)" dur="([^"]*)">([^<]*)<\/text>/g;
     const splittedHTML = videoPageBody.split('"captions":');
 
@@ -84,7 +85,7 @@ async function extractTranscript(videoPageBody, lang) {
         lang: lang ?? captions.captionTracks[0].languageCode,
     }));
     // The text is double-encoded
-    const transcriptText = transcript.map((line) => he.decode(he.decode(line.text))).join(' ');
+    const transcriptText = transcript.map((line) => decode(decode(line.text))).join(' ');
     return transcriptText;
 }
 
@@ -263,5 +264,3 @@ router.post('/visit', jsonParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
-
-module.exports = { router };
