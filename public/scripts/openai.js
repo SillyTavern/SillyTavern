@@ -798,9 +798,7 @@ async function populateDialogueExamples(prompts, chatCompletion, messageExamples
         const newExampleChat = await Message.createAsync('system', substituteParams(oai_settings.new_example_chat_prompt), 'newChat');
         for (const dialogue of [...messageExamples]) {
             const dialogueIndex = messageExamples.indexOf(dialogue);
-            let examplesAdded = 0;
-
-            if (chatCompletion.canAfford(newExampleChat)) chatCompletion.insert(newExampleChat, 'dialogueExamples');
+            const chatMessages = [];
 
             for (let promptIndex = 0; promptIndex < dialogue.length; promptIndex++) {
                 const prompt = dialogue[promptIndex];
@@ -810,15 +808,17 @@ async function populateDialogueExamples(prompts, chatCompletion, messageExamples
 
                 const chatMessage = await Message.createAsync(role, content, identifier);
                 await chatMessage.setName(prompt.name);
-                if (!chatCompletion.canAfford(chatMessage)) {
-                    break;
-                }
-                chatCompletion.insert(chatMessage, 'dialogueExamples');
-                examplesAdded++;
+                chatMessages.push(chatMessage);
             }
 
-            if (0 === examplesAdded) {
-                chatCompletion.removeLastFrom('dialogueExamples');
+            const canAffordBlock = chatCompletion.canAfford(newExampleChat) && chatCompletion.canAffordAll(chatMessages);
+            if (!canAffordBlock) {
+                break;
+            }
+
+            chatCompletion.insert(newExampleChat, 'dialogueExamples');
+            for (const chatMessage of chatMessages) {
+                chatCompletion.insert(chatMessage, 'dialogueExamples');
             }
         }
     }
