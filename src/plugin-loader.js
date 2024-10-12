@@ -1,8 +1,9 @@
-const fs = require('fs');
-const path = require('path');
-const url = require('url');
-const express = require('express');
-const { getConfigValue } = require('./util');
+import fs from 'node:fs';
+import path from 'node:path';
+import url from 'node:url';
+
+import express from 'express';
+import { getConfigValue } from './util.js';
 const enableServerPlugins = getConfigValue('enableServerPlugins', false);
 
 /**
@@ -16,7 +17,7 @@ const loadedPlugins = new Map();
  * @param {string} file Path to file
  * @returns {boolean} True if file is a CommonJS module
  */
-const isCommonJS = (file) => path.extname(file) === '.js';
+const isCommonJS = (file) => path.extname(file) === '.js' || path.extname(file) === '.cjs';
 
 /**
  * Determine if a file is an ECMAScript module.
@@ -32,9 +33,9 @@ const isESModule = (file) => path.extname(file) === '.mjs';
  * @returns {Promise<Function>} Promise that resolves when all plugins are loaded. Resolves to a "cleanup" function to
  * be called before the server shuts down.
  */
-async function loadPlugins(app, pluginsPath) {
+export async function loadPlugins(app, pluginsPath) {
     const exitHooks = [];
-    const emptyFn = () => {};
+    const emptyFn = () => { };
 
     // Server plugins are disabled.
     if (!enableServerPlugins) {
@@ -89,19 +90,15 @@ async function loadFromDirectory(app, pluginDirectoryPath, exitHooks) {
         }
     }
 
-    // Plugin is a CommonJS module.
-    const cjsFilePath = path.join(pluginDirectoryPath, 'index.js');
-    if (fs.existsSync(cjsFilePath)) {
-        if (await loadFromFile(app, cjsFilePath, exitHooks)) {
-            return;
-        }
-    }
+    // Plugin is a module file.
+    const fileTypes = ['index.js', 'index.cjs', 'index.mjs'];
 
-    // Plugin is an ECMAScript module.
-    const esmFilePath = path.join(pluginDirectoryPath, 'index.mjs');
-    if (fs.existsSync(esmFilePath)) {
-        if (await loadFromFile(app, esmFilePath, exitHooks)) {
-            return;
+    for (const fileType of fileTypes) {
+        const filePath = path.join(pluginDirectoryPath, fileType);
+        if (fs.existsSync(filePath)) {
+            if (await loadFromFile(app, filePath, exitHooks)) {
+                return;
+            }
         }
     }
 }
@@ -217,7 +214,3 @@ async function initPlugin(app, plugin, exitHooks) {
 
     return true;
 }
-
-module.exports = {
-    loadPlugins,
-};

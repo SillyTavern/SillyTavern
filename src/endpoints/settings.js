@@ -1,12 +1,14 @@
-const fs = require('fs');
-const path = require('path');
-const express = require('express');
-const _ = require('lodash');
-const writeFileAtomicSync = require('write-file-atomic').sync;
-const { SETTINGS_FILE } = require('../constants');
-const { getConfigValue, generateTimestamp, removeOldBackups } = require('../util');
-const { jsonParser } = require('../express-common');
-const { getAllUserHandles, getUserDirectories } = require('../users');
+import fs from 'node:fs';
+import path from 'node:path';
+
+import express from 'express';
+import _ from 'lodash';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
+
+import { SETTINGS_FILE } from '../constants.js';
+import { getConfigValue, generateTimestamp, removeOldBackups } from '../util.js';
+import { jsonParser } from '../express-common.js';
+import { getAllUserHandles, getUserDirectories } from '../users.js';
 
 const ENABLE_EXTENSIONS = getConfigValue('enableExtensions', true);
 const ENABLE_EXTENSIONS_AUTO_UPDATE = getConfigValue('enableExtensionsAutoUpdate', true);
@@ -190,7 +192,7 @@ function getLatestBackup(handle) {
     return path.join(userDirectories.backups, latestBackup);
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/save', jsonParser, function (request, response) {
     try {
@@ -357,8 +359,6 @@ router.post('/restore-snapshot', jsonParser, async (request, response) => {
 /**
  * Initializes the settings endpoint
  */
-async function init() {
+export async function init() {
     await backupSettings();
 }
-
-module.exports = { router, init };

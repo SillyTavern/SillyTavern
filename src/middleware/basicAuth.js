@@ -2,9 +2,10 @@
  * When applied, this middleware will ensure the request contains the required header for basic authentication and only
  * allow access to the endpoint after successful authentication.
  */
-const { getAllUserHandles, toKey, getPasswordHash } = require('../users.js');
-const { getConfig, getConfigValue } = require('../util.js');
-const storage = require('node-persist');
+import { Buffer } from 'node:buffer';
+import storage from 'node-persist';
+import { getAllUserHandles, toKey, getPasswordHash } from '../users.js';
+import { getConfig, getConfigValue } from '../util.js';
 
 const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false);
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
@@ -49,4 +50,4 @@ const basicAuthMiddleware = async function (request, response, callback) {
     return unauthorizedResponse(response);
 };
 
-module.exports = basicAuthMiddleware;
+export default basicAuthMiddleware;

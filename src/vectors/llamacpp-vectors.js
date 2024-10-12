@@ -1,15 +1,15 @@
-const fetch = require('node-fetch').default;
-const { setAdditionalHeadersByType } = require('../additional-headers');
-const { TEXTGEN_TYPES } = require('../constants');
+import fetch from 'node-fetch';
+import { setAdditionalHeadersByType } from '../additional-headers.js';
+import { TEXTGEN_TYPES } from '../constants.js';
 
 /**
  * Gets the vector for the given text from LlamaCpp
  * @param {string[]} texts - The array of texts to get the vectors for
  * @param {string} apiUrl - The API URL
- * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-async function getLlamaCppBatchVector(texts, apiUrl, directories) {
+export async function getLlamaCppBatchVector(texts, apiUrl, directories) {
     const url = new URL(apiUrl);
     url.pathname = '/v1/embeddings';
 
@@ -30,6 +30,7 @@ async function getLlamaCppBatchVector(texts, apiUrl, directories) {
         throw new Error(`LlamaCpp: Failed to get vector for text: ${response.statusText} ${responseText}`);
     }
 
+    /** @type {any} */
     const data = await response.json();
 
     if (!Array.isArray(data?.data)) {
@@ -47,15 +48,10 @@ async function getLlamaCppBatchVector(texts, apiUrl, directories) {
  * Gets the vector for the given text from LlamaCpp
  * @param {string} text - The text to get the vector for
  * @param {string} apiUrl - The API URL
- * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[]>} - The vector for the text
  */
-async function getLlamaCppVector(text, apiUrl, directories) {
+export async function getLlamaCppVector(text, apiUrl, directories) {
     const vectors = await getLlamaCppBatchVector([text], apiUrl, directories);
     return vectors[0];
 }
-
-module.exports = {
-    getLlamaCppBatchVector,
-    getLlamaCppVector,
-};

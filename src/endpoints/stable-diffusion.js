@@ -1,13 +1,15 @@
-const express = require('express');
-const fetch = require('node-fetch').default;
-const sanitize = require('sanitize-filename');
-const { getBasicAuthHeader, delay, getHexString } = require('../util.js');
-const fs = require('fs');
-const path = require('path');
-const writeFileAtomicSync = require('write-file-atomic').sync;
-const { jsonParser } = require('../express-common');
-const { readSecret, SECRET_KEYS } = require('./secrets.js');
-const FormData = require('form-data');
+import fs from 'node:fs';
+import path from 'node:path';
+
+import express from 'express';
+import fetch from 'node-fetch';
+import sanitize from 'sanitize-filename';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
+import FormData from 'form-data';
+
+import { getBasicAuthHeader, delay } from '../util.js';
+import { jsonParser } from '../express-common.js';
+import { readSecret, SECRET_KEYS } from './secrets.js';
 
 /**
  * Gets the comfy workflows.
@@ -21,7 +23,7 @@ function getComfyWorkflows(directories) {
         .sort(Intl.Collator().compare);
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/ping', jsonParser, async (request, response) => {
     try {
@@ -63,6 +65,7 @@ router.post('/upscalers', jsonParser, async (request, response) => {
                 throw new Error('SD WebUI returned an error.');
             }
 
+            /** @type {any} */
             const data = await result.json();
             const names = data.map(x => x.name);
             return names;
@@ -83,6 +86,7 @@ router.post('/upscalers', jsonParser, async (request, response) => {
                 throw new Error('SD WebUI returned an error.');
             }
 
+            /** @type {any} */
             const data = await result.json();
             const names = data.map(x => x.name);
             return names;
@@ -116,6 +120,7 @@ router.post('/vaes', jsonParser, async (request, response) => {
             throw new Error('SD WebUI returned an error.');
         }
 
+        /** @type {any} */
         const data = await result.json();
         const names = data.map(x => x.model_name);
         return response.send(names);
@@ -141,6 +146,7 @@ router.post('/samplers', jsonParser, async (request, response) => {
             throw new Error('SD WebUI returned an error.');
         }
 
+        /** @type {any} */
         const data = await result.json();
         const names = data.map(x => x.name);
         return response.send(names);
@@ -167,6 +173,7 @@ router.post('/schedulers', jsonParser, async (request, response) => {
             throw new Error('SD WebUI returned an error.');
         }
 
+        /** @type {any} */
         const data = await result.json();
         const names = data.map(x => x.name);
         return response.send(names);
@@ -192,6 +199,7 @@ router.post('/models', jsonParser, async (request, response) => {
             throw new Error('SD WebUI returned an error.');
         }
 
+        /** @type {any} */
         const data = await result.json();
         const models = data.map(x => ({ value: x.title, text: x.title }));
         return response.send(models);
@@ -212,6 +220,7 @@ router.post('/get-model', jsonParser, async (request, response) => {
                 'Authorization': getBasicAuthHeader(request.body.auth),
             },
         });
+        /** @type {any} */
         const data = await result.json();
         return response.send(data['sd_model_checkpoint']);
     } catch (error) {
@@ -231,7 +240,6 @@ router.post('/set-model', jsonParser, async (request, response) => {
                 headers: {
                     'Authorization': getBasicAuthHeader(request.body.auth),
                 },
-                timeout: 0,
             });
             const data = await result.json();
             return data;
@@ -251,7 +259,6 @@ router.post('/set-model', jsonParser, async (request, response) => {
                 'Content-Type': 'application/json',
                 'Authorization': getBasicAuthHeader(request.body.auth),
             },
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -262,6 +269,7 @@ router.post('/set-model', jsonParser, async (request, response) => {
         const CHECK_INTERVAL = 2000;
 
         for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+            /** @type {any} */
             const progressState = await getProgress();
 
             const progress = progressState['progress'];
@@ -306,8 +314,6 @@ router.post('/generate', jsonParser, async (request, response) => {
                 'Content-Type': 'application/json',
                 'Authorization': getBasicAuthHeader(request.body.auth),
             },
-            timeout: 0,
-            // @ts-ignore
             signal: controller.signal,
         });
 
@@ -343,6 +349,7 @@ router.post('/sd-next/upscalers', jsonParser, async (request, response) => {
         // Vlad doesn't provide Latent Upscalers in the API, so we have to hardcode them here
         const latentUpscalers = ['Latent', 'Latent (antialiased)', 'Latent (bicubic)', 'Latent (bicubic antialiased)', 'Latent (nearest)', 'Latent (nearest-exact)'];
 
+        /** @type {any} */
         const data = await result.json();
         const names = data.map(x => x.name);
 
@@ -385,6 +392,7 @@ comfy.post('/samplers', jsonParser, async (request, response) => {
             throw new Error('ComfyUI returned an error.');
         }
 
+        /** @type {any} */
         const data = await result.json();
         return response.send(data.KSampler.input.required.sampler_name[0]);
     } catch (error) {
@@ -402,6 +410,7 @@ comfy.post('/models', jsonParser, async (request, response) => {
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
         }
+        /** @type {any} */
         const data = await result.json();
         return response.send(data.CheckpointLoaderSimple.input.required.ckpt_name[0].map(it => ({ value: it, text: it })));
     } catch (error) {
@@ -420,6 +429,7 @@ comfy.post('/schedulers', jsonParser, async (request, response) => {
             throw new Error('ComfyUI returned an error.');
         }
 
+        /** @type {any} */
         const data = await result.json();
         return response.send(data.KSampler.input.required.scheduler[0]);
     } catch (error) {
@@ -438,6 +448,7 @@ comfy.post('/vaes', jsonParser, async (request, response) => {
             throw new Error('ComfyUI returned an error.');
         }
 
+        /** @type {any} */
         const data = await result.json();
         return response.send(data.VAELoader.input.required.vae_name[0]);
     } catch (error) {
@@ -519,6 +530,7 @@ comfy.post('/generate', jsonParser, async (request, response) => {
             throw new Error('ComfyUI returned an error.');
         }
 
+        /** @type {any} */
         const data = await promptResult.json();
         const id = data.prompt_id;
         let item;
@@ -529,6 +541,7 @@ comfy.post('/generate', jsonParser, async (request, response) => {
             if (!result.ok) {
                 throw new Error('ComfyUI returned an error.');
             }
+            /** @type {any} */
             const history = await result.json();
             item = history[id];
             if (item) {
@@ -631,6 +644,7 @@ together.post('/generate', jsonParser, async (request, response) => {
             return response.sendStatus(500);
         }
 
+        /** @type {any} */
         const data = await result.json();
         console.log('TogetherAI response:', data);
 
@@ -679,6 +693,8 @@ drawthings.post('/get-model', jsonParser, async (request, response) => {
         const result = await fetch(url, {
             method: 'GET',
         });
+
+        /** @type {any} */
         const data = await result.json();
 
         return response.send(data['model']);
@@ -696,6 +712,8 @@ drawthings.post('/get-upscaler', jsonParser, async (request, response) => {
         const result = await fetch(url, {
             method: 'GET',
         });
+
+        /** @type {any} */
         const data = await result.json();
 
         return response.send(data['upscaler']);
@@ -724,7 +742,6 @@ drawthings.post('/generate', jsonParser, async (request, response) => {
                 'Content-Type': 'application/json',
                 'Authorization': auth,
             },
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -846,7 +863,6 @@ stability.post('/generate', jsonParser, async (request, response) => {
                 'Accept': 'image/*',
             },
             body: formData,
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -993,5 +1009,3 @@ router.use('/pollinations', pollinations);
 router.use('/stability', stability);
 router.use('/blockentropy', blockentropy);
 router.use('/huggingface', huggingface);
-
-module.exports = { router };

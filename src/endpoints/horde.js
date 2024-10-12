@@ -1,14 +1,14 @@
-const fetch = require('node-fetch').default;
-const express = require('express');
-const { AIHorde, ModelGenerationInputStableSamplers, ModelInterrogationFormTypes, HordeAsyncRequestStates } = require('@zeldafan0225/ai_horde');
-const { getVersion, delay, Cache } = require('../util');
-const { readSecret, SECRET_KEYS } = require('./secrets');
-const { jsonParser } = require('../express-common');
+import fetch from 'node-fetch';
+import express from 'express';
+import { AIHorde, ModelGenerationInputStableSamplers, ModelInterrogationFormTypes, HordeAsyncRequestStates } from '@zeldafan0225/ai_horde';
+import { getVersion, delay, Cache } from '../util.js';
+import { readSecret, SECRET_KEYS } from './secrets.js';
+import { jsonParser } from '../express-common.js';
 
 const ANONYMOUS_KEY = '0000000000';
 const HORDE_TEXT_MODEL_METADATA_URL = 'https://raw.githubusercontent.com/db0/AI-Horde-text-model-reference/main/db.json';
 const cache = new Cache(60 * 1000);
-const router = express.Router();
+export const router = express.Router();
 
 /**
  * Returns the AIHorde client agent.
@@ -403,5 +403,3 @@ router.post('/generate-image', jsonParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
-
-module.exports = { router };

@@ -1,6 +1,6 @@
-const fetch = require('node-fetch').default;
-const { setAdditionalHeadersByType } = require('../additional-headers');
-const { TEXTGEN_TYPES } = require('../constants');
+import fetch from 'node-fetch';
+import { setAdditionalHeadersByType } from '../additional-headers.js';
+import { TEXTGEN_TYPES } from '../constants.js';
 
 /**
  * Gets the vector for the given text from Ollama
@@ -8,10 +8,10 @@ const { TEXTGEN_TYPES } = require('../constants');
  * @param {string} apiUrl - The API URL
  * @param {string} model - The model to use
  * @param {boolean} keep - Keep the model loaded in memory
- * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-async function getOllamaBatchVector(texts, apiUrl, model, keep, directories) {
+export async function getOllamaBatchVector(texts, apiUrl, model, keep, directories) {
     const result = [];
     for (const text of texts) {
         const vector = await getOllamaVector(text, apiUrl, model, keep, directories);
@@ -26,10 +26,10 @@ async function getOllamaBatchVector(texts, apiUrl, model, keep, directories) {
  * @param {string} apiUrl - The API URL
  * @param {string} model - The model to use
  * @param {boolean} keep - Keep the model loaded in memory
- * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[]>} - The vector for the text
  */
-async function getOllamaVector(text, apiUrl, model, keep, directories) {
+export async function getOllamaVector(text, apiUrl, model, keep, directories) {
     const url = new URL(apiUrl);
     url.pathname = '/api/embeddings';
 
@@ -54,6 +54,7 @@ async function getOllamaVector(text, apiUrl, model, keep, directories) {
         throw new Error(`Ollama: Failed to get vector for text: ${response.statusText} ${responseText}`);
     }
 
+    /** @type {any} */
     const data = await response.json();
 
     if (!Array.isArray(data?.embedding)) {
@@ -62,8 +63,3 @@ async function getOllamaVector(text, apiUrl, model, keep, directories) {
 
     return data.embedding;
 }
-
-module.exports = {
-    getOllamaBatchVector,
-    getOllamaVector,
-};

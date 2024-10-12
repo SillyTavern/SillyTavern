@@ -1,13 +1,14 @@
-const fs = require('fs');
-const path = require('path');
-const express = require('express');
-const sanitize = require('sanitize-filename');
+import fs from 'node:fs';
+import path from 'node:path';
 
-const { jsonParser, urlencodedParser } = require('../express-common');
-const { invalidateThumbnail } = require('./thumbnails');
-const { getImages } = require('../util');
+import express from 'express';
+import sanitize from 'sanitize-filename';
 
-const router = express.Router();
+import { jsonParser, urlencodedParser } from '../express-common.js';
+import { invalidateThumbnail } from './thumbnails.js';
+import { getImages } from '../util.js';
+
+export const router = express.Router();
 
 router.post('/all', jsonParser, function (request, response) {
     var images = getImages(request.user.directories.backgrounds);
@@ -72,5 +73,3 @@ router.post('/upload', urlencodedParser, function (request, response) {
         response.sendStatus(500);
     }
 });
-
-module.exports = { router };
