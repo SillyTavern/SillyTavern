@@ -5046,7 +5046,7 @@ body:not(.movingUI) .drawer-content.maximized {
 }
 
 .fillLeft .scrollableInner {
-    padding: 0.5em 1em 0.5em 0.5em
+    padding: 0.5em 0.75em 0.5em 0.5em
 }
 
 .drawer-content select {
