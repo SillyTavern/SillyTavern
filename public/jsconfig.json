@@ -12,7 +12,8 @@
         "**/dist/**",
         "**/.git/**",
         "lib/**",
-        "**/*.min.js"
+        "**/*.min.js",
+        "scripts/extensions/quick-reply/lib/**"
     ],
     "typeAcquisition": {
         "include": [

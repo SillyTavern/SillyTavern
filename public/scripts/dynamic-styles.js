@@ -148,7 +148,7 @@ export function initDynamicStyles() {
     // Start observing the head for any new added stylesheets
     observer.observe(document.head, {
         childList: true,
-        subtree: true
+        subtree: true,
     });
 
     // Process all stylesheets on initial load

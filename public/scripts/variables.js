@@ -1,6 +1,5 @@
-import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessage, system_message_types } from '../script.js';
+import { chat_metadata, getCurrentChatId, saveSettingsDebounced } from '../script.js';
 import { extension_settings, saveMetadataDebounced } from './extensions.js';
-import { callGenericPopup, POPUP_TYPE } from './popup.js';
 import { executeSlashCommandsWithOptions } from './slash-commands.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortController.js';
