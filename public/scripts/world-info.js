@@ -2261,7 +2261,7 @@ export function parseRegexFromString(input) {
     }
 }
 
-async function getWorldEntry(name, data, entry) {
+export async function getWorldEntry(name, data, entry) {
     if (!data.entries[entry.uid]) {
         return;
     }
