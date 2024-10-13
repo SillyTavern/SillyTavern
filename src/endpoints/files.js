@@ -1,12 +1,15 @@
-const path = require('path');
-const fs = require('fs');
-const writeFileSyncAtomic = require('write-file-atomic').sync;
-const express = require('express');
-const sanitize = require('sanitize-filename');
-const router = express.Router();
-const { validateAssetFileName } = require('./assets');
-const { jsonParser } = require('../express-common');
-const { clientRelativePath } = require('../util');
+import path from 'node:path';
+import fs from 'node:fs';
+
+import express from 'express';
+import sanitize from 'sanitize-filename';
+import { sync as writeFileSyncAtomic } from 'write-file-atomic';
+
+import { validateAssetFileName } from './assets.js';
+import { jsonParser } from '../express-common.js';
+import { clientRelativePath } from '../util.js';
+
+export const router = express.Router();
 
 router.post('/sanitize-filename', jsonParser, async (request, response) => {
     try {
@@ -97,5 +100,3 @@ router.post('/verify', jsonParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
-
-module.exports = { router };

@@ -340,9 +340,9 @@ body.no-blur * {
     backdrop-filter: unset !important;
 }
 
-body.no-blur #send_form.no-connection {
+/* body.no-blur #send_form.no-connection {
     background-color: rgba(100, 0, 0, 0.9) !important;
-}
+} */
 
 body.no-blur #bg1,
 body.no-blur #bg_custom {

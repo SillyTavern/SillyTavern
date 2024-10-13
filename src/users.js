@@ -1,22 +1,25 @@
 // Native Node Modules
-const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
-const os = require('os');
+import path from 'node:path';
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import os from 'node:os';
+import process from 'node:process';
+import { Buffer } from 'node:buffer';
 
 // Express and other dependencies
-const storage = require('node-persist');
-const express = require('express');
-const mime = require('mime-types');
-const archiver = require('archiver');
-const writeFileAtomicSync = require('write-file-atomic').sync;
-const _ = require('lodash');
+import storage from 'node-persist';
+import express from 'express';
+import mime from 'mime-types';
+import archiver from 'archiver';
+import _ from 'lodash';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
-const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE } = require('./constants');
-const { getConfigValue, color, delay, setConfigValue, generateTimestamp } = require('./util');
-const { readSecret, writeSecret } = require('./endpoints/secrets');
+import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE } from './constants.js';
+import { getConfigValue, color, delay, setConfigValue, generateTimestamp } from './util.js';
+import { readSecret, writeSecret } from './endpoints/secrets.js';
+import { getContentOfType } from './endpoints/content-manager.js';
 
-const KEY_PREFIX = 'user:';
+export const KEY_PREFIX = 'user:';
 const AVATAR_PREFIX = 'avatar:';
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
 const AUTHELIA_AUTH = getConfigValue('autheliaAuth', false);
@@ -92,9 +95,9 @@ const STORAGE_KEYS = {
 
 /**
  * Ensures that the content directories exist.
- * @returns {Promise<import('./users').UserDirectoryList[]>} - The list of user directories
+ * @returns {Promise<import('./users.js').UserDirectoryList[]>} - The list of user directories
  */
-async function ensurePublicDirectoriesExist() {
+export async function ensurePublicDirectoriesExist() {
     for (const dir of Object.values(PUBLIC_DIRECTORIES)) {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
@@ -115,9 +118,9 @@ async function ensurePublicDirectoriesExist() {
 
 /**
  * Gets a list of all user directories.
- * @returns {Promise<import('./users').UserDirectoryList[]>} - The list of user directories
+ * @returns {Promise<import('./users.js').UserDirectoryList[]>} - The list of user directories
  */
-async function getUserDirectoriesList() {
+export async function getUserDirectoriesList() {
     const userHandles = await getAllUserHandles();
     const directoriesList = userHandles.map(handle => getUserDirectories(handle));
     return directoriesList;
@@ -126,7 +129,7 @@ async function getUserDirectoriesList() {
 /**
  * Perform migration from the old user data format to the new one.
  */
-async function migrateUserData() {
+export async function migrateUserData() {
     const publicDirectory = path.join(process.cwd(), 'public');
 
     // No need to migrate if the characters directory doesn't exists
@@ -328,14 +331,13 @@ async function migrateUserData() {
     console.log(color.green('Migration completed!'));
 }
 
-async function migrateSystemPrompts() {
+export async function migrateSystemPrompts() {
     /**
      * Gets the default system prompts.
      * @returns {Promise<any[]>} - The list of default system prompts
      */
     async function getDefaultSystemPrompts() {
         try {
-            const { getContentOfType } = await import('./endpoints/content-manager.js');
             return getContentOfType('sysprompt', 'json');
         } catch {
             return [];
@@ -391,7 +393,7 @@ async function migrateSystemPrompts() {
  * @param {string} handle User handle
  * @returns {string} The key for the user storage
  */
-function toKey(handle) {
+export function toKey(handle) {
     return `${KEY_PREFIX}${handle}`;
 }
 
@@ -400,7 +402,7 @@ function toKey(handle) {
  * @param {string} handle User handle
  * @returns {string} The key for the avatar storage
  */
-function toAvatarKey(handle) {
+export function toAvatarKey(handle) {
     return `${AVATAR_PREFIX}${handle}`;
 }
 
@@ -409,7 +411,7 @@ function toAvatarKey(handle) {
  * @param {string} dataRoot The root directory for user data
  * @returns {Promise<void>}
  */
-async function initUserStorage(dataRoot) {
+export async function initUserStorage(dataRoot) {
     global.DATA_ROOT = dataRoot;
     console.log('Using data root:', color.green(global.DATA_ROOT));
     console.log();
@@ -430,7 +432,7 @@ async function initUserStorage(dataRoot) {
  * Get the cookie secret from the config. If it doesn't exist, generate a new one.
  * @returns {string} The cookie secret
  */
-function getCookieSecret() {
+export function getCookieSecret() {
     let secret = getConfigValue(STORAGE_KEYS.cookieSecret);
 
     if (!secret) {
@@ -446,7 +448,7 @@ function getCookieSecret() {
  * Generates a random password salt.
  * @returns {string} The password salt
  */
-function getPasswordSalt() {
+export function getPasswordSalt() {
     return crypto.randomBytes(16).toString('base64');
 }
 
@@ -454,7 +456,7 @@ function getPasswordSalt() {
  * Get the session name for the current server.
  * @returns {string} The session name
  */
-function getCookieSessionName() {
+export function getCookieSessionName() {
     // Get server hostname and hash it to generate a session suffix
     const suffix = crypto.createHash('sha256').update(os.hostname()).digest('hex').slice(0, 8);
     return `session-${suffix}`;
@@ -466,7 +468,7 @@ function getCookieSessionName() {
  * @param {string} salt Salt to use for hashing
  * @returns {string} Hashed password
  */
-function getPasswordHash(password, salt) {
+export function getPasswordHash(password, salt) {
     return crypto.scryptSync(password.normalize(), salt, 64).toString('base64');
 }
 
@@ -475,7 +477,7 @@ function getPasswordHash(password, salt) {
  * @param {import('express').Request} [request] HTTP request object
  * @returns {string} The CSRF secret
  */
-function getCsrfSecret(request) {
+export function getCsrfSecret(request) {
     if (!request || !request.user) {
         return ANON_CSRF_SECRET;
     }
@@ -494,7 +496,7 @@ function getCsrfSecret(request) {
  * Gets a list of all user handles.
  * @returns {Promise<string[]>} - The list of user handles
  */
-async function getAllUserHandles() {
+export async function getAllUserHandles() {
     const keys = await storage.keys(x => x.key.startsWith(KEY_PREFIX));
     const handles = keys.map(x => x.replace(KEY_PREFIX, ''));
     return handles;
@@ -505,7 +507,7 @@ async function getAllUserHandles() {
  * @param {string} handle User handle
  * @returns {UserDirectoryList} User directories
  */
-function getUserDirectories(handle) {
+export function getUserDirectories(handle) {
     if (DIRECTORIES_CACHE.has(handle)) {
         const cache = DIRECTORIES_CACHE.get(handle);
         if (cache) {
@@ -526,7 +528,7 @@ function getUserDirectories(handle) {
  * @param {string} handle User handle
  * @returns {Promise<string>} User avatar URL
  */
-async function getUserAvatar(handle) {
+export async function getUserAvatar(handle) {
     try {
         // Check if the user has a custom avatar
         const avatarKey = toAvatarKey(handle);
@@ -563,7 +565,7 @@ async function getUserAvatar(handle) {
  * @param {import('express').Request} request Request object
  * @returns {boolean} Whether the user should be redirected to the login page
  */
-function shouldRedirectToLogin(request) {
+export function shouldRedirectToLogin(request) {
     return ENABLE_ACCOUNTS && !request.user;
 }
 
@@ -574,7 +576,7 @@ function shouldRedirectToLogin(request) {
  * @param {boolean} basicAuthMode If Basic auth mode is enabled
  * @returns {Promise<boolean>} Whether auto-login was performed
  */
-async function tryAutoLogin(request, basicAuthMode) {
+export async function tryAutoLogin(request, basicAuthMode) {
     if (!ENABLE_ACCOUNTS || request.user || !request.session) {
         return false;
     }
@@ -693,7 +695,7 @@ async function basicUserLogin(request) {
  * @param {import('express').Response} response Response object
  * @param {import('express').NextFunction} next Next function
  */
-async function setUserDataMiddleware(request, response, next) {
+export async function setUserDataMiddleware(request, response, next) {
     // If user accounts are disabled, use the default user
     if (!ENABLE_ACCOUNTS) {
         const handle = DEFAULT_USER.handle;
@@ -751,7 +753,7 @@ async function setUserDataMiddleware(request, response, next) {
  * @param {import('express').Response} response Response object
  * @param {import('express').NextFunction} next Next function
  */
-function requireLoginMiddleware(request, response, next) {
+export function requireLoginMiddleware(request, response, next) {
     if (!request.user) {
         return response.sendStatus(403);
     }
@@ -787,7 +789,7 @@ function createRouteHandler(directoryFn) {
  * @param {import('express').NextFunction} next Next function
  * @returns {any}
  */
-function requireAdminMiddleware(request, response, next) {
+export function requireAdminMiddleware(request, response, next) {
     if (!request.user) {
         return response.sendStatus(403);
     }
@@ -806,7 +808,7 @@ function requireAdminMiddleware(request, response, next) {
  * @param {import('express').Response} response Express response object to write to
  * @returns {Promise<void>} Promise that resolves when the archive is created
  */
-async function createBackupArchive(handle, response) {
+export async function createBackupArchive(handle, response) {
     const directories = getUserDirectories(handle);
 
     console.log('Backup requested for', handle);
@@ -855,7 +857,7 @@ async function getAllUsers() {
  * Gets all of the enabled users.
  * @returns {Promise<User[]>}
  */
-async function getAllEnabledUsers() {
+export async function getAllEnabledUsers() {
     const users = await getAllUsers();
     return users.filter(x => x.enabled);
 }
@@ -863,7 +865,7 @@ async function getAllEnabledUsers() {
 /**
  * Express router for serving files from the user's directories.
  */
-const router = express.Router();
+export const router = express.Router();
 router.use('/backgrounds/*', createRouteHandler(req => req.user.directories.backgrounds));
 router.use('/characters/*', createRouteHandler(req => req.user.directories.characters));
 router.use('/User%20Avatars/*', createRouteHandler(req => req.user.directories.avatars));
@@ -871,31 +873,3 @@ router.use('/assets/*', createRouteHandler(req => req.user.directories.assets));
 router.use('/user/images/*', createRouteHandler(req => req.user.directories.userImages));
 router.use('/user/files/*', createRouteHandler(req => req.user.directories.files));
 router.use('/scripts/extensions/third-party/*', createRouteHandler(req => req.user.directories.extensions));
-
-module.exports = {
-    KEY_PREFIX,
-    toKey,
-    toAvatarKey,
-    initUserStorage,
-    ensurePublicDirectoriesExist,
-    getUserDirectoriesList,
-    getAllUserHandles,
-    getUserDirectories,
-    setUserDataMiddleware,
-    requireLoginMiddleware,
-    requireAdminMiddleware,
-    migrateUserData,
-    migrateSystemPrompts,
-    getPasswordSalt,
-    getPasswordHash,
-    getCsrfSecret,
-    getCookieSecret,
-    getCookieSessionName,
-    getUserAvatar,
-    shouldRedirectToLogin,
-    createBackupArchive,
-    tryAutoLogin,
-    getAllUsers,
-    getAllEnabledUsers,
-    router,
-};

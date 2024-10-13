@@ -26,6 +26,7 @@ import { debounce_timeout } from '../../constants.js';
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
+import { GoogleTranslateTtsProvider } from './google-translate.js';
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000;
@@ -91,6 +92,7 @@ const ttsProviders = {
     'CosyVoice (Unofficial)': CosyVoiceProvider,
     Edge: EdgeTtsProvider,
     ElevenLabs: ElevenLabsTtsProvider,
+    'Google Translate': GoogleTranslateTtsProvider,
     GSVI: GSVITtsProvider,
     'GPT-SoVITS-V2 (Unofficial)': GptSovitsV2Provider,
     Novel: NovelTtsProvider,

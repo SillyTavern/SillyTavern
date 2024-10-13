@@ -464,7 +464,7 @@ export function evaluateMacros(content, env) {
     content = content.replace(/{{firstIncludedMessageId}}/gi, () => String(getFirstIncludedMessageId() ?? ''));
     content = content.replace(/{{lastSwipeId}}/gi, () => String(getLastSwipeId() ?? ''));
     content = content.replace(/{{currentSwipeId}}/gi, () => String(getCurrentSwipeId() ?? ''));
-    content = content.replace(/{{reverse\:(.+?)}}/gi, (_, str) => Array.from(str).reverse().join(''));
+    content = content.replace(/{{reverse:(.+?)}}/gi, (_, str) => Array.from(str).reverse().join(''));
 
     content = content.replace(/\{\{\/\/([\s\S]*?)\}\}/gm, '');
 

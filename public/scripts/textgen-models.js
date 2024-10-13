@@ -4,7 +4,6 @@ import { textgenerationwebui_settings as textgen_settings, textgen_types } from 
 import { tokenizers } from './tokenizers.js';
 import { renderTemplateAsync } from './templates.js';
 import { POPUP_TYPE, callGenericPopup } from './popup.js';
-import { PAGINATION_TEMPLATE } from './utils.js';
 
 let mancerModels = [];
 let togetherModels = [];

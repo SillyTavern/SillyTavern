@@ -1,11 +1,13 @@
 /**
  * Scripts to be done before starting the server for the first time.
  */
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const yaml = require('yaml');
-const _ = require('lodash');
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import process from 'node:process';
+import yaml from 'yaml';
+import _ from 'lodash';
+import { createRequire } from 'node:module';
 
 /**
  * Colorizes console output.
@@ -59,13 +61,15 @@ function convertConfig() {
 
         try {
             console.log(color.blue('Converting config.conf to config.yaml. Your old config.conf will be renamed to config.conf.bak'));
-            const config = require(path.join(process.cwd(), './config.conf'));
-            fs.copyFileSync('./config.conf', './config.conf.bak');
-            fs.rmSync('./config.conf');
+            fs.renameSync('./config.conf', './config.conf.cjs'); // Force loading as CommonJS
+            const require = createRequire(import.meta.url);
+            const config = require(path.join(process.cwd(), './config.conf.cjs'));
+            fs.copyFileSync('./config.conf.cjs', './config.conf.bak');
+            fs.rmSync('./config.conf.cjs');
             fs.writeFileSync('./config.yaml', yaml.stringify(config));
             console.log(color.green('Conversion successful. Please check your config.yaml and fix it if necessary.'));
         } catch (error) {
-            console.error(color.red('FATAL: Config conversion failed. Please check your config.conf file and try again.'));
+            console.error(color.red('FATAL: Config conversion failed. Please check your config.conf file and try again.'), error);
             return;
         }
     }
@@ -75,7 +79,7 @@ function convertConfig() {
  * Compares the current config.yaml with the default config.yaml and adds any missing values.
  */
 function addMissingConfigValues() {
-    try  {
+    try {
         const defaultConfig = yaml.parse(fs.readFileSync(path.join(process.cwd(), './default/config.yaml'), 'utf8'));
         let config = yaml.parse(fs.readFileSync(path.join(process.cwd(), './config.yaml'), 'utf8'));
 
@@ -132,7 +136,7 @@ function createDefaultFiles() {
 function getMd5Hash(data) {
     return crypto
         .createHash('md5')
-        .update(data)
+        .update(new Uint8Array(data))
         .digest('hex');
 }
 

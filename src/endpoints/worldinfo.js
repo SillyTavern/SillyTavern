@@ -1,19 +1,20 @@
-const fs = require('fs');
-const path = require('path');
-const express = require('express');
-const sanitize = require('sanitize-filename');
-const writeFileAtomicSync = require('write-file-atomic').sync;
+import fs from 'node:fs';
+import path from 'node:path';
 
-const { jsonParser, urlencodedParser } = require('../express-common');
+import express from 'express';
+import sanitize from 'sanitize-filename';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
+
+import { jsonParser, urlencodedParser } from '../express-common.js';
 
 /**
  * Reads a World Info file and returns its contents
- * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {string} worldInfoName Name of the World Info file
  * @param {boolean} allowDummy If true, returns an empty object if the file doesn't exist
  * @returns {object} World Info file contents
  */
-function readWorldInfoFile(directories, worldInfoName, allowDummy) {
+export function readWorldInfoFile(directories, worldInfoName, allowDummy) {
     const dummyObject = allowDummy ? { entries: {} } : null;
 
     if (!worldInfoName) {
@@ -33,7 +34,7 @@ function readWorldInfoFile(directories, worldInfoName, allowDummy) {
     return worldInfo;
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/get', jsonParser, (request, response) => {
     if (!request.body?.name) {
@@ -122,5 +123,3 @@ router.post('/edit', jsonParser, (request, response) => {
 
     return response.send({ ok: true });
 });
-
-module.exports = { router, readWorldInfoFile };

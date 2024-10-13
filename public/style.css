@@ -613,6 +613,15 @@ body .panelControlBar {
     min-width: 55px;
     justify-content: flex-end;
     gap: 0px;
+    transition: all 250ms;
+}
+
+.zoomed_avatar .panelControlBar {
+opacity:0;
+}
+
+.zoomed_avatar:hover .panelControlBar {
+    opacity:1;
 }
 
 .panelControlBar .drag-grabber {
@@ -681,9 +690,9 @@ body .panelControlBar {
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
 }
 
-#send_form.no-connection {
+/* #send_form.no-connection {
     background-color: var(--crimson70a) !important;
-}
+} */
 
 #nonQRFormItems {
     padding: 0;
@@ -2953,10 +2962,11 @@ input[type=search]:focus::-webkit-search-cancel-button {
     bottom: 0;
     position: relative;
     word-break: break-word;
-    background-color: var(--black50a);
+    background-color: var(--SmartThemeBlurTintColor);
     font-size: calc(var(--fontScale) * 0.9em);
     max-height: 50%;
     overflow-y: clip;
+    border-radius: 0 0 7px 7px;
 }
 
 .bg_example[custom="true"] .BGSampleTitle {
@@ -3423,7 +3433,7 @@ grammarly-extension {
 
 .menu_button {
     color: var(--SmartThemeBodyColor);
-    background-color: var(--black50a);
+    background-color: var(--SmartThemeBlurTintColor);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 5px;
     padding: 3px 5px;
@@ -3953,8 +3963,8 @@ input[type="range"]::-webkit-slider-thumb {
     opacity: 0.5;
     margin: 0 5px;
     text-align: center;
-    border-radius: 100%;
-    box-shadow: 0 0 3px black;
+/*     border-radius: 100%;
+    box-shadow: 0 0 3px black; */
     transition: all 250ms;
 }
 
@@ -4542,7 +4552,12 @@ h2 {
 
 a {
     color: orange;
+    color: var(--SmartThemeQuoteColor);
     text-decoration: none;
+}
+
+a:hover {
+    filter: brightness(1.25);
 }
 
 #export_format_popup {

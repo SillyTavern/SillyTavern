@@ -1,14 +1,23 @@
-const express = require('express');
-const fetch = require('node-fetch').default;
-const _ = require('lodash');
-const Readable = require('stream').Readable;
+import { Readable } from 'node:stream';
+import fetch from 'node-fetch';
+import express from 'express';
+import _ from 'lodash';
 
-const { jsonParser } = require('../../express-common');
-const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS, INFERMATICAI_KEYS, OPENROUTER_KEYS, VLLM_KEYS, DREAMGEN_KEYS, FEATHERLESS_KEYS } = require('../../constants');
-const { forwardFetchResponse, trimV1, getConfigValue } = require('../../util');
-const { setAdditionalHeaders } = require('../../additional-headers');
+import { jsonParser } from '../../express-common.js';
+import {
+    TEXTGEN_TYPES,
+    TOGETHERAI_KEYS,
+    OLLAMA_KEYS,
+    INFERMATICAI_KEYS,
+    OPENROUTER_KEYS,
+    VLLM_KEYS,
+    DREAMGEN_KEYS,
+    FEATHERLESS_KEYS,
+} from '../../constants.js';
+import { forwardFetchResponse, trimV1, getConfigValue } from '../../util.js';
+import { setAdditionalHeaders } from '../../additional-headers.js';
 
-const router = express.Router();
+export const router = express.Router();
 
 /**
  * Special boy's steaming routine. Wrap this abomination into proper SSE stream.
@@ -19,6 +28,10 @@ const router = express.Router();
  */
 async function parseOllamaStream(jsonStream, request, response) {
     try {
+        if (!jsonStream.body) {
+            throw new Error('No body in the response');
+        }
+
         let partialData = '';
         jsonStream.body.on('data', (data) => {
             const chunk = data.toString();
@@ -144,6 +157,7 @@ router.post('/status', jsonParser, async function (request, response) {
             return response.status(400);
         }
 
+        /** @type {any} */
         let data = await modelsReply.json();
 
         if (request.body.legacy_api) {
@@ -181,6 +195,7 @@ router.post('/status', jsonParser, async function (request, response) {
                 const modelInfoReply = await fetch(modelInfoUrl, args);
 
                 if (modelInfoReply.ok) {
+                    /** @type {any} */
                     const modelInfo = await modelInfoReply.json();
                     console.log('Ooba model info:', modelInfo);
 
@@ -197,6 +212,7 @@ router.post('/status', jsonParser, async function (request, response) {
                 const modelInfoReply = await fetch(modelInfoUrl, args);
 
                 if (modelInfoReply.ok) {
+                    /** @type {any} */
                     const modelInfo = await modelInfoReply.json();
                     console.log('Tabby model info:', modelInfo);
 
@@ -350,6 +366,7 @@ router.post('/generate', jsonParser, async function (request, response) {
             const completionsReply = await fetch(url, args);
 
             if (completionsReply.ok) {
+                /** @type {any} */
                 const data = await completionsReply.json();
                 console.log('Endpoint response:', data);
 
@@ -406,7 +423,6 @@ ollama.post('/download', jsonParser, async function (request, response) {
                 name: name,
                 stream: false,
             }),
-            timeout: 0,
         });
 
         if (!fetchResponse.ok) {
@@ -439,7 +455,6 @@ ollama.post('/caption-image', jsonParser, async function (request, response) {
                 images: [request.body.image],
                 stream: false,
             }),
-            timeout: 0,
         });
 
         if (!fetchResponse.ok) {
@@ -447,6 +462,7 @@ ollama.post('/caption-image', jsonParser, async function (request, response) {
             return response.status(500).send({ error: true });
         }
 
+        /** @type {any} */
         const data = await fetchResponse.json();
         console.log('Ollama caption response:', data);
 
@@ -478,7 +494,6 @@ llamacpp.post('/caption-image', jsonParser, async function (request, response) {
         const fetchResponse = await fetch(`${baseUrl}/completion`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            timeout: 0,
             body: JSON.stringify({
                 prompt: `USER:[img-1]${String(request.body.prompt).trim()}\nASSISTANT:`,
                 image_data: [{ data: request.body.image, id: 1 }],
@@ -493,6 +508,7 @@ llamacpp.post('/caption-image', jsonParser, async function (request, response) {
             return response.status(500).send({ error: true });
         }
 
+        /** @type {any} */
         const data = await fetchResponse.json();
         console.log('LlamaCpp caption response:', data);
 
@@ -522,7 +538,6 @@ llamacpp.post('/props', jsonParser, async function (request, response) {
 
         const fetchResponse = await fetch(`${baseUrl}/props`, {
             method: 'GET',
-            timeout: 0,
         });
 
         if (!fetchResponse.ok) {
@@ -557,7 +572,6 @@ llamacpp.post('/slots', jsonParser, async function (request, response) {
         if (request.body.action === 'info') {
             fetchResponse = await fetch(`${baseUrl}/slots`, {
                 method: 'GET',
-                timeout: 0,
             });
         } else {
             if (!/^\d+$/.test(request.body.id_slot)) {
@@ -570,7 +584,6 @@ llamacpp.post('/slots', jsonParser, async function (request, response) {
             fetchResponse = await fetch(`${baseUrl}/slots/${request.body.id_slot}?action=${request.body.action}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                timeout: 0,
                 body: JSON.stringify({
                     filename: request.body.action !== 'erase' ? `${request.body.filename}` : undefined,
                 }),
@@ -614,6 +627,7 @@ tabby.post('/download', jsonParser, async function (request, response) {
         });
 
         if (permissionResponse.ok) {
+            /** @type {any} */
             const permissionJson = await permissionResponse.json();
 
             if (permissionJson['permission'] !== 'admin') {
@@ -641,5 +655,3 @@ tabby.post('/download', jsonParser, async function (request, response) {
 router.use('/ollama', ollama);
 router.use('/llamacpp', llamacpp);
 router.use('/tabby', tabby);
-
-module.exports = { router };

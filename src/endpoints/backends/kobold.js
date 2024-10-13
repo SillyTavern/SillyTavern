@@ -1,13 +1,13 @@
-const express = require('express');
-const fetch = require('node-fetch').default;
-const fs = require('fs');
+import fs from 'node:fs';
+import express from 'express';
+import fetch from 'node-fetch';
 
-const { jsonParser, urlencodedParser } = require('../../express-common');
-const { forwardFetchResponse, delay } = require('../../util');
-const { getOverrideHeaders, setAdditionalHeaders, setAdditionalHeadersByType } = require('../../additional-headers');
-const { TEXTGEN_TYPES } = require('../../constants');
+import { jsonParser, urlencodedParser } from '../../express-common.js';
+import { forwardFetchResponse, delay } from '../../util.js';
+import { getOverrideHeaders, setAdditionalHeaders, setAdditionalHeadersByType } from '../../additional-headers.js';
+import { TEXTGEN_TYPES } from '../../constants.js';
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/generate', jsonParser, async function (request, response_generate) {
     if (!request.body) return response_generate.sendStatus(400);
@@ -96,7 +96,7 @@ router.post('/generate', jsonParser, async function (request, response_generate)
     for (let i = 0; i < MAX_RETRIES; i++) {
         try {
             const url = request.body.streaming ? `${request.body.api_server}/extra/generate/stream` : `${request.body.api_server}/v1/generate`;
-            const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
+            const response = await fetch(url, { method: 'POST', ...args });
 
             if (request.body.streaming) {
                 // Pipe remote SSE stream to Express response
@@ -156,6 +156,7 @@ router.post('/status', jsonParser, async function (request, response) {
 
     const result = {};
 
+    /** @type {any} */
     const [koboldUnitedResponse, koboldExtraResponse, koboldModelResponse] = await Promise.all([
         // We catch errors both from the response not having a successful HTTP status and from JSON parsing failing
 
@@ -237,5 +238,3 @@ router.post('/transcribe-audio', urlencodedParser, async function (request, resp
         response.status(500).send('Internal server error');
     }
 });
-
-module.exports = { router };

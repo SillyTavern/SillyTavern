@@ -1,6 +1,5 @@
-import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessage, system_message_types } from '../script.js';
+import { chat_metadata, getCurrentChatId, saveSettingsDebounced } from '../script.js';
 import { extension_settings, saveMetadataDebounced } from './extensions.js';
-import { callGenericPopup, POPUP_TYPE } from './popup.js';
 import { executeSlashCommandsWithOptions } from './slash-commands.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortController.js';
@@ -514,7 +513,8 @@ export function parseBooleanOperands(args) {
             return '';
         }
 
-        const operandNumber = Number(operand);
+        // parseFloat will return NaN for spaces.
+        const operandNumber = parseFloat(operand);
 
         if (!isNaN(operandNumber)) {
             return operandNumber;
@@ -834,6 +834,40 @@ function randValuesCallback(from, to, args) {
         return Math.floor(value);
     }
     return value;
+}
+
+function customSortComparitor(a, b) {
+    if (typeof a != typeof b) {
+        a = typeof a;
+        b = typeof b;
+    }
+    return a > b ? 1 : a < b ? -1 : 0;
+}
+
+function sortArrayObjectCallback(args, value) {
+    let parsedValue;
+    if (typeof value == 'string') {
+        try {
+            parsedValue = JSON.parse(value);
+        } catch {
+            // return the original input if it was invalid
+            return value;
+        }
+    } else {
+        parsedValue = value;
+    }
+    if (Array.isArray(parsedValue)) {
+        // always sort lists by value
+        parsedValue.sort(customSortComparitor);
+    } else if (typeof parsedValue == 'object') {
+        let keysort = args.keysort;
+        if (isFalseBoolean(keysort)) {
+            parsedValue = Object.keys(parsedValue).sort(function (a, b) { return customSortComparitor(parsedValue[a], parsedValue[b]); });
+        } else {
+            parsedValue = Object.keys(parsedValue).sort(customSortComparitor);
+        }
+    }
+    return JSON.stringify(parsedValue);
 }
 
 /**
@@ -2104,6 +2138,51 @@ export function registerVariableCommands() {
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/len Lorem ipsum | /echo</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'sort',
+        callback: sortArrayObjectCallback,
+        returns: 'the sorted list or dictionary keys',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({ name: 'keysort',
+                description: 'whether to sort by key or value; ignored for lists',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: ['true', 'false'],
+                defaultValue: 'true',
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'value',
+                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY],
+                isRequired: true,
+                forceEnum: false,
+            }),
+        ],
+        helpString: `
+            <div>
+                Sorts a list or dictionary in ascending order and passes the result down the pipe.
+                <ul>
+                    <li>
+                        For lists, returns the list sorted by value.
+                    </li>
+                    <li>
+                        For dictionaries, returns the ordered list of keys after sorting. Setting keysort=false means keys are sorted by associated value.
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/sort [5,3,4,1,2] | /echo</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/sort keysort=false {"a": 1, "d": 3, "c": 2, "b": 5} | /echo</code></pre>
                     </li>
                 </ul>
             </div>

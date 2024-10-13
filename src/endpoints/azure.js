@@ -1,9 +1,10 @@
-const { readSecret, SECRET_KEYS } = require('./secrets');
-const fetch = require('node-fetch').default;
-const express = require('express');
-const { jsonParser } = require('../express-common');
+import fetch from 'node-fetch';
+import { Router } from 'express';
 
-const router = express.Router();
+import { readSecret, SECRET_KEYS } from './secrets.js';
+import { jsonParser } from '../express-common.js';
+
+export const router = Router();
 
 router.post('/list', jsonParser, async (req, res) => {
     try {
@@ -86,7 +87,3 @@ router.post('/generate', jsonParser, async (req, res) => {
         return res.sendStatus(500);
     }
 });
-
-module.exports = {
-    router,
-};
