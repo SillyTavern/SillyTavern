@@ -6360,6 +6360,7 @@ export function changeMainAPI() {
     //console.log(selectedVal);
     const apiElements = {
         'koboldhorde': {
+            apiStreaming: $('#NULL_SELECTOR'),
             apiSettings: $('#kobold_api-settings'),
             apiConnector: $('#kobold_horde'),
             apiPresets: $('#kobold_api-presets'),
@@ -6368,6 +6369,7 @@ export function changeMainAPI() {
             amountGenElem: $('#amount_gen_block'),
         },
         'kobold': {
+            apiStreaming: $('#streaming_kobold_block'),
             apiSettings: $('#kobold_api-settings'),
             apiConnector: $('#kobold_api'),
             apiPresets: $('#kobold_api-presets'),
@@ -6376,6 +6378,7 @@ export function changeMainAPI() {
             amountGenElem: $('#amount_gen_block'),
         },
         'textgenerationwebui': {
+            apiStreaming: $('#streaming_textgenerationwebui_block'),
             apiSettings: $('#textgenerationwebui_api-settings'),
             apiConnector: $('#textgenerationwebui_api'),
             apiPresets: $('#textgenerationwebui_api-presets'),
@@ -6384,6 +6387,7 @@ export function changeMainAPI() {
             amountGenElem: $('#amount_gen_block'),
         },
         'novel': {
+            apiStreaming: $('#streaming_novel_block'),
             apiSettings: $('#novel_api-settings'),
             apiConnector: $('#novel_api'),
             apiPresets: $('#novel_api-presets'),
@@ -6392,6 +6396,7 @@ export function changeMainAPI() {
             amountGenElem: $('#amount_gen_block'),
         },
         'openai': {
+            apiStreaming: $('#NULL_SELECTOR'),
             apiSettings: $('#openai_settings'),
             apiConnector: $('#openai_api'),
             apiPresets: $('#openai_api-presets'),
@@ -6414,12 +6419,14 @@ export function changeMainAPI() {
         apiObj.apiConnector.css('display', 'none');
         apiObj.apiRanges.css('display', 'none');
         apiObj.apiPresets.css('display', 'none');
+        apiObj.apiStreaming.css('display', 'none');
     }
 
     //then, find and enable the active item.
     //This is split out of the loop so that different apis can share settings divs
     let activeItem = apiElements[selectedVal];
 
+    activeItem.apiStreaming.css('display', 'block');
     activeItem.apiSettings.css('display', 'block');
     activeItem.apiConnector.css('display', 'block');
     activeItem.apiRanges.css('display', 'block');
@@ -6436,17 +6443,6 @@ export function changeMainAPI() {
     }
 
     //custom because streaming has been moved up under response tokens, which exists inside common settings block
-    if (selectedVal === 'textgenerationwebui') {
-        $('#streaming_textgenerationwebui_block').css('display', 'block');
-    } else {
-        $('#streaming_textgenerationwebui_block').css('display', 'none');
-    }
-    if (selectedVal === 'kobold') {
-        $('#streaming_kobold_block').css('display', 'block');
-    } else {
-        $('#streaming_kobold_block').css('display', 'none');
-    }
-
     if (selectedVal === 'novel') {
         $('#ai_module_block_novel').css('display', 'block');
     } else {

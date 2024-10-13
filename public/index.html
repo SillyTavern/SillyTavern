@@ -7,6 +7,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, viewport-fit=cover, initial-scale=1, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="darkreader-lock">
     <meta name="robots" content="noindex, nofollow" />
     <style>
@@ -87,97 +88,134 @@
                     <div class="flex-container flexNoGap" id="ai_response_configuration">
                         <div id="respective-presets-block" class="width100p">
                             <div id="kobold_api-presets">
-                                <h4 class="margin0"><span data-i18n="kobldpresets">Kobold Presets</span>
-                                    <a href="https://docs.sillytavern.app/usage/api-connections/koboldai/" class="notes-link" target="_blank">
-                                        <span class="fa-solid fa-circle-question note-link-span"></span>
-                                    </a>
-                                </h4>
+                                <div class="margin0 title_restorable standoutHeader">
+                                    <strong>
+                                        <span data-i18n="kobldpresets">Kobold Presets</span>
+                                        <a href="https://docs.sillytavern.app/usage/api-connections/koboldai/" class="notes-link" target="_blank">
+                                            <span class="fa-solid fa-circle-question note-link-span"></span>
+                                        </a>
+                                    </strong>
+
+                                    <div class="flex-container gap3px">
+                                        <div data-preset-manager-import="kobold" class="margin0 menu_button_icon menu_button" title="Import preset" data-i18n="[title]Import preset">
+                                            <i class="fa-fw fa-solid fa-file-import"></i>
+                                        </div>
+                                        <div data-preset-manager-export="kobold" class="margin0 menu_button_icon menu_button" title="Export preset" data-i18n="[title]Export preset">
+                                            <i class="fa-fw fa-solid fa-file-export"></i>
+                                        </div>
+                                        <div data-preset-manager-delete="kobold" class="margin0 menu_button_icon menu_button" title="Delete the preset" data-i18n="[title]Delete the preset">
+                                            <i class="fa-fw fa-solid fa-trash-can"></i>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="flex-container flexNoGap">
                                     <select id="settings_preset" data-preset-manager-for="kobold" class="flex1 text_pole">
                                         <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
                                     </select>
-                                    <div class="flex-container marginLeft5 ">
+                                    <div class="flex-container marginLeft5 gap3px">
                                         <input type="file" hidden data-preset-manager-file="kobold" accept=".json, .settings">
-                                        <i data-preset-manager-update="kobold" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                        <i data-preset-manager-new="kobold" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
-                                        <i data-preset-manager-import="kobold" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                        <i data-preset-manager-export="kobold" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
-                                        <i data-preset-manager-restore="kobold" class="menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
-                                        <i data-preset-manager-delete="kobold" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                        <i data-preset-manager-update="kobold" class="menu_button fa-fw fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                        <i data-preset-manager-rename="kobold" class="menu_button fa-fw fa-pencil fa-solid" title="Rename current preset" data-i18n="[title]Rename current preset"></i>
+                                        <i data-preset-manager-new="kobold" class="menu_button fa-fw fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
+                                        <i data-preset-manager-restore="kobold" class="menu_button fa-fw fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
                                     </div>
                                 </div>
                             </div>
                             <div id="novel_api-presets">
-                                <h4 class="margin0">
-                                    <span data-i18n="novelaipresets">NovelAI Presets</span>
-                                    <a href="https://docs.sillytavern.app/usage/api-connections/novelai/" class="notes-link" target="_blank">
-                                        <span class="fa-solid fa-circle-question note-link-span"></span>
-                                    </a>
-                                </h4>
+                                <div class="margin0 title_restorable standoutHeader">
+                                    <strong>
+                                        <span data-i18n="novelaipresets">NovelAI Presets</span>
+                                        <a href="https://docs.sillytavern.app/usage/api-connections/novelai/" class="notes-link" target="_blank">
+                                            <span class="fa-solid fa-circle-question note-link-span"></span>
+                                        </a>
+                                    </strong>
+
+                                    <div class="flex-container gap3px">
+                                        <div data-preset-manager-import="novel" class="margin0 menu_button_icon menu_button" title="Import preset" data-i18n="[title]Import preset">
+                                            <i class="fa-fw fa-solid fa-file-import"></i>
+                                        </div>
+                                        <div data-preset-manager-export="novel"  class="margin0 menu_button_icon menu_button" title="Export preset" data-i18n="[title]Export preset">
+                                            <i class="fa-fw fa-solid fa-file-export"></i>
+                                        </div>
+                                        <div data-preset-manager-delete="novel" class="margin0 menu_button_icon menu_button" title="Delete the preset" data-i18n="[title]Delete the preset">
+                                            <i class="fa-fw fa-solid fa-trash-can"></i>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="flex-container flexNoGap">
                                     <select id="settings_preset_novel" class="flex1 text_pole" data-preset-manager-for="novel">
                                         <option value="gui" data-i18n="Default">Default</option>
                                     </select>
-                                    <div class="flex-container marginLeft5 ">
+                                    <div class="flex-container marginLeft5 gap3px">
                                         <input type="file" hidden data-preset-manager-file="novel" accept=".json, .settings, .preset">
-                                        <i data-preset-manager-update="novel" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                        <i data-preset-manager-new="novel" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
-                                        <i data-preset-manager-import="novel" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                        <i data-preset-manager-export="novel" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
-                                        <i data-preset-manager-restore="novel" class="menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
-                                        <i data-preset-manager-delete="novel" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                        <i data-preset-manager-update="novel" class="menu_button fa-fw fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                        <i data-preset-manager-rename="novel" class="menu_button fa-fw fa-pencil fa-solid" title="Rename current preset" data-i18n="[title]Rename current preset"></i>
+                                        <i data-preset-manager-new="novel" class="menu_button fa-fw fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
+                                        <i data-preset-manager-restore="novel" class="menu_button fa-fw fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
                                     </div>
                                 </div>
                             </div>
                             <div id="openai_api-presets">
                                 <div>
-                                    <h4 class="margin0"><span data-i18n="openaipresets">Chat Completion Presets</span></h4>
+                                    <div class="margin0 title_restorable standoutHeader">
+                                        <strong>
+                                            <span data-i18n="openaipresets">Chat Completion Presets</span>
+                                        </strong>
+
+                                        <div class="flex-container gap3px">
+                                            <div id="import_oai_preset" class="margin0 menu_button menu_button_icon" title="Import preset" data-i18n="[title]Import preset">
+                                                <i class="fa-fw fa-solid fa-file-import"></i>
+                                            </div>
+                                            <div id="export_oai_preset" class="margin0 menu_button menu_button_icon" title="Export preset" data-i18n="[title]Export preset">
+                                                <i class="fa-fw fa-solid fa-file-export"></i>
+                                            </div>
+                                            <div id="delete_oai_preset" class="margin0 menu_button menu_button_icon" title="Delete the preset" data-i18n="[title]Delete the preset">
+                                                <i class="fa-fw fa-solid fa-trash-can"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div class="flex-container flexNoGap">
                                         <select id="settings_preset_openai" class="flex1 text_pole" data-preset-manager-for="openai">
                                             <option value="gui" data-i18n="Default">Default</option>
                                         </select>
-                                        <div class="flex-container marginLeft5 ">
+                                        <div class="flex-container marginLeft5 gap3px">
                                             <input id="openai_preset_import_file" type="file" accept=".json,.settings" hidden />
-                                            <i id="update_oai_preset" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                            <i id="new_oai_preset" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
-                                            <i id="import_oai_preset" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                            <i id="export_oai_preset" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
-                                            <i id="delete_oai_preset" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                            <i id="update_oai_preset" class="menu_button fa-fw fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                            <i id="new_oai_preset" class="menu_button fa-fw fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div id="textgenerationwebui_api-presets">
-                                <h4 class="margin0"><span data-i18n="Text Completion presets">Text Completion presets</span></h4>
+                                <div class="margin0 title_restorable standoutHeader">
+                                    <strong>
+                                        <span data-i18n="Text Completion presets">Text Completion presets</span>
+                                    </strong>
+
+                                    <div class="flex-container gap3px">
+                                        <div data-preset-manager-import="textgenerationwebui" class="margin0 menu_button_icon menu_button" title="Import preset" data-i18n="[title]Import preset">
+                                            <i class="fa-fw fa-solid fa-file-import"></i>
+                                        </div>
+                                        <div data-preset-manager-export="textgenerationwebui" class="margin0 menu_button_icon menu_button" title="Export preset" data-i18n="[title]Export preset">
+                                            <i class="fa-fw fa-solid fa-file-export"></i>
+                                        </div>
+                                        <div data-preset-manager-delete="textgenerationwebui" class="margin0 menu_button_icon menu_button" title="Delete the preset" data-i18n="[title]Delete the preset">
+                                            <i class="fa-fw fa-solid fa-trash-can"></i>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="flex-container flexNoGap">
                                     <select id="settings_preset_textgenerationwebui" class="flex1 text_pole" data-preset-manager-for="textgenerationwebui">
                                     </select>
-                                    <div class="flex-container marginLeft5 ">
+                                    <div class="flex-container marginLeft5 gap3px">
                                         <input type="file" hidden data-preset-manager-file="textgenerationwebui" accept=".json, .settings">
-                                        <i data-preset-manager-update="textgenerationwebui" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                        <i data-preset-manager-new="textgenerationwebui" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
-                                        <i data-preset-manager-import="textgenerationwebui" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                        <i data-preset-manager-export="textgenerationwebui" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
-                                        <i data-preset-manager-restore="textgenerationwebui" class="menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
-                                        <i data-preset-manager-delete="textgenerationwebui" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                        <i data-preset-manager-update="textgenerationwebui" class="menu_button fa-fw fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                        <i data-preset-manager-rename="textgenerationwebui" class="menu_button fa-fw fa-pencil fa-solid" title="Rename current preset" data-i18n="[title]Rename current preset"></i>
+                                        <i data-preset-manager-new="textgenerationwebui" class="menu_button fa-fw fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
+                                        <i data-preset-manager-restore="textgenerationwebui" class="menu_button fa-fw fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div id="ai_module_block_novel" class="width100p">
-                            <div class="range-block">
-                                <div class="range-block-title justifyLeft" data-i18n="AI Module">
-                                    AI Module
-                                </div>
-                                <div class="toggle-description justifyLeft" data-i18n="Changes the style of the generated text.">
-                                    Changes the style of the generated text.
-                                </div>
-                                <select id="nai_prefix">
-                                    <option value="vanilla" data-i18n="No Module">No Module</option>
-                                    <option value="special_instruct" data-i18n="Instruct">Instruct</option>
-                                    <option value="special_proseaugmenter" data-i18n="Prose Augmenter">Prose Augmenter</option>
-                                    <option value="theme_textadventure" data-i18n="Text Adventure">Text Adventure</option>
-                                </select>
                             </div>
                         </div>
                         <div id="common-gen-settings-block" class="width100p">
@@ -204,6 +242,14 @@
                                             </small>
                                         </label>
                                     </div>
+                                    <div id="streaming_novel_block" class="flex-container alignitemscenter justifyCenter marginTop5">
+                                        <label class="checkbox_label" for="streaming_novel">
+                                            <input type="checkbox" id="streaming_novel" />
+                                            <small><span data-i18n="Streaming">Streaming</span>
+                                                <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Streaming_desc" title="Display the response bit by bit as it is generated.&#13;When this is off, responses will be displayed all at once when they are complete."></div>
+                                            </small>
+                                        </label>
+                                    </div>
                                 </div>
                                 <div id="max_context_block" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                     <small data-i18n="context size(tokens)">Context (tokens)</small>
@@ -224,6 +270,22 @@
                                     <span data-i18n="Max prompt cost:">Max prompt cost:</span> <span id="or_prompt_cost">&ndash;</span>
                                 </small>
                             </div>
+                            <div id="ai_module_block_novel" class="width100p">
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft" data-i18n="AI Module">
+                                        AI Module
+                                    </div>
+                                    <div class="toggle-description justifyLeft" data-i18n="Changes the style of the generated text.">
+                                        Changes the style of the generated text.
+                                    </div>
+                                    <select id="nai_prefix">
+                                        <option value="vanilla" data-i18n="No Module">No Module</option>
+                                        <option value="special_instruct" data-i18n="Instruct">Instruct</option>
+                                        <option value="special_proseaugmenter" data-i18n="Prose Augmenter">Prose Augmenter</option>
+                                        <option value="theme_textadventure" data-i18n="Text Adventure">Text Adventure</option>
+                                    </select>
+                                </div>
+                            </div>
                             <hr>
                         </div>
                         <div id="respective-ranges-and-temps" class="width100p">
@@ -232,19 +294,6 @@
                             </div>
                             -->
                             <div id="range_block_novel">
-                                <div class="range-block">
-                                    <label class="checkbox_label widthFreeExpand">
-                                        <input id="streaming_novel" type="checkbox" />
-                                        <span data-i18n="Streaming">Streaming</span>
-                                    </label>
-                                    <div class="toggle-description justifyLeft">
-                                        <span data-i18n="Display the response bit by bit as it is generated.">
-                                            Display the response bit by bit as it is generated.</span><br>
-                                        <span data-i18n="When this is off, responses will be displayed all at once when they are complete.">
-                                            When this is off, responses will be displayed all at once when they are complete.
-                                        </span>
-                                    </div>
-                                </div>
                                 <div class="range-block">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
@@ -5106,6 +5155,8 @@
     </div>
     <!-- various fullscreen popups -->
     <div name="templatesAndPopupsWrapper"> <!--this div is just for IDE sanity for quick collapsing-->
+        <!-- Point to this element when you need a no-op selector -->
+        <template id="NULL_SELECTOR" class="displayNone"></template>
         <div id="export_format_popup" class="list-group">
             <div class="export_format list-group-item" data-format="png">PNG</div>
             <div class="export_format list-group-item" data-format="json">JSON</div>
