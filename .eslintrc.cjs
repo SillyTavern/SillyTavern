@@ -21,6 +21,15 @@ module.exports = {
             },
         },
         {
+            files: ['*.cjs'],
+            parserOptions: {
+                sourceType: 'commonjs',
+            },
+            env: {
+                node: true,
+            },
+        },
+        {
             files: ['src/**/*.mjs'],
             parserOptions: {
                 sourceType: 'module',
@@ -74,6 +83,7 @@ module.exports = {
         'docker/**',
         'plugins/**',
         '**/*.min.js',
+        'public/scripts/extensions/quick-reply/lib/**',
     ],
     rules: {
         'no-unused-vars': ['error', { args: 'none' }],
