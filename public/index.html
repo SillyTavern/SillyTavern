@@ -5262,14 +5262,20 @@
                 <div class="inline-drawer-content">
                     <small data-i18n="Insert {{original}} into either box to include the respective default prompt from system settings.">Insert {{original}} into either box to include the respective default prompt from system settings.</small>
                     <div>
-                        <h4 data-i18n="Main Prompt">Main Prompt</h4>
+                        <h4 class="flex-container alignItemsBaseline">
+                            <span data-i18n="Main Prompt">Main Prompt</span>
+                            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="system_prompt_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                        </h4>
                         <textarea id="system_prompt_textarea" name="system_prompt" data-i18n="[placeholder]Any contents here will replace the default Main Prompt used for this character. (v2 spec: system_prompt)" placeholder="Any contents here will replace the default Main Prompt used for this character.&#10;(v2 spec: system_prompt)" form="form_create" class="text_pole" autocomplete="off" rows="3"></textarea>
                         <div class="extension_token_counter">
                             <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="system_prompt_textarea">counting...</span>
                         </div>
                     </div>
                     <div>
-                        <h4 data-i18n="Post-History Instructions">Post-History Instructions</h4>
+                        <h4 class="flex-container alignItemsBaseline">
+                            <span data-i18n="Post-History Instructions">Post-History Instructions</span>
+                            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="post_history_instructions_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                        </h4>
                         <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Post-History Instructions used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Post-History Instructions used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3"></textarea>
                         <div class="extension_token_counter">
                             <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="post_history_instructions_textarea">counting...</span>
@@ -5300,11 +5306,17 @@
                     </div>
                     <div class="flex-container flexnowrap">
                         <div class="flex1">
-                            <h4 class="flex-box" data-i18n="Creator's Notes">Creator's Notes<i class="editor_maximize fa-solid fa-maximize" data-for="creator_notes_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i></h4>
+                            <h4 class="flex-container alignItemsBaseline">
+                                <span data-i18n="Creator's Notes">Creator's Notes</span>
+                                <i class="editor_maximize fa-solid fa-maximize" data-for="creator_notes_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                            </h4>
                             <textarea id="creator_notes_textarea" name="creator_notes" data-i18n="[placeholder](Describe the bot, give use tips, or list the chat models it has been tested on. This will be displayed in the character list.)" placeholder="(Describe the bot, give use tips, or list the chat models it has been tested on. This will be displayed in the character list.)" form="form_create" class="text_pole" autocomplete="off" rows="4"></textarea>
                         </div>
                         <div class="flex1">
-                            <h4 data-i18n="Tags to Embed">Tags to Embed</h4>
+                            <h4 class="flex-container alignItemsBaseline">
+                                <span data-i18n="Tags to Embed">Tags to Embed</span>
+                                <i class="editor_maximize fa-solid fa-maximize" data-for="tags_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                            </h4>
                             <textarea id="tags_textarea" name="tags" data-i18n="[placeholder](Write a comma-separated list of tags)" placeholder="(Write a comma-separated list of tags)" form="form_create" class="text_pole" autocomplete="off" rows="4"></textarea>
                         </div>
                     </div>
@@ -5314,6 +5326,7 @@
             <div id="personality_div">
                 <h4 class="flex-container alignItemsBaseline">
                     <span data-i18n="Personality summary">Personality summary</span>
+                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="personality_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#personality-summary" class="notes-link" target="_blank"><span class="fa-solid fa-circle-question note-link-span"></span></a>
                 </h4>
                 <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="4"></textarea>
@@ -5324,6 +5337,7 @@
             <div id="scenario_div">
                 <h4 class="flex-container alignItemsBaseline">
                     <span data-i18n="Scenario">Scenario</span>
+                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="scenario_pole" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#scenario" class="notes-link" target="_blank">
                         <span class="fa-solid fa-circle-question note-link-span"></span>
                     </a>
@@ -5335,10 +5349,11 @@
             </div>
             <div id="depth_prompt_div" class="flex-container">
                 <div class="flex1">
-                    <h4>
+                    <h4 class="flex-container alignItemsBaseline">
                         <span data-i18n="Character's Note">
                             Character's Note
                         </span>
+                        <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="depth_prompt_prompt" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                     </h4>
                     <textarea id="depth_prompt_prompt" name="depth_prompt_prompt" class="text_pole" rows="5" autocomplete="off" form="form_create" data-i18n="[placeholder](Text to be inserted in-chat @ designated depth and role)" placeholder="(Text to be inserted in-chat @ designated depth and role)"></textarea>
                 </div>
@@ -5379,7 +5394,10 @@
             <hr>
             <div id="mes_example_div" class="flex-container flexFlowColumn">
                 <div>
-                    <h4 class="flex-container gap5px alignItemsBaseline"><span data-i18n="Examples of dialogue" class="mdhotkey_location">Examples of dialogue</span></h4>
+                    <h4 class="flex-container alignItemsBaseline">
+                        <span data-i18n="Examples of dialogue" class="mdhotkey_location">Examples of dialogue</span>
+                        <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="mes_example_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                    </h4>
                     <h5 data-i18n="Important to set the character's writing style.">Important to set the character's writing style. <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#examples-of-dialogue" class="notes-link" target="_blank"><span class="fa-solid fa-circle-question note-link-span"></span></a></h5>
                 </div>
                 <textarea id="mes_example_textarea" class="flexGrow mdHotkeys" name="mes_example" data-i18n="[placeholder](Examples of chat dialog. Begin each example with START on a new line.)" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" rows="6"></textarea>
