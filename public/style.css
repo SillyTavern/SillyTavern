@@ -4556,6 +4556,10 @@ a {
     text-decoration: none;
 }
 
+a:hover {
+    filter: brightness(1.25);
+}
+
 #export_format_popup {
     display: none;
     z-index: 9999;
