@@ -32,6 +32,14 @@ body.hideChatAvatars .last_mes:not(.smallSysMes) {
     padding-bottom: 20px !important;
 }
 
+body.hideChatAvatars.no-timer.no-tokenCount.no-mesIDDisplay .swipe_left {
+    left: 0px;
+}
+
+body.hideChatAvatars .swipe_left {
+    left: 7px;
+}
+
 body.square-avatars .avatar,
 body.square-avatars .avatar img {
     border-radius: var(--avatar-base-border-radius) !important;
