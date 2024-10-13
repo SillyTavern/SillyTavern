@@ -96,12 +96,15 @@
                                         </a>
                                     </strong>
 
-                                    <div class="flex-container">
+                                    <div class="flex-container gap3px">
                                         <div data-preset-manager-import="kobold" class="margin0 menu_button_icon menu_button" title="Import preset" data-i18n="[title]Import preset">
                                             <i class="fa-solid fa-file-import"></i>
                                         </div>
                                         <div data-preset-manager-export="kobold" class="margin0 menu_button_icon menu_button" title="Export preset" data-i18n="[title]Export preset">
                                             <i class="fa-solid fa-file-export"></i>
+                                        </div>
+                                        <div data-preset-manager-delete="kobold" class="margin0 menu_button_icon menu_button" title="Delete the preset" data-i18n="[title]Delete the preset">
+                                            <i class="fa-solid fa-trash-can"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -115,7 +118,6 @@
                                         <i data-preset-manager-rename="kobold" class="menu_button fa-pencil fa-solid" title="Rename current preset" data-i18n="[title]Rename current preset"></i>
                                         <i data-preset-manager-new="kobold" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
                                         <i data-preset-manager-restore="kobold" class="menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
-                                        <i data-preset-manager-delete="kobold" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                                     </div>
                                 </div>
                             </div>
@@ -128,12 +130,15 @@
                                         </a>
                                     </strong>
 
-                                    <div class="flex-container">
+                                    <div class="flex-container gap3px">
                                         <div data-preset-manager-import="novel" class="margin0 menu_button_icon menu_button" title="Import preset" data-i18n="[title]Import preset">
                                             <i class="fa-solid fa-file-import"></i>
                                         </div>
                                         <div data-preset-manager-export="novel"  class="margin0 menu_button_icon menu_button" title="Export preset" data-i18n="[title]Export preset">
                                             <i class="fa-solid fa-file-export"></i>
+                                        </div>
+                                        <div data-preset-manager-delete="novel" class="margin0 menu_button_icon menu_button" title="Delete the preset" data-i18n="[title]Delete the preset">
+                                            <i class="fa-solid fa-trash-can"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -141,13 +146,12 @@
                                     <select id="settings_preset_novel" class="flex1 text_pole" data-preset-manager-for="novel">
                                         <option value="gui" data-i18n="Default">Default</option>
                                     </select>
-                                    <div class="flex-container marginLeft5 ">
+                                    <div class="flex-container marginLeft5 gap3px">
                                         <input type="file" hidden data-preset-manager-file="novel" accept=".json, .settings, .preset">
                                         <i data-preset-manager-update="novel" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                         <i data-preset-manager-rename="novel" class="menu_button fa-pencil fa-solid" title="Rename current preset" data-i18n="[title]Rename current preset"></i>
                                         <i data-preset-manager-new="novel" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
                                         <i data-preset-manager-restore="novel" class="menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
-                                        <i data-preset-manager-delete="novel" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                                     </div>
                                 </div>
                             </div>
@@ -158,12 +162,15 @@
                                             <span data-i18n="openaipresets">Chat Completion Presets</span>
                                         </strong>
 
-                                        <div class="flex-container">
+                                        <div class="flex-container gap3px">
                                             <div id="import_oai_preset" class="margin0 menu_button menu_button_icon" title="Import preset" data-i18n="[title]Import preset">
                                                 <i class="fa-solid fa-file-import"></i>
                                             </div>
                                             <div id="export_oai_preset" class="margin0 menu_button menu_button_icon" title="Export preset" data-i18n="[title]Export preset">
                                                 <i class="fa-solid fa-file-export"></i>
+                                            </div>
+                                            <div id="delete_oai_preset" class="margin0 menu_button menu_button_icon" title="Delete the preset" data-i18n="[title]Delete the preset">
+                                                <i class="fa-solid fa-trash-can"></i>
                                             </div>
                                         </div>
                                     </div>
@@ -172,11 +179,10 @@
                                         <select id="settings_preset_openai" class="flex1 text_pole" data-preset-manager-for="openai">
                                             <option value="gui" data-i18n="Default">Default</option>
                                         </select>
-                                        <div class="flex-container marginLeft5 ">
+                                        <div class="flex-container marginLeft5 gap3px">
                                             <input id="openai_preset_import_file" type="file" accept=".json,.settings" hidden />
                                             <i id="update_oai_preset" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                             <i id="new_oai_preset" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
-                                            <i id="delete_oai_preset" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -187,25 +193,27 @@
                                         <span data-i18n="Text Completion presets">Text Completion presets</span>
                                     </strong>
 
-                                    <div class="flex-container">
+                                    <div class="flex-container gap3px">
                                         <div data-preset-manager-import="textgenerationwebui" class="margin0 menu_button_icon menu_button" title="Import preset" data-i18n="[title]Import preset">
                                             <i class="fa-solid fa-file-import"></i>
                                         </div>
                                         <div data-preset-manager-export="textgenerationwebui" class="margin0 menu_button_icon menu_button" title="Export preset" data-i18n="[title]Export preset">
                                             <i class="fa-solid fa-file-export"></i>
                                         </div>
+                                        <div data-preset-manager-delete="textgenerationwebui" class="margin0 menu_button_icon menu_button" title="Delete the preset" data-i18n="[title]Delete the preset">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="flex-container flexNoGap">
                                     <select id="settings_preset_textgenerationwebui" class="flex1 text_pole" data-preset-manager-for="textgenerationwebui">
                                     </select>
-                                    <div class="flex-container marginLeft5 ">
+                                    <div class="flex-container marginLeft5 gap3px">
                                         <input type="file" hidden data-preset-manager-file="textgenerationwebui" accept=".json, .settings">
                                         <i data-preset-manager-update="textgenerationwebui" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                         <i data-preset-manager-rename="textgenerationwebui" class="menu_button fa-pencil fa-solid" title="Rename current preset" data-i18n="[title]Rename current preset"></i>
                                         <i data-preset-manager-new="textgenerationwebui" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
                                         <i data-preset-manager-restore="textgenerationwebui" class="menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
-                                        <i data-preset-manager-delete="textgenerationwebui" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                                     </div>
                                 </div>
                             </div>
