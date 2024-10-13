@@ -218,22 +218,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="ai_module_block_novel" class="width100p">
-                            <div class="range-block">
-                                <div class="range-block-title justifyLeft" data-i18n="AI Module">
-                                    AI Module
-                                </div>
-                                <div class="toggle-description justifyLeft" data-i18n="Changes the style of the generated text.">
-                                    Changes the style of the generated text.
-                                </div>
-                                <select id="nai_prefix">
-                                    <option value="vanilla" data-i18n="No Module">No Module</option>
-                                    <option value="special_instruct" data-i18n="Instruct">Instruct</option>
-                                    <option value="special_proseaugmenter" data-i18n="Prose Augmenter">Prose Augmenter</option>
-                                    <option value="theme_textadventure" data-i18n="Text Adventure">Text Adventure</option>
-                                </select>
-                            </div>
-                        </div>
                         <div id="common-gen-settings-block" class="width100p">
                             <div id="pro-settings-block" class="flex-container gap10h5v justifyCenter">
                                 <div id="amount_gen_block" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
@@ -253,6 +237,14 @@
                                     <div id="streaming_kobold_block" class="flex-container alignitemscenter justifyCenter marginTop5">
                                         <label class="checkbox_label" for="streaming_kobold">
                                             <input type="checkbox" id="streaming_kobold" />
+                                            <small><span data-i18n="Streaming">Streaming</span>
+                                                <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Streaming_desc" title="Display the response bit by bit as it is generated.&#13;When this is off, responses will be displayed all at once when they are complete."></div>
+                                            </small>
+                                        </label>
+                                    </div>
+                                    <div id="streaming_novel_block" class="flex-container alignitemscenter justifyCenter marginTop5">
+                                        <label class="checkbox_label" for="streaming_novel">
+                                            <input type="checkbox" id="streaming_novel" />
                                             <small><span data-i18n="Streaming">Streaming</span>
                                                 <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Streaming_desc" title="Display the response bit by bit as it is generated.&#13;When this is off, responses will be displayed all at once when they are complete."></div>
                                             </small>
@@ -278,6 +270,22 @@
                                     <span data-i18n="Max prompt cost:">Max prompt cost:</span> <span id="or_prompt_cost">&ndash;</span>
                                 </small>
                             </div>
+                            <div id="ai_module_block_novel" class="width100p">
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft" data-i18n="AI Module">
+                                        AI Module
+                                    </div>
+                                    <div class="toggle-description justifyLeft" data-i18n="Changes the style of the generated text.">
+                                        Changes the style of the generated text.
+                                    </div>
+                                    <select id="nai_prefix">
+                                        <option value="vanilla" data-i18n="No Module">No Module</option>
+                                        <option value="special_instruct" data-i18n="Instruct">Instruct</option>
+                                        <option value="special_proseaugmenter" data-i18n="Prose Augmenter">Prose Augmenter</option>
+                                        <option value="theme_textadventure" data-i18n="Text Adventure">Text Adventure</option>
+                                    </select>
+                                </div>
+                            </div>
                             <hr>
                         </div>
                         <div id="respective-ranges-and-temps" class="width100p">
@@ -286,19 +294,6 @@
                             </div>
                             -->
                             <div id="range_block_novel">
-                                <div class="range-block">
-                                    <label class="checkbox_label widthFreeExpand">
-                                        <input id="streaming_novel" type="checkbox" />
-                                        <span data-i18n="Streaming">Streaming</span>
-                                    </label>
-                                    <div class="toggle-description justifyLeft">
-                                        <span data-i18n="Display the response bit by bit as it is generated.">
-                                            Display the response bit by bit as it is generated.</span><br>
-                                        <span data-i18n="When this is off, responses will be displayed all at once when they are complete.">
-                                            When this is off, responses will be displayed all at once when they are complete.
-                                        </span>
-                                    </div>
-                                </div>
                                 <div class="range-block">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
@@ -5160,6 +5155,8 @@
     </div>
     <!-- various fullscreen popups -->
     <div name="templatesAndPopupsWrapper"> <!--this div is just for IDE sanity for quick collapsing-->
+        <!-- Point to this element when you need a no-op selector -->
+        <template id="NULL_SELECTOR" class="displayNone"></template>
         <div id="export_format_popup" class="list-group">
             <div class="export_format list-group-item" data-format="png">PNG</div>
             <div class="export_format list-group-item" data-format="json">JSON</div>
