@@ -4565,6 +4565,7 @@ function convertCharacterBook(characterBook) {
             sticky: entry.extensions?.sticky ?? null,
             cooldown: entry.extensions?.cooldown ?? null,
             delay: entry.extensions?.delay ?? null,
+            extensions: entry.extensions ?? {},
         };
     });
 
