@@ -338,7 +338,6 @@
     "Example: 127.0.0.1:5001": "範例：127.0.0.1:5001",
     "Authorize": "授權",
     "Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai": "使用 OAuth 流程取得您的 OpenRouter API 符記。您將被重新導向到 openrouter.ai",
-    "Legacy API (pre-OAI, no streaming)": "傳統 API(OAI之前，無串流)",
     "Bypass status check": "繞過狀態檢查",
     "Chat Completion Source": "聊天補充來源",
     "Reverse Proxy": "反向代理伺服器",

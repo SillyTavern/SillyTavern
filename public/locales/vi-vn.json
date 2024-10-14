@@ -337,7 +337,6 @@
     "Example: 127.0.0.1:5001": "Ví dụ: 127.0.0.1:5001",
     "Cho phép": "Ủy quyền",
     "Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai": "Nhận mã thông báo API OpenRouter của bạn bằng cách sử dụng luồng OAuth. Bạn sẽ được chuyển hướng đến openrouter.ai",
-    "Legacy API (pre-OAI, no streaming)": "API cũ (trước OAI, không có streaming)",
     "Bypass status check": "Bỏ qua check trạng thái",
     "Chat Completion Source": "Nguồn cho Chat Completion",
     "Reverse Proxy": "Proxy",

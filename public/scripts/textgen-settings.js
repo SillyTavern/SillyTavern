@@ -183,7 +183,6 @@ const settings = {
     aphrodite_model: '',
     dreamgen_model: 'opus-v1-xl/text',
     tabby_model: '',
-    legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
     logit_bias: [],
     n: 1,
@@ -252,7 +251,6 @@ export const setting_names = [
     'grammar_string',
     'json_schema',
     'banned_tokens',
-    'legacy_api',
     'ignore_eos_token',
     'spaces_between_special_tokens',
     'speculative_ngram',
@@ -329,22 +327,11 @@ async function selectPreset(name) {
 function formatTextGenURL(value) {
     try {
         const noFormatTypes = [MANCER, TOGETHERAI, INFERMATICAI, DREAMGEN, OPENROUTER];
-        const legacyApiTypes = [OOBA];
         if (noFormatTypes.includes(settings.type)) {
             return value;
         }
 
         const url = new URL(value);
-        if (legacyApiTypes.includes(settings.type)) {
-            if (url.pathname === '/api' && !settings.legacy_api) {
-                toastr.info('Enable Legacy API or start Ooba with the OpenAI extension enabled.', 'Legacy API URL detected. Generation may fail.', { preventDuplicates: true, timeOut: 10000, extendedTimeOut: 20000 });
-                url.pathname = '';
-            }
-
-            if (!power_user.relaxed_api_urls && settings.legacy_api) {
-                url.pathname = '/api';
-            }
-        }
         return url.toString();
     } catch {
         // Just using URL as a validation check
@@ -1185,7 +1172,6 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'banned_strings': banned_strings,
         'api_type': settings.type,
         'api_server': getTextGenServer(),
-        'legacy_api': settings.legacy_api && settings.type === OOBA,
         'sampler_order': settings.type === textgen_types.KOBOLDCPP ? settings.sampler_order : undefined,
         'xtc_threshold': settings.xtc_threshold,
         'xtc_probability': settings.xtc_probability,

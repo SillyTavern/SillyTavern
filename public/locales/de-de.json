@@ -337,7 +337,6 @@
     "Example: 127.0.0.1:5001": "Beispiel: 127.0.0.1:5001",
     "Authorize": "Autorisieren",
     "Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai": "Hole dein OpenRouter-API-Token mit OAuth-Fluss. Du wirst zu openrouter.ai weitergeleitet",
-    "Legacy API (pre-OAI, no streaming)": "Legacy-API (vor OAI, kein Streaming)",
     "Bypass status check": "Umgehe Statusüberprüfung",
     "Chat Completion Source": "Quelle für Chat-Vervollständigung",
     "Reverse Proxy": "Reverse-Proxy",

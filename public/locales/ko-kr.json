@@ -337,7 +337,6 @@
     "Example: 127.0.0.1:5001": "예: 127.0.0.1:5001",
     "Authorize": "승인하다",
     "Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai": "OAuth 플로우를 사용하여 OpenRouter API 토큰을 가져옵니다. openrouter.ai로 리디렉션됩니다.",
-    "Legacy API (pre-OAI, no streaming)": "레거시 API (OAI 이전, 스트리밍 없음)",
     "Bypass status check": "상태 확인 우회",
     "Chat Completion Source": "채팅 완성 소스",
     "Reverse Proxy": "역방향 프록시",
