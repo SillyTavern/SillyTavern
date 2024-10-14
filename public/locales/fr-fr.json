@@ -367,7 +367,6 @@
     "Show External models (provided by API)": "Afficher les modèles externes (fournis par l'API)",
     "Get your key from": "Obtenez votre clé à partir de",
     "Anthropic's developer console": "Console de développement d'Anthropic",
-    "Slack and Poe cookies will not work here, do not bother trying.": "Les cookies Slack et Poe ne fonctionneront pas ici, ne vous embêtez pas à essayer.",
     "Claude Model": "Modèle Claude",
     "Window AI Model": "Modèle Window AI",
     "Model Order": "Tri des modèles OpenRouter",

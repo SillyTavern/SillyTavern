@@ -367,7 +367,6 @@
     "Show External models (provided by API)": "외부 모델 표시 (API 제공)",
     "Get your key from": "다음에서 키를 받으세요",
     "Anthropic's developer console": "Anthropic의 개발자 콘솔",
-    "Slack and Poe cookies will not work here, do not bother trying.": "슬랙과 포 쿠키는 여기서 작동하지 않습니다. 시도하지 마세요.",
     "Claude Model": "Claude 모델",
     "Window AI Model": "창 AI 모델",
     "Model Order": "OpenRouter 모델 정렬",

@@ -367,7 +367,6 @@
     "Show External models (provided by API)": "外部モデルを表示（APIで提供される）",
     "Get your key from": "キーを取得する",
     "Anthropic's developer console": "Anthropicの開発者コンソール",
-    "Slack and Poe cookies will not work here, do not bother trying.": "SlackとPoeのクッキーはここでは機能しませんので、試すのはやめてください。",
     "Claude Model": "Claudeモデル",
     "Window AI Model": "Window AIモデル",
     "Model Order": "OpenRouter モデルのソート",

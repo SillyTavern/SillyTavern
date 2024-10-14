@@ -383,7 +383,6 @@
     "Show External models (provided by API)": "显示外部模型（由API提供）",
     "Get your key from": "从以下位置获取您的密钥",
     "Anthropic's developer console": "Anthropic的开发者控制台",
-    "Slack and Poe cookies will not work here, do not bother trying.": "Slack和Poe的cookie在这里不起作用，请不要尝试。",
     "Claude Model": "Claude 模型",
     "Window AI Model": "Window AI 模型",
     "Allow fallback routes Description": "如果所选模型无法响应您的请求，则自动选择备用模型。",
