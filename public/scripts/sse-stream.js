@@ -109,7 +109,7 @@ function getDelay(s) {
  */
 async function* parseStreamData(json) {
     // Cohere
-    if (typeof json.delta.message === 'object' && ['tool-plan-delta', 'content-delta'].includes(json.type)) {
+    if (typeof json.delta === 'object' && typeof json.delta.message === 'object' && ['tool-plan-delta', 'content-delta'].includes(json.type)) {
         const text = json?.delta?.message?.content?.text ?? '';
         for (let i = 0; i < text.length; i++) {
             const str = json.delta.message.content.text[i];
@@ -121,7 +121,7 @@ async function* parseStreamData(json) {
         return;
     }
     // Claude
-    if (typeof json.delta === 'object' && typeof json.delta.text === 'string') {
+    else if (typeof json.delta === 'object' && typeof json.delta.text === 'string') {
         if (json.delta.text.length > 0) {
             for (let i = 0; i < json.delta.text.length; i++) {
                 const str = json.delta.text[i];
