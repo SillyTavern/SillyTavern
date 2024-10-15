@@ -2009,22 +2009,22 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
             function (match, p1, p2, p3, p4, p5, p6) {
                 if (p1) {
                     // English double quotes
-                    return `<q>"${p1.slice(1, -1)}"</q>`;
+                    return `<span class="mes_text_speech">"${p1.slice(1, -1)}"</span>`;
                 } else if (p2) {
                     // Curly double quotes “ ”
-                    return `<q>“${p2.slice(1, -1)}”</q>`;
+                    return `<span class="mes_text_speech">“${p2.slice(1, -1)}”</span>`;
                 } else if (p3) {
                     // Guillemets « »
-                    return `<q>«${p3.slice(1, -1)}»</q>`;
+                    return `<span class="mes_text_speech">«${p3.slice(1, -1)}»</span>`;
                 } else if (p4) {
                     // Corner brackets 「 」
-                    return `<q>「${p4.slice(1, -1)}」</q>`;
+                    return `<span class="mes_text_speech">「${p4.slice(1, -1)}」</span>`;
                 } else if (p5) {
                     // White corner brackets 『 』
-                    return `<q>『${p5.slice(1, -1)}』</q>`;
+                    return `<span class="mes_text_speech">『${p5.slice(1, -1)}』</span>`;
                 } else if (p6) {
                     // Fullwidth quotes ＂ ＂
-                    return `<q>＂${p6.slice(1, -1)}＂</q>`;
+                    return `<span class="mes_text_speech">＂${p6.slice(1, -1)}＂</span>`;
                 } else {
                     // Return the original match if no quotes are found
                     return match;
