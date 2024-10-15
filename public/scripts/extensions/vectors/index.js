@@ -261,7 +261,7 @@ async function summarizeWebLLM(element) {
         return false;
     }
 
-    const messages = [{ role:'system', content: settings.summary_prompt }, { role:'user', content: element.text }];
+    const messages = [{ role: 'system', content: settings.summary_prompt }, { role: 'user', content: element.text }];
     element.text = await generateWebLlmChatPrompt(messages);
 
     return true;
@@ -275,29 +275,29 @@ async function summarizeWebLLM(element) {
  */
 async function summarize(hashedMessages, endpoint = 'main') {
     for (const element of hashedMessages) {
-        const cachedSummary = cachedSummaries.get(element.hash)
+        const cachedSummary = cachedSummaries.get(element.hash);
         if (!cachedSummary) {
-            let sucess = true;
+            let success = true;
             switch (endpoint) {
                 case 'main':
-                    sucess = await summarizeMain(element);
+                    success = await summarizeMain(element);
                     break;
                 case 'extras':
-                    sucess = await summarizeExtra(element);
+                    success = await summarizeExtra(element);
                     break;
                 case 'webllm':
-                    sucess = await summarizeWebLLM(element);
+                    success = await summarizeWebLLM(element);
                     break;
                 default:
                     console.error('Unsupported endpoint', endpoint);
-                    sucess = false;
+                    success = false;
                     break;
             }
-            if (sucess) {
+            if (success) {
                 cachedSummaries.set(element.hash, element.text);
             } else {
                 break;
-            } 
+            }
         } else {
             element.text = cachedSummary;
         }
