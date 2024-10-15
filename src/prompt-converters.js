@@ -195,7 +195,8 @@ export function convertClaudeMessages(messages, prefillString, useSysPrompt, use
                         content.text = `${message.name}: ${content.text}`;
                     }
 
-                    return content;
+                    // If the text is empty, replace it with a zero-width space
+                    return { type: 'text', text: content.text || '\u200b' };
                 }
 
                 return content;
