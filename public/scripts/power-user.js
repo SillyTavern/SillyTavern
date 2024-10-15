@@ -303,9 +303,6 @@ let movingUIPresets = [];
 export let context_presets = [];
 
 const storage_keys = {
-    auto_connect_legacy: 'AutoConnectEnabled',
-    auto_load_chat_legacy: 'AutoLoadChatEnabled',
-
     storyStringValidationCache: 'StoryStringValidationCache',
 };
 
@@ -1427,20 +1424,6 @@ async function loadPowerUserSettings(settings, data) {
 
     if (data.context !== undefined) {
         context_presets = data.context;
-    }
-
-    // These are still local storage. Delete in 1.12.7
-    const autoLoadChat = localStorage.getItem(storage_keys.auto_load_chat_legacy);
-    const autoConnect = localStorage.getItem(storage_keys.auto_connect_legacy);
-
-    if (autoLoadChat) {
-        power_user.auto_load_chat = autoLoadChat === 'true';
-        localStorage.removeItem(storage_keys.auto_load_chat_legacy);
-    }
-
-    if (autoConnect) {
-        power_user.auto_connect = autoConnect === 'true';
-        localStorage.removeItem(storage_keys.auto_connect_legacy);
     }
 
     if (power_user.chat_display === '') {

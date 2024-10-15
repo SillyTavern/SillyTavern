@@ -889,7 +889,6 @@ function getTextgenAPITokenizationParams(str) {
         text: str,
         api_type: textgen_settings.type,
         url: getTextGenServer(),
-        legacy_api: textgen_settings.legacy_api && textgen_settings.type === OOBA,
         vllm_model: textgen_settings.vllm_model,
         aphrodite_model: textgen_settings.aphrodite_model,
     };

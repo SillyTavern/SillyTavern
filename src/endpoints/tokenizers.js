@@ -942,7 +942,6 @@ router.post('/remote/textgenerationwebui/encode', jsonParser, async function (re
     }
     const text = String(request.body.text) || '';
     const baseUrl = String(request.body.url);
-    const legacyApi = Boolean(request.body.legacy_api);
     const vllmModel = String(request.body.vllm_model) || '';
     const aphroditeModel = String(request.body.aphrodite_model) || '';
 
@@ -957,36 +956,31 @@ router.post('/remote/textgenerationwebui/encode', jsonParser, async function (re
         // Convert to string + remove trailing slash + /v1 suffix
         let url = String(baseUrl).replace(/\/$/, '').replace(/\/v1$/, '');
 
-        if (legacyApi) {
-            url += '/v1/token-count';
-            args.body = JSON.stringify({ 'prompt': text });
-        } else {
-            switch (request.body.api_type) {
-                case TEXTGEN_TYPES.TABBY:
-                    url += '/v1/token/encode';
-                    args.body = JSON.stringify({ 'text': text });
-                    break;
-                case TEXTGEN_TYPES.KOBOLDCPP:
-                    url += '/api/extra/tokencount';
-                    args.body = JSON.stringify({ 'prompt': text });
-                    break;
-                case TEXTGEN_TYPES.LLAMACPP:
-                    url += '/tokenize';
-                    args.body = JSON.stringify({ 'content': text });
-                    break;
-                case TEXTGEN_TYPES.VLLM:
-                    url += '/tokenize';
-                    args.body = JSON.stringify({ 'model': vllmModel, 'prompt': text });
-                    break;
-                case TEXTGEN_TYPES.APHRODITE:
-                    url += '/v1/tokenize';
-                    args.body = JSON.stringify({ 'model': aphroditeModel, 'prompt': text });
-                    break;
-                default:
-                    url += '/v1/internal/encode';
-                    args.body = JSON.stringify({ 'text': text });
-                    break;
-            }
+        switch (request.body.api_type) {
+            case TEXTGEN_TYPES.TABBY:
+                url += '/v1/token/encode';
+                args.body = JSON.stringify({ 'text': text });
+                break;
+            case TEXTGEN_TYPES.KOBOLDCPP:
+                url += '/api/extra/tokencount';
+                args.body = JSON.stringify({ 'prompt': text });
+                break;
+            case TEXTGEN_TYPES.LLAMACPP:
+                url += '/tokenize';
+                args.body = JSON.stringify({ 'content': text });
+                break;
+            case TEXTGEN_TYPES.VLLM:
+                url += '/tokenize';
+                args.body = JSON.stringify({ 'model': vllmModel, 'prompt': text });
+                break;
+            case TEXTGEN_TYPES.APHRODITE:
+                url += '/v1/tokenize';
+                args.body = JSON.stringify({ 'model': aphroditeModel, 'prompt': text });
+                break;
+            default:
+                url += '/v1/internal/encode';
+                args.body = JSON.stringify({ 'text': text });
+                break;
         }
 
         const result = await fetch(url, args);
@@ -997,8 +991,8 @@ router.post('/remote/textgenerationwebui/encode', jsonParser, async function (re
         }
 
         const data = await result.json();
-        const count = legacyApi ? data?.results[0]?.tokens : (data?.length ?? data?.count ?? data?.value ?? data?.tokens?.length);
-        const ids = legacyApi ? [] : (data?.tokens ?? data?.ids ?? []);
+        const count =  (data?.length ?? data?.count ?? data?.value ?? data?.tokens?.length);
+        const ids = (data?.tokens ?? data?.ids ?? []);
 
         return response.send({ count, ids });
     } catch (error) {

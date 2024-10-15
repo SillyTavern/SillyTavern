@@ -112,41 +112,38 @@ router.post('/status', jsonParser, async function (request, response) {
         let url = baseUrl;
         let result = '';
 
-        if (request.body.legacy_api) {
-            url += '/v1/model';
-        } else {
-            switch (apiType) {
-                case TEXTGEN_TYPES.OOBA:
-                case TEXTGEN_TYPES.VLLM:
-                case TEXTGEN_TYPES.APHRODITE:
-                case TEXTGEN_TYPES.KOBOLDCPP:
-                case TEXTGEN_TYPES.LLAMACPP:
-                case TEXTGEN_TYPES.INFERMATICAI:
-                case TEXTGEN_TYPES.OPENROUTER:
-                    url += '/v1/models';
-                    break;
-                case TEXTGEN_TYPES.DREAMGEN:
-                    url += '/api/openai/v1/models';
-                    break;
-                case TEXTGEN_TYPES.MANCER:
-                    url += '/oai/v1/models';
-                    break;
-                case TEXTGEN_TYPES.TABBY:
-                    url += '/v1/model/list';
-                    break;
-                case TEXTGEN_TYPES.TOGETHERAI:
-                    url += '/api/models?&info';
-                    break;
-                case TEXTGEN_TYPES.OLLAMA:
-                    url += '/api/tags';
-                    break;
-                case TEXTGEN_TYPES.FEATHERLESS:
-                    url += '/v1/models';
-                    break;
-                case TEXTGEN_TYPES.HUGGINGFACE:
-                    url += '/info';
-                    break;
-            }
+
+        switch (apiType) {
+            case TEXTGEN_TYPES.OOBA:
+            case TEXTGEN_TYPES.VLLM:
+            case TEXTGEN_TYPES.APHRODITE:
+            case TEXTGEN_TYPES.KOBOLDCPP:
+            case TEXTGEN_TYPES.LLAMACPP:
+            case TEXTGEN_TYPES.INFERMATICAI:
+            case TEXTGEN_TYPES.OPENROUTER:
+                url += '/v1/models';
+                break;
+            case TEXTGEN_TYPES.DREAMGEN:
+                url += '/api/openai/v1/models';
+                break;
+            case TEXTGEN_TYPES.MANCER:
+                url += '/oai/v1/models';
+                break;
+            case TEXTGEN_TYPES.TABBY:
+                url += '/v1/model/list';
+                break;
+            case TEXTGEN_TYPES.TOGETHERAI:
+                url += '/api/models?&info';
+                break;
+            case TEXTGEN_TYPES.OLLAMA:
+                url += '/api/tags';
+                break;
+            case TEXTGEN_TYPES.FEATHERLESS:
+                url += '/v1/models';
+                break;
+            case TEXTGEN_TYPES.HUGGINGFACE:
+                url += '/info';
+                break;
         }
 
         const modelsReply = await fetch(url, args);
@@ -159,11 +156,6 @@ router.post('/status', jsonParser, async function (request, response) {
 
         /** @type {any} */
         let data = await modelsReply.json();
-
-        if (request.body.legacy_api) {
-            console.log('Legacy API response:', data);
-            return response.send({ result: data?.result });
-        }
 
         // Rewrap to OAI-like response
         if (apiType === TEXTGEN_TYPES.TOGETHERAI && Array.isArray(data)) {
@@ -259,37 +251,33 @@ router.post('/generate', jsonParser, async function (request, response) {
 
         let url = trimV1(baseUrl);
 
-        if (request.body.legacy_api) {
-            url += '/v1/generate';
-        } else {
-            switch (request.body.api_type) {
-                case TEXTGEN_TYPES.VLLM:
-                case TEXTGEN_TYPES.FEATHERLESS:
-                case TEXTGEN_TYPES.APHRODITE:
-                case TEXTGEN_TYPES.OOBA:
-                case TEXTGEN_TYPES.TABBY:
-                case TEXTGEN_TYPES.KOBOLDCPP:
-                case TEXTGEN_TYPES.TOGETHERAI:
-                case TEXTGEN_TYPES.INFERMATICAI:
-                case TEXTGEN_TYPES.HUGGINGFACE:
-                    url += '/v1/completions';
-                    break;
-                case TEXTGEN_TYPES.DREAMGEN:
-                    url += '/api/openai/v1/completions';
-                    break;
-                case TEXTGEN_TYPES.MANCER:
-                    url += '/oai/v1/completions';
-                    break;
-                case TEXTGEN_TYPES.LLAMACPP:
-                    url += '/completion';
-                    break;
-                case TEXTGEN_TYPES.OLLAMA:
-                    url += '/api/generate';
-                    break;
-                case TEXTGEN_TYPES.OPENROUTER:
-                    url += '/v1/chat/completions';
-                    break;
-            }
+        switch (request.body.api_type) {
+            case TEXTGEN_TYPES.VLLM:
+            case TEXTGEN_TYPES.FEATHERLESS:
+            case TEXTGEN_TYPES.APHRODITE:
+            case TEXTGEN_TYPES.OOBA:
+            case TEXTGEN_TYPES.TABBY:
+            case TEXTGEN_TYPES.KOBOLDCPP:
+            case TEXTGEN_TYPES.TOGETHERAI:
+            case TEXTGEN_TYPES.INFERMATICAI:
+            case TEXTGEN_TYPES.HUGGINGFACE:
+                url += '/v1/completions';
+                break;
+            case TEXTGEN_TYPES.DREAMGEN:
+                url += '/api/openai/v1/completions';
+                break;
+            case TEXTGEN_TYPES.MANCER:
+                url += '/oai/v1/completions';
+                break;
+            case TEXTGEN_TYPES.LLAMACPP:
+                url += '/completion';
+                break;
+            case TEXTGEN_TYPES.OLLAMA:
+                url += '/api/generate';
+                break;
+            case TEXTGEN_TYPES.OPENROUTER:
+                url += '/v1/chat/completions';
+                break;
         }
 
         const args = {
@@ -369,12 +357,6 @@ router.post('/generate', jsonParser, async function (request, response) {
                 /** @type {any} */
                 const data = await completionsReply.json();
                 console.log('Endpoint response:', data);
-
-                // Wrap legacy response to OAI completions format
-                if (request.body.legacy_api) {
-                    const text = data?.results[0]?.text;
-                    data['choices'] = [{ text }];
-                }
 
                 // Map InfermaticAI response to OAI completions format
                 if (apiType === TEXTGEN_TYPES.INFERMATICAI) {

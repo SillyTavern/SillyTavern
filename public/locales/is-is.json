@@ -337,7 +337,6 @@
     "Example: 127.0.0.1:5001": "Dæmi: 127.0.0.1:5001",
     "Authorize": "Heimild",
     "Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai": "Fáðu API lykilinn þinn fyrir OpenRouter með því að nota OAuth strauminn. Þú verður endurvísað(ð/ur) á openrouter.ai",
-    "Legacy API (pre-OAI, no streaming)": "Eldri API (fyrir OAI, engin flæði)",
     "Bypass status check": "Hlaupa framhjá stöðutík",
     "Chat Completion Source": "Heimild að fullvirkni spjalls",
     "Reverse Proxy": "Reverse proxy",
