@@ -9736,26 +9736,50 @@ jQuery(async function () {
         }
     }, { passive: true });
 
-    $(document).on('click', '.mes', function () {
+    $(document).on('click', '.mes', function (e) {
         //when a 'delete message' parent div is clicked
         // and we are in delete mode and del_checkbox is visible
         if (!is_delete_mode || !$(this).children('.del_checkbox').is(':visible')) {
             return;
         }
-        $('.mes').children('.del_checkbox').each(function () {
-            $(this).prop('checked', false);
-            $(this).parent().removeClass('selected');
-        });
-        $(this).addClass('selected'); //sets the bg of the mes selected for deletion
-        var i = Number($(this).attr('mesid')); //checks the message ID in the chat
-        this_del_mes = i;
-        //as long as the current message ID is less than the total chat length
-        while (i < chat.length) {
-            //sets the bg of the all msgs BELOW the selected .mes
-            $(`.mes[mesid="${i}"]`).addClass('selected');
-            $(`.mes[mesid="${i}"]`).children('.del_checkbox').prop('checked', true);
-            i++;
+
+        // whether we will be checking or unchecking boxes
+        var check_boxes = !$(this).children('.del_checkbox').is(':checked');
+        var mes_id = Number($(this).attr('mesid'));
+
+        if (check_boxes) {
+            $(this).children('.del_checkbox').prop('checked', true);
+            $(this).addClass('selected');
         }
+        else {
+            $(this).children('.del_checkbox').prop('checked', false);
+            $(this).removeClass('selected');
+        }
+
+        // handle mass-select
+        if (e.ctrlKey && (this_del_mes >= 0)) {
+            var last_mes_checked = $(`.mes[mesid="${this_del_mes}"]`).children('.del_checkbox').is(':checked');
+            // we only do mass-selection logic if the checked states of both boxes now match
+            if (check_boxes == last_mes_checked) {
+                // define start and end points of the loop
+                var i = this_del_mes > mes_id ? mes_id : this_del_mes;
+                var end_at = this_del_mes > mes_id ? this_del_mes : mes_id;
+
+                while (i < end_at) {
+                    // set the checkboxes between start and end
+                    if (check_boxes) {
+                        $(`.mes[mesid="${i}"]`).addClass('selected');
+                    }
+                    else {
+                        $(`.mes[mesid="${i}"]`).removeClass('selected');
+                    }
+                    $(`.mes[mesid="${i}"]`).children('.del_checkbox').prop('checked', check_boxes);
+                    i++;
+                }
+            }
+        }
+        // record this id as the previously clicked deletion item
+        this_del_mes = mes_id;
     });
 
     $(document).on('click', '.PastChat_cross', function (e) {
