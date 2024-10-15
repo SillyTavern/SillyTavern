@@ -706,25 +706,17 @@ const onChatEvent = debounce(async () => await moduleWorker.update(), debounce_t
  * @returns {Promise<string>} Text to query
  */
 async function getQueryText(chat, initiator) {
-    let queryText = '';
-    let i = 0;
-
-    let hashedMessages = chat.map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)) }));
+    let hashedMessages = chat
+        .map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)) }))
+        .filter(x => x.text)
+        .reverse()
+        .slice(0, settings.query);
 
     if (initiator === 'chat' && settings.enabled_chats && settings.summarize && settings.summarize_sent) {
         hashedMessages = await summarize(hashedMessages, settings.summary_source);
     }
 
-    for (const message of hashedMessages.slice().reverse()) {
-        if (message.text) {
-            queryText += message.text + '\n';
-            i++;
-        }
-
-        if (i === settings.query) {
-            break;
-        }
-    }
+    const queryText = hashedMessages.map(x => x.text).join('\n');
 
     return collapseNewlines(queryText).trim();
 }
