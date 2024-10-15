@@ -792,7 +792,7 @@ export function reloadMarkdownProcessor(render_formulas = false) {
 
 export function getCurrentChatId() {
     if (selected_group) {
-        return groups.find(x => x.id == selected_group)?.chat_id;
+        return groups.find(x => x.id === selected_group)?.chat_id;
     }
     else if (this_chid !== undefined) {
         return characters[this_chid]?.chat;
@@ -991,7 +991,7 @@ function cancelStatusCheck(reason = 'Manually cancelled status check') {
 }
 
 export function displayOnlineStatus() {
-    if (online_status == 'no_connection') {
+    if (online_status === 'no_connection') {
         $('.online_status_indicator').removeClass('success');
         $('.online_status_text').text($('#API-status-top').attr('no_connection_text'));
     } else {
@@ -1087,7 +1087,7 @@ async function getStatusTextgen() {
         return resultCheckStatus();
     }
 
-    if (textgen_settings.type == OOBA && textgen_settings.bypass_status_check) {
+    if (textgen_settings.type === OOBA && textgen_settings.bypass_status_check) {
         setOnlineStatus('Status check bypassed');
         return resultCheckStatus();
     }
@@ -1266,7 +1266,7 @@ function getHiddenBlock(hidden) {
 
 function getCharacterBlock(item, id) {
     let this_avatar = default_avatar;
-    if (item.avatar != 'none') {
+    if (item.avatar !== 'none') {
         this_avatar = getThumbnailUrl('avatar', item.avatar);
     }
     // Populate the template
@@ -1279,7 +1279,7 @@ function getCharacterBlock(item, id) {
         template.find('.ch_avatar_url').text(item.avatar);
     }
     template.find('.ch_fav_icon').css('display', 'none');
-    template.toggleClass('is_fav', item.fav || item.fav == 'true');
+    template.toggleClass('is_fav', item.fav || item.fav === 'true');
     template.find('.ch_fav').val(item.fav);
 
     const description = item.data?.creator_notes || '';
@@ -1519,7 +1519,7 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
         entities = entitiesFilter.applyFilters(beforeFinalEntities);
 
         // Magic for folder filter. If that one is enabled, and no folders are display anymore, we remove that filter to actually show the characters.
-        if (isFilterState(entitiesFilter.getFilterData(FILTER_TYPES.FOLDER), FILTER_STATES.SELECTED) && entities.filter(x => x.type == 'tag').length == 0) {
+        if (isFilterState(entitiesFilter.getFilterData(FILTER_TYPES.FOLDER), FILTER_STATES.SELECTED) && entities.filter(x => x.type === 'tag').length === 0) {
             entities = entitiesFilter.applyFilters(beforeFinalEntities, { tempOverrides: { [FILTER_TYPES.FOLDER]: FILTER_STATES.UNDEFINED } });
         }
     }
@@ -1528,7 +1528,7 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
     const nonTagEntitiesCount = entities.filter(entity => entity.type !== 'tag').length;
     for (const entity of entities) {
         if (entity.type === 'tag') {
-            if (entity.entities?.length == nonTagEntitiesCount) entity.isUseless = true;
+            if (entity.entities?.length === nonTagEntitiesCount) entity.isUseless = true;
         }
     }
 
@@ -1708,7 +1708,7 @@ export function showMoreMessages() {
         messageId--;
     }
 
-    if (messageId == 0) {
+    if (messageId === 0) {
         $('#show_more_messages').remove();
     }
 
@@ -2313,7 +2313,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
             insertSVGIcon(swipeMessage, params.extra);
         }
 
-        if (mes.swipe_id == mes.swipes.length - 1) {
+        if (mes.swipe_id === mes.swipes.length - 1) {
             swipeMessage.find('.mes_timer').text(params.timerValue).attr('title', params.timerTitle);
             swipeMessage.find('.tokenCounterDisplay').text(`${params.tokenCount}t`);
         } else {
@@ -2529,7 +2529,7 @@ export function getStoppingStrings(isImpersonate, isContinue) {
 
             if (group && Array.isArray(group.members)) {
                 const names = group.members
-                    .map(x => characters.find(y => y.avatar == x))
+                    .map(x => characters.find(y => y.avatar === x))
                     .filter(x => x && x.name && x.name !== name2)
                     .map(x => `\n${x.name}:`);
                 result.push(...names);
@@ -2674,11 +2674,11 @@ function cleanGroupMessage(getMessage) {
         return getMessage;
     }
 
-    const group = groups.find((x) => x.id == selected_group);
+    const group = groups.find((x) => x.id === selected_group);
 
     if (group && Array.isArray(group.members) && group.members) {
         for (let member of group.members) {
-            const character = characters.find(x => x.avatar == member);
+            const character = characters.find(x => x.avatar === member);
 
             if (!character) {
                 continue;
@@ -2758,7 +2758,7 @@ export function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, 
     let extension_prompt = Object.keys(extension_prompts)
         .sort()
         .map((x) => extension_prompts[x])
-        .filter(x => x.position == position && x.value)
+        .filter(x => x.position === position && x.value)
         .filter(x => depth === undefined || x.depth === undefined || x.depth === depth)
         .filter(x => role === undefined || x.role === undefined || x.role === role)
         .map(x => x.value.trim())
@@ -2829,14 +2829,14 @@ export function getCharacterCardFields() {
 export function isStreamingEnabled() {
     const noStreamSources = [chat_completion_sources.SCALE];
     return (
-        (main_api == 'openai' &&
+        (main_api === 'openai' &&
             oai_settings.stream_openai &&
             !noStreamSources.includes(oai_settings.chat_completion_source) &&
-            !(oai_settings.chat_completion_source == chat_completion_sources.OPENAI && oai_settings.openai_model.startsWith('o1-')) &&
-            !(oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE && oai_settings.google_model.includes('bison')))
-        || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_flags.can_use_streaming)
-        || (main_api == 'novel' && nai_settings.streaming_novel)
-        || (main_api == 'textgenerationwebui' && textgen_settings.streaming));
+            !(oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.openai_model.startsWith('o1-')) &&
+            !(oai_settings.chat_completion_source === chat_completion_sources.MAKERSUITE && oai_settings.google_model.includes('bison')))
+        || (main_api === 'kobold' && kai_settings.streaming_kobold && kai_flags.can_use_streaming)
+        || (main_api === 'novel' && nai_settings.streaming_novel)
+        || (main_api === 'textgenerationwebui' && textgen_settings.streaming));
 }
 
 function showStopButton() {
@@ -2984,7 +2984,7 @@ class StreamingProcessor {
                 }
             }
 
-            if ((this.type == 'swipe' || this.type === 'continue') && Array.isArray(chat[messageId]['swipes'])) {
+            if ((this.type === 'swipe' || this.type === 'continue') && Array.isArray(chat[messageId]['swipes'])) {
                 chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
                 chat[messageId]['swipe_info'][chat[messageId]['swipe_id']] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])) };
             }
@@ -3186,7 +3186,7 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
     }
 
     prompt = substituteParams(prompt);
-    prompt = api == 'novel' ? adjustNovelInstructionPrompt(prompt) : prompt;
+    prompt = api === 'novel' ? adjustNovelInstructionPrompt(prompt) : prompt;
     prompt = isInstruct ? formatInstructModeChat(name1, prompt, false, true, '', name1, name2, false) : prompt;
     prompt = isInstruct ? (prompt + formatInstructModePrompt(name2, false, '', name1, name2, isQuiet, quietToLoud)) : (prompt + '\n');
 
@@ -3223,9 +3223,9 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud, sy
 
         let data = {};
 
-        if (api == 'koboldhorde') {
+        if (api === 'koboldhorde') {
             data = await generateHorde(prompt, generateData, abortController.signal, false);
-        } else if (api == 'openai') {
+        } else if (api === 'openai') {
             data = await sendOpenAIRequest('quiet', generateData, abortController.signal);
         } else {
             const generateUrl = getGenerateUrl(api);
@@ -3350,7 +3350,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // Occurs only if the generation is not aborted due to slash commands execution
     await eventSource.emit(event_types.GENERATION_AFTER_COMMANDS, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
 
-    if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
+    if (main_api === 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
         toastr.error(t`Streaming is enabled, but the version of Kobold used does not support token streaming.`, undefined, { timeOut: 10000, preventDuplicates: true });
         unblockGeneration(type);
         return Promise.resolve();
@@ -3407,7 +3407,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             .filter((index) => index !== undefined && index !== null);
 
         if (memberIds.length > 0) {
-            if (menu_type != 'character_edit') setCharacterId(memberIds[0]);
+            if (menu_type !== 'character_edit') setCharacterId(memberIds[0]);
             setCharacterName('');
         } else {
             console.log('No enabled members found');
@@ -3420,7 +3420,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     //this function just gives special care to novel quiet instruction prompts
     if (quiet_prompt) {
         quiet_prompt = substituteParams(quiet_prompt);
-        quiet_prompt = main_api == 'novel' && !quietToLoud ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
+        quiet_prompt = main_api === 'novel' && !quietToLoud ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
     }
 
     const hasBackendConnection = online_status !== 'no_connection';
@@ -3449,7 +3449,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
     }
 
-    const isContinue = type == 'continue';
+    const isContinue = type === 'continue';
 
     // Rewrite the generation timer to account for the time passed for all the continuations.
     if (isContinue && chat.length) {
@@ -3483,7 +3483,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         'ask_command',
     ];
     //for normal messages sent from user..
-    if ((textareaText != '' || (hasPendingFileAttachment() && !noAttachTypes.includes(type))) && !automatic_trigger && type !== 'quiet' && !dryRun) {
+    if ((textareaText !== '' || (hasPendingFileAttachment() && !noAttachTypes.includes(type))) && !automatic_trigger && type !== 'quiet' && !dryRun) {
         // If user message contains no text other than bias - send as a system message
         if (messageBias && !removeMacros(textareaText)) {
             sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
@@ -3492,7 +3492,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             await sendMessageAsUser(textareaText, messageBias);
         }
     }
-    else if (textareaText == '' && !automatic_trigger && !dryRun && type === undefined && main_api == 'openai' && oai_settings.send_if_empty.trim().length > 0) {
+    else if (textareaText === '' && !automatic_trigger && !dryRun && type === undefined && main_api === 'openai' && oai_settings.send_if_empty.trim().length > 0) {
         // Use send_if_empty if set and the user message is empty. Only when sending messages normally
         await sendMessageAsUser(oai_settings.send_if_empty.trim(), messageBias);
     }
@@ -3583,7 +3583,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     // Adjust token limit for Horde
     let adjustedParams;
-    if (main_api == 'koboldhorde' && (horde_settings.auto_adjust_context_length || horde_settings.auto_adjust_response_length)) {
+    if (main_api === 'koboldhorde' && (horde_settings.auto_adjust_context_length || horde_settings.auto_adjust_response_length)) {
         try {
             adjustedParams = await adjustHordeGenerationParams(max_context, amount_gen);
         }
@@ -3599,7 +3599,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
     // kingbri MARK: - Make sure the prompt bias isn't the same as the user bias
-    if ((promptBias && !isUserPromptBias) || power_user.always_force_name2 || main_api == 'novel') {
+    if ((promptBias && !isUserPromptBias) || power_user.always_force_name2 || main_api === 'novel') {
         force_name2 = true;
     }
 
@@ -3711,7 +3711,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     const lastUserMessageIndex = coreChat.findLastIndex(x => x.is_user);
 
     for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
-        if (main_api == 'openai') {
+        if (main_api === 'openai') {
             chat2[i] = coreChat[j].mes;
             if (i === 0 && isContinue) {
                 chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
@@ -3767,7 +3767,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     const storyStringParams = {
         description: description,
         personality: personality,
-        persona: power_user.persona_description_position == persona_description_positions.IN_PROMPT ? persona : '',
+        persona: power_user.persona_description_position === persona_description_positions.IN_PROMPT ? persona : '',
         scenario: scenario,
         system: system,
         char: name2,
@@ -3796,7 +3796,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     // hack for regeneration of the first message
-    if (chat2.length == 0) {
+    if (chat2.length === 0) {
         chat2.push('');
     }
 
@@ -3855,7 +3855,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     for (let i = 0; i < chat2.length; i++) {
         // not needed for OAI prompting
-        if (main_api == 'openai') {
+        if (main_api === 'openai') {
             break;
         }
 
@@ -3941,7 +3941,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     generatedPromptCache += cyclePrompt;
-    if (generatedPromptCache.length == 0 || type === 'continue') {
+    if (generatedPromptCache.length === 0 || type === 'continue') {
         console.debug('generating prompt');
         chatString = '';
         arrMes = arrMes.reverse();
@@ -3967,7 +3967,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     let mesExmString = '';
 
     function setPromptString() {
-        if (main_api == 'openai') {
+        if (main_api === 'openai') {
             return;
         }
 
@@ -4017,7 +4017,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         // Get instruct mode line
         if (isInstruct && !isContinue) {
             const name = (quiet_prompt && !quietToLoud && !isImpersonate) ? (quietName ?? 'System') : (isImpersonate ? name1 : name2);
-            const isQuiet = quiet_prompt && type == 'quiet';
+            const isQuiet = quiet_prompt && type === 'quiet';
             lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2, isQuiet, quietToLoud);
         }
 
@@ -4740,7 +4740,7 @@ export function triggerAutoContinue(messageChunk, isImpersonate) {
 }
 
 export function getBiasStrings(textareaText, type) {
-    if (type == 'impersonate' || type == 'continue') {
+    if (type === 'impersonate' || type === 'continue') {
         return { messageBias: '', promptBias: '', isUserPromptBias: false };
     }
 
@@ -4873,10 +4873,10 @@ export function getMaxContextSize(overrideResponseLength = null) {
     }
 
     let this_max_context = 1487;
-    if (main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'textgenerationwebui') {
+    if (main_api === 'kobold' || main_api === 'koboldhorde' || main_api === 'textgenerationwebui') {
         this_max_context = (max_context - (overrideResponseLength || amount_gen));
     }
-    if (main_api == 'novel') {
+    if (main_api === 'novel') {
         this_max_context = Number(max_context);
         if (nai_settings.model_novel.includes('clio')) {
             this_max_context = Math.min(max_context, 8192);
@@ -4900,7 +4900,7 @@ export function getMaxContextSize(overrideResponseLength = null) {
 
         this_max_context = this_max_context - (overrideResponseLength || amount_gen);
     }
-    if (main_api == 'openai') {
+    if (main_api === 'openai') {
         this_max_context = oai_settings.openai_max_context - (overrideResponseLength || oai_settings.openai_max_tokens);
     }
     return this_max_context;
@@ -5046,7 +5046,7 @@ function getGenerateUrl(api) {
 }
 
 function extractTitleFromData(data) {
-    if (main_api == 'koboldhorde') {
+    if (main_api === 'koboldhorde') {
         return data.workerName;
     }
 
@@ -5213,26 +5213,26 @@ export function cleanUpMessage(getMessage, isImpersonate, isContinue, displayInc
         nameToTrim = power_user.allow_name1_display ? '' : name1;
     }
 
-    if (nameToTrim && getMessage.indexOf(`${nameToTrim}:`) == 0) {
+    if (nameToTrim && getMessage.indexOf(`${nameToTrim}:`) === 0) {
         getMessage = getMessage.substring(0, getMessage.indexOf(`${nameToTrim}:`));
     }
     if (nameToTrim && getMessage.indexOf(`\n${nameToTrim}:`) >= 0) {
         getMessage = getMessage.substring(0, getMessage.indexOf(`\n${nameToTrim}:`));
     }
-    if (getMessage.indexOf('<|endoftext|>') != -1) {
+    if (getMessage.indexOf('<|endoftext|>') !== -1) {
         getMessage = getMessage.substring(0, getMessage.indexOf('<|endoftext|>'));
     }
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isNotEmpty = (str) => str && str.trim() !== '';
     if (isInstruct && power_user.instruct.stop_sequence) {
-        if (getMessage.indexOf(power_user.instruct.stop_sequence) != -1) {
+        if (getMessage.indexOf(power_user.instruct.stop_sequence) !== -1) {
             getMessage = getMessage.substring(0, getMessage.indexOf(power_user.instruct.stop_sequence));
         }
     }
     // Hana: Only use the first sequence (should be <|model|>)
     // of the prompt before <|user|> (as KoboldAI Lite does it).
     if (isInstruct && isNotEmpty(power_user.instruct.input_sequence)) {
-        if (getMessage.indexOf(power_user.instruct.input_sequence) != -1) {
+        if (getMessage.indexOf(power_user.instruct.input_sequence) !== -1) {
             getMessage = getMessage.substring(0, getMessage.indexOf(power_user.instruct.input_sequence));
         }
     }
@@ -5396,7 +5396,7 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
         if (selected_group) {
             console.debug('entering chat update for groups');
             let avatarImg = 'img/ai4.png';
-            if (characters[this_chid].avatar != 'none') {
+            if (characters[this_chid].avatar !== 'none') {
                 avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
             }
             chat[chat.length - 1]['force_avatar'] = avatarImg;
@@ -5620,7 +5620,7 @@ export async function renameCharacter(name = null, { silent = false, renameChats
             await getCharacters();
 
             // Find newly renamed character
-            const newChId = characters.findIndex(c => c.avatar == data.avatar);
+            const newChId = characters.findIndex(c => c.avatar === data.avatar);
 
             if (newChId !== -1) {
                 // Select the character after the renaming
@@ -5691,7 +5691,7 @@ async function renamePastChats(newAvatar, newValue) {
                 const currentChat = await getChatResponse.json();
 
                 for (const message of currentChat) {
-                    if (message.is_user || message.is_system || message.extra?.type == system_message_types.NARRATOR) {
+                    if (message.is_user || message.is_system || message.extra?.type === system_message_types.NARRATOR) {
                         continue;
                     }
 
@@ -5820,7 +5820,7 @@ export async function saveChat(chatName, withMetadata, mesId) {
 
 async function read_avatar_load(input) {
     if (input.files && input.files[0]) {
-        if (selected_button == 'create') {
+        if (selected_button === 'create') {
             create_save.avatar = input.files;
         }
 
@@ -5842,7 +5842,7 @@ async function read_avatar_load(input) {
             $('#avatar_load_preview').attr('src', fileData);
         }
 
-        if (menu_type == 'create') {
+        if (menu_type === 'create') {
             return;
         }
 
@@ -5860,11 +5860,11 @@ async function read_avatar_load(input) {
         });
 
         $('.mes').each(async function () {
-            const nameMatch = $(this).attr('ch_name') == formData.get('ch_name');
-            if ($(this).attr('is_system') == 'true' && !nameMatch) {
+            const nameMatch = $(this).attr('ch_name') === formData.get('ch_name');
+            if ($(this).attr('is_system') === 'true' && !nameMatch) {
                 return;
             }
-            if ($(this).attr('is_user') == 'true') {
+            if ($(this).attr('is_user') === 'true') {
                 return;
             }
             if (nameMatch) {
@@ -5896,7 +5896,7 @@ export function buildAvatarList(block, entities, { templateId = 'inline_avatar_t
         const avatarTemplate = $(`#${templateId} .avatar`).clone();
 
         let this_avatar = default_avatar;
-        if (entity.item.avatar !== undefined && entity.item.avatar != 'none') {
+        if (entity.item.avatar !== undefined && entity.item.avatar !== 'none') {
             this_avatar = getThumbnailUrl('avatar', entity.item.avatar);
         }
 
@@ -5905,7 +5905,7 @@ export function buildAvatarList(block, entities, { templateId = 'inline_avatar_t
         avatarTemplate.find('img').attr('src', this_avatar).attr('alt', entity.item.name);
         avatarTemplate.attr('title', `[Character] ${entity.item.name}\nFile: ${entity.item.avatar}`);
         if (highlightFavs) {
-            avatarTemplate.toggleClass('is_fav', entity.item.fav || entity.item.fav == 'true');
+            avatarTemplate.toggleClass('is_fav', entity.item.fav || entity.item.fav === 'true');
             avatarTemplate.find('.ch_fav').val(entity.item.fav);
         }
 
@@ -6131,7 +6131,7 @@ export function changeMainAPI() {
 
     // Hide common settings for OpenAI
     console.debug('value?', selectedVal);
-    if (selectedVal == 'openai') {
+    if (selectedVal === 'openai') {
         console.debug('hiding settings?');
         $('#common-gen-settings-block').css('display', 'none');
     } else {
@@ -6141,11 +6141,11 @@ export function changeMainAPI() {
     main_api = selectedVal;
     setOnlineStatus('no_connection');
 
-    if (main_api == 'openai' && oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+    if (main_api === 'openai' && oai_settings.chat_completion_source === chat_completion_sources.WINDOWAI) {
         $('#api_button_openai').trigger('click');
     }
 
-    if (main_api == 'koboldhorde') {
+    if (main_api === 'koboldhorde') {
         getStatusHorde();
         getHordeModels(true);
     }
@@ -6156,7 +6156,7 @@ export function changeMainAPI() {
 
 export function setUserName(value) {
     name1 = value;
-    if (name1 === undefined || name1 == '')
+    if (name1 === undefined || name1 === '')
         name1 = default_user_name;
     console.log(`User name changed to ${name1}`);
     $('#your_name').val(name1);
@@ -6209,7 +6209,7 @@ export async function getSettings() {
     }
 
     const data = await response.json();
-    if (data.result != 'file not find' && data.settings) {
+    if (data.result !== 'file not find' && data.settings) {
         settings = JSON.parse(data.settings);
         if (settings.username !== undefined && settings.username !== '') {
             name1 = settings.username;
@@ -6244,7 +6244,7 @@ export async function getSettings() {
         koboldai_setting_names = arr_holder;
         preset_settings = settings.preset_settings;
 
-        if (preset_settings == 'gui') {
+        if (preset_settings === 'gui') {
             selectKoboldGuiPreset();
         } else {
             if (typeof koboldai_setting_names[preset_settings] !== 'undefined') {
@@ -6326,11 +6326,11 @@ export async function getSettings() {
         $('#amount_gen_counter').val(amount_gen);
 
         //Load which API we are using
-        if (settings.main_api == undefined) {
+        if (settings.main_api === undefined) {
             settings.main_api = 'kobold';
         }
 
-        if (settings.main_api == 'poe') {
+        if (settings.main_api === 'poe') {
             settings.main_api = 'openai';
         }
 
@@ -6551,7 +6551,7 @@ function messageEditAuto(div) {
 
 async function messageEditDone(div) {
     let { mesBlock, text, mes, bias } = updateMessage(div);
-    if (this_edit_mes_id == 0) {
+    if (this_edit_mes_id === 0) {
         text = substituteParams(text);
     }
 
@@ -6924,7 +6924,7 @@ export function select_rm_info(type, charId, previousCharId = null) {
     }, 250);
 
     if (previousCharId) {
-        const newId = characters.findIndex((x) => x.avatar == previousCharId);
+        const newId = characters.findIndex((x) => x.avatar === previousCharId);
         if (newId >= 0) {
             this_chid = newId;
         }
@@ -6984,11 +6984,11 @@ export function select_selected_character(chid) {
     $('#chat_import_character_name').val(characters[chid].name);
     $('#character_json_data').val(characters[chid].json_data);
     let this_avatar = default_avatar;
-    if (characters[chid].avatar != 'none') {
+    if (characters[chid].avatar !== 'none') {
         this_avatar = getThumbnailUrl('avatar', characters[chid].avatar);
     }
 
-    updateFavButtonState(characters[chid].fav || characters[chid].fav == 'true');
+    updateFavButtonState(characters[chid].fav || characters[chid].fav === 'true');
 
     $('#avatar_load_preview').attr('src', this_avatar);
     $('#name_div').removeClass('displayBlock');
@@ -7014,8 +7014,8 @@ function select_rm_create() {
     setMenuType('create');
 
     //console.log('select_rm_Create() -- selected button: '+selected_button);
-    if (selected_button == 'create') {
-        if (create_save.avatar != '') {
+    if (selected_button === 'create') {
+        if (create_save.avatar !== '') {
             $('#add_avatar_button').get(0).files = create_save.avatar;
             read_avatar_load($('#add_avatar_button').get(0));
         }
@@ -7226,7 +7226,7 @@ export function callPopup(text, type, inputValue = '', { okButton, rows, wide, w
     $dialoguePopupText.empty().append(text);
     $shadowPopup.css('display', 'block');
 
-    if (popup_type == 'input') {
+    if (popup_type === 'input') {
         $dialoguePopupInput.trigger('focus');
     }
 
@@ -7256,7 +7256,7 @@ export function showSwipeButtons() {
     ) { return; }
 
     // swipe_id should be set if alternate greetings are added
-    if (chat.length == 1 && chat[0].swipe_id === undefined) {
+    if (chat.length === 1 && chat[0].swipe_id === undefined) {
         return;
     }
 
@@ -7439,11 +7439,11 @@ function updateEditArrowClasses() {
         const lastId = Number($('#chat .mes').last().attr('mesid'));
         const firstId = Number($('#chat .mes').first().attr('mesid'));
 
-        if (lastId == Number(this_edit_mes_id)) {
+        if (lastId === Number(this_edit_mes_id)) {
             down.addClass('disabled');
         }
 
-        if (firstId == Number(this_edit_mes_id)) {
+        if (firstId === Number(this_edit_mes_id)) {
             up.addClass('disabled');
         }
     }
@@ -7468,7 +7468,7 @@ export function setGenerationProgress(progress) {
 }
 
 function isHordeGenerationNotAllowed() {
-    if (main_api == 'koboldhorde' && preset_settings == 'gui') {
+    if (main_api === 'koboldhorde' && preset_settings === 'gui') {
         toastr.error(t`GUI Settings preset is not supported for Horde. Please select another preset.`);
         return true;
     }
@@ -7484,13 +7484,13 @@ export function cancelTtsPlay() {
 
 function updateAlternateGreetingsHintVisibility(root) {
     const numberOfGreetings = root.find('.alternate_greetings_list .alternate_greeting').length;
-    $(root).find('.alternate_grettings_hint').toggle(numberOfGreetings == 0);
+    $(root).find('.alternate_grettings_hint').toggle(numberOfGreetings === 0);
 }
 
 function openCharacterWorldPopup() {
     const chid = $('#set_character_world').data('chid');
 
-    if (menu_type != 'create' && chid == undefined) {
+    if (menu_type !== 'create' && chid === undefined) {
         toastr.error('Does not have an Id for this character in world select menu.');
         return;
     }
@@ -7505,7 +7505,7 @@ function openCharacterWorldPopup() {
 
         console.debug('Character world selected:', name);
 
-        if (menu_type == 'create') {
+        if (menu_type === 'create') {
             create_save.world = name;
         } else {
             if (previousValue && !name) {
@@ -7559,8 +7559,8 @@ function openCharacterWorldPopup() {
     const template = $('#character_world_template .character_world').clone();
     const select = template.find('.character_world_info_selector');
     const extraSelect = template.find('.character_extra_world_info_selector');
-    const name = (menu_type == 'create' ? create_save.name : characters[chid]?.data?.name) || 'Nameless';
-    const worldId = (menu_type == 'create' ? create_save.world : characters[chid]?.data?.extensions?.world) || '';
+    const name = (menu_type === 'create' ? create_save.name : characters[chid]?.data?.name) || 'Nameless';
+    const worldId = (menu_type === 'create' ? create_save.world : characters[chid]?.data?.extensions?.world) || '';
     template.find('.character_name').text(name);
 
     // Not needed on mobile
@@ -7617,18 +7617,18 @@ function openCharacterWorldPopup() {
 function openAlternateGreetings() {
     const chid = $('.open_alternate_greetings').data('chid');
 
-    if (menu_type != 'create' && chid === undefined) {
+    if (menu_type !== 'create' && chid === undefined) {
         toastr.error('Does not have an Id for this character in editor menu.');
         return;
     } else {
         // If the character does not have alternate greetings, create an empty array
-        if (chid && Array.isArray(characters[chid].data.alternate_greetings) == false) {
+        if (chid && Array.isArray(characters[chid].data.alternate_greetings) === false) {
             characters[chid].data.alternate_greetings = [];
         }
     }
 
     const template = $('#alternate_greetings_template .alternate_grettings').clone();
-    const getArray = () => menu_type == 'create' ? create_save.alternate_greetings : characters[chid].data.alternate_greetings;
+    const getArray = () => menu_type === 'create' ? create_save.alternate_greetings : characters[chid].data.alternate_greetings;
     const popup = new Popup(template, POPUP_TYPE.TEXT, '', {
         wide: true,
         large: true,
@@ -7707,7 +7707,7 @@ async function createOrEditCharacter(e) {
     const headers = getRequestHeaders();
     delete headers['Content-Type'];
 
-    if ($('#form_create').attr('actiontype') == 'createcharacter') {
+    if ($('#form_create').attr('actiontype') === 'createcharacter') {
         if (String($('#character_name_pole').val()).length === 0) {
             toastr.error(t`Name is required`);
             return;
@@ -7720,7 +7720,7 @@ async function createOrEditCharacter(e) {
             //if the character name text area isn't empty (only posible when creating a new character)
             let url = '/api/characters/create';
 
-            if (crop_data != undefined) {
+            if (crop_data !== undefined) {
                 url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
             }
 
@@ -7803,7 +7803,7 @@ async function createOrEditCharacter(e) {
         try {
             let url = '/api/characters/edit';
 
-            if (crop_data != undefined) {
+            if (crop_data !== undefined) {
                 url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
             }
 
@@ -7871,7 +7871,7 @@ window['SillyTavern'].getContext = function () {
         characterId: this_chid,
         groupId: selected_group,
         chatId: selected_group
-            ? groups.find(x => x.id == selected_group)?.chat_id
+            ? groups.find(x => x.id === selected_group)?.chat_id
             : (this_chid && characters[this_chid] && characters[this_chid].chat),
         getCurrentChatId: getCurrentChatId,
         getRequestHeaders: getRequestHeaders,
@@ -8619,7 +8619,7 @@ async function doImpersonate(args, prompt) {
 
 export async function doNewChat({ deleteCurrentChat = false } = {}) {
     //Make a new chat for selected character
-    if ((!selected_group && this_chid == undefined) || menu_type == 'create') {
+    if ((!selected_group && this_chid === undefined) || menu_type === 'create') {
         return;
     }
 
@@ -8716,7 +8716,7 @@ export async function renameChat(oldFileName, newName) {
             await renameGroupChat(selected_group, oldFileName, newName);
         }
         else {
-            if (characters[this_chid].chat == oldFileName) {
+            if (characters[this_chid].chat === oldFileName) {
                 characters[this_chid].chat = newName;
                 $('#selected_chat_pole').val(characters[this_chid].chat);
                 await createOrEditCharacter();
@@ -8786,7 +8786,7 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
     }
 
     for (const key of characterKey) {
-        const character = characters.find(x => x.avatar == key);
+        const character = characters.find(x => x.avatar === key);
         if (!character) {
             toastr.warning(t`Character ${key} not found. Skipping deletion.`);
             continue;
@@ -9482,7 +9482,7 @@ jQuery(async function () {
             $('#dialogue_popup').removeClass('wide_dialogue_popup');
         }, animation_duration);
 
-        if (popup_type == 'del_chat') {
+        if (popup_type === 'del_chat') {
             //close past chat popup
             $('#select_chat_cross').trigger('click');
             showLoader();
@@ -9505,7 +9505,7 @@ jQuery(async function () {
         }
 
         if (dialogueResolve) {
-            if (popup_type == 'input') {
+            if (popup_type === 'input') {
                 dialogueResolve($('#dialogue_popup_input').val());
                 $('#dialogue_popup_input').val('');
 
@@ -9569,7 +9569,7 @@ jQuery(async function () {
     //////// OPTIMIZED ALL CHAR CREATION/EDITING TEXTAREA LISTENERS ///////////////
 
     $('#character_name_pole').on('input', function () {
-        if (menu_type == 'create') {
+        if (menu_type === 'create') {
             create_save.name = String($('#character_name_pole').val());
         }
     });
@@ -9594,7 +9594,7 @@ jQuery(async function () {
 
     Object.keys(elementsToUpdate).forEach(function (id) {
         $(id).on('input', function () {
-            if (menu_type == 'create') {
+            if (menu_type === 'create') {
                 elementsToUpdate[id]();
             } else {
                 saveCharacterDebounced();
@@ -9604,7 +9604,7 @@ jQuery(async function () {
 
     $('#favorite_button').on('click', function () {
         updateFavButtonState(!fav_ch_checked);
-        if (menu_type != 'create') {
+        if (menu_type !== 'create') {
             saveCharacterDebounced();
         }
     });
@@ -9619,7 +9619,7 @@ jQuery(async function () {
         const popupText = await renderTemplateAsync('chatRename');
         const newName = await callPopup(popupText, 'input', oldFileName);
 
-        if (!newName || newName == oldFileName) {
+        if (!newName || newName === oldFileName) {
             console.log('no new name found, aborting');
             return;
         }
@@ -9661,7 +9661,7 @@ jQuery(async function () {
                 toastr.error(`Error: ${data.message}`);
                 return;
             } else {
-                const mimeType = format == 'txt' ? 'text/plain' : 'application/octet-stream';
+                const mimeType = format === 'txt' ? 'text/plain' : 'application/octet-stream';
                 // success, handle response data
                 console.log(data);
                 await delay(250);
@@ -9679,7 +9679,7 @@ jQuery(async function () {
     ///////////////////////////////////////////////////////////////////////////////////
 
     $('#api_button').click(function (e) {
-        if ($('#api_url_text').val() != '') {
+        if ($('#api_url_text').val() !== '') {
             let value = formatKoboldUrl(String($('#api_url_text').val()).trim());
 
             if (!value) {
@@ -9803,7 +9803,7 @@ jQuery(async function () {
             ...(additionalPrompt !== undefined && { quiet_prompt: additionalPrompt, quietToLoud: true }),
         });
 
-        if (id == 'option_select_chat') {
+        if (id === 'option_select_chat') {
             if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press) || fromSlashCommand) {
                 await displayPastChats();
                 //this is just to avoid the shadow for past chat view when using /delchat
@@ -9821,7 +9821,7 @@ jQuery(async function () {
             }
         }
 
-        else if (id == 'option_start_new_chat') {
+        else if (id === 'option_start_new_chat') {
             if ((selected_group || this_chid !== undefined) && !is_send_press) {
                 let deleteCurrentChat = false;
                 const result = await Popup.show.confirm(t`Start new chat?`, await renderTemplateAsync('newChatConfirm'), {
@@ -9838,9 +9838,9 @@ jQuery(async function () {
             }
         }
 
-        else if (id == 'option_regenerate') {
+        else if (id === 'option_regenerate') {
             closeMessageEditor();
-            if (is_send_press == false) {
+            if (is_send_press === false) {
                 //hideSwipeButtons();
 
                 if (selected_group) {
@@ -9853,28 +9853,28 @@ jQuery(async function () {
             }
         }
 
-        else if (id == 'option_impersonate') {
-            if (is_send_press == false || fromSlashCommand) {
+        else if (id === 'option_impersonate') {
+            if (is_send_press === false || fromSlashCommand) {
                 is_send_press = true;
                 Generate('impersonate', buildOrFillAdditionalArgs());
             }
         }
 
-        else if (id == 'option_continue') {
+        else if (id === 'option_continue') {
             if (this_edit_mes_id) return; // don't proceed if editing a message
 
-            if (is_send_press == false || fromSlashCommand) {
+            if (is_send_press === false || fromSlashCommand) {
                 is_send_press = true;
                 Generate('continue', buildOrFillAdditionalArgs());
             }
         }
 
-        else if (id == 'option_delete_mes') {
+        else if (id === 'option_delete_mes') {
             setTimeout(() => openMessageDelete(fromSlashCommand), animation_duration);
         }
 
-        else if (id == 'option_close_chat') {
-            if (is_send_press == false) {
+        else if (id === 'option_close_chat') {
+            if (is_send_press === false) {
                 await clearChat();
                 chat.length = 0;
                 resetSelectedGroup();
@@ -9975,7 +9975,7 @@ jQuery(async function () {
     });
 
     $('#settings_preset').change(function () {
-        if ($('#settings_preset').find(':selected').val() != 'gui') {
+        if ($('#settings_preset').find(':selected').val() !== 'gui') {
             preset_settings = $('#settings_preset').find(':selected').text();
             const preset = koboldai_settings[koboldai_setting_names[preset_settings]];
             loadKoboldSettings(preset);
@@ -10114,7 +10114,7 @@ jQuery(async function () {
             let chatScrollPosition = $('#chat').scrollTop();
             if (this_edit_mes_id !== undefined) {
                 let mes_edited = $(`#chat [mesid="${this_edit_mes_id}"]`).find('.mes_edit_done');
-                if (Number(edit_mes_id) == chat.length - 1) { //if the generating swipe (...)
+                if (Number(edit_mes_id) === chat.length - 1) { //if the generating swipe (...)
                     let run_edit = true;
                     if (chat[edit_mes_id]['swipe_id'] !== undefined) {
                         if (chat[edit_mes_id]['swipes'].length === chat[edit_mes_id]['swipe_id']) {
@@ -10454,7 +10454,7 @@ jQuery(async function () {
         var ext = file.name.match(/\.(\w+)$/);
         if (
             !ext ||
-            (ext[1].toLowerCase() != 'json' && ext[1].toLowerCase() != 'jsonl')
+            (ext[1].toLowerCase() !== 'json' && ext[1].toLowerCase() !== 'jsonl')
         ) {
             return;
         }
@@ -10516,8 +10516,8 @@ jQuery(async function () {
         var clickTarget = $(e.target);
 
         if ($('#export_format_popup').is(':visible')
-            && clickTarget.closest('#export_button').length == 0
-            && clickTarget.closest('#export_format_popup').length == 0) {
+            && clickTarget.closest('#export_button').length === 0
+            && clickTarget.closest('#export_format_popup').length === 0) {
             $('#export_format_popup').hide();
         }
 
@@ -10539,7 +10539,7 @@ jQuery(async function () {
         }
 
         var targetParentHasOpenDrawer = clickTarget.parents('.openDrawer').length;
-        if (clickTarget.hasClass('drawer-icon') == false && !clickTarget.hasClass('openDrawer')) {
+        if (clickTarget.hasClass('drawer-icon') === false && !clickTarget.hasClass('openDrawer')) {
             if ($('.openDrawer').length !== 0) {
                 if (targetParentHasOpenDrawer === 0) {
                     //console.log($('.openDrawer').not('.pinnedOpen').length);
@@ -10624,10 +10624,10 @@ jQuery(async function () {
             $('body').append(newElement);
             newElement.fadeIn(animation_duration);
             const zoomedAvatarImgElement = $(`.zoomed_avatar[forChar="${charname}"] img`);
-            if (messageElement.attr('is_user') == 'true' || (messageElement.attr('is_system') == 'true' && !isValidCharacter)) { //handle user and system avatars
+            if (messageElement.attr('is_user') === 'true' || (messageElement.attr('is_system') === 'true' && !isValidCharacter)) { //handle user and system avatars
                 zoomedAvatarImgElement.attr('src', thumbURL);
                 zoomedAvatarImgElement.attr('data-izoomify-url', thumbURL);
-            } else if (messageElement.attr('is_user') == 'false') { //handle char avatars
+            } else if (messageElement.attr('is_user') === 'false') { //handle char avatars
                 zoomedAvatarImgElement.attr('src', avatarSrc);
                 zoomedAvatarImgElement.attr('data-izoomify-url', avatarSrc);
             }
@@ -10695,7 +10695,7 @@ jQuery(async function () {
             }
             if (!this_edit_mes_id && $('#mes_stop').is(':visible')) {
                 $('#mes_stop').trigger('click');
-                if (chat.length && Array.isArray(chat[chat.length - 1].swipes) && chat[chat.length - 1].swipe_id == chat[chat.length - 1].swipes.length) {
+                if (chat.length && Array.isArray(chat[chat.length - 1].swipes) && chat[chat.length - 1].swipe_id === chat[chat.length - 1].swipes.length) {
                     $('.last_mes .swipe_left').trigger('click');
                 }
             }
