@@ -709,7 +709,7 @@ async function getQueryText(chat, initiator) {
     let queryText = '';
     let i = 0;
 
-    let hashedMessages = chat.map(x => ({ text: String(substituteParams(x.mes)) }));
+    let hashedMessages = chat.map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)) }));
 
     if (initiator === 'chat' && settings.enabled_chats && settings.summarize && settings.summarize_sent) {
         hashedMessages = await summarize(hashedMessages, settings.summary_source);
