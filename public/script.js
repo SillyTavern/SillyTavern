@@ -1,246 +1,307 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter, addSafariPatch } from './scripts/RossAscends-mods.js';
-import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
-    generateKoboldWithStreaming,
-    kai_settings,
-    loadKoboldSettings,
+    addSafariPatch,
+    dragElement,
+    favsToHotswap,
+    getMessageTimeStamp,
+    humanizedDateTime,
+    initRossMods,
+    isMobile,
+    shouldSendOnEnter,
+} from './scripts/RossAscends-mods.js';
+import { initStats, statMesProcess, userStatsHandler } from './scripts/stats.js';
+import {
     formatKoboldUrl,
+    generateKoboldWithStreaming,
     getKoboldGenerationData,
     kai_flags,
+    kai_settings,
+    loadKoboldSettings,
     setKoboldFlags,
 } from './scripts/kai-settings.js';
 
 import {
-    textgenerationwebui_settings as textgen_settings,
-    loadTextGenSettings,
     generateTextGenWithStreaming,
     getTextGenGenerationData,
-    textgen_types,
     getTextGenServer,
-    validateTextGenUrl,
-    parseTextgenLogprobs,
+    loadTextGenSettings,
     parseTabbyLogprobs,
+    parseTextgenLogprobs,
+    textgen_types,
+    textgenerationwebui_settings as textgen_settings,
+    validateTextGenUrl,
 } from './scripts/textgen-settings.js';
-
-const { MANCER, TOGETHERAI, OOBA, VLLM, APHRODITE, TABBY, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER, FEATHERLESS } = textgen_types;
-
 import {
-    world_info,
+    checkEmbeddedWorld,
     getWorldInfoPrompt,
     getWorldInfoSettings,
-    setWorldInfoSettings,
-    world_names,
     importEmbeddedWorldInfo,
-    checkEmbeddedWorld,
-    setWorldInfoButtonClass,
     importWorldInfo,
+    setWorldInfoButtonClass,
+    setWorldInfoSettings,
     wi_anchor_position,
+    world_info,
     world_info_include_names,
+    world_names,
 } from './scripts/world-info.js';
 
 import {
-    groups,
-    selected_group,
-    saveGroupChat,
-    getGroups,
-    generateGroupWrapper,
-    is_group_generating,
-    resetSelectedGroup,
-    select_group_chats,
-    regenerateGroup,
-    group_generation_id,
-    getGroupChat,
-    renameGroupMember,
     createNewGroupChat,
-    getGroupPastChats,
-    getGroupAvatar,
-    openGroupChat,
-    editGroup,
     deleteGroupChat,
-    renameGroupChat,
-    importGroupChat,
+    editGroup,
+    generateGroupWrapper,
+    getGroupAvatar,
     getGroupBlock,
     getGroupCharacterCards,
+    getGroupChat,
     getGroupDepthPrompts,
+    getGroupPastChats,
+    getGroups,
+    group_generation_id,
+    groups,
+    importGroupChat,
+    is_group_generating,
+    openGroupChat,
+    regenerateGroup,
+    renameGroupChat,
+    renameGroupMember,
+    resetSelectedGroup,
+    saveGroupChat,
+    select_group_chats,
+    selected_group,
 } from './scripts/group-chats.js';
 
 import {
+    applyPowerUserSettings,
     collapseNewlines,
-    loadPowerUserSettings,
-    playMessageSound,
+    context_presets,
     fixMarkdown,
-    power_user,
-    persona_description_positions,
-    loadMovingUIState,
+    flushEphemeralStoppingStrings,
+    forceCharacterEditorTokenize,
     getCustomStoppingStrings,
+    loadMovingUIState,
+    loadPowerUserSettings,
     MAX_CONTEXT_DEFAULT,
     MAX_RESPONSE_DEFAULT,
-    renderStoryString,
-    sortEntitiesList,
+    persona_description_positions,
+    playMessageSound,
+    power_user,
     registerDebugFunction,
-    flushEphemeralStoppingStrings,
-    context_presets,
+    renderStoryString,
     resetMovableStyles,
-    forceCharacterEditorTokenize,
-    applyPowerUserSettings,
+    sortEntitiesList,
     switchSwipeNumAllMessages,
 } from './scripts/power-user.js';
 
 import {
+    chat_completion_sources,
+    getChatCompletionModel,
+    initOpenAI,
+    loadOpenAISettings,
+    loadProxyPresets,
+    oai_settings,
+    openai_messages_count,
+    prepareOpenAIMessages,
+    proxies,
+    selected_proxy,
+    sendOpenAIRequest,
     setOpenAIMessageExamples,
     setOpenAIMessages,
     setupChatCompletionPromptManager,
-    prepareOpenAIMessages,
-    sendOpenAIRequest,
-    loadOpenAISettings,
-    oai_settings,
-    openai_messages_count,
-    chat_completion_sources,
-    getChatCompletionModel,
-    proxies,
-    loadProxyPresets,
-    selected_proxy,
-    initOpenAI,
 } from './scripts/openai.js';
 
 import {
+    adjustNovelInstructionPrompt,
     generateNovelWithStreaming,
-    getNovelGenerationData,
     getKayraMaxContextTokens,
+    getNovelGenerationData,
     getNovelTier,
     loadNovelPreset,
     loadNovelSettings,
-    nai_settings,
-    adjustNovelInstructionPrompt,
     loadNovelSubscriptionData,
+    nai_settings,
     parseNovelAILogprobs,
 } from './scripts/nai-settings.js';
 
-import {
-    initBookmarks,
-    showBookmarksButtons,
-    updateBookmarkDisplay,
-} from './scripts/bookmarks.js';
+import { initBookmarks, showBookmarksButtons, updateBookmarkDisplay } from './scripts/bookmarks.js';
 
 import {
+    adjustHordeGenerationParams,
+    checkHordeStatus,
+    generateHorde,
+    getHordeModels,
     horde_settings,
     loadHordeSettings,
-    generateHorde,
-    checkHordeStatus,
-    getHordeModels,
-    adjustHordeGenerationParams,
     MIN_LENGTH,
 } from './scripts/horde.js';
 
 import {
+    countOccurrences,
     debounce,
     delay,
-    trimToEndSentence,
-    countOccurrences,
-    isOdd,
-    sortMoments,
-    timestampToMoment,
     download,
-    isDataURL,
-    getCharaFilename,
-    PAGINATION_TEMPLATE,
-    waitUntilCondition,
-    escapeRegex,
-    resetScrollHeight,
-    onlyUnique,
-    getBase64Async,
-    humanFileSize,
-    Stopwatch,
-    isValidUrl,
     ensureImageFormatSupported,
+    escapeRegex,
     flashHighlight,
+    getBase64Async,
+    getCharaFilename,
+    humanFileSize,
+    isDataURL,
+    isOdd,
     isTrueBoolean,
+    isValidUrl,
+    onlyUnique,
+    PAGINATION_TEMPLATE,
+    resetScrollHeight,
+    sortMoments,
+    Stopwatch,
+    timestampToMoment,
     toggleDrawer,
+    trimToEndSentence,
+    waitUntilCondition,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
-import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, initExtensions, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
-import { COMMENT_NAME_DEFAULT, executeSlashCommands, executeSlashCommandsOnChatInput, executeSlashCommandsWithOptions, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, registerSlashCommand, stopScriptExecution } from './scripts/slash-commands.js';
 import {
-    tag_map,
-    tags,
-    filterByTagState,
-    isBogusFolder,
-    isBogusFolderOpen,
-    chooseBogusFolder,
-    getTagBlock,
-    loadTagsSettings,
-    printTagFilters,
-    getTagKeyForEntity,
-    printTagList,
-    createTagMapFromList,
-    renameTagKey,
-    importTags,
-    tag_filter_type,
-    compareTagsForSort,
-    initTags,
+    doDailyExtensionUpdatesCheck,
+    extension_settings,
+    getContext,
+    initExtensions,
+    loadExtensionSettings,
+    ModuleWorkerWrapper,
+    renderExtensionTemplate,
+    renderExtensionTemplateAsync,
+    runGenerationInterceptors,
+    saveMetadataDebounced,
+    writeExtensionField,
+} from './scripts/extensions.js';
+import {
+    COMMENT_NAME_DEFAULT,
+    executeSlashCommands,
+    executeSlashCommandsOnChatInput,
+    executeSlashCommandsWithOptions,
+    getSlashCommandsHelp,
+    initDefaultSlashCommands,
+    isExecutingCommandsFromChatInput,
+    pauseScriptExecution,
+    processChatSlashCommands,
+    registerSlashCommand,
+    stopScriptExecution,
+} from './scripts/slash-commands.js';
+import {
     applyTagsOnCharacterSelect,
     applyTagsOnGroupSelect,
+    chooseBogusFolder,
+    compareTagsForSort,
+    createTagMapFromList,
+    filterByTagState,
+    getTagBlock,
+    getTagKeyForEntity,
+    importTags,
+    initTags,
+    isBogusFolder,
+    isBogusFolderOpen,
+    loadTagsSettings,
+    printTagFilters,
+    printTagList,
+    renameTagKey,
+    tag_filter_type,
     tag_import_setting,
+    tag_map,
+    tags,
 } from './scripts/tags.js';
-import {
-    SECRET_KEYS,
-    readSecretState,
-    secret_state,
-    writeSecret,
-} from './scripts/secrets.js';
+import { readSecretState, SECRET_KEYS, secret_state, writeSecret } from './scripts/secrets.js';
 import { EventEmitter } from './lib/eventemitter.js';
 import { markdownExclusionExt } from './scripts/showdown-exclusion.js';
 import { markdownUnderscoreExt } from './scripts/showdown-underscore.js';
-import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from './scripts/authors-note.js';
+import {
+    initAuthorsNote,
+    metadata_keys,
+    NOTE_MODULE_NAME,
+    setFloatingPrompt,
+    shouldWIAddPrompt,
+} from './scripts/authors-note.js';
 import { registerPromptManagerMigration } from './scripts/PromptManager.js';
 import { getRegexedString, regex_placement } from './scripts/extensions/regex/engine.js';
 import { initLogprobs, saveLogprobsForActiveMessage } from './scripts/logprobs.js';
 import { FILTER_STATES, FILTER_TYPES, FilterHelper, isFilterState } from './scripts/filters.js';
 import { getCfgPrompt, getGuidanceScale, initCfg } from './scripts/cfg-scale.js';
 import {
+    autoSelectInstructPreset,
     force_output_sequence,
     formatInstructModeChat,
-    formatInstructModePrompt,
     formatInstructModeExamples,
-    getInstructStoppingSequences,
-    autoSelectInstructPreset,
+    formatInstructModePrompt,
     formatInstructModeSystemPrompt,
-    selectInstructPreset,
+    getInstructStoppingSequences,
     instruct_presets,
     selectContextPreset,
+    selectInstructPreset,
 } from './scripts/instruct-mode.js';
 import { initLocales, t, translate } from './scripts/i18n.js';
-import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache, TOKENIZER_SUPPORTED_KEY } from './scripts/tokenizers.js';
 import {
-    user_avatar,
-    getUserAvatars,
+    getFriendlyTokenizerName,
+    getTokenCount,
+    getTokenCountAsync,
+    getTokenizerModel,
+    initTokenizers,
+    saveTokenCache,
+    TOKENIZER_SUPPORTED_KEY,
+} from './scripts/tokenizers.js';
+import {
     getUserAvatar,
-    setUserAvatar,
+    getUserAvatars,
     initPersonas,
-    setPersonaDescription,
     initUserAvatar,
+    setPersonaDescription,
+    setUserAvatar,
+    user_avatar,
 } from './scripts/personas.js';
-import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
+import { background_settings, getBackgrounds, initBackgrounds, loadBackgroundSettings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadFeatherlessModels, loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels, initTextGenModels, loadTabbyModels } from './scripts/textgen-models.js';
-import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId, preserveNeutralChat, restoreNeutralChat } from './scripts/chats.js';
+import {
+    initTextGenModels,
+    loadAphroditeModels,
+    loadDreamGenModels,
+    loadFeatherlessModels,
+    loadInfermaticAIModels,
+    loadMancerModels,
+    loadOllamaModels,
+    loadOpenRouterModels,
+    loadTabbyModels,
+    loadTogetherAIModels,
+    loadVllmModels,
+} from './scripts/textgen-models.js';
+import {
+    appendFileContent,
+    decodeStyleTags,
+    encodeStyleTags,
+    getCurrentEntityId,
+    hasPendingFileAttachment,
+    isExternalMediaAllowed,
+    populateFileAttachment,
+    preserveNeutralChat,
+    restoreNeutralChat,
+} from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
-import { MacrosParser, evaluateMacros, getLastMessageId } from './scripts/macros.js';
+import { evaluateMacros, getLastMessageId, MacrosParser } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
-import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
+import { callGenericPopup, fixToastrForDialogs, Popup, POPUP_RESULT, POPUP_TYPE } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { initScrapers, ScraperManager } from './scripts/scrapers.js';
 import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './scripts/slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './scripts/slash-commands/SlashCommandArgument.js';
+import {
+    ARGUMENT_TYPE,
+    SlashCommandArgument,
+    SlashCommandNamedArgument,
+} from './scripts/slash-commands/SlashCommandArgument.js';
 import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowser.js';
 import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
 import { DragAndDropHandler } from './scripts/dragdrop.js';
-import { INTERACTABLE_CONTROL_CLASS, initKeyboard } from './scripts/keyboard.js';
+import { initKeyboard, INTERACTABLE_CONTROL_CLASS } from './scripts/keyboard.js';
 import { initDynamicStyles } from './scripts/dynamic-styles.js';
-import { SlashCommandEnumValue, enumTypes } from './scripts/slash-commands/SlashCommandEnumValue.js';
+import { enumTypes, SlashCommandEnumValue } from './scripts/slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './scripts/slash-commands/SlashCommandCommonEnumsProvider.js';
 import { initInputMarkdown } from './scripts/input-md-formatting.js';
 import { AbortReason } from './scripts/util/AbortReason.js';
@@ -250,12 +311,14 @@ import { ToolManager } from './scripts/tool-calling.js';
 import {
     loadItemizedPrompts,
     parseTokenCounts,
-    saveItemizedPrompt,
     registerPromptItemizationHandlers,
+    saveItemizedPrompt,
     saveItemizedPrompts,
     showHidePromptItemizationButton,
     unloadItemizedPrompts,
 } from './scripts/prompt-itemization.js';
+
+const { MANCER, TOGETHERAI, OOBA, VLLM, APHRODITE, TABBY, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER, FEATHERLESS } = textgen_types;
 
 //exporting functions and vars for mods
 export {
@@ -3975,9 +4038,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         if (quiet_prompt && quiet_prompt.length) {
 
             // here name1 is forced for all quiet prompts..why?
-            const name = name1;
             //checks if we are in instruct, if so, formats the chat as such, otherwise just adds the quiet prompt
-            const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, '', name1, name2, false) : `\n${quiet_prompt}`;
+            const quietAppend = isInstruct ? formatInstructModeChat(name1, quiet_prompt, false, true, '', name1, name2, false) : `\n${quiet_prompt}`;
 
             //This begins to fix quietPrompts (particularly /sysgen) for instruct
             //previously instruct input sequence was being appended to the last chat message w/o '\n'
@@ -4528,6 +4590,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
 
         // Don't break the API chain that expects a single string in return
+        // noinspection JSPrimitiveTypeWrapperUsage
         return Object.defineProperty(new String(getMessage), 'messageChunk', { value: messageChunk });
     }
 
@@ -4981,12 +5044,10 @@ export async function sendGenerationRequest(type, data) {
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        throw error;
+        throw await response.json();
     }
 
-    const responseData = await response.json();
-    return responseData;
+    return await response.json();
 }
 
 /**
