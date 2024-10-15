@@ -341,7 +341,7 @@ input[type='checkbox']:focus-visible {
     color: var(--SmartThemeUnderlineColor);
 }
 
-.mes_text .mes_text_speech {
+.mes_text .custom-mes_text_speech {
     color: var(--SmartThemeQuoteColor);
 }
 
@@ -350,7 +350,7 @@ input[type='checkbox']:focus-visible {
     color: inherit;
 }
 
-.mes_text font[color] .mes_text_speech {
+.mes_text font[color] .custom-mes_text_speech {
     color: inherit;
 }
 

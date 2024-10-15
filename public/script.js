@@ -2007,6 +2007,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         mes = mes.replace(
             /```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(".*?")|(\u201C.*?\u201D)|(\u00AB.*?\u00BB)|(\u300C.*?\u300D)|(\u300E.*?\u300F)|(\uFF02.*?\uFF02)/gm,
             function (match, p1, p2, p3, p4, p5, p6) {
+                //Being elements added after page load, below classes will be prefixed with custom-, see 'uponSanitizeAttribute'
                 if (p1) {
                     // English double quotes
                     return `<span class="mes_text_speech">"${p1.slice(1, -1)}"</span>`;
