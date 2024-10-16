@@ -65,6 +65,7 @@ const LLAMACPP_DEFAULT_ORDER = [
     'typical_p',
     'top_p',
     'min_p',
+    'xtc',
     'temperature',
 ];
 const OOBA_DEFAULT_ORDER = [
