@@ -7,6 +7,7 @@ import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
 import localforage from 'localforage';
 import Handlebars from 'handlebars';
+import css from '@adobe/css-tools';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -45,6 +46,7 @@ export default {
     hljs,
     localforage,
     Handlebars,
+    css,
 };
 
 export {
@@ -53,4 +55,5 @@ export {
     hljs,
     localforage,
     Handlebars,
+    css,
 };
