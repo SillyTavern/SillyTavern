@@ -24,7 +24,6 @@
             "droll",
             "handlebars",
             "highlight.js",
-            "localforage",
             "pdfjs-dist",
             "@mozilla/readability"
         ]

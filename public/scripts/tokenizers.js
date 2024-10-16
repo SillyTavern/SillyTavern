@@ -1,3 +1,4 @@
+import { localforage } from '../lib.js';
 import { characters, main_api, api_server, nai_settings, online_status, this_chid } from '../script.js';
 import { power_user, registerDebugFunction } from './power-user.js';
 import { chat_completion_sources, model_list, oai_settings } from './openai.js';
@@ -135,7 +136,7 @@ const TOKENIZER_URLS = {
     },
 };
 
-const objectStore = new localforage.createInstance({ name: 'SillyTavern_ChatCompletions' });
+const objectStore = localforage.createInstance({ name: 'SillyTavern_ChatCompletions' });
 
 let tokenCache = {};
 

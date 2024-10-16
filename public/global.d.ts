@@ -1,7 +1,6 @@
 // Global namespace modules
 declare var droll;
 declare var Handlebars;
-declare var localforage;
 declare var pdfjsLib;
 declare var Popper;
 declare var showdown;

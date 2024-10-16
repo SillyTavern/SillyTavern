@@ -5,6 +5,7 @@
 import Fuse from 'fuse.js';
 import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
+import localforage from 'localforage';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -27,16 +28,22 @@ export function initLibraryShims() {
         // @ts-ignore
         window.hljs = hljs;
     }
+    if (!('localforage' in window)) {
+        // @ts-ignore
+        window.localforage = localforage;
+    }
 }
 
 export default {
     Fuse,
     DOMPurify,
     hljs,
+    localforage,
 };
 
 export {
     Fuse,
     DOMPurify,
     hljs,
+    localforage,
 };

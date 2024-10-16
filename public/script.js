@@ -2,6 +2,7 @@ import {
     Fuse,
     DOMPurify,
     hljs,
+    localforage,
     initLibraryShims,
     default as libs,
 } from './lib.js';
@@ -503,7 +504,7 @@ reloadMarkdownProcessor();
 
 // array for prompt token calculations
 console.debug('initializing Prompt Itemization Array on Startup');
-const promptStorage = new localforage.createInstance({ name: 'SillyTavern_Prompts' });
+const promptStorage = localforage.createInstance({ name: 'SillyTavern_Prompts' });
 export let itemizedPrompts = [];
 
 export const systemUserName = 'SillyTavern System';
