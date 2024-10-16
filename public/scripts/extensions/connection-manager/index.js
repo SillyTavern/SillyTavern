@@ -1,3 +1,5 @@
+import { Fuse } from '../../../lib.js';
+
 import { event_types, eventSource, main_api, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';

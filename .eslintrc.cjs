@@ -52,7 +52,6 @@ module.exports = {
             globals: {
                 DOMPurify: 'readonly',
                 droll: 'readonly',
-                Fuse: 'readonly',
                 Handlebars: 'readonly',
                 hljs: 'readonly',
                 localforage: 'readonly',
