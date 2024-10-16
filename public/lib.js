@@ -15,6 +15,7 @@ import * as pdfjsLib from 'pdfjs-dist/webpack.mjs';
 import DiffMatchPatch from 'diff-match-patch';
 import { isProbablyReaderable, Readability } from '@mozilla/readability';
 import SVGInject from '@iconfu/svg-inject';
+import showdown from 'showdown';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -53,6 +54,10 @@ export function initLibraryShims() {
         // @ts-ignore
         window.SVGInject = SVGInject;
     }
+    if (!('showdown' in window)) {
+        // @ts-ignore
+        window.showdown = showdown;
+    }
 }
 
 export default {
@@ -70,6 +75,7 @@ export default {
     Readability,
     isProbablyReaderable,
     SVGInject,
+    showdown,
 };
 
 export {
@@ -87,4 +93,5 @@ export {
     Readability,
     isProbablyReaderable,
     SVGInject,
+    showdown,
 };

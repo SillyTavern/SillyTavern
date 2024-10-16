@@ -1,7 +1,6 @@
 // Global namespace modules
 declare var droll;
 declare var Popper;
-declare var showdown;
 declare var showdownKatex;
 declare var ai;
 

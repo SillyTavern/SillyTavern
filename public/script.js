@@ -1,4 +1,5 @@
 import {
+    showdown,
     Fuse,
     DOMPurify,
     hljs,
@@ -259,6 +260,7 @@ import { AbortReason } from './scripts/util/AbortReason.js';
 import { initSystemPrompts } from './scripts/sysprompt.js';
 import { registerExtensionSlashCommands as initExtensionSlashCommands } from './scripts/extensions-slashcommands.js';
 import { ToolManager } from './scripts/tool-calling.js';
+import { addShowdownPatch } from './scripts/util/showdown-patch.js';
 
 //exporting functions and vars for mods
 export {
@@ -502,6 +504,7 @@ console.debug('Character context menu initialized', characterContextMenu);
 
 // Markdown converter
 export let mesForShowdownParse; //intended to be used as a context to compare showdown strings against
+/** @type {import('showdown').Converter} */
 let converter;
 reloadMarkdownProcessor();
 
@@ -952,6 +955,7 @@ async function firstLoadInit() {
     }
 
     initLibraryShims();
+    addShowdownPatch(showdown);
     addSafariPatch();
     await getClientVersion();
     await readSecretState();

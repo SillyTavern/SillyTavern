@@ -53,7 +53,6 @@ module.exports = {
                 droll: 'readonly',
                 moment: 'readonly',
                 Popper: 'readonly',
-                showdown: 'readonly',
                 showdownKatex: 'readonly',
                 toastr: 'readonly',
                 isProbablyReaderable: 'readonly',
