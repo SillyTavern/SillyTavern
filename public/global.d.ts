@@ -16,6 +16,7 @@ declare var ai;
 declare var SillyTavern: {
     getContext(): any;
     llm: any;
+    libs: any;
 };
 
 // Jquery plugins

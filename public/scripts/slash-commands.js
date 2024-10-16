@@ -1,4 +1,4 @@
-import { Fuse } from '../lib.js';
+import { Fuse, DOMPurify } from '../lib.js';
 
 import {
     Generate,

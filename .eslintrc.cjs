@@ -50,7 +50,6 @@ module.exports = {
             },
             // These scripts are loaded in HTML; tell ESLint not to complain about them being undefined
             globals: {
-                DOMPurify: 'readonly',
                 droll: 'readonly',
                 Handlebars: 'readonly',
                 hljs: 'readonly',

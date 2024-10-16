@@ -3,7 +3,7 @@
 * By CncAnon (@CncAnon1)
 * https://github.com/CncAnon1/TavernAITurbo
 */
-import { Fuse } from '../lib.js';
+import { Fuse, DOMPurify } from '../lib.js';
 
 import {
     abortStatusCheck,

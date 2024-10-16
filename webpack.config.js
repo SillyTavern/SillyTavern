@@ -4,12 +4,7 @@ export const publicLibConfig = {
     entry: './public/lib.js',
     cache: true,
     devtool: 'source-map',
-    module: {
-        rules: [{
-            test: /\.js$/,
-            exclude: /node_modules/,
-        }],
-    },
+    module: {},
     experiments: {
         outputModule: true,
     },

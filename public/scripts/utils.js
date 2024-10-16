@@ -1,3 +1,5 @@
+import { DOMPurify } from '../lib.js';
+
 import { getContext } from './extensions.js';
 import { characters, getRequestHeaders, this_chid } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';

@@ -1,4 +1,4 @@
-import { Fuse } from './lib.js';
+import { Fuse, DOMPurify, initLibraryShims, default as libs } from './lib.js';
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter, addSafariPatch } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
@@ -410,6 +410,7 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
 
 // API OBJECT FOR EXTERNAL WIRING
 window['SillyTavern'] = {};
+window['SillyTavern'].libs = libs;
 
 // Event source init
 export const event_types = {
@@ -940,6 +941,7 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
+    initLibraryShims();
     addSafariPatch();
     await getClientVersion();
     await readSecretState();
@@ -2058,8 +2060,15 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         mes = mes.replace(new RegExp(`(^|\n)${escapeRegex(ch_name)}:`, 'g'), '$1');
     }
 
-    /** @type {any} */
-    const config = { MESSAGE_SANITIZE: true, ADD_TAGS: ['custom-style'], ...sanitizerOverrides };
+    /** @type {import('dompurify').Config & { RETURN_DOM_FRAGMENT: false; RETURN_DOM: false }} */
+    const config = {
+        RETURN_DOM: false,
+        RETURN_DOM_FRAGMENT: false,
+        RETURN_TRUSTED_TYPE: false,
+        MESSAGE_SANITIZE: true,
+        ADD_TAGS: ['custom-style'],
+        ...sanitizerOverrides,
+    };
     mes = encodeStyleTags(mes);
     mes = DOMPurify.sanitize(mes, config);
     mes = decodeStyleTags(mes);
