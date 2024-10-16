@@ -34,6 +34,7 @@
         "localforage": "^1.10.0",
         "lodash": "^4.17.21",
         "mime-types": "^2.1.35",
+        "moment": "^2.30.1",
         "multer": "^1.4.5-lts.1",
         "node-fetch": "^3.3.2",
         "node-persist": "^4.0.1",

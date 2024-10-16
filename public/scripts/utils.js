@@ -1,4 +1,11 @@
-import { DOMPurify, ePub, pdfjsLib, Readability, isProbablyReaderable } from '../lib.js';
+import {
+    moment,
+    DOMPurify,
+    ePub,
+    pdfjsLib,
+    Readability,
+    isProbablyReaderable,
+} from '../lib.js';
 
 import { getContext } from './extensions.js';
 import { characters, getRequestHeaders, this_chid } from '../script.js';
@@ -773,8 +780,8 @@ export function isOdd(number) {
 
 /**
  * Compare two moment objects for sorting.
- * @param {moment.Moment} a The first moment object.
- * @param {moment.Moment} b The second moment object.
+ * @param {import('moment').Moment} a The first moment object.
+ * @param {import('moment').Moment} b The second moment object.
  * @returns {number} A negative number if a is before b, a positive number if a is after b, or 0 if they are equal.
  */
 export function sortMoments(a, b) {
@@ -793,7 +800,7 @@ const dateCache = new Map();
  * Cached version of moment() to avoid re-parsing the same date strings.
  * Important: Moment objects are mutable, so use clone() before modifying them!
  * @param {string|number} timestamp String or number representing a date.
- * @returns {moment.Moment} Moment object
+ * @returns {import('moment').Moment} Moment object
  */
 export function timestampToMoment(timestamp) {
     if (dateCache.has(timestamp)) {

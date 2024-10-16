@@ -16,6 +16,7 @@ import DiffMatchPatch from 'diff-match-patch';
 import { isProbablyReaderable, Readability } from '@mozilla/readability';
 import SVGInject from '@iconfu/svg-inject';
 import showdown from 'showdown';
+import moment from 'moment';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -58,6 +59,10 @@ export function initLibraryShims() {
         // @ts-ignore
         window.showdown = showdown;
     }
+    if (!('moment' in window)) {
+        // @ts-ignore
+        window.moment = moment;
+    }
 }
 
 export default {
@@ -76,6 +81,7 @@ export default {
     isProbablyReaderable,
     SVGInject,
     showdown,
+    moment,
 };
 
 export {
@@ -94,4 +100,5 @@ export {
     isProbablyReaderable,
     SVGInject,
     showdown,
+    moment,
 };

@@ -1,5 +1,6 @@
 import {
     showdown,
+    moment,
     Fuse,
     DOMPurify,
     hljs,
