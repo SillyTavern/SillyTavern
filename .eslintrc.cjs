@@ -55,7 +55,6 @@ module.exports = {
                 Popper: 'readonly',
                 showdown: 'readonly',
                 showdownKatex: 'readonly',
-                SVGInject: 'readonly',
                 toastr: 'readonly',
                 isProbablyReaderable: 'readonly',
                 SillyTavern: 'readonly',

@@ -3,7 +3,6 @@ declare var droll;
 declare var Popper;
 declare var showdown;
 declare var showdownKatex;
-declare var SVGInject;
 declare var ai;
 
 declare var SillyTavern: {

@@ -5,6 +5,7 @@ import {
     localforage,
     Handlebars,
     DiffMatchPatch,
+    SVGInject,
     initLibraryShims,
     default as libs,
 } from './lib.js';
@@ -2136,7 +2137,7 @@ function insertSVGIcon(mes, extra) {
             mes.find('.timestamp').after(image);
         }
 
-        await SVGInject(this);
+        await SVGInject(image);
     };
 }
 

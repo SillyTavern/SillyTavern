@@ -14,6 +14,7 @@ import ePub from 'epubjs';
 import * as pdfjsLib from 'pdfjs-dist/webpack.mjs';
 import DiffMatchPatch from 'diff-match-patch';
 import { isProbablyReaderable, Readability } from '@mozilla/readability';
+import SVGInject from '@iconfu/svg-inject';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -48,6 +49,10 @@ export function initLibraryShims() {
         // @ts-ignore
         window.diff_match_patch = DiffMatchPatch;
     }
+    if (!('SVGInject' in window)) {
+        // @ts-ignore
+        window.SVGInject = SVGInject;
+    }
 }
 
 export default {
@@ -64,6 +69,7 @@ export default {
     DiffMatchPatch,
     Readability,
     isProbablyReaderable,
+    SVGInject,
 };
 
 export {
@@ -80,4 +86,5 @@ export {
     DiffMatchPatch,
     Readability,
     isProbablyReaderable,
+    SVGInject,
 };
