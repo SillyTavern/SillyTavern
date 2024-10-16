@@ -3,6 +3,7 @@ import {
     DOMPurify,
     hljs,
     localforage,
+    Handlebars,
     initLibraryShims,
     default as libs,
 } from './lib.js';

@@ -6,6 +6,7 @@ import Fuse from 'fuse.js';
 import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
 import localforage from 'localforage';
+import Handlebars from 'handlebars';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -32,6 +33,10 @@ export function initLibraryShims() {
         // @ts-ignore
         window.localforage = localforage;
     }
+    if (!('Handlebars' in window)) {
+        // @ts-ignore
+        window.Handlebars = Handlebars;
+    }
 }
 
 export default {
@@ -39,6 +44,7 @@ export default {
     DOMPurify,
     hljs,
     localforage,
+    Handlebars,
 };
 
 export {
@@ -46,4 +52,5 @@ export {
     DOMPurify,
     hljs,
     localforage,
+    Handlebars,
 };

@@ -1,4 +1,4 @@
-import { Fuse } from '../lib.js';
+import { Fuse, Handlebars } from '../lib.js';
 
 import {
     saveSettingsDebounced,

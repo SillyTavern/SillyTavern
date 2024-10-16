@@ -22,8 +22,6 @@
             "seedrandom",
             "showdown-katex",
             "droll",
-            "handlebars",
-            "highlight.js",
             "pdfjs-dist",
             "@mozilla/readability"
         ]
