@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 
-import vectra from 'vectra';
+import { LocalIndex } from 'vectra';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 
@@ -199,12 +199,12 @@ function getModelScope(sourceSettings) {
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
  * @param {object} sourceSettings - The model for the source
- * @returns {Promise<vectra.LocalIndex>} - The index for the collection
+ * @returns {Promise<LocalIndex>} - The index for the collection
  */
 async function getIndex(directories, collectionId, source, sourceSettings) {
     const model = getModelScope(sourceSettings);
     const pathToFile = path.join(directories.vectors, sanitize(source), sanitize(collectionId), sanitize(model));
-    const store = new vectra.LocalIndex(pathToFile);
+    const store = new LocalIndex(pathToFile);
 
     if (!await store.isIndexCreated()) {
         await store.createIndex();

@@ -37,7 +37,7 @@
         "sillytavern-transformers": "2.14.6",
         "simple-git": "^3.19.1",
         "tiktoken": "^1.0.16",
-        "vectra": "^0.2.2",
+        "vectra": "^0.9.0",
         "wavefile": "^11.0.0",
         "write-file-atomic": "^5.0.1",
         "ws": "^8.17.1",
