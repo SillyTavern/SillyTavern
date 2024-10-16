@@ -22,7 +22,6 @@ import {
     MAX_INJECTION_DEPTH,
     name1,
     name2,
-    replaceItemizedPromptText,
     resultCheckStatus,
     saveSettingsDebounced,
     setOnlineStatus,
@@ -42,7 +41,12 @@ import {
     promptManagerDefaultPromptOrders,
 } from './PromptManager.js';
 
-import { forceCharacterEditorTokenize, getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
+import {
+    forceCharacterEditorTokenize,
+    getCustomStoppingStrings,
+    persona_description_positions,
+    power_user,
+} from './power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 
 import { getEventSourceStream } from './sse-stream.js';
@@ -71,6 +75,7 @@ import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js
 import { Popup, POPUP_RESULT } from './popup.js';
 import { t } from './i18n.js';
 import { ToolManager } from './tool-calling.js';
+import { saveItemizedPromptText } from './prompt-itemization.js';
 
 export {
     openai_messages_count,
@@ -1290,7 +1295,7 @@ export async function prepareOpenAIMessages({
         // Pass chat completion to prompt manager for inspection
         promptManager.setChatCompletion(chatCompletion);
 
-        if (oai_settings.squash_system_messages && dryRun == false) {
+        if (oai_settings.squash_system_messages && dryRun === false) {
             await chatCompletion.squashSystemMessages();
         }
 
@@ -1686,8 +1691,10 @@ async function sendAltScaleRequest(messages, logit_bias, signal, type) {
     }, '');
 
     messages = substituteParams(joinedSubsequentMsgs);
+
+    // TODO: could this be done as an event?
     const messageId = getNextMessageId(type);
-    replaceItemizedPromptText(messageId, messages);
+    void saveItemizedPromptText(messageId, messages);
 
     const generate_data = {
         sysprompt: joinedSysMsgs,
@@ -1697,6 +1704,8 @@ async function sendAltScaleRequest(messages, logit_bias, signal, type) {
         max_tokens: Number(oai_settings.openai_max_tokens),
         logit_bias: logit_bias,
     };
+
+    await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data, type);
 
     const response = await fetch(generate_url, {
         method: 'POST',
@@ -1714,59 +1723,27 @@ async function sendAltScaleRequest(messages, logit_bias, signal, type) {
     return data.output;
 }
 
-async function sendOpenAIRequest(type, messages, signal) {
-    // Provide default abort signal
-    if (!signal) {
-        signal = new AbortController().signal;
-    }
-
-    // HACK: Filter out null and non-object messages
-    if (!Array.isArray(messages)) {
-        throw new Error('messages must be an array');
-    }
-
-    messages = messages.filter(msg => msg && typeof msg === 'object');
-
-    let logit_bias = {};
-    const isClaude = oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
-    const isOpenRouter = oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER;
-    const isScale = oai_settings.chat_completion_source == chat_completion_sources.SCALE;
-    const isGoogle = oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE;
-    const isOAI = oai_settings.chat_completion_source == chat_completion_sources.OPENAI;
-    const isMistral = oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI;
-    const isCustom = oai_settings.chat_completion_source == chat_completion_sources.CUSTOM;
-    const isCohere = oai_settings.chat_completion_source == chat_completion_sources.COHERE;
-    const isPerplexity = oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY;
-    const isGroq = oai_settings.chat_completion_source == chat_completion_sources.GROQ;
-    const is01AI = oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI;
+export async function getChatCompletionGenerationData(type, messages, logit_bias) {
+    const model = getChatCompletionModel();
+    const stream = isStreamingRequest(type);
+    const isClaude = oai_settings.chat_completion_source === chat_completion_sources.CLAUDE;
+    const isOpenRouter = oai_settings.chat_completion_source === chat_completion_sources.OPENROUTER;
+    const isScale = oai_settings.chat_completion_source === chat_completion_sources.SCALE;
+    const isGoogle = oai_settings.chat_completion_source === chat_completion_sources.MAKERSUITE;
+    const isOAI = oai_settings.chat_completion_source === chat_completion_sources.OPENAI;
+    const isMistral = oai_settings.chat_completion_source === chat_completion_sources.MISTRALAI;
+    const isCustom = oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
+    const isCohere = oai_settings.chat_completion_source === chat_completion_sources.COHERE;
+    const isPerplexity = oai_settings.chat_completion_source === chat_completion_sources.PERPLEXITY;
+    const isGroq = oai_settings.chat_completion_source === chat_completion_sources.GROQ;
+    const is01AI = oai_settings.chat_completion_source === chat_completion_sources.ZEROONEAI;
     const isTextCompletion = isOAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
-    const stream = oai_settings.stream_openai && !isQuiet && !isScale && !(isGoogle && oai_settings.google_model.includes('bison')) && !(isOAI && oai_settings.openai_model.startsWith('o1-'));
     const useLogprobs = !!power_user.request_token_probabilities;
     const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isCustom);
 
-    // If we're using the window.ai extension, use that instead
-    // Doesn't support logit bias yet
-    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
-        return sendWindowAIRequest(messages, signal, stream);
-    }
-
-    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.SCALE, chat_completion_sources.CUSTOM];
-    if (oai_settings.bias_preset_selected
-        && logitBiasSources.includes(oai_settings.chat_completion_source)
-        && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
-        && oai_settings.bias_presets[oai_settings.bias_preset_selected].length) {
-        logit_bias = biasCache || await calculateLogitBias();
-        biasCache = logit_bias;
-    }
-
-    if (isScale && oai_settings.use_alt_scale) {
-        return sendAltScaleRequest(messages, logit_bias, signal, type);
-    }
-
-    const model = getChatCompletionModel();
     const generate_data = {
         'messages': messages,
         'model': model,
@@ -1926,7 +1903,61 @@ async function sendOpenAIRequest(type, messages, signal) {
         // delete generate_data.logit_bias;
     }
 
-    await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
+    return generate_data;
+}
+
+async function getChatCompletionLogitBias() {
+    let logit_bias = {};
+    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.SCALE, chat_completion_sources.CUSTOM];
+    if (oai_settings.bias_preset_selected
+        && logitBiasSources.includes(oai_settings.chat_completion_source)
+        && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
+        && oai_settings.bias_presets[oai_settings.bias_preset_selected].length) {
+        logit_bias = biasCache || await calculateLogitBias();
+        biasCache = logit_bias;
+    }
+    return logit_bias;
+}
+
+function isStreamingRequest(type) {
+    const isScale = oai_settings.chat_completion_source === chat_completion_sources.SCALE;
+    const isGoogle = oai_settings.chat_completion_source === chat_completion_sources.MAKERSUITE;
+    const isOAI = oai_settings.chat_completion_source === chat_completion_sources.OPENAI;
+    const isQuiet = type === 'quiet';
+    return oai_settings.stream_openai && !isQuiet && !isScale && !(isGoogle && oai_settings.google_model.includes('bison')) && !(isOAI && oai_settings.openai_model.startsWith('o1-'));
+}
+
+async function sendOpenAIRequest(type, messages, signal) {
+    // Provide default abort signal
+    if (!signal) {
+        signal = new AbortController().signal;
+    }
+
+    // HACK: Filter out null and non-object messages
+    if (!Array.isArray(messages)) {
+        throw new Error('messages must be an array');
+    }
+
+    messages = messages.filter(msg => msg && typeof msg === 'object');
+
+    const stream = isStreamingRequest(type);
+
+    // If we're using the window.ai extension, use that instead
+    // Doesn't support logit bias yet
+    if (oai_settings.chat_completion_source === chat_completion_sources.WINDOWAI) {
+        return sendWindowAIRequest(messages, signal, stream);
+    }
+
+    const logit_bias = await getChatCompletionLogitBias();
+
+    const isScale = oai_settings.chat_completion_source === chat_completion_sources.SCALE;
+    if (isScale && oai_settings.use_alt_scale) {
+        return sendAltScaleRequest(messages, logit_bias, signal, type);
+    }
+
+    const generate_data = await getChatCompletionGenerationData(type, messages, logit_bias);
+
+    await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data, type);
 
     const generate_url = '/api/backends/chat-completions/generate';
     const response = await fetch(generate_url, {
