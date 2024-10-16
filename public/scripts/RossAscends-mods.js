@@ -1,4 +1,4 @@
-import { DOMPurify } from '../lib.js';
+import { DOMPurify, Bowser } from '../lib.js';
 
 import {
     characters,
@@ -39,7 +39,6 @@ import { getTokenCountAsync } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
 import { debounce_timeout } from './constants.js';
 
-import Bowser from '../lib/bowser.min.js';
 import { Popup } from './popup.js';
 
 var RPanelPin = document.getElementById('rm_button_panel_pin');

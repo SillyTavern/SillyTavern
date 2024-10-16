@@ -8,6 +8,7 @@ import hljs from 'highlight.js';
 import localforage from 'localforage';
 import Handlebars from 'handlebars';
 import css from '@adobe/css-tools';
+import Bowser from 'bowser';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -47,6 +48,7 @@ export default {
     localforage,
     Handlebars,
     css,
+    Bowser,
 };
 
 export {
@@ -56,4 +58,5 @@ export {
     localforage,
     Handlebars,
     css,
+    Bowser,
 };
