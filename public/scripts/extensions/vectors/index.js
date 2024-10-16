@@ -1530,7 +1530,7 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
-    $('#vectors_force_chunk_delimiter').prop('checked', settings.force_chunk_delimiter).on('input', () => {
+    $('#vectors_force_chunk_delimiter').val(settings.force_chunk_delimiter).on('input', () => {
         settings.force_chunk_delimiter = String($('#vectors_force_chunk_delimiter').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
