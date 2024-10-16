@@ -54,6 +54,8 @@ import {
     tryAutoLogin,
     router as userDataRouter,
 } from './src/users.js';
+
+import getWebpackServeMiddleware from './src/middleware/webpack-serve.js';
 import basicAuthMiddleware from './src/middleware/basicAuth.js';
 import whitelistMiddleware from './src/middleware/whitelist.js';
 import multerMonkeyPatch from './src/middleware/multerMonkeyPatch.js';
@@ -438,6 +440,7 @@ app.get('/login', async (request, response) => {
 });
 
 // Host frontend assets
+app.use(getWebpackServeMiddleware());
 app.use(express.static(process.cwd() + '/public', {}));
 
 // Public API
