@@ -21,8 +21,7 @@
             "showdown",
             "seedrandom",
             "showdown-katex",
-            "droll",
-            "@mozilla/readability"
+            "droll"
         ]
     }
 }

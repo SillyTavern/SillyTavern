@@ -57,7 +57,6 @@ module.exports = {
                 showdownKatex: 'readonly',
                 SVGInject: 'readonly',
                 toastr: 'readonly',
-                Readability: 'readonly',
                 isProbablyReaderable: 'readonly',
                 SillyTavern: 'readonly',
             },

@@ -12,6 +12,7 @@ import Bowser from 'bowser';
 import ePub from 'epubjs';
 import * as pdfjsLib from 'pdfjs-dist/webpack.mjs';
 import DiffMatchPatch from 'diff-match-patch';
+import { isProbablyReaderable, Readability } from '@mozilla/readability';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -59,6 +60,8 @@ export default {
     ePub,
     pdfjsLib,
     DiffMatchPatch,
+    Readability,
+    isProbablyReaderable,
 };
 
 export {
@@ -72,4 +75,6 @@ export {
     ePub,
     pdfjsLib,
     DiffMatchPatch,
+    Readability,
+    isProbablyReaderable,
 };

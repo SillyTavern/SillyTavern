@@ -1,4 +1,4 @@
-import { DOMPurify, ePub, pdfjsLib } from '../lib.js';
+import { DOMPurify, ePub, pdfjsLib, Readability, isProbablyReaderable } from '../lib.js';
 
 import { getContext } from './extensions.js';
 import { characters, getRequestHeaders, this_chid } from '../script.js';

@@ -4,8 +4,6 @@ declare var Popper;
 declare var showdown;
 declare var showdownKatex;
 declare var SVGInject;
-declare var Readability;
-declare var isProbablyReaderable;
 declare var ai;
 
 declare var SillyTavern: {
