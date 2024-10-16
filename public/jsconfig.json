@@ -18,7 +18,6 @@
     "typeAcquisition": {
         "include": [
             "@popperjs/core",
-            "seedrandom",
             "showdown-katex",
             "droll"
         ]

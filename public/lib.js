@@ -17,6 +17,7 @@ import { isProbablyReaderable, Readability } from '@mozilla/readability';
 import SVGInject from '@iconfu/svg-inject';
 import showdown from 'showdown';
 import moment from 'moment';
+import seedrandom from 'seedrandom';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -82,6 +83,7 @@ export default {
     SVGInject,
     showdown,
     moment,
+    seedrandom,
 };
 
 export {
@@ -101,4 +103,5 @@ export {
     SVGInject,
     showdown,
     moment,
+    seedrandom,
 };

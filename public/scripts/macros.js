@@ -1,4 +1,4 @@
-import { Handlebars, moment } from '../lib.js';
+import { Handlebars, moment, seedrandom } from '../lib.js';
 import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId, substituteParams } from '../script.js';
 import { timestampToMoment, isDigitsOnly, getStringHash, escapeRegex, uuidv4 } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
@@ -330,7 +330,7 @@ function randomReplace(input, emptyListPlaceholder = '') {
         if (list.length === 0) {
             return emptyListPlaceholder;
         }
-        const rng = new Math.seedrandom('added entropy.', { entropy: true });
+        const rng = seedrandom('added entropy.', { entropy: true });
         const randomIndex = Math.floor(rng() * list.length);
         return list[randomIndex];
     });
@@ -359,8 +359,8 @@ function pickReplace(input, rawContent, emptyListPlaceholder = '') {
         // We build a hash seed based on: unique chat file, raw content, and the placement inside this content
         // This allows us to get unique but repeatable picks in nearly all cases
         const combinedSeedString = `${chatIdHash}-${rawContentHash}-${offset}`;
-        const finalSeed = getStringHash(combinedSeedString);
-        const rng = new Math.seedrandom(finalSeed);
+        const finalSeed = getStringHash(combinedSeedString).toString();
+        const rng = seedrandom(finalSeed);
         const randomIndex = Math.floor(rng() * list.length);
         return list[randomIndex];
     });
