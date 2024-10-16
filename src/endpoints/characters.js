@@ -10,7 +10,7 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import yaml from 'yaml';
 import _ from 'lodash';
 import mime from 'mime-types';
-import jimp from 'jimp';
+import { Jimp, JimpMime } from 'jimp';
 
 import { AVATAR_WIDTH, AVATAR_HEIGHT } from '../constants.js';
 import { jsonParser, urlencodedParser } from '../express-common.js';
@@ -104,12 +104,12 @@ async function writeCharacterData(inputFile, data, outputFile, request, crop = u
  * @returns {Promise<Buffer>} Image buffer
  */
 async function parseImageBuffer(buffer, crop) {
-    const image = await jimp.read(buffer);
+    const image = await Jimp.fromBuffer(buffer);
     let finalWidth = image.bitmap.width, finalHeight = image.bitmap.height;
 
     // Apply crop if defined
     if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
-        image.crop(crop.x, crop.y, crop.width, crop.height);
+        image.crop({ x: crop.x, y: crop.y, w: crop.width, h: crop.height });
         // Apply standard resize if requested
         if (crop.want_resize) {
             finalWidth = AVATAR_WIDTH;
@@ -120,7 +120,8 @@ async function parseImageBuffer(buffer, crop) {
         }
     }
 
-    return image.cover(finalWidth, finalHeight).getBufferAsync(jimp.MIME_PNG);
+    image.cover({ w: finalWidth, h: finalHeight });
+    return await image.getBuffer(JimpMime.png);
 }
 
 /**
@@ -131,12 +132,12 @@ async function parseImageBuffer(buffer, crop) {
  */
 async function tryReadImage(imgPath, crop) {
     try {
-        let rawImg = await jimp.read(imgPath);
+        const rawImg = await Jimp.read(imgPath);
         let finalWidth = rawImg.bitmap.width, finalHeight = rawImg.bitmap.height;
 
         // Apply crop if defined
         if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
-            rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
+            rawImg.crop({ x: crop.x, y: crop.y, w: crop.width, h: crop.height });
             // Apply standard resize if requested
             if (crop.want_resize) {
                 finalWidth = AVATAR_WIDTH;
@@ -147,8 +148,8 @@ async function tryReadImage(imgPath, crop) {
             }
         }
 
-        const image = await rawImg.cover(finalWidth, finalHeight).getBufferAsync(jimp.MIME_PNG);
-        return image;
+        rawImg.cover({ w: finalWidth, h: finalHeight });
+        return await rawImg.getBuffer(JimpMime.png);
     }
     // If it's an unsupported type of image (APNG) - just read the file as buffer
     catch {
