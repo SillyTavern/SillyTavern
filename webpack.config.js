@@ -3,9 +3,13 @@ export const publicLibConfig = {
     mode: 'production',
     entry: './public/lib.js',
     cache: true,
-    devtool: 'source-map',
+    devtool: false,
     module: {},
-    stats: 'minimal',
+    stats: {
+        preset: 'minimal',
+        assets: false,
+        modules: false,
+    },
     experiments: {
         outputModule: true,
     },
