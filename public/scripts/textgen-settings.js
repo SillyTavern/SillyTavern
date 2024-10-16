@@ -848,6 +848,7 @@ function setSettingByName(setting, value, trigger) {
 
     if ('samplers' === setting) {
         value = Array.isArray(value) ? value : LLAMACPP_DEFAULT_ORDER;
+        insertMissingArrayItems(LLAMACPP_DEFAULT_ORDER, value);
         sortLlamacppItemsByOrder(value);
         settings.samplers = value;
         return;
