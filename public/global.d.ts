@@ -7,7 +7,6 @@ declare var showdownKatex;
 declare var SVGInject;
 declare var Readability;
 declare var isProbablyReaderable;
-declare var ePub;
 declare var ai;
 
 declare var SillyTavern: {

@@ -15,6 +15,7 @@
         "cors": "^2.8.5",
         "csrf-csrf": "^2.2.3",
         "dompurify": "^3.1.7",
+        "epubjs": "^0.3.93",
         "express": "^4.21.0",
         "form-data": "^4.0.0",
         "fuse.js": "^7.0.0",

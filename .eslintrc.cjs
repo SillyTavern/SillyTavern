@@ -60,7 +60,6 @@ module.exports = {
                 toastr: 'readonly',
                 Readability: 'readonly',
                 isProbablyReaderable: 'readonly',
-                ePub: 'readonly',
                 diff_match_patch: 'readonly',
                 SillyTavern: 'readonly',
             },

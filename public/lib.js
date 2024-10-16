@@ -9,6 +9,7 @@ import localforage from 'localforage';
 import Handlebars from 'handlebars';
 import css from '@adobe/css-tools';
 import Bowser from 'bowser';
+import ePub from 'epubjs';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -49,6 +50,7 @@ export default {
     Handlebars,
     css,
     Bowser,
+    ePub,
 };
 
 export {
@@ -59,4 +61,5 @@ export {
     Handlebars,
     css,
     Bowser,
+    ePub,
 };

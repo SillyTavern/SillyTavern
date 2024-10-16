@@ -1,4 +1,4 @@
-import { DOMPurify } from '../lib.js';
+import { DOMPurify, ePub } from '../lib.js';
 
 import { getContext } from './extensions.js';
 import { characters, getRequestHeaders, this_chid } from '../script.js';
@@ -1563,32 +1563,6 @@ export async function extractTextFromMarkdown(blob) {
 }
 
 export async function extractTextFromEpub(blob) {
-    async function initEpubJs() {
-        const epubScript = new Promise((resolve, reject) => {
-            const epubScript = document.createElement('script');
-            epubScript.async = true;
-            epubScript.src = 'lib/epub.min.js';
-            epubScript.onload = resolve;
-            epubScript.onerror = reject;
-            document.head.appendChild(epubScript);
-        });
-
-        const jszipScript = new Promise((resolve, reject) => {
-            const jszipScript = document.createElement('script');
-            jszipScript.async = true;
-            jszipScript.src = 'lib/jszip.min.js';
-            jszipScript.onload = resolve;
-            jszipScript.onerror = reject;
-            document.head.appendChild(jszipScript);
-        });
-
-        return Promise.all([epubScript, jszipScript]);
-    }
-
-    if (!('ePub' in window)) {
-        await initEpubJs();
-    }
-
     const book = ePub(blob);
     await book.ready;
     const sectionPromises = [];
