@@ -65,6 +65,7 @@ const LLAMACPP_DEFAULT_ORDER = [
     'typical_p',
     'top_p',
     'min_p',
+    'xtc',
     'temperature',
 ];
 const OOBA_DEFAULT_ORDER = [
@@ -834,6 +835,7 @@ function setSettingByName(setting, value, trigger) {
 
     if ('samplers' === setting) {
         value = Array.isArray(value) ? value : LLAMACPP_DEFAULT_ORDER;
+        insertMissingArrayItems(LLAMACPP_DEFAULT_ORDER, value);
         sortLlamacppItemsByOrder(value);
         settings.samplers = value;
         return;
