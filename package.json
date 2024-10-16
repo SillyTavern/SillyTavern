@@ -51,9 +51,6 @@
     "overrides": {
         "vectra": {
             "openai": "^4.17.0"
-        },
-        "node-fetch": {
-            "whatwg-url": "^14.0.0"
         }
     },
     "name": "sillytavern",
