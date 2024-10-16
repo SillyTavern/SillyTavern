@@ -10,6 +10,7 @@ import Handlebars from 'handlebars';
 import css from '@adobe/css-tools';
 import Bowser from 'bowser';
 import ePub from 'epubjs';
+import * as pdfjsLib from 'pdfjs-dist/webpack.mjs';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -51,6 +52,7 @@ export default {
     css,
     Bowser,
     ePub,
+    pdfjsLib,
 };
 
 export {
@@ -62,4 +64,5 @@ export {
     css,
     Bowser,
     ePub,
+    pdfjsLib,
 };

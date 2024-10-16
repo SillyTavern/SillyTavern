@@ -22,7 +22,6 @@
             "seedrandom",
             "showdown-katex",
             "droll",
-            "pdfjs-dist",
             "@mozilla/readability"
         ]
     }

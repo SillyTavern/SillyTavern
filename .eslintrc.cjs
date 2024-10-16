@@ -52,7 +52,6 @@ module.exports = {
             globals: {
                 droll: 'readonly',
                 moment: 'readonly',
-                pdfjsLib: 'readonly',
                 Popper: 'readonly',
                 showdown: 'readonly',
                 showdownKatex: 'readonly',
