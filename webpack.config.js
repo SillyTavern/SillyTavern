@@ -1,8 +1,14 @@
+import process from 'node:process';
+import path from 'node:path';
+
 /** @type {import('webpack').Configuration} */
 export const publicLibConfig = {
     mode: 'production',
     entry: './public/lib.js',
-    cache: true,
+    cache: {
+        type: 'filesystem',
+        cacheDirectory: path.resolve(process.cwd(), 'dist/webpack'),
+    },
     devtool: false,
     module: {},
     stats: {
