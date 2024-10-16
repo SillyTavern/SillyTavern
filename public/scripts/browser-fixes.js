@@ -1,0 +1,52 @@
+const isFirefox = () => /firefox/i.test(navigator.userAgent);
+
+function sanitizeInlineQuotationOnCopy() {
+    // STRG+C, STRG+V on firefox leads to duplicate double quotes when inline quotation elements are copied.
+    // To work around this, take the selection and transform <q> to <span> before calling toString().
+    document.addEventListener('copy', function (event) {
+        const selection = window.getSelection();
+        if (selection.anchorNode.nodeName !== '#text' || selection.focusNode.nodeName !== '#text' || !selection.anchorNode?.parentElement.closest('.mes_text')) {
+            // Complex selection, skip.
+            return;
+        }
+
+        const range = selection.getRangeAt(0).cloneContents();
+        const tempDOM = document.createDocumentFragment();
+
+        function processNode(node) {
+            if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase() === 'q') {
+                // Transform <q> to <span>, preserve children
+                const span = document.createElement('span');
+
+                [...node.childNodes].forEach(child => {
+                    const processedChild = processNode(child);
+                    span.appendChild(processedChild);
+                });
+
+                return span;
+            } else {
+                // Nested structures containing <q> elements are unlikely
+                return node.cloneNode(true);
+            }
+        }
+
+        [...range.childNodes].forEach(child => {
+            const processedChild = processNode(child);
+            tempDOM.appendChild(processedChild);
+        });
+
+        const newRange = document.createRange();
+        newRange.selectNodeContents(tempDOM);
+
+        event.preventDefault();
+        event.clipboardData.setData('text/plain', newRange.toString());
+    });
+}
+
+function applyBrowserFixes() {
+    if (isFirefox()) {
+        sanitizeInlineQuotationOnCopy();
+    }
+}
+
+export { isFirefox, applyBrowserFixes };

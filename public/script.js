@@ -247,6 +247,7 @@ import { AbortReason } from './scripts/util/AbortReason.js';
 import { initSystemPrompts } from './scripts/sysprompt.js';
 import { registerExtensionSlashCommands as initExtensionSlashCommands } from './scripts/extensions-slashcommands.js';
 import { ToolManager } from './scripts/tool-calling.js';
+import { applyBrowserFixes } from './scripts/browser-fixes.js';
 
 //exporting functions and vars for mods
 export {
@@ -272,6 +273,7 @@ await new Promise((resolve) => {
 });
 
 showLoader();
+applyBrowserFixes();
 
 // Configure toast library:
 toastr.options.escapeHtml = true; // Prevent raw HTML inserts
