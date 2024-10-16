@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import process from 'node:process';
 import { Buffer } from 'node:buffer';
 
-import { pipeline, env, RawImage } from '@xenova/transformers';
+import { pipeline, env, RawImage } from 'sillytavern-transformers';
 import { getConfigValue } from './util.js';
 
 configureTransformers();
@@ -115,9 +115,9 @@ async function migrateCacheToDataDir() {
 
 /**
  * Gets the transformers.js pipeline for a given task.
- * @param {import('@xenova/transformers').PipelineType} task The task to get the pipeline for
+ * @param {import('sillytavern-transformers').PipelineType} task The task to get the pipeline for
  * @param {string} forceModel The model to use for the pipeline, if any
- * @returns {Promise<import('@xenova/transformers').Pipeline>} The transformers.js pipeline
+ * @returns {Promise<import('sillytavern-transformers').Pipeline>} The transformers.js pipeline
  */
 export async function getPipeline(task, forceModel = '') {
     await migrateCacheToDataDir();

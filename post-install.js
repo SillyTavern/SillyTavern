@@ -141,18 +141,18 @@ function getMd5Hash(data) {
 }
 
 /**
- * Copies the WASM binaries from the transformers.js package to the dist folder.
+ * Copies the WASM binaries from the sillytavern-transformers package to the dist folder.
  */
 function copyWasmFiles() {
     if (!fs.existsSync('./dist')) {
         fs.mkdirSync('./dist');
     }
 
-    const listDir = fs.readdirSync('./node_modules/@xenova/transformers/dist');
+    const listDir = fs.readdirSync('./node_modules/sillytavern-transformers/dist');
 
     for (const file of listDir) {
         if (file.endsWith('.wasm')) {
-            const sourcePath = `./node_modules/@xenova/transformers/dist/${file}`;
+            const sourcePath = `./node_modules/sillytavern-transformers/dist/${file}`;
             const targetPath = `./dist/${file}`;
 
             // Don't copy if the file already exists and is the same checksum
