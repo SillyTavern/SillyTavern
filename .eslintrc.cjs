@@ -59,7 +59,6 @@ module.exports = {
                 toastr: 'readonly',
                 Readability: 'readonly',
                 isProbablyReaderable: 'readonly',
-                diff_match_patch: 'readonly',
                 SillyTavern: 'readonly',
             },
         },

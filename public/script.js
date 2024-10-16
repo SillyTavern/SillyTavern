@@ -4,6 +4,7 @@ import {
     hljs,
     localforage,
     Handlebars,
+    DiffMatchPatch,
     initLibraryShims,
     default as libs,
 } from './lib.js';
@@ -5233,7 +5234,7 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
     if (priorPromptArrayItemForRawPromptDisplay) {
         diffPrevPrompt.style.display = '';
         diffPrevPrompt.addEventListener('click', function () {
-            const dmp = new diff_match_patch();
+            const dmp = new DiffMatchPatch();
             const text1 = flatten(itemizedPrompts[priorPromptArrayItemForRawPromptDisplay].rawPrompt);
             const text2 = flatten(itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt);
 

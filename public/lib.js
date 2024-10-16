@@ -11,6 +11,7 @@ import css from '@adobe/css-tools';
 import Bowser from 'bowser';
 import ePub from 'epubjs';
 import * as pdfjsLib from 'pdfjs-dist/webpack.mjs';
+import DiffMatchPatch from 'diff-match-patch';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -41,6 +42,10 @@ export function initLibraryShims() {
         // @ts-ignore
         window.Handlebars = Handlebars;
     }
+    if (!('diff_match_patch' in window)) {
+        // @ts-ignore
+        window.diff_match_patch = DiffMatchPatch;
+    }
 }
 
 export default {
@@ -53,6 +58,7 @@ export default {
     Bowser,
     ePub,
     pdfjsLib,
+    DiffMatchPatch,
 };
 
 export {
@@ -65,4 +71,5 @@ export {
     Bowser,
     ePub,
     pdfjsLib,
+    DiffMatchPatch,
 };
