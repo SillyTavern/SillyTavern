@@ -52,7 +52,6 @@ module.exports = {
             globals: {
                 droll: 'readonly',
                 Handlebars: 'readonly',
-                hljs: 'readonly',
                 localforage: 'readonly',
                 moment: 'readonly',
                 pdfjsLib: 'readonly',

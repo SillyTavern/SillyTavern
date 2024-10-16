@@ -1,4 +1,10 @@
-import { Fuse, DOMPurify, initLibraryShims, default as libs } from './lib.js';
+import {
+    Fuse,
+    DOMPurify,
+    hljs,
+    initLibraryShims,
+    default as libs,
+} from './lib.js';
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter, addSafariPatch } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';

@@ -18,6 +18,7 @@
         "fuse.js": "^7.0.0",
         "google-translate-api-x": "^10.7.1",
         "helmet": "^7.1.0",
+        "highlight.js": "^11.10.0",
         "html-entities": "^2.5.2",
         "iconv-lite": "^0.6.3",
         "ip-matching": "^2.1.2",

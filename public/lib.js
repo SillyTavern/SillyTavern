@@ -4,6 +4,7 @@
  */
 import Fuse from 'fuse.js';
 import DOMPurify from 'dompurify';
+import hljs from 'highlight.js';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -22,14 +23,20 @@ export function initLibraryShims() {
         // @ts-ignore
         window.DOMPurify = DOMPurify;
     }
+    if (!('hljs' in window)) {
+        // @ts-ignore
+        window.hljs = hljs;
+    }
 }
 
 export default {
     Fuse,
     DOMPurify,
+    hljs,
 };
 
 export {
     Fuse,
     DOMPurify,
+    hljs,
 };
