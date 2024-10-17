@@ -8,6 +8,7 @@ import {
     Handlebars,
     DiffMatchPatch,
     SVGInject,
+    Popper,
     initLibraryShims,
     default as libs,
 } from './lib.js';

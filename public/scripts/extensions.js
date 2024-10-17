@@ -1,4 +1,4 @@
-import { DOMPurify } from '../lib.js';
+import { DOMPurify, Popper } from '../lib.js';
 
 import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration } from '../script.js';
 import { showLoader } from './loader.js';

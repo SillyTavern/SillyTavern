@@ -18,6 +18,7 @@ import SVGInject from '@iconfu/svg-inject';
 import showdown from 'showdown';
 import moment from 'moment';
 import seedrandom from 'seedrandom';
+import * as Popper from '@popperjs/core';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -64,6 +65,10 @@ export function initLibraryShims() {
         // @ts-ignore
         window.moment = moment;
     }
+    if (!('Popper' in window)) {
+        // @ts-ignore
+        window.Popper = Popper;
+    }
 }
 
 export default {
@@ -84,6 +89,7 @@ export default {
     showdown,
     moment,
     seedrandom,
+    Popper,
 };
 
 export {
@@ -104,4 +110,5 @@ export {
     showdown,
     moment,
     seedrandom,
+    Popper,
 };

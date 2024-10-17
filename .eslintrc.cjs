@@ -51,7 +51,6 @@ module.exports = {
             // These scripts are loaded in HTML; tell ESLint not to complain about them being undefined
             globals: {
                 droll: 'readonly',
-                Popper: 'readonly',
                 showdownKatex: 'readonly',
                 toastr: 'readonly',
                 SillyTavern: 'readonly',
