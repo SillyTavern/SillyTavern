@@ -1,3 +1,4 @@
+import { DOMPurify, showdown } from '../../lib.js';
 import { sendSystemMessage, system_message_types } from '../../script.js';
 import { callGenericPopup, POPUP_TYPE } from '../popup.js';
 import { escapeHtml } from '../utils.js';

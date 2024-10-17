@@ -1,3 +1,5 @@
+import { Fuse, DOMPurify } from '../lib.js';
+
 import {
     Generate,
     UNIQUE_APIS,

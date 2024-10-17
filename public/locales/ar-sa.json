@@ -694,8 +694,6 @@
     "Auto-save Message Edits": "حفظ التعديلات التلقائي للرسائل",
     "Confirm message deletion": "تأكيد حذف الرسالة",
     "Auto-fix Markdown": "إصلاح Markdown تلقائيًا",
-    "Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX": "تقديم علامة LaTeX و AsciiMath للمعادلات في رسائل الدردشة. مدعوم بواسطة KaTeX",
-    "Render Formulas": "تقديم الصيغ",
     "Disallow embedded media from other domains in chat messages": "عدم السماح بالوسائط المضمنة من المجالات الأخرى في رسائل الدردشة.",
     "Forbid External Media": "منع وسائط خارجية",
     "Allow {{char}}: in bot messages": "السماح بـ {{char}}: في رسائل البوت",

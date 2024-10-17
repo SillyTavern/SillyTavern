@@ -695,8 +695,6 @@
     "Auto-save Message Edits": "自動儲存編輯的訊息",
     "Confirm message deletion": "確認刪除訊息",
     "Auto-fix Markdown": "自動修正 Markdown",
-    "Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX": "在聊天訊息中算繪 LaTeX 和 AsciiMath 方程式標記。由 KaTeX 提供支援。",
-    "Render Formulas": "算繪公式",
     "Disallow embedded media from other domains in chat messages": "禁止在聊天訊息中嵌入來自其他領域的媒體。",
     "Forbid External Media": "禁止使用外部媒體",
     "Allow {{char}}: in bot messages": "允許機器人訊息中使用 {{char}}:",

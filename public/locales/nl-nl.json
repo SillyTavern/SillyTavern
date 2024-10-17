@@ -694,8 +694,6 @@
     "Auto-save Message Edits": "Automatisch opslaan van berichtbewerkingen",
     "Confirm message deletion": "Bevestig bericht verwijdering",
     "Auto-fix Markdown": "Automatisch repareren van Markdown",
-    "Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX": "LaTeX en AsciiMath-vergelijking notatie renderen in chatberichten. Aangedreven door KaTeX",
-    "Render Formulas": "Formules renderen",
     "Disallow embedded media from other domains in chat messages": "Ingesloten media van andere domeinen niet toestaan ​​in chatberichten.",
     "Forbid External Media": "Externe media verbieden",
     "Allow {{char}}: in bot messages": "Toestaan {{char}}: in botberichten",

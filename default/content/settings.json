@@ -133,7 +133,6 @@
         "auto_fix_generated_markdown": false,
         "send_on_enter": 0,
         "console_log_prompts": false,
-        "render_formulas": false,
         "allow_name1_display": false,
         "allow_name2_display": false,
         "hotswap_enabled": true,

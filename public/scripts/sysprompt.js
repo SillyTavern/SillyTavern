@@ -1,3 +1,5 @@
+import { Fuse } from '../lib.js';
+
 import { saveSettingsDebounced } from '../script.js';
 import { callGenericPopup, POPUP_TYPE } from './popup.js';
 import { power_user } from './power-user.js';

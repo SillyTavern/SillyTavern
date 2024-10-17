@@ -1,3 +1,4 @@
+import { hljs } from '../../lib.js';
 import { power_user } from '../power-user.js';
 import { isTrueBoolean, uuidv4 } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';

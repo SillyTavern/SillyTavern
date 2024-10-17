@@ -37,7 +37,7 @@ util.inspect.defaultOptions.maxStringLength = null;
 util.inspect.defaultOptions.depth = 4;
 
 // local library imports
-import{ loadPlugins } from './src/plugin-loader.js';
+import { loadPlugins } from './src/plugin-loader.js';
 import {
     initUserStorage,
     getCsrfSecret,
@@ -54,6 +54,8 @@ import {
     tryAutoLogin,
     router as userDataRouter,
 } from './src/users.js';
+
+import getWebpackServeMiddleware from './src/middleware/webpack-serve.js';
 import basicAuthMiddleware from './src/middleware/basicAuth.js';
 import whitelistMiddleware from './src/middleware/whitelist.js';
 import multerMonkeyPatch from './src/middleware/multerMonkeyPatch.js';
@@ -438,6 +440,8 @@ app.get('/login', async (request, response) => {
 });
 
 // Host frontend assets
+const webpackMiddleware = getWebpackServeMiddleware();
+app.use(webpackMiddleware);
 app.use(express.static(process.cwd() + '/public', {}));
 
 // Public API
@@ -623,6 +627,10 @@ const tavernUrl = new URL(
     (':' + server_port),
 );
 
+function prepareFrontendBundle() {
+    return new Promise((resolve) => webpackMiddleware.waitUntilValid(resolve));
+}
+
 /**
  * Tasks that need to be run before the server starts listening.
  */
@@ -672,6 +680,9 @@ const preSetupTasks = async function () {
 
     // Add request proxy.
     initRequestProxy({ enabled: proxyEnabled, url: proxyUrl, bypass: proxyBypass });
+
+    // Wait for frontend libs to compile
+    await prepareFrontendBundle();
 };
 
 /**

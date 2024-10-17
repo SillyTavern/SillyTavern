@@ -1,3 +1,5 @@
+import { Fuse } from '../lib.js';
+
 import {
     amount_gen,
     characters,

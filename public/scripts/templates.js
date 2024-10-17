@@ -1,3 +1,4 @@
+import { DOMPurify, Handlebars } from '../lib.js';
 import { applyLocale } from './i18n.js';
 
 /**

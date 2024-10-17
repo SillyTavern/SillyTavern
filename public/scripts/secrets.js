@@ -1,3 +1,4 @@
+import { DOMPurify } from '../lib.js';
 import { callPopup, getRequestHeaders } from '../script.js';
 
 export const SECRET_KEYS = {

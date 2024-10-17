@@ -1,3 +1,4 @@
+import { Popper } from '../../../lib.js';
 import {
     saveSettingsDebounced,
     systemUserName,

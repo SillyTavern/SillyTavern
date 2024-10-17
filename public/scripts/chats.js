@@ -1,6 +1,6 @@
 // Move chat functions here from script.js (eventually)
 
-import css from '../lib/css-parser.mjs';
+import { Popper, css } from '../lib.js';
 import {
     addCopyToCodeBlocks,
     appendMediaToMessage,
