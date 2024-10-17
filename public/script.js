@@ -1,4 +1,4 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter, addSafariPatch } from './scripts/RossAscends-mods.js';
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -247,6 +247,7 @@ import { AbortReason } from './scripts/util/AbortReason.js';
 import { initSystemPrompts } from './scripts/sysprompt.js';
 import { registerExtensionSlashCommands as initExtensionSlashCommands } from './scripts/extensions-slashcommands.js';
 import { ToolManager } from './scripts/tool-calling.js';
+import { applyBrowserFixes } from './scripts/browser-fixes.js';
 
 //exporting functions and vars for mods
 export {
@@ -938,7 +939,7 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
-    addSafariPatch();
+    applyBrowserFixes();
     await getClientVersion();
     await readSecretState();
     await initLocales();
