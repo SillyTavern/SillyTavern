@@ -508,7 +508,6 @@ console.debug('Character context menu initialized', characterContextMenu);
 export let mesForShowdownParse; //intended to be used as a context to compare showdown strings against
 /** @type {import('showdown').Converter} */
 let converter;
-reloadMarkdownProcessor();
 
 // array for prompt token calculations
 console.debug('initializing Prompt Itemization Array on Startup');
@@ -758,48 +757,22 @@ async function getClientVersion() {
     }
 }
 
-export function reloadMarkdownProcessor(render_formulas = false) {
-    if (render_formulas) {
-        converter = new showdown.Converter({
-            emoji: true,
-            underline: true,
-            tables: true,
-            parseImgDimensions: true,
-            simpleLineBreaks: true,
-            strikethrough: true,
-            disableForced4SpacesIndentedSublists: true,
-            extensions: [
-                showdownKatex(
-                    {
-                        delimiters: [
-                            { left: '$$', right: '$$', display: true, asciimath: false },
-                            { left: '$', right: '$', display: false, asciimath: true },
-                        ],
-                    },
-                )],
-        });
-    }
-    else {
-        converter = new showdown.Converter({
-            emoji: true,
-            literalMidWordUnderscores: true,
-            parseImgDimensions: true,
-            tables: true,
-            underline: true,
-            simpleLineBreaks: true,
-            strikethrough: true,
-            disableForced4SpacesIndentedSublists: true,
-            extensions: [markdownUnderscoreExt()],
-        });
-    }
+export function reloadMarkdownProcessor() {
+    converter = new showdown.Converter({
+        emoji: true,
+        literalMidWordUnderscores: true,
+        parseImgDimensions: true,
+        tables: true,
+        underline: true,
+        simpleLineBreaks: true,
+        strikethrough: true,
+        disableForced4SpacesIndentedSublists: true,
+        extensions: [markdownUnderscoreExt()],
+    });
 
     // Inject the dinkus extension after creating the converter
     // Maybe move this into power_user init?
-    setTimeout(() => {
-        if (power_user) {
-            converter.addExtension(markdownExclusionExt(), 'exclusion');
-        }
-    }, 1);
+    converter.addExtension(markdownExclusionExt(), 'exclusion');
 
     return converter;
 }
@@ -958,6 +931,7 @@ async function firstLoadInit() {
 
     initLibraryShims();
     addShowdownPatch(showdown);
+    reloadMarkdownProcessor();
     addSafariPatch();
     await getClientVersion();
     await readSecretState();

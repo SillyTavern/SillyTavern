@@ -180,7 +180,6 @@ let power_user = {
     console_log_prompts: false,
     request_token_probabilities: false,
     show_group_chat_queue: false,
-    render_formulas: false,
     allow_name1_display: false,
     allow_name2_display: false,
     hotswap_enabled: true,
@@ -1488,7 +1487,6 @@ async function loadPowerUserSettings(settings, data) {
     $('#collapse-newlines-checkbox').prop('checked', power_user.collapse_newlines);
     $('#always-force-name2-checkbox').prop('checked', power_user.always_force_name2);
     $('#trim_sentences_checkbox').prop('checked', power_user.trim_sentences);
-    $('#render_formulas').prop('checked', power_user.render_formulas);
     $('#disable_group_trimming').prop('checked', power_user.disable_group_trimming);
     $('#markdown_escape_strings').val(power_user.markdown_escape_strings);
     $('#fast_ui_mode').prop('checked', power_user.fast_ui_mode);
@@ -1595,7 +1593,7 @@ async function loadPowerUserSettings(settings, data) {
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop('selected', true);
     switchReducedMotion();
     switchCompactInputArea();
-    reloadMarkdownProcessor(power_user.render_formulas);
+    reloadMarkdownProcessor();
     await loadInstructMode(data);
     await loadContextSettings();
     await loadSystemPrompts(data);
@@ -3067,7 +3065,7 @@ $(document).ready(() => {
     $('#markdown_escape_strings').on('input', function () {
         power_user.markdown_escape_strings = String($(this).val());
         saveSettingsDebounced();
-        reloadMarkdownProcessor(power_user.render_formulas);
+        reloadMarkdownProcessor();
     });
 
     $('#start_reply_with').on('input', function () {
@@ -3416,13 +3414,6 @@ $(document).ready(() => {
 
     $('#confirm_message_delete').on('input', function () {
         power_user.confirm_message_delete = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $('#render_formulas').on('input', function () {
-        power_user.render_formulas = !!$(this).prop('checked');
-        reloadMarkdownProcessor(power_user.render_formulas);
-        reloadCurrentChat();
         saveSettingsDebounced();
     });
 

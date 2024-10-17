@@ -16,8 +16,6 @@
         "scripts/extensions/quick-reply/lib/**"
     ],
     "typeAcquisition": {
-        "include": [
-            "showdown-katex"
-        ]
+        "include": []
     }
 }

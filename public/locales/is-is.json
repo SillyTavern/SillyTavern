@@ -694,8 +694,6 @@
     "Auto-save Message Edits": "Sjálfvirkur vistun skilaboðabreytinga",
     "Confirm message deletion": "Staðfesta eyðingu skilaboða",
     "Auto-fix Markdown": "Sjálfvirk lagfæring Markdown",
-    "Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX": "Gera LaTeX og AsciiMath jöfnutímanótur í spjall skilaboðum. Aflað af KaTeX",
-    "Render Formulas": "Render Formúlur",
     "Disallow embedded media from other domains in chat messages": "Ekki leyfa innfellda miðla frá öðrum lénum í spjallskilaboðum.",
     "Forbid External Media": "Banna ytri miðla",
     "Allow {{char}}: in bot messages": "Leyfa {{char}}: í boðum botts",
