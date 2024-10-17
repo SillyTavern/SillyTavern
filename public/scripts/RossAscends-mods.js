@@ -933,6 +933,12 @@ export function initRossMods() {
         if (!$(e.target).closest('#sheld').length) {
             return;
         }
+        if ($('#curEditTextarea').length) {
+            // Don't swipe while in text edit mode
+            // the ios selection gestures get picked up
+            // as swipe gestures
+            return;
+        }
         var SwipeButR = $('.swipe_right:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
@@ -949,6 +955,12 @@ export function initRossMods() {
             return;
         }
         if (!$(e.target).closest('#sheld').length) {
+            return;
+        }
+        if ($('#curEditTextarea').length) {
+            // Don't swipe while in text edit mode
+            // the ios selection gestures get picked up
+            // as swipe gestures
             return;
         }
         var SwipeButL = $('.swipe_left:last');
