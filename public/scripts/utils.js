@@ -2,7 +2,6 @@ import {
     moment,
     DOMPurify,
     ePub,
-    pdfjsLib,
     Readability,
     isProbablyReaderable,
 } from '../lib.js';
@@ -1500,6 +1499,11 @@ export async function getReadableText(document, textSelector = 'body') {
  * @returns {Promise<string>} A promise that resolves to the parsed text.
  */
 export async function extractTextFromPDF(blob) {
+    if (!('pdfjsLib' in window)) {
+        await import('../lib/pdf.min.mjs');
+        await import('../lib/pdf.worker.min.mjs');
+    }
+
     const buffer = await getFileBuffer(blob);
     const pdf = await pdfjsLib.getDocument(buffer).promise;
     const pages = [];

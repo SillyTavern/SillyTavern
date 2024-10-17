@@ -50,6 +50,7 @@ module.exports = {
             },
             // These scripts are loaded in HTML; tell ESLint not to complain about them being undefined
             globals: {
+                pdfjsLib: 'readonly',
                 toastr: 'readonly',
                 SillyTavern: 'readonly',
             },

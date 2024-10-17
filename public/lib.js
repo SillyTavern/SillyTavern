@@ -11,7 +11,6 @@ import Handlebars from 'handlebars';
 import css from '@adobe/css-tools';
 import Bowser from 'bowser';
 import ePub from 'epubjs';
-import * as pdfjsLib from 'pdfjs-dist/webpack.mjs';
 import DiffMatchPatch from 'diff-match-patch';
 import { isProbablyReaderable, Readability } from '@mozilla/readability';
 import SVGInject from '@iconfu/svg-inject';
@@ -87,7 +86,6 @@ export default {
     css,
     Bowser,
     ePub,
-    pdfjsLib,
     DiffMatchPatch,
     Readability,
     isProbablyReaderable,
@@ -110,7 +108,6 @@ export {
     css,
     Bowser,
     ePub,
-    pdfjsLib,
     DiffMatchPatch,
     Readability,
     isProbablyReaderable,
