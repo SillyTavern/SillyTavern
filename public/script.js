@@ -13,7 +13,7 @@ import {
     default as libs,
 } from './lib.js';
 
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter, addSafariPatch } from './scripts/RossAscends-mods.js';
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -263,6 +263,7 @@ import { initSystemPrompts } from './scripts/sysprompt.js';
 import { registerExtensionSlashCommands as initExtensionSlashCommands } from './scripts/extensions-slashcommands.js';
 import { ToolManager } from './scripts/tool-calling.js';
 import { addShowdownPatch } from './scripts/util/showdown-patch.js';
+import { applyBrowserFixes } from './scripts/browser-fixes.js';
 
 //exporting functions and vars for mods
 export {
@@ -932,7 +933,7 @@ async function firstLoadInit() {
     initLibraryShims();
     addShowdownPatch(showdown);
     reloadMarkdownProcessor();
-    addSafariPatch();
+    applyBrowserFixes();
     await getClientVersion();
     await readSecretState();
     await initLocales();

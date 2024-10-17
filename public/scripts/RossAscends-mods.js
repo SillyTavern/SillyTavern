@@ -122,7 +122,7 @@ export function humanizeGenTime(total_gen_time) {
  */
 var parsedUA = null;
 
-function getParsedUA() {
+export function getParsedUA() {
     if (!parsedUA) {
         try {
             parsedUA = Bowser.parse(navigator.userAgent);
@@ -718,18 +718,6 @@ export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea, deboun
 
 // ---------------------------------------------------
 
-export function addSafariPatch() {
-    const userAgent = getParsedUA();
-    console.debug('User Agent', userAgent);
-    const isMobileSafari = /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isDesktopSafari = userAgent?.browser?.name === 'Safari' && userAgent?.platform?.type === 'desktop';
-    const isIOS = userAgent?.os?.name === 'iOS';
-
-    if (isIOS || isMobileSafari || isDesktopSafari) {
-        document.body.classList.add('safari');
-    }
-}
-
 export function initRossMods() {
     // initial status check
     checkStatusDebounced();
@@ -740,16 +728,6 @@ export function initRossMods() {
 
     if (power_user.auto_connect) {
         RA_autoconnect();
-    }
-
-    if (isMobile()) {
-        const fixFunkyPositioning = () => {
-            console.debug('[Mobile] Device viewport change detected.');
-            document.documentElement.style.position = 'fixed';
-            requestAnimationFrame(() => document.documentElement.style.position = '');
-        };
-        window.addEventListener('resize', fixFunkyPositioning);
-        window.addEventListener('orientationchange', fixFunkyPositioning);
     }
 
     $('#main_api').change(function () {
@@ -934,6 +912,12 @@ export function initRossMods() {
         if (!$(e.target).closest('#sheld').length) {
             return;
         }
+        if ($('#curEditTextarea').length) {
+            // Don't swipe while in text edit mode
+            // the ios selection gestures get picked up
+            // as swipe gestures
+            return;
+        }
         var SwipeButR = $('.swipe_right:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
@@ -950,6 +934,12 @@ export function initRossMods() {
             return;
         }
         if (!$(e.target).closest('#sheld').length) {
+            return;
+        }
+        if ($('#curEditTextarea').length) {
+            // Don't swipe while in text edit mode
+            // the ios selection gestures get picked up
+            // as swipe gestures
             return;
         }
         var SwipeButL = $('.swipe_left:last');
