@@ -17,9 +17,7 @@
     ],
     "typeAcquisition": {
         "include": [
-            "@popperjs/core",
-            "showdown-katex",
-            "droll"
+            "showdown-katex"
         ]
     }
 }

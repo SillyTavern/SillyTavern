@@ -19,6 +19,7 @@ import showdown from 'showdown';
 import moment from 'moment';
 import seedrandom from 'seedrandom';
 import * as Popper from '@popperjs/core';
+import droll from 'droll';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -69,6 +70,10 @@ export function initLibraryShims() {
         // @ts-ignore
         window.Popper = Popper;
     }
+    if (!('droll' in window)) {
+        // @ts-ignore
+        window.droll = droll;
+    }
 }
 
 export default {
@@ -90,6 +95,7 @@ export default {
     moment,
     seedrandom,
     Popper,
+    droll,
 };
 
 export {
@@ -111,4 +117,5 @@ export {
     moment,
     seedrandom,
     Popper,
+    droll,
 };

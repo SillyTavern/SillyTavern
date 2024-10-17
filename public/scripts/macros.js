@@ -1,4 +1,4 @@
-import { Handlebars, moment, seedrandom } from '../lib.js';
+import { Handlebars, moment, seedrandom, droll } from '../lib.js';
 import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId, substituteParams } from '../script.js';
 import { timestampToMoment, isDigitsOnly, getStringHash, escapeRegex, uuidv4 } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
