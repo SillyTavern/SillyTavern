@@ -83,9 +83,9 @@ export function setNovelData(data) {
 export function getKayraMaxContextTokens() {
     switch (novel_data?.tier) {
         case 1:
-            return 3072;
+            return 4096;
         case 2:
-            return 6144;
+            return 8192;
         case 3:
             return 8192;
     }
@@ -93,14 +93,14 @@ export function getKayraMaxContextTokens() {
     return null;
 }
 
-export function getKayraMaxResponseTokens() {
+export function getNovelMaxResponseTokens() {
     switch (novel_data?.tier) {
         case 1:
-            return 100;
-        case 2:
-            return 100;
-        case 3:
             return 150;
+        case 2:
+            return 150;
+        case 3:
+            return 250;
     }
 
     return maximum_output_length;
@@ -546,7 +546,7 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
         finalPrompt = '<|startoftext|><|reserved_special_token81|>' + finalPrompt;
     }
 
-    const adjustedMaxLength = (isKayra || isErato) ? getKayraMaxResponseTokens() : maximum_output_length;
+    const adjustedMaxLength = (isKayra || isErato) ? getNovelMaxResponseTokens() : maximum_output_length;
 
     return {
         'input': finalPrompt,
