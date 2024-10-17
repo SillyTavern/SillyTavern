@@ -20,6 +20,7 @@ import moment from 'moment';
 import seedrandom from 'seedrandom';
 import * as Popper from '@popperjs/core';
 import droll from 'droll';
+import morphdom from 'morphdom';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -96,6 +97,7 @@ export default {
     seedrandom,
     Popper,
     droll,
+    morphdom,
 };
 
 export {
@@ -118,4 +120,5 @@ export {
     seedrandom,
     Popper,
     droll,
+    morphdom,
 };
