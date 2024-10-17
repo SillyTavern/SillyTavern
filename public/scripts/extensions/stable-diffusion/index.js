@@ -18,7 +18,7 @@ import {
 } from '../../../script.js';
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplateAsync, writeExtensionField } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
-import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async, delay, isTrueBoolean, debounce, isFalseBoolean } from '../../utils.js';
+import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async, delay, isTrueBoolean, debounce, isFalseBoolean, deepMerge } from '../../utils.js';
 import { getMessageTimeStamp, humanizedDateTime } from '../../RossAscends-mods.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { getNovelUnlimitedImageGeneration, getNovelAnlas, loadNovelSubscriptionData } from '../../nai-settings.js';
@@ -219,7 +219,7 @@ const defaultSettings = {
     // Automatic1111/Horde exclusives
     restore_faces: false,
     enable_hr: false,
-	aiFaceDetailer: false,
+    adetailer_face: false,
 
     // Horde settings
     horde: false,
@@ -436,7 +436,7 @@ async function loadSettings() {
     $('#sd_horde_sanitize').prop('checked', extension_settings.sd.horde_sanitize);
     $('#sd_restore_faces').prop('checked', extension_settings.sd.restore_faces);
     $('#sd_enable_hr').prop('checked', extension_settings.sd.enable_hr);
-	$('#sd_aiFaceDetailer').prop('checked', extension_settings.sd.aiFaceDetailer);
+    $('#sd_adetailer_face').prop('checked', extension_settings.sd.adetailer_face);
     $('#sd_refine_mode').prop('checked', extension_settings.sd.refine_mode);
     $('#sd_multimodal_captioning').prop('checked', extension_settings.sd.multimodal_captioning);
     $('#sd_auto_url').val(extension_settings.sd.auto_url);
@@ -855,8 +855,8 @@ function onSamplerChange() {
     saveSettingsDebounced();
 }
 
-function onAiFaceDetailerChange() {
-	extension_settings.sd.aiFaceDetailer = $('#sd_aiFaceDetailer').prop('checked');
+function onADetailerFaceChange() {
+    extension_settings.sd.adetailer_face = !!$('#sd_adetailer_face').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -2955,20 +2955,22 @@ async function generateAutoImage(prompt, negativePrompt, signal) {
         do_not_save_grid: false,
         do_not_save_samples: false,
     };
-    // Conditionally add the ADetailer if aiFaceDetailer is enabled
-	console.log('extension_settings.sd.aiFaceDetailer:', extension_settings.sd.aiFaceDetailer);
-    if (extension_settings.sd.aiFaceDetailer) {
-        payload.alwayson_scripts = {
-            ADetailer: {
-                args: [
-                    true, // ad_enable
-                    true, // skip_img2img
-                    {
-                        "ad_model": "face_yolov8n.pt"
-                    }
-                ]
-            }
-        };
+
+    // Conditionally add the ADetailer if adetailer_face is enabled
+    if (extension_settings.sd.adetailer_face) {
+        payload = deepMerge(payload, {
+            alwayson_scripts: {
+                ADetailer: {
+                    args: [
+                        true, // ad_enable
+                        true, // skip_img2img
+                        {
+                            'ad_model': 'face_yolov8n.pt',
+                        },
+                    ],
+                },
+            },
+        });
     }
 
     // Make the fetch call with the payload
@@ -2978,8 +2980,6 @@ async function generateAutoImage(prompt, negativePrompt, signal) {
         signal: signal,
         body: JSON.stringify(payload),
     });
-	
-	
 
     if (result.ok) {
         const data = await result.json();
@@ -4210,7 +4210,7 @@ jQuery(async () => {
     $('#sd_horde_sanitize').on('input', onHordeSanitizeInput);
     $('#sd_restore_faces').on('input', onRestoreFacesInput);
     $('#sd_enable_hr').on('input', onHighResFixInput);
-	$('#sd_aiFaceDetailer').on('change', onAiFaceDetailerChange);
+    $('#sd_adetailer_face').on('change', onADetailerFaceChange);
     $('#sd_refine_mode').on('input', onRefineModeInput);
     $('#sd_character_prompt').on('input', onCharacterPromptInput);
     $('#sd_character_negative_prompt').on('input', onCharacterNegativePromptInput);

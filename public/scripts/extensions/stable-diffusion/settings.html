@@ -354,11 +354,16 @@
                     <small data-i18n="Karras">Karras</small>
                     <i class="fa-solid fa-info-circle fa-sm opacity50p" data-i18n="[title]Not all samplers supported." title="Not all samplers supported."></i>
                 </label>
-				<label for="sd_aiFaceDetailer" class="checkbox_label" data-i18n="[title]sd_aiFaceDetailer" title="Use AI Face Detailer in image generation.">
-					<input id="sd_aiFaceDetailer" type="checkbox" />
-					<small data-i18n="sd_aiFaceDetailer">Use AI Face Detailer</small>
-				</label>
+            </div>
 
+            <div class="flex-container marginTopBot5" data-sd-source="auto">
+                <label for="sd_adetailer_face" class="flex1 checkbox_label" data-i18n="[title]sd_adetailer_face" title="Use ADetailer with face model during the generation. The ADetailer extension must be installed on the backend.">
+                    <input id="sd_adetailer_face" type="checkbox" />
+                    <small data-i18n="Use ADetailer (Face)">Use ADetailer (Face)</small>
+                </label>
+                <div class="flex1">
+                    <!-- I will be useful later! -->
+                </div>
             </div>
 
             <div class="flex-container marginTopBot5" data-sd-source="novel">

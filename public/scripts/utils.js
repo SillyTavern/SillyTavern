@@ -23,6 +23,38 @@ export const navigation_option = {
     previous: -1000,
 };
 
+/**
+ * Determines if a value is an object.
+ * @param {any} item The item to check.
+ * @returns {boolean} True if the item is an object, false otherwise.
+ */
+function isObject(item) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
+}
+
+/**
+ * Merges properties of two objects. If the property is an object, it will be merged recursively.
+ * @param {object} target The target object
+ * @param {object} source The source object
+ * @returns {object} Merged object
+ */
+export function deepMerge(target, source) {
+    let output = Object.assign({}, target);
+    if (isObject(target) && isObject(source)) {
+        Object.keys(source).forEach(key => {
+            if (isObject(source[key])) {
+                if (!(key in target))
+                    Object.assign(output, { [key]: source[key] });
+                else
+                    output[key] = deepMerge(target[key], source[key]);
+            } else {
+                Object.assign(output, { [key]: source[key] });
+            }
+        });
+    }
+    return output;
+}
+
 export function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
