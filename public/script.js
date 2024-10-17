@@ -1,4 +1,4 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter, addSafariPatch } from './scripts/RossAscends-mods.js';
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -273,7 +273,6 @@ await new Promise((resolve) => {
 });
 
 showLoader();
-applyBrowserFixes();
 
 // Configure toast library:
 toastr.options.escapeHtml = true; // Prevent raw HTML inserts
@@ -940,7 +939,7 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
-    addSafariPatch();
+    applyBrowserFixes();
     await getClientVersion();
     await readSecretState();
     await initLocales();
