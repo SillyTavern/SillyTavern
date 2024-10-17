@@ -10,6 +10,7 @@ export const publicLibConfig = {
         cacheDirectory: path.resolve(process.cwd(), 'dist/webpack'),
     },
     devtool: false,
+    watch: false,
     module: {},
     stats: {
         preset: 'minimal',

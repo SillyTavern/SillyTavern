@@ -1,7 +1,6 @@
 import {
     moment,
     DOMPurify,
-    ePub,
     Readability,
     isProbablyReaderable,
 } from '../lib.js';
@@ -1540,6 +1539,11 @@ export async function extractTextFromMarkdown(blob) {
 }
 
 export async function extractTextFromEpub(blob) {
+    if (!('ePub' in window)) {
+        await import('../lib/jszip.min.js');
+        await import('../lib/epub.min.js');
+    }
+
     const book = ePub(blob);
     await book.ready;
     const sectionPromises = [];

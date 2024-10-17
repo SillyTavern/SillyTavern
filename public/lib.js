@@ -10,7 +10,6 @@ import localforage from 'localforage';
 import Handlebars from 'handlebars';
 import css from '@adobe/css-tools';
 import Bowser from 'bowser';
-import ePub from 'epubjs';
 import DiffMatchPatch from 'diff-match-patch';
 import { isProbablyReaderable, Readability } from '@mozilla/readability';
 import SVGInject from '@iconfu/svg-inject';
@@ -85,7 +84,6 @@ export default {
     Handlebars,
     css,
     Bowser,
-    ePub,
     DiffMatchPatch,
     Readability,
     isProbablyReaderable,
@@ -107,7 +105,6 @@ export {
     Handlebars,
     css,
     Bowser,
-    ePub,
     DiffMatchPatch,
     Readability,
     isProbablyReaderable,

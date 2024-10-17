@@ -1,6 +1,7 @@
 // Global namespace modules
 declare var ai;
 declare var pdfjsLib;
+declare var ePub;
 
 declare var SillyTavern: {
     getContext(): any;
