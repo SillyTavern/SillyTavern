@@ -7,8 +7,7 @@ function sanitizeInlineQuotationOnCopy() {
     // To work around this, take the selection and transform <q> to <span> before calling toString().
     document.addEventListener('copy', function (event) {
         const selection = window.getSelection();
-        if (selection.anchorNode.nodeName !== '#text' || selection.focusNode.nodeName !== '#text' || !selection.anchorNode?.parentElement.closest('.mes_text')) {
-            // Complex selection, skip.
+        if (!selection.anchorNode?.parentElement.closest('.mes_text')) {
             return;
         }
 
