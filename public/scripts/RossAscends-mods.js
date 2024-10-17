@@ -933,7 +933,7 @@ export function initRossMods() {
         if (!$(e.target).closest('#sheld').length) {
             return;
         }
-        if ($('#curEditTextarea')) {
+        if ($('#curEditTextarea').length) {
             // Don't swipe while in text edit mode
             // the ios selection gestures get picked up
             // as swipe gestures
@@ -957,7 +957,7 @@ export function initRossMods() {
         if (!$(e.target).closest('#sheld').length) {
             return;
         }
-        if ($('#curEditTextarea')) {
+        if ($('#curEditTextarea').length) {
             // Don't swipe while in text edit mode
             // the ios selection gestures get picked up
             // as swipe gestures
