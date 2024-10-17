@@ -18,7 +18,7 @@ import {
 } from '../../../script.js';
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplateAsync, writeExtensionField } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
-import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async, delay, isTrueBoolean, debounce, isFalseBoolean } from '../../utils.js';
+import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async, delay, isTrueBoolean, debounce, isFalseBoolean, deepMerge } from '../../utils.js';
 import { getMessageTimeStamp, humanizedDateTime } from '../../RossAscends-mods.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { getNovelUnlimitedImageGeneration, getNovelAnlas, loadNovelSubscriptionData } from '../../nai-settings.js';
@@ -219,6 +219,7 @@ const defaultSettings = {
     // Automatic1111/Horde exclusives
     restore_faces: false,
     enable_hr: false,
+    adetailer_face: false,
 
     // Horde settings
     horde: false,
@@ -435,6 +436,7 @@ async function loadSettings() {
     $('#sd_horde_sanitize').prop('checked', extension_settings.sd.horde_sanitize);
     $('#sd_restore_faces').prop('checked', extension_settings.sd.restore_faces);
     $('#sd_enable_hr').prop('checked', extension_settings.sd.enable_hr);
+    $('#sd_adetailer_face').prop('checked', extension_settings.sd.adetailer_face);
     $('#sd_refine_mode').prop('checked', extension_settings.sd.refine_mode);
     $('#sd_multimodal_captioning').prop('checked', extension_settings.sd.multimodal_captioning);
     $('#sd_auto_url').val(extension_settings.sd.auto_url);
@@ -850,6 +852,11 @@ async function onNegativePromptInput() {
 
 function onSamplerChange() {
     extension_settings.sd.sampler = $('#sd_sampler').find(':selected').val();
+    saveSettingsDebounced();
+}
+
+function onADetailerFaceChange() {
+    extension_settings.sd.adetailer_face = !!$('#sd_adetailer_face').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -2920,41 +2927,58 @@ async function generateHordeImage(prompt, negativePrompt, signal) {
  */
 async function generateAutoImage(prompt, negativePrompt, signal) {
     const isValidVae = extension_settings.sd.vae && !['N/A', placeholderVae].includes(extension_settings.sd.vae);
+    let payload = {
+        ...getSdRequestBody(),
+        prompt: prompt,
+        negative_prompt: negativePrompt,
+        sampler_name: extension_settings.sd.sampler,
+        scheduler: extension_settings.sd.scheduler,
+        steps: extension_settings.sd.steps,
+        cfg_scale: extension_settings.sd.scale,
+        width: extension_settings.sd.width,
+        height: extension_settings.sd.height,
+        restore_faces: !!extension_settings.sd.restore_faces,
+        enable_hr: !!extension_settings.sd.enable_hr,
+        hr_upscaler: extension_settings.sd.hr_upscaler,
+        hr_scale: extension_settings.sd.hr_scale,
+        denoising_strength: extension_settings.sd.denoising_strength,
+        hr_second_pass_steps: extension_settings.sd.hr_second_pass_steps,
+        seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+        override_settings: {
+            CLIP_stop_at_last_layers: extension_settings.sd.clip_skip,
+            sd_vae: isValidVae ? extension_settings.sd.vae : undefined,
+        },
+        override_settings_restore_afterwards: true,
+        clip_skip: extension_settings.sd.clip_skip, // For SD.Next
+        save_images: true,
+        send_images: true,
+        do_not_save_grid: false,
+        do_not_save_samples: false,
+    };
+
+    // Conditionally add the ADetailer if adetailer_face is enabled
+    if (extension_settings.sd.adetailer_face) {
+        payload = deepMerge(payload, {
+            alwayson_scripts: {
+                ADetailer: {
+                    args: [
+                        true, // ad_enable
+                        true, // skip_img2img
+                        {
+                            'ad_model': 'face_yolov8n.pt',
+                        },
+                    ],
+                },
+            },
+        });
+    }
+
+    // Make the fetch call with the payload
     const result = await fetch('/api/sd/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
         signal: signal,
-        body: JSON.stringify({
-            ...getSdRequestBody(),
-            prompt: prompt,
-            negative_prompt: negativePrompt,
-            sampler_name: extension_settings.sd.sampler,
-            scheduler: extension_settings.sd.scheduler,
-            steps: extension_settings.sd.steps,
-            cfg_scale: extension_settings.sd.scale,
-            width: extension_settings.sd.width,
-            height: extension_settings.sd.height,
-            restore_faces: !!extension_settings.sd.restore_faces,
-            enable_hr: !!extension_settings.sd.enable_hr,
-            hr_upscaler: extension_settings.sd.hr_upscaler,
-            hr_scale: extension_settings.sd.hr_scale,
-            denoising_strength: extension_settings.sd.denoising_strength,
-            hr_second_pass_steps: extension_settings.sd.hr_second_pass_steps,
-            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
-            // For AUTO1111
-            override_settings: {
-                CLIP_stop_at_last_layers: extension_settings.sd.clip_skip,
-                sd_vae: isValidVae ? extension_settings.sd.vae : undefined,
-            },
-            override_settings_restore_afterwards: true,
-            // For SD.Next
-            clip_skip: extension_settings.sd.clip_skip,
-            // Ensure generated img is saved to disk
-            save_images: true,
-            send_images: true,
-            do_not_save_grid: false,
-            do_not_save_samples: false,
-        }),
+        body: JSON.stringify(payload),
     });
 
     if (result.ok) {
@@ -4186,6 +4210,7 @@ jQuery(async () => {
     $('#sd_horde_sanitize').on('input', onHordeSanitizeInput);
     $('#sd_restore_faces').on('input', onRestoreFacesInput);
     $('#sd_enable_hr').on('input', onHighResFixInput);
+    $('#sd_adetailer_face').on('change', onADetailerFaceChange);
     $('#sd_refine_mode').on('input', onRefineModeInput);
     $('#sd_character_prompt').on('input', onCharacterPromptInput);
     $('#sd_character_negative_prompt').on('input', onCharacterNegativePromptInput);
