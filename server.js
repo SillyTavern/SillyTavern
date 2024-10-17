@@ -37,7 +37,7 @@ util.inspect.defaultOptions.maxStringLength = null;
 util.inspect.defaultOptions.depth = 4;
 
 // local library imports
-import{ loadPlugins } from './src/plugin-loader.js';
+import { loadPlugins } from './src/plugin-loader.js';
 import {
     initUserStorage,
     getCsrfSecret,
@@ -440,7 +440,8 @@ app.get('/login', async (request, response) => {
 });
 
 // Host frontend assets
-app.use(getWebpackServeMiddleware());
+const webpackMiddleware = getWebpackServeMiddleware();
+app.use(webpackMiddleware);
 app.use(express.static(process.cwd() + '/public', {}));
 
 // Public API
@@ -626,6 +627,10 @@ const tavernUrl = new URL(
     (':' + server_port),
 );
 
+function prepareFrontendBundle() {
+    return new Promise((resolve) => webpackMiddleware.waitUntilValid(resolve));
+}
+
 /**
  * Tasks that need to be run before the server starts listening.
  */
@@ -675,6 +680,9 @@ const preSetupTasks = async function () {
 
     // Add request proxy.
     initRequestProxy({ enabled: proxyEnabled, url: proxyUrl, bypass: proxyBypass });
+
+    // Wait for frontend libs to compile
+    await prepareFrontendBundle();
 };
 
 /**
