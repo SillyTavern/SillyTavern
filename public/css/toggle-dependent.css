@@ -482,3 +482,7 @@ label[for="trim_spaces"]:has(input:checked) i.warning {
     gap: 5px;
     margin: 10px 0;
 }
+
+#mistralai_other_models:empty {
+    display: none;
+}

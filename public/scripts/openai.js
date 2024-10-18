@@ -1609,6 +1609,33 @@ function saveModelList(data) {
 
         $('#model_blockentropy_select').val(oai_settings.blockentropy_model).trigger('change');
     }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
+        /** @type {HTMLSelectElement} */
+        const mistralModelSelect = document.querySelector('#model_mistralai_select');
+        if (mistralModelSelect) {
+            const options = Array.from(mistralModelSelect.options);
+            options.forEach((option) => {
+                const existingModel = model_list.find(model => model.id === option.value);
+                if (!existingModel) {
+                    option.remove();
+                }
+            });
+
+            const otherOptionsGroup = mistralModelSelect.querySelector('#mistralai_other_models');
+            for (const model of model_list.filter(model => model?.capabilities?.completion_chat)) {
+                if (!options.some(option => option.value === model.id) && otherOptionsGroup) {
+                    otherOptionsGroup.append(new Option(model.id, model.id));
+                }
+            }
+
+            const selectedModel = model_list.find(model => model.id === oai_settings.mistralai_model);
+            if (!selectedModel) {
+                oai_settings.mistralai_model = model_list.find(model => model?.capabilities?.completion_chat)?.id;
+                $('#model_mistralai_select').val(oai_settings.mistralai_model).trigger('change');
+            }
+        }
+    }
 }
 
 function appendOpenRouterOptions(model_list, groupModels = false, sort = false) {
@@ -4659,6 +4686,8 @@ export function isImageInliningSupported() {
         'chatgpt-4o-latest',
         'yi-vision',
         'pixtral-latest',
+        'pixtral-12b-latest',
+        'pixtral-12b',
         'pixtral-12b-2409',
     ];
 
