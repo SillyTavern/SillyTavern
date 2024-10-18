@@ -21,6 +21,7 @@ module.exports = {
             },
             globals: {
                 globalThis: 'readonly',
+                Deno: 'readonly',
             },
         },
         {
