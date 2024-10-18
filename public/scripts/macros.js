@@ -359,7 +359,8 @@ function pickReplace(input, rawContent, emptyListPlaceholder = '') {
         // We build a hash seed based on: unique chat file, raw content, and the placement inside this content
         // This allows us to get unique but repeatable picks in nearly all cases
         const combinedSeedString = `${chatIdHash}-${rawContentHash}-${offset}`;
-        const finalSeed = getStringHash(combinedSeedString).toString();
+        const finalSeed = getStringHash(combinedSeedString);
+        // @ts-ignore - have to use numbers for legacy picks
         const rng = seedrandom(finalSeed);
         const randomIndex = Math.floor(rng() * list.length);
         return list[randomIndex];
