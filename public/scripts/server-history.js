@@ -80,7 +80,7 @@ function onServerConnectClick() {
     });
 }
 
-jQuery(function () {
+export function initServerHistory() {
     $('[data-server-history]').each(createServerAutocomplete);
     $(document).on('click', '[data-server-connect]', onServerConnectClick);
-});
+}

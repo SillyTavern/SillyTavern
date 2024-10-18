@@ -264,6 +264,9 @@ import { registerExtensionSlashCommands as initExtensionSlashCommands } from './
 import { ToolManager } from './scripts/tool-calling.js';
 import { addShowdownPatch } from './scripts/util/showdown-patch.js';
 import { applyBrowserFixes } from './scripts/browser-fixes.js';
+import { initServerHistory } from './scripts/server-history.js';
+import { initSettingsSearch } from './scripts/setting-search.js';
+import { initBulkEdit } from './scripts/bulk-edit.js';
 
 //exporting functions and vars for mods
 export {
@@ -965,6 +968,9 @@ async function firstLoadInit() {
     initCfg();
     initLogprobs();
     initInputMarkdown();
+    initServerHistory();
+    initSettingsSearch();
+    initBulkEdit();
     await initScrapers();
     doDailyExtensionUpdatesCheck();
     await hideLoader();

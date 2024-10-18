@@ -30,11 +30,6 @@ const toggleBulkEditMode = (isBulkEdit) => {
     }
 };
 
-characterGroupOverlay.addStateChangeCallback((state) => {
-    if (state === BulkEditOverlayState.select) enableBulkEdit();
-    if (state === BulkEditOverlayState.browse) disableBulkEdit();
-});
-
 /**
  * Toggles bulk edit mode on/off when the edit button is clicked.
  */
@@ -117,8 +112,13 @@ function disableBulkSelect() {
 /**
  * Entry point that runs on page load.
  */
-jQuery(() => {
+export function initBulkEdit() {
+    characterGroupOverlay.addStateChangeCallback((state) => {
+        if (state === BulkEditOverlayState.select) enableBulkEdit();
+        if (state === BulkEditOverlayState.browse) disableBulkEdit();
+    });
+
     $('#bulkEditButton').on('click', onEditButtonClick);
     $('#bulkSelectAllButton').on('click', onSelectAllButtonClick);
     $('#bulkDeleteButton').on('click', onDeleteButtonClick);
-});
+}
