@@ -2,7 +2,7 @@
     "dependencies": {
         "@agnai/sentencepiece-js": "^1.1.1",
         "@agnai/web-tokenizers": "^0.1.3",
-        "@zeldafan0225/ai_horde": "^5.1.0",
+        "@zeldafan0225/ai_horde": "^5.2.0",
         "archiver": "^7.0.1",
         "bing-translate-api": "^2.9.1",
         "body-parser": "^1.20.2",
@@ -20,7 +20,7 @@
         "iconv-lite": "^0.6.3",
         "ip-matching": "^2.1.2",
         "ipaddr.js": "^2.0.1",
-        "jimp": "^0.22.10",
+        "jimp": "^1.6.0",
         "lodash": "^4.17.21",
         "mime-types": "^2.1.35",
         "multer": "^1.4.5-lts.1",
@@ -37,7 +37,7 @@
         "sillytavern-transformers": "2.14.6",
         "simple-git": "^3.19.1",
         "tiktoken": "^1.0.16",
-        "vectra": "^0.2.2",
+        "vectra": "^0.9.0",
         "wavefile": "^11.0.0",
         "write-file-atomic": "^5.0.1",
         "ws": "^8.17.1",
@@ -51,12 +51,6 @@
     "overrides": {
         "vectra": {
             "openai": "^4.17.0"
-        },
-        "axios": {
-            "follow-redirects": "^1.15.4"
-        },
-        "node-fetch": {
-            "whatwg-url": "^14.0.0"
         }
     },
     "name": "sillytavern",
