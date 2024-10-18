@@ -18,8 +18,13 @@ function sanitizeInlineQuotationOnCopy() {
         const range = selection.getRangeAt(0).cloneContents();
         const tempDOM = document.createDocumentFragment();
 
+        /**
+         * Process a node, transforming <q> elements to <span> elements and preserving children.
+         * @param {Node} node Input node
+         * @returns {Node} Processed node
+         */
         function processNode(node) {
-            if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase() === 'q') {
+            if (node.nodeType === Node.ELEMENT_NODE && node.nodeName.toLowerCase() === 'q') {
                 // Transform <q> to <span>, preserve children
                 const span = document.createElement('span');
 
