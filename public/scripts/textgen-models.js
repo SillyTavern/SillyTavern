@@ -288,15 +288,19 @@ export async function loadFeatherlessModels(data) {
     originalModels = data;  // Store the original data for search
     featherlessModels = data;
 
+    if (!data.find(x => x.id === textgen_settings.featherless_model)) {
+        textgen_settings.featherless_model = data[0]?.id || '';
+    }
+
     // Populate class select options with unique classes
     populateClassSelection(data);
 
-    // Retrieve the stored number of items per page or default to 5
+    // Retrieve the stored number of items per page or default to 10
     const perPage = Number(localStorage.getItem(storageKey)) || 10;
 
     // Initialize pagination with the full set of models
-    const selectedModelPage = (data.findIndex(x => x.id === textgen_settings.featherless_model) / perPage) + 1;
-    featherlessCurrentPage = selectedModelPage > 0 ? selectedModelPage : 1;
+    const currentModelIndex = data.findIndex(x => x.id === textgen_settings.featherless_model);
+    featherlessCurrentPage = currentModelIndex >= 0 ? (currentModelIndex / perPage) + 1 : 1;
     setupPagination(originalModels, perPage);
 
     // Function to set up pagination (also used for filtered results)
