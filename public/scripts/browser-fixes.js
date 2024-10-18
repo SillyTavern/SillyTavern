@@ -6,6 +6,10 @@ function sanitizeInlineQuotationOnCopy() {
     // STRG+C, STRG+V on firefox leads to duplicate double quotes when inline quotation elements are copied.
     // To work around this, take the selection and transform <q> to <span> before calling toString().
     document.addEventListener('copy', function (event) {
+        if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) {
+            return;
+        }
+
         const selection = window.getSelection();
         if (!selection.anchorNode?.parentElement.closest('.mes_text')) {
             return;
@@ -14,8 +18,13 @@ function sanitizeInlineQuotationOnCopy() {
         const range = selection.getRangeAt(0).cloneContents();
         const tempDOM = document.createDocumentFragment();
 
+        /**
+         * Process a node, transforming <q> elements to <span> elements and preserving children.
+         * @param {Node} node Input node
+         * @returns {Node} Processed node
+         */
         function processNode(node) {
-            if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase() === 'q') {
+            if (node.nodeType === Node.ELEMENT_NODE && node.nodeName.toLowerCase() === 'q') {
                 // Transform <q> to <span>, preserve children
                 const span = document.createElement('span');
 
