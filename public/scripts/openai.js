@@ -4129,6 +4129,8 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_64k);
         } else if (oai_settings.mistralai_model.includes('pixtral')) {
             $('#openai_max_context').attr('max', max_128k);
+        } else if (oai_settings.mistralai_model.includes('ministral')) {
+            $('#openai_max_context').attr('max', max_32k);
         } else {
             $('#openai_max_context').attr('max', max_32k);
         }
