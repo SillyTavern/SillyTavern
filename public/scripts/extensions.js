@@ -420,7 +420,7 @@ async function connectToApi(baseUrl) {
     }
 
     const url = new URL(baseUrl);
-    url.pathname = '/api/modules';
+    url.pathname += '/api/modules';
 
     try {
         const getExtensionsResult = await doExtrasFetch(url);
