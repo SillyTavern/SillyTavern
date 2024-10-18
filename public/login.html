@@ -4,9 +4,9 @@
 <head>
     <base href="/">
     <meta charset="utf-8">
-    <meta name="viewport"
-        content="width=device-width, viewport-fit=cover, initial-scale=1, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, viewport-fit=cover, initial-scale=1, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="darkreader-lock">
     <meta name="robots" content="noindex, nofollow" />
     <style>
@@ -31,8 +31,6 @@
     <link href="css/fontawesome.min.css" rel="stylesheet">
     <link href="css/solid.min.css" rel="stylesheet">
     <link href="css/user.css" rel="stylesheet">
-    <script src="lib/jquery-3.5.1.min.js"></script>
-    <script src="scripts/login.js"></script>
     <title>SillyTavern</title>
 </head>
 
@@ -65,8 +63,7 @@
                                     <div id="loginButton" class="menu_button">Login</div>
                                 </div>
                             </div>
-                            <div id="passwordRecoveryBlock" style="display:none;"
-                                class="flex-container flexFlowColumn alignItemsCenter">
+                            <div id="passwordRecoveryBlock" style="display:none;" class="flex-container flexFlowColumn alignItemsCenter">
                                 <div id="recoverMessage">
                                     Recovery code has been posted to the server console.
                                 </div>
@@ -84,6 +81,10 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <script src="lib/jquery-3.5.1.min.js"></script>
+    <script src="scripts/login.js"></script>
 </body>
 
 </html>
