@@ -141,7 +141,7 @@ export async function migrateUserData() {
 
     console.log();
     console.log(color.magenta('Preparing to migrate user data...'));
-    console.log(`All public data will be moved to the ${global.DATA_ROOT} directory.`);
+    console.log(`All public data will be moved to the ${globalThis.DATA_ROOT} directory.`);
     console.log('This process may take a while depending on the amount of data to move.');
     console.log(`Backups will be placed in the ${PUBLIC_DIRECTORIES.backups} directory.`);
     console.log(`The process will start in ${TIMEOUT} seconds. Press Ctrl+C to cancel.`);
@@ -412,11 +412,11 @@ export function toAvatarKey(handle) {
  * @returns {Promise<void>}
  */
 export async function initUserStorage(dataRoot) {
-    global.DATA_ROOT = dataRoot;
-    console.log('Using data root:', color.green(global.DATA_ROOT));
+    globalThis.DATA_ROOT = dataRoot;
+    console.log('Using data root:', color.green(globalThis.DATA_ROOT));
     console.log();
     await storage.init({
-        dir: path.join(global.DATA_ROOT, '_storage'),
+        dir: path.join(globalThis.DATA_ROOT, '_storage'),
         ttl: false, // Never expire
     });
 
@@ -517,7 +517,7 @@ export function getUserDirectories(handle) {
 
     const directories = structuredClone(USER_DIRECTORY_TEMPLATE);
     for (const key in directories) {
-        directories[key] = path.join(global.DATA_ROOT, handle, USER_DIRECTORY_TEMPLATE[key]);
+        directories[key] = path.join(globalThis.DATA_ROOT, handle, USER_DIRECTORY_TEMPLATE[key]);
     }
     DIRECTORIES_CACHE.set(handle, directories);
     return directories;

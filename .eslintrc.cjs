@@ -19,6 +19,9 @@ module.exports = {
             parserOptions: {
                 sourceType: 'module',
             },
+            globals: {
+                globalThis: 'readonly',
+            },
         },
         {
             files: ['*.cjs'],

@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer';
 import express from 'express';
 import wavefile from 'wavefile';
 import { jsonParser } from '../express-common.js';
-import { getPipeline } from '../transformers.mjs';
+import { getPipeline } from '../transformers.js';
 
 export const router = express.Router();
 

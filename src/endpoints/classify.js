@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { getPipeline } from '../transformers.mjs';
+import { getPipeline } from '../transformers.js';
 import { jsonParser } from '../express-common.js';
 
 const TASK = 'text-classification';

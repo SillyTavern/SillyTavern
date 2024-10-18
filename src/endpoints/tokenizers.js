@@ -82,7 +82,7 @@ async function getPathToTokenizer(model, fallbackModel) {
             throw new Error('Failed to extract the file name from the URL');
         }
 
-        const CACHE_PATH = path.join(global.DATA_ROOT, '_cache');
+        const CACHE_PATH = path.join(globalThis.DATA_ROOT, '_cache');
         if (!fs.existsSync(CACHE_PATH)) {
             fs.mkdirSync(CACHE_PATH, { recursive: true });
         }

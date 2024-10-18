@@ -1,4 +1,4 @@
-import { getPipeline } from '../transformers.mjs';
+import { getPipeline } from '../transformers.js';
 const TASK = 'feature-extraction';
 
 /**

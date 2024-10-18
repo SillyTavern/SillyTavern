@@ -85,7 +85,7 @@ function getModelForTask(task) {
 
 async function migrateCacheToDataDir() {
     const oldCacheDir = path.join(process.cwd(), 'cache');
-    const newCacheDir = path.join(global.DATA_ROOT, '_cache');
+    const newCacheDir = path.join(globalThis.DATA_ROOT, '_cache');
 
     if (!fs.existsSync(newCacheDir)) {
         fs.mkdirSync(newCacheDir, { recursive: true });
@@ -130,7 +130,7 @@ export async function getPipeline(task, forceModel = '') {
         await tasks[task].pipeline.dispose();
     }
 
-    const cacheDir = path.join(global.DATA_ROOT, '_cache');
+    const cacheDir = path.join(globalThis.DATA_ROOT, '_cache');
     const model = forceModel || getModelForTask(task);
     const localOnly = getConfigValue('extras.disableAutoDownload', false);
     console.log('Initializing transformers.js pipeline for task', task, 'with model', model);
