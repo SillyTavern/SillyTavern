@@ -5,7 +5,7 @@ import path from 'node:path';
 import mime from 'mime-types';
 import express from 'express';
 import sanitize from 'sanitize-filename';
-import jimp from 'jimp';
+import { Jimp, JimpMime } from 'jimp';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 import { getAllUserHandles, getUserDirectories } from '../users.js';
@@ -121,9 +121,11 @@ async function generateThumbnail(directories, type, file) {
         let buffer;
 
         try {
-            const image = await jimp.read(pathToOriginalFile);
-            const imgType = type == 'avatar' && pngFormat ? 'image/png' : 'image/jpeg';
-            buffer = await image.cover(mySize[0], mySize[1]).quality(quality).getBufferAsync(imgType);
+            const image = await Jimp.read(pathToOriginalFile);
+            image.cover({ w: mySize[0], h: mySize[1] });
+            buffer = pngFormat
+                ? await image.getBuffer(JimpMime.png)
+                : await image.getBuffer(JimpMime.jpeg, { quality: quality });
         }
         catch (inner) {
             console.warn(`Thumbnailer can not process the image: ${pathToOriginalFile}. Using original size`);
@@ -172,7 +174,7 @@ export const router = express.Router();
 
 // Important: This route must be mounted as '/thumbnail'. It is used in the client code and saved to chat files.
 router.get('/', jsonParser, async function (request, response) {
-    try{
+    try {
         if (typeof request.query.file !== 'string' || typeof request.query.type !== 'string') {
             return response.sendStatus(400);
         }
