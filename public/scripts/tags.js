@@ -1,3 +1,5 @@
+import { DOMPurify } from '../lib.js';
+
 import {
     characters,
     saveSettingsDebounced,

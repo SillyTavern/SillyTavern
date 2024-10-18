@@ -733,8 +733,6 @@
     "Auto-save Message Edits": "自动保存消息编辑",
     "Confirm message deletion": "删除消息前确认",
     "Auto-fix Markdown": "自动修复 Markdown",
-    "Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX": "在聊天消息中渲染LaTeX和AsciiMath方程式符号。由KaTeX提供支持",
-    "Render Formulas": "渲染公式",
     "Disallow embedded media from other domains in chat messages": "禁止在聊天消息中嵌入来自其他域的媒体。",
     "Forbid External Media": "禁止外部媒体",
     "Allow {{char}}: in bot messages": "在机器人消息中允许 {{char}}: ",

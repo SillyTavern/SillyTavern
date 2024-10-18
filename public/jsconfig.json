@@ -16,17 +16,6 @@
         "scripts/extensions/quick-reply/lib/**"
     ],
     "typeAcquisition": {
-        "include": [
-            "@popperjs/core",
-            "showdown",
-            "seedrandom",
-            "showdown-katex",
-            "droll",
-            "handlebars",
-            "highlight.js",
-            "localforage",
-            "pdfjs-dist",
-            "@mozilla/readability"
-        ]
+        "include": []
     }
 }

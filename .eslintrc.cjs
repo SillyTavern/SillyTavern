@@ -19,6 +19,10 @@ module.exports = {
             parserOptions: {
                 sourceType: 'module',
             },
+            globals: {
+                globalThis: 'readonly',
+                Deno: 'readonly',
+            },
         },
         {
             files: ['*.cjs'],
@@ -50,23 +54,9 @@ module.exports = {
             },
             // These scripts are loaded in HTML; tell ESLint not to complain about them being undefined
             globals: {
-                DOMPurify: 'readonly',
-                droll: 'readonly',
-                Fuse: 'readonly',
-                Handlebars: 'readonly',
-                hljs: 'readonly',
-                localforage: 'readonly',
-                moment: 'readonly',
-                pdfjsLib: 'readonly',
-                Popper: 'readonly',
-                showdown: 'readonly',
-                showdownKatex: 'readonly',
-                SVGInject: 'readonly',
-                toastr: 'readonly',
-                Readability: 'readonly',
-                isProbablyReaderable: 'readonly',
                 ePub: 'readonly',
-                diff_match_patch: 'readonly',
+                pdfjsLib: 'readonly',
+                toastr: 'readonly',
                 SillyTavern: 'readonly',
             },
         },

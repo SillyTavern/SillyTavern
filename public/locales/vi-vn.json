@@ -694,8 +694,6 @@
     "Auto-save Message Edits": "Tự động lưu Sửa Tin nhắn",
     "Confirm message deletion": "Xác nhận xóa tin nhắn",
     "Auto-fix Markdown": "Tự động sửa Markdown",
-    "Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX": "Kết xuất ký hiệu phương trình LaTeX và AsciiMath trong tin nhắn trò chuyện. Được cung cấp bởi KaTeX",
-    "Render Formulas": "Hiển thị Công thức",
     "Disallow embedded media from other domains in chat messages": "Không cho phép nhúng phương tiện từ các miền khác vào tin nhắn trò chuyện.",
     "Forbid External Media": "Cấm Phương tiện Ngoại tuyến",
     "Allow {{char}}: in bot messages": "Cho phép {{char}}: trong các Tin nhắn Bot",

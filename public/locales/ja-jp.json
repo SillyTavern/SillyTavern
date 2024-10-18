@@ -694,8 +694,6 @@
     "Auto-save Message Edits": "メッセージ編集の自動保存",
     "Confirm message deletion": "メッセージの削除を確認",
     "Auto-fix Markdown": "Markdownの自動修正",
-    "Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX": "チャットメッセージでLaTeXおよびAsciiMathの数式表記をレンダリングします。KaTeXで動作します",
-    "Render Formulas": "数式のレンダリング",
     "Disallow embedded media from other domains in chat messages": "チャットメッセージの他のドメインからの埋め込みメディアを禁止する",
     "Forbid External Media": "外部メディアを禁止",
     "Allow {{char}}: in bot messages": "ボットメッセージ内の{{char}}:を許可",

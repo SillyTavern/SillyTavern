@@ -1,6 +1,6 @@
 import express from 'express';
 import { jsonParser } from '../express-common.js';
-import { getPipeline, getRawImage } from '../transformers.mjs';
+import { getPipeline, getRawImage } from '../transformers.js';
 
 const TASK = 'image-to-text';
 

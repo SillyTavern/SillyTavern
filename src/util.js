@@ -305,8 +305,8 @@ export const color = {
  * @returns {string} A UUIDv4 string
  */
 export function uuidv4() {
-    if ('crypto' in global && 'randomUUID' in global.crypto) {
-        return global.crypto.randomUUID();
+    if ('crypto' in globalThis && 'randomUUID' in globalThis.crypto) {
+        return globalThis.crypto.randomUUID();
     }
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0;

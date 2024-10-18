@@ -4398,13 +4398,6 @@
                                     <input id="auto_fix_generated_markdown" type="checkbox" />
                                     <small data-i18n="Auto-fix Markdown">Auto-fix Markdown</small>
                                 </label>
-                                <label class="checkbox_label" for="render_formulas" title="Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX." data-i18n="[title]Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX">
-                                    <input id="render_formulas" type="checkbox" />
-                                    <small data-i18n="Render Formulas">Render Formulas</small>
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/uicustomization/#formulas-rendering" class="notes-link" target="_blank">
-                                        <small class="fa-solid fa-circle-question note-link-small"></small>
-                                    </a>
-                                </label>
                                 <label class="checkbox_label" for="forbid_external_media" title="Disallow embedded media from other domains in chat messages." data-i18n="[title]Disallow embedded media from other domains in chat messages">
                                     <input id="forbid_external_media" type="checkbox" />
                                     <small data-i18n="Forbid External Media">Forbid External Media</small>
@@ -6748,42 +6741,23 @@
 
     <!-- Script includes -->
     <script src="lib/polyfill.js"></script>
-    <script src="lib/diff_match_patch.js"></script>
     <script src="lib/jquery-3.5.1.min.js"></script>
     <script src="lib/jquery-ui.min.js"></script>
     <script src="lib/jquery.transit.min.js"></script>
     <script src="lib/jquery-cookie-1.4.1.min.js"></script>
     <script src="lib/jquery.ui.touch-punch.min.js"></script>
-    <script src="lib/showdown.min.js"></script>
-    <script src="lib/showdown-patch.js"></script>
-    <script src="lib/showdown-katex.min.js"></script>
-    <script src="lib/popper.js"></script>
-    <script src="lib/purify.min.js"></script>
-    <script src="lib/highlight.min.js"></script>
-    <script src="lib/moment-with-locales.min.js"></script>
     <script src="lib/cropper.min.js"></script>
     <script src="lib/jquery-cropper.min.js"></script>
     <script src="lib/toastr.min.js"></script>
-    <script src="lib/fuse.js"></script>
     <script src="lib/select2.min.js"></script>
     <script src="lib/select2-search-placeholder.js"></script>
-    <script src="lib/seedrandom.min.js"></script>
-    <script src="lib/droll.js"></script>
-    <script src="lib/localforage.min.js"></script>
-    <script src="lib/handlebars.js"></script>
     <script src="lib/pagination.js"></script>
     <script src="lib/toolcool-color-picker.js"></script>
-    <script src="lib/svg-inject.js"></script>
-    <script src="lib/Readability.js"></script>
-    <script src="lib/Readability-readerable.js"></script>
     <script src="lib/jquery.izoomify.js"></script>
     <script type="module" src="lib/structured-clone/monkey-patch.js"></script>
     <script type="module" src="lib/swiped-events.js"></script>
     <script type="module" src="lib/eventemitter.js"></script>
     <script type="module" src="scripts/i18n.js"></script>
-    <script type="module" src="scripts/bulk-edit.js"></script>
-    <script type="module" src="scripts/setting-search.js"></script>
-    <script type="module" src="scripts/server-history.js"></script>
     <script type="module" src="script.js"></script>
     <script>
         window.addEventListener('load', (event) => {
