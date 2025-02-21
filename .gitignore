@@ -53,5 +53,27 @@ public/scripts/extensions/third-party
 /certs
 .aider*
 .env
+<<<<<<< Updated upstream
 /StartDev.bat
 
+=======
+LennySuite.bat
+LennySuite.ps1
+public/scripts/extensions/third-party/.gitkeep
+SillyTavern-AssetRepoManager/
+SillyTavern-Codex/
+SillyTavern-CssSnippets/
+SillyTavern-CustomTitle/
+SillyTavern-DiscordHomeLink/
+SillyTavern-FileExplorer/
+SillyTavern-InputHistory/
+SillyTavern-LALib/
+SillyTavern-LandingPage/
+SillyTavern-LogoutButton/
+SillyTavern-MessageActions/
+SillyTavern-MoreFlexibleContinues/
+SillyTavern-Variable-Viewer/
+SillyTavern-VideoBackgrounds/
+SillyTavern-WorldInfoPresets/
+public/scripts/extensions/third-party/.gitkeep
+>>>>>>> Stashed changes
