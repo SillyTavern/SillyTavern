@@ -224,6 +224,88 @@ const sensitiveFields = [
     'custom_include_headers',
 ];
 
+/**
+ * preset_name -> [selector, setting_name, is_checkbox]
+ * @type {Record<string, [string, string, boolean]>}
+ */
+const settingsToUpdate = {
+    chat_completion_source: ['#chat_completion_source', 'chat_completion_source', false],
+    temperature: ['#temp_openai', 'temp_openai', false],
+    frequency_penalty: ['#freq_pen_openai', 'freq_pen_openai', false],
+    presence_penalty: ['#pres_pen_openai', 'pres_pen_openai', false],
+    top_p: ['#top_p_openai', 'top_p_openai', false],
+    top_k: ['#top_k_openai', 'top_k_openai', false],
+    top_a: ['#top_a_openai', 'top_a_openai', false],
+    min_p: ['#min_p_openai', 'min_p_openai', false],
+    repetition_penalty: ['#repetition_penalty_openai', 'repetition_penalty_openai', false],
+    max_context_unlocked: ['#oai_max_context_unlocked', 'max_context_unlocked', true],
+    openai_model: ['#model_openai_select', 'openai_model', false],
+    claude_model: ['#model_claude_select', 'claude_model', false],
+    windowai_model: ['#model_windowai_select', 'windowai_model', false],
+    openrouter_model: ['#model_openrouter_select', 'openrouter_model', false],
+    openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true],
+    openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false],
+    openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false],
+    openrouter_providers: ['#openrouter_providers_chat', 'openrouter_providers', false],
+    openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true],
+    openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false],
+    ai21_model: ['#model_ai21_select', 'ai21_model', false],
+    mistralai_model: ['#model_mistralai_select', 'mistralai_model', false],
+    cohere_model: ['#model_cohere_select', 'cohere_model', false],
+    perplexity_model: ['#model_perplexity_select', 'perplexity_model', false],
+    groq_model: ['#model_groq_select', 'groq_model', false],
+    nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false],
+    deepseek_model: ['#model_deepseek_select', 'deepseek_model', false],
+    zerooneai_model: ['#model_01ai_select', 'zerooneai_model', false],
+    blockentropy_model: ['#model_blockentropy_select', 'blockentropy_model', false],
+    custom_model: ['#custom_model_id', 'custom_model', false],
+    custom_url: ['#custom_api_url_text', 'custom_url', false],
+    custom_include_body: ['#custom_include_body', 'custom_include_body', false],
+    custom_exclude_body: ['#custom_exclude_body', 'custom_exclude_body', false],
+    custom_include_headers: ['#custom_include_headers', 'custom_include_headers', false],
+    custom_prompt_post_processing: ['#custom_prompt_post_processing', 'custom_prompt_post_processing', false],
+    google_model: ['#model_google_select', 'google_model', false],
+    openai_max_context: ['#openai_max_context', 'openai_max_context', false],
+    openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
+    wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true],
+    names_behavior: ['#names_behavior', 'names_behavior', false],
+    send_if_empty: ['#send_if_empty_textarea', 'send_if_empty', false],
+    impersonation_prompt: ['#impersonation_prompt_textarea', 'impersonation_prompt', false],
+    new_chat_prompt: ['#newchat_prompt_textarea', 'new_chat_prompt', false],
+    new_group_chat_prompt: ['#newgroupchat_prompt_textarea', 'new_group_chat_prompt', false],
+    new_example_chat_prompt: ['#newexamplechat_prompt_textarea', 'new_example_chat_prompt', false],
+    continue_nudge_prompt: ['#continue_nudge_prompt_textarea', 'continue_nudge_prompt', false],
+    bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
+    reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
+    wi_format: ['#wi_format_textarea', 'wi_format', false],
+    scenario_format: ['#scenario_format_textarea', 'scenario_format', false],
+    personality_format: ['#personality_format_textarea', 'personality_format', false],
+    group_nudge_prompt: ['#group_nudge_prompt_textarea', 'group_nudge_prompt', false],
+    stream_openai: ['#stream_toggle', 'stream_openai', true],
+    prompts: ['', 'prompts', false],
+    prompt_order: ['', 'prompt_order', false],
+    api_url_scale: ['#api_url_scale', 'api_url_scale', false],
+    show_external_models: ['#openai_show_external_models', 'show_external_models', true],
+    proxy_password: ['#openai_proxy_password', 'proxy_password', false],
+    assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
+    assistant_impersonation: ['#claude_assistant_impersonation', 'assistant_impersonation', false],
+    claude_use_sysprompt: ['#claude_use_sysprompt', 'claude_use_sysprompt', true],
+    use_makersuite_sysprompt: ['#use_makersuite_sysprompt', 'use_makersuite_sysprompt', true],
+    use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
+    squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
+    image_inlining: ['#openai_image_inlining', 'image_inlining', true],
+    inline_image_quality: ['#openai_inline_image_quality', 'inline_image_quality', false],
+    continue_prefill: ['#continue_prefill', 'continue_prefill', true],
+    continue_postfix: ['#continue_postfix', 'continue_postfix', false],
+    function_calling: ['#openai_function_calling', 'function_calling', true],
+    show_thoughts: ['#openai_show_thoughts', 'show_thoughts', true],
+    reasoning_effort: ['#openai_reasoning_effort', 'reasoning_effort', false],
+    seed: ['#seed_openai', 'seed', false],
+    n: ['#n_openai', 'n', false],
+    jailbreak_system: ['#jailbreak_system', 'jailbreak_system', true],
+    bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true],
+};
+
 const default_settings = {
     preset_settings_openai: 'Default',
     temp_openai: 1.0,
@@ -399,13 +481,17 @@ export let openai_settings;
 /** @type {import('./PromptManager.js').PromptManager} */
 export let promptManager = null;
 
-async function validateReverseProxy() {
-    if (!oai_settings.reverse_proxy) {
+/**
+ * @param {string} reverseProxy If it's set, ignores active reverse proxy
+ */
+async function validateReverseProxy(reverseProxy = null) {
+    const activeReverseProxy = reverseProxy ?? oai_settings.reverse_proxy;
+    if (!activeReverseProxy) {
         return;
     }
 
     try {
-        new URL(oai_settings.reverse_proxy);
+        new URL(activeReverseProxy);
     }
     catch (err) {
         toastr.error(t`Entered reverse proxy address is not a valid URL`);
@@ -413,7 +499,7 @@ async function validateReverseProxy() {
         resultCheckStatus();
         throw err;
     }
-    const rememberKey = `Proxy_SkipConfirm_${getStringHash(oai_settings.reverse_proxy)}`;
+    const rememberKey = `Proxy_SkipConfirm_${getStringHash(activeReverseProxy)}`;
     const skipConfirm = accountStorage.getItem(rememberKey) === 'true';
 
     const confirmation = skipConfirm || await Popup.show.confirm(t`Connecting To Proxy`, await renderTemplateAsync('proxyConnectionWarning', { proxyURL: DOMPurify.sanitize(oai_settings.reverse_proxy) }));
@@ -1835,16 +1921,43 @@ async function sendAltScaleRequest(messages, logit_bias, signal, type) {
     return data.output;
 }
 
+export function presetToSettings(preset) {
+    let result = {};
+
+    // Add preset values.
+    for (const [key, value] of Object.entries(preset)) {
+        const settingToUpdate = settingsToUpdate[key];
+        if (!settingToUpdate) {
+            console.warn(`Unknown setting/preset name: ${key}`);
+            continue;
+        }
+
+        result[settingToUpdate[1]] = value;
+    }
+
+    // Merge with oai_settings
+    const resultKeys = new Set(Object.keys(result));
+    for (const [key, value] of Object.entries(oai_settings)) {
+        if (!resultKeys.has(key)) {
+            result[key] = value;
+        }
+    }
+
+    return result;
+}
+
 /**
  * Send a chat completion request to backend
  * @param {string} type (impersonate, quiet, continue, etc)
  * @param {Array} messages
  * @param {AbortSignal?} signal
+ * @param {{source?: string, preset?: object}} custom?
+ * @param {boolean} emitEvent
  * @returns {Promise<unknown>}
  * @throws {Error}
  */
 
-async function sendOpenAIRequest(type, messages, signal) {
+async function sendOpenAIRequest(type, messages, signal, { source, preset } = {}, emitEvent = true) {
     // Provide default abort signal
     if (!signal) {
         signal = new AbortController().signal;
@@ -1857,39 +1970,42 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     messages = messages.filter(msg => msg && typeof msg === 'object');
 
+    const active_oai_settings = structuredClone(preset ? presetToSettings(preset) : oai_settings);
+    active_oai_settings.chat_completion_source = source ?? active_oai_settings.chat_completion_source;
+
     let logit_bias = {};
-    const isClaude = oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
-    const isOpenRouter = oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER;
-    const isScale = oai_settings.chat_completion_source == chat_completion_sources.SCALE;
-    const isGoogle = oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE;
-    const isOAI = oai_settings.chat_completion_source == chat_completion_sources.OPENAI;
-    const isMistral = oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI;
-    const isCustom = oai_settings.chat_completion_source == chat_completion_sources.CUSTOM;
-    const isCohere = oai_settings.chat_completion_source == chat_completion_sources.COHERE;
-    const isPerplexity = oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY;
-    const isGroq = oai_settings.chat_completion_source == chat_completion_sources.GROQ;
-    const is01AI = oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI;
-    const isNano = oai_settings.chat_completion_source == chat_completion_sources.NANOGPT;
-    const isDeepSeek = oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK;
-    const isTextCompletion = isOAI && textCompletionModels.includes(oai_settings.openai_model);
+    const isClaude = active_oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
+    const isOpenRouter = active_oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER;
+    const isScale = active_oai_settings.chat_completion_source == chat_completion_sources.SCALE;
+    const isGoogle = active_oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE;
+    const isOAI = active_oai_settings.chat_completion_source == chat_completion_sources.OPENAI;
+    const isMistral = active_oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI;
+    const isCustom = active_oai_settings.chat_completion_source == chat_completion_sources.CUSTOM;
+    const isCohere = active_oai_settings.chat_completion_source == chat_completion_sources.COHERE;
+    const isPerplexity = active_oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY;
+    const isGroq = active_oai_settings.chat_completion_source == chat_completion_sources.GROQ;
+    const is01AI = active_oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI;
+    const isNano = active_oai_settings.chat_completion_source == chat_completion_sources.NANOGPT;
+    const isDeepSeek = active_oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK;
+    const isTextCompletion = isOAI && textCompletionModels.includes(active_oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
-    const stream = oai_settings.stream_openai && !isQuiet && !isScale && !(isOAI && ['o1-2024-12-17', 'o1'].includes(oai_settings.openai_model));
+    const stream = active_oai_settings.stream_openai && !isQuiet && !isScale && !(isOAI && ['o1-2024-12-17', 'o1'].includes(active_oai_settings.openai_model));
     const useLogprobs = !!power_user.request_token_probabilities;
-    const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isCustom);
+    const canMultiSwipe = active_oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isCustom);
 
     // If we're using the window.ai extension, use that instead
     // Doesn't support logit bias yet
-    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+    if (active_oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
         return sendWindowAIRequest(messages, signal, stream);
     }
 
     const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.SCALE, chat_completion_sources.CUSTOM];
-    if (oai_settings.bias_preset_selected
-        && logitBiasSources.includes(oai_settings.chat_completion_source)
-        && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
-        && oai_settings.bias_presets[oai_settings.bias_preset_selected].length) {
+    if (active_oai_settings.bias_preset_selected
+        && logitBiasSources.includes(active_oai_settings.chat_completion_source)
+        && Array.isArray(active_oai_settings.bias_presets[active_oai_settings.bias_preset_selected])
+        && active_oai_settings.bias_presets[active_oai_settings.bias_preset_selected].length) {
         logit_bias = biasCache || await calculateLogitBias();
         biasCache = logit_bias;
     }
@@ -1898,29 +2014,29 @@ async function sendOpenAIRequest(type, messages, signal) {
         logit_bias = undefined;
     }
 
-    if (isScale && oai_settings.use_alt_scale) {
+    if (isScale && active_oai_settings.use_alt_scale) {
         return sendAltScaleRequest(messages, logit_bias, signal, type);
     }
 
-    const model = getChatCompletionModel();
+    const model = getChatCompletionModel(active_oai_settings.chat_completion_source);
     const generate_data = {
         'messages': messages,
         'model': model,
-        'temperature': Number(oai_settings.temp_openai),
-        'frequency_penalty': Number(oai_settings.freq_pen_openai),
-        'presence_penalty': Number(oai_settings.pres_pen_openai),
-        'top_p': Number(oai_settings.top_p_openai),
-        'max_tokens': oai_settings.openai_max_tokens,
+        'temperature': Number(active_oai_settings.temp_openai),
+        'frequency_penalty': Number(active_oai_settings.freq_pen_openai),
+        'presence_penalty': Number(active_oai_settings.pres_pen_openai),
+        'top_p': Number(active_oai_settings.top_p_openai),
+        'max_tokens': active_oai_settings.openai_max_tokens,
         'stream': stream,
         'logit_bias': logit_bias,
         'stop': getCustomStoppingStrings(openai_max_stop_strings),
-        'chat_completion_source': oai_settings.chat_completion_source,
-        'n': canMultiSwipe ? oai_settings.n : undefined,
+        'chat_completion_source': active_oai_settings.chat_completion_source,
+        'n': canMultiSwipe ? active_oai_settings.n : undefined,
         'user_name': name1,
         'char_name': name2,
         'group_names': getGroupNames(),
-        'include_reasoning': Boolean(oai_settings.show_thoughts),
-        'reasoning_effort': String(oai_settings.reasoning_effort),
+        'include_reasoning': Boolean(active_oai_settings.show_thoughts),
+        'reasoning_effort': String(active_oai_settings.reasoning_effort),
     };
 
     if (!canMultiSwipe && ToolManager.canPerformToolCalls(type)) {
@@ -1933,10 +2049,10 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     // Proxy is only supported for Claude, OpenAI, Mistral, and Google MakerSuite
-    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE, chat_completion_sources.DEEPSEEK].includes(oai_settings.chat_completion_source)) {
-        await validateReverseProxy();
-        generate_data['reverse_proxy'] = oai_settings.reverse_proxy;
-        generate_data['proxy_password'] = oai_settings.proxy_password;
+    if (active_oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE, chat_completion_sources.DEEPSEEK].includes(active_oai_settings.chat_completion_source)) {
+        await validateReverseProxy(active_oai_settings.reverse_proxy);
+        generate_data['reverse_proxy'] = active_oai_settings.reverse_proxy;
+        generate_data['proxy_password'] = active_oai_settings.proxy_password;
     }
 
     // Add logprobs request (currently OpenAI only, max 5 on their side)
@@ -1945,31 +2061,31 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     // Remove logit bias, logprobs and stop strings if it's not supported by the model
-    if (isOAI && oai_settings.openai_model.includes('vision') || isOpenRouter && oai_settings.openrouter_model.includes('vision')) {
+    if (isOAI && active_oai_settings.openai_model.includes('vision') || isOpenRouter && active_oai_settings.openrouter_model.includes('vision')) {
         delete generate_data.logit_bias;
         delete generate_data.stop;
         delete generate_data.logprobs;
     }
 
     if (isClaude) {
-        generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['claude_use_sysprompt'] = oai_settings.claude_use_sysprompt;
+        generate_data['top_k'] = Number(active_oai_settings.top_k_openai);
+        generate_data['claude_use_sysprompt'] = active_oai_settings.claude_use_sysprompt;
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
         // Don't add a prefill on quiet gens (summarization) and when using continue prefill.
-        if (!isQuiet && !(isContinue && oai_settings.continue_prefill)) {
-            generate_data['assistant_prefill'] = isImpersonate ? substituteParams(oai_settings.assistant_impersonation) : substituteParams(oai_settings.assistant_prefill);
+        if (!isQuiet && !(isContinue && active_oai_settings.continue_prefill)) {
+            generate_data['assistant_prefill'] = isImpersonate ? substituteParams(active_oai_settings.assistant_impersonation) : substituteParams(active_oai_settings.assistant_prefill);
         }
     }
 
     if (isOpenRouter) {
-        generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['min_p'] = Number(oai_settings.min_p_openai);
-        generate_data['repetition_penalty'] = Number(oai_settings.repetition_penalty_openai);
-        generate_data['top_a'] = Number(oai_settings.top_a_openai);
-        generate_data['use_fallback'] = oai_settings.openrouter_use_fallback;
-        generate_data['provider'] = oai_settings.openrouter_providers;
-        generate_data['allow_fallbacks'] = oai_settings.openrouter_allow_fallbacks;
-        generate_data['middleout'] = oai_settings.openrouter_middleout;
+        generate_data['top_k'] = Number(active_oai_settings.top_k_openai);
+        generate_data['min_p'] = Number(active_oai_settings.min_p_openai);
+        generate_data['repetition_penalty'] = Number(active_oai_settings.repetition_penalty_openai);
+        generate_data['top_a'] = Number(active_oai_settings.top_a_openai);
+        generate_data['use_fallback'] = active_oai_settings.openrouter_use_fallback;
+        generate_data['provider'] = active_oai_settings.openrouter_providers;
+        generate_data['allow_fallbacks'] = active_oai_settings.openrouter_allow_fallbacks;
+        generate_data['middleout'] = active_oai_settings.openrouter_middleout;
 
         if (isTextCompletion) {
             generate_data['stop'] = getStoppingStrings(isImpersonate, isContinue);
@@ -1977,14 +2093,14 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     if (isScale) {
-        generate_data['api_url_scale'] = oai_settings.api_url_scale;
+        generate_data['api_url_scale'] = active_oai_settings.api_url_scale;
     }
 
     if (isGoogle) {
         const stopStringsLimit = 5;
-        generate_data['top_k'] = Number(oai_settings.top_k_openai);
+        generate_data['top_k'] = Number(active_oai_settings.top_k_openai);
         generate_data['stop'] = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
-        generate_data['use_makersuite_sysprompt'] = oai_settings.use_makersuite_sysprompt;
+        generate_data['use_makersuite_sysprompt'] = active_oai_settings.use_makersuite_sysprompt;
     }
 
     if (isMistral) {
@@ -1992,28 +2108,28 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     if (isCustom) {
-        generate_data['custom_url'] = oai_settings.custom_url;
-        generate_data['custom_include_body'] = oai_settings.custom_include_body;
-        generate_data['custom_exclude_body'] = oai_settings.custom_exclude_body;
-        generate_data['custom_include_headers'] = oai_settings.custom_include_headers;
-        generate_data['custom_prompt_post_processing'] = oai_settings.custom_prompt_post_processing;
+        generate_data['custom_url'] = active_oai_settings.custom_url;
+        generate_data['custom_include_body'] = active_oai_settings.custom_include_body;
+        generate_data['custom_exclude_body'] = active_oai_settings.custom_exclude_body;
+        generate_data['custom_include_headers'] = active_oai_settings.custom_include_headers;
+        generate_data['custom_prompt_post_processing'] = active_oai_settings.custom_prompt_post_processing;
     }
 
     if (isCohere) {
         // Clamp to 0.01 -> 0.99
-        generate_data['top_p'] = Math.min(Math.max(Number(oai_settings.top_p_openai), 0.01), 0.99);
-        generate_data['top_k'] = Number(oai_settings.top_k_openai);
+        generate_data['top_p'] = Math.min(Math.max(Number(active_oai_settings.top_p_openai), 0.01), 0.99);
+        generate_data['top_k'] = Number(active_oai_settings.top_k_openai);
         // Clamp to 0 -> 1
-        generate_data['frequency_penalty'] = Math.min(Math.max(Number(oai_settings.freq_pen_openai), 0), 1);
-        generate_data['presence_penalty'] = Math.min(Math.max(Number(oai_settings.pres_pen_openai), 0), 1);
+        generate_data['frequency_penalty'] = Math.min(Math.max(Number(active_oai_settings.freq_pen_openai), 0), 1);
+        generate_data['presence_penalty'] = Math.min(Math.max(Number(active_oai_settings.pres_pen_openai), 0), 1);
         generate_data['stop'] = getCustomStoppingStrings(5);
     }
 
     if (isPerplexity) {
-        generate_data['top_k'] = Number(oai_settings.top_k_openai);
+        generate_data['top_k'] = Number(active_oai_settings.top_k_openai);
         // Normalize values. 1 == disabled. 0 == is usual disabled state in OpenAI.
-        generate_data['frequency_penalty'] = Math.max(0, Number(oai_settings.freq_pen_openai)) + 1;
-        generate_data['presence_penalty'] = Number(oai_settings.pres_pen_openai);
+        generate_data['frequency_penalty'] = Math.max(0, Number(active_oai_settings.freq_pen_openai)) + 1;
+        generate_data['presence_penalty'] = Number(active_oai_settings.pres_pen_openai);
 
         // YEAH BRO JUST USE OPENAI CLIENT BRO
         delete generate_data['stop'];
@@ -2055,11 +2171,11 @@ async function sendOpenAIRequest(type, messages, signal) {
         }
     }
 
-    if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere || isNano) && oai_settings.seed >= 0) {
-        generate_data['seed'] = oai_settings.seed;
+    if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere || isNano) && active_oai_settings.seed >= 0) {
+        generate_data['seed'] = active_oai_settings.seed;
     }
 
-    if (isOAI && (oai_settings.openai_model.startsWith('o1') || oai_settings.openai_model.startsWith('o3'))) {
+    if (isOAI && (active_oai_settings.openai_model.startsWith('o1') || active_oai_settings.openai_model.startsWith('o3'))) {
         generate_data.messages.forEach((msg) => {
             if (msg.role === 'system') {
                 msg.role = 'user';
@@ -2080,7 +2196,9 @@ async function sendOpenAIRequest(type, messages, signal) {
         delete generate_data.logit_bias;
     }
 
-    await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
+    if (emitEvent) {
+        await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
+    }
 
     const generate_url = '/api/backends/chat-completions/generate';
     const response = await fetch(generate_url, {
@@ -3923,84 +4041,7 @@ async function onLogitBiasPresetDeleteClick() {
 
 // Load OpenAI preset settings
 function onSettingsPresetChange() {
-    const settingsToUpdate = {
-        chat_completion_source: ['#chat_completion_source', 'chat_completion_source', false],
-        temperature: ['#temp_openai', 'temp_openai', false],
-        frequency_penalty: ['#freq_pen_openai', 'freq_pen_openai', false],
-        presence_penalty: ['#pres_pen_openai', 'pres_pen_openai', false],
-        top_p: ['#top_p_openai', 'top_p_openai', false],
-        top_k: ['#top_k_openai', 'top_k_openai', false],
-        top_a: ['#top_a_openai', 'top_a_openai', false],
-        min_p: ['#min_p_openai', 'min_p_openai', false],
-        repetition_penalty: ['#repetition_penalty_openai', 'repetition_penalty_openai', false],
-        max_context_unlocked: ['#oai_max_context_unlocked', 'max_context_unlocked', true],
-        openai_model: ['#model_openai_select', 'openai_model', false],
-        claude_model: ['#model_claude_select', 'claude_model', false],
-        windowai_model: ['#model_windowai_select', 'windowai_model', false],
-        openrouter_model: ['#model_openrouter_select', 'openrouter_model', false],
-        openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true],
-        openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false],
-        openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false],
-        openrouter_providers: ['#openrouter_providers_chat', 'openrouter_providers', false],
-        openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true],
-        openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false],
-        ai21_model: ['#model_ai21_select', 'ai21_model', false],
-        mistralai_model: ['#model_mistralai_select', 'mistralai_model', false],
-        cohere_model: ['#model_cohere_select', 'cohere_model', false],
-        perplexity_model: ['#model_perplexity_select', 'perplexity_model', false],
-        groq_model: ['#model_groq_select', 'groq_model', false],
-        nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false],
-        deepseek_model: ['#model_deepseek_select', 'deepseek_model', false],
-        zerooneai_model: ['#model_01ai_select', 'zerooneai_model', false],
-        blockentropy_model: ['#model_blockentropy_select', 'blockentropy_model', false],
-        custom_model: ['#custom_model_id', 'custom_model', false],
-        custom_url: ['#custom_api_url_text', 'custom_url', false],
-        custom_include_body: ['#custom_include_body', 'custom_include_body', false],
-        custom_exclude_body: ['#custom_exclude_body', 'custom_exclude_body', false],
-        custom_include_headers: ['#custom_include_headers', 'custom_include_headers', false],
-        custom_prompt_post_processing: ['#custom_prompt_post_processing', 'custom_prompt_post_processing', false],
-        google_model: ['#model_google_select', 'google_model', false],
-        openai_max_context: ['#openai_max_context', 'openai_max_context', false],
-        openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
-        wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true],
-        names_behavior: ['#names_behavior', 'names_behavior', false],
-        send_if_empty: ['#send_if_empty_textarea', 'send_if_empty', false],
-        impersonation_prompt: ['#impersonation_prompt_textarea', 'impersonation_prompt', false],
-        new_chat_prompt: ['#newchat_prompt_textarea', 'new_chat_prompt', false],
-        new_group_chat_prompt: ['#newgroupchat_prompt_textarea', 'new_group_chat_prompt', false],
-        new_example_chat_prompt: ['#newexamplechat_prompt_textarea', 'new_example_chat_prompt', false],
-        continue_nudge_prompt: ['#continue_nudge_prompt_textarea', 'continue_nudge_prompt', false],
-        bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
-        reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
-        wi_format: ['#wi_format_textarea', 'wi_format', false],
-        scenario_format: ['#scenario_format_textarea', 'scenario_format', false],
-        personality_format: ['#personality_format_textarea', 'personality_format', false],
-        group_nudge_prompt: ['#group_nudge_prompt_textarea', 'group_nudge_prompt', false],
-        stream_openai: ['#stream_toggle', 'stream_openai', true],
-        prompts: ['', 'prompts', false],
-        prompt_order: ['', 'prompt_order', false],
-        api_url_scale: ['#api_url_scale', 'api_url_scale', false],
-        show_external_models: ['#openai_show_external_models', 'show_external_models', true],
-        proxy_password: ['#openai_proxy_password', 'proxy_password', false],
-        assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
-        assistant_impersonation: ['#claude_assistant_impersonation', 'assistant_impersonation', false],
-        claude_use_sysprompt: ['#claude_use_sysprompt', 'claude_use_sysprompt', true],
-        use_makersuite_sysprompt: ['#use_makersuite_sysprompt', 'use_makersuite_sysprompt', true],
-        use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
-        squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
-        image_inlining: ['#openai_image_inlining', 'image_inlining', true],
-        inline_image_quality: ['#openai_inline_image_quality', 'inline_image_quality', false],
-        continue_prefill: ['#continue_prefill', 'continue_prefill', true],
-        continue_postfix: ['#continue_postfix', 'continue_postfix', false],
-        function_calling: ['#openai_function_calling', 'function_calling', true],
-        show_thoughts: ['#openai_show_thoughts', 'show_thoughts', true],
-        reasoning_effort: ['#openai_reasoning_effort', 'reasoning_effort', false],
-        seed: ['#seed_openai', 'seed', false],
-        n: ['#n_openai', 'n', false],
-    };
-
     const presetNameBefore = oai_settings.preset_settings_openai;
-
     const presetName = $('#settings_preset_openai').find(':selected').text();
     oai_settings.preset_settings_openai = presetName;
 

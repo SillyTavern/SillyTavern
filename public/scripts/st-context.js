@@ -57,7 +57,7 @@ import { groups, openGroupChat, selected_group } from './group-chats.js';
 import { t, translate } from './i18n.js';
 import { hideLoader, showLoader } from './loader.js';
 import { MacrosParser } from './macros.js';
-import { getChatCompletionModel, oai_settings } from './openai.js';
+import { getChatCompletionModel, oai_settings, sendOpenAIRequest } from './openai.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { power_user, registerDebugFunction } from './power-user.js';
 import { getPresetManager } from './preset-manager.js';
@@ -68,7 +68,7 @@ import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { tag_map, tags } from './tags.js';
-import { getTextGenServer, textgenerationwebui_settings } from './textgen-settings.js';
+import { getTextGenGenerationData, getTextGenServer, textgenerationwebui_settings } from './textgen-settings.js';
 import { tokenizers, getTextTokens, getTokenCount, getTokenCountAsync, getTokenizerModel } from './tokenizers.js';
 import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
@@ -201,6 +201,8 @@ export function getContext() {
         extractMessageFromData,
         getPresetManager,
         getChatCompletionModel,
+        sendOpenAIRequest,
+        getTextGenGenerationData,
     };
 }
 
