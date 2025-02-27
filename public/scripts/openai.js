@@ -1936,9 +1936,8 @@ export function presetToSettings(preset) {
     }
 
     // Merge with oai_settings
-    const resultKeys = new Set(Object.keys(result));
     for (const [key, value] of Object.entries(oai_settings)) {
-        if (!resultKeys.has(key)) {
+        if (!Object.hasOwn(result, key)) {
             result[key] = value;
         }
     }
