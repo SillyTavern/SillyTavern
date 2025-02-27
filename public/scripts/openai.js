@@ -1951,13 +1951,13 @@ export function presetToSettings(preset) {
  * @param {string} type (impersonate, quiet, continue, etc)
  * @param {Array} messages
  * @param {AbortSignal?} signal
- * @param {{source?: string, preset?: object}} custom?
+ * @param {{source?: string, preset?: object, model?: string}} custom?
  * @param {boolean} emitEvent
  * @returns {Promise<unknown>}
  * @throws {Error}
  */
 
-async function sendOpenAIRequest(type, messages, signal, { source, preset } = {}, emitEvent = true) {
+async function sendOpenAIRequest(type, messages, signal, { source, preset, model } = {}, emitEvent = true) {
     // Provide default abort signal
     if (!signal) {
         signal = new AbortController().signal;
@@ -2018,10 +2018,9 @@ async function sendOpenAIRequest(type, messages, signal, { source, preset } = {}
         return sendAltScaleRequest(messages, logit_bias, signal, type);
     }
 
-    const model = getChatCompletionModel(active_oai_settings.chat_completion_source);
     const generate_data = {
         'messages': messages,
-        'model': model,
+        'model': model ?? getChatCompletionModel(active_oai_settings.chat_completion_source),
         'temperature': Number(active_oai_settings.temp_openai),
         'frequency_penalty': Number(active_oai_settings.freq_pen_openai),
         'presence_penalty': Number(active_oai_settings.pres_pen_openai),
