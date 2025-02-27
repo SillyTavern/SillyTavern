@@ -1969,42 +1969,42 @@ async function sendOpenAIRequest(type, messages, signal, { source, preset, model
 
     messages = messages.filter(msg => msg && typeof msg === 'object');
 
-    const active_oai_settings = structuredClone(preset ? presetToSettings(preset) : oai_settings);
-    active_oai_settings.chat_completion_source = source ?? active_oai_settings.chat_completion_source;
+    const settings = structuredClone(preset ? presetToSettings(preset) : oai_settings);
+    settings.chat_completion_source = source ?? settings.chat_completion_source;
 
     let logit_bias = {};
-    const isClaude = active_oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
-    const isOpenRouter = active_oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER;
-    const isScale = active_oai_settings.chat_completion_source == chat_completion_sources.SCALE;
-    const isGoogle = active_oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE;
-    const isOAI = active_oai_settings.chat_completion_source == chat_completion_sources.OPENAI;
-    const isMistral = active_oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI;
-    const isCustom = active_oai_settings.chat_completion_source == chat_completion_sources.CUSTOM;
-    const isCohere = active_oai_settings.chat_completion_source == chat_completion_sources.COHERE;
-    const isPerplexity = active_oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY;
-    const isGroq = active_oai_settings.chat_completion_source == chat_completion_sources.GROQ;
-    const is01AI = active_oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI;
-    const isNano = active_oai_settings.chat_completion_source == chat_completion_sources.NANOGPT;
-    const isDeepSeek = active_oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK;
-    const isTextCompletion = isOAI && textCompletionModels.includes(active_oai_settings.openai_model);
+    const isClaude = settings.chat_completion_source == chat_completion_sources.CLAUDE;
+    const isOpenRouter = settings.chat_completion_source == chat_completion_sources.OPENROUTER;
+    const isScale = settings.chat_completion_source == chat_completion_sources.SCALE;
+    const isGoogle = settings.chat_completion_source == chat_completion_sources.MAKERSUITE;
+    const isOAI = settings.chat_completion_source == chat_completion_sources.OPENAI;
+    const isMistral = settings.chat_completion_source == chat_completion_sources.MISTRALAI;
+    const isCustom = settings.chat_completion_source == chat_completion_sources.CUSTOM;
+    const isCohere = settings.chat_completion_source == chat_completion_sources.COHERE;
+    const isPerplexity = settings.chat_completion_source == chat_completion_sources.PERPLEXITY;
+    const isGroq = settings.chat_completion_source == chat_completion_sources.GROQ;
+    const is01AI = settings.chat_completion_source == chat_completion_sources.ZEROONEAI;
+    const isNano = settings.chat_completion_source == chat_completion_sources.NANOGPT;
+    const isDeepSeek = settings.chat_completion_source == chat_completion_sources.DEEPSEEK;
+    const isTextCompletion = isOAI && textCompletionModels.includes(settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
-    const stream = active_oai_settings.stream_openai && !isQuiet && !isScale && !(isOAI && ['o1-2024-12-17', 'o1'].includes(active_oai_settings.openai_model));
+    const stream = settings.stream_openai && !isQuiet && !isScale && !(isOAI && ['o1-2024-12-17', 'o1'].includes(settings.openai_model));
     const useLogprobs = !!power_user.request_token_probabilities;
-    const canMultiSwipe = active_oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isCustom);
+    const canMultiSwipe = settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isCustom);
 
     // If we're using the window.ai extension, use that instead
     // Doesn't support logit bias yet
-    if (active_oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+    if (settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
         return sendWindowAIRequest(messages, signal, stream);
     }
 
     const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.SCALE, chat_completion_sources.CUSTOM];
-    if (active_oai_settings.bias_preset_selected
-        && logitBiasSources.includes(active_oai_settings.chat_completion_source)
-        && Array.isArray(active_oai_settings.bias_presets[active_oai_settings.bias_preset_selected])
-        && active_oai_settings.bias_presets[active_oai_settings.bias_preset_selected].length) {
+    if (settings.bias_preset_selected
+        && logitBiasSources.includes(settings.chat_completion_source)
+        && Array.isArray(settings.bias_presets[settings.bias_preset_selected])
+        && settings.bias_presets[settings.bias_preset_selected].length) {
         logit_bias = biasCache || await calculateLogitBias();
         biasCache = logit_bias;
     }
@@ -2013,28 +2013,28 @@ async function sendOpenAIRequest(type, messages, signal, { source, preset, model
         logit_bias = undefined;
     }
 
-    if (isScale && active_oai_settings.use_alt_scale) {
+    if (isScale && settings.use_alt_scale) {
         return sendAltScaleRequest(messages, logit_bias, signal, type);
     }
 
     const generate_data = {
         'messages': messages,
-        'model': model ?? getChatCompletionModel(active_oai_settings.chat_completion_source),
-        'temperature': Number(active_oai_settings.temp_openai),
-        'frequency_penalty': Number(active_oai_settings.freq_pen_openai),
-        'presence_penalty': Number(active_oai_settings.pres_pen_openai),
-        'top_p': Number(active_oai_settings.top_p_openai),
-        'max_tokens': active_oai_settings.openai_max_tokens,
+        'model': model ?? getChatCompletionModel(settings.chat_completion_source),
+        'temperature': Number(settings.temp_openai),
+        'frequency_penalty': Number(settings.freq_pen_openai),
+        'presence_penalty': Number(settings.pres_pen_openai),
+        'top_p': Number(settings.top_p_openai),
+        'max_tokens': settings.openai_max_tokens,
         'stream': stream,
         'logit_bias': logit_bias,
         'stop': getCustomStoppingStrings(openai_max_stop_strings),
-        'chat_completion_source': active_oai_settings.chat_completion_source,
-        'n': canMultiSwipe ? active_oai_settings.n : undefined,
+        'chat_completion_source': settings.chat_completion_source,
+        'n': canMultiSwipe ? settings.n : undefined,
         'user_name': name1,
         'char_name': name2,
         'group_names': getGroupNames(),
-        'include_reasoning': Boolean(active_oai_settings.show_thoughts),
-        'reasoning_effort': String(active_oai_settings.reasoning_effort),
+        'include_reasoning': Boolean(settings.show_thoughts),
+        'reasoning_effort': String(settings.reasoning_effort),
     };
 
     if (!canMultiSwipe && ToolManager.canPerformToolCalls(type)) {
@@ -2047,10 +2047,10 @@ async function sendOpenAIRequest(type, messages, signal, { source, preset, model
     }
 
     // Proxy is only supported for Claude, OpenAI, Mistral, and Google MakerSuite
-    if (active_oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE, chat_completion_sources.DEEPSEEK].includes(active_oai_settings.chat_completion_source)) {
-        await validateReverseProxy(active_oai_settings.reverse_proxy);
-        generate_data['reverse_proxy'] = active_oai_settings.reverse_proxy;
-        generate_data['proxy_password'] = active_oai_settings.proxy_password;
+    if (settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE, chat_completion_sources.DEEPSEEK].includes(settings.chat_completion_source)) {
+        await validateReverseProxy(settings.reverse_proxy);
+        generate_data['reverse_proxy'] = settings.reverse_proxy;
+        generate_data['proxy_password'] = settings.proxy_password;
     }
 
     // Add logprobs request (currently OpenAI only, max 5 on their side)
@@ -2059,31 +2059,31 @@ async function sendOpenAIRequest(type, messages, signal, { source, preset, model
     }
 
     // Remove logit bias, logprobs and stop strings if it's not supported by the model
-    if (isOAI && active_oai_settings.openai_model.includes('vision') || isOpenRouter && active_oai_settings.openrouter_model.includes('vision')) {
+    if (isOAI && settings.openai_model.includes('vision') || isOpenRouter && settings.openrouter_model.includes('vision')) {
         delete generate_data.logit_bias;
         delete generate_data.stop;
         delete generate_data.logprobs;
     }
 
     if (isClaude) {
-        generate_data['top_k'] = Number(active_oai_settings.top_k_openai);
-        generate_data['claude_use_sysprompt'] = active_oai_settings.claude_use_sysprompt;
+        generate_data['top_k'] = Number(settings.top_k_openai);
+        generate_data['claude_use_sysprompt'] = settings.claude_use_sysprompt;
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
         // Don't add a prefill on quiet gens (summarization) and when using continue prefill.
-        if (!isQuiet && !(isContinue && active_oai_settings.continue_prefill)) {
-            generate_data['assistant_prefill'] = isImpersonate ? substituteParams(active_oai_settings.assistant_impersonation) : substituteParams(active_oai_settings.assistant_prefill);
+        if (!isQuiet && !(isContinue && settings.continue_prefill)) {
+            generate_data['assistant_prefill'] = isImpersonate ? substituteParams(settings.assistant_impersonation) : substituteParams(settings.assistant_prefill);
         }
     }
 
     if (isOpenRouter) {
-        generate_data['top_k'] = Number(active_oai_settings.top_k_openai);
-        generate_data['min_p'] = Number(active_oai_settings.min_p_openai);
-        generate_data['repetition_penalty'] = Number(active_oai_settings.repetition_penalty_openai);
-        generate_data['top_a'] = Number(active_oai_settings.top_a_openai);
-        generate_data['use_fallback'] = active_oai_settings.openrouter_use_fallback;
-        generate_data['provider'] = active_oai_settings.openrouter_providers;
-        generate_data['allow_fallbacks'] = active_oai_settings.openrouter_allow_fallbacks;
-        generate_data['middleout'] = active_oai_settings.openrouter_middleout;
+        generate_data['top_k'] = Number(settings.top_k_openai);
+        generate_data['min_p'] = Number(settings.min_p_openai);
+        generate_data['repetition_penalty'] = Number(settings.repetition_penalty_openai);
+        generate_data['top_a'] = Number(settings.top_a_openai);
+        generate_data['use_fallback'] = settings.openrouter_use_fallback;
+        generate_data['provider'] = settings.openrouter_providers;
+        generate_data['allow_fallbacks'] = settings.openrouter_allow_fallbacks;
+        generate_data['middleout'] = settings.openrouter_middleout;
 
         if (isTextCompletion) {
             generate_data['stop'] = getStoppingStrings(isImpersonate, isContinue);
@@ -2091,14 +2091,14 @@ async function sendOpenAIRequest(type, messages, signal, { source, preset, model
     }
 
     if (isScale) {
-        generate_data['api_url_scale'] = active_oai_settings.api_url_scale;
+        generate_data['api_url_scale'] = settings.api_url_scale;
     }
 
     if (isGoogle) {
         const stopStringsLimit = 5;
-        generate_data['top_k'] = Number(active_oai_settings.top_k_openai);
+        generate_data['top_k'] = Number(settings.top_k_openai);
         generate_data['stop'] = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
-        generate_data['use_makersuite_sysprompt'] = active_oai_settings.use_makersuite_sysprompt;
+        generate_data['use_makersuite_sysprompt'] = settings.use_makersuite_sysprompt;
     }
 
     if (isMistral) {
@@ -2106,28 +2106,28 @@ async function sendOpenAIRequest(type, messages, signal, { source, preset, model
     }
 
     if (isCustom) {
-        generate_data['custom_url'] = active_oai_settings.custom_url;
-        generate_data['custom_include_body'] = active_oai_settings.custom_include_body;
-        generate_data['custom_exclude_body'] = active_oai_settings.custom_exclude_body;
-        generate_data['custom_include_headers'] = active_oai_settings.custom_include_headers;
-        generate_data['custom_prompt_post_processing'] = active_oai_settings.custom_prompt_post_processing;
+        generate_data['custom_url'] = settings.custom_url;
+        generate_data['custom_include_body'] = settings.custom_include_body;
+        generate_data['custom_exclude_body'] = settings.custom_exclude_body;
+        generate_data['custom_include_headers'] = settings.custom_include_headers;
+        generate_data['custom_prompt_post_processing'] = settings.custom_prompt_post_processing;
     }
 
     if (isCohere) {
         // Clamp to 0.01 -> 0.99
-        generate_data['top_p'] = Math.min(Math.max(Number(active_oai_settings.top_p_openai), 0.01), 0.99);
-        generate_data['top_k'] = Number(active_oai_settings.top_k_openai);
+        generate_data['top_p'] = Math.min(Math.max(Number(settings.top_p_openai), 0.01), 0.99);
+        generate_data['top_k'] = Number(settings.top_k_openai);
         // Clamp to 0 -> 1
-        generate_data['frequency_penalty'] = Math.min(Math.max(Number(active_oai_settings.freq_pen_openai), 0), 1);
-        generate_data['presence_penalty'] = Math.min(Math.max(Number(active_oai_settings.pres_pen_openai), 0), 1);
+        generate_data['frequency_penalty'] = Math.min(Math.max(Number(settings.freq_pen_openai), 0), 1);
+        generate_data['presence_penalty'] = Math.min(Math.max(Number(settings.pres_pen_openai), 0), 1);
         generate_data['stop'] = getCustomStoppingStrings(5);
     }
 
     if (isPerplexity) {
-        generate_data['top_k'] = Number(active_oai_settings.top_k_openai);
+        generate_data['top_k'] = Number(settings.top_k_openai);
         // Normalize values. 1 == disabled. 0 == is usual disabled state in OpenAI.
-        generate_data['frequency_penalty'] = Math.max(0, Number(active_oai_settings.freq_pen_openai)) + 1;
-        generate_data['presence_penalty'] = Number(active_oai_settings.pres_pen_openai);
+        generate_data['frequency_penalty'] = Math.max(0, Number(settings.freq_pen_openai)) + 1;
+        generate_data['presence_penalty'] = Number(settings.pres_pen_openai);
 
         // YEAH BRO JUST USE OPENAI CLIENT BRO
         delete generate_data['stop'];
@@ -2169,11 +2169,11 @@ async function sendOpenAIRequest(type, messages, signal, { source, preset, model
         }
     }
 
-    if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere || isNano) && active_oai_settings.seed >= 0) {
-        generate_data['seed'] = active_oai_settings.seed;
+    if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere || isNano) && settings.seed >= 0) {
+        generate_data['seed'] = settings.seed;
     }
 
-    if (isOAI && (active_oai_settings.openai_model.startsWith('o1') || active_oai_settings.openai_model.startsWith('o3'))) {
+    if (isOAI && (settings.openai_model.startsWith('o1') || settings.openai_model.startsWith('o3'))) {
         generate_data.messages.forEach((msg) => {
             if (msg.role === 'system') {
                 msg.role = 'user';
