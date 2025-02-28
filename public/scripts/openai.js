@@ -1921,7 +1921,7 @@ async function sendAltScaleRequest(messages, logit_bias, signal, type) {
     return data.output;
 }
 
-export function presetToSettings(preset) {
+export function chatCompletionPresetToSettings(preset) {
     let result = {};
 
     // Add preset values.
@@ -1969,7 +1969,7 @@ async function sendOpenAIRequest(type, messages, signal, { source, preset, model
 
     messages = messages.filter(msg => msg && typeof msg === 'object');
 
-    const settings = structuredClone(preset ? presetToSettings(preset) : oai_settings);
+    const settings = structuredClone(preset ? chatCompletionPresetToSettings(preset) : oai_settings);
     settings.chat_completion_source = source ?? settings.chat_completion_source;
 
     let logit_bias = {};
