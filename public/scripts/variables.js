@@ -252,11 +252,11 @@ export function getVariableMacros() {
         // Replace {{addvar::name::value}} with empty string and add value to the variable value
         { regex: /{{addvar::([a-zA-Z0-9]+?)::((?:{{.*?}}|[^{}])+?)}}/gi, replace: (_, name, value) => { addLocalVariable(name.trim(), value); return ''; } },
         // Replace {{addglobalvar::name::value}} with empty string and add value to the global variable value
-        { regex: /{{addglobalvar::([a-zA-Z0-9]+?)::((?:{{.*?}}|[^{}])+)}}/gi, replace: (_, name, value) => { addGlobalVariable(name.trim(), value); return ''; } },
+        { regex: /{{addglobalvar::([a-zA-Z0-9]+?)::((?:{{.*?}}|[^{}])+?)}}/gi, replace: (_, name, value) => { addGlobalVariable(name.trim(), value); return ''; } },
         // Replace {{setvar::name::value}} with empty string and set the variable name to value
-        { regex: /{{setvar::([a-zA-Z0-9]+?)::((?:{{.*?}}|[^{}])+?)}}/gi, replace: (_, name, value) => { setLocalVariable(name.trim(), value); return ''; } },
+        { regex: /{{setvar::([a-zA-Z0-9]+?)::((?:{{.*?}}|[^{}])*?)}}/gi, replace: (_, name, value) => { setLocalVariable(name.trim(), value); return ''; } },
         // Replace {{setglobalvar::name::value}} with empty string and set the global variable name to value
-        { regex: /{{setglobalvar::([a-zA-Z0-9]+?)::((?:{{.*?}}|[^{}])+)}}/gi, replace: (_, name, value) => { setGlobalVariable(name.trim(), value); return ''; } },
+        { regex: /{{setglobalvar::([a-zA-Z0-9]+?)::((?:{{.*?}}|[^{}])*?)}}/gi, replace: (_, name, value) => { setGlobalVariable(name.trim(), value); return ''; } },
     ];
 }
 
