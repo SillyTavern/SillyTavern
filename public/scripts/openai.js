@@ -302,7 +302,6 @@ const settingsToUpdate = {
     reasoning_effort: ['#openai_reasoning_effort', 'reasoning_effort', false],
     seed: ['#seed_openai', 'seed', false],
     n: ['#n_openai', 'n', false],
-    jailbreak_system: ['#jailbreak_system', 'jailbreak_system', true],
     bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true],
 };
 
@@ -359,7 +358,6 @@ const default_settings = {
     openrouter_providers: [],
     openrouter_allow_fallbacks: true,
     openrouter_middleout: openrouter_middleout_types.ON,
-    jailbreak_system: false,
     reverse_proxy: '',
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
@@ -439,7 +437,6 @@ const oai_settings = {
     openrouter_providers: [],
     openrouter_allow_fallbacks: true,
     openrouter_middleout: openrouter_middleout_types.ON,
-    jailbreak_system: false,
     reverse_proxy: '',
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
@@ -3335,7 +3332,6 @@ function loadOpenAISettings(data, settings) {
     $('#openai_max_tokens').val(oai_settings.openai_max_tokens);
 
     $('#wrap_in_quotes').prop('checked', oai_settings.wrap_in_quotes);
-    $('#jailbreak_system').prop('checked', oai_settings.jailbreak_system);
     $('#openai_show_external_models').prop('checked', oai_settings.show_external_models);
     $('#openai_external_category').toggle(oai_settings.show_external_models);
     $('#claude_use_sysprompt').prop('checked', oai_settings.claude_use_sysprompt);
@@ -3619,7 +3615,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         names_behavior: settings.names_behavior,
         send_if_empty: settings.send_if_empty,
         jailbreak_prompt: settings.jailbreak_prompt,
-        jailbreak_system: settings.jailbreak_system,
         impersonation_prompt: settings.impersonation_prompt,
         new_chat_prompt: settings.new_chat_prompt,
         new_group_chat_prompt: settings.new_group_chat_prompt,

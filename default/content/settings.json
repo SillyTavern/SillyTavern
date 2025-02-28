@@ -626,7 +626,6 @@
         "ai21_model": "jamba-1.5-large",
         "windowai_model": "",
         "openrouter_model": "OR_Website",
-        "jailbreak_system": true,
         "reverse_proxy": "",
         "chat_completion_source": "openai",
         "max_context_unlocked": false,
