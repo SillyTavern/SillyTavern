@@ -1,4 +1,5 @@
 import { UserDirectoryList, User } from "./src/users";
+import { CommandLineArguments } from "./src/command-line";
 import { CsrfSyncedToken } from "csrf-sync";
 
 declare global {
@@ -32,4 +33,9 @@ declare global {
      * The root directory for user data.
      */
     var DATA_ROOT: string;
+
+    /**
+     * Parsed command line arguments.
+     */
+    var COMMAND_LINE_ARGS: CommandLineArguments;
 }

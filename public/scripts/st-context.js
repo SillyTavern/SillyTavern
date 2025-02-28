@@ -45,6 +45,8 @@ import {
     this_chid,
     updateChatMetadata,
     updateMessageBlock,
+    printMessages,
+    clearChat,
 } from '../script.js';
 import {
     extension_settings,
@@ -54,7 +56,7 @@ import {
     writeExtensionField,
 } from './extensions.js';
 import { groups, openGroupChat, selected_group } from './group-chats.js';
-import { t, translate } from './i18n.js';
+import { addLocaleData, getCurrentLocale, t, translate } from './i18n.js';
 import { hideLoader, showLoader } from './loader.js';
 import { MacrosParser } from './macros.js';
 import { getChatCompletionModel, oai_settings, sendOpenAIRequest } from './openai.js';
@@ -165,6 +167,8 @@ export function getContext() {
         isMobile,
         t,
         translate,
+        getCurrentLocale,
+        addLocaleData,
         tags,
         tagMap: tag_map,
         menuType: menu_type,
@@ -201,6 +205,8 @@ export function getContext() {
         extractMessageFromData,
         getPresetManager,
         getChatCompletionModel,
+        printMessages,
+        clearChat,
         sendOpenAIRequest,
         getTextGenGenerationData,
     };

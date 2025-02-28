@@ -108,6 +108,7 @@ export function isHiddenReasoningModel() {
 
     /** @type {{ name: string; func: MatchingFunc; }[]} */
     const hiddenReasoningModels = [
+        { name: 'gpt-4.5', func: FUNCS.startsWith },
         { name: 'o1', func: FUNCS.startsWith },
         { name: 'o3', func: FUNCS.startsWith },
         { name: 'gemini-2.0-flash-thinking-exp', func: FUNCS.startsWith },
@@ -493,7 +494,7 @@ export class ReasoningHandler {
             data = null;
         }
 
-        if (this.type !== ReasoningType.Model) {
+        if (this.type && this.type !== ReasoningType.Model) {
             title += ` [${translate(this.type)}]`;
             title = title.trim();
         }

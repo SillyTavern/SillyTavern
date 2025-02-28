@@ -378,6 +378,23 @@ function getIndexOfLatestChatSummary(chat) {
     return -1;
 }
 
+/**
+ * Check if something is changed during the summarization process.
+ * @param {{ groupId: any; chatId: any; characterId: any; }} context
+ * @returns {boolean} True if the context has changed and the summary should be discarded
+ */
+function isContextChanged(context) {
+    const newContext = getContext();
+    if (newContext.groupId !== context.groupId
+        || newContext.chatId !== context.chatId
+        || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
+        console.log('Context changed, summary discarded');
+        return true;
+    }
+
+    return false;
+}
+
 function onChatChanged() {
     const context = getContext();
     const latestMemory = getLatestMemoryFromChat(context.chat);
@@ -626,7 +643,6 @@ async function summarizeChatWebLLM(context, force) {
     try {
         inApiCall = true;
         const summary = await generateWebLlmChatPrompt(messages, params);
-        const newContext = getContext();
 
         if (!summary) {
             console.warn('Empty summary received');
@@ -634,10 +650,7 @@ async function summarizeChatWebLLM(context, force) {
         }
 
         // something changed during summarization request
-        if (newContext.groupId !== context.groupId ||
-            newContext.chatId !== context.chatId ||
-            (!newContext.groupId && (newContext.characterId !== context.characterId))) {
-            console.log('Context changed, summary discarded');
+        if (isContextChanged(context)) {
             return;
         }
 
@@ -701,13 +714,7 @@ async function summarizeChatMain(context, force, skipWIAN) {
         return;
     }
 
-    const newContext = getContext();
-
-    // something changed during summarization request
-    if (newContext.groupId !== context.groupId
-        || newContext.chatId !== context.chatId
-        || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
-        console.log('Context changed, summary discarded');
+    if (isContextChanged(context)) {
         return;
     }
 
@@ -833,18 +840,13 @@ async function summarizeChatExtras(context) {
     try {
         inApiCall = true;
         const summary = await callExtrasSummarizeAPI(resultingString);
-        const newContext = getContext();
 
         if (!summary) {
             console.warn('Empty summary received');
             return;
         }
 
-        // something changed during summarization request
-        if (newContext.groupId !== context.groupId
-            || newContext.chatId !== context.chatId
-            || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
-            console.log('Context changed, summary discarded');
+        if (isContextChanged(context)) {
             return;
         }
 

@@ -7,7 +7,7 @@ import { renderTemplate, renderTemplateAsync } from './templates.js';
 import { delay, isSubsetOf, sanitizeSelector, setValueByPath } from './utils.js';
 import { getContext } from './st-context.js';
 import { isAdmin } from './user.js';
-import { t } from './i18n.js';
+import { addLocaleData, getCurrentLocale, t } from './i18n.js';
 import { debounce_timeout } from './constants.js';
 import { accountStorage } from './util/AccountStorage.js';
 
@@ -384,7 +384,7 @@ async function activateExtensions() {
         if (meetsModuleRequirements && !isDisabled) {
             try {
                 console.debug('Activating extension', name);
-                const promise = Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]);
+                const promise = addExtensionLocale(name, manifest).finally(() => Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]));
                 await promise
                     .then(() => activeExtensions.add(name))
                     .catch(err => console.log('Could not activate extension', name, err));
@@ -574,6 +574,42 @@ function addExtensionScript(name, manifest) {
             document.body.appendChild(script);
         }
     });
+}
+
+/**
+ * Adds a localization data for an extension.
+ * @param {string} name Extension name
+ * @param {object} manifest Manifest object
+ */
+function addExtensionLocale(name, manifest) {
+    // No i18n data in the manifest
+    if (!manifest.i18n || typeof manifest.i18n !== 'object') {
+        return Promise.resolve();
+    }
+
+    const currentLocale = getCurrentLocale();
+    const localeFile = manifest.i18n[currentLocale];
+
+    // Manifest doesn't provide a locale file for the current locale
+    if (!localeFile) {
+        return Promise.resolve();
+    }
+
+    return fetch(`/scripts/extensions/${name}/${localeFile}`)
+        .then(async response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data && typeof data === 'object') {
+                addLocaleData(currentLocale, data);
+            }
+        })
+        .catch(err => {
+            console.log('Could not load extension locale data for ' + name, err);
+        });
 }
 
 /**

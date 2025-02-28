@@ -606,7 +606,6 @@ export const printCharactersDebounced = debounce(() => { printCharacters(false);
 export const system_message_types = {
     HELP: 'help',
     WELCOME: 'welcome',
-    GROUP: 'group',
     EMPTY: 'empty',
     GENERIC: 'generic',
     NARRATOR: 'narrator',
@@ -698,14 +697,6 @@ async function getSystemMessages() {
             is_system: true,
             uses_system_ui: true,
             mes: await renderTemplateAsync('welcome', { displayVersion }),
-        },
-        group: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            is_group: true,
-            mes: 'Group chat created. Say \'Hi\' to lovely people!',
         },
         empty: {
             name: systemUserName,
@@ -5318,7 +5309,7 @@ function addChatsSeparator(mesSendString) {
 }
 
 async function duplicateCharacter() {
-    if (!this_chid) {
+    if (this_chid === undefined || !characters[this_chid]) {
         toastr.warning(t`You must first select a character to duplicate!`);
         return '';
     }
@@ -7800,8 +7791,8 @@ function select_rm_create() {
     $('#renameCharButton').css('display', 'none');
     $('#name_div').removeClass('displayNone');
     $('#name_div').addClass('displayBlock');
-    $('.open_alternate_greetings').data('chid', undefined);
-    $('#set_character_world').data('chid', undefined);
+    $('.open_alternate_greetings').data('chid', -1);
+    $('#set_character_world').data('chid', -1);
     setWorldInfoButtonClass(undefined, !!create_save.world);
     updateFavButtonState(false);
     checkEmbeddedWorld();
@@ -7892,7 +7883,7 @@ function updateFavButtonState(state) {
 }
 
 export async function setScenarioOverride() {
-    if (!selected_group && !this_chid) {
+    if (!selected_group && (this_chid === undefined || !characters[this_chid])) {
         console.warn('setScenarioOverride() -- no selected group or character');
         return;
     }
@@ -8257,7 +8248,7 @@ function updateAlternateGreetingsHintVisibility(root) {
 function openCharacterWorldPopup() {
     const chid = $('#set_character_world').data('chid');
 
-    if (menu_type != 'create' && chid == undefined) {
+    if (menu_type != 'create' && chid === undefined) {
         toastr.error('Does not have an Id for this character in world select menu.');
         return;
     }
@@ -8389,7 +8380,7 @@ function openAlternateGreetings() {
         return;
     } else {
         // If the character does not have alternate greetings, create an empty array
-        if (chid && Array.isArray(characters[chid].data.alternate_greetings) == false) {
+        if (characters[chid] && !Array.isArray(characters[chid].data.alternate_greetings)) {
             characters[chid].data.alternate_greetings = [];
         }
     }
@@ -8576,7 +8567,7 @@ async function createOrEditCharacter(e) {
 
             formData.delete('alternate_greetings');
             const chid = $('.open_alternate_greetings').data('chid');
-            if (chid && Array.isArray(characters[chid]?.data?.alternate_greetings)) {
+            if (characters[chid] && Array.isArray(characters[chid]?.data?.alternate_greetings)) {
                 for (const value of characters[chid].data.alternate_greetings) {
                     formData.append('alternate_greetings', value);
                 }
@@ -10292,7 +10283,7 @@ jQuery(async function () {
     $('#form_create').submit(createOrEditCharacter);
 
     $('#delete_button').on('click', async function () {
-        if (!this_chid) {
+        if (this_chid === undefined || !characters[this_chid]) {
             toastr.warning('No character selected.');
             return;
         }

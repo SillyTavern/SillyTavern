@@ -28,6 +28,11 @@ port: 8000
 # - Use -1 to use the server port.
 # - Specify a port to override the default.
 autorunPortOverride: -1
+# -- SSL options --
+ssl:
+  enabled: false
+  certPath: "./certs/cert.pem"
+  keyPath: "./certs/privkey.pem"
 # -- SECURITY CONFIGURATION --
 # Toggle whitelist mode
 whitelistMode: true

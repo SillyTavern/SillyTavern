@@ -1294,8 +1294,8 @@
                                             <span data-i18n="TFS">TFS</span>
                                             <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Tail_Free_Sampling_desc" title="Tail-Free Sampling (TFS) searches for a tail of low-probability tokens in the distribution,&#13;by analyzing the rate of change in token probabilities using derivatives. It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative.&#13;The closer to 0, the more discarded tokens. Set to 1.0 to disable."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="tfs_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="tfs_textgenerationwebui" id="tfs_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="tfs_textgenerationwebui" name="volume" min="0" max="1" step="0.001">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="tfs_textgenerationwebui" id="tfs_counter_textgenerationwebui">
                                     </div>
                                     <div data-tg-type="ooba,mancer,aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
@@ -1477,8 +1477,8 @@
                                             </div>
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
                                                 <small data-i18n="Exponent">Exponent</small>
-                                                <input class="neo-range-slider" type="range" id="dynatemp_exponent_textgenerationwebui" name="volume" min="0.01" max="10" step="0.01" />
-                                                <input class="neo-range-input" type="number" min="0.01" max="10" step="0.01" data-for="dynatemp_exponent_textgenerationwebui" id="dynatemp_exponent_counter_textgenerationwebui">
+                                                <input class="neo-range-slider" type="range" id="dynatemp_exponent_textgenerationwebui" name="volume" min="0.001" max="10" step="0.001" />
+                                                <input class="neo-range-input" type="number" min="0.001" max="10" step="0.001" data-for="dynatemp_exponent_textgenerationwebui" id="dynatemp_exponent_counter_textgenerationwebui">
                                             </div>
                                         </div>
                                     </div>
@@ -2866,6 +2866,10 @@
                                     <optgroup label="o3">
                                         <option value="o3-mini">o3-mini</option>
                                         <option value="o3-mini-2025-01-31">o3-mini-2025-01-31</option>
+                                    </optgroup>
+                                    <optgroup label="GPT-4.5">
+                                        <option value="gpt-4.5-preview">gpt-4.5-preview</option>
+                                        <option value="gpt-4.5-preview-2025-02-27">gpt-4.5-preview-2025-02-27</option>
                                     </optgroup>
                                     <optgroup label="GPT-4 Turbo and GPT-4">
                                         <option value="gpt-4-turbo">gpt-4-turbo</option>

@@ -783,7 +783,7 @@ async function onCharacterNegativePromptInput() {
 }
 
 function getCharacterPrefix() {
-    if (!this_chid || selected_group) {
+    if (this_chid === undefined || selected_group) {
         return '';
     }
 
@@ -797,7 +797,7 @@ function getCharacterPrefix() {
 }
 
 function getCharacterNegativePrefix() {
-    if (!this_chid || selected_group) {
+    if (this_chid === undefined || selected_group) {
         return '';
     }
 

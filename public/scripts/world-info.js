@@ -4732,7 +4732,7 @@ export function setWorldInfoButtonClass(chid, forceValue = undefined) {
         return;
     }
 
-    if (!chid) {
+    if (chid === undefined) {
         return;
     }
 
@@ -4749,7 +4749,7 @@ export function checkEmbeddedWorld(chid) {
     }
 
     if (characters[chid]?.data?.character_book) {
-        $('#import_character_info').data('data-chid', chid).show();
+        $('#import_character_info').data('chid', chid).show();
 
         // Only show the alert once per character
         const checkKey = `AlertWI_${characters[chid].avatar}`;
@@ -4783,9 +4783,15 @@ export function checkEmbeddedWorld(chid) {
 }
 
 export async function importEmbeddedWorldInfo(skipPopup = false) {
-    const chid = $('#import_character_info').data('data-chid');
+    const chid = $('#import_character_info').data('chid');
 
-    if (chid === undefined) {
+    if (chid === undefined || chid === -1) {
+        return;
+    }
+
+    const hasEmbed = checkEmbeddedWorld(chid);
+
+    if (!hasEmbed) {
         return;
     }
 
@@ -5167,20 +5173,24 @@ jQuery(() => {
     });
 
     $('#world_button').on('click', async function (event) {
+        const openSetWorldMenu = () => $('#char-management-dropdown').val($('#set_character_world').val()).trigger('change');
         const chid = $('#set_character_world').data('chid');
 
-        if (chid) {
-            const worldName = characters[chid]?.data?.extensions?.world;
-            const hasEmbed = checkEmbeddedWorld(chid);
-            if (worldName && world_names.includes(worldName) && !event.shiftKey) {
-                openWorldInfoEditor(worldName);
-            } else if (hasEmbed && !event.shiftKey) {
-                await importEmbeddedWorldInfo();
-                saveCharacterDebounced();
-            }
-            else {
-                $('#char-management-dropdown').val($('#set_character_world').val()).trigger('change');
-            }
+        if (chid === -1) {
+            openSetWorldMenu();
+            return;
+        }
+
+        const worldName = characters[chid]?.data?.extensions?.world;
+        const hasEmbed = checkEmbeddedWorld(chid);
+        if (worldName && world_names.includes(worldName) && !event.shiftKey) {
+            openWorldInfoEditor(worldName);
+        } else if (hasEmbed && !event.shiftKey) {
+            await importEmbeddedWorldInfo();
+            saveCharacterDebounced();
+        }
+        else {
+            openSetWorldMenu();
         }
     });
 

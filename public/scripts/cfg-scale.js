@@ -40,7 +40,7 @@ function setCharCfg(tempValue, setting) {
         name: avatarName,
     };
 
-    switch(setting) {
+    switch (setting) {
         case settingType.guidance_scale:
             tempCharaCfg['guidance_scale'] = Number(tempValue);
             break;
@@ -69,8 +69,7 @@ function setCharCfg(tempValue, setting) {
         if (!existingCharaCfg.useChara &&
             (tempAssign.guidance_scale ?? 1.00) === 1.00 &&
             (tempAssign.negative_prompt?.length ?? 0) === 0 &&
-            (tempAssign.positive_prompt?.length ?? 0) === 0)
-        {
+            (tempAssign.positive_prompt?.length ?? 0) === 0) {
             extension_settings.cfg.chara.splice(existingCharaCfgIndex, 1);
         }
     } else if (avatarName && tempValue.length > 0) {
@@ -92,7 +91,7 @@ function setCharCfg(tempValue, setting) {
 }
 
 function setChatCfg(tempValue, setting) {
-    switch(setting) {
+    switch (setting) {
         case settingType.guidance_scale:
             chat_metadata[metadataKeys.guidance_scale] = tempValue;
             break;
@@ -113,49 +112,49 @@ function setChatCfg(tempValue, setting) {
 
 // TODO: Only change CFG when character is selected
 function onCfgMenuItemClick() {
-    if (selected_group || this_chid) {
-        //show CFG config if it's hidden
-        if ($('#cfgConfig').css('display') !== 'flex') {
-            $('#cfgConfig').addClass('resizing');
-            $('#cfgConfig').css('display', 'flex');
-            $('#cfgConfig').css('opacity', 0.0);
-            $('#cfgConfig').transition({
-                opacity: 1.0,
-                duration: animation_duration,
-            }, async function () {
-                await delay(50);
-                $('#cfgConfig').removeClass('resizing');
-            });
-
-            //auto-open the main AN inline drawer
-            if ($('#CFGBlockToggle')
-                .siblings('.inline-drawer-content')
-                .css('display') !== 'block') {
-                $('#floatingPrompt').addClass('resizing');
-                $('#CFGBlockToggle').click();
-            }
-        } else {
-            //hide AN if it's already displayed
-            $('#cfgConfig').addClass('resizing');
-            $('#cfgConfig').transition({
-                opacity: 0.0,
-                duration: animation_duration,
-            },
-            async function () {
-                await delay(50);
-                $('#cfgConfig').removeClass('resizing');
-            });
-            setTimeout(function () {
-                $('#cfgConfig').hide();
-            }, animation_duration);
-
-        }
-        //duplicate options menu close handler from script.js
-        //because this listener takes priority
-        $('#options').stop().fadeOut(animation_duration);
-    } else {
+    if (!selected_group && this_chid === undefined) {
         toastr.warning('Select a character before trying to configure CFG', '', { timeOut: 2000 });
+        return;
     }
+
+    //show CFG config if it's hidden
+    if ($('#cfgConfig').css('display') !== 'flex') {
+        $('#cfgConfig').addClass('resizing');
+        $('#cfgConfig').css('display', 'flex');
+        $('#cfgConfig').css('opacity', 0.0);
+        $('#cfgConfig').transition({
+            opacity: 1.0,
+            duration: animation_duration,
+        }, async function () {
+            await delay(50);
+            $('#cfgConfig').removeClass('resizing');
+        });
+
+        //auto-open the main AN inline drawer
+        if ($('#CFGBlockToggle')
+            .siblings('.inline-drawer-content')
+            .css('display') !== 'block') {
+            $('#floatingPrompt').addClass('resizing');
+            $('#CFGBlockToggle').click();
+        }
+    } else {
+        //hide AN if it's already displayed
+        $('#cfgConfig').addClass('resizing');
+        $('#cfgConfig').transition({
+            opacity: 0.0,
+            duration: animation_duration,
+        }, async function () {
+            await delay(50);
+            $('#cfgConfig').removeClass('resizing');
+        });
+        setTimeout(function () {
+            $('#cfgConfig').hide();
+        }, animation_duration);
+
+    }
+    //duplicate options menu close handler from script.js
+    //because this listener takes priority
+    $('#options').stop().fadeOut(animation_duration);
 }
 
 async function onChatChanged() {
@@ -288,7 +287,7 @@ export function initCfg() {
         setTimeout(function () { $('#cfgConfig').hide(); }, animation_duration);
     });
 
-    $('#chat_cfg_guidance_scale').on('input', function() {
+    $('#chat_cfg_guidance_scale').on('input', function () {
         const numberValue = Number($(this).val());
         const success = setChatCfg(numberValue, settingType.guidance_scale);
         if (success) {
@@ -296,15 +295,15 @@ export function initCfg() {
         }
     });
 
-    $('#chat_cfg_negative_prompt').on('input', function() {
+    $('#chat_cfg_negative_prompt').on('input', function () {
         setChatCfg($(this).val(), settingType.negative_prompt);
     });
 
-    $('#chat_cfg_positive_prompt').on('input', function() {
+    $('#chat_cfg_positive_prompt').on('input', function () {
         setChatCfg($(this).val(), settingType.positive_prompt);
     });
 
-    $('#chara_cfg_guidance_scale').on('input', function() {
+    $('#chara_cfg_guidance_scale').on('input', function () {
         const value = $(this).val();
         const success = setCharCfg(value, settingType.guidance_scale);
         if (success) {
@@ -312,34 +311,34 @@ export function initCfg() {
         }
     });
 
-    $('#chara_cfg_negative_prompt').on('input', function() {
+    $('#chara_cfg_negative_prompt').on('input', function () {
         setCharCfg($(this).val(), settingType.negative_prompt);
     });
 
-    $('#chara_cfg_positive_prompt').on('input', function() {
+    $('#chara_cfg_positive_prompt').on('input', function () {
         setCharCfg($(this).val(), settingType.positive_prompt);
     });
 
-    $('#global_cfg_guidance_scale').on('input', function() {
+    $('#global_cfg_guidance_scale').on('input', function () {
         extension_settings.cfg.global.guidance_scale = Number($(this).val());
         $('#global_cfg_guidance_scale_counter').val(extension_settings.cfg.global.guidance_scale.toFixed(2));
         saveSettingsDebounced();
     });
 
-    $('#global_cfg_negative_prompt').on('input', function() {
+    $('#global_cfg_negative_prompt').on('input', function () {
         extension_settings.cfg.global.negative_prompt = $(this).val();
         saveSettingsDebounced();
     });
 
-    $('#global_cfg_positive_prompt').on('input', function() {
+    $('#global_cfg_positive_prompt').on('input', function () {
         extension_settings.cfg.global.positive_prompt = $(this).val();
         saveSettingsDebounced();
     });
 
-    $('input[name="cfg_prompt_combine"]').on('input', function() {
+    $('input[name="cfg_prompt_combine"]').on('input', function () {
         const values = $('#cfgConfig').find('input[name="cfg_prompt_combine"]')
             .filter(':checked')
-            .map(function() { return Number($(this).val()); })
+            .map(function () { return Number($(this).val()); })
             .get()
             .filter((e) => !Number.isNaN(e)) || [];
 
@@ -347,17 +346,17 @@ export function initCfg() {
         saveMetadataDebounced();
     });
 
-    $('#cfg_prompt_insertion_depth').on('input', function() {
+    $('#cfg_prompt_insertion_depth').on('input', function () {
         chat_metadata[metadataKeys.prompt_insertion_depth] = Number($(this).val());
         saveMetadataDebounced();
     });
 
-    $('#cfg_prompt_separator').on('input', function() {
+    $('#cfg_prompt_separator').on('input', function () {
         chat_metadata[metadataKeys.prompt_separator] = $(this).val();
         saveMetadataDebounced();
     });
 
-    $('#groupchat_cfg_use_chara').on('input', function() {
+    $('#groupchat_cfg_use_chara').on('input', function () {
         const checked = !!$(this).prop('checked');
         chat_metadata[metadataKeys.groupchat_individual_chars] = checked;
 

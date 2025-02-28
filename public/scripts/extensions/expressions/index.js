@@ -624,7 +624,7 @@ function getFolderNameByMessage(message) {
     if (context.groupId) {
         avatarPath = message.original_avatar || context.characters.find(x => message.force_avatar && message.force_avatar.includes(encodeURIComponent(x.avatar)))?.avatar;
     }
-    else if (context.characterId) {
+    else if (context.characterId !== undefined) {
         avatarPath = getCharaFilename();
     }
 

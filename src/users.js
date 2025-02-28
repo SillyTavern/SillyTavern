@@ -14,7 +14,7 @@ import archiver from 'archiver';
 import _ from 'lodash';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
-import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE } from './constants.js';
+import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
 import { getConfigValue, color, delay, generateTimestamp } from './util.js';
 import { readSecret, writeSecret } from './endpoints/secrets.js';
 import { getContentOfType } from './endpoints/content-manager.js';
@@ -118,6 +118,93 @@ export async function ensurePublicDirectoriesExist() {
         }
     }
     return directoriesList;
+}
+
+/**
+ * Prints an error message and exits the process if necessary
+ * @param {string} message The error message to print
+ * @returns {void}
+ */
+function logSecurityAlert(message) {
+    const { basicAuthMode, whitelistMode } = globalThis.COMMAND_LINE_ARGS;
+    if (basicAuthMode || whitelistMode) return; // safe!
+    console.error(color.red(message));
+    if (getConfigValue('securityOverride', false, 'boolean')) {
+        console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
+        return;
+    }
+    process.exit(1);
+}
+
+/**
+ * Verifies the security settings and prints warnings if necessary
+ * @returns {Promise<void>}
+ */
+export async function verifySecuritySettings() {
+    const { listen, basicAuthMode } = globalThis.COMMAND_LINE_ARGS;
+
+    // Skip all security checks as listen is set to false
+    if (!listen) {
+        return;
+    }
+
+    if (!ENABLE_ACCOUNTS) {
+        logSecurityAlert('Your current SillyTavern configuration is insecure (listening to non-localhost). Enable whitelisting, basic authentication or user accounts.');
+    }
+
+    const users = await getAllEnabledUsers();
+    const unprotectedUsers = users.filter(x => !x.password);
+    const unprotectedAdminUsers = unprotectedUsers.filter(x => x.admin);
+
+    if (unprotectedUsers.length > 0) {
+        console.warn(color.blue('A friendly reminder that the following users are not password protected:'));
+        unprotectedUsers.map(x => `${color.yellow(x.handle)} ${color.red(x.admin ? '(admin)' : '')}`).forEach(x => console.warn(x));
+        console.log();
+        console.warn(`Consider setting a password in the admin panel or by using the ${color.blue('recover.js')} script.`);
+        console.log();
+
+        if (unprotectedAdminUsers.length > 0) {
+            logSecurityAlert('If you are not using basic authentication or whitelisting, you should set a password for all admin users.');
+        }
+    }
+
+    if (basicAuthMode) {
+        const perUserBasicAuth = getConfigValue('perUserBasicAuth', false, 'boolean');
+        if (perUserBasicAuth && !ENABLE_ACCOUNTS) {
+            console.error(color.red(
+                'Per-user basic authentication is enabled, but user accounts are disabled. This configuration may be insecure.',
+            ));
+        } else if (!perUserBasicAuth) {
+            const basicAuthUserName = getConfigValue('basicAuthUser.username', '');
+            const basicAuthUserPassword = getConfigValue('basicAuthUser.password', '');
+            if (!basicAuthUserName || !basicAuthUserPassword) {
+                console.warn(color.yellow(
+                    'Basic Authentication is enabled, but username or password is not set or empty!',
+                ));
+            }
+        }
+    }
+}
+
+export function cleanUploads() {
+    try {
+        const uploadsPath = path.join(globalThis.DATA_ROOT, UPLOADS_DIRECTORY);
+        if (fs.existsSync(uploadsPath)) {
+            const uploads = fs.readdirSync(uploadsPath);
+
+            if (!uploads.length) {
+                return;
+            }
+
+            console.debug(`Cleaning uploads folder (${uploads.length} files)`);
+            uploads.forEach(file => {
+                const pathToFile = path.join(uploadsPath, file);
+                fs.unlinkSync(pathToFile);
+            });
+        }
+    } catch (err) {
+        console.error(err);
+    }
 }
 
 /**
@@ -478,6 +565,25 @@ export function getCookieSessionName() {
     return `session-${suffix}`;
 }
 
+export function getSessionCookieAge() {
+    // Defaults to "no expiration" if not set
+    const configValue = getConfigValue('sessionTimeout', -1, 'number');
+
+    // Convert to milliseconds
+    if (configValue > 0) {
+        return configValue * 1000;
+    }
+
+    // "No expiration" is just 400 days as per RFC 6265
+    if (configValue < 0) {
+        return 400 * 24 * 60 * 60 * 1000;
+    }
+
+    // 0 means session cookie is deleted when the browser session ends
+    // (depends on the implementation of the browser)
+    return undefined;
+}
+
 /**
  * Hashes a password using scrypt with the provided salt.
  * @param {string} password Password to hash
@@ -775,6 +881,31 @@ export function requireLoginMiddleware(request, response, next) {
     }
 
     return next();
+}
+
+/**
+ * Middleware to host the login page.
+ * @param {import('express').Request} request Request object
+ * @param {import('express').Response} response Response object
+ */
+export async function loginPageMiddleware(request, response) {
+    if (!ENABLE_ACCOUNTS) {
+        console.log('User accounts are disabled. Redirecting to index page.');
+        return response.redirect('/');
+    }
+
+    try {
+        const { basicAuthMode } = globalThis.COMMAND_LINE_ARGS;
+        const autoLogin = await tryAutoLogin(request, basicAuthMode);
+
+        if (autoLogin) {
+            return response.redirect('/');
+        }
+    } catch (error) {
+        console.error('Error during auto-login:', error);
+    }
+
+    return response.sendFile('login.html', { root: path.join(process.cwd(), 'public') });
 }
 
 /**

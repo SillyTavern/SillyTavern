@@ -410,7 +410,7 @@ function getInlineListSelector() {
         return `.group_select[grid="${selected_group}"] .tags`;
     }
 
-    if (this_chid && menu_type === 'character_edit') {
+    if (this_chid !== undefined && menu_type === 'character_edit') {
         return `.character_select[chid="${this_chid}"] .tags`;
     }
 

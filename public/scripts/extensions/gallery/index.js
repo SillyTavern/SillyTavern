@@ -169,9 +169,9 @@ async function showCharGallery() {
 
     try {
         let url = selected_group || this_chid;
-        if (!selected_group && this_chid) {
+        if (!selected_group && this_chid !== undefined) {
             const char = characters[this_chid];
-            url = char.avatar.replace('.png', '');
+            url = char.name;
         }
 
         const items = await getGalleryItems(url);
@@ -455,9 +455,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
 async function listGalleryCommand(args) {
     try {
         let url = args.char ?? (args.group ? groups.find(it => it.name == args.group)?.id : null) ?? (selected_group || this_chid);
-        if (!args.char && !args.group && !selected_group && this_chid) {
+        if (!args.char && !args.group && !selected_group && this_chid !== undefined) {
             const char = characters[this_chid];
-            url = char.avatar.replace('.png', '');
+            url = char.name;
         }
 
         const items = await getGalleryItems(url);
