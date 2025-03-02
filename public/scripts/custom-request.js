@@ -1,5 +1,5 @@
 import { getPresetManager } from "./preset-manager.js";
-import { getGenerateUrl, getRequestHeaders } from "../script.js";
+import { extractMessageFromData, getGenerateUrl, getRequestHeaders } from "../script.js";
 import { getTextGenServer } from "./textgen-settings.js";
 
 // #region Type Definitions
@@ -18,6 +18,8 @@ import { getTextGenServer } from "./textgen-settings.js";
  * Creates & sends a text completion request. Streaming is not supported.
  */
 export class TextCompletionService {
+    static TYPE = 'textgenerationwebui';
+
     /**
      * @param {TextCompletionRequest} custom
      * @returns {TextCompletionPayload}
@@ -39,9 +41,12 @@ export class TextCompletionService {
     /**
      * Sends a text completion request to the specified server
      * @param {TextCompletionPayload} data Request data
+     * @param {boolean?} extractData Extract message from the response. Default true
+     * @returns {Promise<string | any>} Extracted data or the raw response
+     * @throws {Error}
      */
-    static async sendRequest(data) {
-        const response = await fetch(getGenerateUrl('textgenerationwebui'), {
+    static async sendRequest(data, extractData = true) {
+        const response = await fetch(getGenerateUrl(this.TYPE), {
             method: 'POST',
             headers: getRequestHeaders(),
             cache: 'no-cache',
@@ -53,17 +58,19 @@ export class TextCompletionService {
             throw await response.json();
         }
 
-        return await response.json();
+        const json = await response.json();
+        return extractData ? extractMessageFromData(json, this.TYPE) : json;
     }
 
     /**
      * @param {string} presetName
      * @param {TextCompletionRequest} custom
-     * @returns {Promise<any | null>}
+     * @param {boolean?} extractData Extract message from the response. Default true
+     * @returns {Promise<string | any>} Extracted data or the raw response
      * @throws {Error}
      */
-    static async sendRequestWithPreset(presetName, custom) {
-        const presetManager = getPresetManager('textgenerationwebui');
+    static async sendRequestWithPreset(presetName, custom, extractData = true) {
+        const presetManager = getPresetManager(this.TYPE);
         if (!presetManager) {
             throw new Error('Preset manager not found');
         }
@@ -75,7 +82,7 @@ export class TextCompletionService {
 
         const data = this.createRequestData({ ...preset, ...custom });
 
-        return await this.sendRequest(data);
+        return await this.sendRequest(data, extractData);
     }
 }
 
@@ -83,6 +90,8 @@ export class TextCompletionService {
  * Creates & sends a chat completion request. Streaming is not supported.
  */
 export class ChatCompletionService {
+    static TYPE = 'openai';
+
     /**
      * @param {ChatCompletionPayload} custom
      * @returns {ChatCompletionPayload}
@@ -102,8 +111,11 @@ export class ChatCompletionService {
     /**
      * Sends a chat completion request
      * @param {ChatCompletionPayload} data Request data
+     * @param {boolean?} extractData Extract message from the response. Default true
+     * @returns {Promise<string | any>} Extracted data or the raw response
+     * @throws {Error}
      */
-    static async sendRequest(data) {
+    static async sendRequest(data, extractData = true) {
         const response = await fetch('/api/backends/chat-completions/generate', {
             method: 'POST',
             headers: getRequestHeaders(),
@@ -116,17 +128,19 @@ export class ChatCompletionService {
             throw await response.json();
         }
 
-        return await response.json();
+        const json = await response.json();
+        return extractData ? extractMessageFromData(json, this.TYPE) : json;
     }
 
     /**
      * @param {string} presetName
      * @param {ChatCompletionPayload} custom
-     * @returns {Promise<any | null>}
+     * @param {boolean} extractData Extract message from the response. Default true
+     * @returns {Promise<string | any>} Extracted data or the raw response
      * @throws {Error}
      */
-    static async sendRequestWithPreset(presetName, custom) {
-        const presetManager = getPresetManager('openai');
+    static async sendRequestWithPreset(presetName, custom, extractData = true) {
+        const presetManager = getPresetManager(this.TYPE);
         if (!presetManager) {
             throw new Error('Preset manager not found');
         }
@@ -138,6 +152,6 @@ export class ChatCompletionService {
 
         const data = this.createRequestData({ ...preset, ...custom });
 
-        return await this.sendRequest(data);
+        return await this.sendRequest(data, extractData);
     }
 }
