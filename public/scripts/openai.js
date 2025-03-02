@@ -228,7 +228,7 @@ const sensitiveFields = [
  * preset_name -> [selector, setting_name, is_checkbox]
  * @type {Record<string, [string, string, boolean]>}
  */
-const settingsToUpdate = {
+export const settingsToUpdate = {
     chat_completion_source: ['#chat_completion_source', 'chat_completion_source', false],
     temperature: ['#temp_openai', 'temp_openai', false],
     frequency_penalty: ['#freq_pen_openai', 'freq_pen_openai', false],

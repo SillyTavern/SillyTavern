@@ -1,6 +1,6 @@
 import { getPresetManager } from "./preset-manager.js";
 import { getGenerateUrl, getRequestHeaders } from "../script.js";
-import { DREAMGEN_SERVER, FEATHERLESS_SERVER, INFERMATICAI_SERVER, MANCER_SERVER, OPENROUTER_SERVER, textgen_types, textgenerationwebui_settings, TOGETHERAI_SERVER } from "./textgen-settings.js";
+import { getTextGenServer } from "./textgen-settings.js";
 
 // #region Type Definitions
 /**
@@ -14,31 +14,10 @@ import { DREAMGEN_SERVER, FEATHERLESS_SERVER, INFERMATICAI_SERVER, MANCER_SERVER
  */
 // #endregion
 
+/**
+ * Creates & sends a text completion request. Streaming is not supported.
+ */
 export class TextCompletionService {
-    /**
-     * Gets the API URL for the selected text generation type.
-     * @param {string} type
-     * @returns {string} API URL
-     */
-    static getApiUrl(type) {
-        switch (type) {
-            case textgen_types.FEATHERLESS:
-                return FEATHERLESS_SERVER;
-            case textgen_types.MANCER:
-                return MANCER_SERVER;
-            case textgen_types.TOGETHERAI:
-                return TOGETHERAI_SERVER;
-            case textgen_types.INFERMATICAI:
-                return INFERMATICAI_SERVER;
-            case textgen_types.DREAMGEN:
-                return DREAMGEN_SERVER;
-            case textgen_types.OPENROUTER:
-                return OPENROUTER_SERVER;
-            default:
-                return textgenerationwebui_settings.server_urls[type] ?? '';
-        }
-    }
-
     /**
      * @param {TextCompletionRequest} custom
      * @returns {TextCompletionPayload}
@@ -51,8 +30,9 @@ export class TextCompletionService {
             max_new_tokens: max_tokens,
             model,
             api_type,
-            api_server: api_server ?? this.getApiUrl(api_type),
+            api_server: api_server ?? getTextGenServer(api_type),
             temperature,
+            stream: false,
         };
     }
 
@@ -99,6 +79,9 @@ export class TextCompletionService {
     }
 }
 
+/**
+ * Creates & sends a chat completion request. Streaming is not supported.
+ */
 export class ChatCompletionService {
     /**
      * @param {ChatCompletionPayload} custom
@@ -112,6 +95,7 @@ export class ChatCompletionService {
             chat_completion_source,
             max_tokens,
             temperature,
+            stream: false,
         };
     }
 
