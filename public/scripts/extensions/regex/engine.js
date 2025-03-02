@@ -103,7 +103,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
             }
 
             // Check if the depth is within the min/max depth
-            if (typeof depth === 'number' && depth >= 0) {
+            if (typeof depth === 'number' && depth !== null) {
                 if (!isNaN(script.minDepth) && script.minDepth !== null && script.minDepth >= 0 && depth < script.minDepth) {
                     console.debug(`getRegexedString: Skipping script ${script.scriptName} because depth ${depth} is less than minDepth ${script.minDepth}`);
                     return;
@@ -139,7 +139,7 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
     }
 
     const getRegexString = () => {
-        switch(Number(regexScript.substituteRegex)) {
+        switch (Number(regexScript.substituteRegex)) {
             case substitute_find_regex.NONE:
                 return regexScript.findRegex;
             case substitute_find_regex.RAW:

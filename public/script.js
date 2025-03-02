@@ -3866,7 +3866,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     coreChat = await Promise.all(coreChat.map(async (chatItem, index) => {
         let message = chatItem.mes;
         let regexType = chatItem.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
-        let options = { isPrompt: true, depth: (coreChat.length - index - 1) };
+        let options = { isPrompt: true, depth: (coreChat.length - index - (isContinue ? 2 : 1)) };
 
         let regexedMessage = getRegexedString(message, regexType, options);
         regexedMessage = await appendFileContent(chatItem, regexedMessage);
@@ -3885,7 +3885,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     const reasoning = new PromptReasoning();
     for (let i = coreChat.length - 1; i >= 0; i--) {
         const depth = coreChat.length - i - 1;
-        const isPrefix = isContinue && i === coreChat.length - 1;
+        const isPrefix = isContinue && i === coreChat.length - (isContinue ? 2 : 1);
         coreChat[i] = {
             ...coreChat[i],
             mes: reasoning.addToMessage(
