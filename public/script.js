@@ -5643,7 +5643,7 @@ export async function sendStreamingRequest(type, data) {
  * @returns {string} Generation URL
  * @throws {Error} If the API is unknown
  */
-function getGenerateUrl(api) {
+export function getGenerateUrl(api) {
     switch (api) {
         case 'kobold':
             return '/api/backends/kobold/generate';
