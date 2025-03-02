@@ -1,16 +1,44 @@
-import { getPresetManager } from "./preset-manager.js";
-import { getGenerateUrl, getRequestHeaders } from "../script.js";
-import { getTextGenServer } from "./textgen-settings.js";
+import { getPresetManager } from './preset-manager.js';
+import { getGenerateUrl, getRequestHeaders } from '../script.js';
+import { getTextGenServer } from './textgen-settings.js';
 
 // #region Type Definitions
 /**
- * @typedef {{prompt: string, max_tokens: number, model?: string, api_type: string, api_server?: string, temperature?: number, [key: string]: any}} TextCompletionRequest
- * @typedef {{prompt: string, max_tokens: number, max_new_tokens: number, model?: string, api_type: string, api_server: string, temperature?: number, [key: string]: any}} TextCompletionPayload
+ * @typedef {{[key: string]: any}} TextCompletionRequest
+ * @property {string} prompt - The text prompt for completion
+ * @property {number} max_tokens - Maximum number of tokens to generate
+ * @property {string} [model] - Optional model name
+ * @property {string} api_type - Type of API to use
+ * @property {string} [api_server] - Optional API server URL
+ * @property {number} [temperature] - Optional temperature parameter
  */
 
 /**
- * @typedef {{role: string, content: string}} ChatCompletionMessage
- * @typedef {{messages: ChatCompletionMessage[], model?: string, chat_completion_source: string, max_tokens: number, temperature?: number, [key: string]: any}} ChatCompletionPayload
+ * @typedef {{[key: string]: any}} TextCompletionPayload
+ * @property {string} prompt - The text prompt for completion
+ * @property {number} max_tokens - Maximum number of tokens to generate
+ * @property {number} max_new_tokens - Alias for max_tokens
+ * @property {string} [model] - Optional model name
+ * @property {string} api_type - Type of API to use
+ * @property {string} api_server - API server URL
+ * @property {number} [temperature] - Optional temperature parameter
+ */
+
+/**
+ * @typedef {Object} ChatCompletionMessage
+ * @property {string} role - The role of the message author (e.g., "user", "assistant", "system")
+ * @property {string} content - The content of the message
+ */
+
+/**
+ * @typedef {Object} ChatCompletionPayload
+ * @property {ChatCompletionMessage[]} messages - Array of chat messages
+ * @property {string} [model] - Optional model name to use for completion
+ * @property {string} chat_completion_source - Source provider for chat completion
+ * @property {number} max_tokens - Maximum number of tokens to generate
+ * @property {number} [temperature] - Optional temperature parameter for response randomness
+ * @property {boolean} [stream] - Whether to stream the response (false by default)
+ * @property {any} [key] - Any additional properties
  */
 // #endregion
 
