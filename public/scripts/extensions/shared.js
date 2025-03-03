@@ -439,7 +439,7 @@ export class ConnectionManagerRequestService {
         const defaultOption = document.createElement('option');
         defaultOption.value = '';
         defaultOption.textContent = 'Select a Connection Profile';
-        defaultOption.setAttribute('data-i18n', 'Select a Connection Profile');
+        defaultOption.dataset.i18n = 'Select a Connection Profile';
         dropdown.append(defaultOption);
 
         const profiles = context.extensionSettings.connectionManager.profiles;

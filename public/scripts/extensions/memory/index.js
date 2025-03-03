@@ -674,7 +674,7 @@ async function summarizeChatWithProfile(context, force) {
         console.debug('Connection profile does\'t support this prompt builder. Using raw prompt.');
     }
 
-    const lock = extension_settings.memory.prompt_builder === [prompt_builders.RAW_BLOCKING, prompt_builders.DEFAULT].includes(extension_settings.memory.prompt_builder);
+    const lock = [prompt_builders.RAW_BLOCKING, prompt_builders.DEFAULT].includes(extension_settings.memory.prompt_builder);
     try {
         inApiCall = true;
         if (lock) {

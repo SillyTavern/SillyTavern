@@ -1,4 +1,4 @@
-import { Fuse } from '../../../lib.js';
+import { DOMPurify, Fuse } from '../../../lib.js';
 
 import { event_types, eventSource, main_api, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
@@ -254,16 +254,18 @@ async function createConnectionProfile(forceName = null) {
     });
     const isNameTaken = (n) => extension_settings.connectionManager.profiles.some(p => p.name === n);
     const suggestedName = getUniqueName(collapseSpaces(`${profile.api ?? ''} ${profile.model ?? ''} - ${profile.preset ?? ''}`), isNameTaken);
-    const name = forceName ?? await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName, { rows: 2 });
+    const userInput = forceName ?? await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName, { rows: 2 });
 
-    if (!name) {
+    if (!userInput) {
         return null;
     }
 
-    if (isNameTaken(name) || name === NONE) {
+    if (isNameTaken(userInput) || userInput === NONE) {
         toastr.error('A profile with the same name already exists.');
         return null;
     }
+
+    const name = DOMPurify.sanitize(String(userInput));
 
     if (Array.isArray(profile.exclude)) {
         for (const command of profile.exclude) {
@@ -544,7 +546,7 @@ async function renderDetailsContent(detailsContent) {
             return acc;
         }, {});
         const template = $(await renderExtensionTemplateAsync(MODULE_NAME, 'edit', { name: profile.name, settings }));
-        const newName = await callGenericPopup(template, POPUP_TYPE.INPUT, profile.name, {
+        const userInput = await callGenericPopup(template, POPUP_TYPE.INPUT, profile.name, {
             customButtons: [{
                 text: t`Save and Update`,
                 classes: ['popup-button-ok'],
@@ -555,11 +557,11 @@ async function renderDetailsContent(detailsContent) {
             }],
         });
 
-        if (!newName) {
+        if (!userInput) {
             return;
         }
 
-        if (profile.name !== newName && extension_settings.connectionManager.profiles.some(p => p.name === newName)) {
+        if (profile.name !== userInput && extension_settings.connectionManager.profiles.some(p => p.name === userInput)) {
             toastr.error('A profile with the same name already exists.');
             return;
         }
@@ -581,9 +583,9 @@ async function renderDetailsContent(detailsContent) {
             }
         }
 
-        if (profile.name !== newName) {
+        if (profile.name !== userInput) {
             toastr.success('Connection profile renamed.');
-            profile.name = String(newName);
+            profile.name = DOMPurify.sanitize(String(userInput));
         }
 
         saveSettingsDebounced();
