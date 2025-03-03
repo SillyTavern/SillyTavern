@@ -437,7 +437,7 @@ export class ConnectionManagerRequestService {
         defaultOption.value = '';
         defaultOption.textContent = 'Select a Connection Profile';
         defaultOption.setAttribute('data-i18n', 'Select a Connection Profile');
-        dropdown[0].appendChild(defaultOption);
+        dropdown.append(defaultOption);
 
         const profiles = context.extensionSettings.connectionManager.profiles;
 
@@ -481,7 +481,7 @@ export class ConnectionManagerRequestService {
 
         for (const group of Object.values(groups)) {
             if (group.children.length > 0) {
-                dropdown[0].appendChild(group);
+                dropdown.append(group);
             }
         }
 
