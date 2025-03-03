@@ -4032,7 +4032,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         flushWIDepthInjections();
         if (Array.isArray(worldInfoDepth)) {
             worldInfoDepth.forEach((e) => {
-                const joinedEntries = e.entries.join('\n');
+                const joinedEntries = e.entries.join("\n\n");
                 setExtensionPrompt(`customDepthWI-${e.depth}-${e.role}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth, false, e.role);
             });
         }
