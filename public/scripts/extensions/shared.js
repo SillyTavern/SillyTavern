@@ -1,4 +1,4 @@
-import { getRequestHeaders } from '../../script.js';
+import { CONNECT_API_MAP, getRequestHeaders } from '../../script.js';
 import { extension_settings, openThirdPartyExtensionMenu } from '../extensions.js';
 import { oai_settings } from '../openai.js';
 import { SECRET_KEYS, secret_state } from '../secrets.js';
@@ -268,4 +268,121 @@ export async function getWebLlmContextSize() {
     await engine.loadModel();
     const model = await engine.getCurrentModelInfo();
     return model?.context_size;
+}
+
+export class ConnectionManagerUtils {
+    static ALLOWED_TYPES = {
+        openai: 'Chat Completion',
+        textgenerationwebui: 'Text Completion',
+    };
+
+    static defaultSendRequestParams = {
+        extractData: true,
+        includePreset: true,
+    };
+
+    /**
+     * Uses Connection Profile to send a generate request.
+     * @param {string} profileId
+     * @param {string | import('../custom-request.js').ChatCompletionMessage[]} prompt
+     * @param {number} maxTokens
+     * @param {{extractData?: boolean, includePreset?: boolean}} custom - default values are true
+     * @returns {Promise<string | any>} Extracted data or the raw response
+     */
+    static async sendRequest(profileId, prompt, maxTokens, custom = this.defaultSendRequestParams) {
+        const { extractData, includePreset } = { ...this.defaultSendRequestParams, ...custom };
+
+        const context = SillyTavern.getContext();
+        if (!context.extensionSettings.connectionManager) {
+            throw new Error('Connection Manager is not available');
+        }
+
+        const profile = context.extensionSettings.connectionManager.profiles.find((p) => p.id === profileId);
+        if (!profile) {
+            throw new Error(`Could not find profile with id ${profileId}`);
+        }
+        if (!profile.api) {
+            throw new Error('Select a connection profile that has an API');
+        }
+
+        const selectedApiMap = context.CONNECT_API_MAP[profile.api];
+        if (!selectedApiMap) {
+            throw new Error(`Unknown API type ${profile.api}`);
+        }
+        if (!Object.keys(this.ALLOWED_TYPES).includes(selectedApiMap.selected)) {
+            throw new Error(`API type ${selectedApiMap.selected} is not supported. Supported types: ${Object.values(this.ALLOWED_TYPES)}`);
+        }
+
+        try {
+            if (selectedApiMap.selected === 'openai') {
+                if (!selectedApiMap.source) {
+                    throw new Error(`API type ${selectedApiMap.selected} does not support chat completions`);
+                }
+
+                const messages = Array.isArray(prompt) ? prompt : [{ role: 'user', content: prompt }];
+                const data = context.ChatCompletionService.createRequestData({
+                    messages,
+                    max_tokens: maxTokens,
+                    model: profile.model,
+                    chat_completion_source: selectedApiMap.source,
+                });
+                if (profile.preset && includePreset) {
+                    return await context.ChatCompletionService.sendRequestWithPreset(profile.preset, data, extractData);
+                }
+                return await context.ChatCompletionService.sendRequest(data, extractData);
+            } else if (selectedApiMap.selected === 'textgenerationwebui') {
+                if (!selectedApiMap.type) {
+                    throw new Error(`API type ${selectedApiMap.selected} does not support text completions`);
+                }
+
+                const data = context.TextCompletionService.createRequestData({
+                    prompt: Array.isArray(prompt) ? prompt.map((m) => m.content).join('\n') : prompt,
+                    max_tokens: maxTokens,
+                    model: profile.model,
+                    api_type: selectedApiMap.type,
+                    api_server: profile['api-url'],
+                })
+                if (profile.preset && includePreset) {
+                    return await context.TextCompletionService.sendRequestWithPreset(profile.preset, data, extractData);
+                }
+                return await context.TextCompletionService.sendRequest(data, extractData);
+            }
+        } catch (error) {
+            throw new Error(`API request failed: ${error.message}`);
+        }
+
+        throw new Error(`Unknown API type ${selectedApiMap.selected}`);
+    }
+
+    /**
+     * Respects allowed types.
+     * @returns {import('./connection-manager/index.js').ConnectionProfile[]}
+     */
+    static getSupportedProfiles() {
+        const context = SillyTavern.getContext();
+        if (!context.extensionSettings.connectionManager) {
+            throw new Error('Connection Manager is not available');
+        }
+
+        const profiles = context.extensionSettings.connectionManager.profiles;
+        return profiles.filter((p) => this.isProfileSupported(p));
+    }
+
+    /**
+     * @param {import('./connection-manager/index.js').ConnectionProfile} profile
+     * @returns {boolean}
+     */
+    static isProfileSupported(profile) {
+        const apiMap = CONNECT_API_MAP[profile.api];
+        if (!Object.hasOwn(this.ALLOWED_TYPES, apiMap.selected)) {
+            return false;
+        }
+
+        // Some providers not need model, like koboldcpp. But I don't want to check by provider.
+        if (apiMap.selected === 'openai') {
+            return !!apiMap.source;
+        } else if (apiMap.selected === 'textgenerationwebui') {
+            return !!apiMap.type;
+        }
+    }
 }

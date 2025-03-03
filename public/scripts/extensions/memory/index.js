@@ -26,7 +26,7 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { MacrosParser } from '../../macros.js';
-import { countWebLlmTokens, generateWebLlmChatPrompt, getWebLlmContextSize, isWebLlmSupported } from '../shared.js';
+import { ConnectionManagerUtils, countWebLlmTokens, generateWebLlmChatPrompt, getWebLlmContextSize, isWebLlmSupported } from '../shared.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 export { MODULE_NAME };
 
@@ -148,7 +148,9 @@ function loadSettings() {
         }
     }
 
-    populateProfileDropdown();
+    if (extension_settings.connectionManager) {
+        populateProfileDropdown();
+    }
 
     $('#summary_source').val(extension_settings.memory.source).trigger('change');
     $('#memory_connection_profile').val(extension_settings.memory.profileId).trigger('change');
@@ -494,7 +496,7 @@ async function forceSummarizeChat(quiet) {
             value = await summarizeChatWebLLM(context, true);
             break;
         case summary_sources.profile:
-            value = await summarizeChatWithProfile(context, true, skipWIAN);
+            value = await summarizeChatWithProfile(context, true);
             break;
     }
 
@@ -541,7 +543,7 @@ async function summarizeCallback(args, text) {
                     toastr.warning('No connection profile selected');
                     return '';
                 }
-                return await getGeneratePayloadWithProfile(extension_settings.memory.profileId, `${prompt}\n\n${text}`);
+                return await ConnectionManagerUtils.sendRequest(extension_settings.memory.profileId, `${prompt}\n\n${text}`, 2048);
             }
             default:
                 toastr.warning('Invalid summarization source specified');
@@ -567,7 +569,7 @@ async function summarizeChat(context) {
             await summarizeChatWebLLM(context, false);
             break;
         case summary_sources.profile:
-            await summarizeChatWithProfile(context, false, skipWIAN);
+            await summarizeChatWithProfile(context, false);
             break;
         default:
             break;
@@ -645,122 +647,51 @@ async function getSummaryPromptForNow(context, force) {
 }
 
 /**
- * Get payload for a connection profile
- * @param {string} profileId Profile ID
- * @param {string} prompt Prompt text
- * @returns {Promise<string|null>} Generated text or null if an error occurred
+ * @param {'refresh' | 'create' | 'delete' | 'update'} type
+ * @param {import('../connection-manager/index.js').ConnectionProfile} [firstProfile] - if type is 'create' or 'delete', this is the profile. If type is 'update', this is the old profile
+ * @param {import('../connection-manager/index.js').ConnectionProfile} [secondProfile] - if type is 'update', this is the new profile
  */
-async function getGeneratePayloadWithProfile(profileId, prompt) {
-    const context = getContext();
-
-    if (!context.extensionSettings.connectionManager) {
-        toastr.error('Connection Manager is not available');
-        return null;
-    }
-
-    const profile = context.extensionSettings.connectionManager.profiles.find((p) => p.id === profileId);
-    if (!profile) {
-        toastr.error(`Could not find profile with id ${profileId}`);
-        return null;
-    }
-
-    if (!profile.api) {
-        toastr.error('Select a connection profile that has an API');
-        return null;
-    }
-
-    if (!profile.preset) {
-        toastr.error('Select a connection profile that has a preset');
-        return null;
-    }
-
-    const selectedApiMap = context.CONNECT_API_MAP[profile.api];
-    if (!selectedApiMap) {
-        toastr.error(`Could not find API ${profile.api}`);
-        return null;
-    }
-
-    if (!(selectedApiMap.selected === 'openai' || selectedApiMap.selected === 'textgenerationwebui')) {
-        toastr.error(`API ${profile.api} is not supported`);
-        return null;
-    }
-
-    /**
-     * @type {number}
-     */
-    const adjustedMaxTokens = extension_settings.memory.overrideResponseLength || 4096;
-
-    try {
-        if (selectedApiMap.selected === 'openai') {
-            if (!selectedApiMap.source) {
-                toastr.error(`Could not find source for API ${profile.api}`);
-                return null;
-            }
-
-            return await context.ChatCompletionService.sendRequestWithPreset(profile.preset, {
-                chat_completion_source: selectedApiMap.source,
-                max_tokens: adjustedMaxTokens,
-                messages: [{ role: 'system', content: prompt }],
-                model: profile.model,
-            });
-        } else {
-            return await context.TextCompletionService.sendRequestWithPreset(profile.preset, {
-                prompt,
-                model: profile.model,
-                api_type: selectedApiMap.type,
-                max_tokens: adjustedMaxTokens,
-                api_server: profile['api-url'],
-            });
-        }
-    } catch (error) {
-        toastr.error(`Failed to generate text: ${error.message || error}`);
-        return null;
-    }
-}
-
-/**
- * @param {'refresh' | 'create' | 'delete'} type
- * @param {import('../connection-manager/index.js').ConnectionProfile} [profileData]
- */
-function populateProfileDropdown(type = 'refresh', profileData = null) {
+function populateProfileDropdown(type = 'refresh', firstProfile = null, secondProfile = null) {
     const dropdown = $('#memory_connection_profile');
 
     if (type === 'refresh') {
         dropdown.empty();
         dropdown.append('<option value="">Select a Connection Profile</option>');
 
-        const context = getContext();
-        if (context.extensionSettings.connectionManager && Array.isArray(context.extensionSettings.connectionManager.profiles)) {
-            context.extensionSettings.connectionManager.profiles.forEach(profile => {
-                const isSupported = profile.api &&
-                    profile.preset &&
-                    context.CONNECT_API_MAP[profile.api] &&
-                    (context.CONNECT_API_MAP[profile.api].selected === 'openai' ||
-                        context.CONNECT_API_MAP[profile.api].selected === 'textgenerationwebui');
+        const profiles = ConnectionManagerUtils.getSupportedProfiles();
+        profiles.forEach(profile => {
+            const selected = profile.id === extension_settings.memory.profileId ? 'selected' : '';
+            dropdown.append(`<option value="${profile.id}" ${selected}>${profile.name}</option>`);
+        });
+    } else if (type === 'delete' && firstProfile) {
+        dropdown.find(`option[value="${firstProfile.id}"]`).remove();
 
-                if (isSupported) {
-                    const selected = profile.id === extension_settings.memory.profileId ? 'selected' : '';
-                    dropdown.append(`<option value="${profile.id}" ${selected}>${profile.name}</option>`);
-                }
-            });
+        if (extension_settings.memory.profileId === firstProfile.id) {
+            extension_settings.memory.profileId = '';
+            saveSettingsDebounced();
         }
-    } else if (type === 'delete' && profileData) {
-        dropdown.find(`option[value="${profileData.id}"]`).remove();
-    } else if (type === 'create' && profileData) {
-        const context = getContext();
-        const isSupported = profileData.api &&
-            profileData.preset &&
-            context.CONNECT_API_MAP[profileData.api] &&
-            (context.CONNECT_API_MAP[profileData.api].selected === 'openai' ||
-                context.CONNECT_API_MAP[profileData.api].selected === 'textgenerationwebui');
+    } else if (type === 'create' && firstProfile) {
+        if (ConnectionManagerUtils.isProfileSupported(firstProfile)) {
+            dropdown.append(`<option value="${firstProfile.id}">${firstProfile.name}</option>`);
+        }
+    } else if (type === 'update' && firstProfile && secondProfile) {
+        const isSupported = ConnectionManagerUtils.isProfileSupported(secondProfile);
+
+        dropdown.find(`option[value="${firstProfile.id}"]`).remove();
 
         if (isSupported) {
-            dropdown.append(`<option value="${profileData.id}">${profileData.name}</option>`);
+            const selected = secondProfile.id === extension_settings.memory.profileId ? 'selected' : '';
+            dropdown.append(`<option value="${secondProfile.id}" ${selected}>${secondProfile.name}</option>`);
+        }
+
+        if (extension_settings.memory.profileId === firstProfile.id && !isSupported) {
+            extension_settings.memory.profileId = '';
+            saveSettingsDebounced();
         }
     }
 }
 
-async function summarizeChatWithProfile(context, force, skipWIAN) {
+async function summarizeChatWithProfile(context, force) {
     if (!extension_settings.memory.profileId) {
         console.warn('No connection profile selected for summarization');
         return null;
@@ -797,8 +728,11 @@ async function summarizeChatWithProfile(context, force, skipWIAN) {
             return null;
         }
 
-        summary = await getGeneratePayloadWithProfile(extension_settings.memory.profileId, `${prompt}\n\n${rawPrompt}`);
+        summary = await ConnectionManagerUtils.sendRequest(extension_settings.memory.profileId, `${prompt}\n\n${rawPrompt}`, 2048);
         index = lastUsedIndex;
+    } catch (error) {
+        toastr.error(String(error), 'Failed to summarize text');
+        console.log(error);
     } finally {
         inApiCall = false;
         if (lock) {
@@ -1268,6 +1202,7 @@ jQuery(async function () {
 
     eventSource.on(event_types.CONNECTION_PROFILE_CREATED, (profile) =>populateProfileDropdown('create', profile));
     eventSource.on(event_types.CONNECTION_PROFILE_DELETED, (profile) => populateProfileDropdown('delete', profile));
+    eventSource.on(event_types.CONNECTION_PROFILE_UPDATED, (oldProfile, newProfile) => populateProfileDropdown('update', oldProfile, newProfile));
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.makeLast(event_types.CHARACTER_MESSAGE_RENDERED, onChatEvent);
     for (const event of [event_types.MESSAGE_DELETED, event_types.MESSAGE_UPDATED, event_types.MESSAGE_SWIPED]) {

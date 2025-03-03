@@ -513,6 +513,7 @@ export const event_types = {
     CONNECTION_PROFILE_LOADED: 'connection_profile_loaded',
     CONNECTION_PROFILE_CREATED: 'connection_profile_created',
     CONNECTION_PROFILE_DELETED: 'connection_profile_deleted',
+    CONNECTION_PROFILE_UPDATED: 'connection_profile_updated',
     TOOL_CALLS_PERFORMED: 'tool_calls_performed',
     TOOL_CALLS_RENDERED: 'tool_calls_rendered',
 };
@@ -8978,6 +8979,17 @@ const swipe_right = () => {
     }
 };
 
+/**
+ * @typedef {object} ConnectAPIMap
+ * @property {string} selected - API name (e.g. "textgenerationwebui", "openai")
+ * @property {string?} [button] - CSS selector for the API button
+ * @property {string?} [type] - API type, mostly used by text completion. (e.g. "openrouter")
+ * @property {string?} [source] - API source, mostly used by chat completion. (e.g. "openai")
+ */
+
+/**
+ * @type {Record<string, ConnectAPIMap>}
+ */
 export const CONNECT_API_MAP = {
     // Default APIs not contined inside text gen / chat gen
     'kobold': {

@@ -78,6 +78,7 @@ import { timestampToMoment, uuidv4 } from './utils.js';
 import { getGlobalVariable, getLocalVariable, setGlobalVariable, setLocalVariable } from './variables.js';
 import { convertCharacterBook, loadWorldInfo, saveWorldInfo, updateWorldInfoList } from './world-info.js';
 import { ChatCompletionService, TextCompletionService } from './custom-request.js';
+import { ConnectionManagerUtils } from './extensions/shared.js';
 
 export function getContext() {
     return {
@@ -210,6 +211,7 @@ export function getContext() {
         clearChat,
         ChatCompletionService,
         TextCompletionService,
+        ConnectionManagerUtils,
     };
 }
 

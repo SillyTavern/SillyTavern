@@ -506,9 +506,11 @@ async function renderDetailsContent(detailsContent) {
             console.log('No profile selected');
             return;
         }
+        const oldProfile = structuredClone(profile);
         await updateConnectionProfile(profile);
         await renderDetailsContent(detailsContent);
         saveSettingsDebounced();
+        await eventSource.emit(event_types.CONNECTION_PROFILE_UPDATED, oldProfile, profile);
         await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
         toastr.success('Connection profile updated', '', { timeOut: 1500 });
     });
@@ -566,6 +568,7 @@ async function renderDetailsContent(detailsContent) {
             return Object.entries(FANCY_NAMES).find(x => x[1] === String($(this).val()))?.[0];
         }).get();
 
+        const oldProfile = structuredClone(profile);
         if (newExcludeList.length !== profile.exclude.length || !newExcludeList.every(e => profile.exclude.includes(e))) {
             profile.exclude = newExcludeList;
             for (const command of newExcludeList) {
@@ -584,6 +587,7 @@ async function renderDetailsContent(detailsContent) {
         }
 
         saveSettingsDebounced();
+        await eventSource.emit(event_types.CONNECTION_PROFILE_UPDATED, oldProfile, profile);
         renderConnectionProfiles(profiles);
         await renderDetailsContent(detailsContent);
     });
@@ -701,9 +705,11 @@ async function renderDetailsContent(detailsContent) {
                 toastr.warning('No profile selected.');
                 return '';
             }
+            const oldProfile = structuredClone(profile);
             await updateConnectionProfile(profile);
             await renderDetailsContent(detailsContent);
             saveSettingsDebounced();
+            await eventSource.emit(event_types.CONNECTION_PROFILE_UPDATED, oldProfile, profile);
             return profile.name;
         },
     }));
