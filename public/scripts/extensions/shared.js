@@ -1,5 +1,6 @@
 import { CONNECT_API_MAP, getRequestHeaders } from '../../script.js';
 import { extension_settings, openThirdPartyExtensionMenu } from '../extensions.js';
+import { t } from '../i18n.js';
 import { oai_settings } from '../openai.js';
 import { SECRET_KEYS, secret_state } from '../secrets.js';
 import { textgen_types, textgenerationwebui_settings } from '../textgen-settings.js';
@@ -271,18 +272,20 @@ export async function getWebLlmContextSize() {
 }
 
 /**
- * Doesn't support streaming.
+ * It uses the profiles to send a generate request to the API. Doesn't support streaming.
  */
 export class ConnectionManagerRequestService {
-    static ALLOWED_TYPES = {
-        openai: 'Chat Completion',
-        textgenerationwebui: 'Text Completion',
-    };
-
     static defaultSendRequestParams = {
         extractData: true,
         includePreset: true,
     };
+
+    static getAllowedTypes() {
+        return {
+            openai: t`Chat Completion`,
+            textgenerationwebui: t`Text Completion`,
+        }
+    }
 
     /**
      * @param {string} profileId
@@ -311,49 +314,53 @@ export class ConnectionManagerRequestService {
         if (!selectedApiMap) {
             throw new Error(`Unknown API type ${profile.api}`);
         }
-        if (!Object.hasOwn(this.ALLOWED_TYPES, selectedApiMap.selected)) {
-            throw new Error(`API type ${selectedApiMap.selected} is not supported. Supported types: ${Object.values(this.ALLOWED_TYPES).join(', ')}`);
+        if (!Object.hasOwn(this.getAllowedTypes(), selectedApiMap.selected)) {
+            throw new Error(`API type ${selectedApiMap.selected} is not supported. Supported types: ${Object.values(this.getAllowedTypes()).join(', ')}`);
         }
 
         try {
-            if (selectedApiMap.selected === 'openai') {
-                if (!selectedApiMap.source) {
-                    throw new Error(`API type ${selectedApiMap.selected} does not support chat completions`);
-                }
+            switch (selectedApiMap.selected) {
+                case 'openai': {
+                    if (!selectedApiMap.source) {
+                        throw new Error(`API type ${selectedApiMap.selected} does not support chat completions`);
+                    }
 
-                const messages = Array.isArray(prompt) ? prompt : [{ role: 'user', content: prompt }];
-                const data = context.ChatCompletionService.createRequestData({
-                    messages,
-                    max_tokens: maxTokens,
-                    model: profile.model,
-                    chat_completion_source: selectedApiMap.source,
-                });
-                if (profile.preset && includePreset) {
-                    return await context.ChatCompletionService.sendRequestWithPreset(profile.preset, data, extractData);
+                    const messages = Array.isArray(prompt) ? prompt : [{ role: 'user', content: prompt }];
+                    const data = context.ChatCompletionService.createRequestData({
+                        messages,
+                        max_tokens: maxTokens,
+                        model: profile.model,
+                        chat_completion_source: selectedApiMap.source,
+                    });
+                    if (profile.preset && includePreset) {
+                        return await context.ChatCompletionService.sendRequestWithPreset(profile.preset, data, extractData);
+                    }
+                    return await context.ChatCompletionService.sendRequest(data, extractData);
                 }
-                return await context.ChatCompletionService.sendRequest(data, extractData);
-            } else if (selectedApiMap.selected === 'textgenerationwebui') {
-                if (!selectedApiMap.type) {
-                    throw new Error(`API type ${selectedApiMap.selected} does not support text completions`);
-                }
+                case 'textgenerationwebui': {
+                    if (!selectedApiMap.type) {
+                        throw new Error(`API type ${selectedApiMap.selected} does not support text completions`);
+                    }
 
-                const data = context.TextCompletionService.createRequestData({
-                    prompt: Array.isArray(prompt) ? prompt.map((m) => m.content).join('\n') : prompt,
-                    max_tokens: maxTokens,
-                    model: profile.model,
-                    api_type: selectedApiMap.type,
-                    api_server: profile['api-url'],
-                })
-                if (profile.preset && includePreset) {
-                    return await context.TextCompletionService.sendRequestWithPreset(profile.preset, data, extractData);
+                    const data = context.TextCompletionService.createRequestData({
+                        prompt: Array.isArray(prompt) ? prompt.map((m) => m.content).join('\n\n') : prompt,
+                        max_tokens: maxTokens,
+                        model: profile.model,
+                        api_type: selectedApiMap.type,
+                        api_server: profile['api-url'],
+                    })
+                    if (profile.preset && includePreset) {
+                        return await context.TextCompletionService.sendRequestWithPreset(profile.preset, data, extractData);
+                    }
+                    return await context.TextCompletionService.sendRequest(data, extractData);
                 }
-                return await context.TextCompletionService.sendRequest(data, extractData);
+                default: {
+                    throw new Error(`Unknown API type ${selectedApiMap.selected}`);
+                }
             }
         } catch (error) {
             throw new Error(`API request failed: ${error.message}`);
         }
-
-        throw new Error(`Unknown API type ${selectedApiMap.selected}`);
     }
 
     /**
@@ -380,7 +387,7 @@ export class ConnectionManagerRequestService {
         }
 
         const apiMap = CONNECT_API_MAP[profile.api];
-        if (!Object.hasOwn(this.ALLOWED_TYPES, apiMap.selected)) {
+        if (!Object.hasOwn(this.getAllowedTypes(), apiMap.selected)) {
             return false;
         }
 
@@ -424,16 +431,26 @@ export class ConnectionManagerRequestService {
         }
 
         dropdown.empty();
-        dropdown.append('<option value="">Select a Connection Profile</option>');
+
+        // Create default option using document.createElement
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Select a Connection Profile';
+        defaultOption.setAttribute('data-i18n', 'Select a Connection Profile');
+        dropdown[0].appendChild(defaultOption);
+
         const profiles = context.extensionSettings.connectionManager.profiles;
 
+        // Create optgroups using document.createElement
         const groups = {};
-        for (const [apiType, groupLabel] of Object.entries(this.ALLOWED_TYPES)) {
-            groups[apiType] = $('<optgroup>').attr('label', groupLabel);
+        for (const [apiType, groupLabel] of Object.entries(this.getAllowedTypes())) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = groupLabel;
+            groups[apiType] = optgroup;
         }
 
         const sortedProfilesByGroup = {};
-        for (const apiType of Object.keys(this.ALLOWED_TYPES)) {
+        for (const apiType of Object.keys(this.getAllowedTypes())) {
             sortedProfilesByGroup[apiType] = [];
         }
 
@@ -455,16 +472,16 @@ export class ConnectionManagerRequestService {
 
             const group = groups[apiType];
             for (const profile of groupProfiles) {
-                const option = $('<option>');
-                option.val(profile.id);
-                option.text(profile.name);
-                group.append(option);
+                const option = document.createElement('option');
+                option.value = profile.id;
+                option.textContent = profile.name;
+                group.appendChild(option);
             }
         }
 
         for (const group of Object.values(groups)) {
-            if (group.children().length > 0) {
-                dropdown.append(group);
+            if (group.children.length > 0) {
+                dropdown[0].appendChild(group);
             }
         }
 
@@ -480,10 +497,10 @@ export class ConnectionManagerRequestService {
             }
 
             const group = groups[CONNECT_API_MAP[profile.api].selected];
-            const option = $('<option>');
-            option.val(profile.id);
-            option.text(profile.name);
-            group.append(option);
+            const option = document.createElement('option');
+            option.value = profile.id;
+            option.textContent = profile.name;
+            group.appendChild(option);
 
             await onCreate(profile);
         });
@@ -502,11 +519,15 @@ export class ConnectionManagerRequestService {
             }
 
             const group = groups[CONNECT_API_MAP[newProfile.api].selected];
-            group.find(`option[value="${oldProfile.id}"]`).remove();
-            const option = $('<option>');
-            option.val(newProfile.id);
-            option.text(newProfile.name);
-            group.append(option);
+            const oldOption = group.querySelector(`option[value="${oldProfile.id}"]`);
+            if (oldOption) {
+                oldOption.remove();
+            }
+
+            const option = document.createElement('option');
+            option.value = newProfile.id;
+            option.textContent = newProfile.name;
+            group.appendChild(option);
 
             if (isSelectedProfile) {
                 // Ackchyually, we don't need to reselect but what if id changes? It is not possible for now I couldn't stop myself.
@@ -522,7 +543,11 @@ export class ConnectionManagerRequestService {
                 return;
             }
 
-            groups[CONNECT_API_MAP[profile.api].selected].find(`option[value="${profile.id}"]`).remove();
+            const group = groups[CONNECT_API_MAP[profile.api].selected];
+            const optionToRemove = group.querySelector(`option[value="${profile.id}"]`);
+            if (optionToRemove) {
+                optionToRemove.remove();
+            }
 
             if (isSelectedProfile) {
                 dropdown.val('');

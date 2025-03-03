@@ -18,17 +18,18 @@
                 </select><br>
 
                 <!-- Connection Profile section (only visible when "profile" is selected) -->
-                <div data-summary-source="profile" style="display:none;">
+                <div data-summary-source="profile">
                     <div class="openai_restorable flex-container">
                         <div class="title_restorable">
-                            <label>Connection Profile</label>
+                            <label data-i18n="Connection Profile">Connection Profile</label>
                             <button
                                 class="menu_button fa-solid fa-route interactable redirect_sys_settings"
                                 title="Go to connection profile tab"
+                                data-i18n="[title]Go to connection profile tab"
                             ></button>
                         </div>
-                        <select id="memory_connection_profile" class="text_pole profile" title="Select a Connection Profile">
-                            <option value="">Select a Connection Profile</option>
+                        <select id="memory_connection_profile" class="text_pole profile" title="Select a Connection Profile" data-i18n="[title]Select a Connection Profile">
+                            <option value="" data-i18n="Select a Connection Profile">Select a Connection Profile</option>
                         </select>
                     </div>
                 </div>

@@ -544,7 +544,14 @@ async function summarizeCallback(args, text) {
                     toastr.warning('No connection profile selected');
                     return '';
                 }
-                return await ConnectionManagerRequestService.sendRequest(extension_settings.memory.profileId, `${prompt}\n\n${text}`, 2048);
+                return await ConnectionManagerRequestService.sendRequest(
+                    extension_settings.memory.profileId,
+                    [
+                        { role: 'system', content: prompt },
+                        { role: 'user', content: text }
+                    ],
+                    2048
+                );
             }
             default:
                 toastr.warning('Invalid summarization source specified');
@@ -664,7 +671,7 @@ async function summarizeChatWithProfile(context, force) {
     let index = null;
 
     if (extension_settings.memory.prompt_builder === prompt_builders.DEFAULT) {
-        toastr.info('Connection profile does\'t support this prompt builder. Using raw prompt.');
+        console.debug('Connection profile does\'t support this prompt builder. Using raw prompt.');
     }
 
     const lock = extension_settings.memory.prompt_builder === [prompt_builders.RAW_BLOCKING, prompt_builders.DEFAULT].includes(extension_settings.memory.prompt_builder);
@@ -684,7 +691,14 @@ async function summarizeChatWithProfile(context, force) {
             return null;
         }
 
-        summary = await ConnectionManagerRequestService.sendRequest(extension_settings.memory.profileId, `${prompt}\n\n${rawPrompt}`, 2048);
+        summary = await ConnectionManagerRequestService.sendRequest(
+            extension_settings.memory.profileId,
+            [
+                { role: 'system', content: prompt },
+                { role: 'user', content: rawPrompt }
+            ],
+            2048
+        );
         index = lastUsedIndex;
     } catch (error) {
         toastr.error(String(error), 'Failed to summarize text');
@@ -704,9 +718,7 @@ async function summarizeChatWithProfile(context, force) {
     const newContext = getContext();
 
     // something changed during summarization request
-    if (newContext.groupId !== context.groupId
-        || newContext.chatId !== context.chatId
-        || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
+    if (isContextChanged(newContext)) {
         console.log('Context changed, summary discarded');
         return null;
     }
@@ -1149,6 +1161,10 @@ jQuery(async function () {
         $('#summaryExtensionPopoutButton').off('click').on('click', function (e) {
             doPopout(e);
             e.stopPropagation();
+        });
+
+        $('#memory_settings').find('.redirect_sys_settings').on('click', function () {
+            $('#sys-settings-button .drawer-toggle').trigger('click');
         });
     }
 
