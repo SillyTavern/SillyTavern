@@ -4956,7 +4956,7 @@ async function doChatInject(messages, isContinue) {
             [extension_prompt_roles.ASSISTANT]: name2,
         };
         const roleMessages = [];
-        const separator = '\n';
+        const separator = '\n\n';
         const wrap = false;
 
         for (const role of roles) {
