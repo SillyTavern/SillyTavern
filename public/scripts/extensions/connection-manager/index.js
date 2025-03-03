@@ -254,18 +254,16 @@ async function createConnectionProfile(forceName = null) {
     });
     const isNameTaken = (n) => extension_settings.connectionManager.profiles.some(p => p.name === n);
     const suggestedName = getUniqueName(collapseSpaces(`${profile.api ?? ''} ${profile.model ?? ''} - ${profile.preset ?? ''}`), isNameTaken);
-    const userInput = forceName ?? await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName, { rows: 2 });
-
-    if (!userInput) {
+    let name = forceName ?? await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName, { rows: 2 });
+    name = DOMPurify.sanitize(String(name));
+    if (!name) {
         return null;
     }
 
-    if (isNameTaken(userInput) || userInput === NONE) {
+    if (isNameTaken(name) || name === NONE) {
         toastr.error('A profile with the same name already exists.');
         return null;
     }
-
-    const name = DOMPurify.sanitize(String(userInput));
 
     if (Array.isArray(profile.exclude)) {
         for (const command of profile.exclude) {
@@ -546,7 +544,7 @@ async function renderDetailsContent(detailsContent) {
             return acc;
         }, {});
         const template = $(await renderExtensionTemplateAsync(MODULE_NAME, 'edit', { name: profile.name, settings }));
-        const userInput = await callGenericPopup(template, POPUP_TYPE.INPUT, profile.name, {
+        let name = await callGenericPopup(template, POPUP_TYPE.INPUT, profile.name, {
             customButtons: [{
                 text: t`Save and Update`,
                 classes: ['popup-button-ok'],
@@ -557,11 +555,13 @@ async function renderDetailsContent(detailsContent) {
             }],
         });
 
-        if (!userInput) {
+        name = DOMPurify.sanitize(String(name));
+
+        if (!name) {
             return;
         }
 
-        if (profile.name !== userInput && extension_settings.connectionManager.profiles.some(p => p.name === userInput)) {
+        if (profile.name !== name && extension_settings.connectionManager.profiles.some(p => p.name === name)) {
             toastr.error('A profile with the same name already exists.');
             return;
         }
@@ -583,9 +583,9 @@ async function renderDetailsContent(detailsContent) {
             }
         }
 
-        if (profile.name !== userInput) {
+        if (profile.name !== name) {
             toastr.success('Connection profile renamed.');
-            profile.name = DOMPurify.sanitize(String(userInput));
+            profile.name = name;
         }
 
         saveSettingsDebounced();
