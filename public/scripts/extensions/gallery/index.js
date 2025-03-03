@@ -89,7 +89,7 @@ function initSettings() {
  * @returns {string} The gallery folder for the character
  */
 function getGalleryFolder(char) {
-    return SillyTavern.getContext().extensionSettings?.gallery?.folders?.[char?.avatar] ?? char?.name;
+    return SillyTavern.getContext().extensionSettings.gallery.folders[char?.avatar] ?? char?.name;
 }
 
 /**
