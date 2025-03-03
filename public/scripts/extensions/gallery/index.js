@@ -50,12 +50,12 @@ mutationObserver.observe(document.body, {
     subtree: false,
 });
 
-const SORT = {
+const SORT = Object.freeze({
     NAME_ASC: { value: 'nameAsc', field: 'name', order: 'asc', label: t`Sort By: Name (A-Z)` },
     NAME_DESC: { value: 'nameDesc', field: 'name', order: 'desc', label: t`Sort By: Name (Z-A)` },
     DATE_ASC: { value: 'dateAsc', field: 'date', order: 'asc', label: t`Sort By: Date (Oldest First)` },
     DATE_DESC: { value: 'dateDesc', field: 'date', order: 'desc', label: t`Sort By: Date (Newest First)` },
-};
+});
 
 const defaultSettings = Object.freeze({
     folders: {},
