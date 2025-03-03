@@ -420,6 +420,9 @@ export class ConnectionManagerRequestService {
         onDelete = () => { }
     ) {
         const context = SillyTavern.getContext();
+        if (!context.extensionSettings.connectionManager) {
+            throw new Error('Connection Manager is not available');
+        }
 
         /**
          * @type {JQuery<HTMLSelectElement>}
