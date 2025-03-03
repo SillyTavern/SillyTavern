@@ -153,6 +153,10 @@ function setSortOrder(order) {
     context.saveSettingsDebounced();
 }
 
+/**
+ * Retrieves the current sort order for the gallery.
+ * @returns {string} The current sort order for the gallery.
+ */
 function getSortOrder() {
     return SillyTavern.getContext().extensionSettings.gallery.sort ?? SORT.DATE_ASC.value;
 }
