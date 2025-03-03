@@ -2741,7 +2741,7 @@ export class ChatCompletion {
 
             if (shouldSquash(message)) {
                 if (lastMessage && shouldSquash(lastMessage)) {
-                    lastMessage.content += '\n' + message.content;
+                    lastMessage.content += '\n\n' + message.content;
                     lastMessage.tokens = await tokenHandler.countAsync({ role: lastMessage.role, content: lastMessage.content });
                 }
                 else {
