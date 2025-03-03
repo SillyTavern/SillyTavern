@@ -511,6 +511,8 @@ export const event_types = {
     ONLINE_STATUS_CHANGED: 'online_status_changed',
     IMAGE_SWIPED: 'image_swiped',
     CONNECTION_PROFILE_LOADED: 'connection_profile_loaded',
+    CONNECTION_PROFILE_CREATED: 'connection_profile_created',
+    CONNECTION_PROFILE_DELETED: 'connection_profile_deleted',
     TOOL_CALLS_PERFORMED: 'tool_calls_performed',
     TOOL_CALLS_RENDERED: 'tool_calls_rendered',
 };

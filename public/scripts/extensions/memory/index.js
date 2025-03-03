@@ -91,6 +91,7 @@ const summary_sources = {
     'extras': 'extras',
     'main': 'main',
     'webllm': 'webllm',
+    'profile': 'profile',
 };
 
 const prompt_builders = {
@@ -106,6 +107,7 @@ const defaultSettings = {
     memoryFrozen: false,
     SkipWIAN: false,
     source: summary_sources.extras,
+    profileId: '',
     prompt: defaultPrompt,
     template: defaultTemplate,
     position: extension_prompt_types.IN_PROMPT,
@@ -146,7 +148,10 @@ function loadSettings() {
         }
     }
 
+    populateProfileDropdown();
+
     $('#summary_source').val(extension_settings.memory.source).trigger('change');
+    $('#memory_connection_profile').val(extension_settings.memory.profileId).trigger('change');
     $('#memory_frozen').prop('checked', extension_settings.memory.memoryFrozen).trigger('input');
     $('#memory_skipWIAN').prop('checked', extension_settings.memory.SkipWIAN).trigger('input');
     $('#memory_prompt').val(extension_settings.memory.prompt).trigger('input');
@@ -252,6 +257,12 @@ function switchSourceControls(value) {
         const source = element.dataset.summarySource.split(',').map(s => s.trim());
         $(element).toggle(source.includes(value));
     });
+}
+
+function onMemoryConnectionProfileChange() {
+    const value = $(this).val();
+    extension_settings.memory.profileId = value;
+    saveSettingsDebounced();
 }
 
 function onMemoryFrozenInput() {
@@ -412,6 +423,11 @@ async function onChatEvent() {
         return;
     }
 
+    // Profile not selected
+    if (extension_settings.memory.source === summary_sources.profile && !extension_settings.memory.profileId) {
+        return;
+    }
+
     // Streaming in-progress
     if (streamingProcessor && !streamingProcessor.isFinished) {
         return;
@@ -468,9 +484,19 @@ async function forceSummarizeChat(quiet) {
     const skipWIAN = extension_settings.memory.SkipWIAN;
 
     const toast = quiet ? jQuery() : toastr.info('Summarizing chat...', 'Please wait', { timeOut: 0, extendedTimeOut: 0 });
-    const value = extension_settings.memory.source === summary_sources.main
-        ? await summarizeChatMain(context, true, skipWIAN)
-        : await summarizeChatWebLLM(context, true);
+    let value = '';
+
+    switch (extension_settings.memory.source) {
+        case summary_sources.main:
+            value = await summarizeChatMain(context, true, skipWIAN);
+            break;
+        case summary_sources.webllm:
+            value = await summarizeChatWebLLM(context, true);
+            break;
+        case summary_sources.profile:
+            value = await summarizeChatWithProfile(context, true, skipWIAN);
+            break;
+    }
 
     toastr.clear(toast);
 
@@ -510,6 +536,13 @@ async function summarizeCallback(args, text) {
                 const params = extension_settings.memory.overrideResponseLength > 0 ? { max_tokens: extension_settings.memory.overrideResponseLength } : {};
                 return await generateWebLlmChatPrompt(messages, params);
             }
+            case summary_sources.profile: {
+                if (!extension_settings.memory.profileId) {
+                    toastr.warning('No connection profile selected');
+                    return '';
+                }
+                return await getGeneratePayloadWithProfile(extension_settings.memory.profileId, `${prompt}\n\n${text}`);
+            }
             default:
                 toastr.warning('Invalid summarization source specified');
                 return '';
@@ -532,6 +565,9 @@ async function summarizeChat(context) {
             break;
         case summary_sources.webllm:
             await summarizeChatWebLLM(context, false);
+            break;
+        case summary_sources.profile:
+            await summarizeChatWithProfile(context, false, skipWIAN);
             break;
         default:
             break;
@@ -606,6 +642,187 @@ async function getSummaryPromptForNow(context, force) {
     }
 
     return prompt;
+}
+
+/**
+ * Get payload for a connection profile
+ * @param {string} profileId Profile ID
+ * @param {string} prompt Prompt text
+ * @returns {Promise<string|null>} Generated text or null if an error occurred
+ */
+async function getGeneratePayloadWithProfile(profileId, prompt) {
+    const context = getContext();
+
+    if (!context.extensionSettings.connectionManager) {
+        toastr.error('Connection Manager is not available');
+        return null;
+    }
+
+    const profile = context.extensionSettings.connectionManager.profiles.find((p) => p.id === profileId);
+    if (!profile) {
+        toastr.error(`Could not find profile with id ${profileId}`);
+        return null;
+    }
+
+    if (!profile.api) {
+        toastr.error('Select a connection profile that has an API');
+        return null;
+    }
+
+    if (!profile.preset) {
+        toastr.error('Select a connection profile that has a preset');
+        return null;
+    }
+
+    const selectedApiMap = context.CONNECT_API_MAP[profile.api];
+    if (!selectedApiMap) {
+        toastr.error(`Could not find API ${profile.api}`);
+        return null;
+    }
+
+    if (!(selectedApiMap.selected === 'openai' || selectedApiMap.selected === 'textgenerationwebui')) {
+        toastr.error(`API ${profile.api} is not supported`);
+        return null;
+    }
+
+    /**
+     * @type {number}
+     */
+    const adjustedMaxTokens = extension_settings.memory.overrideResponseLength || 4096;
+
+    try {
+        if (selectedApiMap.selected === 'openai') {
+            if (!selectedApiMap.source) {
+                toastr.error(`Could not find source for API ${profile.api}`);
+                return null;
+            }
+
+            return await context.ChatCompletionService.sendRequestWithPreset(profile.preset, {
+                chat_completion_source: selectedApiMap.source,
+                max_tokens: adjustedMaxTokens,
+                messages: [{ role: 'system', content: prompt }],
+                model: profile.model,
+            });
+        } else {
+            return await context.TextCompletionService.sendRequestWithPreset(profile.preset, {
+                prompt,
+                model: profile.model,
+                api_type: selectedApiMap.type,
+                max_tokens: adjustedMaxTokens,
+                api_server: profile['api-url'],
+            });
+        }
+    } catch (error) {
+        toastr.error(`Failed to generate text: ${error.message || error}`);
+        return null;
+    }
+}
+
+/**
+ * @param {'refresh' | 'create' | 'delete'} type
+ * @param {import('../connection-manager/index.js').ConnectionProfile} [profileData]
+ */
+function populateProfileDropdown(type = 'refresh', profileData = null) {
+    const dropdown = $('#memory_connection_profile');
+
+    if (type === 'refresh') {
+        dropdown.empty();
+        dropdown.append('<option value="">Select a Connection Profile</option>');
+
+        const context = getContext();
+        if (context.extensionSettings.connectionManager && Array.isArray(context.extensionSettings.connectionManager.profiles)) {
+            context.extensionSettings.connectionManager.profiles.forEach(profile => {
+                const isSupported = profile.api &&
+                    profile.preset &&
+                    context.CONNECT_API_MAP[profile.api] &&
+                    (context.CONNECT_API_MAP[profile.api].selected === 'openai' ||
+                        context.CONNECT_API_MAP[profile.api].selected === 'textgenerationwebui');
+
+                if (isSupported) {
+                    const selected = profile.id === extension_settings.memory.profileId ? 'selected' : '';
+                    dropdown.append(`<option value="${profile.id}" ${selected}>${profile.name}</option>`);
+                }
+            });
+        }
+    } else if (type === 'delete' && profileData) {
+        dropdown.find(`option[value="${profileData.id}"]`).remove();
+    } else if (type === 'create' && profileData) {
+        const context = getContext();
+        const isSupported = profileData.api &&
+            profileData.preset &&
+            context.CONNECT_API_MAP[profileData.api] &&
+            (context.CONNECT_API_MAP[profileData.api].selected === 'openai' ||
+                context.CONNECT_API_MAP[profileData.api].selected === 'textgenerationwebui');
+
+        if (isSupported) {
+            dropdown.append(`<option value="${profileData.id}">${profileData.name}</option>`);
+        }
+    }
+}
+
+async function summarizeChatWithProfile(context, force, skipWIAN) {
+    if (!extension_settings.memory.profileId) {
+        console.warn('No connection profile selected for summarization');
+        return null;
+    }
+
+    const prompt = await getSummaryPromptForNow(context, force);
+
+    if (!prompt) {
+        return null;
+    }
+
+    console.log('sending summary prompt to connection profile');
+    let summary = '';
+    let index = null;
+
+    if (extension_settings.memory.prompt_builder === prompt_builders.DEFAULT) {
+        toastr.info('Connection profile does\'t support this prompt builder. Using raw prompt.');
+    }
+
+    const lock = extension_settings.memory.prompt_builder === [prompt_builders.RAW_BLOCKING, prompt_builders.DEFAULT].includes(extension_settings.memory.prompt_builder);
+    try {
+        inApiCall = true;
+        if (lock) {
+            deactivateSendButtons();
+        }
+
+        const { rawPrompt, lastUsedIndex } = await getRawSummaryPrompt(context, prompt);
+
+        if (lastUsedIndex === null || lastUsedIndex === -1) {
+            if (force) {
+                toastr.info('To try again, remove the latest summary.', 'No messages found to summarize');
+            }
+
+            return null;
+        }
+
+        summary = await getGeneratePayloadWithProfile(extension_settings.memory.profileId, `${prompt}\n\n${rawPrompt}`);
+        index = lastUsedIndex;
+    } finally {
+        inApiCall = false;
+        if (lock) {
+            activateSendButtons();
+        }
+    }
+
+    if (!summary) {
+        console.warn('Empty summary received from connection profile');
+        return null;
+    }
+
+    const newContext = getContext();
+
+    // something changed during summarization request
+    if (newContext.groupId !== context.groupId
+        || newContext.chatId !== context.chatId
+        || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
+        console.log('Context changed, summary discarded');
+        return null;
+    }
+
+    setMemoryContext(summary, true, index);
+    return summary;
 }
 
 async function summarizeChatWebLLM(context, force) {
@@ -1011,6 +1228,7 @@ function setupListeners() {
     $('#memory_frozen').off('input').on('input', onMemoryFrozenInput);
     $('#memory_skipWIAN').off('input').on('input', onMemorySkipWIANInput);
     $('#summary_source').off('change').on('change', onSummarySourceChange);
+    $('#memory_connection_profile').off('change').on('change', onMemoryConnectionProfileChange);
     $('#memory_prompt_words').off('input').on('input', onMemoryPromptWordsInput);
     $('#memory_prompt_interval').off('input').on('input', onMemoryPromptIntervalInput);
     $('#memory_prompt').off('input').on('input', onMemoryPromptInput);
@@ -1047,6 +1265,9 @@ jQuery(async function () {
 
     await addExtensionControls();
     loadSettings();
+
+    eventSource.on(event_types.CONNECTION_PROFILE_CREATED, (profile) =>populateProfileDropdown('create', profile));
+    eventSource.on(event_types.CONNECTION_PROFILE_DELETED, (profile) => populateProfileDropdown('delete', profile));
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.makeLast(event_types.CHARACTER_MESSAGE_RENDERED, onChatEvent);
     for (const event of [event_types.MESSAGE_DELETED, event_types.MESSAGE_UPDATED, event_types.MESSAGE_SWIPED]) {

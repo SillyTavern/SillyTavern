@@ -14,7 +14,24 @@
                     <option value="main" data-i18n="ext_sum_main_api">Main API</option>
                     <option value="extras">Extras API (deprecated)</option>
                     <option value="webllm" data-i18n="ext_sum_webllm">WebLLM Extension</option>
+                    <option value="profile" data-i18n="ext_sum_profile">Connection Profile</option>
                 </select><br>
+
+                <!-- Connection Profile section (only visible when "profile" is selected) -->
+                <div data-summary-source="profile" style="display:none;">
+                    <div class="openai_restorable flex-container">
+                        <div class="title_restorable">
+                            <label>Connection Profile</label>
+                            <button
+                                class="menu_button fa-solid fa-route interactable redirect_sys_settings"
+                                title="Go to connection profile tab"
+                            ></button>
+                        </div>
+                        <select id="memory_connection_profile" class="text_pole profile" title="Select a Connection Profile">
+                            <option value="">Select a Connection Profile</option>
+                        </select>
+                    </div>
+                </div>
 
                 <div class="flex-container justifyspacebetween alignitemscenter">
                     <span data-i18n="ext_sum_current_summary">Current summary:</span>
@@ -27,12 +44,12 @@
 
                 <textarea id="memory_contents" class="text_pole textarea_compact" rows="6" data-i18n="[placeholder]ext_sum_memory_placeholder" placeholder="Summary will be generated here..."></textarea>
                 <div class="memory_contents_controls">
-                    <div id="memory_force_summarize" data-summary-source="main,webllm" class="menu_button menu_button_icon" title="Trigger a summary update right now." data-i18n="[title]ext_sum_force_tip">
+                    <div id="memory_force_summarize" data-summary-source="main,webllm,profile" class="menu_button menu_button_icon" title="Trigger a summary update right now." data-i18n="[title]ext_sum_force_tip">
                         <i class="fa-solid fa-database"></i>
                         <span data-i18n="ext_sum_force_text">Summarize now</span>
                     </div>
                     <label for="memory_frozen" title="Disable automatic summary updates. While paused, the summary remains as-is. You can still force an update by pressing the Summarize now button (which is only available with the Main API)." data-i18n="[title]Disable automatic summary updates. While paused, the summary remains as-is. You can still force an update by pressing the Summarize now button (which is only available with the Main API)."><input id="memory_frozen" type="checkbox" /><span data-i18n="ext_sum_pause">Pause</span></label>
-                    <label data-summary-source="main" for="memory_skipWIAN" title="Omit World Info and Author's Note from text to be summarized. Only has an effect when using the Main API. The Extras API always omits WI/AN." data-i18n="[title]Omit World Info and Author's Note from text to be summarized. Only has an effect when using the Main API. The Extras API always omits WI/AN.">
+                    <label data-summary-source="main,profile" for="memory_skipWIAN" title="Omit World Info and Author's Note from text to be summarized. Only has an effect when using the Main API. The Extras API always omits WI/AN." data-i18n="[title]Omit World Info and Author's Note from text to be summarized. Only has an effect when using the Main API. The Extras API always omits WI/AN.">
                         <input id="memory_skipWIAN" type="checkbox" />
                         <span data-i18n="ext_sum_no_wi_an">No WI/AN</span>
                     </label>
@@ -44,7 +61,7 @@
                     </div>
                 </div>
                 <div id="summarySettingsBlock" style="display:none;">
-                    <div data-summary-source="main">
+                    <div data-summary-source="main,profile">
                         <label data-i18n="ext_sum_prompt_builder">
                             Prompt builder
                         </label>
@@ -61,7 +78,7 @@
                             <span data-i18n="ext_sum_prompt_builder_3">Classic, blocking</span>
                         </label>
                     </div>
-                    <div data-summary-source="main,webllm">
+                    <div data-summary-source="main,webllm,profile">
                         <label for="memory_prompt" class="title_restorable">
                             <span data-i18n="Summary Prompt">Summary Prompt</span>
                             <div id="memory_prompt_restore" data-i18n="[title]ext_sum_restore_default_prompt_tip" title="Restore default prompt" class="right_menu_button">

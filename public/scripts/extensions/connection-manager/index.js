@@ -290,7 +290,8 @@ async function deleteConnectionProfile() {
         return;
     }
 
-    const name = extension_settings.connectionManager.profiles[index].name;
+    const profile = extension_settings.connectionManager.profiles[index];
+    const name = profile.name;
     const confirm = await Popup.show.confirm(t`Are you sure you want to delete the selected profile?`, name);
 
     if (!confirm) {
@@ -300,6 +301,8 @@ async function deleteConnectionProfile() {
     extension_settings.connectionManager.profiles.splice(index, 1);
     extension_settings.connectionManager.selectedProfile = null;
     saveSettingsDebounced();
+
+    await eventSource.emit(event_types.CONNECTION_PROFILE_DELETED, profile);
 }
 
 /**
@@ -491,6 +494,7 @@ async function renderDetailsContent(detailsContent) {
         saveSettingsDebounced();
         renderConnectionProfiles(profiles);
         await renderDetailsContent(detailsContent);
+        await eventSource.emit(event_types.CONNECTION_PROFILE_CREATED, profile);
         await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
     });
 
@@ -682,6 +686,7 @@ async function renderDetailsContent(detailsContent) {
             saveSettingsDebounced();
             renderConnectionProfiles(profiles);
             await renderDetailsContent(detailsContent);
+            await eventSource.emit(event_types.CONNECTION_PROFILE_CREATED, profile);
             return profile.name;
         },
     }));
