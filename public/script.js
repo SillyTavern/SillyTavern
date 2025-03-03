@@ -2984,7 +2984,7 @@ async function getAllExtensionPrompts() {
         values.push(value);
     }
 
-    return substituteParams(values.join('\n'));
+    return substituteParams(values.join("\n\n"));
 }
 
 /**
