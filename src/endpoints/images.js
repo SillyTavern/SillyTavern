@@ -77,17 +77,40 @@ router.post('/upload', jsonParser, async (request, response) => {
 });
 
 router.post('/list/:folder', (request, response) => {
-    const directoryPath = path.join(request.user.directories.userImages, sanitize(request.params.folder));
-
-    if (!fs.existsSync(directoryPath)) {
-        fs.mkdirSync(directoryPath, { recursive: true });
-    }
-
     try {
-        const images = getImages(directoryPath, 'date');
+        const directoryPath = path.join(request.user.directories.userImages, sanitize(request.params.folder));
+        const sort = request.body.sortField || 'date';
+        const order = request.body.sortOrder || 'asc';
+
+        if (!fs.existsSync(directoryPath)) {
+            fs.mkdirSync(directoryPath, { recursive: true });
+        }
+
+        const images = getImages(directoryPath, sort);
+        if (order === 'desc') {
+            images.reverse();
+        }
         return response.send(images);
     } catch (error) {
         console.error(error);
         return response.status(500).send({ error: 'Unable to retrieve files' });
+    }
+});
+
+router.post('/folders', (request, response) => {
+    try {
+        const directoryPath = request.user.directories.userImages;
+        if (!fs.existsSync(directoryPath)) {
+            fs.mkdirSync(directoryPath, { recursive: true });
+        }
+
+        const folders = fs.readdirSync(directoryPath, { withFileTypes: true })
+            .filter(dirent => dirent.isDirectory())
+            .map(dirent => dirent.name);
+
+        return response.send(folders);
+    } catch (error) {
+        console.error(error);
+        return response.status(500).send({ error: 'Unable to retrieve folders' });
     }
 });

@@ -14,7 +14,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { DragAndDropHandler } from '../../dragdrop.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
-import { translate } from '../../i18n.js';
+import { t, translate } from '../../i18n.js';
 
 const extensionName = 'gallery';
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
@@ -50,6 +50,48 @@ mutationObserver.observe(document.body, {
     subtree: false,
 });
 
+const SORT = {
+    NAME_ASC: { value: 'nameAsc', field: 'name', order: 'asc', label: t`Sort By: Name (A-Z)` },
+    NAME_DESC: { value: 'nameDesc', field: 'name', order: 'desc', label: t`Sort By: Name (Z-A)` },
+    DATE_ASC: { value: 'dateAsc', field: 'date', order: 'asc', label: t`Sort By: Date (Oldest First)` },
+    DATE_DESC: { value: 'dateDesc', field: 'date', order: 'desc', label: t`Sort By: Date (Newest First)` },
+};
+
+const defaultSettings = Object.freeze({
+    folders: {},
+    sort: SORT.DATE_ASC.value,
+});
+
+/**
+ * Initializes the settings for the gallery extension.
+ */
+function initSettings() {
+    let shouldSave = false;
+    const context = SillyTavern.getContext();
+    if (!context.extensionSettings.gallery) {
+        context.extensionSettings.gallery = structuredClone(defaultSettings);
+        shouldSave = true;
+    }
+    for (const key of Object.keys(defaultSettings)) {
+        if (!Object.hasOwn(context.extensionSettings.gallery, key)) {
+            context.extensionSettings.gallery[key] = structuredClone(defaultSettings[key]);
+            shouldSave = true;
+        }
+    }
+    if (shouldSave) {
+        context.saveSettingsDebounced();
+    }
+}
+
+/**
+ * Retrieves the gallery folder for a given character.
+ * @param {import('../../char-data.js').v1CharData} char Character data
+ * @returns {string} The gallery folder for the character
+ */
+function getGalleryFolder(char) {
+    return SillyTavern.getContext().extensionSettings?.gallery?.folders?.[char?.avatar] ?? char?.name;
+}
+
 /**
  * Retrieves a list of gallery items based on a given URL. This function calls an API endpoint
  * to get the filenames and then constructs the item list.
@@ -58,9 +100,15 @@ mutationObserver.observe(document.body, {
  * @returns {Promise<Array>} - Resolves with an array of gallery item objects, rejects on error.
  */
 async function getGalleryItems(url) {
+    const sortValue = getSortOrder();
+    const sortObj = Object.values(SORT).find(it => it.value === sortValue) ?? SORT.DATE_ASC;
     const response = await fetch(`/api/images/list/${url}`, {
         method: 'POST',
         headers: getRequestHeaders(),
+        body: JSON.stringify({
+            sortField: sortObj.field,
+            sortOrder: sortObj.order,
+        }),
     });
 
     const data = await response.json();
@@ -71,6 +119,42 @@ async function getGalleryItems(url) {
     }));
 
     return items;
+}
+
+/**
+ * Retrieves a list of gallery folders. This function calls an API endpoint
+ * @returns {Promise<string[]>} - Resolves with an array of gallery folders.
+ */
+async function getGalleryFolders() {
+    try {
+        const response = await fetch('/api/images/folders', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error. Status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Failed to fetch gallery folders:', error);
+        return [];
+    }
+}
+
+/**
+ * Sets the sort order for the gallery.
+ * @param {string} order Sort order
+ */
+function setSortOrder(order) {
+    const context = SillyTavern.getContext();
+    context.extensionSettings.gallery.sort = order;
+    context.saveSettingsDebounced();
+}
+
+function getSortOrder() {
+    return SillyTavern.getContext().extensionSettings.gallery.sort ?? SORT.DATE_ASC.value;
 }
 
 /**
@@ -170,14 +254,13 @@ async function showCharGallery() {
     try {
         let url = selected_group || this_chid;
         if (!selected_group && this_chid !== undefined) {
-            const char = characters[this_chid];
-            url = char.name;
+            url = getGalleryFolder(characters[this_chid]);
         }
 
         const items = await getGalleryItems(url);
         // if there already is a gallery, destroy it and place this one in its place
         $('#dragGallery').closest('#gallery').remove();
-        makeMovable();
+        await makeMovable(url);
         await delay(100);
         await initGallery(items, url);
     } catch (err) {
@@ -234,7 +317,7 @@ async function uploadFile(file, url) {
             // Refresh the gallery
             const newItems = await getGalleryItems(url);  // Fetch the latest items
             $('#dragGallery').closest('#gallery').remove();  // Destroy old gallery
-            makeMovable();
+            await makeMovable(url);
             await delay(100);
             await initGallery(newItems, url);  // Reinitialize the gallery with new items and pass 'url'
         } catch (error) {
@@ -269,19 +352,43 @@ $(document).ready(function () {
  * This function takes a template with the ID 'generic_draggable_template' and clones it.
  * The cloned element has its attributes set, a new child div appended, and is made visible on the body.
  * Additionally, it sets up the element to prevent dragging on its images.
+ * @param {string} url - The URL of the image source.
+ * @returns {Promise<void>} - Promise representing the completion of the draggable container creation.
  */
-function makeMovable(id = 'gallery') {
-
+async function makeMovable(url) {
     console.debug('making new container from template');
+    const id = 'gallery';
     const template = $('#generic_draggable_template').html();
     const newElement = $(template);
     newElement.css('background-color', 'var(--SmartThemeBlurTintColor)');
     newElement.attr('forChar', id);
     newElement.attr('id', id);
     newElement.find('.drag-grabber').attr('id', `${id}header`);
-    newElement.find('.dragTitle').text('Image Gallery');
-    //add a div for the gallery
-    newElement.append('<div id="dragGallery"></div>');
+    const dragTitle = newElement.find('.dragTitle');
+    dragTitle.addClass('flex-container justifySpaceBetween alignItemsBaseline');
+    const titleText = document.createElement('span');
+    titleText.textContent = t`Image Gallery`;
+    dragTitle.append(titleText);
+    const sortSelect = document.createElement('select');
+    sortSelect.classList.add('gallery-sort-select');
+
+    for (const sort of Object.values(SORT)) {
+        const option = document.createElement('option');
+        option.value = sort.value;
+        option.textContent = sort.label;
+        sortSelect.appendChild(option);
+    }
+
+    sortSelect.addEventListener('change', async () => {
+        const selectedOption = sortSelect.options[sortSelect.selectedIndex].value;
+        setSortOrder(selectedOption);
+        closeButton.trigger('click');
+        await showCharGallery();
+    });
+
+    sortSelect.value = getSortOrder();
+    dragTitle.append(sortSelect);
+
     // add no-scrollbar class to this element
     newElement.addClass('no-scrollbar');
 
@@ -289,6 +396,79 @@ function makeMovable(id = 'gallery') {
     const closeButton = newElement.find('.dragClose');
     closeButton.attr('id', `${id}close`);
     closeButton.attr('data-related-id', `${id}`);
+
+    const topBarElement = document.createElement('div');
+    topBarElement.classList.add('flex-container', 'alignItemsCenter');
+
+    const onChangeFolder = async (/** @type {Event} */ e) => {
+        if (e instanceof KeyboardEvent && e.key !== 'Enter') {
+            return;
+        }
+
+        try {
+            updateGalleryFolder(galleryFolderInput.value);
+            closeButton.trigger('click');
+            await showCharGallery();
+            toastr.info('Gallery folder changed to ' + galleryFolderInput.value);
+        } catch (error) {
+            console.error('Failed to change gallery folder:', error);
+            toastr.error(error?.message || 'Unknown error', 'Failed to change gallery folder');
+        }
+    };
+
+    const onRestoreFolder = async () => {
+        try {
+            restoreGalleryFolder();
+            closeButton.trigger('click');
+            await showCharGallery();
+        } catch (error) {
+            console.error('Failed to restore gallery folder:', error);
+            toastr.error(error?.message || 'Unknown error', 'Failed to restore gallery folder');
+        }
+    };
+
+    const galleryFolderInput = document.createElement('input');
+    galleryFolderInput.type = 'text';
+    galleryFolderInput.placeholder = t`Folder Name`;
+    galleryFolderInput.title = t`Enter a folder name to change the gallery folder`;
+    galleryFolderInput.value = url;
+    galleryFolderInput.classList.add('text_pole', 'gallery-folder-input', 'flex1');
+    galleryFolderInput.addEventListener('keyup', onChangeFolder);
+
+    const galleryFolderAccept = document.createElement('div');
+    galleryFolderAccept.classList.add('right_menu_button', 'fa-solid', 'fa-check', 'fa-fw');
+    galleryFolderAccept.title = t`Change gallery folder`;
+    galleryFolderAccept.addEventListener('click', onChangeFolder);
+
+    const galleryFolderRestore = document.createElement('div');
+    galleryFolderRestore.classList.add('right_menu_button', 'fa-solid', 'fa-xmark', 'fa-fw');
+    galleryFolderRestore.title = t`Restore gallery folder`;
+    galleryFolderRestore.addEventListener('click', onRestoreFolder);
+
+    topBarElement.appendChild(galleryFolderInput);
+    topBarElement.appendChild(galleryFolderAccept);
+    topBarElement.appendChild(galleryFolderRestore);
+    newElement.append(topBarElement);
+
+    // Populate the gallery folder input with a list of available folders
+    const folders = await getGalleryFolders();
+    $(galleryFolderInput)
+        .autocomplete({
+            source: (i, o) => {
+                const term = i.term.toLowerCase();
+                const filtered = folders.filter(f => f.toLowerCase().includes(term));
+                o(filtered);
+            },
+            select: (e, u) => {
+                galleryFolderInput.value = u.item.value;
+                onChangeFolder(e);
+            },
+            minLength: 0,
+        })
+        .on('focus', () => $(galleryFolderInput).autocomplete('search', ''));
+
+    //add a div for the gallery
+    newElement.append('<div id="dragGallery"></div>');
 
     $('#dragGallery').css('display', 'block');
 
@@ -303,6 +483,46 @@ function makeMovable(id = 'gallery') {
         e.preventDefault();
         return false;
     });
+}
+
+/**
+ * Sets the gallery folder to a new URL.
+ * @param {string} newUrl - The new URL to set for the gallery folder.
+ */
+function updateGalleryFolder(newUrl) {
+    if (!newUrl) {
+        throw new Error('Folder name cannot be empty');
+    }
+    const context = SillyTavern.getContext();
+    if (context.characterId === undefined) {
+        throw new Error('Character is not selected');
+    }
+    const avatar = context.characters[context.characterId]?.avatar;
+    if (!avatar) {
+        throw new Error('Character PNG ID is not found');
+    }
+    context.extensionSettings.gallery.folders[avatar] = newUrl;
+    context.saveSettingsDebounced();
+}
+
+/**
+ * Restores the gallery folder to the default value.
+ */
+function restoreGalleryFolder() {
+    const context = SillyTavern.getContext();
+    if (context.characterId === undefined) {
+        throw new Error('Character is not selected');
+    }
+    const avatar = context.characters[context.characterId]?.avatar;
+    if (!avatar) {
+        throw new Error('Character PNG ID is not found');
+    }
+    const existingOverride = context.extensionSettings.gallery.folders[avatar];
+    if (!existingOverride) {
+        throw new Error('No folder override found');
+    }
+    delete context.extensionSettings.gallery.folders[avatar];
+    context.saveSettingsDebounced();
 }
 
 /**
@@ -331,7 +551,7 @@ function makeDragImg(id, url) {
     const imgElem = document.createElement('img');
     imgElem.src = url;
     let uniqueId = `draggable_${id}`;
-    const draggableElem = newElement.querySelector('.draggable');
+    const draggableElem = /** @type {HTMLElement} */ (newElement.querySelector('.draggable'));
     if (draggableElem) {
         draggableElem.appendChild(imgElem);
 
@@ -351,7 +571,7 @@ function makeDragImg(id, url) {
 
         // Add an id to the close button
         // If the close button exists, set related-id
-        const closeButton = draggableElem.querySelector('.dragClose');
+        const closeButton = /** @type {HTMLElement} */ (draggableElem.querySelector('.dragClose'));
         if (closeButton) {
             closeButton.id = `${uniqueId}close`;
             closeButton.dataset.relatedId = uniqueId;
@@ -456,8 +676,7 @@ async function listGalleryCommand(args) {
     try {
         let url = args.char ?? (args.group ? groups.find(it => it.name == args.group)?.id : null) ?? (selected_group || this_chid);
         if (!args.char && !args.group && !selected_group && this_chid !== undefined) {
-            const char = characters[this_chid];
-            url = char.name;
+            url = getGalleryFolder(characters[this_chid]);
         }
 
         const items = await getGalleryItems(url);
@@ -469,3 +688,8 @@ async function listGalleryCommand(args) {
     }
     return JSON.stringify([]);
 }
+
+// On extension load, ensure the settings are initialized
+(function () {
+    initSettings();
+})();

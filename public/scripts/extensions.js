@@ -210,6 +210,12 @@ export const extension_settings = {
      * @type {string[]}
      */
     disabled_attachments: [],
+    gallery: {
+        /** @type {Record<string,string>} */
+        folders: {},
+        /** @type {string} */
+        sort: 'dateAsc',
+    },
 };
 
 function showHideExtensionsMenu() {
