@@ -270,7 +270,10 @@ export async function getWebLlmContextSize() {
     return model?.context_size;
 }
 
-export class ConnectionManagerUtils {
+/**
+ * Doesn't support streaming.
+ */
+export class ConnectionManagerRequestService {
     static ALLOWED_TYPES = {
         openai: 'Chat Completion',
         textgenerationwebui: 'Text Completion',
@@ -282,7 +285,6 @@ export class ConnectionManagerUtils {
     };
 
     /**
-     * Uses Connection Profile to send a generate request.
      * @param {string} profileId
      * @param {string | import('../custom-request.js').ChatCompletionMessage[]} prompt
      * @param {number} maxTokens
@@ -309,8 +311,8 @@ export class ConnectionManagerUtils {
         if (!selectedApiMap) {
             throw new Error(`Unknown API type ${profile.api}`);
         }
-        if (!Object.keys(this.ALLOWED_TYPES).includes(selectedApiMap.selected)) {
-            throw new Error(`API type ${selectedApiMap.selected} is not supported. Supported types: ${Object.values(this.ALLOWED_TYPES)}`);
+        if (!Object.hasOwn(this.ALLOWED_TYPES, selectedApiMap.selected)) {
+            throw new Error(`API type ${selectedApiMap.selected} is not supported. Supported types: ${Object.values(this.ALLOWED_TYPES).join(', ')}`);
         }
 
         try {
@@ -379,10 +381,13 @@ export class ConnectionManagerUtils {
         }
 
         // Some providers not need model, like koboldcpp. But I don't want to check by provider.
-        if (apiMap.selected === 'openai') {
-            return !!apiMap.source;
-        } else if (apiMap.selected === 'textgenerationwebui') {
-            return !!apiMap.type;
+        switch (apiMap.selected) {
+            case 'openai':
+                return !!apiMap.source;
+            case 'textgenerationwebui':
+                return !!apiMap.type;
         }
+
+        return false;
     }
 }

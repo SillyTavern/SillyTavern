@@ -26,7 +26,7 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { MacrosParser } from '../../macros.js';
-import { ConnectionManagerUtils, countWebLlmTokens, generateWebLlmChatPrompt, getWebLlmContextSize, isWebLlmSupported } from '../shared.js';
+import { ConnectionManagerRequestService, countWebLlmTokens, generateWebLlmChatPrompt, getWebLlmContextSize, isWebLlmSupported } from '../shared.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 export { MODULE_NAME };
 
@@ -543,7 +543,7 @@ async function summarizeCallback(args, text) {
                     toastr.warning('No connection profile selected');
                     return '';
                 }
-                return await ConnectionManagerUtils.sendRequest(extension_settings.memory.profileId, `${prompt}\n\n${text}`, 2048);
+                return await ConnectionManagerRequestService.sendRequest(extension_settings.memory.profileId, `${prompt}\n\n${text}`, 2048);
             }
             default:
                 toastr.warning('Invalid summarization source specified');
@@ -658,7 +658,7 @@ function populateProfileDropdown(type = 'refresh', firstProfile = null, secondPr
         dropdown.empty();
         dropdown.append('<option value="">Select a Connection Profile</option>');
 
-        const profiles = ConnectionManagerUtils.getSupportedProfiles();
+        const profiles = ConnectionManagerRequestService.getSupportedProfiles();
         profiles.forEach(profile => {
             const selected = profile.id === extension_settings.memory.profileId ? 'selected' : '';
             dropdown.append(`<option value="${profile.id}" ${selected}>${profile.name}</option>`);
@@ -671,11 +671,11 @@ function populateProfileDropdown(type = 'refresh', firstProfile = null, secondPr
             saveSettingsDebounced();
         }
     } else if (type === 'create' && firstProfile) {
-        if (ConnectionManagerUtils.isProfileSupported(firstProfile)) {
+        if (ConnectionManagerRequestService.isProfileSupported(firstProfile)) {
             dropdown.append(`<option value="${firstProfile.id}">${firstProfile.name}</option>`);
         }
     } else if (type === 'update' && firstProfile && secondProfile) {
-        const isSupported = ConnectionManagerUtils.isProfileSupported(secondProfile);
+        const isSupported = ConnectionManagerRequestService.isProfileSupported(secondProfile);
 
         dropdown.find(`option[value="${firstProfile.id}"]`).remove();
 
@@ -728,7 +728,7 @@ async function summarizeChatWithProfile(context, force) {
             return null;
         }
 
-        summary = await ConnectionManagerUtils.sendRequest(extension_settings.memory.profileId, `${prompt}\n\n${rawPrompt}`, 2048);
+        summary = await ConnectionManagerRequestService.sendRequest(extension_settings.memory.profileId, `${prompt}\n\n${rawPrompt}`, 2048);
         index = lastUsedIndex;
     } catch (error) {
         toastr.error(String(error), 'Failed to summarize text');
