@@ -4,35 +4,19 @@ import { getTextGenServer } from './textgen-settings.js';
 
 // #region Type Definitions
 /**
- * @typedef {{
- *   prompt: string,
- *   max_tokens: number,
- *   model?: string,
- *   api_type: string,
- *   api_server?: string,
- *   temperature?: number,
- *   [key: string]: any
- * }} TextCompletionRequest
+ * @typedef {Object} TextCompletionRequestBase
  * @property {string} prompt - The text prompt for completion
  * @property {number} max_tokens - Maximum number of tokens to generate
  * @property {string} [model] - Optional model name
  * @property {string} api_type - Type of API to use
  * @property {string} [api_server] - Optional API server URL
  * @property {number} [temperature] - Optional temperature parameter
- * @property {any} [key] - Any additional properties
  */
 
+/** @typedef {Record<string, any> & TextCompletionRequestBase} TextCompletionRequest */
+
 /**
- * @typedef {{
- *   prompt: string,
- *   max_tokens: number,
- *   max_new_tokens: number,
- *   model?: string,
- *   api_type: string,
- *   api_server: string,
- *   temperature?: number,
- *   [key: string]: any
- * }} TextCompletionPayload
+ * @typedef {Object} TextCompletionPayloadBase
  * @property {string} prompt - The text prompt for completion
  * @property {number} max_tokens - Maximum number of tokens to generate
  * @property {number} max_new_tokens - Alias for max_tokens
@@ -40,34 +24,26 @@ import { getTextGenServer } from './textgen-settings.js';
  * @property {string} api_type - Type of API to use
  * @property {string} api_server - API server URL
  * @property {number} [temperature] - Optional temperature parameter
- * @property {any} [key] - Any additional properties
  */
 
+/** @typedef {Record<string, any> & TextCompletionPayloadBase} TextCompletionPayload */
+
 /**
- * @typedef {{
- *   role: string,
- *   content: string
- * }} ChatCompletionMessage
+ * @typedef {Object} ChatCompletionMessage
  * @property {string} role - The role of the message author (e.g., "user", "assistant", "system")
  * @property {string} content - The content of the message
  */
 
 /**
- * @typedef {{
- *   messages: ChatCompletionMessage[],
- *   model?: string,
- *   chat_completion_source: string,
- *   max_tokens: number,
- *   temperature?: number,
- *   [key: string]: any
- * }} ChatCompletionPayload
+ * @typedef {Object} ChatCompletionPayloadBase
  * @property {ChatCompletionMessage[]} messages - Array of chat messages
  * @property {string} [model] - Optional model name to use for completion
  * @property {string} chat_completion_source - Source provider for chat completion
  * @property {number} max_tokens - Maximum number of tokens to generate
- * @property {number} [temperature] - Optional temperature parameter
- * @property {any} [key] - Any additional properties
+ * @property {number} [temperature] - Optional temperature parameter for response randomness
  */
+
+/** @typedef {Record<string, any> & ChatCompletionPayloadBase} ChatCompletionPayload */
 // #endregion
 
 /**
