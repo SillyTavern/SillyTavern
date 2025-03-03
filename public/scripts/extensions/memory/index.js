@@ -715,10 +715,8 @@ async function summarizeChatWithProfile(context, force) {
         return null;
     }
 
-    const newContext = getContext();
-
     // something changed during summarization request
-    if (isContextChanged(newContext)) {
+    if (isContextChanged(context)) {
         console.log('Context changed, summary discarded');
         return null;
     }
