@@ -149,11 +149,10 @@ function loadSettings() {
     }
 
     if (extension_settings.connectionManager) {
-        populateProfileDropdown();
+        ConnectionManagerRequestService.handleDropdown('#memory_connection_profile', extension_settings.memory.profileId, onMemoryConnectionProfileChange);
     }
 
     $('#summary_source').val(extension_settings.memory.source).trigger('change');
-    $('#memory_connection_profile').val(extension_settings.memory.profileId).trigger('change');
     $('#memory_frozen').prop('checked', extension_settings.memory.memoryFrozen).trigger('input');
     $('#memory_skipWIAN').prop('checked', extension_settings.memory.SkipWIAN).trigger('input');
     $('#memory_prompt').val(extension_settings.memory.prompt).trigger('input');
@@ -261,9 +260,11 @@ function switchSourceControls(value) {
     });
 }
 
-function onMemoryConnectionProfileChange() {
-    const value = $(this).val();
-    extension_settings.memory.profileId = value;
+/**
+ * @param {import('../connection-manager/index.js').ConnectionProfile?} [profile]
+ */
+function onMemoryConnectionProfileChange(profile) {
+    extension_settings.memory.profileId = profile ? profile.id : '';
     saveSettingsDebounced();
 }
 
@@ -644,51 +645,6 @@ async function getSummaryPromptForNow(context, force) {
     }
 
     return prompt;
-}
-
-/**
- * @param {'refresh' | 'create' | 'delete' | 'update'} type
- * @param {import('../connection-manager/index.js').ConnectionProfile} [firstProfile] - if type is 'create' or 'delete', this is the profile. If type is 'update', this is the old profile
- * @param {import('../connection-manager/index.js').ConnectionProfile} [secondProfile] - if type is 'update', this is the new profile
- */
-function populateProfileDropdown(type = 'refresh', firstProfile = null, secondProfile = null) {
-    const dropdown = $('#memory_connection_profile');
-
-    if (type === 'refresh') {
-        dropdown.empty();
-        dropdown.append('<option value="">Select a Connection Profile</option>');
-
-        const profiles = ConnectionManagerRequestService.getSupportedProfiles();
-        profiles.forEach(profile => {
-            const selected = profile.id === extension_settings.memory.profileId ? 'selected' : '';
-            dropdown.append(`<option value="${profile.id}" ${selected}>${profile.name}</option>`);
-        });
-    } else if (type === 'delete' && firstProfile) {
-        dropdown.find(`option[value="${firstProfile.id}"]`).remove();
-
-        if (extension_settings.memory.profileId === firstProfile.id) {
-            extension_settings.memory.profileId = '';
-            saveSettingsDebounced();
-        }
-    } else if (type === 'create' && firstProfile) {
-        if (ConnectionManagerRequestService.isProfileSupported(firstProfile)) {
-            dropdown.append(`<option value="${firstProfile.id}">${firstProfile.name}</option>`);
-        }
-    } else if (type === 'update' && firstProfile && secondProfile) {
-        const isSupported = ConnectionManagerRequestService.isProfileSupported(secondProfile);
-
-        dropdown.find(`option[value="${firstProfile.id}"]`).remove();
-
-        if (isSupported) {
-            const selected = secondProfile.id === extension_settings.memory.profileId ? 'selected' : '';
-            dropdown.append(`<option value="${secondProfile.id}" ${selected}>${secondProfile.name}</option>`);
-        }
-
-        if (extension_settings.memory.profileId === firstProfile.id && !isSupported) {
-            extension_settings.memory.profileId = '';
-            saveSettingsDebounced();
-        }
-    }
 }
 
 async function summarizeChatWithProfile(context, force) {
@@ -1162,7 +1118,6 @@ function setupListeners() {
     $('#memory_frozen').off('input').on('input', onMemoryFrozenInput);
     $('#memory_skipWIAN').off('input').on('input', onMemorySkipWIANInput);
     $('#summary_source').off('change').on('change', onSummarySourceChange);
-    $('#memory_connection_profile').off('change').on('change', onMemoryConnectionProfileChange);
     $('#memory_prompt_words').off('input').on('input', onMemoryPromptWordsInput);
     $('#memory_prompt_interval').off('input').on('input', onMemoryPromptIntervalInput);
     $('#memory_prompt').off('input').on('input', onMemoryPromptInput);
@@ -1200,9 +1155,6 @@ jQuery(async function () {
     await addExtensionControls();
     loadSettings();
 
-    eventSource.on(event_types.CONNECTION_PROFILE_CREATED, (profile) =>populateProfileDropdown('create', profile));
-    eventSource.on(event_types.CONNECTION_PROFILE_DELETED, (profile) => populateProfileDropdown('delete', profile));
-    eventSource.on(event_types.CONNECTION_PROFILE_UPDATED, (oldProfile, newProfile) => populateProfileDropdown('update', oldProfile, newProfile));
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.makeLast(event_types.CHARACTER_MESSAGE_RENDERED, onChatEvent);
     for (const event of [event_types.MESSAGE_DELETED, event_types.MESSAGE_UPDATED, event_types.MESSAGE_SWIPED]) {

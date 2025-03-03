@@ -371,10 +371,14 @@ export class ConnectionManagerRequestService {
     }
 
     /**
-     * @param {import('./connection-manager/index.js').ConnectionProfile} profile
+     * @param {import('./connection-manager/index.js').ConnectionProfile?} [profile]
      * @returns {boolean}
      */
     static isProfileSupported(profile) {
+        if (!profile) {
+            return false;
+        }
+
         const apiMap = CONNECT_API_MAP[profile.api];
         if (!Object.hasOwn(this.ALLOWED_TYPES, apiMap.selected)) {
             return false;
@@ -389,5 +393,149 @@ export class ConnectionManagerRequestService {
         }
 
         return false;
+    }
+
+    /**
+     * Create profiles dropdown and updates select element accordingly. Use onChange, onCreate, unUpdate, onDelete callbacks for custom behaviour. e.g updating extension settings.
+     * @param {string} selector
+     * @param {string} initialSelectedProfileId
+     * @param {(profile?: import('./connection-manager/index.js').ConnectionProfile) => Promise<void> | void} onChange - 3 cases. 1- When user selects new profile. 2- When user deletes selected profile. 3- When user updates selected profile.
+     * @param {(profile: import('./connection-manager/index.js').ConnectionProfile) => Promise<void> | void} onCreate
+     * @param {(oldProfile: import('./connection-manager/index.js').ConnectionProfile, newProfile: import('./connection-manager/index.js').ConnectionProfile) => Promise<void> | void} unUpdate
+     * @param {(profile: import('./connection-manager/index.js').ConnectionProfile) => Promise<void> | void} onDelete
+     */
+    static handleDropdown(
+        selector,
+        initialSelectedProfileId,
+        onChange = () => { },
+        onCreate = () => { },
+        unUpdate = () => { },
+        onDelete = () => { }
+    ) {
+        const context = SillyTavern.getContext();
+
+        /**
+         * @type {JQuery<HTMLSelectElement>}
+         */
+        const dropdown = $(selector);
+
+        if (!dropdown || !dropdown.length) {
+            throw new Error(`Could not find dropdown with selector ${selector}`);
+        }
+
+        dropdown.empty();
+        dropdown.append('<option value="">Select a Connection Profile</option>');
+        const profiles = context.extensionSettings.connectionManager.profiles;
+
+        const groups = {};
+        for (const [apiType, groupLabel] of Object.entries(this.ALLOWED_TYPES)) {
+            groups[apiType] = $('<optgroup>').attr('label', groupLabel);
+        }
+
+        const sortedProfilesByGroup = {};
+        for (const apiType of Object.keys(this.ALLOWED_TYPES)) {
+            sortedProfilesByGroup[apiType] = [];
+        }
+
+        for (const profile of profiles) {
+            if (this.isProfileSupported(profile)) {
+                const apiMap = CONNECT_API_MAP[profile.api];
+                if (sortedProfilesByGroup[apiMap.selected]) {
+                    sortedProfilesByGroup[apiMap.selected].push(profile);
+                }
+            }
+        }
+
+        // Sort each group alphabetically and add to dropdown
+        for (const [apiType, groupProfiles] of Object.entries(sortedProfilesByGroup)) {
+            if (groupProfiles.length === 0) continue;
+
+            // Should we sort? I'm not sure.
+            // groupProfiles.sort((a, b) => a.name.localeCompare(b.name));
+
+            const group = groups[apiType];
+            for (const profile of groupProfiles) {
+                const option = $('<option>');
+                option.val(profile.id);
+                option.text(profile.name);
+                group.append(option);
+            }
+        }
+
+        for (const group of Object.values(groups)) {
+            if (group.children().length > 0) {
+                dropdown.append(group);
+            }
+        }
+
+        const selectedProfile = profiles.find((p) => p.id === initialSelectedProfileId);
+        if (selectedProfile) {
+            dropdown.val(selectedProfile.id);
+        }
+
+        context.eventSource.on(context.eventTypes.CONNECTION_PROFILE_CREATED, async (profile) => {
+            const isSupported = this.isProfileSupported(profile);
+            if (!isSupported) {
+                return;
+            }
+
+            const group = groups[CONNECT_API_MAP[profile.api].selected];
+            const option = $('<option>');
+            option.val(profile.id);
+            option.text(profile.name);
+            group.append(option);
+
+            await onCreate(profile);
+        });
+
+        context.eventSource.on(context.eventTypes.CONNECTION_PROFILE_UPDATED, async (oldProfile, newProfile) => {
+            const currentSelected = dropdown.val();
+            const isSelectedProfile = currentSelected === oldProfile.id;
+            await unUpdate(oldProfile, newProfile);
+
+            if (!this.isProfileSupported(newProfile)) {
+                if (isSelectedProfile) {
+                    dropdown.val('');
+                    dropdown.trigger('change');
+                }
+                return;
+            }
+
+            const group = groups[CONNECT_API_MAP[newProfile.api].selected];
+            group.find(`option[value="${oldProfile.id}"]`).remove();
+            const option = $('<option>');
+            option.val(newProfile.id);
+            option.text(newProfile.name);
+            group.append(option);
+
+            if (isSelectedProfile) {
+                // Ackchyually, we don't need to reselect but what if id changes? It is not possible for now I couldn't stop myself.
+                dropdown.val(newProfile.id);
+                dropdown.trigger('change');
+            }
+        });
+
+        context.eventSource.on(context.eventTypes.CONNECTION_PROFILE_DELETED, async (profile) => {
+            const currentSelected = dropdown.val();
+            const isSelectedProfile = currentSelected === profile.id;
+            if (!this.isProfileSupported(profile)) {
+                return;
+            }
+
+            groups[CONNECT_API_MAP[profile.api].selected].find(`option[value="${profile.id}"]`).remove();
+
+            if (isSelectedProfile) {
+                dropdown.val('');
+                dropdown.trigger('change');
+            }
+
+            await onDelete(profile);
+        });
+
+        dropdown.on('change', async () => {
+            const profileId = dropdown.val();
+            const profile = context.extensionSettings.connectionManager.profiles.find((p) => p.id === profileId);
+            await onChange(profile);
+        });
     }
 }
