@@ -702,4 +702,20 @@ async function listGalleryCommand(args) {
 // On extension load, ensure the settings are initialized
 (function () {
     initSettings();
+    eventSource.on(event_types.CHARACTER_RENAMED, (oldAvatar, newAvatar) => {
+        const context = SillyTavern.getContext();
+        const galleryFolder = context.extensionSettings.gallery.folders[oldAvatar];
+        if (galleryFolder) {
+            context.extensionSettings.gallery.folders[newAvatar] = galleryFolder;
+            delete context.extensionSettings.gallery.folders[oldAvatar];
+            context.saveSettingsDebounced();
+        }
+    });
+    eventSource.on(event_types.CHARACTER_DELETED, (data) => {
+        const avatar = data?.character?.avatar;
+        if (!avatar) return;
+        const context = SillyTavern.getContext();
+        delete context.extensionSettings.gallery.folders[avatar];
+        context.saveSettingsDebounced();
+    });
 })();
