@@ -318,12 +318,12 @@ async function uploadFile(file, url) {
 
         const result = await response.json();
 
-        toastr.success('File uploaded successfully. Saved at: ' + result.path);
+        toastr.success(t`File uploaded successfully. Saved at: ${result.path}`);
     } catch (error) {
         console.error('There was an issue uploading the file:', error);
 
         // Replacing alert with toastr error notification
-        toastr.error('Failed to upload the file.');
+        toastr.error(t`Failed to upload the file.`);
     }
 }
 
@@ -389,10 +389,10 @@ async function makeMovable(url) {
             updateGalleryFolder(galleryFolderInput.value);
             closeButton.trigger('click');
             await showCharGallery();
-            toastr.info('Gallery folder changed to ' + galleryFolderInput.value);
+            toastr.info(t`Gallery folder changed to ${galleryFolderInput.value}`);
         } catch (error) {
             console.error('Failed to change gallery folder:', error);
-            toastr.error(error?.message || 'Unknown error', 'Failed to change gallery folder');
+            toastr.error(error?.message || t`Unknown error`, t`Failed to change gallery folder`);
         }
     };
 
@@ -403,7 +403,7 @@ async function makeMovable(url) {
             await showCharGallery();
         } catch (error) {
             console.error('Failed to restore gallery folder:', error);
-            toastr.error(error?.message || 'Unknown error', 'Failed to restore gallery folder');
+            toastr.error(error?.message || t`Unknown error`, t`Failed to restore gallery folder`);
         }
     };
 
