@@ -87,6 +87,10 @@ router.post('/list/:folder?', jsonParser, (request, response) => {
             request.body.folder = request.params.folder;
         }
 
+        if (!request.body.folder) {
+            return response.status(400).send({ error: 'No folder specified' });
+        }
+
         const directoryPath = path.join(request.user.directories.userImages, sanitize(request.body.folder));
         const sort = request.body.sortField || 'date';
         const order = request.body.sortOrder || 'asc';
