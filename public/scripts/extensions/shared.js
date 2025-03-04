@@ -359,7 +359,7 @@ export class ConnectionManagerRequestService {
                 }
             }
         } catch (error) {
-            throw new Error(`API request failed: ${error.message}`);
+            throw new Error(`API request failed`, { cause: error });
         }
     }
 
