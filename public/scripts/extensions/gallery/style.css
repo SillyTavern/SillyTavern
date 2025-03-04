@@ -40,3 +40,7 @@
 #gallery .dragTitle {
     margin-right: 30px;
 }
+
+#dragGallery {
+    min-height: 25dvh;
+}
