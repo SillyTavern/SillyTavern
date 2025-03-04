@@ -393,10 +393,12 @@ async function makeMovable(url) {
         }
 
         try {
-            updateGalleryFolder(galleryFolderInput.value);
+            const newUrl = await getSanitizedFilename(galleryFolderInput.value);
+            updateGalleryFolder(newUrl);
             closeButton.trigger('click');
             await showCharGallery();
-            toastr.info(t`Gallery folder changed to ${galleryFolderInput.value}`);
+            toastr.info(t`Gallery folder changed to ${newUrl}`);
+            galleryFolderInput.value = newUrl;
         } catch (error) {
             console.error('Failed to change gallery folder:', error);
             toastr.error(error?.message || t`Unknown error`, t`Failed to change gallery folder`);
