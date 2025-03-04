@@ -422,7 +422,7 @@ async function makeMovable(url) {
     galleryFolderAccept.addEventListener('click', onChangeFolder);
 
     const galleryFolderRestore = document.createElement('div');
-    galleryFolderRestore.classList.add('right_menu_button', 'fa-solid', 'fa-xmark', 'fa-fw');
+    galleryFolderRestore.classList.add('right_menu_button', 'fa-solid', 'fa-recycle', 'fa-fw');
     galleryFolderRestore.title = t`Restore gallery folder`;
     galleryFolderRestore.addEventListener('click', onRestoreFolder);
 
