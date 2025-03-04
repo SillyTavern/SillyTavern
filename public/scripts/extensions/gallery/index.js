@@ -102,10 +102,11 @@ function getGalleryFolder(char) {
 async function getGalleryItems(url) {
     const sortValue = getSortOrder();
     const sortObj = Object.values(SORT).find(it => it.value === sortValue) ?? SORT.DATE_ASC;
-    const response = await fetch(`/api/images/list/${url}`, {
+    const response = await fetch('/api/images/list', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
+            folder: url,
             sortField: sortObj.field,
             sortOrder: sortObj.order,
         }),
