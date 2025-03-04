@@ -486,10 +486,17 @@ function updateGalleryFolder(newUrl) {
         throw new Error('Character is not selected');
     }
     const avatar = context.characters[context.characterId]?.avatar;
+    const name = context.characters[context.characterId]?.name;
     if (!avatar) {
         throw new Error('Character PNG ID is not found');
     }
-    context.extensionSettings.gallery.folders[avatar] = newUrl;
+    if (newUrl === name) {
+        // Default folder name is picked, remove the override
+        delete context.extensionSettings.gallery.folders[avatar];
+    } else {
+        // Custom folder name is provided, set the override
+        context.extensionSettings.gallery.folders[avatar] = newUrl;
+    }
     context.saveSettingsDebounced();
 }
 
