@@ -211,7 +211,7 @@ export const extension_settings = {
      */
     disabled_attachments: [],
     gallery: {
-        /** @type {Record<string,string>} */
+        /** @type {{[characterKey: string]: string}} */
         folders: {},
         /** @type {string} */
         sort: 'dateAsc',
