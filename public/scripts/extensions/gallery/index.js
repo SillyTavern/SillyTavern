@@ -6,7 +6,7 @@ import {
     event_types,
 } from '../../../script.js';
 import { groups, selected_group } from '../../group-chats.js';
-import { loadFileToDocument, delay } from '../../utils.js';
+import { loadFileToDocument, delay, getBase64Async } from '../../utils.js';
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -196,9 +196,22 @@ async function initGallery(items, url) {
         fnThumbnailOpen: viewWithDragbox,
     });
 
-    const dragDropHandler = new DragAndDropHandler(`#dragGallery.${nonce}`, async (files, event) => {
-        let file = files[0];
-        uploadFile(file, url);  // Added url parameter to know where to upload
+    const dragDropHandler = new DragAndDropHandler(`#dragGallery.${nonce}`, async (files) => {
+        if (!Array.isArray(files) || files.length === 0) {
+            return;
+        }
+
+        // Upload each file
+        for (const file of files) {
+            await uploadFile(file, url);
+        }
+
+        // Refresh the gallery
+        const newItems = await getGalleryItems(url);
+        $('#dragGallery').closest('#gallery').remove();
+        await makeMovable(url);
+        await delay(100);
+        await initGallery(newItems, url);
     });
 
     const resizeHandler = function () {
@@ -283,55 +296,35 @@ async function showCharGallery() {
  * @returns {Promise<void>} - Promise representing the completion of the file upload and gallery refresh.
  */
 async function uploadFile(file, url) {
-    // Convert the file to a base64 string
-    const reader = new FileReader();
-    reader.onloadend = async function () {
-        const base64Data = reader.result;
+    try {
+        // Convert the file to a base64 string
+        const base64Data = await getBase64Async(file);
 
         // Create the payload
         const payload = {
             image: base64Data,
+            ch_name: url,
         };
 
-        // Add the ch_name from the provided URL (assuming it's the character name)
-        payload.ch_name = url;
+        const response = await fetch('/api/images/upload', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(payload),
+        });
 
-        try {
-            const headers = await getRequestHeaders();
-
-            // Merge headers with content-type for JSON
-            Object.assign(headers, {
-                'Content-Type': 'application/json',
-            });
-
-            const response = await fetch('/api/images/upload', {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const result = await response.json();
-
-            toastr.success('File uploaded successfully. Saved at: ' + result.path);
-
-            // Refresh the gallery
-            const newItems = await getGalleryItems(url);  // Fetch the latest items
-            $('#dragGallery').closest('#gallery').remove();  // Destroy old gallery
-            await makeMovable(url);
-            await delay(100);
-            await initGallery(newItems, url);  // Reinitialize the gallery with new items and pass 'url'
-        } catch (error) {
-            console.error('There was an issue uploading the file:', error);
-
-            // Replacing alert with toastr error notification
-            toastr.error('Failed to upload the file.');
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
-    };
-    reader.readAsDataURL(file);
+
+        const result = await response.json();
+
+        toastr.success('File uploaded successfully. Saved at: ' + result.path);
+    } catch (error) {
+        console.error('There was an issue uploading the file:', error);
+
+        // Replacing alert with toastr error notification
+        toastr.error('Failed to upload the file.');
+    }
 }
 
 /**
