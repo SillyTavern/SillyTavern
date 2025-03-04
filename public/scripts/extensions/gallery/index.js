@@ -6,7 +6,7 @@ import {
     event_types,
 } from '../../../script.js';
 import { groups, selected_group } from '../../group-chats.js';
-import { loadFileToDocument, delay, getBase64Async } from '../../utils.js';
+import { loadFileToDocument, delay, getBase64Async, getSanitizedFilename } from '../../utils.js';
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -111,6 +111,8 @@ async function getGalleryItems(url) {
             sortOrder: sortObj.order,
         }),
     });
+
+    url = await getSanitizedFilename(url);
 
     const data = await response.json();
     const items = data.map((file) => ({
