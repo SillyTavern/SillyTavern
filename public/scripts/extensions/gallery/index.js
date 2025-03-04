@@ -195,6 +195,10 @@ async function initGallery(items, url) {
         },
         galleryDisplayMode: 'pagination',
         fnThumbnailOpen: viewWithDragbox,
+        fnThumbnailInit: function (/** @type {JQuery<HTMLElement>} */ $thumbnail, /** @type {{src: string}} */ item) {
+            if (!item?.src) return;
+            $thumbnail.attr('title', String(item.src).split('/').pop());
+        },
     });
 
     const dragDropHandler = new DragAndDropHandler(`#dragGallery.${nonce}`, async (files) => {
