@@ -76,7 +76,7 @@ router.post('/upload', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/list/:folder', (request, response) => {
+router.post('/list/:folder', jsonParser, (request, response) => {
     try {
         const directoryPath = path.join(request.user.directories.userImages, sanitize(request.params.folder));
         const sort = request.body.sortField || 'date';
