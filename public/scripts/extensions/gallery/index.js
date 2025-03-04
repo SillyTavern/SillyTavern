@@ -498,6 +498,9 @@ function updateGalleryFolder(newUrl) {
         throw new Error('Folder name cannot be empty');
     }
     const context = SillyTavern.getContext();
+    if (context.groupId) {
+        throw new Error('Cannot change gallery folder in group chat');
+    }
     if (context.characterId === undefined) {
         throw new Error('Character is not selected');
     }
@@ -514,6 +517,9 @@ function updateGalleryFolder(newUrl) {
  */
 function restoreGalleryFolder() {
     const context = SillyTavern.getContext();
+    if (context.groupId) {
+        throw new Error('Cannot change gallery folder in group chat');
+    }
     if (context.characterId === undefined) {
         throw new Error('Character is not selected');
     }
