@@ -544,7 +544,7 @@ async function renderDetailsContent(detailsContent) {
             return acc;
         }, {});
         const template = $(await renderExtensionTemplateAsync(MODULE_NAME, 'edit', { name: profile.name, settings }));
-        let name = await callGenericPopup(template, POPUP_TYPE.INPUT, profile.name, {
+        let newName = await callGenericPopup(template, POPUP_TYPE.INPUT, profile.name, {
             customButtons: [{
                 text: t`Save and Update`,
                 classes: ['popup-button-ok'],
@@ -555,13 +555,13 @@ async function renderDetailsContent(detailsContent) {
             }],
         });
 
-        name = DOMPurify.sanitize(String(name));
+        newName = DOMPurify.sanitize(String(newName));
 
-        if (!name) {
+        if (!newName) {
             return;
         }
 
-        if (profile.name !== name && extension_settings.connectionManager.profiles.some(p => p.name === name)) {
+        if (profile.name !== newName && extension_settings.connectionManager.profiles.some(p => p.name === newName)) {
             toastr.error('A profile with the same name already exists.');
             return;
         }
@@ -583,9 +583,9 @@ async function renderDetailsContent(detailsContent) {
             }
         }
 
-        if (profile.name !== name) {
+        if (profile.name !== newName) {
             toastr.success('Connection profile renamed.');
-            profile.name = name;
+            profile.name = newName;
         }
 
         saveSettingsDebounced();
