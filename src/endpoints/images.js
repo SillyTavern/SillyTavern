@@ -76,8 +76,17 @@ router.post('/upload', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/list', jsonParser, (request, response) => {
+router.post('/list/:folder?', jsonParser, (request, response) => {
     try {
+        if (request.params.folder) {
+            if (request.body.folder) {
+                return response.status(400).send({ error: 'Folder specified in both URL and body' });
+            }
+
+            console.warn('Deprecated: Use POST /api/images/list with folder in request body');
+            request.body.folder = request.params.folder;
+        }
+
         const directoryPath = path.join(request.user.directories.userImages, sanitize(request.body.folder));
         const sort = request.body.sortField || 'date';
         const order = request.body.sortOrder || 'asc';
