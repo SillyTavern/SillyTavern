@@ -334,23 +334,6 @@ async function uploadFile(file, url) {
     reader.readAsDataURL(file);
 }
 
-$(document).ready(function () {
-    // Register an event listener
-    eventSource.on('charManagementDropdown', (selectedOptionId) => {
-        if (selectedOptionId === 'show_char_gallery') {
-            showCharGallery();
-        }
-    });
-
-    // Add an option to the dropdown
-    $('#char-management-dropdown').append(
-        $('<option>', {
-            id: 'show_char_gallery',
-            text: translate('Show Gallery'),
-        }),
-    );
-});
-
 /**
  * Creates a new draggable container based on a template.
  * This function takes a template with the ID 'generic_draggable_template' and clones it.
@@ -718,4 +701,17 @@ async function listGalleryCommand(args) {
         delete context.extensionSettings.gallery.folders[avatar];
         context.saveSettingsDebounced();
     });
+    eventSource.on('charManagementDropdown', (selectedOptionId) => {
+        if (selectedOptionId === 'show_char_gallery') {
+            showCharGallery();
+        }
+    });
+
+    // Add an option to the dropdown
+    $('#char-management-dropdown').append(
+        $('<option>', {
+            id: 'show_char_gallery',
+            text: translate('Show Gallery'),
+        }),
+    );
 })();
