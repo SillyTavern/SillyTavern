@@ -195,13 +195,26 @@ async function translateIncomingMessage(messageId) {
     const translation = await translate(textToTranslate, extension_settings.translate.target_language);
     message.extra.display_text = translation;
 
-    if (message?.extra?.reasoning) {
-        const reasoningTranslation = await translate(message.extra.reasoning, extension_settings.translate.target_language);
-        message.extra.reasoning_display_text = reasoningTranslation;
-        updateReasoningUI(Number(messageId));
+    updateMessageBlock(messageId, message);
+}
+
+async function translateIncomingMessageReasoning(messageId) {
+    const context = getContext();
+    const message = context.chat[messageId];
+
+    if (typeof message.extra !== 'object') {
+        message.extra = {};
     }
 
-    updateMessageBlock(messageId, message);
+    if (!message.extra.reasoning) {
+        return;
+    }
+
+    const textToTranslate = substituteParams(message.extra.reasoning, context.name1, message.name);
+    const translation = await translate(textToTranslate, extension_settings.translate.target_language);
+    message.extra.reasoning_display_text = translation;
+
+    updateReasoningUI(Number(messageId));
 }
 
 async function translateProviderOneRing(text, lang) {
@@ -543,6 +556,7 @@ async function onTranslateChatClick() {
 
         for (let i = 0; i < chat.length; i++) {
             await translateIncomingMessage(i);
+            await translateIncomingMessageReasoning(i);
         }
 
         await context.saveChat();
@@ -590,6 +604,31 @@ async function translateMessageEdit(messageId) {
     }
 }
 
+async function translateMessageReasoningEdit(messageId) {
+    const context = getContext();
+    const chat = context.chat;
+    const message = chat[messageId];
+
+    if (message.is_system || extension_settings.translate.auto_mode == autoModeOptions.NONE) {
+        return;
+    }
+
+    if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
+        await translateIncomingMessageReasoning(messageId);
+        context.saveChat();
+    }
+}
+
+function removeReasoningDisplayText(messageId) {
+    const context = getContext();
+    const message = context.chat[messageId];
+    if (message.extra?.reasoning_display_text) {
+        delete message.extra.reasoning_display_text;
+        updateReasoningUI(Number(messageId));
+        context.saveChat();
+    }
+}
+
 async function onMessageTranslateClick() {
     const context = getContext();
     const messageId = $(this).closest('.mes').attr('mesid');
@@ -611,6 +650,7 @@ async function onMessageTranslateClick() {
     // If the message is not translated, translate it
     if (!alreadyTranslated) {
         await translateIncomingMessage(messageId);
+        await translateIncomingMessageReasoning(messageId);
     }
 
     await context.saveChat();
@@ -620,6 +660,8 @@ const handleIncomingMessage = createEventHandler(translateIncomingMessage, () =>
 const handleOutgoingMessage = createEventHandler(translateOutgoingMessage, () => shouldTranslate(outgoingTypes));
 const handleImpersonateReady = createEventHandler(translateImpersonate, () => shouldTranslate(incomingTypes));
 const handleMessageEdit = createEventHandler(translateMessageEdit, () => true);
+const handleMessageReasoningEdit = createEventHandler(translateMessageReasoningEdit, () => true);
+const handleMessageReasoningDelete = createEventHandler(removeReasoningDisplayText, () => true);
 
 globalThis.translate = translate;
 
@@ -733,6 +775,8 @@ jQuery(async () => {
     eventSource.on(event_types.MESSAGE_SWIPED, handleIncomingMessage);
     eventSource.on(event_types.IMPERSONATE_READY, handleImpersonateReady);
     eventSource.on(event_types.MESSAGE_UPDATED, handleMessageEdit);
+    eventSource.on(event_types.MESSAGE_REASONING_EDITED, handleMessageReasoningEdit);
+    eventSource.on(event_types.MESSAGE_REASONING_DELETED, handleMessageReasoningDelete);
 
     document.body.classList.add('translate');
 
