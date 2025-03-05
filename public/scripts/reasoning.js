@@ -252,6 +252,7 @@ export class ReasoningHandler {
             this.state = this.#isHiddenReasoningModel ? ReasoningState.Thinking : ReasoningState.None;
             this.type = null;
             this.reasoning = '';
+            this.reasoning_display_text = null;
             this.initialTime = new Date();
             this.startTime = null;
             this.endTime = null;
