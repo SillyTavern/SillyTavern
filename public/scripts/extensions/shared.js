@@ -284,7 +284,7 @@ export class ConnectionManagerRequestService {
         return {
             openai: t`Chat Completion`,
             textgenerationwebui: t`Text Completion`,
-        }
+        };
     }
 
     /**
@@ -335,7 +335,7 @@ export class ConnectionManagerRequestService {
                         model: profile.model,
                         api_type: selectedApiMap.type,
                         api_server: profile['api-url'],
-                    })
+                    });
                     if (profile.preset && includePreset) {
                         return await context.TextCompletionService.sendRequestWithPreset(profile.preset, data, extractData);
                     }
@@ -346,7 +346,7 @@ export class ConnectionManagerRequestService {
                 }
             }
         } catch (error) {
-            throw new Error(`API request failed`, { cause: error });
+            throw new Error('API request failed', { cause: error });
         }
     }
 
@@ -396,7 +396,7 @@ export class ConnectionManagerRequestService {
      */
     static validateProfile(profile) {
         if (!profile) {
-            throw new Error(`Could not find profile.`);
+            throw new Error('Could not find profile.');
         }
         if (!profile.api) {
             throw new Error('Select a connection profile that has an API');
@@ -429,7 +429,7 @@ export class ConnectionManagerRequestService {
         onChange = () => { },
         onCreate = () => { },
         unUpdate = () => { },
-        onDelete = () => { }
+        onDelete = () => { },
     ) {
         const context = SillyTavern.getContext();
         if (context.extensionSettings.disabledExtensions.includes('connection-manager')) {

@@ -548,9 +548,9 @@ async function summarizeCallback(args, text) {
                     extension_settings.memory.profileId,
                     [
                         { role: 'system', content: prompt },
-                        { role: 'user', content: text }
+                        { role: 'user', content: text },
                     ],
-                    2048
+                    2048,
                 );
             }
             default:
@@ -694,9 +694,9 @@ async function summarizeChatWithProfile(context, force) {
             extension_settings.memory.profileId,
             [
                 { role: 'system', content: prompt },
-                { role: 'user', content: rawPrompt }
+                { role: 'user', content: rawPrompt },
             ],
-            2048
+            2048,
         );
         index = lastUsedIndex;
     } catch (error) {
