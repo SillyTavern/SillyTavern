@@ -167,7 +167,7 @@ export class ReasoningHandler {
         this.type = null;
         /** @type {string} The reasoning output */
         this.reasoning = '';
-        /** @type {string | null} The reasoning output display in case of translate or other */
+        /** @type {string?} The reasoning output display in case of translate or other */
         this.reasoning_display_text = null;
         /** @type {Date} When the reasoning started */
         this.startTime = null;
