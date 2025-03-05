@@ -167,6 +167,8 @@ export class ReasoningHandler {
         this.type = null;
         /** @type {string} The reasoning output */
         this.reasoning = '';
+        /** @type {string | null} The reasoning output display in case of translate or other */
+        this.reasoning_display_text = null;
         /** @type {Date} When the reasoning started */
         this.startTime = null;
         /** @type {Date} When the reasoning ended */
@@ -234,6 +236,7 @@ export class ReasoningHandler {
 
         this.type = extra?.reasoning_type;
         this.reasoning = extra?.reasoning ?? '';
+        this.reasoning_display_text = extra?.reasoning_display_text ?? null;
 
         if (this.state !== ReasoningState.None) {
             this.initialTime = new Date(chat[messageId].gen_started);
@@ -434,7 +437,7 @@ export class ReasoningHandler {
         setDatasetProperty(this.messageReasoningDetailsDom, 'type', this.type);
 
         // Update the reasoning message
-        const reasoning = trimSpaces(this.reasoning);
+        const reasoning = trimSpaces(this.reasoning_display_text ?? this.reasoning);
         const displayReasoning = messageFormatting(reasoning, '', false, false, messageId, {}, true);
         this.messageReasoningContentDom.innerHTML = displayReasoning;
 

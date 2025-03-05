@@ -11,6 +11,7 @@ import {
 } from '../../../script.js';
 import { extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from '../../popup.js';
+import { updateReasoningUI } from '../../reasoning.js';
 import { findSecret, secret_state, writeSecret } from '../../secrets.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
@@ -193,6 +194,12 @@ async function translateIncomingMessage(messageId) {
     const textToTranslate = substituteParams(message.mes, context.name1, message.name);
     const translation = await translate(textToTranslate, extension_settings.translate.target_language);
     message.extra.display_text = translation;
+
+    if (message?.extra?.reasoning) {
+        const reasoningTranslation = await translate(message.extra.reasoning, extension_settings.translate.target_language);
+        message.extra.reasoning_display_text = reasoningTranslation;
+        updateReasoningUI(Number(messageId));
+    }
 
     updateMessageBlock(messageId, message);
 }
@@ -561,6 +568,7 @@ async function onTranslationsClearClick() {
     for (const mes of chat) {
         if (mes.extra) {
             delete mes.extra.display_text;
+            delete mes.extra.reasoning_display_text;
         }
     }
 
@@ -588,12 +596,20 @@ async function onMessageTranslateClick() {
     const message = context.chat[messageId];
 
     // If the message is already translated, revert it back to the original text
+    let alreadyTranslated = false;
     if (message?.extra?.display_text) {
         delete message.extra.display_text;
         updateMessageBlock(messageId, message);
+        alreadyTranslated = true;
     }
+    if (message?.extra?.reasoning_display_text) {
+        delete message.extra.reasoning_display_text;
+        updateReasoningUI(Number(messageId));
+        alreadyTranslated = true;
+    }
+
     // If the message is not translated, translate it
-    else {
+    if (!alreadyTranslated) {
         await translateIncomingMessage(messageId);
     }
 
