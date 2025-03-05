@@ -348,6 +348,7 @@ async function postSetupTasks(result) {
     console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
 
     setupLogLevel();
+    startElectronApp(autorunUrl.toString());
 }
 
 /**
@@ -358,6 +359,44 @@ function apply404Middleware() {
     app.use((req, res) => {
         res.status(404).send(notFoundWebpage);
     });
+}
+
+/**
+ * Creates a window.
+ * @param {string} url The url Electron will use
+ */
+async function startElectronApp(url) {
+    const useElectron = 'electron' in process.versions;
+
+    try {
+        if (!useElectron) return;
+        const { app, BrowserWindow } = await import('electron');
+
+        const createElectronWindow = () => {
+            new BrowserWindow({
+                height: 600,
+                width: 800,
+            }).loadURL(url);
+        };
+
+        app.whenReady().then(() => {
+            createElectronWindow();
+
+            app.on('activate', () => {
+                if (BrowserWindow.getAllWindows().length === 0) {
+                    createElectronWindow();
+                }
+            });
+        });
+
+        app.on('window-all-closed', () => {
+            if (process.platform !== 'darwin') {
+                app.quit();
+            }
+        });
+    } catch (err) {
+        console.warn('Could not use Electron');
+    }
 }
 
 // User storage module needs to be initialized before starting the server
