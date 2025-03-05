@@ -198,6 +198,10 @@ async function translateIncomingMessage(messageId) {
     updateMessageBlock(messageId, message);
 }
 
+/**
+ * @param {string | number} messageId
+ * @returns {Promise<boolean>} translated or not
+ */
 async function translateIncomingMessageReasoning(messageId) {
     const context = getContext();
     const message = context.chat[messageId];
@@ -207,7 +211,7 @@ async function translateIncomingMessageReasoning(messageId) {
     }
 
     if (!message.extra.reasoning) {
-        return;
+        return false;
     }
 
     const textToTranslate = substituteParams(message.extra.reasoning, context.name1, message.name);
@@ -215,6 +219,7 @@ async function translateIncomingMessageReasoning(messageId) {
     message.extra.reasoning_display_text = translation;
 
     updateReasoningUI(Number(messageId));
+    return true;
 }
 
 async function translateProviderOneRing(text, lang) {
@@ -609,12 +614,16 @@ async function translateMessageReasoningEdit(messageId) {
     const chat = context.chat;
     const message = chat[messageId];
 
-    if (message.is_system || extension_settings.translate.auto_mode == autoModeOptions.NONE) {
-        return;
+    let anyChange = false;
+    if (message.is_system || (extension_settings.translate.auto_mode == autoModeOptions.NONE && message.extra?.reasoning_display_text)) {
+        delete message.extra.reasoning_display_text;
+        updateReasoningUI(Number(messageId));
+        anyChange = true;
+    } else if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
+        anyChange = await translateIncomingMessageReasoning(messageId);
     }
 
-    if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
-        await translateIncomingMessageReasoning(messageId);
+    if (anyChange) {
         await context.saveChat();
     }
 }
