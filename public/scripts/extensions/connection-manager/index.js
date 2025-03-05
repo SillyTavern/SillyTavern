@@ -255,8 +255,13 @@ async function createConnectionProfile(forceName = null) {
     const isNameTaken = (n) => extension_settings.connectionManager.profiles.some(p => p.name === n);
     const suggestedName = getUniqueName(collapseSpaces(`${profile.api ?? ''} ${profile.model ?? ''} - ${profile.preset ?? ''}`), isNameTaken);
     let name = forceName ?? await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName, { rows: 2 });
+    // If it's cancelled, it will be false
+    if (!name) {
+        return null;
+    }
     name = DOMPurify.sanitize(String(name));
     if (!name) {
+        toastr.error('Name cannot be empty.');
         return null;
     }
 
@@ -555,9 +560,13 @@ async function renderDetailsContent(detailsContent) {
             }],
         });
 
-        newName = DOMPurify.sanitize(String(newName));
-
+        // If it's cancelled, it will be false
         if (!newName) {
+            return;
+        }
+        newName = DOMPurify.sanitize(String(newName));
+        if (!newName) {
+            toastr.error('Name cannot be empty.');
             return;
         }
 
