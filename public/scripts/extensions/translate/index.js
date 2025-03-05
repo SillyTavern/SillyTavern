@@ -615,17 +615,17 @@ async function translateMessageReasoningEdit(messageId) {
 
     if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
         await translateIncomingMessageReasoning(messageId);
-        context.saveChat();
+        await context.saveChat();
     }
 }
 
-function removeReasoningDisplayText(messageId) {
+async function removeReasoningDisplayText(messageId) {
     const context = getContext();
     const message = context.chat[messageId];
     if (message.extra?.reasoning_display_text) {
         delete message.extra.reasoning_display_text;
         updateReasoningUI(Number(messageId));
-        context.saveChat();
+        await context.saveChat();
     }
 }
 
