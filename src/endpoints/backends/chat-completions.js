@@ -330,6 +330,7 @@ async function sendMakerSuiteRequest(request, response) {
             contents: prompt.contents,
             safetySettings: safetySettings,
             generationConfig: generationConfig,
+            tools: request.body.tools,
         };
 
         if (should_use_system_prompt) {
