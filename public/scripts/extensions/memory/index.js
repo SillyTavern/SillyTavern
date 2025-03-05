@@ -148,7 +148,7 @@ function loadSettings() {
         }
     }
 
-    if (extension_settings.connectionManager) {
+    if (!extension_settings.disabledExtensions.includes('connection-manager')) {
         ConnectionManagerRequestService.handleDropdown('#memory_connection_profile', extension_settings.memory.profileId, onMemoryConnectionProfileChange);
     }
 
@@ -666,7 +666,6 @@ async function summarizeChatWithProfile(context, force) {
         return null;
     }
 
-    console.log('sending summary prompt to connection profile');
     let summary = '';
     let index = null;
 

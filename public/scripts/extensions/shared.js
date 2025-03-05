@@ -298,25 +298,12 @@ export class ConnectionManagerRequestService {
         const { extractData, includePreset } = { ...this.defaultSendRequestParams, ...custom };
 
         const context = SillyTavern.getContext();
-        if (!context.extensionSettings.connectionManager) {
+        if (context.extensionSettings.disabledExtensions.includes('connection-manager')) {
             throw new Error('Connection Manager is not available');
         }
 
         const profile = context.extensionSettings.connectionManager.profiles.find((p) => p.id === profileId);
-        if (!profile) {
-            throw new Error(`Could not find profile with id ${profileId}`);
-        }
-        if (!profile.api) {
-            throw new Error('Select a connection profile that has an API');
-        }
-
-        const selectedApiMap = context.CONNECT_API_MAP[profile.api];
-        if (!selectedApiMap) {
-            throw new Error(`Unknown API type ${profile.api}`);
-        }
-        if (!Object.hasOwn(this.getAllowedTypes(), selectedApiMap.selected)) {
-            throw new Error(`API type ${selectedApiMap.selected} is not supported. Supported types: ${Object.values(this.getAllowedTypes()).join(', ')}`);
-        }
+        const selectedApiMap = this.validateProfile(profile);
 
         try {
             switch (selectedApiMap.selected) {
@@ -369,7 +356,7 @@ export class ConnectionManagerRequestService {
      */
     static getSupportedProfiles() {
         const context = SillyTavern.getContext();
-        if (!context.extensionSettings.connectionManager) {
+        if (context.extensionSettings.disabledExtensions.includes('connection-manager')) {
             throw new Error('Connection Manager is not available');
         }
 
@@ -403,6 +390,31 @@ export class ConnectionManagerRequestService {
     }
 
     /**
+     * @param {import('./connection-manager/index.js').ConnectionProfile?} [profile]
+     * @return {import('../../script.js').ConnectAPIMap}
+     * @throws {Error}
+     */
+    static validateProfile(profile) {
+        if (!profile) {
+            throw new Error(`Could not find profile.`);
+        }
+        if (!profile.api) {
+            throw new Error('Select a connection profile that has an API');
+        }
+
+        const context = SillyTavern.getContext();
+        const selectedApiMap = context.CONNECT_API_MAP[profile.api];
+        if (!selectedApiMap) {
+            throw new Error(`Unknown API type ${profile.api}`);
+        }
+        if (!Object.hasOwn(this.getAllowedTypes(), selectedApiMap.selected)) {
+            throw new Error(`API type ${selectedApiMap.selected} is not supported. Supported types: ${Object.values(this.getAllowedTypes()).join(', ')}`);
+        }
+
+        return selectedApiMap;
+    }
+
+    /**
      * Create profiles dropdown and updates select element accordingly. Use onChange, onCreate, unUpdate, onDelete callbacks for custom behaviour. e.g updating extension settings.
      * @param {string} selector
      * @param {string} initialSelectedProfileId
@@ -420,7 +432,7 @@ export class ConnectionManagerRequestService {
         onDelete = () => { }
     ) {
         const context = SillyTavern.getContext();
-        if (!context.extensionSettings.connectionManager) {
+        if (context.extensionSettings.disabledExtensions.includes('connection-manager')) {
             throw new Error('Connection Manager is not available');
         }
 
@@ -470,8 +482,7 @@ export class ConnectionManagerRequestService {
         for (const [apiType, groupProfiles] of Object.entries(sortedProfilesByGroup)) {
             if (groupProfiles.length === 0) continue;
 
-            // Should we sort? I'm not sure.
-            // groupProfiles.sort((a, b) => a.name.localeCompare(b.name));
+            groupProfiles.sort((a, b) => a.name.localeCompare(b.name));
 
             const group = groups[apiType];
             for (const profile of groupProfiles) {
