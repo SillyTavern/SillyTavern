@@ -898,7 +898,7 @@ function setReasoningEventHandlers() {
         textarea.remove();
 
         messageBlock.find('.mes_edit_done:visible').trigger('click');
-        eventSource.emit(event_types.MESSAGE_REASONING_EDITED, messageId);
+        await eventSource.emit(event_types.MESSAGE_REASONING_EDITED, messageId);
     });
 
     $(document).on('click', '.mes_reasoning_edit_cancel', function (e) {
@@ -960,7 +960,7 @@ function setReasoningEventHandlers() {
         updateMessageBlock(messageId, message);
         const textarea = messageBlock.find('.reasoning_edit_textarea');
         textarea.remove();
-        eventSource.emit(event_types.MESSAGE_REASONING_DELETED, messageId);
+        await eventSource.emit(event_types.MESSAGE_REASONING_DELETED, messageId);
     });
 
     $(document).on('pointerup', '.mes_reasoning_copy', async function () {
