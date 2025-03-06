@@ -7,7 +7,6 @@ import net from 'node:net';
 import dns from 'node:dns';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import EventEmitter from 'node:events';
 
 import cors from 'cors';
 import { csrfSync } from 'csrf-sync';
