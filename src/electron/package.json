@@ -10,7 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "electron ."
   },
-  "devDependencies": {
+  "dependencies": {
     "electron": "^35.0.0"
   }
 }
