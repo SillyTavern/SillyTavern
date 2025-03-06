@@ -7,6 +7,7 @@ import net from 'node:net';
 import dns from 'node:dns';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import EventEmitter from 'node:events';
 
 import cors from 'cors';
 import { csrfSync } from 'csrf-sync';
@@ -65,6 +66,8 @@ import { init as statsInit, onExit as statsOnExit } from './src/endpoints/stats.
 import { checkForNewContent } from './src/endpoints/content-manager.js';
 import { init as settingsInit } from './src/endpoints/settings.js';
 import { redirectDeprecatedEndpoints, ServerStartup, setupPrivateEndpoints } from './src/server-startup.js';
+
+export const serverStatusEvent = new EventEmitter();
 
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
@@ -348,6 +351,7 @@ async function postSetupTasks(result) {
     console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
 
     setupLogLevel();
+    serverStatusEvent.emit('serverStarted', autorunUrl);
 }
 
 /**
