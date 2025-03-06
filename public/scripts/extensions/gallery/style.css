@@ -3,3 +3,43 @@
     align-items: center;
     justify-content: center;
 }
+
+.gallery-folder-input {
+    background-color: transparent;
+    font-size: calc(var(--mainFontSize)* 0.9);
+    opacity: 0.8;
+    flex-grow: 1;
+}
+
+.gallery-folder-input:placeholder-shown {
+    font-style: italic;
+    opacity: 0.5;
+    border-color: transparent;
+}
+
+.gallery-sort-select {
+    width: max-content;
+    flex: 1;
+    cursor: pointer;
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    width: 100%;
+    opacity: 0.8;
+    background: none;
+    background-image: url(/img/down-arrow.svg);
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    background-size: 8px 5px;
+    padding-right: 20px;
+    font-size: calc(var(--mainFontSize)* 0.9);
+    margin-bottom: 0;
+}
+
+#gallery .dragTitle {
+    margin-right: 30px;
+}
+
+#dragGallery {
+    min-height: 25dvh;
+}

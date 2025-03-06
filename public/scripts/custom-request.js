@@ -86,11 +86,11 @@ export class TextCompletionService {
             signal: new AbortController().signal,
         });
 
-        if (!response.ok) {
-            throw await response.json();
+        const json = await response.json();
+        if (!response.ok || json.error) {
+            throw json;
         }
 
-        const json = await response.json();
         return extractData ? extractMessageFromData(json, this.TYPE) : json;
     }
 
@@ -156,11 +156,11 @@ export class ChatCompletionService {
             signal: new AbortController().signal,
         });
 
-        if (!response.ok) {
-            throw await response.json();
+        const json = await response.json();
+        if (!response.ok || json.error) {
+            throw json;
         }
 
-        const json = await response.json();
         return extractData ? extractMessageFromData(json, this.TYPE) : json;
     }
 

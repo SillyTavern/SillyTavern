@@ -76,18 +76,54 @@ router.post('/upload', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/list/:folder', (request, response) => {
-    const directoryPath = path.join(request.user.directories.userImages, sanitize(request.params.folder));
-
-    if (!fs.existsSync(directoryPath)) {
-        fs.mkdirSync(directoryPath, { recursive: true });
-    }
-
+router.post('/list/:folder?', jsonParser, (request, response) => {
     try {
-        const images = getImages(directoryPath, 'date');
+        if (request.params.folder) {
+            if (request.body.folder) {
+                return response.status(400).send({ error: 'Folder specified in both URL and body' });
+            }
+
+            console.warn('Deprecated: Use POST /api/images/list with folder in request body');
+            request.body.folder = request.params.folder;
+        }
+
+        if (!request.body.folder) {
+            return response.status(400).send({ error: 'No folder specified' });
+        }
+
+        const directoryPath = path.join(request.user.directories.userImages, sanitize(request.body.folder));
+        const sort = request.body.sortField || 'date';
+        const order = request.body.sortOrder || 'asc';
+
+        if (!fs.existsSync(directoryPath)) {
+            fs.mkdirSync(directoryPath, { recursive: true });
+        }
+
+        const images = getImages(directoryPath, sort);
+        if (order === 'desc') {
+            images.reverse();
+        }
         return response.send(images);
     } catch (error) {
         console.error(error);
         return response.status(500).send({ error: 'Unable to retrieve files' });
+    }
+});
+
+router.post('/folders', (request, response) => {
+    try {
+        const directoryPath = request.user.directories.userImages;
+        if (!fs.existsSync(directoryPath)) {
+            fs.mkdirSync(directoryPath, { recursive: true });
+        }
+
+        const folders = fs.readdirSync(directoryPath, { withFileTypes: true })
+            .filter(dirent => dirent.isDirectory())
+            .map(dirent => dirent.name);
+
+        return response.send(folders);
+    } catch (error) {
+        console.error(error);
+        return response.status(500).send({ error: 'Unable to retrieve folders' });
     }
 });
