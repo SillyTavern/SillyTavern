@@ -2,6 +2,7 @@ import { getPresetManager } from './preset-manager.js';
 import { extractMessageFromData, getGenerateUrl, getRequestHeaders } from '../script.js';
 import { getTextGenServer, textgen_types } from './textgen-settings.js';
 import { chat_completion_sources } from './openai.js';
+import { onlyUnique } from './utils.js';
 
 // #region Type Definitions
 /**
@@ -122,7 +123,7 @@ export class TextCompletionService {
             throw new Error('Preset not found');
         }
 
-        const payload = this.presetToGeneratePayload(preset, custom);
+        const payload = this.presetToGeneratePayload(preset, {}, custom);
 
         const data = this.createRequestData({ ...payload, ...custom });
 
@@ -130,230 +131,274 @@ export class TextCompletionService {
     }
 
     /**
-     * Converts a preset configuration into a valid text completion payload
+     * Converts a preset to a valid text completion payload.
      * @param {Object} preset - The preset configuration
-     * @param {Object} customParams - Additional parameters to override preset values
+     * @param {Object} customPreset - Additional parameters to override preset values
+     * @param {TextCompletionRequestBase} custom
      * @returns {Object} - Formatted payload for text completion API
      */
-    static presetToGeneratePayload(preset, customParams = {}) {
+    static presetToGeneratePayload(preset, customPreset = {}, { prompt, model, api_type, max_tokens, api_server, temperature }) {
         if (!preset || typeof preset !== 'object') {
             throw new Error('Invalid preset: must be an object');
         }
 
         // Merge preset with custom parameters
-        const settings = { ...preset, ...customParams };
+        const settings = { ...preset, ...customPreset };
 
-        // Extract API type and determine if dynamic temperature is supported
-        const apiType = settings.api_type || textgen_types.KOBOLD;
+        if (!api_type) {
+            throw new Error('API type cannot be empty');
+        }
+
         const dynatemp = Boolean(settings.dynatemp);
+        const maxTokens = max_tokens || settings.genamt || 150; // Or should we throw an error?
+        const { banned_tokens_array, banned_tokens_string, banned_strings } = this.getBannedTokens(settings.banned_tokens);
 
         // Initialize base payload with common parameters
-        const payload = {
-            'prompt': customParams.prompt || '',
-            'model': settings.model || '',
-            'max_new_tokens': settings.genamt || settings.max_tokens || 150,
-            'max_tokens': settings.genamt || settings.max_tokens || 150,
-            'temperature': settings.temp,
+        let payload = {
+            'prompt': prompt || '',
+            'model': model,
+            'max_new_tokens': maxTokens,
+            'max_tokens': maxTokens,
+            'temperature': temperature ?? dynatemp ? (settings.min_temp + settings.max_temp) / 2 : settings.temp,
             'top_p': settings.top_p,
             'typical_p': settings.typical_p,
             'typical': settings.typical_p,
-            'api_type': apiType,
-            'api_server': customParams.api_server,
-            'stream': false
+            'sampler_seed': settings.seed >= 0 ? settings.seed : undefined,
+            'min_p': settings.min_p,
+            'repetition_penalty': settings.rep_pen,
+            'frequency_penalty': settings.freq_pen,
+            'presence_penalty': settings.presence_pen,
+            'top_k': settings.top_k,
+            'top_a': settings.top_a,
+            'tfs': settings.tfs,
+            'skew': settings.skew,
+            'min_length': api_type === textgen_types.OOBA ? settings.min_length : undefined,
+            'min_tokens': settings.min_length,
+            'max_length': settings.max_length,
+            'num_beams': api_type === textgen_types.OOBA ? settings.num_beams : undefined,
+            'length_penalty': api_type === textgen_types.OOBA ? settings.length_penalty : undefined,
+            'early_stopping': api_type === textgen_types.OOBA ? settings.early_stopping : undefined,
+            'add_bos_token': settings.add_bos_token,
+            'dynamic_temperature': dynatemp ? true : undefined,
+            'dynatemp_low': dynatemp ? settings.min_temp : undefined,
+            'dynatemp_high': dynatemp ? settings.max_temp : undefined,
+            'dynatemp_range': dynatemp ? (settings.max_temp - settings.min_temp) / 2 : undefined,
+            'dynatemp_exponent': dynatemp ? settings.dynatemp_exponent : undefined,
+            'smoothing_factor': settings.smoothing_factor,
+            'smoothing_curve': settings.smoothing_curve,
+            'dry_allowed_length': settings.dry_allowed_length,
+            'dry_multiplier': settings.dry_multiplier,
+            'dry_base': settings.dry_base,
+            'dry_sequence_breakers': settings.dry_sequence_breakers,
+            'dry_penalty_last_n': settings.dry_penalty_last_n,
+            'max_tokens_second': settings.max_tokens_second,
+            'sampler_priority': api_type === textgen_types.OOBA ? settings.sampler_priority : undefined,
+            'samplers': api_type === textgen_types.LLAMACPP ? settings.samplers : undefined,
+            'ban_eos_token': settings.ban_eos_token,
+            'skip_special_tokens': settings.skip_special_tokens,
+            'include_reasoning': settings.include_reasoning,
+            'epsilon_cutoff': [textgen_types.OOBA, textgen_types.MANCER].includes(api_type) ? settings.epsilon_cutoff : undefined,
+            'eta_cutoff': [textgen_types.OOBA, textgen_types.MANCER].includes(api_type) ? settings.eta_cutoff : undefined,
+            'mirostat_mode': settings.mirostat_mode,
+            'mirostat_tau': settings.mirostat_tau,
+            'mirostat_eta': settings.mirostat_eta,
+            'custom_token_bans': [textgen_types.APHRODITE, textgen_types.MANCER].includes(settings.type) ? banned_tokens_array : banned_tokens_string,
+            'banned_strings': banned_strings,
+            'api_type': api_type,
+            'api_server': api_server,
+            'sampler_order': api_type === textgen_types.KOBOLDCPP ? settings.sampler_order : undefined,
+            'xtc_threshold': settings.xtc_threshold,
+            'xtc_probability': settings.xtc_probability,
+            'nsigma': settings.nsigma,
+            'stream': Boolean(settings.streaming),
+            'bypass_status_check': Boolean(settings.bypass_status_check),
+            'rep_pen_size': settings.rep_pen_size
         };
 
-        // Add seed parameter if present
-        if (settings.seed >= 0) {
-            payload.sampler_seed = settings.seed;
+        // Create non-Aphrodite parameter set
+        const nonAphroditeParams = {
+            'rep_pen': settings.rep_pen,
+            'rep_pen_range': settings.rep_pen_range,
+            'repetition_decay': api_type === textgen_types.TABBY ? settings.rep_pen_decay : undefined,
+            'repetition_penalty_range': settings.rep_pen_range,
+            'encoder_repetition_penalty': api_type === textgen_types.OOBA ? settings.encoder_rep_pen : undefined,
+            'no_repeat_ngram_size': api_type === textgen_types.OOBA ? settings.no_repeat_ngram_size : undefined,
+            'penalty_alpha': api_type === textgen_types.OOBA ? settings.penalty_alpha : undefined,
+            'temperature_last': (api_type === textgen_types.OOBA || api_type === textgen_types.APHRODITE || api_type === textgen_types.TABBY) ? settings.temperature_last : undefined,
+            'speculative_ngram': api_type === textgen_types.TABBY ? settings.speculative_ngram : undefined,
+            'do_sample': api_type === textgen_types.OOBA ? settings.do_sample : undefined,
+            'seed': settings.seed >= 0 ? settings.seed : undefined,
+            'guidance_scale': settings.guidance_scale || 1,
+            'negative_prompt': settings.negative_prompt || '',
+            'grammar_string': settings.grammar_string,
+            'json_schema': [textgen_types.TABBY, textgen_types.LLAMACPP].includes(api_type) ? settings.json_schema : undefined,
+            // llama.cpp aliases
+            'repeat_penalty': settings.rep_pen,
+            'tfs_z': settings.tfs,
+            'repeat_last_n': settings.rep_pen_range,
+            'n_predict': maxTokens,
+            'num_predict': maxTokens,
+            'mirostat': settings.mirostat_mode,
+            'ignore_eos': settings.ban_eos_token,
+            'rep_pen_slope': settings.rep_pen_slope,
+        };
+
+        // Create VLLM parameter set
+        const vllmParams = {
+            'n': settings.n > 1 ? settings.n : 1,
+            'ignore_eos': settings.ignore_eos_token,
+            'spaces_between_special_tokens': settings.spaces_between_special_tokens,
+            'seed': settings.seed >= 0 ? settings.seed : undefined,
+        };
+
+        // Create Aphrodite parameter set
+        const aphroditeParams = {
+            'n': settings.n > 1 ? settings.n : 1,
+            'frequency_penalty': settings.freq_pen,
+            'presence_penalty': settings.presence_pen,
+            'repetition_penalty': settings.rep_pen,
+            'seed': settings.seed >= 0 ? settings.seed : undefined,
+            'stop': payload.stop,
+            'temperature': payload.temperature,
+            'temperature_last': settings.temperature_last,
+            'top_p': settings.top_p,
+            'top_k': settings.top_k,
+            'top_a': settings.top_a,
+            'min_p': settings.min_p,
+            'tfs': settings.tfs,
+            'eta_cutoff': settings.eta_cutoff,
+            'epsilon_cutoff': settings.epsilon_cutoff,
+            'typical_p': settings.typical_p,
+            'smoothing_factor': settings.smoothing_factor,
+            'smoothing_curve': settings.smoothing_curve,
+            'ignore_eos': settings.ignore_eos_token,
+            'min_tokens': settings.min_length,
+            'skip_special_tokens': settings.skip_special_tokens,
+            'spaces_between_special_tokens': settings.spaces_between_special_tokens,
+            'guided_grammar': settings.grammar_string,
+            'guided_json': settings.json_schema,
+            'early_stopping': false, // hardcoded as per legacy code
+            'include_stop_str_in_output': false,
+            'dynatemp_min': dynatemp ? settings.min_temp : undefined,
+            'dynatemp_max': dynatemp ? settings.max_temp : undefined,
+            'dynatemp_exponent': dynatemp ? settings.dynatemp_exponent : undefined,
+            'xtc_threshold': settings.xtc_threshold,
+            'xtc_probability': settings.xtc_probability,
+            'nsigma': settings.nsigma,
+            'custom_token_bans': banned_tokens_array,
+            'no_repeat_ngram_size': settings.no_repeat_ngram_size,
+            'sampler_priority': api_type === textgen_types.APHRODITE && settings.samplers_priorities ?
+                settings.samplers_priorities : undefined,
+        };
+
+        // API-specific adjustments
+
+        // OPENROUTER
+        if (api_type === textgen_types.OPENROUTER) {
+            payload.provider = settings.openrouter_providers;
+            payload.allow_fallbacks = settings.openrouter_allow_fallbacks;
         }
 
-        // Add common parameters
-        payload.min_p = settings.min_p;
-        payload.top_k = settings.top_k;
-        payload.repetition_penalty = settings.rep_pen;
-        payload.frequency_penalty = settings.freq_pen;
-        payload.presence_penalty = settings.presence_pen;
-        payload.top_a = settings.top_a;
-        payload.tfs = settings.tfs;
-        payload.skew = settings.skew;
-        payload.min_length = settings.min_length;
-        payload.min_tokens = settings.min_length;
-
-        // Handle dynamic temperature settings
-        if (dynatemp) {
-            payload.dynamic_temperature = true;
-            payload.dynatemp_low = settings.min_temp;
-            payload.dynatemp_high = settings.max_temp;
-            payload.dynatemp_range = (settings.max_temp - settings.min_temp) / 2;
-            payload.dynatemp_exponent = settings.dynatemp_exponent;
-        }
-
-        // Add token control parameters
-        payload.add_bos_token = settings.add_bos_token;
-        payload.ban_eos_token = settings.ban_eos_token;
-        payload.skip_special_tokens = settings.skip_special_tokens;
-
-        // Add "dry" sampling parameters
-        payload.dry_allowed_length = settings.dry_allowed_length;
-        payload.dry_multiplier = settings.dry_multiplier;
-        payload.dry_base = settings.dry_base;
-        payload.dry_sequence_breakers = settings.dry_sequence_breakers;
-        payload.dry_penalty_last_n = settings.dry_penalty_last_n;
-
-        // Add mirostat parameters
-        payload.mirostat_mode = settings.mirostat_mode;
-        payload.mirostat_tau = settings.mirostat_tau;
-        payload.mirostat_eta = settings.mirostat_eta;
-
-        // Add cutoff parameters
-        payload.epsilon_cutoff = settings.epsilon_cutoff;
-        payload.eta_cutoff = settings.eta_cutoff;
-
-        // Add experimental parameters
-        payload.xtc_threshold = settings.xtc_threshold;
-        payload.xtc_probability = settings.xtc_probability;
-        payload.nsigma = settings.nsigma;
-
-        // Add stopping strings if provided
-        if (customParams.stop) {
-            payload.stopping_strings = customParams.stop;
-            payload.stop = customParams.stop;
-        }
-
-        /**
-         * Banned tokens are mid, because ST uses custom format.
-         * If line is quoted, it converts to tokens.
-         * Otherwise, it's just a token.
-         * So I'm not sure we should do the same thing here.
-         * Let it be exercise by the developer.
-         */
-        if (settings.banned_tokens) {
-            payload.custom_token_bans = settings.banned_tokens;
-        }
-
-        // === API-specific parameters ===
-
-        // OOBA specific parameters
-        if (apiType === textgen_types.OOBA) {
-            payload.sampler_priority = settings.sampler_priority;
-            payload.num_beams = settings.num_beams;
-            payload.length_penalty = settings.length_penalty;
-            payload.early_stopping = settings.early_stopping;
-            payload.encoder_repetition_penalty = settings.encoder_rep_pen;
-            payload.no_repeat_ngram_size = settings.no_repeat_ngram_size;
-            payload.penalty_alpha = settings.penalty_alpha;
-            payload.temperature_last = settings.temperature_last;
-            payload.do_sample = settings.do_sample;
-            payload.guidance_scale = settings.guidance_scale;
-            payload.negative_prompt = settings.negative_prompt;
-            payload.grammar_string = settings.grammar_string;
-        }
-
-        // APHRODITE specific parameters
-        if (apiType === textgen_types.APHRODITE) {
-            // Multi-generation support
-            payload.n = settings.n > 1 ? settings.n : 1;
-            payload.temperature_last = settings.temperature_last;
-            payload.ignore_eos = settings.ignore_eos_token;
-            payload.spaces_between_special_tokens = settings.spaces_between_special_tokens;
-            payload.guided_grammar = settings.grammar_string;
-            payload.guided_json = settings.json_schema;
-            payload.early_stopping = false;
-            payload.include_stop_str_in_output = false;
-            payload.no_repeat_ngram_size = settings.no_repeat_ngram_size;
-
-            if (dynatemp) {
-                payload.dynatemp_min = settings.min_temp;
-                payload.dynatemp_max = settings.max_temp;
-            }
-
-            if (settings.samplers_priorities) {
-                payload.sampler_priority = settings.samplers_priorities;
-            }
-        }
-
-        // LLAMACPP/OLLAMA specific parameters
-        if (apiType === textgen_types.LLAMACPP || apiType === textgen_types.OLLAMA) {
-            payload.samplers = settings.samplers;
+        // KOBOLDCPP
+        if (api_type === textgen_types.KOBOLDCPP) {
             payload.grammar = settings.grammar_string;
-            payload.json_schema = settings.json_schema;
-            payload.ignore_eos = settings.ignore_eos_token;
-            payload.cache_prompt = true;
-            payload.repeat_penalty = settings.rep_pen;
-            payload.tfs_z = settings.tfs;
-            payload.repeat_last_n = settings.rep_pen_range;
-            payload.n_predict = payload.max_tokens;
-            payload.num_predict = payload.max_tokens;
-            payload.rep_pen_slope = settings.rep_pen_slope;
+            payload.trim_stop = true;
+        }
 
-            // Handle logit bias
-            if (Array.isArray(settings.logit_bias) && settings.logit_bias.length) {
-                payload.logit_bias = settings.logit_bias;
+        // HUGGINGFACE
+        if (api_type === textgen_types.HUGGINGFACE) {
+            payload.top_p = Math.min(Math.max(Number(payload.top_p), 0.0), 0.999);
+            payload.stop = Array.isArray(payload.stop) ? payload.stop.slice(0, 4) : [];
+            nonAphroditeParams.seed = settings.seed >= 0 ? settings.seed : Math.floor(Math.random() * Math.pow(2, 32));
+        }
+
+        // MANCER
+        if (api_type === textgen_types.MANCER) {
+            payload.n = settings.n > 1 ? settings.n : 1;
+            if (typeof payload.epsilon_cutoff === 'number') {
+                payload.epsilon_cutoff /= 1000;
+            }
+            if (typeof payload.eta_cutoff === 'number') {
+                payload.eta_cutoff /= 1000;
+            }
+            payload.dynatemp_mode = payload.dynamic_temperature ? 1 : 0;
+            payload.dynatemp_min = payload.dynatemp_low;
+            payload.dynatemp_max = payload.dynatemp_high;
+            delete payload.dynatemp_low;
+            delete payload.dynatemp_high;
+        }
+
+        // TABBY
+        if (api_type === textgen_types.TABBY) {
+            payload.n = settings.n > 1 ? settings.n : 1;
+        }
+
+        // Merge appropriate parameter sets based on API type
+        switch (api_type) {
+            case textgen_types.VLLM:
+            case textgen_types.INFERMATICAI:
+                payload = Object.assign(payload, vllmParams);
+                break;
+
+            case textgen_types.APHRODITE:
+                payload = Object.assign(payload, aphroditeParams);
+                break;
+
+            default:
+                payload = Object.assign(payload, nonAphroditeParams);
+                break;
+        }
+
+        // Handle logit bias
+        if (Array.isArray(settings.logit_bias) && settings.logit_bias.length > 0) {
+            payload.logit_bias = settings.logit_bias;
+        }
+
+        // Special handling for LLAMACPP/OLLAMA
+        if (api_type === textgen_types.LLAMACPP || api_type === textgen_types.OLLAMA) {
+            // Convert bias and token bans to array of arrays
+            const logitBiasArray = (payload.logit_bias && typeof payload.logit_bias === 'object' && Object.keys(payload.logit_bias).length > 0)
+                ? Object.entries(payload.logit_bias).map(([key, value]) => [Number(key), value])
+                : [];
+
+            const tokenBans = banned_tokens_array;
+            if (tokenBans.length > 0) {
+                logitBiasArray.push(...tokenBans.map(x => [Number(x), false]));
             }
 
-            // Handle grammar vs json_schema conflict
+            // Parse dry_sequence_breakers
+            let sequenceBreakers;
+            try {
+                if (typeof payload.dry_sequence_breakers === 'string') {
+                    sequenceBreakers = JSON.parse(payload.dry_sequence_breakers);
+                }
+            } catch {
+                if (typeof payload.dry_sequence_breakers === 'string') {
+                    sequenceBreakers = payload.dry_sequence_breakers.split(',');
+                }
+            }
+
+            const llamaCppParams = {
+                'logit_bias': logitBiasArray.length > 0 ? logitBiasArray : undefined,
+                'grammar': settings.grammar_string,
+                'cache_prompt': true,
+                'dry_sequence_breakers': sequenceBreakers,
+            };
+
+            payload = Object.assign(payload, llamaCppParams);
+
+            if (!sequenceBreakers || (Array.isArray(sequenceBreakers) && sequenceBreakers.length === 0)) {
+                delete payload.dry_sequence_breakers;
+            }
+        }
+
+        // Handle grammar vs json_schema conflict for LLAMACPP
+        if (api_type === textgen_types.LLAMACPP) {
             if (payload.json_schema && Object.keys(payload.json_schema).length > 0) {
                 delete payload.grammar_string;
                 delete payload.grammar;
             } else {
                 delete payload.json_schema;
-            }
-        }
-
-        // KOBOLDCPP specific parameters
-        if (apiType === textgen_types.KOBOLDCPP) {
-            payload.grammar = settings.grammar_string;
-            payload.trim_stop = true;
-            payload.sampler_order = settings.sampler_order;
-        }
-
-        // VLLM/InfermaticAI specific parameters
-        if (apiType === textgen_types.VLLM || apiType === textgen_types.INFERMATICAI) {
-            payload.n = settings.n > 1 ? settings.n : 1;
-            payload.ignore_eos = settings.ignore_eos_token;
-            payload.spaces_between_special_tokens = settings.spaces_between_special_tokens;
-            if (settings.seed >= 0) {
-                payload.seed = settings.seed;
-            }
-        }
-
-        // MANCER specific parameters
-        if (apiType === textgen_types.MANCER) {
-            payload.n = settings.n > 1 ? settings.n : 1;
-            // Convert epsilon/eta cutoff from permille to float
-            payload.epsilon_cutoff = settings.epsilon_cutoff / 1000;
-            payload.eta_cutoff = settings.eta_cutoff / 1000;
-            payload.dynatemp_mode = dynatemp ? 1 : 0;
-            payload.dynatemp_min = settings.min_temp;
-            payload.dynatemp_max = settings.max_temp;
-            delete payload.dynatemp_low;
-            delete payload.dynatemp_high;
-        }
-
-        // TABBY specific parameters
-        if (apiType === textgen_types.TABBY) {
-            payload.n = settings.n > 1 ? settings.n : 1;
-            payload.temperature_last = settings.temperature_last;
-            payload.repetition_decay = settings.rep_pen_decay;
-            payload.speculative_ngram = settings.speculative_ngram;
-        }
-
-        // OPENROUTER specific parameters
-        if (apiType === textgen_types.OPENROUTER) {
-            payload.provider = settings.openrouter_providers;
-            payload.allow_fallbacks = settings.openrouter_allow_fallbacks;
-        }
-
-        // HUGGINGFACE specific parameters
-        if (apiType === textgen_types.HUGGINGFACE) {
-            payload.top_p = Math.min(Math.max(Number(payload.top_p), 0.0), 0.999);
-            if (Array.isArray(payload.stop)) {
-                payload.stop = payload.stop.slice(0, 4);
-            }
-            if (settings.seed >= 0) {
-                payload.seed = settings.seed;
-            } else {
-                payload.seed = Math.floor(Math.random() * Math.pow(2, 32));
             }
         }
 
@@ -365,6 +410,36 @@ export class TextCompletionService {
         });
 
         return payload;
+    }
+
+    /**
+     * Quote and number arrays are supported.
+     * @param {string} value
+     * @returns {{banned_tokens_array: number[], banned_tokens_string: string, banned_strings: string[]}} {[1,2,3], "1,2,3", ["text"]}
+     */
+    static getBannedTokens(value) {
+        if (!value) {
+            return { banned_tokens_array: [], banned_tokens_string: '', banned_strings: [] };
+        }
+
+        const lines = value.split('\n');
+        const banned_tokens_array = [];
+        const banned_strings = [];
+        for (const line of lines) {
+            if (line.startsWith('[') && line.endsWith(']')) {
+                try {
+                    const tokens = JSON.parse(line);
+                    banned_tokens_array.push(...tokens);
+                } catch (error) {
+                    console.log('Error parsing banned tokens:', line, error);
+                }
+            } else if (line.startsWith('"') && line.endsWith('"')) {
+                banned_strings.push(line.slice(1, -1));
+            }
+        }
+
+        const banned_tokens_string = banned_tokens_array.filter(onlyUnique).join(',');
+        return { banned_tokens_array, banned_tokens_string, banned_strings };
     }
 }
 
@@ -449,7 +524,7 @@ export class ChatCompletionService {
     }
 
     /**
-     * Converts a preset configuration into a valid chat completion payload
+     * Converts a preset to a valid chat completion payload
      * @param {Object} preset - The preset configuration
      * @param {Object} customParams - Additional parameters to override preset values
      * @returns {Object} - Formatted payload for chat completion API
