@@ -600,12 +600,18 @@ async function translateMessageEdit(messageId) {
     const chat = context.chat;
     const message = chat[messageId];
 
-    if (message.is_system || extension_settings.translate.auto_mode == autoModeOptions.NONE) {
-        return;
+    let anyChange = false;
+    if (message.is_system || (extension_settings.translate.auto_mode == autoModeOptions.NONE && message.extra?.display_text)) {
+        delete message.extra.display_text;
+        updateMessageBlock(messageId, message);
+        anyChange = true;
+    } else if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
+        await translateIncomingMessage(messageId);
+        anyChange = true;
     }
 
-    if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
-        await translateIncomingMessage(messageId);
+    if (anyChange) {
+        await context.saveChat();
     }
 }
 
@@ -647,7 +653,7 @@ async function onMessageTranslateClick() {
     let alreadyTranslated = false;
     if (message?.extra?.display_text) {
         delete message.extra.display_text;
-        updateMessageBlock(messageId, message);
+        updateMessageBlock(Number(messageId), message);
         alreadyTranslated = true;
     }
     if (message?.extra?.reasoning_display_text) {

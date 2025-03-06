@@ -892,10 +892,14 @@ function setReasoningEventHandlers() {
         }
 
         const textarea = messageBlock.find('.reasoning_edit_textarea');
-        updateReasoningFromValue(message, String(textarea.val()));
+        const newReasoning = String(textarea.val());
+        textarea.remove();
+        if (newReasoning === message.extra.reasoning) {
+            return;
+        }
+        updateReasoningFromValue(message, newReasoning);
         await saveChatConditional();
         updateMessageBlock(messageId, message);
-        textarea.remove();
 
         messageBlock.find('.mes_edit_done:visible').trigger('click');
         await eventSource.emit(event_types.MESSAGE_REASONING_EDITED, messageId);
