@@ -182,6 +182,10 @@ async function translateIncomingMessage(messageId) {
     const context = getContext();
     const message = context.chat[messageId];
 
+    if (!message) {
+        return;
+    }
+
     if (typeof message.extra !== 'object') {
         message.extra = {};
     }
@@ -205,6 +209,10 @@ async function translateIncomingMessage(messageId) {
 async function translateIncomingMessageReasoning(messageId) {
     const context = getContext();
     const message = context.chat[messageId];
+
+    if (!message) {
+        return false;
+    }
 
     if (typeof message.extra !== 'object') {
         message.extra = {};
@@ -672,8 +680,8 @@ async function onMessageTranslateClick() {
 }
 
 const handleIncomingMessage = createEventHandler(async (messageId) => {
-    await translateIncomingMessage(messageId);
     await translateIncomingMessageReasoning(messageId);
+    await translateIncomingMessage(messageId);
 }, () => shouldTranslate(incomingTypes));
 const handleOutgoingMessage = createEventHandler(translateOutgoingMessage, () => shouldTranslate(outgoingTypes));
 const handleImpersonateReady = createEventHandler(translateImpersonate, () => shouldTranslate(incomingTypes));
