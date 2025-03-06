@@ -671,7 +671,10 @@ async function onMessageTranslateClick() {
     await context.saveChat();
 }
 
-const handleIncomingMessage = createEventHandler(translateIncomingMessage, () => shouldTranslate(incomingTypes));
+const handleIncomingMessage = createEventHandler(async (messageId) => {
+    await translateIncomingMessage(messageId);
+    await translateIncomingMessageReasoning(messageId);
+}, () => shouldTranslate(incomingTypes));
 const handleOutgoingMessage = createEventHandler(translateOutgoingMessage, () => shouldTranslate(outgoingTypes));
 const handleImpersonateReady = createEventHandler(translateImpersonate, () => shouldTranslate(incomingTypes));
 const handleMessageEdit = createEventHandler(translateMessageEdit, () => true);
