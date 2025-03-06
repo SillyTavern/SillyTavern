@@ -26,10 +26,10 @@ function createSillyTavernWindow(autorunUrl) {
 
 function startServer() {
     return new Promise((_resolve, _reject) => {
-        const sillyTavernRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+        const sillyTavernRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
         process.chdir(sillyTavernRoot);
 
-        import('../server.js')
+        import('../../server.js')
             .then((sillyTavern) => {
                 sillyTavern.serverStatusEvent.addListener('serverStarted', createSillyTavernWindow);
             });
