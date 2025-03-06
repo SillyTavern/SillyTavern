@@ -1,6 +1,6 @@
 import { getPresetManager } from './preset-manager.js';
 import { extractMessageFromData, getGenerateUrl, getRequestHeaders } from '../script.js';
-import { getTextGenServer } from './textgen-settings.js';
+import { getTextGenServer, textgen_types } from './textgen-settings.js';
 import { chat_completion_sources } from './openai.js';
 
 // #region Type Definitions
@@ -58,7 +58,7 @@ export class TextCompletionService {
      * @returns {TextCompletionPayload}
      */
     static createRequestData({ prompt, max_tokens, model, api_type, api_server, temperature, ...props }) {
-        return {
+        const payload = {
             ...props,
             prompt,
             max_tokens,
@@ -69,6 +69,15 @@ export class TextCompletionService {
             temperature,
             stream: false,
         };
+
+        // Remove undefined values to avoid API errors
+        Object.keys(payload).forEach(key => {
+            if (payload[key] === undefined) {
+                delete payload[key];
+            }
+        });
+
+        return payload;
     }
 
     /**
@@ -113,9 +122,249 @@ export class TextCompletionService {
             throw new Error('Preset not found');
         }
 
-        const data = this.createRequestData({ ...preset, ...custom });
+        const payload = this.presetToGeneratePayload(preset, custom);
+
+        const data = this.createRequestData({ ...payload, ...custom });
 
         return await this.sendRequest(data, extractData);
+    }
+
+    /**
+     * Converts a preset configuration into a valid text completion payload
+     * @param {Object} preset - The preset configuration
+     * @param {Object} customParams - Additional parameters to override preset values
+     * @returns {Object} - Formatted payload for text completion API
+     */
+    static presetToGeneratePayload(preset, customParams = {}) {
+        if (!preset || typeof preset !== 'object') {
+            throw new Error('Invalid preset: must be an object');
+        }
+
+        // Merge preset with custom parameters
+        const settings = { ...preset, ...customParams };
+
+        // Extract API type and determine if dynamic temperature is supported
+        const apiType = settings.api_type || textgen_types.KOBOLD;
+        const dynatemp = Boolean(settings.dynatemp);
+
+        // Initialize base payload with common parameters
+        const payload = {
+            'prompt': customParams.prompt || '',
+            'model': settings.model || '',
+            'max_new_tokens': settings.genamt || settings.max_tokens || 150,
+            'max_tokens': settings.genamt || settings.max_tokens || 150,
+            'temperature': settings.temp,
+            'top_p': settings.top_p,
+            'typical_p': settings.typical_p,
+            'typical': settings.typical_p,
+            'api_type': apiType,
+            'api_server': customParams.api_server,
+            'stream': false
+        };
+
+        // Add seed parameter if present
+        if (settings.seed >= 0) {
+            payload.sampler_seed = settings.seed;
+        }
+
+        // Add common parameters
+        payload.min_p = settings.min_p;
+        payload.top_k = settings.top_k;
+        payload.repetition_penalty = settings.rep_pen;
+        payload.frequency_penalty = settings.freq_pen;
+        payload.presence_penalty = settings.presence_pen;
+        payload.top_a = settings.top_a;
+        payload.tfs = settings.tfs;
+        payload.skew = settings.skew;
+        payload.min_length = settings.min_length;
+        payload.min_tokens = settings.min_length;
+
+        // Handle dynamic temperature settings
+        if (dynatemp) {
+            payload.dynamic_temperature = true;
+            payload.dynatemp_low = settings.min_temp;
+            payload.dynatemp_high = settings.max_temp;
+            payload.dynatemp_range = (settings.max_temp - settings.min_temp) / 2;
+            payload.dynatemp_exponent = settings.dynatemp_exponent;
+        }
+
+        // Add token control parameters
+        payload.add_bos_token = settings.add_bos_token;
+        payload.ban_eos_token = settings.ban_eos_token;
+        payload.skip_special_tokens = settings.skip_special_tokens;
+
+        // Add "dry" sampling parameters
+        payload.dry_allowed_length = settings.dry_allowed_length;
+        payload.dry_multiplier = settings.dry_multiplier;
+        payload.dry_base = settings.dry_base;
+        payload.dry_sequence_breakers = settings.dry_sequence_breakers;
+        payload.dry_penalty_last_n = settings.dry_penalty_last_n;
+
+        // Add mirostat parameters
+        payload.mirostat_mode = settings.mirostat_mode;
+        payload.mirostat_tau = settings.mirostat_tau;
+        payload.mirostat_eta = settings.mirostat_eta;
+
+        // Add cutoff parameters
+        payload.epsilon_cutoff = settings.epsilon_cutoff;
+        payload.eta_cutoff = settings.eta_cutoff;
+
+        // Add experimental parameters
+        payload.xtc_threshold = settings.xtc_threshold;
+        payload.xtc_probability = settings.xtc_probability;
+        payload.nsigma = settings.nsigma;
+
+        // Add stopping strings if provided
+        if (customParams.stop) {
+            payload.stopping_strings = customParams.stop;
+            payload.stop = customParams.stop;
+        }
+
+        /**
+         * Banned tokens are mid, because ST uses custom format.
+         * If line is quoted, it converts to tokens.
+         * Otherwise, it's just a token.
+         * So I'm not sure we should do the same thing here.
+         * Let it be exercise by the developer.
+         */
+        if (settings.banned_tokens) {
+            payload.custom_token_bans = settings.banned_tokens;
+        }
+
+        // === API-specific parameters ===
+
+        // OOBA specific parameters
+        if (apiType === textgen_types.OOBA) {
+            payload.sampler_priority = settings.sampler_priority;
+            payload.num_beams = settings.num_beams;
+            payload.length_penalty = settings.length_penalty;
+            payload.early_stopping = settings.early_stopping;
+            payload.encoder_repetition_penalty = settings.encoder_rep_pen;
+            payload.no_repeat_ngram_size = settings.no_repeat_ngram_size;
+            payload.penalty_alpha = settings.penalty_alpha;
+            payload.temperature_last = settings.temperature_last;
+            payload.do_sample = settings.do_sample;
+            payload.guidance_scale = settings.guidance_scale;
+            payload.negative_prompt = settings.negative_prompt;
+            payload.grammar_string = settings.grammar_string;
+        }
+
+        // APHRODITE specific parameters
+        if (apiType === textgen_types.APHRODITE) {
+            // Multi-generation support
+            payload.n = settings.n > 1 ? settings.n : 1;
+            payload.temperature_last = settings.temperature_last;
+            payload.ignore_eos = settings.ignore_eos_token;
+            payload.spaces_between_special_tokens = settings.spaces_between_special_tokens;
+            payload.guided_grammar = settings.grammar_string;
+            payload.guided_json = settings.json_schema;
+            payload.early_stopping = false;
+            payload.include_stop_str_in_output = false;
+            payload.no_repeat_ngram_size = settings.no_repeat_ngram_size;
+
+            if (dynatemp) {
+                payload.dynatemp_min = settings.min_temp;
+                payload.dynatemp_max = settings.max_temp;
+            }
+
+            if (settings.samplers_priorities) {
+                payload.sampler_priority = settings.samplers_priorities;
+            }
+        }
+
+        // LLAMACPP/OLLAMA specific parameters
+        if (apiType === textgen_types.LLAMACPP || apiType === textgen_types.OLLAMA) {
+            payload.samplers = settings.samplers;
+            payload.grammar = settings.grammar_string;
+            payload.json_schema = settings.json_schema;
+            payload.ignore_eos = settings.ignore_eos_token;
+            payload.cache_prompt = true;
+            payload.repeat_penalty = settings.rep_pen;
+            payload.tfs_z = settings.tfs;
+            payload.repeat_last_n = settings.rep_pen_range;
+            payload.n_predict = payload.max_tokens;
+            payload.num_predict = payload.max_tokens;
+            payload.rep_pen_slope = settings.rep_pen_slope;
+
+            // Handle logit bias
+            if (Array.isArray(settings.logit_bias) && settings.logit_bias.length) {
+                payload.logit_bias = settings.logit_bias;
+            }
+
+            // Handle grammar vs json_schema conflict
+            if (payload.json_schema && Object.keys(payload.json_schema).length > 0) {
+                delete payload.grammar_string;
+                delete payload.grammar;
+            } else {
+                delete payload.json_schema;
+            }
+        }
+
+        // KOBOLDCPP specific parameters
+        if (apiType === textgen_types.KOBOLDCPP) {
+            payload.grammar = settings.grammar_string;
+            payload.trim_stop = true;
+            payload.sampler_order = settings.sampler_order;
+        }
+
+        // VLLM/InfermaticAI specific parameters
+        if (apiType === textgen_types.VLLM || apiType === textgen_types.INFERMATICAI) {
+            payload.n = settings.n > 1 ? settings.n : 1;
+            payload.ignore_eos = settings.ignore_eos_token;
+            payload.spaces_between_special_tokens = settings.spaces_between_special_tokens;
+            if (settings.seed >= 0) {
+                payload.seed = settings.seed;
+            }
+        }
+
+        // MANCER specific parameters
+        if (apiType === textgen_types.MANCER) {
+            payload.n = settings.n > 1 ? settings.n : 1;
+            // Convert epsilon/eta cutoff from permille to float
+            payload.epsilon_cutoff = settings.epsilon_cutoff / 1000;
+            payload.eta_cutoff = settings.eta_cutoff / 1000;
+            payload.dynatemp_mode = dynatemp ? 1 : 0;
+            payload.dynatemp_min = settings.min_temp;
+            payload.dynatemp_max = settings.max_temp;
+            delete payload.dynatemp_low;
+            delete payload.dynatemp_high;
+        }
+
+        // TABBY specific parameters
+        if (apiType === textgen_types.TABBY) {
+            payload.n = settings.n > 1 ? settings.n : 1;
+            payload.temperature_last = settings.temperature_last;
+            payload.repetition_decay = settings.rep_pen_decay;
+            payload.speculative_ngram = settings.speculative_ngram;
+        }
+
+        // OPENROUTER specific parameters
+        if (apiType === textgen_types.OPENROUTER) {
+            payload.provider = settings.openrouter_providers;
+            payload.allow_fallbacks = settings.openrouter_allow_fallbacks;
+        }
+
+        // HUGGINGFACE specific parameters
+        if (apiType === textgen_types.HUGGINGFACE) {
+            payload.top_p = Math.min(Math.max(Number(payload.top_p), 0.0), 0.999);
+            if (Array.isArray(payload.stop)) {
+                payload.stop = payload.stop.slice(0, 4);
+            }
+            if (settings.seed >= 0) {
+                payload.seed = settings.seed;
+            } else {
+                payload.seed = Math.floor(Math.random() * Math.pow(2, 32));
+            }
+        }
+
+        // Remove undefined values to avoid API errors
+        Object.keys(payload).forEach(key => {
+            if (payload[key] === undefined) {
+                delete payload[key];
+            }
+        });
+
+        return payload;
     }
 }
 
@@ -130,7 +379,7 @@ export class ChatCompletionService {
      * @returns {ChatCompletionPayload}
      */
     static createRequestData({ messages, model, chat_completion_source, max_tokens, temperature, ...props }) {
-        return {
+        const payload = {
             ...props,
             messages,
             model,
@@ -139,6 +388,15 @@ export class ChatCompletionService {
             temperature,
             stream: false,
         };
+
+        // Remove undefined values to avoid API errors
+        Object.keys(payload).forEach(key => {
+            if (payload[key] === undefined) {
+                delete payload[key];
+            }
+        });
+
+        return payload;
     }
 
     /**
@@ -183,7 +441,7 @@ export class ChatCompletionService {
             throw new Error('Preset not found');
         }
 
-        const payload = ChatCompletionService.presetToGeneratePayload(preset, custom);
+        const payload = this.presetToGeneratePayload(preset, custom);
 
         const data = this.createRequestData({ ...payload, ...custom });
 
@@ -381,6 +639,13 @@ export class ChatCompletionService {
             delete payload.presence_penalty;
             delete payload.stop;
         }
+
+        // Remove undefined values to avoid API errors
+        Object.keys(payload).forEach(key => {
+            if (payload[key] === undefined) {
+                delete payload[key];
+            }
+        });
 
         return payload;
     }
