@@ -96,6 +96,11 @@ const keyMigrationMap = [
         newKey: 'logging.minLogLevel',
         migrate: (value) => value,
     },
+    {
+        oldKey: 'cardsCacheCapacity',
+        newKey: 'performance.memoryCacheCapacity',
+        migrate: (value) => `${value}mb`,
+    },
     // uncomment one release after 1.12.13
     /*
     {

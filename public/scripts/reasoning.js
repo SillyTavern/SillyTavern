@@ -167,6 +167,8 @@ export class ReasoningHandler {
         this.type = null;
         /** @type {string} The reasoning output */
         this.reasoning = '';
+        /** @type {string?} The reasoning output display in case of translate or other */
+        this.reasoningDisplayText = null;
         /** @type {Date} When the reasoning started */
         this.startTime = null;
         /** @type {Date} When the reasoning ended */
@@ -234,6 +236,7 @@ export class ReasoningHandler {
 
         this.type = extra?.reasoning_type;
         this.reasoning = extra?.reasoning ?? '';
+        this.reasoningDisplayText = extra?.reasoning_display_text ?? null;
 
         if (this.state !== ReasoningState.None) {
             this.initialTime = new Date(chat[messageId].gen_started);
@@ -249,6 +252,7 @@ export class ReasoningHandler {
             this.state = this.#isHiddenReasoningModel ? ReasoningState.Thinking : ReasoningState.None;
             this.type = null;
             this.reasoning = '';
+            this.reasoningDisplayText = null;
             this.initialTime = new Date();
             this.startTime = null;
             this.endTime = null;
@@ -434,7 +438,7 @@ export class ReasoningHandler {
         setDatasetProperty(this.messageReasoningDetailsDom, 'type', this.type);
 
         // Update the reasoning message
-        const reasoning = trimSpaces(this.reasoning);
+        const reasoning = trimSpaces(this.reasoningDisplayText ?? this.reasoning);
         const displayReasoning = messageFormatting(reasoning, '', false, false, messageId, {}, true);
         this.messageReasoningContentDom.innerHTML = displayReasoning;
 
@@ -888,12 +892,17 @@ function setReasoningEventHandlers() {
         }
 
         const textarea = messageBlock.find('.reasoning_edit_textarea');
-        updateReasoningFromValue(message, String(textarea.val()));
+        const newReasoning = String(textarea.val());
+        textarea.remove();
+        if (newReasoning === message.extra.reasoning) {
+            return;
+        }
+        updateReasoningFromValue(message, newReasoning);
         await saveChatConditional();
         updateMessageBlock(messageId, message);
-        textarea.remove();
 
         messageBlock.find('.mes_edit_done:visible').trigger('click');
+        await eventSource.emit(event_types.MESSAGE_REASONING_EDITED, messageId);
     });
 
     $(document).on('click', '.mes_reasoning_edit_cancel', function (e) {
@@ -955,6 +964,7 @@ function setReasoningEventHandlers() {
         updateMessageBlock(messageId, message);
         const textarea = messageBlock.find('.reasoning_edit_textarea');
         textarea.remove();
+        await eventSource.emit(event_types.MESSAGE_REASONING_DELETED, messageId);
     });
 
     $(document).on('pointerup', '.mes_reasoning_copy', async function () {

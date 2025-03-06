@@ -16,6 +16,7 @@ import mime from 'mime-types';
 import { default as simpleGit } from 'simple-git';
 import chalk from 'chalk';
 import { LOG_LEVELS } from './constants.js';
+import bytes from 'bytes';
 
 /**
  * Parsed config object.
@@ -856,14 +857,10 @@ export function setupLogLevel() {
 export class MemoryLimitedMap {
     /**
      * Creates an instance of MemoryLimitedMap.
-     * @param {number} maxMemoryInBytes - The maximum allowed memory in bytes for string values.
+     * @param {string} cacheCapacity - Maximum memory usage in human-readable format (e.g., '1 GB').
      */
-    constructor(maxMemoryInBytes) {
-        if (typeof maxMemoryInBytes !== 'number' || maxMemoryInBytes <= 0 || isNaN(maxMemoryInBytes)) {
-            console.warn('Invalid maxMemoryInBytes, using a fallback value of 1 GB.');
-            maxMemoryInBytes = 1024 * 1024 * 1024; // 1 GB
-        }
-        this.maxMemory = maxMemoryInBytes;
+    constructor(cacheCapacity) {
+        this.maxMemory = bytes.parse(cacheCapacity) ?? 0;
         this.currentMemory = 0;
         this.map = new Map();
         this.queue = [];
@@ -886,6 +883,10 @@ export class MemoryLimitedMap {
      * @param {string} value
      */
     set(key, value) {
+        if (this.maxMemory <= 0) {
+            return;
+        }
+
         if (typeof key !== 'string' || typeof value !== 'string') {
             return;
         }

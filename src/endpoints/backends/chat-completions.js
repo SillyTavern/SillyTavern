@@ -1182,6 +1182,7 @@ router.post('/generate', jsonParser, function (request, response) {
      */
     async function makeRequest(config, response, request, retries = 5, timeout = 5000) {
         try {
+            controller.signal.throwIfAborted();
             const fetchResponse = await fetch(endpointUrl, config);
 
             if (request.body.stream) {

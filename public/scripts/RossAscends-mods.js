@@ -316,7 +316,10 @@ export async function favsToHotswap() {
     const entities = getEntitiesList({ doFilter: false });
     const container = $('#right-nav-panel .hotswap');
 
-    const favs = entities.filter(x => x.item.fav || x.item.fav == 'true');
+    // Hard limit is required because even if all hotswaps don't fit the screen, their images would still be loaded
+    // 25 is roughly calculated as the maximum number of favs that can fit an ultrawide monitor with the default theme
+    const FAVS_LIMIT = 25;
+    const favs = entities.filter(x => x.item.fav || x.item.fav == 'true').slice(0, FAVS_LIMIT);
 
     //helpful instruction message if no characters are favorited
     if (favs.length == 0) {
