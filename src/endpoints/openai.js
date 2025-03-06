@@ -62,6 +62,10 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.GROQ);
         }
 
+        if (request.body.api === 'cohere') {
+            key = readSecret(request.user.directories, SECRET_KEYS.COHERE);
+        }
+
         if (!key && !request.body.reverse_proxy && ['custom', 'ooba', 'koboldcpp', 'vllm'].includes(request.body.api) === false) {
             console.warn('No key found for API', request.body.api);
             return response.sendStatus(400);
@@ -93,8 +97,6 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             excludeKeysByYaml(body, request.body.custom_exclude_body);
         }
 
-        console.debug('Multimodal captioning request', body);
-
         let apiUrl = '';
 
         if (request.body.api === 'openrouter') {
@@ -120,10 +122,17 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (request.body.api === 'groq') {
             apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
+            if (body.messages?.[0]?.role === 'system') {
+                body.messages[0].role = 'user';
+            }
         }
 
         if (request.body.api === 'mistral') {
             apiUrl = 'https://api.mistral.ai/v1/chat/completions';
+        }
+
+        if (request.body.api === 'cohere') {
+            apiUrl = 'https://api.cohere.ai/v2/chat';
         }
 
         if (request.body.api === 'ooba') {
@@ -145,6 +154,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
         }
 
         setAdditionalHeaders(request, { headers }, apiUrl);
+        console.debug('Multimodal captioning request', body);
 
         const result = await fetch(apiUrl, {
             method: 'POST',
@@ -165,7 +175,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
         /** @type {any} */
         const data = await result.json();
         console.info('Multimodal captioning response', data);
-        const caption = data?.choices[0]?.message?.content;
+        const caption = data?.choices?.[0]?.message?.content ?? data?.message?.content?.[0]?.text;
 
         if (!caption) {
             return response.status(500).send('No caption found');

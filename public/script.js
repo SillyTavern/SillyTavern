@@ -2477,7 +2477,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         timestamp: timestamp,
         extra: mes.extra,
         tokenCount: mes.extra?.token_count ?? 0,
-        ...formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count, mes.extra?.reasoning_duration),
+        ...formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count, mes.extra?.reasoning_duration, mes.extra?.time_to_first_token),
     };
 
     const renderedMessage = getMessageFromTemplate(params);
@@ -2598,13 +2598,14 @@ export function formatCharacterAvatar(characterAvatar) {
  * @param {Date} gen_finished Date when generation was finished
  * @param {number} tokenCount Number of tokens generated (0 if not available)
  * @param {number?} [reasoningDuration=null] Reasoning duration (null if no reasoning was done)
+ * @param {number?} [timeToFirstToken=null] Time to first token
  * @returns {Object} Object containing the formatted timer value and title
  * @example
  * const { timerValue, timerTitle } = formatGenerationTimer(gen_started, gen_finished, tokenCount);
  * console.log(timerValue); // 1.2s
  * console.log(timerTitle); // Generation queued: 12:34:56 7 Jan 2021\nReply received: 12:34:57 7 Jan 2021\nTime to generate: 1.2 seconds\nToken rate: 5 t/s
  */
-function formatGenerationTimer(gen_started, gen_finished, tokenCount, reasoningDuration = null) {
+function formatGenerationTimer(gen_started, gen_finished, tokenCount, reasoningDuration = null, timeToFirstToken = null) {
     if (!gen_started || !gen_finished) {
         return {};
     }
@@ -2618,8 +2619,9 @@ function formatGenerationTimer(gen_started, gen_finished, tokenCount, reasoningD
         `Generation queued: ${start.format(dateFormat)}`,
         `Reply received: ${finish.format(dateFormat)}`,
         `Time to generate: ${seconds} seconds`,
+        timeToFirstToken ? `Time to first token: ${timeToFirstToken / 1000} seconds` : '',
         reasoningDuration > 0 ? `Time to think: ${reasoningDuration / 1000} seconds` : '',
-        tokenCount > 0 ? `Token rate: ${Number(tokenCount / seconds).toFixed(1)} t/s` : '',
+        tokenCount > 0 ? `Token rate: ${Number(tokenCount / seconds).toFixed(3)} t/s` : '',
     ].filter(x => x).join('\n').trim();
 
     if (isNaN(seconds) || seconds < 0) {
@@ -3158,6 +3160,9 @@ class StreamingProcessor {
         this.abortController = new AbortController();
         this.firstMessageText = '...';
         this.timeStarted = timeStarted;
+        /** @type {number?} */
+        this.timeToFirstToken = null;
+        this.createdAt = new Date();
         this.continueMessage = type === 'continue' ? continueMessage : '';
         this.swipes = [];
         /** @type {import('./scripts/logprobs.js').TokenLogprobs[]} */
@@ -3249,6 +3254,7 @@ class StreamingProcessor {
             if (!chat[messageId]['extra']) {
                 chat[messageId]['extra'] = {};
             }
+            chat[messageId]['extra']['time_to_first_token'] = this.timeToFirstToken;
 
             // Update reasoning
             await this.reasoningHandler.process(messageId, mesChanged);
@@ -3266,7 +3272,12 @@ class StreamingProcessor {
 
             if ((this.type == 'swipe' || this.type === 'continue') && Array.isArray(chat[messageId]['swipes'])) {
                 chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
-                chat[messageId]['swipe_info'][chat[messageId]['swipe_id']] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])) };
+                chat[messageId]['swipe_info'][chat[messageId]['swipe_id']] = {
+                    'send_date': chat[messageId]['send_date'],
+                    'gen_started': chat[messageId]['gen_started'],
+                    'gen_finished': chat[messageId]['gen_finished'],
+                    'extra': JSON.parse(JSON.stringify(chat[messageId]['extra']))
+                };
             }
 
             const formattedText = messageFormatting(
@@ -3282,7 +3293,7 @@ class StreamingProcessor {
                 this.messageTextDom.innerHTML = formattedText;
             }
 
-            const timePassed = formatGenerationTimer(this.timeStarted, currentTime, currentTokenCount, this.reasoningHandler.getDuration());
+            const timePassed = formatGenerationTimer(this.timeStarted, currentTime, currentTokenCount, this.reasoningHandler.getDuration(), this.timeToFirstToken);
             if (this.messageTimerDom instanceof HTMLElement) {
                 this.messageTimerDom.textContent = timePassed.timerValue;
                 this.messageTimerDom.title = timePassed.timerTitle;
@@ -3357,7 +3368,12 @@ class StreamingProcessor {
         if (this.type !== 'swipe' && this.type !== 'impersonate') {
             if (Array.isArray(chat[messageId]['swipes']) && chat[messageId]['swipes'].length === 1 && chat[messageId]['swipe_id'] === 0) {
                 chat[messageId]['swipes'][0] = chat[messageId]['mes'];
-                chat[messageId]['swipe_info'][0] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])) };
+                chat[messageId]['swipe_info'][0] = {
+                    'send_date': chat[messageId]['send_date'],
+                    'gen_started': chat[messageId]['gen_started'],
+                    'gen_finished': chat[messageId]['gen_finished'],
+                    'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])),
+                };
             }
         }
     }
@@ -3391,7 +3407,11 @@ class StreamingProcessor {
             const sw = new Stopwatch(1000 / power_user.streaming_fps);
             const timestamps = [];
             for await (const { text, swipes, logprobs, toolCalls, state } of this.generator()) {
-                timestamps.push(Date.now());
+                const now = Date.now();
+                timestamps.push(now);
+                if (!this.timeToFirstToken) {
+                    this.timeToFirstToken = now - this.createdAt.getTime();
+                }
                 if (this.isStopped || this.abortController.signal.aborted) {
                     return this.result;
                 }
@@ -8830,7 +8850,12 @@ const swipe_right = () => {
         chat[chat.length - 1]['swipes'] = [];                         // empty the array
         chat[chat.length - 1]['swipe_info'] = [];
         chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
-        chat[chat.length - 1]['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[chat.length - 1]['extra'])) };
+        chat[chat.length - 1]['swipe_info'][0] = {
+            'send_date': chat[chat.length - 1]['send_date'],
+            'gen_started': chat[chat.length - 1]['gen_started'],
+            'gen_finished': chat[chat.length - 1]['gen_finished'],
+            'extra': JSON.parse(JSON.stringify(chat[chat.length - 1]['extra'])),
+        };
         //assign swipe info array with last message from chat
     }
     if (chat.length === 1 && chat[0]['swipe_id'] !== undefined && chat[0]['swipe_id'] === chat[0]['swipes'].length - 1) {    // if swipe_right is called on the last alternate greeting, loop back around

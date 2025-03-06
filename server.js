@@ -21,6 +21,7 @@ import bodyParser from 'body-parser';
 import open from 'open';
 
 // local library imports
+import { serverEvents, EVENT_NAMES } from './src/server-events.js';
 import { CommandLineParser } from './src/command-line.js';
 import { loadPlugins } from './src/plugin-loader.js';
 import {
@@ -66,8 +67,6 @@ import { init as statsInit, onExit as statsOnExit } from './src/endpoints/stats.
 import { checkForNewContent } from './src/endpoints/content-manager.js';
 import { init as settingsInit } from './src/endpoints/settings.js';
 import { redirectDeprecatedEndpoints, ServerStartup, setupPrivateEndpoints } from './src/server-startup.js';
-
-export const serverStatusEvent = new EventEmitter();
 
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
@@ -351,7 +350,7 @@ async function postSetupTasks(result) {
     console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
 
     setupLogLevel();
-    serverStatusEvent.emit('serverStarted', autorunUrl);
+    serverEvents.emit(EVENT_NAMES.SERVER_STARTED, { url: autorunUrl });
 }
 
 /**

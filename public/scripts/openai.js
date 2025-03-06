@@ -4430,6 +4430,9 @@ async function onModelChange() {
         else if (['c4ai-aya-23-8b', 'c4ai-aya-expanse-8b'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_8k);
         }
+        else if (['c4ai-aya-vision-8b', 'c4ai-aya-vision-32b'].includes(oai_settings.cohere_model)) {
+            $('#openai_max_context').attr('max', max_16k);
+        }
         else {
             $('#openai_max_context').attr('max', max_4k);
         }
@@ -5010,6 +5013,8 @@ export function isImageInliningSupported() {
         'pixtral-12b-2409',
         'pixtral-large-latest',
         'pixtral-large-2411',
+        'c4ai-aya-vision-8b',
+        'c4ai-aya-vision-32b',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -5027,6 +5032,8 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.zerooneai_model.includes(model));
         case chat_completion_sources.MISTRALAI:
             return visionSupportedModels.some(model => oai_settings.mistralai_model.includes(model));
+        case chat_completion_sources.COHERE:
+            return visionSupportedModels.some(model => oai_settings.cohere_model.includes(model));
         default:
             return false;
     }

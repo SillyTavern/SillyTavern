@@ -398,23 +398,62 @@ jQuery(async function () {
 
         $('#caption_wand_container').append(sendButton);
         $(sendButton).on('click', () => {
-            const hasCaptionModule =
-                (modules.includes('caption') && extension_settings.caption.source === 'extras') ||
-                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'openai' && (secret_state[SECRET_KEYS.OPENAI] || extension_settings.caption.allow_reverse_proxy)) ||
-                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'openrouter' && secret_state[SECRET_KEYS.OPENROUTER]) ||
-                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'zerooneai' && secret_state[SECRET_KEYS.ZEROONEAI]) ||
-                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'groq' && secret_state[SECRET_KEYS.GROQ]) ||
-                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'mistral' && (secret_state[SECRET_KEYS.MISTRALAI] || extension_settings.caption.allow_reverse_proxy)) ||
-                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'google' && (secret_state[SECRET_KEYS.MAKERSUITE] || extension_settings.caption.allow_reverse_proxy)) ||
-                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'anthropic' && (secret_state[SECRET_KEYS.CLAUDE] || extension_settings.caption.allow_reverse_proxy)) ||
-                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'ollama' && textgenerationwebui_settings.server_urls[textgen_types.OLLAMA]) ||
-                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'llamacpp' && textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) ||
-                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'ooba' && textgenerationwebui_settings.server_urls[textgen_types.OOBA]) ||
-                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'koboldcpp' && textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP]) ||
-                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'vllm' && textgenerationwebui_settings.server_urls[textgen_types.VLLM]) ||
-                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'custom') ||
-                extension_settings.caption.source === 'local' ||
-                extension_settings.caption.source === 'horde';
+            const hasCaptionModule = (() => {
+                const settings = extension_settings.caption;
+
+                // Handle non-multimodal sources
+                if (settings.source === 'extras' && modules.includes('caption')) return true;
+                if (settings.source === 'local' || settings.source === 'horde') return true;
+
+                // Handle multimodal sources
+                if (settings.source === 'multimodal') {
+                    const api = settings.multimodal_api;
+
+                    // APIs that support reverse proxy
+                    const reverseProxyApis = {
+                        'openai': SECRET_KEYS.OPENAI,
+                        'mistral': SECRET_KEYS.MISTRALAI,
+                        'google': SECRET_KEYS.MAKERSUITE,
+                        'anthropic': SECRET_KEYS.CLAUDE,
+                    };
+
+                    if (reverseProxyApis[api]) {
+                        if (secret_state[reverseProxyApis[api]] || settings.allow_reverse_proxy) {
+                            return true;
+                        }
+                    }
+
+                    const chatCompletionApis = {
+                        'openrouter': SECRET_KEYS.OPENROUTER,
+                        'zerooneai': SECRET_KEYS.ZEROONEAI,
+                        'groq': SECRET_KEYS.GROQ,
+                        'cohere': SECRET_KEYS.COHERE,
+                    };
+
+                    if (chatCompletionApis[api] && secret_state[chatCompletionApis[api]]) {
+                        return true;
+                    }
+
+                    const textCompletionApis = {
+                        'ollama': textgen_types.OLLAMA,
+                        'llamacpp': textgen_types.LLAMACPP,
+                        'ooba': textgen_types.OOBA,
+                        'koboldcpp': textgen_types.KOBOLDCPP,
+                        'vllm': textgen_types.VLLM,
+                    };
+
+                    if (textCompletionApis[api] && textgenerationwebui_settings.server_urls[textCompletionApis[api]]) {
+                        return true;
+                    }
+
+                    // Custom API doesn't need additional checks
+                    if (api === 'custom') {
+                        return true;
+                    }
+                }
+
+                return false;
+            })();
 
             if (!hasCaptionModule) {
                 toastr.error('Choose other captioning source in the extension settings.', 'Captioning is not available');

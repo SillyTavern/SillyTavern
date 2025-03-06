@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import yargs from 'yargs';
+import { serverEvents, EVENT_NAMES } from '../server-events.js';
 
 const cliArguments = yargs(process.argv)
     .usage('Usage: <your-start-script> [options]')
@@ -15,24 +16,26 @@ const cliArguments = yargs(process.argv)
         describe: 'The height of the window',
     }).parseSync();
 
-function createSillyTavernWindow(autorunUrl) {
-    const url = autorunUrl.toString();
+/** @type {string} The URL to load in the window. */
+let appUrl;
 
+function createSillyTavernWindow() {
     new BrowserWindow({
         height: cliArguments.height,
         width: cliArguments.width,
-    }).loadURL(url);
+    }).loadURL(appUrl);
 }
 
 function startServer() {
     return new Promise((_resolve, _reject) => {
+        serverEvents.addListener(EVENT_NAMES.SERVER_STARTED, ({ url }) => {
+            appUrl = url.toString();
+            createSillyTavernWindow();
+        });
         const sillyTavernRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
         process.chdir(sillyTavernRoot);
 
-        import('../../server.js')
-            .then((sillyTavern) => {
-                sillyTavern.serverStatusEvent.addListener('serverStarted', createSillyTavernWindow);
-            });
+        import('../../server.js');
     });
 }
 
