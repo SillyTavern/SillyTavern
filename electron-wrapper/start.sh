@@ -8,4 +8,4 @@ echo "Installing Electron Wrapper's Node Modules..."
 npm i --no-audit --no-fund --loglevel=error --no-progress
 
 echo "Starting Electron Wrapper..."
-npm run start "$@"
+npm run start -- "$@"
