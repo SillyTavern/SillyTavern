@@ -560,8 +560,8 @@ async function onTranslateChatClick() {
         toastr.info(`${chat.length} message(s) queued for translation.`, 'Please wait...');
 
         for (let i = 0; i < chat.length; i++) {
-            await translateIncomingMessage(i);
             await translateIncomingMessageReasoning(i);
+            await translateIncomingMessage(i);
         }
 
         await context.saveChat();
@@ -664,8 +664,8 @@ async function onMessageTranslateClick() {
 
     // If the message is not translated, translate it
     if (!alreadyTranslated) {
-        await translateIncomingMessage(messageId);
         await translateIncomingMessageReasoning(messageId);
+        await translateIncomingMessage(messageId);
     }
 
     await context.saveChat();
