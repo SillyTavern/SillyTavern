@@ -10,16 +10,22 @@ const cliArguments = yargs(process.argv)
         type: 'number',
         default: 800,
         describe: 'The width of the window',
-    }).option('height', {
+    })
+    .option('height', {
         type: 'number',
         default: 600,
         describe: 'The height of the window',
-    }).parseSync();
+    })
+    .parseSync();
 
 /** @type {string} The URL to load in the window. */
 let appUrl;
 
 function createSillyTavernWindow() {
+    if (!appUrl) {
+        console.error('The server has not started yet.');
+        return;
+    }
     new BrowserWindow({
         height: cliArguments.height,
         width: cliArguments.width,
