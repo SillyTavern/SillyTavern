@@ -20,6 +20,7 @@ import bodyParser from 'body-parser';
 import open from 'open';
 
 // local library imports
+import { serverEvents, EVENT_NAMES } from './src/server-events.js';
 import { CommandLineParser } from './src/command-line.js';
 import { loadPlugins } from './src/plugin-loader.js';
 import {
@@ -348,6 +349,7 @@ async function postSetupTasks(result) {
     console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
 
     setupLogLevel();
+    serverEvents.emit(EVENT_NAMES.SERVER_STARTED, { url: autorunUrl });
 }
 
 /**

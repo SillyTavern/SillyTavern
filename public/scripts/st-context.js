@@ -47,6 +47,7 @@ import {
     updateMessageBlock,
     printMessages,
     clearChat,
+    unshallowCharacter,
 } from '../script.js';
 import {
     extension_settings,
@@ -55,7 +56,7 @@ import {
     renderExtensionTemplateAsync,
     writeExtensionField,
 } from './extensions.js';
-import { groups, openGroupChat, selected_group } from './group-chats.js';
+import { groups, openGroupChat, selected_group, unshallowGroupMembers } from './group-chats.js';
 import { addLocaleData, getCurrentLocale, t, translate } from './i18n.js';
 import { hideLoader, showLoader } from './loader.js';
 import { MacrosParser } from './macros.js';
@@ -212,6 +213,8 @@ export function getContext() {
         ChatCompletionService,
         TextCompletionService,
         updateReasoningUI,
+        unshallowCharacter,
+        unshallowGroupMembers,
     };
 }
 

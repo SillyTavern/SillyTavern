@@ -438,6 +438,7 @@ ollama.post('/download', jsonParser, async function (request, response) {
 
         const name = request.body.name;
         const url = String(request.body.api_server).replace(/\/$/, '');
+        console.debug('Pulling Ollama model:', name);
 
         const fetchResponse = await fetch(`${url}/api/pull`, {
             method: 'POST',
@@ -453,6 +454,7 @@ ollama.post('/download', jsonParser, async function (request, response) {
             return response.status(fetchResponse.status).send({ error: true });
         }
 
+        console.debug('Ollama pull response:', await fetchResponse.json());
         return response.send({ ok: true });
     } catch (error) {
         console.error(error);

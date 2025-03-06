@@ -11,6 +11,7 @@
         "bing-translate-api": "^4.0.2",
         "body-parser": "^1.20.2",
         "bowser": "^2.11.0",
+        "bytes": "^3.1.2",
         "chalk": "^5.4.1",
         "command-exists": "^1.2.9",
         "compression": "^1.8.0",
@@ -92,7 +93,8 @@
     "version": "1.12.12",
     "scripts": {
         "start": "node server.js",
-        "debug": "node server.js --inspect",
+        "debug": "node --inspect server.js",
+        "electron": "electron ./src/electron",
         "start:deno": "deno run --allow-run --allow-net --allow-read --allow-write --allow-sys --allow-env server.js",
         "start:bun": "bun server.js",
         "start:no-csrf": "node server.js --disableCsrf",
@@ -112,6 +114,7 @@
     "main": "server.js",
     "devDependencies": {
         "@types/archiver": "^6.0.3",
+        "@types/bytes": "^3.1.5",
         "@types/command-exists": "^1.2.3",
         "@types/compression": "^1.7.5",
         "@types/cookie-parser": "^1.4.8",
