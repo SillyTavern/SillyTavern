@@ -173,11 +173,25 @@ function loadSettings() {
     showKeysButton();
 }
 
+/**
+ * Check if the swipe is being generated for a message.
+ * @param {string|number} messageId Message ID
+ * @returns {boolean} Whether the swipe is being generated
+ */
+function isGeneratingSwipe(messageId) {
+    return $(`#chat .mes[mesid="${messageId}"] .mes_text`).text() === '...';
+}
+
 async function translateImpersonate(text) {
     const translatedText = await translate(text, extension_settings.translate.target_language);
     $('#send_textarea').val(translatedText);
 }
 
+/**
+ * Translates the contents of an incoming message.
+ * @param {string | number} messageId Message ID
+ * @returns {Promise<void>}
+ */
 async function translateIncomingMessage(messageId) {
     const context = getContext();
     const message = context.chat[messageId];
@@ -190,8 +204,7 @@ async function translateIncomingMessage(messageId) {
         message.extra = {};
     }
 
-    // New swipe is being generated. Don't translate that
-    if ($(`#chat .mes[mesid="${messageId}"] .mes_text`).text() == '...') {
+    if (isGeneratingSwipe(messageId)) {
         return;
     }
 
@@ -199,10 +212,11 @@ async function translateIncomingMessage(messageId) {
     const translation = await translate(textToTranslate, extension_settings.translate.target_language);
     message.extra.display_text = translation;
 
-    updateMessageBlock(messageId, message);
+    updateMessageBlock(Number(messageId), message);
 }
 
 /**
+ * Translates the reasoning of an incoming message.
  * @param {string | number} messageId
  * @returns {Promise<boolean>} translated or not
  */
@@ -218,7 +232,7 @@ async function translateIncomingMessageReasoning(messageId) {
         message.extra = {};
     }
 
-    if (!message.extra.reasoning) {
+    if (!message.extra.reasoning || isGeneratingSwipe(messageId)) {
         return false;
     }
 
