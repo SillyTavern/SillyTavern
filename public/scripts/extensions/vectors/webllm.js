@@ -1,4 +1,4 @@
-export class WebLLMVectorProvider {
+export class WebLlmVectorProvider {
     /** @type {object?} WebLLM engine */
     #engine = null;
 
@@ -10,7 +10,7 @@ export class WebLLMVectorProvider {
      * Check if WebLLM is available and up-to-date
      * @throws {Error} If WebLLM is not available or not up-to-date
      */
-    #checkWebLLM() {
+    #checkWebLlm() {
         if (!Object.hasOwn(SillyTavern, 'llm')) {
             throw new Error('WebLLM is not available', { cause: 'not-available' });
         }
@@ -38,7 +38,7 @@ export class WebLLMVectorProvider {
      * @returns {{id:string, toString: function(): string}[]} Array of available models
      */
     getModels() {
-        this.#checkWebLLM();
+        this.#checkWebLlm();
         return SillyTavern.llm.getEmbeddingModels();
     }
 
@@ -49,7 +49,7 @@ export class WebLLMVectorProvider {
      * @returns {Promise<number[][]>} Array of embeddings for each text
      */
     async embedTexts(texts, modelId) {
-        this.#checkWebLLM();
+        this.#checkWebLlm();
         await this.#initEngine(modelId);
         return this.#engine.generateEmbedding(texts);
     }
@@ -59,7 +59,7 @@ export class WebLLMVectorProvider {
      * @param {string} modelId Model ID to load
      */
     async loadModel(modelId) {
-        this.#checkWebLLM();
+        this.#checkWebLlm();
         await this.#initEngine(modelId);
     }
 }

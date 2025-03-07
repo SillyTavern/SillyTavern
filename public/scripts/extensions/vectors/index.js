@@ -35,7 +35,7 @@ import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashComm
 import { slashCommandReturnHelper } from '../../slash-commands/SlashCommandReturnHelper.js';
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
-import { WebLLMVectorProvider } from './webllm.js';
+import { WebLlmVectorProvider } from './webllm.js';
 
 /**
  * @typedef {object} HashedMessage
@@ -106,7 +106,7 @@ const settings = {
 };
 
 const moduleWorker = new ModuleWorkerWrapper(synchronizeChat);
-const webllmProvider = new WebLLMVectorProvider();
+const webllmProvider = new WebLlmVectorProvider();
 const cachedSummaries = new Map();
 
 /**
