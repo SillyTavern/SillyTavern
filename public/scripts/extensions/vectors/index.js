@@ -1691,6 +1691,11 @@ jQuery(async () => {
     eventSource.on(event_types.CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.GROUP_CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.FILE_ATTACHMENT_DELETED, purgeFileVectorIndex);
+    eventSource.on(event_types.EXTENSION_SETTINGS_LOADED, async (manifest) => {
+        if (settings.source === 'webllm' && manifest?.display_name === 'WebLLM') {
+            await loadWebLlmModels();
+        }
+    });
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'db-ingest',
