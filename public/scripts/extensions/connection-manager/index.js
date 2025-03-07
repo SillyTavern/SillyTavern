@@ -16,6 +16,7 @@ import { t } from '../../i18n.js';
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
+const EMPTY = '<Empty>';
 
 const DEFAULT_SETTINGS = {
     profiles: [],
@@ -321,7 +322,14 @@ async function deleteConnectionProfile() {
  */
 function makeFancyProfile(profile) {
     return Object.entries(FANCY_NAMES).reduce((acc, [key, value]) => {
-        if (!profile[key]) return acc;
+        const allowEmpty = ALLOW_EMPTY.includes(key);
+        if (!profile[key]) {
+            if (profile[key] === '' && allowEmpty) {
+                acc[value] = EMPTY;
+            }
+            return acc;
+        }
+
         acc[value] = profile[key];
         return acc;
     }, {});
