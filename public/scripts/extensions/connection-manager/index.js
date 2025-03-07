@@ -22,6 +22,12 @@ const DEFAULT_SETTINGS = {
     selectedProfile: null,
 };
 
+// Commands that can record an empty value into the profile
+const ALLOW_EMPTY = [
+    'stop-strings',
+    'start-reply-with',
+];
+
 const CC_COMMANDS = [
     'api',
     'preset',
@@ -31,6 +37,7 @@ const CC_COMMANDS = [
     'model',
     'proxy',
     'stop-strings',
+    'start-reply-with',
 ];
 
 const TC_COMMANDS = [
@@ -45,6 +52,7 @@ const TC_COMMANDS = [
     'instruct-state',
     'tokenizer',
     'stop-strings',
+    'start-reply-with',
 ];
 
 const FANCY_NAMES = {
@@ -60,6 +68,7 @@ const FANCY_NAMES = {
     'context': 'Context Template',
     'tokenizer': 'Tokenizer',
     'stop-strings': 'Custom Stopping Strings',
+    'start-reply-with': 'Start Reply With',
 };
 
 /**
@@ -107,6 +116,7 @@ class ConnectionManagerSpinner {
 /**
  * Get named arguments for the command callback.
  * @param {object} [args] Additional named arguments
+ * @param {string} [args.force] Whether to force setting the value
  * @returns {object} Named arguments
  */
 function getNamedArguments(args = {}) {
@@ -142,6 +152,7 @@ const profilesProvider = () => [
  * @property {string} [instruct-state] Instruct Mode
  * @property {string} [tokenizer] Tokenizer
  * @property {string} [stop-strings] Custom Stopping Strings
+ * @property {string} [start-reply-with] Start Reply With
  * @property {string[]} [exclude] Commands to exclude
  */
 
@@ -186,9 +197,10 @@ async function readProfileFromCommands(mode, profile, cleanUp = false) {
                 continue;
             }
 
+            const allowEmpty = ALLOW_EMPTY.includes(command);
             const args = getNamedArguments();
             const result = await SlashCommandParser.commands[command].callback(args, '');
-            if (result) {
+            if (result || (allowEmpty && result === '')) {
                 profile[command] = result;
                 continue;
             }
@@ -339,11 +351,12 @@ async function applyConnectionProfile(profile) {
         }
 
         const argument = profile[command];
-        if (!argument) {
+        const allowEmpty = ALLOW_EMPTY.includes(command);
+        if (!argument || (allowEmpty && argument === '')) {
             continue;
         }
         try {
-            const args = getNamedArguments();
+            const args = getNamedArguments(allowEmpty ? { force: 'true' } : {});
             await SlashCommandParser.commands[command].callback(args, argument);
         } catch (error) {
             console.error(`Failed to execute command: ${command} ${argument}`, error);
