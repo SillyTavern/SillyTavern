@@ -8,7 +8,7 @@ export class KokoroTtsProvider {
             dtype: "q8",
             device: "wasm",
             voiceMap: {},
-            defaultVoice: "Heart (American Female)",
+            defaultVoice: "af_heart",
             speakingRate: 1.0,
             volumeGainDb: 0.0
         };
