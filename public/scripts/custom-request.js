@@ -209,8 +209,6 @@ export class TextCompletionService {
             'xtc_threshold': settings.xtc_threshold,
             'xtc_probability': settings.xtc_probability,
             'nsigma': settings.nsigma,
-            'stream': Boolean(settings.streaming),
-            'bypass_status_check': Boolean(settings.bypass_status_check),
             'rep_pen_size': settings.rep_pen_size
         };
 
