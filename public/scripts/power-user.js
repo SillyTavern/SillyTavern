@@ -4195,15 +4195,15 @@ $(document).ready(() => {
         name: 'start-reply-with',
         helpString: `
             <div>
-                Sets a "Start Reply With". Gets the list if no value is provided.
+                Sets a "Start Reply With". Gets the current value if no value is provided.
                 Use a "force" argument to force set an empty value.
             </div>
             <div>
                 <strong>Examples:</strong>
             </div>
             <ul>
-                <li>Value must be a JSON-serialized array: <pre><code class="language-stscript">/stop-strings ["goodbye", "farewell"]</code></pre></li>
-                <li>Pipe characters must be escaped with a backslash: <pre><code class="language-stscript">/stop-strings ["left\\|right"]</code></pre></li>
+                <li>Set the field value: <pre><code class="language-stscript">/start-reply-with Sure!</code></pre></li>
+                <li>Force set an empty value: <pre><code class="language-stscript">/start-reply-with force="true" {{noop}}</code></pre></li>
             </ul>
         `,
         namedArgumentList: [
