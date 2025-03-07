@@ -360,7 +360,7 @@ async function applyConnectionProfile(profile) {
 
         const argument = profile[command];
         const allowEmpty = ALLOW_EMPTY.includes(command);
-        if (!argument && !allowEmpty && argument !== '') {
+        if (!argument || (allowEmpty && argument !== '')) {
             continue;
         }
         try {
