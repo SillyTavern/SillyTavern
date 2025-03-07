@@ -2716,7 +2716,16 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
         environment.personality = fields.personality || '';
         environment.scenario = fields.scenario || '';
         environment.persona = fields.persona || '';
-        environment.mesExamples = fields.mesExamples || '';
+        environment.mesExamples = () => {
+            const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
+            const mesExamplesArray = parseMesExamples(fields.mesExamples, isInstruct);
+            if (isInstruct) {
+                const instructExamples = formatInstructModeExamples(mesExamplesArray, name1, name2);
+                return instructExamples.join('');
+            }
+            return mesExamplesArray.join('');
+        };
+        environment.mesExamplesRaw = fields.mesExamples || '';
         environment.charVersion = fields.version || '';
         environment.char_version = fields.version || '';
     }
@@ -3105,6 +3114,27 @@ export function getCharacterCardFields() {
     return result;
 }
 
+/**
+ * Parses an examples string.
+ * @param {string} examplesStr
+ * @returns {string[]} Examples array with block heading
+ */
+export function parseMesExamples(examplesStr, isInstruct) {
+    if (!examplesStr || examplesStr.length === 0 || examplesStr === '<START>') {
+        return [];
+    }
+
+    if (!examplesStr.startsWith('<START>')) {
+        examplesStr = '<START>\n' + examplesStr.trim();
+    }
+
+    const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
+    const blockHeading = main_api === 'openai' ? '<START>\n' : (exampleSeparator || (isInstruct ? '<START>\n' : ''));
+    const splitExamples = examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
+
+    return splitExamples;
+}
+
 export function isStreamingEnabled() {
     const noStreamSources = [chat_completion_sources.SCALE];
     return (
@@ -3276,7 +3306,7 @@ class StreamingProcessor {
                     'send_date': chat[messageId]['send_date'],
                     'gen_started': chat[messageId]['gen_started'],
                     'gen_finished': chat[messageId]['gen_finished'],
-                    'extra': JSON.parse(JSON.stringify(chat[messageId]['extra']))
+                    'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])),
                 };
             }
 
@@ -3993,29 +4023,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         force_name2 = false;
     }
 
-    // TODO (kingbri): Migrate to a utility function
-    /**
-     * Parses an examples string.
-     * @param {string} examplesStr
-     * @returns {string[]} Examples array with block heading
-     */
-    function parseMesExamples(examplesStr) {
-        if (!examplesStr || examplesStr.length === 0 || examplesStr === '<START>') {
-            return [];
-        }
-
-        if (!examplesStr.startsWith('<START>')) {
-            examplesStr = '<START>\n' + examplesStr.trim();
-        }
-
-        const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
-        const blockHeading = main_api === 'openai' ? '<START>\n' : (exampleSeparator || (isInstruct ? '<START>\n' : ''));
-        const splitExamples = examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
-
-        return splitExamples;
-    }
-
-    let mesExamplesArray = parseMesExamples(mesExamples);
+    let mesExamplesArray = parseMesExamples(mesExamples, isInstruct);
 
     //////////////////////////////////
     // Extension added strings
@@ -4040,7 +4048,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
 
         const formattedExample = baseChatReplace(exampleMessage, name1, name2);
-        const cleanedExample = parseMesExamples(formattedExample);
+        const cleanedExample = parseMesExamples(formattedExample, isInstruct);
 
         // Insert depending on before or after position
         if (example.position === wi_anchor_position.before) {
