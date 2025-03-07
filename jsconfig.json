@@ -15,7 +15,7 @@
         "**/node_modules/**",
         "**/dist/**",
         "**/.git/**",
-        "public/lib/**",
+        "public/**",
         "backups/**",
         "data/**",
         "cache/**",

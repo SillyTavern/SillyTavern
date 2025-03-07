@@ -566,7 +566,7 @@ export function initAuthorsNote() {
         namedArgumentList: [],
         unnamedArgumentList: [
             new SlashCommandArgument(
-                'position', [ARGUMENT_TYPE.STRING], false, false, null, ['system', 'user', 'assistant'],
+                'role', [ARGUMENT_TYPE.STRING], false, false, null, ['system', 'user', 'assistant'],
             ),
         ],
         helpString: `

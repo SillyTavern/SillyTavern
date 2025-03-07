@@ -1621,14 +1621,14 @@ jQuery(async () => {
             const attachments = source ? getDataBankAttachmentsForSource(source, false) : getDataBankAttachments(false);
             const collectionIds = await ingestDataBankAttachments(String(source));
             const queryResults = await queryMultipleCollections(collectionIds, String(query), count, threshold);
-    
+
             // Get URLs
             const urls = Object
                 .keys(queryResults)
                 .map(x => attachments.find(y => getFileCollectionId(y.url) === x))
                 .filter(x => x)
                 .map(x => x.url);
-    
+
             // Gets the actual text content of chunks
             const getChunksText = () => {
                 let textResult = '';
@@ -1638,14 +1638,12 @@ jQuery(async () => {
                 }
                 return textResult;
             };
-            
             if (args.return === 'chunks') {
                 return getChunksText();
             }
 
             // @ts-ignore
             return slashCommandReturnHelper.doReturn(args.return ?? 'object', urls, { objectToStringFunc: list => list.join('\n') });
-            
         },
         aliases: ['databank-search', 'data-bank-search'],
         helpString: 'Search the Data Bank for a specific query using vector similarity. Returns a list of file URLs with the most relevant content.',
@@ -1660,10 +1658,10 @@ jQuery(async () => {
                 defaultValue: 'object',
                 enumList: [
                     new SlashCommandEnumValue('chunks', 'Return the actual content chunks', enumTypes.enum, '{}'),
-                    ...slashCommandReturnHelper.enumList({ allowObject: true })
+                    ...slashCommandReturnHelper.enumList({ allowObject: true }),
                 ],
                 forceEnum: true,
-            })
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument('Query to search by.', ARGUMENT_TYPE.STRING, true, false),

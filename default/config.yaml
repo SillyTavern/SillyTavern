@@ -6,7 +6,13 @@ cardsCacheCapacity: 100
 # -- SERVER CONFIGURATION --
 # Listen for incoming connections
 listen: false
+# Listen on a specific address, supports IPv4 and IPv6
+listenAddress:
+  ipv4: 0.0.0.0
+  ipv6: '[::]'
 # Enables IPv6 and/or IPv4 protocols. Need to have at least one enabled!
+# - Use option "auto" to automatically detect support
+# - Use true or false (no qoutes) to enable or disable each protocol
 protocol:
     ipv4: true
     ipv6: false
@@ -65,12 +71,14 @@ autheliaAuth: false
 # the username and passwords for basic auth are the same as those
 # for the individual accounts
 perUserBasicAuth: false
+# Minimum log level to display in the terminal (DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3)
+minLogLevel: 0
 
 # User session timeout *in seconds* (defaults to 24 hours).
 ## Set to a positive number to expire session after a certain time of inactivity
 ## Set to 0 to expire session when the browser is closed
 ## Set to a negative number to disable session expiration
-sessionTimeout: 86400
+sessionTimeout: -1
 # Used to sign session cookies. Will be auto-generated if not set
 cookieSecret: ''
 # Disable CSRF protection - NOT RECOMMENDED
@@ -133,24 +141,26 @@ whitelistImportDomains:
 ##   headers:
 ##     User-Agent: "Googlebot/2.1 (+http://www.google.com/bot.html)"
 requestOverrides: []
-# -- EXTENSIONS CONFIGURATION --
-# Enable UI extensions
-enableExtensions: true
-# Automatically update extensions when a release version changes
-enableExtensionsAutoUpdate: true
+
+# EXTENSIONS CONFIGURATION
+extensions:
+  # Enable UI extensions
+  enabled: true
+  # Automatically update extensions when a release version changes
+  autoUpdate: true
+  models:
+    # Enables automatic model download from HuggingFace
+    autoDownload: true
+    # Additional models for extensions. Expects model IDs from HuggingFace model hub in ONNX format
+    classification: Cohee/distilbert-base-uncased-go-emotions-onnx
+    captioning: Xenova/vit-gpt2-image-captioning
+    embedding: Cohee/jina-embeddings-v2-base-en
+    speechToText: Xenova/whisper-small
+    textToSpeech: Xenova/speecht5_tts
+
 # Additional model tokenizers can be downloaded on demand.
 # Disabling will fallback to another locally available tokenizer.
 enableDownloadableTokenizers: true
-# Extension settings
-extras:
-  # Disables automatic model download from HuggingFace
-  disableAutoDownload: false
-  # Extra models for plugins. Expects model IDs from HuggingFace model hub in ONNX format
-  classificationModel: Cohee/distilbert-base-uncased-go-emotions-onnx
-  captioningModel: Xenova/vit-gpt2-image-captioning
-  embeddingModel: Cohee/jina-embeddings-v2-base-en
-  speechToTextModel: Xenova/whisper-small
-  textToSpeechModel: Xenova/speecht5_tts
 # -- OPENAI CONFIGURATION --
 # A placeholder message to use in strict prompt post-processing mode when the prompt doesn't start with a user message
 promptPlaceholder: "[Start a new chat]"
@@ -177,6 +187,10 @@ ollama:
   # * 0: Unload the model immediately after the request
   # * N (any positive number): Keep the model loaded for N seconds after the request.
   keepAlive: -1
+  # Controls the "num_batch" (batch size) parameter of the generation request
+  # * -1: Use the default value of the model
+  # * N (positive number): Use the specified value. Must be a power of 2, e.g. 128, 256, 512, etc.
+  batchSize: -1
 # -- ANTHROPIC CLAUDE API CONFIGURATION --
 claude:
   # Enables caching of the system prompt (if supported).
@@ -196,3 +210,5 @@ claude:
   cachingAtDepth: -1
 # -- SERVER PLUGIN CONFIGURATION --
 enableServerPlugins: false
+# Attempt to automatically update server plugins on startup
+enableServerPluginsAutoUpdate: true

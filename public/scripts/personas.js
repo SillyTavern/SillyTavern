@@ -25,6 +25,7 @@ import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { openWorldInfoEditor, world_names } from './world-info.js';
 import { renderTemplateAsync } from './templates.js';
+import { accountStorage } from './util/AccountStorage.js';
 
 let savePersonasPage = 0;
 const GRID_STORAGE_KEY = 'Personas_GridView';
@@ -34,7 +35,7 @@ export let user_avatar = '';
 export const personasFilter = new FilterHelper(debounce(getUserAvatars, debounce_timeout.quick));
 
 function switchPersonaGridView() {
-    const state = localStorage.getItem(GRID_STORAGE_KEY) === 'true';
+    const state = accountStorage.getItem(GRID_STORAGE_KEY) === 'true';
     $('#user_avatar_block').toggleClass('gridView', state);
 }
 
@@ -182,7 +183,7 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
 
         const storageKey = 'Personas_PerPage';
         const listId = '#user_avatar_block';
-        const perPage = Number(localStorage.getItem(storageKey)) || 5;
+        const perPage = Number(accountStorage.getItem(storageKey)) || 5;
 
         $('#persona_pagination_container').pagination({
             dataSource: entities,
@@ -205,7 +206,7 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
                 highlightSelectedAvatar();
             },
             afterSizeSelectorChange: function (e) {
-                localStorage.setItem(storageKey, e.target.value);
+                accountStorage.setItem(storageKey, e.target.value);
             },
             afterPaging: function (e) {
                 savePersonasPage = e;
@@ -1132,8 +1133,8 @@ export function initPersonas() {
         saveSettingsDebounced();
     });
     $('#persona_grid_toggle').on('click', () => {
-        const state = localStorage.getItem(GRID_STORAGE_KEY) === 'true';
-        localStorage.setItem(GRID_STORAGE_KEY, String(!state));
+        const state = accountStorage.getItem(GRID_STORAGE_KEY) === 'true';
+        accountStorage.setItem(GRID_STORAGE_KEY, String(!state));
         switchPersonaGridView();
     });
 

@@ -44,9 +44,9 @@ router.post('/', jsonParser, async (req, res) => {
             }
         }
 
-        console.log('Classify input:', text);
+        console.debug('Classify input:', text);
         const result = await getResult(text);
-        console.log('Classify output:', result);
+        console.debug('Classify output:', result);
 
         return res.json({ classification: result });
     } catch (error) {

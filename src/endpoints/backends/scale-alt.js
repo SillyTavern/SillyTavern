@@ -13,7 +13,7 @@ router.post('/generate', jsonParser, async function (request, response) {
         const cookie = readSecret(request.user.directories, SECRET_KEYS.SCALE_COOKIE);
 
         if (!cookie) {
-            console.log('No Scale cookie found');
+            console.error('No Scale cookie found');
             return response.sendStatus(400);
         }
 
@@ -62,7 +62,7 @@ router.post('/generate', jsonParser, async function (request, response) {
             },
         };
 
-        console.log('Scale request:', body);
+        console.debug('Scale request:', body);
 
         const result = await fetch('https://dashboard.scale.com/spellbook/api/trpc/v2.variant.run', {
             method: 'POST',
@@ -75,7 +75,7 @@ router.post('/generate', jsonParser, async function (request, response) {
 
         if (!result.ok) {
             const text = await result.text();
-            console.log('Scale request failed', result.statusText, text);
+            console.error('Scale request failed', result.statusText, text);
             return response.status(500).send({ error: { message: result.statusText } });
         }
 
@@ -83,7 +83,7 @@ router.post('/generate', jsonParser, async function (request, response) {
         const data = await result.json();
         const output = data?.result?.data?.json?.outputs?.[0] || '';
 
-        console.log('Scale response:', data);
+        console.debug('Scale response:', data);
 
         if (!output) {
             console.warn('Scale response is empty');
@@ -92,7 +92,7 @@ router.post('/generate', jsonParser, async function (request, response) {
 
         return response.json({ output });
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return response.sendStatus(500);
     }
 });

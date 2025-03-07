@@ -8,6 +8,7 @@ import { getRequestHeaders, processDroppedFiles, eventSource, event_types } from
 import { deleteExtension, extensionNames, getContext, installExtension, renderExtensionTemplateAsync } from '../../extensions.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from '../../popup.js';
 import { executeSlashCommands } from '../../slash-commands.js';
+import { accountStorage } from '../../util/AccountStorage.js';
 import { flashHighlight, getStringHash, isValidUrl } from '../../utils.js';
 export { MODULE_NAME };
 
@@ -432,14 +433,14 @@ jQuery(async () => {
     connectButton.on('click', async function () {
         const url = DOMPurify.sanitize(String(assetsJsonUrl.val()));
         const rememberKey = `Assets_SkipConfirm_${getStringHash(url)}`;
-        const skipConfirm = localStorage.getItem(rememberKey) === 'true';
+        const skipConfirm = accountStorage.getItem(rememberKey) === 'true';
 
         const confirmation = skipConfirm || await Popup.show.confirm('Loading Asset List', `<span>Are you sure you want to connect to the following url?</span><var>${url}</var>`, {
             customInputs: [{ id: 'assets-remember', label: 'Don\'t ask again for this URL' }],
             onClose: popup => {
                 if (popup.result) {
                     const rememberValue = popup.inputResults.get('assets-remember');
-                    localStorage.setItem(rememberKey, String(rememberValue));
+                    accountStorage.setItem(rememberKey, String(rememberValue));
                 }
             },
         });

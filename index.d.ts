@@ -1,6 +1,24 @@
 import { UserDirectoryList, User } from "./src/users";
+import { CsrfSyncedToken } from "csrf-sync";
 
 declare global {
+    declare namespace CookieSessionInterfaces {
+        export interface CookieSessionObject {
+            /**
+             * The CSRF token for the session.
+             */
+            csrfToken: CsrfSyncedToken;
+            /**
+             * Authenticated user handle.
+             */
+            handle: string;
+            /**
+             * Last time the session was extended.
+             */
+            touch: number;
+        }
+    }
+
     namespace Express {
         export interface Request {
             user: {
@@ -15,11 +33,3 @@ declare global {
      */
     var DATA_ROOT: string;
 }
-
-declare module 'express-session' {
-    export interface SessionData {
-      handle: string;
-      touch: number;
-      // other properties...
-    }
-  }

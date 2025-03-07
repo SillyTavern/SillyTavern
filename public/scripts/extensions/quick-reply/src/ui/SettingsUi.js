@@ -346,7 +346,7 @@ export class SettingsUi {
     }
 
     async addQrSet() {
-        const name = await Popup.show.input('Create a new World Info', 'Enter a name for the new Quick Reply Set:');
+        const name = await Popup.show.input('Create a new Quick Reply Set', 'Enter a name for the new Quick Reply Set:');
         if (name && name.length > 0) {
             const oldQrs = QuickReplySet.get(name);
             if (oldQrs) {

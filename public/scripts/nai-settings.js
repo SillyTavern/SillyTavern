@@ -746,7 +746,7 @@ export async function generateNovelWithStreaming(generate_data, signal) {
                 text += data.token;
             }
 
-            yield { text, swipes: [], logprobs: parseNovelAILogprobs(data.logprobs), toolCalls: [] };
+            yield { text, swipes: [], logprobs: parseNovelAILogprobs(data.logprobs), toolCalls: [], state: {} };
         }
     };
 }

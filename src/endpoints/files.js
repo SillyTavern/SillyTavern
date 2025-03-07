@@ -21,7 +21,7 @@ router.post('/sanitize-filename', jsonParser, async (request, response) => {
         const sanitizedFilename = sanitize(fileName);
         return response.send({ fileName: sanitizedFilename });
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return response.sendStatus(500);
     }
 });
@@ -44,10 +44,10 @@ router.post('/upload', jsonParser, async (request, response) => {
         const pathToUpload = path.join(request.user.directories.files, request.body.name);
         writeFileSyncAtomic(pathToUpload, request.body.data, 'base64');
         const url = clientRelativePath(request.user.directories.root, pathToUpload);
-        console.log(`Uploaded file: ${url} from ${request.user.profile.handle}`);
+        console.info(`Uploaded file: ${url} from ${request.user.profile.handle}`);
         return response.send({ path: url });
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return response.sendStatus(500);
     }
 });
@@ -68,10 +68,10 @@ router.post('/delete', jsonParser, async (request, response) => {
         }
 
         fs.rmSync(pathToDelete);
-        console.log(`Deleted file: ${request.body.path} from ${request.user.profile.handle}`);
+        console.info(`Deleted file: ${request.body.path} from ${request.user.profile.handle}`);
         return response.sendStatus(200);
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return response.sendStatus(500);
     }
 });
@@ -87,7 +87,7 @@ router.post('/verify', jsonParser, async (request, response) => {
         for (const url of request.body.urls) {
             const pathToVerify = path.join(request.user.directories.root, url);
             if (!pathToVerify.startsWith(request.user.directories.files)) {
-                console.debug(`File verification: Invalid path: ${pathToVerify}`);
+                console.warn(`File verification: Invalid path: ${pathToVerify}`);
                 continue;
             }
             const fileExists = fs.existsSync(pathToVerify);
@@ -96,7 +96,7 @@ router.post('/verify', jsonParser, async (request, response) => {
 
         return response.send(verified);
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return response.sendStatus(500);
     }
 });

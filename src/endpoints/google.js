@@ -34,7 +34,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             generationConfig: { maxOutputTokens: 1000 },
         };
 
-        console.log('Multimodal captioning request', model, body);
+        console.debug('Multimodal captioning request', model, body);
 
         const result = await fetch(url, {
             body: JSON.stringify(body),
@@ -46,13 +46,13 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (!result.ok) {
             const error = await result.json();
-            console.log(`Google AI Studio API returned error: ${result.status} ${result.statusText}`, error);
+            console.error(`Google AI Studio API returned error: ${result.status} ${result.statusText}`, error);
             return response.status(result.status).send({ error: true });
         }
 
         /** @type {any} */
         const data = await result.json();
-        console.log('Multimodal captioning response', data);
+        console.info('Multimodal captioning response', data);
 
         const candidates = data?.candidates;
         if (!candidates) {

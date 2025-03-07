@@ -48,6 +48,13 @@ async function updatePlugins() {
             console.log(`Updating plugin ${color.green(directory)}...`);
             const pluginPath = path.join(pluginsPath, directory);
             const pluginRepo = git(pluginPath);
+
+            const isRepo = await pluginRepo.checkIsRepo();
+            if (!isRepo) {
+                console.log(`Directory ${color.yellow(directory)} is not a Git repository`);
+                continue;
+            }
+
             await pluginRepo.fetch();
             const commitHash = await pluginRepo.revparse(['HEAD']);
             const trackingBranch = await pluginRepo.revparse(['--abbrev-ref', '@{u}']);

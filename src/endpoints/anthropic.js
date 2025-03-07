@@ -32,7 +32,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             max_tokens: 4096,
         };
 
-        console.log('Multimodal captioning request', body);
+        console.debug('Multimodal captioning request', body);
 
         const result = await fetch(url, {
             body: JSON.stringify(body),
@@ -46,14 +46,14 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (!result.ok) {
             const text = await result.text();
-            console.log(`Claude API returned error: ${result.status} ${result.statusText}`, text);
+            console.warn(`Claude API returned error: ${result.status} ${result.statusText}`, text);
             return response.status(result.status).send({ error: true });
         }
 
         /** @type {any} */
         const generateResponseJson = await result.json();
         const caption = generateResponseJson.content[0].text;
-        console.log('Claude response:', generateResponseJson);
+        console.debug('Claude response:', generateResponseJson);
 
         if (!caption) {
             return response.status(500).send('No caption found');

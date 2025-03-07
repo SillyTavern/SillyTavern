@@ -9,6 +9,7 @@ import { getContext } from './st-context.js';
 import { isAdmin } from './user.js';
 import { t } from './i18n.js';
 import { debounce_timeout } from './constants.js';
+import { accountStorage } from './util/AccountStorage.js';
 
 export {
     getContext,
@@ -714,7 +715,7 @@ async function showExtensionsDetails() {
         htmlExternal.append(htmlLoading);
 
         const sortOrderKey = 'extensions_sortByName';
-        const sortByName = localStorage.getItem(sortOrderKey) === 'true';
+        const sortByName = accountStorage.getItem(sortOrderKey) === 'true';
         const sortFn = sortByName ? sortManifestsByName : sortManifestsByOrder;
         const extensions = Object.entries(manifests).sort((a, b) => sortFn(a[1], b[1])).map(getExtensionData);
 
@@ -745,7 +746,7 @@ async function showExtensionsDetails() {
             text: sortByName ? t`Sort: Display Name` : t`Sort: Loading Order`,
             action: async () => {
                 abortController.abort();
-                localStorage.setItem(sortOrderKey, sortByName ? 'false' : 'true');
+                accountStorage.setItem(sortOrderKey, sortByName ? 'false' : 'true');
                 await showExtensionsDetails();
             },
         };
@@ -1153,11 +1154,11 @@ async function checkForExtensionUpdates(force) {
         const currentDate = new Date().toDateString();
 
         // Don't nag more than once a day
-        if (localStorage.getItem(STORAGE_NAG_KEY) === currentDate) {
+        if (accountStorage.getItem(STORAGE_NAG_KEY) === currentDate) {
             return;
         }
 
-        localStorage.setItem(STORAGE_NAG_KEY, currentDate);
+        accountStorage.setItem(STORAGE_NAG_KEY, currentDate);
     }
 
     const isCurrentUserAdmin = isAdmin();

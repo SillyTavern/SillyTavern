@@ -80,7 +80,7 @@ router.post('/install', jsonParser, async (request, response) => {
         const { url, global } = request.body;
 
         if (global && !request.user.profile.admin) {
-            console.warn(`User ${request.user.profile.handle} does not have permission to install global extensions.`);
+            console.error(`User ${request.user.profile.handle} does not have permission to install global extensions.`);
             return response.status(403).send('Forbidden: No permission to install global extensions.');
         }
 
@@ -92,13 +92,13 @@ router.post('/install', jsonParser, async (request, response) => {
         }
 
         await git.clone(url, extensionPath, { '--depth': 1 });
-        console.log(`Extension has been cloned at ${extensionPath}`);
+        console.info(`Extension has been cloned at ${extensionPath}`);
 
         const { version, author, display_name } = await getManifest(extensionPath);
 
         return response.send({ version, author, display_name, extensionPath });
     } catch (error) {
-        console.log('Importing custom content failed', error);
+        console.error('Importing custom content failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);
     }
 });
@@ -124,7 +124,7 @@ router.post('/update', jsonParser, async (request, response) => {
         const { extensionName, global } = request.body;
 
         if (global && !request.user.profile.admin) {
-            console.warn(`User ${request.user.profile.handle} does not have permission to update global extensions.`);
+            console.error(`User ${request.user.profile.handle} does not have permission to update global extensions.`);
             return response.status(403).send('Forbidden: No permission to update global extensions.');
         }
 
@@ -139,9 +139,9 @@ router.post('/update', jsonParser, async (request, response) => {
         const currentBranch = await git.cwd(extensionPath).branch();
         if (!isUpToDate) {
             await git.cwd(extensionPath).pull('origin', currentBranch.current);
-            console.log(`Extension has been updated at ${extensionPath}`);
+            console.info(`Extension has been updated at ${extensionPath}`);
         } else {
-            console.log(`Extension is up to date at ${extensionPath}`);
+            console.info(`Extension is up to date at ${extensionPath}`);
         }
         await git.cwd(extensionPath).fetch('origin');
         const fullCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
@@ -150,7 +150,7 @@ router.post('/update', jsonParser, async (request, response) => {
         return response.send({ shortCommitHash, extensionPath, isUpToDate, remoteUrl });
 
     } catch (error) {
-        console.log('Updating custom content failed', error);
+        console.error('Updating custom content failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);
     }
 });
@@ -164,7 +164,7 @@ router.post('/move', jsonParser, async (request, response) => {
         }
 
         if (!request.user.profile.admin) {
-            console.warn(`User ${request.user.profile.handle} does not have permission to move extensions.`);
+            console.error(`User ${request.user.profile.handle} does not have permission to move extensions.`);
             return response.status(403).send('Forbidden: No permission to move extensions.');
         }
 
@@ -190,11 +190,11 @@ router.post('/move', jsonParser, async (request, response) => {
 
         fs.cpSync(sourcePath, destinationPath, { recursive: true, force: true });
         fs.rmSync(sourcePath, { recursive: true, force: true });
-        console.log(`Extension has been moved from ${sourcePath} to ${destinationPath}`);
+        console.info(`Extension has been moved from ${sourcePath} to ${destinationPath}`);
 
         return response.sendStatus(204);
     } catch (error) {
-        console.log('Moving extension failed', error);
+        console.error('Moving extension failed', error);
         return response.status(500).send('Internal Server Error. Try again later.');
     }
 });
@@ -237,13 +237,13 @@ router.post('/version', jsonParser, async (request, response) => {
         // get only the working branch
         const currentBranchName = currentBranch.current;
         await git.cwd(extensionPath).fetch('origin');
-        console.log(extensionName, currentBranchName, currentCommitHash);
+        console.debug(extensionName, currentBranchName, currentCommitHash);
         const { isUpToDate, remoteUrl } = await checkIfRepoIsUpToDate(extensionPath);
 
         return response.send({ currentBranchName, currentCommitHash, isUpToDate, remoteUrl });
 
     } catch (error) {
-        console.log('Getting extension version failed', error);
+        console.error('Getting extension version failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);
     }
 });
@@ -265,7 +265,7 @@ router.post('/delete', jsonParser, async (request, response) => {
         const { extensionName, global } = request.body;
 
         if (global && !request.user.profile.admin) {
-            console.warn(`User ${request.user.profile.handle} does not have permission to delete global extensions.`);
+            console.error(`User ${request.user.profile.handle} does not have permission to delete global extensions.`);
             return response.status(403).send('Forbidden: No permission to delete global extensions.');
         }
 
@@ -277,12 +277,12 @@ router.post('/delete', jsonParser, async (request, response) => {
         }
 
         await fs.promises.rm(extensionPath, { recursive: true });
-        console.log(`Extension has been deleted at ${extensionPath}`);
+        console.info(`Extension has been deleted at ${extensionPath}`);
 
         return response.send(`Extension has been deleted at ${extensionPath}`);
 
     } catch (error) {
-        console.log('Deleting custom content failed', error);
+        console.error('Deleting custom content failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);
     }
 });
@@ -323,7 +323,7 @@ router.get('/discover', jsonParser, function (request, response) {
 
     // Combine all extensions
     const allExtensions = [...builtInExtensions, ...userExtensions, ...globalExtensions];
-    console.log('Extensions available for', request.user.profile.handle, allExtensions);
+    console.info('Extensions available for', request.user.profile.handle, allExtensions);
 
     return response.send(allExtensions);
 });

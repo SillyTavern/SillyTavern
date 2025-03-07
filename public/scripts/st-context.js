@@ -1,6 +1,7 @@
 import {
     activateSendButtons,
     addOneMessage,
+    appendMediaToMessage,
     callPopup,
     characters,
     chat,
@@ -12,6 +13,7 @@ import {
     extension_prompts,
     Generate,
     generateQuietPrompt,
+    getCharacters,
     getCurrentChatId,
     getRequestHeaders,
     getThumbnailUrl,
@@ -40,6 +42,7 @@ import {
     substituteParamsExtended,
     this_chid,
     updateChatMetadata,
+    updateMessageBlock,
 } from '../script.js';
 import {
     extension_settings,
@@ -55,7 +58,7 @@ import { MacrosParser } from './macros.js';
 import { oai_settings } from './openai.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { power_user, registerDebugFunction } from './power-user.js';
-import { isMobile, shouldSendOnEnter } from './RossAscends-mods.js';
+import { humanizedDateTime, isMobile, shouldSendOnEnter } from './RossAscends-mods.js';
 import { ScraperManager } from './scrapers.js';
 import { executeSlashCommands, executeSlashCommandsWithOptions, registerSlashCommand } from './slash-commands.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -65,10 +68,14 @@ import { tag_map, tags } from './tags.js';
 import { textgenerationwebui_settings } from './textgen-settings.js';
 import { tokenizers, getTextTokens, getTokenCount, getTokenCountAsync, getTokenizerModel } from './tokenizers.js';
 import { ToolManager } from './tool-calling.js';
-import { timestampToMoment } from './utils.js';
+import { accountStorage } from './util/AccountStorage.js';
+import { timestampToMoment, uuidv4 } from './utils.js';
+import { getGlobalVariable, getLocalVariable, setGlobalVariable, setLocalVariable } from './variables.js';
+import { convertCharacterBook, loadWorldInfo, saveWorldInfo, updateWorldInfoList } from './world-info.js';
 
 export function getContext() {
     return {
+        accountStorage,
         chat,
         characters,
         groups,
@@ -167,6 +174,25 @@ export function getContext() {
         chatCompletionSettings: oai_settings,
         textCompletionSettings: textgenerationwebui_settings,
         powerUserSettings: power_user,
+        getCharacters,
+        uuidv4,
+        humanizedDateTime,
+        updateMessageBlock,
+        appendMediaToMessage,
+        variables: {
+            local: {
+                get: getLocalVariable,
+                set: setLocalVariable,
+            },
+            global: {
+                get: getGlobalVariable,
+                set: setGlobalVariable,
+            },
+        },
+        loadWorldInfo,
+        saveWorldInfo,
+        updateWorldInfoList,
+        convertCharacterBook,
     };
 }
 

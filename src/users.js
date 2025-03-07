@@ -458,7 +458,8 @@ export function getPasswordSalt() {
  */
 export function getCookieSessionName() {
     // Get server hostname and hash it to generate a session suffix
-    const suffix = crypto.createHash('sha256').update(os.hostname()).digest('hex').slice(0, 8);
+    const hostname = os.hostname() || 'localhost';
+    const suffix = crypto.createHash('sha256').update(hostname).digest('hex').slice(0, 8);
     return `session-${suffix}`;
 }
 
@@ -839,7 +840,7 @@ export function requireAdminMiddleware(request, response, next) {
 export async function createBackupArchive(handle, response) {
     const directories = getUserDirectories(handle);
 
-    console.log('Backup requested for', handle);
+    console.info('Backup requested for', handle);
     const archive = archiver('zip');
 
     archive.on('error', function (err) {
@@ -848,7 +849,7 @@ export async function createBackupArchive(handle, response) {
 
     // On stream closed we can end the request
     archive.on('end', function () {
-        console.log('Archive wrote %d bytes', archive.pointer());
+        console.info('Archive wrote %d bytes', archive.pointer());
         response.end(); // End the Express response
     });
 

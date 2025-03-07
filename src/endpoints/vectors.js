@@ -164,7 +164,7 @@ function getSourceSettings(source, request) {
             };
         case 'transformers':
             return {
-                model: getConfigValue('extras.embeddingModel', ''),
+                model: getConfigValue('extensions.models.embedding', ''),
             };
         case 'palm':
             return {
@@ -360,7 +360,7 @@ async function regenerateCorruptedIndexErrorHandler(req, res, error) {
 
             if (exists) {
                 const path = index.folderPath;
-                console.error(`Corrupted index detected at ${path}, regenerating...`);
+                console.warn(`Corrupted index detected at ${path}, regenerating...`);
                 await index.deleteIndex();
                 return res.redirect(307, req.originalUrl + '?regenerated=true');
             }
@@ -474,7 +474,7 @@ router.post('/purge-all', jsonParser, async (req, res) => {
                 continue;
             }
             await fs.promises.rm(sourcePath, { recursive: true });
-            console.log(`Deleted vector source store at ${sourcePath}`);
+            console.info(`Deleted vector source store at ${sourcePath}`);
         }
 
         return res.sendStatus(200);
@@ -498,7 +498,7 @@ router.post('/purge', jsonParser, async (req, res) => {
                 continue;
             }
             await fs.promises.rm(sourcePath, { recursive: true });
-            console.log(`Deleted vector index at ${sourcePath}`);
+            console.info(`Deleted vector index at ${sourcePath}`);
         }
 
         return res.sendStatus(200);

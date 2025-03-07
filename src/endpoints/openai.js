@@ -63,7 +63,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
         }
 
         if (!key && !request.body.reverse_proxy && ['custom', 'ooba', 'koboldcpp', 'vllm'].includes(request.body.api) === false) {
-            console.log('No key found for API', request.body.api);
+            console.warn('No key found for API', request.body.api);
             return response.sendStatus(400);
         }
 
@@ -93,7 +93,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             excludeKeysByYaml(body, request.body.custom_exclude_body);
         }
 
-        console.log('Multimodal captioning request', body);
+        console.debug('Multimodal captioning request', body);
 
         let apiUrl = '';
 
@@ -158,13 +158,13 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (!result.ok) {
             const text = await result.text();
-            console.log('Multimodal captioning request failed', result.statusText, text);
+            console.warn('Multimodal captioning request failed', result.statusText, text);
             return response.status(500).send(text);
         }
 
         /** @type {any} */
         const data = await result.json();
-        console.log('Multimodal captioning response', data);
+        console.info('Multimodal captioning response', data);
         const caption = data?.choices[0]?.message?.content;
 
         if (!caption) {
@@ -184,17 +184,17 @@ router.post('/transcribe-audio', urlencodedParser, async (request, response) => 
         const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
 
         if (!key) {
-            console.log('No OpenAI key found');
+            console.warn('No OpenAI key found');
             return response.sendStatus(400);
         }
 
         if (!request.file) {
-            console.log('No audio file found');
+            console.warn('No audio file found');
             return response.sendStatus(400);
         }
 
         const formData = new FormData();
-        console.log('Processing audio file', request.file.path);
+        console.info('Processing audio file', request.file.path);
         formData.append('file', fs.createReadStream(request.file.path), { filename: 'audio.wav', contentType: 'audio/wav' });
         formData.append('model', request.body.model);
 
@@ -213,13 +213,13 @@ router.post('/transcribe-audio', urlencodedParser, async (request, response) => 
 
         if (!result.ok) {
             const text = await result.text();
-            console.log('OpenAI request failed', result.statusText, text);
+            console.warn('OpenAI request failed', result.statusText, text);
             return response.status(500).send(text);
         }
 
         fs.rmSync(request.file.path);
         const data = await result.json();
-        console.log('OpenAI transcription response', data);
+        console.debug('OpenAI transcription response', data);
         return response.json(data);
     } catch (error) {
         console.error('OpenAI transcription failed', error);
@@ -232,7 +232,7 @@ router.post('/generate-voice', jsonParser, async (request, response) => {
         const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
 
         if (!key) {
-            console.log('No OpenAI key found');
+            console.warn('No OpenAI key found');
             return response.sendStatus(400);
         }
 
@@ -253,7 +253,7 @@ router.post('/generate-voice', jsonParser, async (request, response) => {
 
         if (!result.ok) {
             const text = await result.text();
-            console.log('OpenAI request failed', result.statusText, text);
+            console.warn('OpenAI request failed', result.statusText, text);
             return response.status(500).send(text);
         }
 
@@ -271,11 +271,11 @@ router.post('/generate-image', jsonParser, async (request, response) => {
         const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
 
         if (!key) {
-            console.log('No OpenAI key found');
+            console.warn('No OpenAI key found');
             return response.sendStatus(400);
         }
 
-        console.log('OpenAI request', request.body);
+        console.debug('OpenAI request', request.body);
 
         const result = await fetch('https://api.openai.com/v1/images/generations', {
             method: 'POST',
@@ -288,7 +288,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
 
         if (!result.ok) {
             const text = await result.text();
-            console.log('OpenAI request failed', result.statusText, text);
+            console.warn('OpenAI request failed', result.statusText, text);
             return response.status(500).send(text);
         }
 
@@ -308,7 +308,7 @@ custom.post('/generate-voice', jsonParser, async (request, response) => {
         const { input, provider_endpoint, response_format, voice, speed, model } = request.body;
 
         if (!provider_endpoint) {
-            console.log('No OpenAI-compatible TTS provider endpoint provided');
+            console.warn('No OpenAI-compatible TTS provider endpoint provided');
             return response.sendStatus(400);
         }
 
@@ -329,7 +329,7 @@ custom.post('/generate-voice', jsonParser, async (request, response) => {
 
         if (!result.ok) {
             const text = await result.text();
-            console.log('OpenAI request failed', result.statusText, text);
+            console.warn('OpenAI request failed', result.statusText, text);
             return response.status(500).send(text);
         }
 

@@ -114,7 +114,7 @@ router.post('/delete', jsonParser, async (request, response) => {
 
         if (group && Array.isArray(group.chats)) {
             for (const chat of group.chats) {
-                console.log('Deleting group chat', chat);
+                console.info('Deleting group chat', chat);
                 const pathToFile = path.join(request.user.directories.groupChats, `${id}.jsonl`);
 
                 if (fs.existsSync(pathToFile)) {

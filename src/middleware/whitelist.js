@@ -1,10 +1,11 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import process from 'node:process';
+import Handlebars from 'handlebars';
 import ipMatching from 'ip-matching';
 
 import { getIpFromRequest } from '../express-common.js';
-import { color, getConfigValue } from '../util.js';
+import { color, getConfigValue, safeReadFileSync } from '../util.js';
 
 const whitelistPath = path.join(process.cwd(), './whitelist.txt');
 const enableForwardedWhitelist = getConfigValue('enableForwardedWhitelist', false);
@@ -52,13 +53,17 @@ function getForwardedIp(req) {
  * @returns {import('express').RequestHandler} The middleware function
  */
 export default function whitelistMiddleware(whitelistMode, listen) {
+    const forbiddenWebpage = Handlebars.compile(
+        safeReadFileSync('./public/error/forbidden-by-whitelist.html') ?? '',
+    );
+
     return function (req, res, next) {
         const clientIp = getIpFromRequest(req);
         const forwardedIp = getForwardedIp(req);
+        const userAgent = req.headers['user-agent'];
 
         if (listen && !knownIPs.has(clientIp)) {
-            const userAgent = req.headers['user-agent'];
-            console.log(color.yellow(`New connection from ${clientIp}; User Agent: ${userAgent}\n`));
+            console.info(color.yellow(`New connection from ${clientIp}; User Agent: ${userAgent}\n`));
             knownIPs.add(clientIp);
 
             // Write access log
@@ -76,9 +81,15 @@ export default function whitelistMiddleware(whitelistMode, listen) {
             || forwardedIp && whitelistMode === true && !whitelist.some(x => ipMatching.matches(forwardedIp, ipMatching.getMatch(x)))
         ) {
             // Log the connection attempt with real IP address
-            const ipDetails = forwardedIp ? `${clientIp} (forwarded from ${forwardedIp})` : clientIp;
-            console.log(color.red('Forbidden: Connection attempt from ' + ipDetails + '. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.yaml in root of SillyTavern folder.\n'));
-            return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>' + ipDetails + '</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.yaml in root of SillyTavern folder.');
+            const ipDetails = forwardedIp
+                ? `${clientIp} (forwarded from ${forwardedIp})`
+                : clientIp;
+            console.warn(
+                color.red(
+                    `Blocked connection from ${clientIp}; User Agent: ${userAgent}\n\tTo allow this connection, add its IP address to the whitelist or disable whitelist mode by editing config.yaml in the root directory of your SillyTavern installation.\n`,
+                ),
+            );
+            return res.status(403).send(forbiddenWebpage({ ipDetails }));
         }
         next();
     };

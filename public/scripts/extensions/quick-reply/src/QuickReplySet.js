@@ -1,14 +1,13 @@
 import { getRequestHeaders, substituteParams } from '../../../../script.js';
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
-import { executeSlashCommands, executeSlashCommandsOnChatInput, executeSlashCommandsWithOptions } from '../../../slash-commands.js';
-import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
+import { executeSlashCommandsOnChatInput, executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
-import { debounceAsync, log, warn } from '../index.js';
+import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
+import { debounceAsync, warn } from '../index.js';
 import { QuickReply } from './QuickReply.js';
 
 export class QuickReplySet {
     /**@type {QuickReplySet[]}*/ static list = [];
-
 
     static from(props) {
         props.qrList = []; //props.qrList?.map(it=>QuickReply.from(it));
@@ -24,9 +23,6 @@ export class QuickReplySet {
         return this.list.find(it=>it.name == name);
     }
 
-
-
-
     /**@type {string}*/ name;
     /**@type {boolean}*/ disableSend = false;
     /**@type {boolean}*/ placeBeforeInput = false;
@@ -34,18 +30,11 @@ export class QuickReplySet {
     /**@type {string}*/ color = 'transparent';
     /**@type {boolean}*/ onlyBorderColor = false;
     /**@type {QuickReply[]}*/ qrList = [];
-
     /**@type {number}*/ idIndex = 0;
-
     /**@type {boolean}*/ isDeleted = false;
-
     /**@type {function}*/ save;
-
     /**@type {HTMLElement}*/ dom;
     /**@type {HTMLElement}*/ settingsDom;
-
-
-
 
     constructor() {
         this.save = debounceAsync(()=>this.performSave(), 200);
@@ -54,9 +43,6 @@ export class QuickReplySet {
     init() {
         this.qrList.forEach(qr=>this.hookQuickReply(qr));
     }
-
-
-
 
     unrender() {
         this.dom?.remove();
@@ -100,9 +86,6 @@ export class QuickReplySet {
         }
     }
 
-
-
-
     renderSettings() {
         if (!this.settingsDom) {
             this.settingsDom = document.createElement('div'); {
@@ -123,9 +106,6 @@ export class QuickReplySet {
         this.settingsDom.append(qr.renderSettings(idx));
     }
 
-
-
-
     /**
      *
      * @param {QuickReply} qr
@@ -138,6 +118,7 @@ export class QuickReplySet {
         closure.scope.setMacro('arg::*', '');
         return (await closure.execute())?.pipe;
     }
+
     /**
      *
      * @param {QuickReply} qr The QR to execute.
@@ -207,6 +188,7 @@ export class QuickReplySet {
             document.querySelector('#send_but').click();
         }
     }
+
     /**
      * @param {QuickReply} qr
      * @param {string} [message] - optional altered message to be used
@@ -219,9 +201,6 @@ export class QuickReplySet {
             scope,
         });
     }
-
-
-
 
     addQuickReply(data = {}) {
         const id = Math.max(this.idIndex, this.qrList.reduce((max,qr)=>Math.max(max,qr.id),0)) + 1;
@@ -239,6 +218,7 @@ export class QuickReplySet {
         this.save();
         return qr;
     }
+
     addQuickReplyFromText(qrJson) {
         let data;
         if (qrJson) {
@@ -371,7 +351,6 @@ export class QuickReplySet {
         this.save();
     }
 
-
     toJSON() {
         return {
             version: 2,
@@ -385,7 +364,6 @@ export class QuickReplySet {
             idIndex: this.idIndex,
         };
     }
-
 
     async performSave() {
         const response = await fetch('/api/quick-replies/save', {

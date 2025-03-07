@@ -19,7 +19,7 @@ import { isFalseBoolean, convertValueType, isTrueBoolean } from './utils.js';
 
 const MAX_LOOPS = 100;
 
-function getLocalVariable(name, args = {}) {
+export function getLocalVariable(name, args = {}) {
     if (!chat_metadata.variables) {
         chat_metadata.variables = {};
     }
@@ -45,7 +45,7 @@ function getLocalVariable(name, args = {}) {
     return (localVariable?.trim?.() === '' || isNaN(Number(localVariable))) ? (localVariable || '') : Number(localVariable);
 }
 
-function setLocalVariable(name, value, args = {}) {
+export function setLocalVariable(name, value, args = {}) {
     if (!name) {
         throw new Error('Variable name cannot be empty or undefined.');
     }
@@ -80,7 +80,7 @@ function setLocalVariable(name, value, args = {}) {
     return value;
 }
 
-function getGlobalVariable(name, args = {}) {
+export function getGlobalVariable(name, args = {}) {
     let globalVariable = extension_settings.variables.global[args.key ?? name];
     if (args.index !== undefined) {
         try {
@@ -102,7 +102,7 @@ function getGlobalVariable(name, args = {}) {
     return (globalVariable?.trim?.() === '' || isNaN(Number(globalVariable))) ? (globalVariable || '') : Number(globalVariable);
 }
 
-function setGlobalVariable(name, value, args = {}) {
+export function setGlobalVariable(name, value, args = {}) {
     if (!name) {
         throw new Error('Variable name cannot be empty or undefined.');
     }

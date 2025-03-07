@@ -96,7 +96,7 @@ router.post('/restore', jsonParser, function (request, response) {
 
         return response.send(result);
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return response.sendStatus(500);
     }
 });

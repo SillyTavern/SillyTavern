@@ -106,6 +106,8 @@
     --tool-cool-color-picker-btn-bg: transparent;
     --tool-cool-color-picker-btn-border-color: transparent;
 
+    --mes-right-spacing: 30px;
+
     --avatar-base-height: 50px;
     --avatar-base-width: 50px;
     --avatar-base-border-radius: 2px;
@@ -260,6 +262,10 @@ input[type='checkbox']:focus-visible {
     color: var(--SmartThemeEmColor);
 }
 
+.tokenItemizingMaintext {
+    font-size: calc(var(--mainFontSize) * 0.8);
+}
+
 .tokenGraph {
     border-radius: 10px;
     border: 1px solid var(--SmartThemeBorderColor);
@@ -292,36 +298,44 @@ input[type='checkbox']:focus-visible {
     filter: grayscale(25%);
 }
 
-.mes_text table {
+.mes_text table,
+.mes_reasoning table {
     border-spacing: 0;
     border-collapse: collapse;
     margin-bottom: 10px;
 }
 
 .mes_text td,
-.mes_text th {
+.mes_text th,
+.mes_reasoning td,
+.mes_reasoning th {
     border: 1px solid;
     border-collapse: collapse;
     padding: 0.25em;
 }
 
-.mes_text p {
+.mes_text p,
+.mes_reasoning p {
     margin-top: 0;
     margin-bottom: 10px;
 }
 
-.mes_text li tt {
+.mes_text li tt,
+.mes_reasoning li tt {
     display: inline-block;
 }
 
 .mes_text ol,
-.mes_text ul {
+.mes_text ul,
+.mes_reasoning ol,
+.mes_reasoning ul {
     margin-top: 5px;
     margin-bottom: 5px;
 }
 
 .mes_text br,
-.mes_bias br {
+.mes_bias br,
+.mes_reasoning br {
     content: ' ';
 }
 
@@ -332,25 +346,150 @@ input[type='checkbox']:focus-visible {
     color: var(--SmartThemeQuoteColor);
 }
 
-.mes_text i,
-.mes_text em {
+.mes_reasoning {
+    display: block;
+    border-left: 2px solid var(--SmartThemeEmColor);
+    border-radius: 2px;
+    padding: 5px;
+    padding-left: 14px;
+    margin-bottom: 0.5em;
+    overflow-y: auto;
     color: var(--SmartThemeEmColor);
 }
 
-.mes_text u {
+.mes_reasoning_details {
+    margin-right: var(--mes-right-spacing);
+}
+
+.mes_reasoning_details .mes_reasoning_summary {
+    list-style: none;
+    margin-right: calc(var(--mes-right-spacing) * -1);
+}
+
+.mes_reasoning_details summary::-webkit-details-marker {
+    display: none;
+}
+
+.mes_reasoning *:last-child {
+    margin-bottom: 0;
+}
+
+.mes_reasoning em,
+.mes_reasoning i,
+.mes_reasoning u,
+.mes_reasoning q,
+.mes_reasoning blockquote {
+    filter: saturate(0.5);
+}
+
+.mes_reasoning_details .mes_reasoning em {
+    color: color-mix(in srgb, var(--SmartThemeEmColor) 67%, var(--SmartThemeBlurTintColor) 33%);
+}
+
+.mes_reasoning_header_block {
+    flex-grow: 1;
+}
+
+.mes_reasoning_header {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    margin: 0.5em 2px;
+    padding: 7px 14px;
+    padding-right: calc(0.7em + 14px);
+    border-radius: 5px;
+    background-color: var(--grey30);
+    font-size: calc(var(--mainFontSize) * 0.9);
+    align-items: baseline;
+}
+
+.mes:has(.mes_reasoning:empty) .mes_reasoning_header {
+    cursor: default;
+}
+
+/* TWIMC: Remove with custom CSS to show the icon */
+.mes_reasoning_header>.icon-svg {
+    display: none;
+}
+
+@supports not selector(:has(*)) {
+    .mes_reasoning_details {
+        display: none !important;
+    }
+}
+
+.mes_bias:empty,
+.mes:not(.reasoning) .mes_reasoning_details,
+.mes_reasoning_details:not([open]) .mes_reasoning_actions,
+.mes_reasoning_details:has(.reasoning_edit_textarea) .mes_reasoning,
+.mes_reasoning_details:has(.reasoning_edit_textarea) .mes_reasoning_header,
+.mes_reasoning_details:has(.reasoning_edit_textarea) .mes_reasoning_actions .mes_button:not(.edit_button),
+.mes_reasoning_details:not(:has(.reasoning_edit_textarea)) .mes_reasoning_actions .edit_button,
+.mes_block:has(.edit_textarea):has(.reasoning_edit_textarea) .mes_reasoning_actions,
+.mes.reasoning:not([data-reasoning-state="hidden"]) .mes_edit_add_reasoning,
+.mes:has(.mes_reasoning:empty) .mes_reasoning_arrow,
+.mes:has(.mes_reasoning:empty) .mes_reasoning,
+.mes:has(.mes_reasoning:empty) .mes_reasoning_copy {
+    display: none;
+}
+
+.mes[data-reasoning-state="hidden"] .mes_edit_add_reasoning {
+    background-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 33%, var(--SmartThemeBlurTintColor) 66%);
+}
+
+/** If hidden reasoning should not be shown, we hide all blocks that don't have content */
+#chat:not([data-show-hidden-reasoning="true"]):not(:has(.reasoning_edit_textarea)) .mes:has(.mes_reasoning:empty) .mes_reasoning_details {
+    display: none;
+}
+
+.mes_reasoning_details .mes_reasoning_arrow {
+    position: absolute;
+    top: 50%;
+    right: 7px;
+    transform: translateY(-50%);
+    font-size: calc(var(--mainFontSize) * 0.7);
+    width: calc(var(--mainFontSize) * 0.7);
+    height: calc(var(--mainFontSize) * 0.7);
+}
+
+.mes_reasoning_details:not([open]) .mes_reasoning_arrow {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.mes_reasoning_summary>span {
+    margin-left: 0.5em;
+}
+
+.mes_text i,
+.mes_text em,
+.mes_reasoning i,
+.mes_reasoning em {
+    color: var(--SmartThemeEmColor);
+}
+
+.mes_text q i,
+.mes_text q em {
+    color: inherit;
+}
+
+.mes_text u,
+.mes_reasoning u {
     color: var(--SmartThemeUnderlineColor);
 }
 
-.mes_text q {
+.mes_text q,
+.mes_reasoning q {
     color: var(--SmartThemeQuoteColor);
 }
 
 .mes_text font[color] em,
-.mes_text font[color] i {
-    color: inherit;
-}
-
-.mes_text font[color] q {
+.mes_text font[color] i,
+.mes_text font[color] u,
+.mes_text font[color] q,
+.mes_reasoning font[color] em,
+.mes_reasoning font[color] i,
+.mes_reasoning font[color] u,
+.mes_reasoning font[color] q {
     color: inherit;
 }
 
@@ -358,7 +497,8 @@ input[type='checkbox']:focus-visible {
     display: block;
 }
 
-.mes_text blockquote {
+.mes_text blockquote,
+.mes_reasoning blockquote {
     border-left: 3px solid var(--SmartThemeQuoteColor);
     padding-left: 10px;
     background-color: var(--black30a);
@@ -368,18 +508,24 @@ input[type='checkbox']:focus-visible {
 .mes_text strong em,
 .mes_text strong,
 .mes_text h2,
-.mes_text h1 {
+.mes_text h1,
+.mes_reasoning strong em,
+.mes_reasoning strong,
+.mes_reasoning h2,
+.mes_reasoning h1 {
     font-weight: bold;
 }
 
-.mes_text pre code {
+.mes_text pre code,
+.mes_reasoning pre code {
     position: relative;
     display: block;
     overflow-x: auto;
     padding: 1em;
 }
 
-.mes_text img:not(.mes_img) {
+.mes_text img:not(.mes_img),
+.mes_reasoning img:not(.mes_img) {
     max-width: 100%;
     max-height: var(--doc-height);
 }
@@ -1022,8 +1168,8 @@ body .panelControlBar {
     /*only affects bubblechat to make it sit nicely at the bottom*/
 }
 
-.last_mes .mes_text {
-    padding-right: 30px;
+.last_mes:has(.mes_text:empty):has(.mes_reasoning_details) .mes_reasoning:not(:empty) {
+    margin-bottom: var(--mes-right-spacing);
 }
 
 /* SWIPE RELATED STYLES*/
@@ -1235,14 +1381,19 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     overflow-y: clip;
 }
 
-.mes_text {
+.mes_text,
+.mes_reasoning {
     font-weight: 500;
     line-height: calc(var(--mainFontSize) + .5rem);
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.mes_text {
     padding-left: 0;
     padding-top: 5px;
     padding-bottom: 5px;
-    max-width: 100%;
-    overflow-wrap: anywhere;
+    padding-right: var(--mes-right-spacing);
 }
 
 br {
@@ -2728,9 +2879,8 @@ select option:not(:checked) {
     color: var(--active) !important;
 }
 
-#instruct_enabled_label .menu_button:not(.toggleEnabled),
-#sysprompt_enabled_label .menu_button:not(.toggleEnabled) {
-    color: Red;
+.menu_button.togglable:not(.toggleEnabled) {
+    color: red;
 }
 
 .displayBlock {
@@ -2913,6 +3063,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .mes_block .ch_name {
     max-width: 100%;
     min-height: 22px;
+    align-items: flex-start;
 }
 
 /*applies to both groups and solos chars in the char list*/
@@ -2921,7 +3072,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     position: relative;
 }
 
-#rm_print_characters_block .ch_name,
+.character_name_block .ch_name,
 .avatar-container .ch_name {
     flex: 1 1 auto;
     white-space: nowrap;
@@ -2929,6 +3080,13 @@ input[type=search]:focus::-webkit-search-cancel-button {
     text-wrap: nowrap;
     text-overflow: ellipsis;
     display: block;
+}
+
+.character_name_block .character_version {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    text-wrap: nowrap;
+    max-width: 50%;
 }
 
 #rm_print_characters_block .character_name_block> :last-child {
@@ -4130,7 +4288,13 @@ input[type="range"]::-webkit-slider-thumb {
     transition: 0.3s ease-in-out;
 }
 
-.mes_edit_buttons .menu_button {
+.mes_reasoning_actions {
+    margin: 0;
+    margin-top: 0.5em;
+}
+
+.mes_edit_buttons .menu_button,
+.mes_reasoning_actions .edit_button {
     opacity: 0.5;
     padding: 0px;
     font-size: 1rem;
@@ -4143,10 +4307,18 @@ input[type="range"]::-webkit-slider-thumb {
     align-items: center;
 }
 
+.mes_reasoning_actions .edit_button {
+    margin-bottom: 0.5em;
+    opacity: 1;
+    filter: brightness(0.7);
+}
+
+.mes_reasoning_edit_cancel,
 .mes_edit_cancel.menu_button {
     background-color: var(--crimson70a);
 }
 
+.mes_reasoning_edit_done,
 .mes_edit_done.menu_button {
     background-color: var(--okGreen70a);
 }
@@ -4155,6 +4327,7 @@ input[type="range"]::-webkit-slider-thumb {
     opacity: 1;
 }
 
+.reasoning_edit_textarea,
 .edit_textarea {
     padding: 5px;
     margin: 0;
@@ -4164,6 +4337,14 @@ input[type="range"]::-webkit-slider-thumb {
     max-height: 75vh;
     max-height: 75dvh;
     field-sizing: content;
+}
+
+body[data-generating="true"] #send_but,
+body[data-generating="true"] #mes_continue,
+body[data-generating="true"] #mes_impersonate,
+body[data-generating="true"] #chat .last_mes .mes_buttons,
+body[data-generating="true"] #chat .last_mes .mes_reasoning_actions {
+    display: none;
 }
 
 #anchor_order {
@@ -4503,23 +4684,6 @@ body .ui-widget-content li {
 body .ui-widget-content li:hover {
     /* background-color: var(--SmartThemeEmColor); */
     opacity: 1;
-}
-
-.typing_indicator {
-    position: sticky;
-    bottom: 10px;
-    margin: 10px;
-    opacity: 0.85;
-    text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
-    order: 9999;
-}
-
-.typing_indicator:after {
-    display: inline-block;
-    vertical-align: bottom;
-    animation: ellipsis steps(4, end) 1500ms infinite;
-    content: "";
-    width: 0px;
 }
 
 #group_avatar_preview .missing-avatar {
@@ -5610,11 +5774,13 @@ body:not(.movingUI) .drawer-content.maximized {
     overflow-wrap: anywhere;
 }
 
+#SystemPromptColumn summary,
 #InstructSequencesColumn summary {
     font-size: 0.95em;
     cursor: pointer;
 }
 
+#SystemPromptColumn details,
 #InstructSequencesColumn details:not(:last-of-type) {
     margin-bottom: 5px;
 }
@@ -5643,6 +5809,7 @@ body:not(.movingUI) .drawer-content.maximized {
 
 .model-card .details-container {
     text-align: right;
+    line-height: 0.9;
 }
 
 .model-card:hover {
@@ -5665,7 +5832,7 @@ body:not(.movingUI) .drawer-content.maximized {
 }
 
 .model-title {
-    font-size: 13px;
+    font-size: calc(var(--mainFontSize) * 0.95);
     font-weight: bold;
     overflow: hidden;
 }
@@ -5681,7 +5848,7 @@ body:not(.movingUI) .drawer-content.maximized {
 .model-class,
 .model-context-length,
 .model-date-added {
-    font-size: 10px;
+    font-size: calc(var(--mainFontSize) * 0.75);
 }
 
 .model-class,
@@ -5762,4 +5929,30 @@ body:not(.movingUI) .drawer-content.maximized {
 
 .alternate_greetings_list {
     overflow-y: scroll;
+}
+
+.mes_text div[data-type="assistant_note"]:has(.assistant_note_export) {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 0 2px;
+}
+
+.mes_text div[data-type="assistant_note"]:has(.assistant_note_export)>div:not(.assistant_note_export) {
+    flex: 1;
+}
+
+.oneline-dropdown label {
+    margin-top: 3px;
+    margin-bottom: 5px;
+    flex-grow: 1;
+    text-align: left;
+}
+
+.oneline-dropdown select {
+    min-width: fit-content;
+    width: 40%;
 }

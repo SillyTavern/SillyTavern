@@ -120,7 +120,7 @@ router.post('/status', jsonParser, async function (req, res) {
     const api_key_novel = readSecret(req.user.directories, SECRET_KEYS.NOVEL);
 
     if (!api_key_novel) {
-        console.log('NovelAI Access Token is missing.');
+        console.warn('NovelAI Access Token is missing.');
         return res.sendStatus(400);
     }
 
@@ -137,15 +137,15 @@ router.post('/status', jsonParser, async function (req, res) {
             const data = await response.json();
             return res.send(data);
         } else if (response.status == 401) {
-            console.log('NovelAI Access Token is incorrect.');
+            console.error('NovelAI Access Token is incorrect.');
             return res.send({ error: true });
         }
         else {
-            console.log('NovelAI returned an error:', response.statusText);
+            console.warn('NovelAI returned an error:', response.statusText);
             return res.send({ error: true });
         }
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return res.send({ error: true });
     }
 });
@@ -156,7 +156,7 @@ router.post('/generate', jsonParser, async function (req, res) {
     const api_key_novel = readSecret(req.user.directories, SECRET_KEYS.NOVEL);
 
     if (!api_key_novel) {
-        console.log('NovelAI Access Token is missing.');
+        console.warn('NovelAI Access Token is missing.');
         return res.sendStatus(400);
     }
 
@@ -241,7 +241,7 @@ router.post('/generate', jsonParser, async function (req, res) {
         }
     }
 
-    console.log(util.inspect(data, { depth: 4 }));
+    console.debug(util.inspect(data, { depth: 4 }));
 
     const args = {
         body: JSON.stringify(data),
@@ -261,7 +261,7 @@ router.post('/generate', jsonParser, async function (req, res) {
             if (!response.ok) {
                 const text = await response.text();
                 let message = text;
-                console.log(`Novel API returned error: ${response.status} ${response.statusText} ${text}`);
+                console.warn(`Novel API returned error: ${response.status} ${response.statusText} ${text}`);
 
                 try {
                     const data = JSON.parse(text);
@@ -276,7 +276,7 @@ router.post('/generate', jsonParser, async function (req, res) {
 
             /** @type {any} */
             const data = await response.json();
-            console.log('NovelAI Output', data?.output);
+            console.info('NovelAI Output', data?.output);
             return res.send(data);
         }
     } catch (error) {
@@ -292,12 +292,12 @@ router.post('/generate-image', jsonParser, async (request, response) => {
     const key = readSecret(request.user.directories, SECRET_KEYS.NOVEL);
 
     if (!key) {
-        console.log('NovelAI Access Token is missing.');
+        console.warn('NovelAI Access Token is missing.');
         return response.sendStatus(400);
     }
 
     try {
-        console.log('NAI Diffusion request:', request.body);
+        console.debug('NAI Diffusion request:', request.body);
         const generateUrl = `${IMAGE_NOVELAI}/ai/generate-image`;
         const generateResult = await fetch(generateUrl, {
             method: 'POST',
@@ -358,7 +358,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
 
         if (!generateResult.ok) {
             const text = await generateResult.text();
-            console.log('NovelAI returned an error.', generateResult.statusText, text);
+            console.warn('NovelAI returned an error.', generateResult.statusText, text);
             return response.sendStatus(500);
         }
 
@@ -366,7 +366,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
         const imageBuffer = await extractFileFromZipBuffer(archiveBuffer, '.png');
 
         if (!imageBuffer) {
-            console.warn('NovelAI generated an image, but the PNG file was not found.');
+            console.error('NovelAI generated an image, but the PNG file was not found.');
             return response.sendStatus(500);
         }
 
@@ -378,7 +378,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
         }
 
         try {
-            console.debug('Upscaling image...');
+            console.info('Upscaling image...');
             const upscaleUrl = `${API_NOVELAI}/ai/upscale`;
             const upscaleResult = await fetch(upscaleUrl, {
                 method: 'POST',
@@ -413,7 +413,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
             return response.send(originalBase64);
         }
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return response.sendStatus(500);
     }
 });
@@ -422,7 +422,7 @@ router.post('/generate-voice', jsonParser, async (request, response) => {
     const token = readSecret(request.user.directories, SECRET_KEYS.NOVEL);
 
     if (!token) {
-        console.log('NovelAI Access Token is missing.');
+        console.error('NovelAI Access Token is missing.');
         return response.sendStatus(400);
     }
 
@@ -445,7 +445,7 @@ router.post('/generate-voice', jsonParser, async (request, response) => {
 
         if (!result.ok) {
             const errorText = await result.text();
-            console.log('NovelAI returned an error.', result.statusText, errorText);
+            console.error('NovelAI returned an error.', result.statusText, errorText);
             return response.sendStatus(500);
         }
 

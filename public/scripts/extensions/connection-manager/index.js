@@ -30,6 +30,7 @@ const CC_COMMANDS = [
     'api-url',
     'model',
     'proxy',
+    'stop-strings',
 ];
 
 const TC_COMMANDS = [
@@ -43,6 +44,7 @@ const TC_COMMANDS = [
     'context',
     'instruct-state',
     'tokenizer',
+    'stop-strings',
 ];
 
 const FANCY_NAMES = {
@@ -57,6 +59,7 @@ const FANCY_NAMES = {
     'instruct': 'Instruct Template',
     'context': 'Context Template',
     'tokenizer': 'Tokenizer',
+    'stop-strings': 'Custom Stopping Strings',
 };
 
 /**
@@ -138,6 +141,7 @@ const profilesProvider = () => [
  * @property {string} [context] Context Template
  * @property {string} [instruct-state] Instruct Mode
  * @property {string} [tokenizer] Tokenizer
+ * @property {string} [stop-strings] Custom Stopping Strings
  * @property {string[]} [exclude] Commands to exclude
  */
 

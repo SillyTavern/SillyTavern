@@ -176,7 +176,7 @@ router.post('/get', jsonParser, async (request, response) => {
         }
     }
     catch (err) {
-        console.log(err);
+        console.error(err);
     }
     return response.send(output);
 });
@@ -200,7 +200,7 @@ router.post('/download', jsonParser, async (request, response) => {
             category = i;
 
     if (category === null) {
-        console.debug('Bad request: unsupported asset category.');
+        console.error('Bad request: unsupported asset category.');
         return response.sendStatus(400);
     }
 
@@ -212,7 +212,7 @@ router.post('/download', jsonParser, async (request, response) => {
 
     const temp_path = path.join(request.user.directories.assets, 'temp', request.body.filename);
     const file_path = path.join(request.user.directories.assets, category, request.body.filename);
-    console.debug('Request received to download', url, 'to', file_path);
+    console.info('Request received to download', url, 'to', file_path);
 
     try {
         // Download to temp
@@ -241,13 +241,13 @@ router.post('/download', jsonParser, async (request, response) => {
         }
 
         // Move into asset place
-        console.debug('Download finished, moving file from', temp_path, 'to', file_path);
+        console.info('Download finished, moving file from', temp_path, 'to', file_path);
         fs.copyFileSync(temp_path, file_path);
         fs.rmSync(temp_path);
         response.sendStatus(200);
     }
     catch (error) {
-        console.log(error);
+        console.error(error);
         response.sendStatus(500);
     }
 });
@@ -270,7 +270,7 @@ router.post('/delete', jsonParser, async (request, response) => {
             category = i;
 
     if (category === null) {
-        console.debug('Bad request: unsupported asset category.');
+        console.error('Bad request: unsupported asset category.');
         return response.sendStatus(400);
     }
 
@@ -280,7 +280,7 @@ router.post('/delete', jsonParser, async (request, response) => {
         return response.status(400).send(validation.message);
 
     const file_path = path.join(request.user.directories.assets, category, request.body.filename);
-    console.debug('Request received to delete', category, file_path);
+    console.info('Request received to delete', category, file_path);
 
     try {
         // Delete if previous download failed
@@ -288,17 +288,17 @@ router.post('/delete', jsonParser, async (request, response) => {
             fs.unlink(file_path, (err) => {
                 if (err) throw err;
             });
-            console.debug('Asset deleted.');
+            console.info('Asset deleted.');
         }
         else {
-            console.debug('Asset not found.');
+            console.error('Asset not found.');
             response.sendStatus(400);
         }
         // Move into asset place
         response.sendStatus(200);
     }
     catch (error) {
-        console.log(error);
+        console.error(error);
         response.sendStatus(500);
     }
 });
@@ -314,6 +314,7 @@ router.post('/delete', jsonParser, async (request, response) => {
  */
 router.post('/character', jsonParser, async (request, response) => {
     if (request.query.name === undefined) return response.sendStatus(400);
+
     // For backwards compatibility, don't reject invalid character names, just sanitize them
     const name = sanitize(request.query.name.toString());
     const inputCategory = request.query.category;
@@ -325,7 +326,7 @@ router.post('/character', jsonParser, async (request, response) => {
             category = i;
 
     if (category === null) {
-        console.debug('Bad request: unsupported asset category.');
+        console.error('Bad request: unsupported asset category.');
         return response.sendStatus(400);
     }
 
@@ -364,7 +365,7 @@ router.post('/character', jsonParser, async (request, response) => {
         return response.send(output);
     }
     catch (err) {
-        console.log(err);
+        console.error(err);
         return response.sendStatus(500);
     }
 });

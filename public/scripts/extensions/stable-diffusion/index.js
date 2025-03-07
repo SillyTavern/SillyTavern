@@ -81,6 +81,7 @@ const sources = {
     huggingface: 'huggingface',
     nanogpt: 'nanogpt',
     bfl: 'bfl',
+    falai: 'falai',
 };
 
 const initiators = {
@@ -1169,6 +1170,10 @@ async function onBflKeyClick() {
     return onApiKeyClick('BFL API Key:', SECRET_KEYS.BFL);
 }
 
+async function onFalaiKeyClick() {
+    return onApiKeyClick('FALAI API Key:', SECRET_KEYS.FALAI);
+}
+
 function onBflUpsamplingInput() {
     extension_settings.sd.bfl_upsampling = !!$('#sd_bfl_upsampling').prop('checked');
     saveSettingsDebounced();
@@ -1299,6 +1304,7 @@ async function onModelChange() {
         sources.huggingface,
         sources.nanogpt,
         sources.bfl,
+        sources.falai,
     ];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
@@ -1707,6 +1713,9 @@ async function loadModels() {
         case sources.bfl:
             models = await loadBflModels();
             break;
+        case sources.falai:
+            models = await loadFalaiModels();
+            break;
     }
 
     for (const model of models) {
@@ -1742,6 +1751,21 @@ async function loadBflModels() {
         { value: 'flux-pro', text: 'flux-pro' },
         { value: 'flux-dev', text: 'flux-dev' },
     ];
+}
+
+async function loadFalaiModels() {
+    $('#sd_falai_key').toggleClass('success', !!secret_state[SECRET_KEYS.FALAI]);
+
+    const result = await fetch('/api/sd/falai/models', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+
+    if (result.ok) {
+        return await result.json();
+    }
+
+    return [];
 }
 
 async function loadPollinationsModels() {
@@ -2079,6 +2103,9 @@ async function loadSchedulers() {
             schedulers = ['N/A'];
             break;
         case sources.bfl:
+            schedulers = ['N/A'];
+            break;
+        case sources.falai:
             schedulers = ['N/A'];
             break;
     }
@@ -2734,6 +2761,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                 break;
             case sources.bfl:
                 result = await generateBflImage(prefixedPrompt, signal);
+                break;
+            case sources.falai:
+                result = await generateFalaiImage(prefixedPrompt, negativePrompt, signal);
                 break;
         }
 
@@ -3496,6 +3526,40 @@ async function generateBflImage(prompt, signal) {
     }
 }
 
+/**
+ * Generates an image using the FAL.AI API.
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The negative prompt used to guide the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateFalaiImage(prompt, negativePrompt, signal) {
+    const result = await fetch('/api/sd/falai/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify({
+            prompt: prompt,
+            negative_prompt: negativePrompt,
+            model: extension_settings.sd.model,
+            steps: clamp(extension_settings.sd.steps, 1, 50),
+            guidance: clamp(extension_settings.sd.scale, 1.5, 5),
+            width: clamp(extension_settings.sd.width, 256, 1440),
+            height: clamp(extension_settings.sd.height, 256, 1440),
+            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'jpg', data: data.image };
+    } else {
+        const text = await result.text();
+        console.log(text);
+        throw new Error(text);
+    }
+}
+
 async function onComfyOpenWorkflowEditorClick() {
     let workflow = await (await fetch('/api/sd/comfy/workflow', {
         method: 'POST',
@@ -3782,6 +3846,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.NANOGPT];
         case sources.bfl:
             return secret_state[SECRET_KEYS.BFL];
+        case sources.falai:
+            return secret_state[SECRET_KEYS.FALAI];
     }
 }
 
@@ -4443,6 +4509,7 @@ jQuery(async () => {
     $('#sd_function_tool').on('input', onFunctionToolInput);
     $('#sd_bfl_key').on('click', onBflKeyClick);
     $('#sd_bfl_upsampling').on('input', onBflUpsamplingInput);
+    $('#sd_falai_key').on('click', onFalaiKeyClick);
 
     if (!CSS.supports('field-sizing', 'content')) {
         $('.sd_settings .inline-drawer-toggle').on('click', function () {

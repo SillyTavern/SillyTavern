@@ -672,10 +672,6 @@
         "type": "moving_ui"
     },
     {
-        "filename": "presets/moving-ui/Black Magic Time.json",
-        "type": "moving_ui"
-    },
-    {
         "filename": "presets/quick-replies/Default.json",
         "type": "quick_replies"
     },
@@ -781,6 +777,14 @@
     },
     {
         "filename": "presets/context/Mistral V7.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/instruct/DeepSeek-V2.5.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/DeepSeek-V2.5.json",
         "type": "context"
     }
 ]

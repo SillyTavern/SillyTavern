@@ -72,6 +72,10 @@ dialog {
     overflow-x: auto;
 }
 
+.popup.left_aligned_dialogue_popup .popup-content {
+    text-align: start;
+}
+
 /* Opening animation */
 .popup[opening] {
     animation: pop-in var(--popup-animation-speed) ease-in-out;

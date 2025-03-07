@@ -41,7 +41,8 @@
                 <option value="blockentropy">Block Entropy</option>
                 <option value="comfy">ComfyUI</option>
                 <option value="drawthings">DrawThings HTTP API</option>
-                <option value="extras">Extras API (local / remote)</option>
+                <option value="extras">Extras API (deprecated)</option>
+                <option value="falai">FAL.AI</option>
                 <option value="huggingface">HuggingFace Inference API (serverless)</option>
                 <option value="nanogpt">NanoGPT</option>
                 <option value="novel">NovelAI Diffusion</option>
@@ -254,6 +255,20 @@
                         Prompt Upsampling
                     </span>
                 </label>
+            </div>
+
+            <div data-sd-source="falai">
+                <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
+                    <a href="https://fal.ai/dashboard" target="_blank" rel="noopener noreferrer">
+                        <strong data-i18n="API Key">API Key</strong>
+                        <i class="fa-solid fa-share-from-square"></i>
+                    </a>
+                    <span class="expander"></span>
+                    <div id="sd_falai_key" class="menu_button menu_button_icon">
+                        <i class="fa-fw fa-solid fa-key"></i>
+                        <span data-i18n="Click to set">Click to set</span>
+                    </div>
+                </div>
             </div>
 
             <div class="flex-container">

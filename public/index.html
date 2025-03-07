@@ -730,7 +730,7 @@
                                             <input type="range" id="top_k_openai" name="volume" min="0" max="500" step="1">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="0" max="200" step="1" data-for="top_k_openai" id="top_k_counter_openai">
+                                            <input type="number" min="0" max="500" step="1" data-for="top_k_openai" id="top_k_counter_openai">
                                         </div>
                                     </div>
                                 </div>
@@ -1587,6 +1587,10 @@
                                                 <input type="checkbox" id="skip_special_tokens_textgenerationwebui" />
                                                 <small data-i18n="Skip Special Tokens">Skip Special Tokens</small>
                                             </label>
+                                            <label data-tg-type="openrouter" class="checkbox_label flexGrow flexShrink" for="include_reasoning_textgenerationwebui">
+                                                <input type="checkbox" id="include_reasoning_textgenerationwebui" />
+                                                <small data-i18n="Request Model Reasoning">Request Model Reasoning</small>
+                                            </label>
                                             <label data-tg-type="ooba, aphrodite, tabby" class="checkbox_label  flexGrow flexShrink" for="temperature_last_textgenerationwebui">
                                                 <input type="checkbox" id="temperature_last_textgenerationwebui" />
                                                 <label>
@@ -1617,17 +1621,34 @@
                                     </div>
                                     <div data-tg-type-mode="except" data-tg-type="generic" id="banned_tokens_block_ooba" class="wide100p">
                                         <hr class="width100p">
-                                        <h4 class="range-block-title justifyCenter">
-                                            <span data-i18n="Banned Tokens">Banned Tokens/Strings</span>
-                                            <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]LLaMA / Mistral / Yi models only" title="Enter sequences you don't want to appear in the output.&#13;Unquoted text will be tokenized in the back end and banned as tokens.&#13;[token ids] will be banned as-is.&#13;Most tokens have a leading space. Use token counter (with the correct tokenizer selected first!) if you are unsure.&#13;Enclose text in double quotes to ban the entire string as a set.&#13;Quoted Strings and [Token ids] must be on their own line."></div>
-                                        </h4>
-                                        <div class="wide100p">
-                                            <textarea id="banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="banned_tokens_textgenerationwebui" rows="3" data-i18n="[placeholder]Example: some text [42, 69, 1337]" placeholder='some text as tokens&#10;[420, 69, 1337]&#10;"Some verbatim string"'></textarea>
+                                        <div class="range-block-title title_restorable">
+                                            <div>
+                                                <strong data-i18n="Banned Tokens">Banned Tokens/Strings</strong>
+                                                <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]LLaMA / Mistral / Yi models only" title="Enter sequences you don't want to appear in the output.&#13;Unquoted text will be tokenized in the back end and banned as tokens.&#13;[token ids] will be banned as-is.&#13;Most tokens have a leading space. Use token counter (with the correct tokenizer selected first!) if you are unsure.&#13;Enclose text in double quotes to ban the entire string as a set.&#13;Quoted Strings and [Token ids] must be on their own line."></div>
+                                            </div>
+                                            <label id="send_banned_tokens_label" for="send_banned_tokens_textgenerationwebui" class="checkbox_label">
+                                                <input id="send_banned_tokens_textgenerationwebui" type="checkbox" style="display:none;" />
+                                                <small><i class="fa-solid fa-power-off menu_button togglable margin0"></i></small>
+                                            </label>
+                                        </div>
+                                        <div id="banned_tokens_controls_ooba">
+                                            <div class="textAlignCenter">
+                                                <small data-i18n="Global list">Global list</small>
+                                            </div>
+                                            <div class="wide100p marginBot10">
+                                                <textarea id="global_banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="global_banned_tokens_textgenerationwebui" rows="3" data-i18n="[placeholder]Example: some text [42, 69, 1337]" placeholder='some text as tokens&#10;[420, 69, 1337]&#10;"Some verbatim string"'></textarea>
+                                            </div>
+                                            <div class="textAlignCenter">
+                                                <small data-i18n="Preset-specific list">Preset-specific list</small>
+                                            </div>
+                                            <div class="wide100p">
+                                                <textarea id="banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="banned_tokens_textgenerationwebui" rows="3" data-i18n="[placeholder]Example: some text [42, 69, 1337]" placeholder='some text as tokens&#10;[420, 69, 1337]&#10;"Some verbatim string"'></textarea>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="range-block wide100p">
                                         <div id="logit_bias_textgenerationwebui" class="range-block-title title_restorable">
-                                            <span data-i18n="Logit Bias">Logit Bias</span>
+                                            <strong data-i18n="Logit Bias">Logit Bias</strong>
                                             <div id="textgen_logit_bias_new_entry" class="menu_button menu_button_icon">
                                                 <i class="fa-xs fa-solid fa-plus"></i>
                                                 <small data-i18n="Add">Add</small>
@@ -1930,7 +1951,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -1953,14 +1974,16 @@
                                             <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
                                         </div>
                                         <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom">
-                                            <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
-                                                Inline Image Quality
-                                            </label>
-                                            <select id="openai_inline_image_quality">
-                                                <option data-i18n="openai_inline_image_quality_auto" value="auto">Auto</option>
-                                                <option data-i18n="openai_inline_image_quality_low" value="low">Low</option>
-                                                <option data-i18n="openai_inline_image_quality_high" value="high">High</option>
-                                            </select>
+                                            <div class="flex-container oneline-dropdown">
+                                                <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
+                                                    Inline Image Quality
+                                                </label>
+                                                <select id="openai_inline_image_quality">
+                                                    <option data-i18n="openai_inline_image_quality_auto" value="auto">Auto</option>
+                                                    <option data-i18n="openai_inline_image_quality_low" value="low">Low</option>
+                                                    <option data-i18n="openai_inline_image_quality_high" value="high">High</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="makersuite">
@@ -1977,18 +2000,30 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite">
+                                    <div class="range-block" data-source="deepseek,openrouter">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
                                             <span>
-                                                <span data-i18n="Show model thoughts">Show model thoughts</span>
-                                                <i class="opacity50p fa-solid fa-circle-info" title="Gemini 2.0 Thinking"></i>
+                                                <span data-i18n="Request model reasoning">Request model reasoning</span>
+                                                <i class="opacity50p fa-solid fa-circle-info" title="DeepSeek Reasoner"></i>
                                             </span>
                                         </label>
                                         <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Display the model's internal thoughts in the response.">
-                                                Display the model's internal thoughts in the response.
+                                            <span data-i18n="Allows the model to return its thinking process.">
+                                                Allows the model to return its thinking process.
                                             </span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom">
+                                        <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Currently supported values are low, medium, and high.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response.">
+                                            <label for="openai_reasoning_effort" data-i18n="Reasoning Effort">
+                                                Reasoning Effort
+                                            </label>
+                                            <select id="openai_reasoning_effort">
+                                                <option data-i18n="openai_reasoning_effort_low" value="low">Low</option>
+                                                <option data-i18n="openai_reasoning_effort_medium" value="medium">Medium</option>
+                                                <option data-i18n="openai_reasoning_effort_high" value="high">High</option>
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="claude">
@@ -2692,7 +2727,7 @@
                                 <option value="windowai">Window AI</option>
                             </optgroup>
                         </select>
-                        <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite">
+                        <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,deepseek">
                             <div class="inline-drawer-toggle inline-drawer-header">
                                 <b data-i18n="Reverse Proxy">Reverse Proxy</b>
                                 <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -2755,7 +2790,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite">
+                        <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite,deepseek">
                             <div class="reverse_proxy_warning">
                                 <b>
                                     <div data-i18n="Using a proxy that you're not running yourself is a risk to your data privacy.">
@@ -2805,27 +2840,6 @@
                             <div>
                                 <h4 data-i18n="OpenAI Model">OpenAI Model</h4>
                                 <select id="model_openai_select">
-                                    <optgroup label="GPT-3.5 Turbo">
-                                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                                        <option value="gpt-3.5-turbo-0125">gpt-3.5-turbo-0125 (2024)</option>
-                                        <option value="gpt-3.5-turbo-1106">gpt-3.5-turbo-1106 (2023)</option>
-                                        <option value="gpt-3.5-turbo-0613">gpt-3.5-turbo-0613 (2023)</option>
-                                        <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301 (2023)</option>
-                                        <option value="gpt-3.5-turbo-16k">gpt-3.5-turbo-16k</option>
-                                        <option value="gpt-3.5-turbo-16k-0613">gpt-3.5-turbo-16k-0613 (2023)</option>
-                                    </optgroup>
-                                    <optgroup label="GPT-3.5 Turbo Instruct">
-                                        <option value="gpt-3.5-turbo-instruct">gpt-3.5-turbo-instruct</option>
-                                        <option value="gpt-3.5-turbo-instruct-0914">gpt-3.5-turbo-instruct-0914</option>
-                                    </optgroup>
-                                    <optgroup label="GPT-4">
-                                        <option value="gpt-4">gpt-4</option>
-                                        <option value="gpt-4-0613">gpt-4-0613 (2023)</option>
-                                        <option value="gpt-4-0314">gpt-4-0314 (2023)</option>
-                                        <option value="gpt-4-32k">gpt-4-32k</option>
-                                        <option value="gpt-4-32k-0613">gpt-4-32k-0613 (2023)</option>
-                                        <option value="gpt-4-32k-0314">gpt-4-32k-0314 (2023)</option>
-                                    </optgroup>
                                     <optgroup label="GPT-4o">
                                         <option value="gpt-4o">gpt-4o</option>
                                         <option value="gpt-4o-2024-11-20">gpt-4o-2024-11-20</option>
@@ -2833,29 +2847,44 @@
                                         <option value="gpt-4o-2024-05-13">gpt-4o-2024-05-13</option>
                                         <option value="chatgpt-4o-latest">chatgpt-4o-latest</option>
                                     </optgroup>
-                                    <optgroup label="gpt-4o-mini">
+                                    <optgroup label="GPT-4o mini">
                                         <option value="gpt-4o-mini">gpt-4o-mini</option>
-                                        <option value="gpt-4o-mini-2024-07-18">gpt-4o-mini-2024-07-18</option>
+                                        <option value="gpt-4o-2024-11-20">gpt-4o-2024-11-20</option>
+                                        <option value="gpt-4o-2024-08-06">gpt-4o-2024-08-06</option>
+                                        <option value="gpt-4o-2024-05-13">gpt-4o-2024-05-13</option>
+                                        <option value="chatgpt-4o-latest">chatgpt-4o-latest</option>
                                     </optgroup>
-                                    <optgroup label="GPT-4 Turbo">
+                                    <optgroup label="o1 and o1-mini">
+                                        <option value="o1">o1</option>
+                                        <option value="o1-2024-12-17">o1-2024-12-17</option>
+                                        <option value="o1-mini">o1-mini</option>
+                                        <option value="o1-mini-2024-09-12">o1-mini-2024-09-12</option>
+                                        <option value="o1-preview">o1-preview</option>
+                                        <option value="o1-preview-2024-09-12">o1-preview-2024-09-12</option>
+                                    </optgroup>
+                                    <optgroup label="o3">
+                                        <option value="o3-mini">o3-mini</option>
+                                        <option value="o3-mini-2025-01-31">o3-mini-2025-01-31</option>
+                                    </optgroup>
+                                    <optgroup label="GPT-4 Turbo and GPT-4">
                                         <option value="gpt-4-turbo">gpt-4-turbo</option>
                                         <option value="gpt-4-turbo-2024-04-09">gpt-4-turbo-2024-04-09</option>
                                         <option value="gpt-4-turbo-preview">gpt-4-turbo-preview</option>
-                                        <option value="gpt-4-vision-preview">gpt-4-vision-preview</option>
                                         <option value="gpt-4-0125-preview">gpt-4-0125-preview (2024)</option>
                                         <option value="gpt-4-1106-preview">gpt-4-1106-preview (2023)</option>
+                                        <option value="gpt-4">gpt-4</option>
+                                        <option value="gpt-4-0613">gpt-4-0613 (2023)</option>
+                                        <option value="gpt-4-0314">gpt-4-0314 (2023)</option>
                                     </optgroup>
-                                    <optgroup label="o1">
-                                        <option value="o1-preview">o1-preview</option>
-                                        <option value="o1-mini">o1-mini</option>
+                                    <optgroup label="GPT-3.5 Turbo">
+                                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                                        <option value="gpt-3.5-turbo-0125">gpt-3.5-turbo-0125 (2024)</option>
+                                        <option value="gpt-3.5-turbo-1106">gpt-3.5-turbo-1106 (2023)</option>
+                                        <option value="gpt-3.5-turbo-instruct">gpt-3.5-turbo-instruct</option>
                                     </optgroup>
                                     <optgroup label="Other">
-                                        <option value="text-davinci-003">text-davinci-003</option>
-                                        <option value="text-davinci-002">text-davinci-002</option>
-                                        <option value="text-curie-001">text-curie-001</option>
-                                        <option value="text-babbage-001">text-babbage-001</option>
-                                        <option value="text-ada-001">text-ada-001</option>
-                                        <option value="code-davinci-002">code-davinci-002</option>
+                                        <option value="babbage-002">babbage-002</option>
+                                        <option value="davinci-002">davinci-002</option>
                                     </optgroup>
                                     <optgroup id="openai_external_category" label="External">
                                     </optgroup>
@@ -3054,6 +3083,7 @@
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
                                     <optgroup label="Primary">
+                                        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
                                         <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
                                         <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
                                         <option value="gemini-1.0-pro">Gemini 1.0 Pro (Deprecated)</option>
@@ -3062,7 +3092,14 @@
                                         <option value="gemini-1.0-ultra-latest">Gemini 1.0 Ultra</option>
                                     </optgroup>
                                     <optgroup label="Subversions">
-                                        <option value="gemini-2.0-flash-thinking-exp-1219">Gemini 2.0 Flash Thinking Experimental</option>
+                                        <option value="gemini-2.0-pro-exp">Gemini 2.0 Pro Experimental</option>
+                                        <option value="gemini-2.0-pro-exp-02-05">Gemini 2.0 Pro Experimental 2025-02-05</option>
+                                        <option value="gemini-2.0-flash-lite-preview">Gemini 2.0 Flash-Lite Preview</option>
+                                        <option value="gemini-2.0-flash-lite-preview-02-05">Gemini 2.0 Flash-Lite Preview 2025-02-05</option>
+                                        <option value="gemini-2.0-flash-001">Gemini 2.0 Flash [001]</option>
+                                        <option value="gemini-2.0-flash-thinking-exp">Gemini 2.0 Flash Thinking Experimental</option>
+                                        <option value="gemini-2.0-flash-thinking-exp-01-21">Gemini 2.0 Flash Thinking Experimental 2025-01-21</option>
+                                        <option value="gemini-2.0-flash-thinking-exp-1219">Gemini 2.0 Flash Thinking Experimental 2024-12-19</option>
                                         <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Experimental</option>
                                         <option value="gemini-exp-1114">Gemini Experimental 2024-11-14</option>
                                         <option value="gemini-exp-1121">Gemini Experimental 2024-11-21</option>
@@ -3149,33 +3186,21 @@
                             </div>
                             <h4 data-i18n="Groq Model">Groq Model</h4>
                             <select id="model_groq_select">
-                                <optgroup label="Llama 3.3">
+                                <optgroup label="Production Models">
+                                    <option value="gemma2-9b-it">gemma2-9b-it</option>
                                     <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                                    <option value="llama3-70b-8192">llama3-70b-8192</option>
+                                    <option value="llama3-8b-8192">llama3-8b-8192</option>
+                                    <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
                                 </optgroup>
-                                <optgroup label="Llama 3.2">
+                                <optgroup label="Preview Models">
+                                    <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
+                                    <option value="llama-3.3-70b-specdec">llama-3.3-70b-specdec</option>
                                     <option value="llama-3.2-1b-preview">llama-3.2-1b-preview</option>
                                     <option value="llama-3.2-3b-preview">llama-3.2-3b-preview</option>
                                     <option value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview</option>
                                     <option value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview</option>
-                                </optgroup>
-                                <optgroup label="Llama 3.1">
-                                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-                                    <option value="llama-3.1-70b-versatile">llama-3.1-70b-versatile</option>
-                                    <option value="llama-3.1-405b-reasoning">llama-3.1-405b-reasoning</option>
-                                </optgroup>
-                                <optgroup label="Llama 3">
-                                    <option value="llama3-groq-8b-8192-tool-use-preview">llama3-groq-8b-8192-tool-use-preview</option>
-                                    <option value="llama3-groq-70b-8192-tool-use-preview">llama3-groq-70b-8192-tool-use-preview</option>
-                                    <option value="llama3-8b-8192">llama3-8b-8192</option>
-                                    <option value="llama3-70b-8192">llama3-70b-8192</option>
-                                </optgroup>
-                                <optgroup label="Gemma">
-                                    <option value="gemma-7b-it">gemma-7b-it</option>
-                                    <option value="gemma2-9b-it">gemma2-9b-it</option>
-                                </optgroup>
-                                <optgroup label="Other">
-                                    <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
-                                    <option value="llava-v1.5-7b-4096-preview">llava-v1.5-7b-4096-preview</option>
                                 </optgroup>
                             </select>
                         </div>
@@ -3209,6 +3234,7 @@
                                 <select id="model_deepseek_select">
                                     <option value="deepseek-chat">deepseek-chat</option>
                                     <option value="deepseek-coder">deepseek-coder</option>
+                                    <option value="deepseek-reasoner">deepseek-reasoner</option>
                                 </select>
                             </div>
                         </div>
@@ -3224,31 +3250,18 @@
                             <h4 data-i18n="Perplexity Model">Perplexity Model</h4>
                             <select id="model_perplexity_select">
                                 <optgroup label="Perplexity Sonar Models">
+                                    <option value="sonar">sonar</option>
+                                    <option value="sonar-pro">sonar-pro</option>
+                                    <option value="sonar-reasoning">sonar-reasoning</option>
+                                </optgroup>
+                                <optgroup label="Deprecated Models">
+                                    <!-- These are scheduled for deprecation after 2/22/2025 -->
                                     <option value="llama-3.1-sonar-small-128k-online">llama-3.1-sonar-small-128k-online</option>
                                     <option value="llama-3.1-sonar-large-128k-online">llama-3.1-sonar-large-128k-online</option>
                                     <option value="llama-3.1-sonar-huge-128k-online">llama-3.1-sonar-huge-128k-online</option>
-                                </optgroup>
-                                <optgroup label="Perplexity Chat Models">
+                                    <!-- These are not listed on the site anymore -->
                                     <option value="llama-3.1-sonar-small-128k-chat">llama-3.1-sonar-small-128k-chat</option>
                                     <option value="llama-3.1-sonar-large-128k-chat">llama-3.1-sonar-large-128k-chat</option>
-                                </optgroup>
-                                <optgroup label="Open-Source Models">
-                                    <option value="llama-3.1-8b-instruct">llama-3.1-8b-instruct</option>
-                                    <option value="llama-3.1-70b-instruct">llama-3.1-70b-instruct</option>
-                                </optgroup>
-                                <optgroup label="Deprecated Models">
-                                    <option value="llama-3-sonar-small-32k-chat">llama-3-sonar-small-32k-chat</option>
-                                    <option value="llama-3-sonar-small-32k-online">llama-3-sonar-small-32k-online</option>
-                                    <option value="llama-3-sonar-large-32k-chat">llama-3-sonar-large-32k-chat</option>
-                                    <option value="llama-3-sonar-large-32k-online">llama-3-sonar-large-32k-online</option>
-                                    <option value="sonar-small-chat">sonar-small-chat</option>
-                                    <option value="sonar-small-online">sonar-small-online</option>
-                                    <option value="sonar-medium-chat">sonar-medium-chat</option>
-                                    <option value="sonar-medium-online">sonar-medium-online</option>
-                                    <option value="llama-3-8b-instruct">llama-3-8b-instruct</option>
-                                    <option value="llama-3-70b-instruct">llama-3-70b-instruct</option>
-                                    <option value="mistral-7b-instruct">mistral-7b-instruct (v0.2)</option>
-                                    <option value="mixtral-8x7b-instruct">mixtral-8x7b-instruct</option>
                                 </optgroup>
                             </select>
                         </div>
@@ -3521,7 +3534,7 @@
                                 </label>
                                 <label id="instruct_enabled_label"for="instruct_enabled" class="checkbox_label flex1" title="Enable Instruct Mode" data-i18n="[title]instruct_enabled">
                                     <input id="instruct_enabled" type="checkbox" style="display:none;" />
-                                    <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
+                                    <small><i class="fa-solid fa-power-off menu_button togglable margin0"></i></small>
                                 </label>
                             </div>
                         </h4>
@@ -3699,7 +3712,7 @@
                             <div class="flex-container">
                                 <label id="sysprompt_enabled_label" for="sysprompt_enabled" class="checkbox_label flex1" title="Enable System Prompt" data-i18n="[title]sysprompt_enabled">
                                     <input id="sysprompt_enabled" type="checkbox" style="display:none;" />
-                                    <small><i class="fa-solid fa-power-off menu_button margin0"></i></small>
+                                    <small><i class="fa-solid fa-power-off menu_button togglable margin0"></i></small>
                                 </label>
                             </div>
                         </h4>
@@ -3753,8 +3766,8 @@
                             </div>
                             <label class="checkbox_label" for="custom_stopping_strings_macro">
                                 <input id="custom_stopping_strings_macro" type="checkbox" checked>
-                                <small data-i18n="Replace Macro in Custom Stopping Strings">
-                                    Replace Macro in Custom Stopping Strings
+                                <small data-i18n="Replace Macro in Stop Strings">
+                                    Replace Macro in Stop Strings
                                 </small>
                             </label>
                         </div>
@@ -3794,6 +3807,66 @@
                                     </small>
                                 </div>
                                 <input id="token_padding" class="text_pole textarea_compact" type="number" min="-2048" max="2048" />
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="standoutHeader">
+                                <span data-i18n="Reasoning">Reasoning</span>
+                            </h4>
+                            <div>
+                                <div class="flex-container alignItemsBaseline">
+                                    <label class="checkbox_label flex1" for="reasoning_auto_parse" title="Automatically parse reasoning blocks from main content between the reasoning prefix/suffix. Both fields must be defined and non-empty." data-i18n="[title]reasoning_auto_parse">
+                                        <input id="reasoning_auto_parse" type="checkbox" />
+                                        <small data-i18n="Auto-Parse">
+                                            Auto-Parse
+                                        </small>
+                                    </label>
+                                    <label class="checkbox_label flex1" for="reasoning_auto_expand" title="Automatically expand reasoning blocks." data-i18n="[title]reasoning_auto_expand">
+                                        <input id="reasoning_auto_expand" type="checkbox" />
+                                        <small data-i18n="Auto-Expand">
+                                            Auto-Expand
+                                        </small>
+                                    </label>
+                                    <label class="checkbox_label flex1" for="reasoning_show_hidden" title="Show reasoning time for models with hidden reasoning." data-i18n="[title]reasoning_show_hidden">
+                                        <input id="reasoning_show_hidden" type="checkbox" />
+                                        <small data-i18n="Show Hidden">
+                                            Show Hidden
+                                        </small>
+                                    </label>
+                                </div>
+                                <div class="flex-container alignItemsBaseline">
+                                    <label class="checkbox_label flex1" for="reasoning_add_to_prompts" title="Add existing reasoning blocks to prompts. To add a new reasoning block, use the message edit menu." data-i18n="[title]reasoning_add_to_prompts">
+                                        <input id="reasoning_add_to_prompts" type="checkbox" />
+                                        <small data-i18n="Add to Prompts">
+                                            Add to Prompts
+                                        </small>
+                                    </label>
+                                    <div class="flex1 flex-container alignItemsBaseline" title="Maximum number of reasoning blocks to be added per prompt, counting from the last message." data-i18n="[title]reasoning_max_additions">
+                                        <input id="reasoning_max_additions" class="text_pole textarea_compact widthUnset" type="number" min="0" max="999"></textarea>
+                                        <small data-i18n="Max">Max</small>
+                                    </div>
+                                </div>
+                                <details>
+                                    <summary data-i18n="Reasoning Formatting">
+                                        Reasoning Formatting
+                                    </summary>
+                                    <div class="flex-container">
+                                        <div class="flex1" title="Inserted before the reasoning content." data-i18n="[title]reasoning_prefix">
+                                            <small data-i18n="Prefix">Prefix</small>
+                                            <textarea id="reasoning_prefix" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                        </div>
+                                        <div class="flex1" title="Inserted after the reasoning content." data-i18n="[title]reasoning_suffix">
+                                            <small data-i18n="Suffix">Suffix</small>
+                                            <textarea id="reasoning_suffix" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="flex-container">
+                                        <div class="flex1" title="Inserted between the reasoning and the message content." data-i18n="[title]reasoning_separator">
+                                            <small data-i18n="Separator">Separator</small>
+                                            <textarea id="reasoning_separator" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                        </div>
+                                    </div>
+                                </details>
                             </div>
                         </div>
                         <div>
@@ -4809,6 +4882,7 @@
                     </div>
                     <div id="extensions_settings" class="flex1 wide50p">
                         <div id="assets_container" class="extension_container"></div>
+                        <div id="typing_indicator_container" class="extension_container"></div>
                         <div id="expressions_container" class="extension_container"></div>
                         <div id="sd_container" class="extension_container"></div>
                         <div id="tts_container" class="extension_container"></div>
@@ -5804,7 +5878,7 @@
                         <div class="inline-drawer-content flex-container paddingBottom5px wide100p">
                             <div class="flex-container wide100p alignitemscenter">
                                 <div name="keywordsAndLogicBlock" class="flex-container wide100p alignitemscenter">
-                                    <div class="world_entry_form_control flex1">
+                                    <div class="world_entry_form_control keyprimary flex1">
                                         <small class="displayNone">
                                             <span data-i18n="Comma separated (required)">
                                                 Comma separated (required)
@@ -6218,14 +6292,31 @@
                         <div class="mes_edit_buttons">
                             <div class="mes_edit_done menu_button  fa-solid fa-check" title="Confirm" data-i18n="[title]Confirm"></div>
                             <div class="mes_edit_copy menu_button  fa-solid fa-copy" title="Copy this message" data-i18n="[title]Copy this message"></div>
-                            <div class="mes_edit_delete menu_button  fa-solid fa-trash-can" title="Delete this message" data-i18n="[title]Delete this message">
-                            </div>
+                            <div class="mes_edit_add_reasoning menu_button fa-solid fa-lightbulb" title="Add a reasoning block" data-i18n="[title]Add a reasoning block"></div>
+                            <div class="mes_edit_delete menu_button  fa-solid fa-trash-can" title="Delete this message" data-i18n="[title]Delete this message"></div>
                             <div class="mes_edit_up menu_button  fa-solid fa-chevron-up " title="Move message up" data-i18n="[title]Move message up"></div>
-                            <div class="mes_edit_down menu_button  fa-solid fa-chevron-down" title="Move message down" data-i18n="[title]Move message down">
-                            </div>
+                            <div class="mes_edit_down menu_button  fa-solid fa-chevron-down" title="Move message down" data-i18n="[title]Move message down"></div>
                             <div class="mes_edit_cancel menu_button  fa-solid fa-xmark" title="Cancel" data-i18n="[title]Cancel"></div>
                         </div>
                     </div>
+                    <details class="mes_reasoning_details">
+                        <summary class="mes_reasoning_summary flex-container">
+                            <div class="mes_reasoning_header_block flex-container">
+                                <div class="mes_reasoning_header flex-container">
+                                    <span class="mes_reasoning_header_title" data-i18n="Thought for some time">Thought for some time</span>
+                                    <div class="mes_reasoning_arrow fa-solid fa-chevron-up"></div>
+                                </div>
+                            </div>
+                            <div class="mes_reasoning_actions flex-container">
+                                <div class="mes_reasoning_edit_done menu_button edit_button fa-solid fa-check" title="Confirm" data-i18n="[title]Confirmedit"></div>
+                                <div class="mes_reasoning_delete menu_button edit_button fa-solid fa-trash-can" title="Remove reasoning" data-i18n="[title]Remove reasoning"></div>
+                                <div class="mes_reasoning_edit_cancel menu_button edit_button fa-solid fa-xmark" title="Cancel edit" data-i18n="[title]Cancel edit"></div>
+                                <div class="mes_reasoning_copy mes_button fa-solid fa-copy" title="Copy reasoning" data-i18n="[title]Copy reasoning"></div>
+                                <div class="mes_reasoning_edit mes_button fa-solid fa-pencil" title="Edit reasoning" data-i18n="[title]Edit reasoning"></div>
+                            </div>
+                        </summary>
+                        <div class="mes_reasoning"></div>
+                    </details>
                     <div class="mes_text"></div>
                     <div class="mes_img_container">
                         <div class="mes_img_controls">
@@ -6325,7 +6416,10 @@
                     <img alt="Avatar" src="" />
                 </div>
                 <div class="group_member_name">
-                    <div class="ch_name"></div>
+                    <div class="character_name_block">
+                        <span class="ch_name"></span>
+                        <small class="ch_additional_info character_version"></small>
+                    </div>
                     <div class="tags tags_inline"></div>
                 </div>
                 <input class="ch_fav" value="" hidden />
@@ -6437,9 +6531,6 @@
         </div>
 
         <!-- chat and input bar -->
-        <div id="typing_indicator_template" class="template_element">
-            <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
-        </div>
         <div id="message_file_template" class="template_element">
             <div class="mes_file_container">
                 <div class="fa-lg fa-solid fa-file-alt mes_file_icon"></div>

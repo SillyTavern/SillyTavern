@@ -679,6 +679,9 @@ export function getTokenizerModel() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.PERPLEXITY) {
+        if (oai_settings.perplexity_model.includes('sonar-reasoning')) {
+            return deepseekTokenizer;
+        }
         if (oai_settings.perplexity_model.includes('llama-3') || oai_settings.perplexity_model.includes('llama3')) {
             return llama3Tokenizer;
         }

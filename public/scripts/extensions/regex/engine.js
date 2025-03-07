@@ -20,6 +20,7 @@ const regex_placement = {
     SLASH_COMMAND: 3,
     // 4 - sendAs (legacy)
     WORLD_INFO: 5,
+    REASONING: 6,
 };
 
 export const substitute_find_regex = {
@@ -94,7 +95,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
             // Script applies to Generate and input is Generate
             (script.promptOnly && isPrompt) ||
             // Script applies to all cases when neither "only"s are true, but there's no need to do it when `isMarkdown`, the as source (chat history) should already be changed beforehand
-            (!script.markdownOnly && !script.promptOnly && !isMarkdown)
+            (!script.markdownOnly && !script.promptOnly && !isMarkdown && !isPrompt)
         ) {
             if (isEdit && !script.runOnEdit) {
                 console.debug(`getRegexedString: Skipping script ${script.scriptName} because it does not run on edit`);

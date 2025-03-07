@@ -25,7 +25,7 @@ export function readWorldInfoFile(directories, worldInfoName, allowDummy) {
     const pathToWorldInfo = path.join(directories.worlds, filename);
 
     if (!fs.existsSync(pathToWorldInfo)) {
-        console.log(`World info file ${filename} doesn't exist.`);
+        console.error(`World info file ${filename} doesn't exist.`);
         return dummyObject;
     }
 

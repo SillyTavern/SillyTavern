@@ -9,6 +9,7 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { jsonParser, urlencodedParser } from '../express-common.js';
 import { AVATAR_WIDTH, AVATAR_HEIGHT } from '../constants.js';
 import { getImages, tryParse } from '../util.js';
+import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
 
@@ -17,7 +18,7 @@ router.post('/get', jsonParser, function (request, response) {
     response.send(JSON.stringify(images));
 });
 
-router.post('/delete', jsonParser, function (request, response) {
+router.post('/delete', jsonParser, getFileNameValidationFunction('avatar'), function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     if (request.body.avatar !== sanitize(request.body.avatar)) {

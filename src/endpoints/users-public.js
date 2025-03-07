@@ -56,7 +56,7 @@ router.post('/list', async (_request, response) => {
 router.post('/login', jsonParser, async (request, response) => {
     try {
         if (!request.body.handle) {
-            console.log('Login failed: Missing required fields');
+            console.warn('Login failed: Missing required fields');
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -67,17 +67,17 @@ router.post('/login', jsonParser, async (request, response) => {
         const user = await storage.getItem(toKey(request.body.handle));
 
         if (!user) {
-            console.log('Login failed: User', request.body.handle, 'not found');
+            console.error('Login failed: User', request.body.handle, 'not found');
             return response.status(403).json({ error: 'Incorrect credentials' });
         }
 
         if (!user.enabled) {
-            console.log('Login failed: User', user.handle, 'is disabled');
+            console.warn('Login failed: User', user.handle, 'is disabled');
             return response.status(403).json({ error: 'User is disabled' });
         }
 
         if (user.password && user.password !== getPasswordHash(request.body.password, user.salt)) {
-            console.log('Login failed: Incorrect password for', user.handle);
+            console.warn('Login failed: Incorrect password for', user.handle);
             return response.status(403).json({ error: 'Incorrect credentials' });
         }
 
@@ -88,11 +88,11 @@ router.post('/login', jsonParser, async (request, response) => {
 
         await loginLimiter.delete(ip);
         request.session.handle = user.handle;
-        console.log('Login successful:', user.handle, 'from', ip, 'at', new Date().toLocaleString());
+        console.info('Login successful:', user.handle, 'from', ip, 'at', new Date().toLocaleString());
         return response.json({ handle: user.handle });
     } catch (error) {
         if (error instanceof RateLimiterRes) {
-            console.log('Login failed: Rate limited from', getIpFromRequest(request));
+            console.error('Login failed: Rate limited from', getIpFromRequest(request));
             return response.status(429).send({ error: 'Too many attempts. Try again later or recover your password.' });
         }
 
@@ -104,7 +104,7 @@ router.post('/login', jsonParser, async (request, response) => {
 router.post('/recover-step1', jsonParser, async (request, response) => {
     try {
         if (!request.body.handle) {
-            console.log('Recover step 1 failed: Missing required fields');
+            console.warn('Recover step 1 failed: Missing required fields');
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -115,12 +115,12 @@ router.post('/recover-step1', jsonParser, async (request, response) => {
         const user = await storage.getItem(toKey(request.body.handle));
 
         if (!user) {
-            console.log('Recover step 1 failed: User', request.body.handle, 'not found');
+            console.error('Recover step 1 failed: User', request.body.handle, 'not found');
             return response.status(404).json({ error: 'User not found' });
         }
 
         if (!user.enabled) {
-            console.log('Recover step 1 failed: User', user.handle, 'is disabled');
+            console.error('Recover step 1 failed: User', user.handle, 'is disabled');
             return response.status(403).json({ error: 'User is disabled' });
         }
 
@@ -132,7 +132,7 @@ router.post('/recover-step1', jsonParser, async (request, response) => {
         return response.sendStatus(204);
     } catch (error) {
         if (error instanceof RateLimiterRes) {
-            console.log('Recover step 1 failed: Rate limited from', getIpFromRequest(request));
+            console.error('Recover step 1 failed: Rate limited from', getIpFromRequest(request));
             return response.status(429).send({ error: 'Too many attempts. Try again later or contact your admin.' });
         }
 
@@ -144,7 +144,7 @@ router.post('/recover-step1', jsonParser, async (request, response) => {
 router.post('/recover-step2', jsonParser, async (request, response) => {
     try {
         if (!request.body.handle || !request.body.code) {
-            console.log('Recover step 2 failed: Missing required fields');
+            console.warn('Recover step 2 failed: Missing required fields');
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -153,12 +153,12 @@ router.post('/recover-step2', jsonParser, async (request, response) => {
         const ip = getIpFromRequest(request);
 
         if (!user) {
-            console.log('Recover step 2 failed: User', request.body.handle, 'not found');
+            console.error('Recover step 2 failed: User', request.body.handle, 'not found');
             return response.status(404).json({ error: 'User not found' });
         }
 
         if (!user.enabled) {
-            console.log('Recover step 2 failed: User', user.handle, 'is disabled');
+            console.warn('Recover step 2 failed: User', user.handle, 'is disabled');
             return response.status(403).json({ error: 'User is disabled' });
         }
 
@@ -166,7 +166,7 @@ router.post('/recover-step2', jsonParser, async (request, response) => {
 
         if (request.body.code !== mfaCode) {
             await recoverLimiter.consume(ip);
-            console.log('Recover step 2 failed: Incorrect code');
+            console.warn('Recover step 2 failed: Incorrect code');
             return response.status(403).json({ error: 'Incorrect code' });
         }
 
@@ -186,7 +186,7 @@ router.post('/recover-step2', jsonParser, async (request, response) => {
         return response.sendStatus(204);
     } catch (error) {
         if (error instanceof RateLimiterRes) {
-            console.log('Recover step 2 failed: Rate limited from', getIpFromRequest(request));
+            console.error('Recover step 2 failed: Rate limited from', getIpFromRequest(request));
             return response.status(429).send({ error: 'Too many attempts. Try again later or contact your admin.' });
         }
 

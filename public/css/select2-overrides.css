@@ -100,6 +100,13 @@
     border: 1px solid var(--SmartThemeBorderColor);
 }
 
+.select2-container .select2-results .select2-results__option--disabled {
+    color: inherit;
+    background-color: inherit;
+    cursor: not-allowed;
+    filter: brightness(0.5);
+}
+
 .select2-container .select2-selection--multiple .select2-selection__choice,
 .select2-container .select2-selection--single .select2-selection__choice {
     border-radius: 5px;

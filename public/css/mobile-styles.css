@@ -216,8 +216,6 @@
 
     }
 
-    #showRawPrompt,
-    #copyPromptToClipboard,
     #groupCurrentMemberPopoutButton,
     #summaryExtensionPopoutButton {
         display: none;

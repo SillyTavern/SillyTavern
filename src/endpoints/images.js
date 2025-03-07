@@ -71,7 +71,7 @@ router.post('/upload', jsonParser, async (request, response) => {
         await fs.promises.writeFile(pathToNewFile, new Uint8Array(imageBuffer));
         response.send({ path: clientRelativePath(request.user.directories.root, pathToNewFile) });
     } catch (error) {
-        console.log(error);
+        console.error(error);
         response.status(500).send({ error: 'Failed to save the image' });
     }
 });

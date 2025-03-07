@@ -2,9 +2,9 @@ import express from 'express';
 import { jsonParser } from '../express-common.js';
 import { getPipeline, getRawImage } from '../transformers.js';
 
-const TASK = 'image-to-text';
-
 export const router = express.Router();
+
+const TASK = 'image-to-text';
 
 router.post('/', jsonParser, async (req, res) => {
     try {
@@ -13,14 +13,14 @@ router.post('/', jsonParser, async (req, res) => {
         const rawImage = await getRawImage(image);
 
         if (!rawImage) {
-            console.log('Failed to parse captioned image');
+            console.warn('Failed to parse captioned image');
             return res.sendStatus(400);
         }
 
         const pipe = await getPipeline(TASK);
         const result = await pipe(rawImage);
         const text = result[0].generated_text;
-        console.log('Image caption:', text);
+        console.info('Image caption:', text);
 
         return res.json({ caption: text });
     } catch (error) {

@@ -472,6 +472,11 @@ label[for="trim_spaces"]:has(input:checked) i.warning {
     display: none;
 }
 
+label[for="trim_spaces"]:not(:has(input:checked)) small {
+    color: var(--warning);
+    opacity: 1;
+}
+
 #claude_function_prefill_warning {
     display: none;
     color: red;
@@ -487,4 +492,8 @@ label[for="trim_spaces"]:has(input:checked) i.warning {
 
 #mistralai_other_models:empty {
     display: none;
+}
+
+#banned_tokens_block_ooba:not(:has(#send_banned_tokens_textgenerationwebui:checked)) #banned_tokens_controls_ooba {
+    filter: brightness(0.5);
 }

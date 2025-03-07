@@ -441,7 +441,6 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             description: 'character name',
             typeList: [ARGUMENT_TYPE.STRING],
             enumProvider: commonEnumProviders.characters('character'),
-            forceEnum: true,
         }),
         SlashCommandNamedArgument.fromProps({
             name: 'group',

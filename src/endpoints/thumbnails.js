@@ -89,7 +89,6 @@ async function generateThumbnail(directories, type, file) {
     let thumbnailFolder = getThumbnailFolder(directories, type);
     let originalFolder = getOriginalFolder(directories, type);
     if (thumbnailFolder === undefined || originalFolder === undefined) throw new Error('Invalid thumbnail type');
-
     const pathToCachedFile = path.join(thumbnailFolder, file);
     const pathToOriginalFile = path.join(originalFolder, file);
 
@@ -104,7 +103,7 @@ async function generateThumbnail(directories, type, file) {
         const cachedStat = fs.statSync(pathToCachedFile);
 
         if (originalStat.mtimeMs > cachedStat.ctimeMs) {
-            //console.log('Original file changed. Regenerating thumbnail...');
+            //console.warn('Original file changed. Regenerating thumbnail...');
             shouldRegenerate = true;
         }
     }
@@ -157,7 +156,7 @@ export async function ensureThumbnailCache() {
             return;
         }
 
-        console.log('Generating thumbnails cache. Please wait...');
+        console.info('Generating thumbnails cache. Please wait...');
 
         const bgFiles = fs.readdirSync(directories.backgrounds);
         const tasks = [];
@@ -167,7 +166,7 @@ export async function ensureThumbnailCache() {
         }
 
         await Promise.all(tasks);
-        console.log(`Done! Generated: ${bgFiles.length} preview images`);
+        console.info(`Done! Generated: ${bgFiles.length} preview images`);
     }
 }
 

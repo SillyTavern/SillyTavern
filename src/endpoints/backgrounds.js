@@ -7,6 +7,7 @@ import sanitize from 'sanitize-filename';
 import { jsonParser, urlencodedParser } from '../express-common.js';
 import { invalidateThumbnail } from './thumbnails.js';
 import { getImages } from '../util.js';
+import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
 
@@ -15,7 +16,7 @@ router.post('/all', jsonParser, function (request, response) {
     response.send(JSON.stringify(images));
 });
 
-router.post('/delete', jsonParser, function (request, response) {
+router.post('/delete', jsonParser, getFileNameValidationFunction('bg'), function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     if (request.body.bg !== sanitize(request.body.bg)) {
@@ -26,7 +27,7 @@ router.post('/delete', jsonParser, function (request, response) {
     const fileName = path.join(request.user.directories.backgrounds, sanitize(request.body.bg));
 
     if (!fs.existsSync(fileName)) {
-        console.log('BG file not found');
+        console.error('BG file not found');
         return response.sendStatus(400);
     }
 
@@ -42,12 +43,12 @@ router.post('/rename', jsonParser, function (request, response) {
     const newFileName = path.join(request.user.directories.backgrounds, sanitize(request.body.new_bg));
 
     if (!fs.existsSync(oldFileName)) {
-        console.log('BG file not found');
+        console.error('BG file not found');
         return response.sendStatus(400);
     }
 
     if (fs.existsSync(newFileName)) {
-        console.log('New BG file already exists');
+        console.error('New BG file already exists');
         return response.sendStatus(400);
     }
 

@@ -10,6 +10,7 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { download, getFileText, getSortableDelay, uuidv4 } from '../../utils.js';
 import { regex_placement, runRegexScript, substitute_find_regex } from './engine.js';
 import { t } from '../../i18n.js';
+import { accountStorage } from '../../util/AccountStorage.js';
 
 /**
  * @typedef {object} RegexScript
@@ -18,7 +19,7 @@ import { t } from '../../i18n.js';
  * @property {string} replaceString - The replace string
  * @property {string[]} trimStrings - The trim strings
  * @property {string?} findRegex - The find regex
- * @property {string?} substituteRegex - The substitute regex
+ * @property {number?} substituteRegex - The substitute regex
  */
 
 /**
@@ -440,8 +441,8 @@ async function checkEmbeddedRegexScripts() {
             if (avatar && !extension_settings.character_allowed_regex.includes(avatar)) {
                 const checkKey = `AlertRegex_${characters[chid].avatar}`;
 
-                if (!localStorage.getItem(checkKey)) {
-                    localStorage.setItem(checkKey, 'true');
+                if (!accountStorage.getItem(checkKey)) {
+                    accountStorage.setItem(checkKey, 'true');
                     const template = await renderExtensionTemplateAsync('regex', 'embeddedScripts', {});
                     const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: 'Yes' });
 

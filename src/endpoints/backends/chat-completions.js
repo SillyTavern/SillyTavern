@@ -37,6 +37,8 @@ import {
     getTiktokenTokenizer,
     sentencepieceTokenizers,
     TEXT_COMPLETION_MODELS,
+    webTokenizers,
+    getWebTokenizer,
 } from '../tokenizers.js';
 
 const API_OPENAI = 'https://api.openai.com/v1';
@@ -61,6 +63,7 @@ const API_DEEPSEEK = 'https://api.deepseek.com/beta';
  * @returns
  */
 function postProcessPrompt(messages, type, names) {
+    const addAssistantPrefix = x => x.length && (x[x.length - 1].role !== 'assistant' || (x[x.length - 1].prefix = true)) ? x : x;
     switch (type) {
         case 'merge':
         case 'claude':
@@ -70,7 +73,9 @@ function postProcessPrompt(messages, type, names) {
         case 'strict':
             return mergeMessages(messages, names, true, true);
         case 'deepseek':
-            return (x => x.length && (x[x.length - 1].role !== 'assistant' || (x[x.length - 1].prefix = true)) ? x : x)(mergeMessages(messages, names, true, false));
+            return addAssistantPrefix(mergeMessages(messages, names, true, false));
+        case 'deepseek-reasoner':
+            return addAssistantPrefix(mergeMessages(messages, names, true, true));
         default:
             return messages;
     }
@@ -109,7 +114,7 @@ async function sendClaudeRequest(request, response) {
     }
 
     if (!apiKey) {
-        console.log(color.red(`Claude API key is missing.\n${divider}`));
+        console.warn(color.red(`Claude API key is missing.\n${divider}`));
         return response.status(400).send({ error: true });
     }
 
@@ -174,7 +179,7 @@ async function sendClaudeRequest(request, response) {
             additionalHeaders['anthropic-beta'] = 'prompt-caching-2024-07-31';
         }
 
-        console.log('Claude request:', requestBody);
+        console.debug('Claude request:', requestBody);
 
         const generateResponse = await fetch(apiUrl + '/messages', {
             method: 'POST',
@@ -194,21 +199,21 @@ async function sendClaudeRequest(request, response) {
         } else {
             if (!generateResponse.ok) {
                 const generateResponseText = await generateResponse.text();
-                console.log(color.red(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText}\n${generateResponseText}\n${divider}`));
+                console.warn(color.red(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText}\n${generateResponseText}\n${divider}`));
                 return response.status(generateResponse.status).send({ error: true });
             }
 
             /** @type {any} */
             const generateResponseJson = await generateResponse.json();
             const responseText = generateResponseJson?.content?.[0]?.text || '';
-            console.log('Claude response:', generateResponseJson);
+            console.debug('Claude response:', generateResponseJson);
 
             // Wrap it back to OAI format + save the original content
             const reply = { choices: [{ 'message': { 'content': responseText } }], content: generateResponseJson.content };
             return response.send(reply);
         }
     } catch (error) {
-        console.log(color.red(`Error communicating with Claude: ${error}\n${divider}`));
+        console.error(color.red(`Error communicating with Claude: ${error}\n${divider}`));
         if (!response.headersSent) {
             return response.status(500).send({ error: true });
         }
@@ -225,12 +230,12 @@ async function sendScaleRequest(request, response) {
     const apiKey = readSecret(request.user.directories, SECRET_KEYS.SCALE);
 
     if (!apiKey) {
-        console.log('Scale API key is missing.');
+        console.warn('Scale API key is missing.');
         return response.status(400).send({ error: true });
     }
 
     const requestPrompt = convertTextCompletionPrompt(request.body.messages);
-    console.log('Scale request:', requestPrompt);
+    console.debug('Scale request:', requestPrompt);
 
     try {
         const controller = new AbortController();
@@ -249,18 +254,18 @@ async function sendScaleRequest(request, response) {
         });
 
         if (!generateResponse.ok) {
-            console.log(`Scale API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+            console.warn(`Scale API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
             return response.status(500).send({ error: true });
         }
 
         /** @type {any} */
         const generateResponseJson = await generateResponse.json();
-        console.log('Scale response:', generateResponseJson);
+        console.debug('Scale response:', generateResponseJson);
 
         const reply = { choices: [{ 'message': { 'content': generateResponseJson.output } }] };
         return response.send(reply);
     } catch (error) {
-        console.log(error);
+        console.error(error);
         if (!response.headersSent) {
             return response.status(500).send({ error: true });
         }
@@ -277,13 +282,13 @@ async function sendMakerSuiteRequest(request, response) {
     const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
 
     if (!request.body.reverse_proxy && !apiKey) {
-        console.log('Google AI Studio API key is missing.');
+        console.warn('Google AI Studio API key is missing.');
         return response.status(400).send({ error: true });
     }
 
     const model = String(request.body.model);
     const stream = Boolean(request.body.stream);
-    const showThoughts = Boolean(request.body.show_thoughts);
+    const isThinking = model.includes('thinking');
 
     const generationConfig = {
         stopSequences: request.body.stop,
@@ -300,8 +305,9 @@ async function sendMakerSuiteRequest(request, response) {
         }
 
         const should_use_system_prompt = (
+            model.includes('gemini-2.0-pro') ||
+            model.includes('gemini-2.0-flash') ||
             model.includes('gemini-2.0-flash-thinking-exp') ||
-            model.includes('gemini-2.0-flash-exp') ||
             model.includes('gemini-1.5-flash') ||
             model.includes('gemini-1.5-pro') ||
             model.startsWith('gemini-exp')
@@ -310,9 +316,15 @@ async function sendMakerSuiteRequest(request, response) {
         const prompt = convertGooglePrompt(request.body.messages, model, should_use_system_prompt, getPromptNames(request));
         let safetySettings = GEMINI_SAFETY;
 
-        if (model.includes('gemini-2.0-flash-exp')) {
+        // These old models do not support setting the threshold to OFF at all.
+        if (['gemini-1.5-pro-001', 'gemini-1.5-flash-001', 'gemini-1.5-flash-8b-exp-0827', 'gemini-1.5-flash-8b-exp-0924', 'gemini-pro', 'gemini-1.0-pro', 'gemini-1.0-pro-001'].includes(model)) {
+            safetySettings = GEMINI_SAFETY.map(setting => ({ ...setting, threshold: 'BLOCK_NONE' }));
+        }
+        // Interestingly, Gemini 2.0 Flash does support setting the threshold for HARM_CATEGORY_CIVIC_INTEGRITY to OFF.
+        else if (['gemini-2.0-flash', 'gemini-2.0-flash-001', 'gemini-2.0-flash-exp'].includes(model)) {
             safetySettings = GEMINI_SAFETY.map(setting => ({ ...setting, threshold: 'OFF' }));
         }
+        // Most of the other models allow for setting the threshold of filters, except for HARM_CATEGORY_CIVIC_INTEGRITY, to OFF.
 
         let body = {
             contents: prompt.contents,
@@ -328,7 +340,7 @@ async function sendMakerSuiteRequest(request, response) {
     }
 
     const body = getGeminiBody();
-    console.log('Google AI Studio request:', body);
+    console.debug('Google AI Studio request:', body);
 
     try {
         const controller = new AbortController();
@@ -337,7 +349,6 @@ async function sendMakerSuiteRequest(request, response) {
             controller.abort();
         });
 
-        const isThinking = model.includes('thinking');
         const apiVersion = isThinking ? 'v1alpha' : 'v1beta';
         const responseType = (stream ? 'streamGenerateContent' : 'generateContent');
 
@@ -355,14 +366,14 @@ async function sendMakerSuiteRequest(request, response) {
                 // Pipe remote SSE stream to Express response
                 forwardFetchResponse(generateResponse, response);
             } catch (error) {
-                console.log('Error forwarding streaming response:', error);
+                console.error('Error forwarding streaming response:', error);
                 if (!response.headersSent) {
                     return response.status(500).send({ error: true });
                 }
             }
         } else {
             if (!generateResponse.ok) {
-                console.log(`Google AI Studio API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+                console.warn(`Google AI Studio API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
                 return response.status(generateResponse.status).send({ error: true });
             }
 
@@ -372,7 +383,7 @@ async function sendMakerSuiteRequest(request, response) {
             const candidates = generateResponseJson?.candidates;
             if (!candidates || candidates.length === 0) {
                 let message = 'Google AI Studio API returned no candidate';
-                console.log(message, generateResponseJson);
+                console.warn(message, generateResponseJson);
                 if (generateResponseJson?.promptFeedback?.blockReason) {
                     message += `\nPrompt was blocked due to : ${generateResponseJson.promptFeedback.blockReason}`;
                 }
@@ -380,25 +391,21 @@ async function sendMakerSuiteRequest(request, response) {
             }
 
             const responseContent = candidates[0].content ?? candidates[0].output;
-            console.log('Google AI Studio response:', responseContent);
+            console.warn('Google AI Studio response:', responseContent);
 
-            if (Array.isArray(responseContent?.parts) && isThinking && !showThoughts) {
-                responseContent.parts = responseContent.parts.filter(part => !part.thought);
-            }
-
-            const responseText = typeof responseContent === 'string' ? responseContent : responseContent?.parts?.map(part => part.text)?.join('\n\n');
+            const responseText = typeof responseContent === 'string' ? responseContent : responseContent?.parts?.filter(part => !part.thought)?.map(part => part.text)?.join('\n\n');
             if (!responseText) {
                 let message = 'Google AI Studio Candidate text empty';
-                console.log(message, generateResponseJson);
+                console.warn(message, generateResponseJson);
                 return response.send({ error: { message } });
             }
 
             // Wrap it back to OAI format
-            const reply = { choices: [{ 'message': { 'content': responseText } }] };
+            const reply = { choices: [{ 'message': { 'content': responseText } }], responseContent };
             return response.send(reply);
         }
     } catch (error) {
-        console.log('Error communicating with Google AI Studio API: ', error);
+        console.error('Error communicating with Google AI Studio API: ', error);
         if (!response.headersSent) {
             return response.status(500).send({ error: true });
         }
@@ -412,8 +419,9 @@ async function sendMakerSuiteRequest(request, response) {
  */
 async function sendAI21Request(request, response) {
     if (!request.body) return response.sendStatus(400);
+
     const controller = new AbortController();
-    console.log(request.body.messages);
+    console.debug(request.body.messages);
     request.socket.removeAllListeners('close');
     request.socket.on('close', function () {
         controller.abort();
@@ -439,7 +447,7 @@ async function sendAI21Request(request, response) {
         signal: controller.signal,
     };
 
-    console.log('AI21 request:', body);
+    console.debug('AI21 request:', body);
 
     try {
         const generateResponse = await fetch(API_AI21 + '/chat/completions', options);
@@ -448,16 +456,16 @@ async function sendAI21Request(request, response) {
         } else {
             if (!generateResponse.ok) {
                 const errorText = await generateResponse.text();
-                console.log(`AI21 API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                console.warn(`AI21 API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
                 const errorJson = tryParse(errorText) ?? { error: true };
                 return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
-            console.log('AI21 response:', generateResponseJson);
+            console.debug('AI21 response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
     } catch (error) {
-        console.log('Error communicating with AI21 API: ', error);
+        console.error('Error communicating with AI21 API: ', error);
         if (!response.headersSent) {
             response.send({ error: true });
         } else {
@@ -476,7 +484,7 @@ async function sendMistralAIRequest(request, response) {
     const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MISTRALAI);
 
     if (!apiKey) {
-        console.log('MistralAI API key is missing.');
+        console.warn('MistralAI API key is missing.');
         return response.status(400).send({ error: true });
     }
 
@@ -517,7 +525,7 @@ async function sendMistralAIRequest(request, response) {
             timeout: 0,
         };
 
-        console.log('MisralAI request:', requestBody);
+        console.debug('MisralAI request:', requestBody);
 
         const generateResponse = await fetch(apiUrl + '/chat/completions', config);
         if (request.body.stream) {
@@ -525,16 +533,16 @@ async function sendMistralAIRequest(request, response) {
         } else {
             if (!generateResponse.ok) {
                 const errorText = await generateResponse.text();
-                console.log(`MistralAI API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                console.warn(`MistralAI API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
                 const errorJson = tryParse(errorText) ?? { error: true };
                 return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
-            console.log('MistralAI response:', generateResponseJson);
+            console.debug('MistralAI response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
     } catch (error) {
-        console.log('Error communicating with MistralAI API: ', error);
+        console.error('Error communicating with MistralAI API: ', error);
         if (!response.headersSent) {
             response.send({ error: true });
         } else {
@@ -557,7 +565,7 @@ async function sendCohereRequest(request, response) {
     });
 
     if (!apiKey) {
-        console.log('Cohere API key is missing.');
+        console.warn('Cohere API key is missing.');
         return response.status(400).send({ error: true });
     }
 
@@ -596,7 +604,7 @@ async function sendCohereRequest(request, response) {
             requestBody.safety_mode = 'OFF';
         }
 
-        console.log('Cohere request:', requestBody);
+        console.debug('Cohere request:', requestBody);
 
         const config = {
             method: 'POST',
@@ -618,16 +626,16 @@ async function sendCohereRequest(request, response) {
             const generateResponse = await fetch(apiUrl, config);
             if (!generateResponse.ok) {
                 const errorText = await generateResponse.text();
-                console.log(`Cohere API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                console.warn(`Cohere API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
                 const errorJson = tryParse(errorText) ?? { error: true };
                 return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
-            console.log('Cohere response:', generateResponseJson);
+            console.debug('Cohere response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
     } catch (error) {
-        console.log('Error communicating with Cohere API: ', error);
+        console.error('Error communicating with Cohere API: ', error);
         if (!response.headersSent) {
             response.send({ error: true });
         } else {
@@ -635,6 +643,94 @@ async function sendCohereRequest(request, response) {
         }
     }
 }
+
+/**
+ * Sends a request to DeepSeek API.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendDeepSeekRequest(request, response) {
+    const apiUrl = new URL(request.body.reverse_proxy || API_DEEPSEEK).toString();
+    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK);
+
+    if (!apiKey && !request.body.reverse_proxy) {
+        console.warn('DeepSeek API key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+
+    try {
+        let bodyParams = {};
+
+        if (request.body.logprobs > 0) {
+            bodyParams['top_logprobs'] = request.body.logprobs;
+            bodyParams['logprobs'] = true;
+        }
+
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
+        }
+
+        const postProcessType = String(request.body.model).endsWith('-reasoner') ? 'deepseek-reasoner' : 'deepseek';
+        const processedMessages = postProcessPrompt(request.body.messages, postProcessType, getPromptNames(request));
+
+        const requestBody = {
+            'messages': processedMessages,
+            'model': request.body.model,
+            'temperature': request.body.temperature,
+            'max_tokens': request.body.max_tokens,
+            'stream': request.body.stream,
+            'presence_penalty': request.body.presence_penalty,
+            'frequency_penalty': request.body.frequency_penalty,
+            'top_p': request.body.top_p,
+            'stop': request.body.stop,
+            'seed': request.body.seed,
+            ...bodyParams,
+        };
+
+        const config = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey,
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+        };
+
+        console.debug('DeepSeek request:', requestBody);
+
+        const generateResponse = await fetch(apiUrl + '/chat/completions', config);
+
+        if (request.body.stream) {
+            forwardFetchResponse(generateResponse, response);
+        } else {
+            if (!generateResponse.ok) {
+                const errorText = await generateResponse.text();
+                console.warn(`DeepSeek API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
+            }
+            const generateResponseJson = await generateResponse.json();
+            console.debug('DeepSeek response:', generateResponseJson);
+            return response.send(generateResponseJson);
+        }
+    } catch (error) {
+        console.error('Error communicating with DeepSeek API: ', error);
+        if (!response.headersSent) {
+            response.send({ error: true });
+        } else {
+            response.end();
+        }
+    }
+}
+
 
 export const router = express.Router();
 
@@ -680,16 +776,16 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         api_key_openai = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
         headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.DEEPSEEK) {
-        api_url = API_DEEPSEEK.replace('/beta', '');
-        api_key_openai = readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK);
+        api_url = new URL(request.body.reverse_proxy || API_DEEPSEEK.replace('/beta', ''));
+        api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK);
         headers = {};
     } else {
-        console.log('This chat completion source is not supported yet.');
+        console.warn('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
     }
 
     if (!api_key_openai && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
-        console.log('Chat Completion API key is missing.');
+        console.warn('Chat Completion API key is missing.');
         return response_getstatus_openai.status(400).send({ error: true });
     }
 
@@ -724,23 +820,23 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
                     };
                 });
 
-                console.log('Available OpenRouter models:', models);
+                console.info('Available OpenRouter models:', models);
             } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
                 const models = data?.data;
-                console.log(models);
+                console.info(models);
             } else {
                 const models = data?.data;
 
                 if (Array.isArray(models)) {
                     const modelIds = models.filter(x => x && typeof x === 'object').map(x => x.id).sort();
-                    console.log('Available models:', modelIds);
+                    console.info('Available models:', modelIds);
                 } else {
-                    console.log('Chat Completion endpoint did not return a list of models.');
+                    console.warn('Chat Completion endpoint did not return a list of models.');
                 }
             }
         }
         else {
-            console.log('Chat Completion status check failed. Either Access Token is incorrect or API endpoint is down.');
+            console.error('Chat Completion status check failed. Either Access Token is incorrect or API endpoint is down.');
             response_getstatus_openai.send({ error: true, can_bypass: true, data: { data: [] } });
         }
     } catch (e) {
@@ -773,10 +869,18 @@ router.post('/bias', jsonParser, async function (request, response) {
             const tokenizer = getSentencepiceTokenizer(model);
             const instance = await tokenizer?.get();
             if (!instance) {
-                console.warn('Tokenizer not initialized:', model);
+                console.error('Tokenizer not initialized:', model);
                 return response.send({});
             }
             encodeFunction = (text) => new Uint32Array(instance.encodeIds(text));
+        } else if (webTokenizers.includes(model)) {
+            const tokenizer = getWebTokenizer(model);
+            const instance = await tokenizer?.get();
+            if (!instance) {
+                console.warn('Tokenizer not initialized:', model);
+                return response.send({});
+            }
+            encodeFunction = (text) => new Uint32Array(instance.encode(text));
         } else {
             const tokenizer = getTiktokenTokenizer(model);
             encodeFunction = (tokenizer.encode.bind(tokenizer));
@@ -841,6 +945,7 @@ router.post('/generate', jsonParser, function (request, response) {
         case CHAT_COMPLETION_SOURCES.MAKERSUITE: return sendMakerSuiteRequest(request, response);
         case CHAT_COMPLETION_SOURCES.MISTRALAI: return sendMistralAIRequest(request, response);
         case CHAT_COMPLETION_SOURCES.COHERE: return sendCohereRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.DEEPSEEK: return sendDeepSeekRequest(request, response);
     }
 
     let apiUrl;
@@ -899,6 +1004,10 @@ router.post('/generate', jsonParser, function (request, response) {
             bodyParams['route'] = 'fallback';
         }
 
+        if (request.body.include_reasoning) {
+            bodyParams['include_reasoning'] = true;
+        }
+
         let cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1);
         if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && request.body.model?.startsWith('anthropic/claude-3')) {
             cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth);
@@ -922,7 +1031,7 @@ router.post('/generate', jsonParser, function (request, response) {
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
 
         if (request.body.custom_prompt_post_processing) {
-            console.log('Applying custom prompt post-processing of type', request.body.custom_prompt_post_processing);
+            console.info('Applying custom prompt post-processing of type', request.body.custom_prompt_post_processing);
             request.body.messages = postProcessPrompt(
                 request.body.messages,
                 request.body.custom_prompt_post_processing,
@@ -954,25 +1063,20 @@ router.post('/generate', jsonParser, function (request, response) {
         apiKey = readSecret(request.user.directories, SECRET_KEYS.BLOCKENTROPY);
         headers = {};
         bodyParams = {};
-    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.DEEPSEEK) {
-        apiUrl = API_DEEPSEEK;
-        apiKey = readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK);
-        headers = {};
-        bodyParams = {};
-
-        if (request.body.logprobs > 0) {
-            bodyParams['top_logprobs'] = request.body.logprobs;
-            bodyParams['logprobs'] = true;
-        }
-
-        request.body.messages = postProcessPrompt(request.body.messages, 'deepseek', getPromptNames(request));
     } else {
-        console.log('This chat completion source is not supported yet.');
+        console.warn('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });
     }
 
+    // A few of OpenAIs reasoning models support reasoning effort
+    if ([CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
+        if (['o1', 'o3-mini', 'o3-mini-2025-01-31'].includes(request.body.model)) {
+            bodyParams['reasoning_effort'] = request.body.reasoning_effort;
+        }
+    }
+
     if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
-        console.log('OpenAI API key is missing.');
+        console.warn('OpenAI API key is missing.');
         return response.status(400).send({ error: true });
     }
 
@@ -1032,7 +1136,7 @@ router.post('/generate', jsonParser, function (request, response) {
         signal: controller.signal,
     };
 
-    console.log(requestBody);
+    console.debug(requestBody);
 
     makeRequest(config, response, request);
 
@@ -1049,7 +1153,7 @@ router.post('/generate', jsonParser, function (request, response) {
             const fetchResponse = await fetch(endpointUrl, config);
 
             if (request.body.stream) {
-                console.log('Streaming request in progress');
+                console.info('Streaming request in progress');
                 forwardFetchResponse(fetchResponse, response);
                 return;
             }
@@ -1058,10 +1162,10 @@ router.post('/generate', jsonParser, function (request, response) {
                 /** @type {any} */
                 let json = await fetchResponse.json();
                 response.send(json);
-                console.log(json);
-                console.log(json?.choices?.[0]?.message);
+                console.debug(json);
+                console.debug(json?.choices?.[0]?.message);
             } else if (fetchResponse.status === 429 && retries > 0) {
-                console.log(`Out of quota, retrying in ${Math.round(timeout / 1000)}s`);
+                console.warn(`Out of quota, retrying in ${Math.round(timeout / 1000)}s`);
                 setTimeout(() => {
                     timeout *= 2;
                     makeRequest(config, response, request, retries - 1, timeout);
@@ -1070,7 +1174,7 @@ router.post('/generate', jsonParser, function (request, response) {
                 await handleErrorResponse(fetchResponse);
             }
         } catch (error) {
-            console.log('Generation failed', error);
+            console.error('Generation failed', error);
             const message = error.code === 'ECONNREFUSED'
                 ? `Connection refused: ${error.message}`
                 : error.message || 'Unknown error occurred';
@@ -1092,7 +1196,7 @@ router.post('/generate', jsonParser, function (request, response) {
 
         const message = errorResponse.statusText || 'Unknown error occurred';
         const quota_error = errorResponse.status === 429 && errorData?.error?.type === 'insufficient_quota';
-        console.log('Chat completion request error: ', message, responseText);
+        console.error('Chat completion request error: ', message, responseText);
 
         if (!response.headersSent) {
             response.send({ error: { message }, quota_error: quota_error });
@@ -1103,4 +1207,3 @@ router.post('/generate', jsonParser, function (request, response) {
         }
     }
 });
-

@@ -96,8 +96,13 @@ function highlightLockedBackground() {
     });
 }
 
+/**
+ * Locks the background for the current chat
+ * @param {Event} e Click event
+ * @returns {string} Empty string
+ */
 function onLockBackgroundClick(e) {
-    e.stopPropagation();
+    e?.stopPropagation();
 
     const chatName = getCurrentChatId();
 
@@ -106,7 +111,7 @@ function onLockBackgroundClick(e) {
         return '';
     }
 
-    const relativeBgImage = getUrlParameter(this);
+    const relativeBgImage = getUrlParameter(this) ?? background_settings.url;
 
     saveBackgroundMetadata(relativeBgImage);
     setCustomBackground();
@@ -114,8 +119,13 @@ function onLockBackgroundClick(e) {
     return '';
 }
 
+/**
+ * Locks the background for the current chat
+ * @param {Event} e Click event
+ * @returns {string} Empty string
+ */
 function onUnlockBackgroundClick(e) {
-    e.stopPropagation();
+    e?.stopPropagation();
     removeBackgroundMetadata();
     unsetCustomBackground();
     highlightLockedBackground();
@@ -482,10 +492,10 @@ function highlightNewBackground(bg) {
  */
 function setFittingClass(fitting) {
     const backgrounds = $('#bg1, #bg_custom');
-    backgrounds.toggleClass('cover', fitting === 'cover');
-    backgrounds.toggleClass('contain', fitting === 'contain');
-    backgrounds.toggleClass('stretch', fitting === 'stretch');
-    backgrounds.toggleClass('center', fitting === 'center');
+    for (const option of ['cover', 'contain', 'stretch', 'center']) {
+        backgrounds.toggleClass(option, option === fitting);
+    }
+    background_settings.fitting = fitting;
 }
 
 function onBackgroundFilterInput() {
@@ -513,12 +523,12 @@ export function initBackgrounds() {
     $('#add_bg_button').on('change', onBackgroundUploadSelected);
     $('#bg-filter').on('input', onBackgroundFilterInput);
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'lockbg',
-        callback: onLockBackgroundClick,
+        callback: () => onLockBackgroundClick(new CustomEvent('click')),
         aliases: ['bglock'],
         helpString: 'Locks a background for the currently selected chat',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'unlockbg',
-        callback: onUnlockBackgroundClick,
+        callback: () => onUnlockBackgroundClick(new CustomEvent('click')),
         aliases: ['bgunlock'],
         helpString: 'Unlocks a background for the currently selected chat',
     }));

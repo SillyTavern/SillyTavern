@@ -19,31 +19,31 @@ const tasks = {
     'text-classification': {
         defaultModel: 'Cohee/distilbert-base-uncased-go-emotions-onnx',
         pipeline: null,
-        configField: 'extras.classificationModel',
+        configField: 'extensions.models.classification',
         quantized: true,
     },
     'image-to-text': {
         defaultModel: 'Xenova/vit-gpt2-image-captioning',
         pipeline: null,
-        configField: 'extras.captioningModel',
+        configField: 'extensions.models.captioning',
         quantized: true,
     },
     'feature-extraction': {
         defaultModel: 'Xenova/all-mpnet-base-v2',
         pipeline: null,
-        configField: 'extras.embeddingModel',
+        configField: 'extensions.models.embedding',
         quantized: true,
     },
     'automatic-speech-recognition': {
         defaultModel: 'Xenova/whisper-small',
         pipeline: null,
-        configField: 'extras.speechToTextModel',
+        configField: 'extensions.models.speechToText',
         quantized: true,
     },
     'text-to-speech': {
         defaultModel: 'Xenova/speecht5_tts',
         pipeline: null,
-        configField: 'extras.textToSpeechModel',
+        configField: 'extensions.models.textToSpeech',
         quantized: false,
     },
 };
@@ -132,7 +132,7 @@ export async function getPipeline(task, forceModel = '') {
 
     const cacheDir = path.join(globalThis.DATA_ROOT, '_cache');
     const model = forceModel || getModelForTask(task);
-    const localOnly = getConfigValue('extras.disableAutoDownload', false);
+    const localOnly = !getConfigValue('extensions.models.autoDownload', true);
     console.log('Initializing transformers.js pipeline for task', task, 'with model', model);
     const instance = await pipeline(task, model, { cache_dir: cacheDir, quantized: tasks[task].quantized ?? true, local_files_only: localOnly });
     tasks[task].pipeline = instance;

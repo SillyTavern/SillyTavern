@@ -883,6 +883,10 @@ export class SlashCommandHandler {
         }
     }
     getQuickReply(args) {
+        if (!args.id && !args.label) {
+            toastr.error('Please provide a valid id or label.');
+            return '';
+        }
         try {
             return JSON.stringify(this.api.getQrByLabel(args.set, args.id !== undefined ? Number(args.id) : args.label));
         } catch (ex) {

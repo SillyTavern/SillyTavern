@@ -563,6 +563,7 @@ export class ToolManager {
             chat_completion_sources.OPENROUTER,
             chat_completion_sources.GROQ,
             chat_completion_sources.COHERE,
+            chat_completion_sources.DEEPSEEK,
         ];
         return supportedSources.includes(oai_settings.chat_completion_source);
     }

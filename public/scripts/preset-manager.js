@@ -586,6 +586,9 @@ class PresetManager {
             'tabby_model',
             'derived',
             'generic_model',
+            'include_reasoning',
+            'global_banned_tokens',
+            'send_banned_tokens',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 

@@ -82,14 +82,14 @@ export function importRisuSprites(directories, data) {
             return;
         }
 
-        console.log(`RisuAI: Found ${images.length} sprites for ${name}. Writing to disk.`);
+        console.info(`RisuAI: Found ${images.length} sprites for ${name}. Writing to disk.`);
         const files = fs.readdirSync(spritesPath);
 
         outer: for (const [label, fileBase64] of images) {
             // Remove existing sprite with the same label
             for (const file of files) {
                 if (path.parse(file).name === label) {
-                    console.log(`RisuAI: The sprite ${label} for ${name} already exists. Skipping.`);
+                    console.warn(`RisuAI: The sprite ${label} for ${name} already exists. Skipping.`);
                     continue outer;
                 }
             }
@@ -133,7 +133,7 @@ router.get('/get', jsonParser, function (request, response) {
         }
     }
     catch (err) {
-        console.log(err);
+        console.error(err);
     }
     return response.send(sprites);
 });

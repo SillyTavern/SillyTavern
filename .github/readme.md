@@ -274,7 +274,7 @@ You will need two mandatory directory mappings and a port mapping to allow Silly
 1. Open your Command Line
 2. Run the following command
 
-`docker create --name='sillytavern' --net='[DockerNet]' -p '8000:8000/tcp' -v '[plugins]':'/home/node/app/plugins':'rw' -v '[config]':'/home/node/app/config':'rw' -v '[data]':'/home/node/app/data':'rw' -v '[extensions]':'/home/node/app/public/scripts/extensions/third-party':'rw' 'ghcr.io/sillytavern/sillytavern:[version]'`
+`docker run --name='sillytavern' --net='[DockerNet]' -p '8000:8000/tcp' -v '[plugins]':'/home/node/app/plugins':'rw' -v '[config]':'/home/node/app/config':'rw' -v '[data]':'/home/node/app/data':'rw' -v '[extensions]':'/home/node/app/public/scripts/extensions/third-party':'rw' 'ghcr.io/sillytavern/sillytavern:[version]'`
 
 > Note that 8000 is a default listening port. Don't forget to use an appropriate port if you change it in the config.
 

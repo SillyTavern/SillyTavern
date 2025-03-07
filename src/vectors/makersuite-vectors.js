@@ -23,7 +23,7 @@ export async function getMakerSuiteVector(text, directories) {
     const key = readSecret(directories, SECRET_KEYS.MAKERSUITE);
 
     if (!key) {
-        console.log('No Google AI Studio key found');
+        console.warn('No Google AI Studio key found');
         throw new Error('No Google AI Studio key found');
     }
 
@@ -48,7 +48,7 @@ export async function getMakerSuiteVector(text, directories) {
 
     if (!response.ok) {
         const text = await response.text();
-        console.log('Google AI Studio request failed', response.statusText, text);
+        console.warn('Google AI Studio request failed', response.statusText, text);
         throw new Error('Google AI Studio request failed');
     }
 
