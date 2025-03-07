@@ -189,7 +189,6 @@ export class TextCompletionService {
             'dry_allowed_length': settings.dry_allowed_length,
             'dry_multiplier': settings.dry_multiplier,
             'dry_base': settings.dry_base,
-            'dry_sequence_breakers': settings.dry_sequence_breakers,
             'dry_penalty_last_n': settings.dry_penalty_last_n,
             'max_tokens_second': settings.max_tokens_second,
             'sampler_priority': api_type === textgen_types.OOBA ? settings.sampler_priority : undefined,
