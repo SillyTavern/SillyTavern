@@ -257,7 +257,6 @@ export class TextCompletionService {
             'presence_penalty': settings.presence_pen,
             'repetition_penalty': settings.rep_pen,
             'seed': settings.seed >= 0 ? settings.seed : undefined,
-            'stop': payload.stop,
             'temperature': payload.temperature,
             'temperature_last': settings.temperature_last,
             'top_p': settings.top_p,
