@@ -229,7 +229,6 @@ export class TextCompletionService {
             'do_sample': api_type === textgen_types.OOBA ? settings.do_sample : undefined,
             'seed': settings.seed >= 0 ? settings.seed : undefined,
             'guidance_scale': settings.guidance_scale || 1,
-            'negative_prompt': settings.negative_prompt || '',
             'grammar_string': settings.grammar_string,
             'json_schema': [textgen_types.TABBY, textgen_types.LLAMACPP].includes(api_type) ? settings.json_schema : undefined,
             // llama.cpp aliases
