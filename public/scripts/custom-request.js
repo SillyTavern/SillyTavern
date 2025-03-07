@@ -1,8 +1,8 @@
 import { getPresetManager } from './preset-manager.js';
 import { extractMessageFromData, getGenerateUrl, getRequestHeaders } from '../script.js';
-import { getTextGenServer, textgen_types } from './textgen-settings.js';
+import { APHRODITE_DEFAULT_ORDER, getTextGenServer, textgen_types } from './textgen-settings.js';
 import { chat_completion_sources } from './openai.js';
-import { onlyUnique } from './utils.js';
+import { arraysEqual, onlyUnique } from './utils.js';
 
 // #region Type Definitions
 /**
@@ -287,8 +287,11 @@ export class TextCompletionService {
             'nsigma': settings.nsigma,
             'custom_token_bans': banned_tokens_array,
             'no_repeat_ngram_size': settings.no_repeat_ngram_size,
-            'sampler_priority': api_type === textgen_types.APHRODITE && settings.samplers_priorities ?
-                settings.samplers_priorities : undefined,
+            'sampler_priority': api_type === textgen_types.APHRODITE && !arraysEqual(
+                settings.samplers_priorities,
+                APHRODITE_DEFAULT_ORDER)
+                ? settings.samplers_priorities
+                : undefined,
         };
 
         // API-specific adjustments
