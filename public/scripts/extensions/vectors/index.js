@@ -791,6 +791,21 @@ function getVectorsRequestBody(args = {}) {
 }
 
 /**
+ * Gets additional arguments for vector requests.
+ * @param {string[]} items Items to embed
+ * @returns {Promise<object>} Additional arguments
+ */
+async function getAdditionalArgs(items) {
+    const args = {};
+    switch (settings.source) {
+        case 'webllm':
+            args.embeddings = await createWebLlmEmbeddings(items);
+            break;
+    }
+    return args;
+}
+
+/**
  * Gets the saved hashes for a collection
 * @param {string} collectionId
 * @returns {Promise<number[]>} Saved hashes
@@ -823,10 +838,7 @@ async function getSavedHashes(collectionId) {
 async function insertVectorItems(collectionId, items) {
     throwIfSourceInvalid();
 
-    const args = {};
-    if (settings.source === 'webllm') {
-        args.embeddings = await createWebLlmVectors(items.map(x => x.text));
-    }
+    const args = await getAdditionalArgs(items.map(x => x.text));
     const response = await fetch('/api/vector/insert', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -905,10 +917,7 @@ async function deleteVectorItems(collectionId, hashes) {
  * @returns {Promise<{ hashes: number[], metadata: object[]}>} - Hashes of the results
  */
 async function queryCollection(collectionId, searchText, topK) {
-    const args = {};
-    if (settings.source === 'webllm') {
-        args.embeddings = await createWebLlmVectors([searchText]);
-    }
+    const args = await getAdditionalArgs([searchText]);
     const response = await fetch('/api/vector/query', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -938,10 +947,7 @@ async function queryCollection(collectionId, searchText, topK) {
  * @returns {Promise<Record<string, { hashes: number[], metadata: object[] }>>} - Results mapped to collection IDs
  */
 async function queryMultipleCollections(collectionIds, searchText, topK, threshold) {
-    const args = {};
-    if (settings.source === 'webllm') {
-        args.embeddings = await createWebLlmVectors([searchText]);
-    }
+    const args = await getAdditionalArgs([searchText]);
     const response = await fetch('/api/vector/query-multi', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -1119,7 +1125,7 @@ function loadWebLlmModels() {
  * @param {string[]} items Items to embed
  * @returns {Promise<Record<string, number[]>>} Calculated embeddings
  */
-async function createWebLlmVectors(items) {
+async function createWebLlmEmbeddings(items) {
     return executeWithWebLlmErrorHandling(async () => {
         const embeddings = await webllmProvider.embedTexts(items, settings.webllm_model);
         const result = /** @type {Record<string, number[]>} */ ({});
