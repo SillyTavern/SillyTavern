@@ -1091,10 +1091,10 @@ async function executeWithWebLlmErrorHandling(func) {
             return;
         }
         switch (error.cause) {
-            case 'not-available':
+            case 'webllm-not-available':
                 toastr.warning('WebLLM is not available. Please install the extension.', 'WebLLM not installed');
                 break;
-            case 'not-updated':
+            case 'webllm-not-updated':
                 toastr.warning('The installed extension version does not support embeddings.', 'WebLLM update required');
                 break;
         }
