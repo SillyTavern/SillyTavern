@@ -271,7 +271,7 @@ import { initSettingsSearch } from './scripts/setting-search.js';
 import { initBulkEdit } from './scripts/bulk-edit.js';
 import { deriveTemplatesFromChatTemplate } from './scripts/chat-templates.js';
 import { getContext } from './scripts/st-context.js';
-import { extractReasoningFromData, initReasoning, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
+import { extractReasoningFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
 import { accountStorage } from './scripts/util/AccountStorage.js';
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -2716,7 +2716,16 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
         environment.personality = fields.personality || '';
         environment.scenario = fields.scenario || '';
         environment.persona = fields.persona || '';
-        environment.mesExamples = fields.mesExamples || '';
+        environment.mesExamples = () => {
+            const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
+            const mesExamplesArray = parseMesExamples(fields.mesExamples, isInstruct);
+            if (isInstruct) {
+                const instructExamples = formatInstructModeExamples(mesExamplesArray, name1, name2);
+                return instructExamples.join('');
+            }
+            return mesExamplesArray.join('');
+        };
+        environment.mesExamplesRaw = fields.mesExamples || '';
         environment.charVersion = fields.version || '';
         environment.char_version = fields.version || '';
     }
@@ -3105,6 +3114,27 @@ export function getCharacterCardFields() {
     return result;
 }
 
+/**
+ * Parses an examples string.
+ * @param {string} examplesStr
+ * @returns {string[]} Examples array with block heading
+ */
+export function parseMesExamples(examplesStr, isInstruct) {
+    if (!examplesStr || examplesStr.length === 0 || examplesStr === '<START>') {
+        return [];
+    }
+
+    if (!examplesStr.startsWith('<START>')) {
+        examplesStr = '<START>\n' + examplesStr.trim();
+    }
+
+    const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
+    const blockHeading = main_api === 'openai' ? '<START>\n' : (exampleSeparator || (isInstruct ? '<START>\n' : ''));
+    const splitExamples = examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
+
+    return splitExamples;
+}
+
 export function isStreamingEnabled() {
     const noStreamSources = [chat_completion_sources.SCALE];
     return (
@@ -3276,7 +3306,7 @@ class StreamingProcessor {
                     'send_date': chat[messageId]['send_date'],
                     'gen_started': chat[messageId]['gen_started'],
                     'gen_finished': chat[messageId]['gen_finished'],
-                    'extra': JSON.parse(JSON.stringify(chat[messageId]['extra']))
+                    'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])),
                 };
             }
 
@@ -3316,15 +3346,18 @@ class StreamingProcessor {
 
         if (Array.isArray(this.swipes) && this.swipes.length > 0) {
             const message = chat[messageId];
+            const swipeInfoExtra = structuredClone(message.extra ?? {});
+            delete swipeInfoExtra.token_count;
+            delete swipeInfoExtra.reasoning;
+            delete swipeInfoExtra.reasoning_duration;
             const swipeInfo = {
                 send_date: message.send_date,
                 gen_started: message.gen_started,
                 gen_finished: message.gen_finished,
-                extra: structuredClone(message.extra),
+                extra: swipeInfoExtra,
             };
-            const swipeInfoArray = [];
-            swipeInfoArray.length = this.swipes.length;
-            swipeInfoArray.fill(swipeInfo);
+            const swipeInfoArray = Array(this.swipes.length).fill().map(() => structuredClone(swipeInfo));
+            parseReasoningInSwipes(this.swipes, swipeInfoArray, message.extra?.reasoning_duration);
             chat[messageId].swipes.push(...this.swipes);
             chat[messageId].swipe_info.push(...swipeInfoArray);
         }
@@ -3336,6 +3369,7 @@ class StreamingProcessor {
             await eventSource.emit(event_types.IMPERSONATE_READY, text);
         }
 
+        syncMesToSwipe(messageId);
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
         await saveChatConditional();
         unblockGeneration();
@@ -3993,29 +4027,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         force_name2 = false;
     }
 
-    // TODO (kingbri): Migrate to a utility function
-    /**
-     * Parses an examples string.
-     * @param {string} examplesStr
-     * @returns {string[]} Examples array with block heading
-     */
-    function parseMesExamples(examplesStr) {
-        if (!examplesStr || examplesStr.length === 0 || examplesStr === '<START>') {
-            return [];
-        }
-
-        if (!examplesStr.startsWith('<START>')) {
-            examplesStr = '<START>\n' + examplesStr.trim();
-        }
-
-        const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
-        const blockHeading = main_api === 'openai' ? '<START>\n' : (exampleSeparator || (isInstruct ? '<START>\n' : ''));
-        const splitExamples = examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
-
-        return splitExamples;
-    }
-
-    let mesExamplesArray = parseMesExamples(mesExamples);
+    let mesExamplesArray = parseMesExamples(mesExamples, isInstruct);
 
     //////////////////////////////////
     // Extension added strings
@@ -4040,7 +4052,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
 
         const formattedExample = baseChatReplace(exampleMessage, name1, name2);
-        const cleanedExample = parseMesExamples(formattedExample);
+        const cleanedExample = parseMesExamples(formattedExample, isInstruct);
 
         // Insert depending on before or after position
         if (example.position === wi_anchor_position.before) {
@@ -6109,15 +6121,18 @@ export async function saveReply(type, getMessage, fromStreaming, title, swipes, 
     }
 
     if (Array.isArray(swipes) && swipes.length > 0) {
+        const swipeInfoExtra = structuredClone(item.extra ?? {});
+        delete swipeInfoExtra.token_count;
+        delete swipeInfoExtra.reasoning;
+        delete swipeInfoExtra.reasoning_duration;
         const swipeInfo = {
             send_date: item.send_date,
             gen_started: item.gen_started,
             gen_finished: item.gen_finished,
-            extra: structuredClone(item.extra),
+            extra: swipeInfoExtra,
         };
-        const swipeInfoArray = [];
-        swipeInfoArray.length = swipes.length;
-        swipeInfoArray.fill(swipeInfo, 0, swipes.length);
+        const swipeInfoArray = Array(swipes.length).fill().map(() => structuredClone(swipeInfo));
+        parseReasoningInSwipes(swipes, swipeInfoArray, item.extra?.reasoning_duration);
         item.swipes.push(...swipes);
         item.swipe_info.push(...swipeInfoArray);
     }
@@ -6139,12 +6154,16 @@ export function syncMesToSwipe(messageId = null) {
     }
 
     const targetMessageId = messageId ?? chat.length - 1;
-    if (chat.length > targetMessageId || targetMessageId < 0) {
+    if (targetMessageId >= chat.length || targetMessageId < 0) {
         console.warn(`[syncMesToSwipe] Invalid message ID: ${messageId}`);
         return false;
     }
 
     const targetMessage = chat[targetMessageId];
+
+    if (!targetMessage) {
+        return false;
+    }
 
     // No swipe data there yet, exit out
     if (typeof targetMessage.swipe_id !== 'number') {
