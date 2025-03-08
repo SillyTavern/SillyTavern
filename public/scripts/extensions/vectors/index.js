@@ -376,6 +376,8 @@ async function synchronizeChat(batchSize = 5) {
                     return 'Vectorization Source Model is required, but not set.';
                 case 'extras_module_missing':
                     return 'Extras API must provide an "embeddings" module.';
+                case 'webllm_not_supported':
+                    return 'WebLLM extension is not installed or the model is not set.';
                 default:
                     return 'Check server console for more details';
             }
@@ -883,7 +885,7 @@ function throwIfSourceInvalid() {
     }
 
     if (settings.source === 'webllm' && (!isWebLlmSupported() || !settings.webllm_model)) {
-        throw new Error('Vectors: WebLLM is not supported');
+        throw new Error('Vectors: WebLLM is not supported', { cause: 'webllm_not_supported' });
     }
 }
 
