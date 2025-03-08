@@ -2313,44 +2313,81 @@ export function updateMessageBlock(messageId, message, { rerenderMessage = true 
  * @param {boolean} [adjustScroll=true] Whether to adjust the scroll position after appending the media
  */
 export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
-    // Add image to message
+    // Handle images in message
     if (mes.extra?.image) {
         const container = messageElement.find('.mes_img_container');
         const chatHeight = $('#chat').prop('scrollHeight');
-        const image = messageElement.find('.mes_img');
         const text = messageElement.find('.mes_text');
         const isInline = !!mes.extra?.inline_image;
-        image.off('load').on('load', function () {
-            if (!adjustScroll) {
-                return;
+
+        // Clear existing images first
+        container.find('.mes_img').remove();
+
+        // Handle image as array
+        const images = Array.isArray(mes.extra.image) ? mes.extra.image : [mes.extra.image];
+
+        // Create and append each image
+        images.forEach((imageUrl, index) => {
+            const imageElement = $('<img>', {
+                class: 'mes_img' + (isInline ? ' img_inline' : ''),
+                src: imageUrl,
+                title: mes.extra?.title || mes.title || '',
+            });
+
+            // Apply side-by-side styling
+            if (images.length > 1) {
+                imageElement.css({
+                    'max-width': `${Math.floor(100 / images.length)}%`,
+                    'display': 'inline-block',
+                    'margin': '2px'
+                });
             }
-            const scrollPosition = $('#chat').scrollTop();
-            const newChatHeight = $('#chat').prop('scrollHeight');
-            const diff = newChatHeight - chatHeight;
-            $('#chat').scrollTop(scrollPosition + diff);
+
+            // Add load event to first image only for scroll adjustment
+            if (index === 0) {
+                imageElement.off('load').on('load', function () {
+                    if (!adjustScroll) {
+                        return;
+                    }
+                    const scrollPosition = $('#chat').scrollTop();
+                    const newChatHeight = $('#chat').prop('scrollHeight');
+                    const diff = newChatHeight - chatHeight;
+                    $('#chat').scrollTop(scrollPosition + diff);
+                });
+            }
+
+            container.append(imageElement);
         });
-        image.attr('src', mes.extra?.image);
-        image.attr('title', mes.extra?.title || mes.title || '');
+
         container.addClass('img_extra');
-        image.toggleClass('img_inline', isInline);
         text.toggleClass('displayNone', !isInline);
 
+        // Handle image swipes if present
         const imageSwipes = mes.extra.image_swipes;
         if (Array.isArray(imageSwipes) && imageSwipes.length > 0) {
             container.addClass('img_swipes');
             const counter = container.find('.mes_img_swipe_counter');
-            const currentImage = imageSwipes.indexOf(mes.extra.image) + 1;
-            counter.text(`${currentImage}/${imageSwipes.length}`);
 
-            const swipeLeft = container.find('.mes_img_swipe_left');
-            swipeLeft.off('click').on('click', function () {
-                eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'left' });
-            });
+            // If image is array, we're showing all images at once, so swipe is disabled
+            if (Array.isArray(mes.extra.image)) {
+                counter.text(`All/${imageSwipes.length}`);
+                container.find('.mes_img_swipe_left, .mes_img_swipe_right').hide();
+            } else {
+                const currentImage = imageSwipes.indexOf(mes.extra.image) + 1;
+                counter.text(`${currentImage}/${imageSwipes.length}`);
 
-            const swipeRight = container.find('.mes_img_swipe_right');
-            swipeRight.off('click').on('click', function () {
-                eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'right' });
-            });
+                const swipeLeft = container.find('.mes_img_swipe_left');
+                swipeLeft.off('click').on('click', function () {
+                    eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'left' });
+                });
+
+                const swipeRight = container.find('.mes_img_swipe_right');
+                swipeRight.off('click').on('click', function () {
+                    eventSource.emit(event_types.IMAGE_SWIPED, { message: mes, element: messageElement, direction: 'right' });
+                });
+
+                container.find('.mes_img_swipe_left, .mes_img_swipe_right').show();
+            }
         }
     }
 
@@ -2368,6 +2405,8 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
         messageElement.find('.mes_file_container').remove();
     }
 }
+
+
 
 /**
  * @deprecated Use appendMediaToMessage instead.
@@ -6191,6 +6230,8 @@ function saveImageToMessage(img, mes) {
         mes.extra.title = img.title;
     }
 }
+
+
 
 export function getGeneratingApi() {
     switch (main_api) {

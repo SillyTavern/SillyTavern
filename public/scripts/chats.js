@@ -189,47 +189,57 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
         if (!message.extra) message.extra = {};
         const fileInput = document.getElementById(inputId);
         if (!(fileInput instanceof HTMLInputElement)) return;
-        const file = fileInput.files[0];
-        if (!file) return;
+        const files = fileInput.files;
+        if (!files || files.length === 0) return;
 
-        const slug = getStringHash(file.name);
-        const fileNamePrefix = `${Date.now()}_${slug}`;
-        const fileBase64 = await getBase64Async(file);
-        let base64Data = fileBase64.split(',')[1];
+        // Initialize image array if we're handling images
+        message.extra.image = [];
 
-        // If file is image
-        if (file.type.startsWith('image/')) {
-            const extension = file.type.split('/')[1];
-            const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
-            message.extra.image = imageUrl;
-            message.extra.inline_image = true;
-        } else {
-            const uniqueFileName = `${fileNamePrefix}.txt`;
+        // Process each file
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const slug = getStringHash(file.name);
+            const fileNamePrefix = `${Date.now()}_${slug}`;
+            const fileBase64 = await getBase64Async(file);
+            let base64Data = fileBase64.split(',')[1];
 
-            if (isConvertible(file.type)) {
-                try {
-                    const converter = getConverter(file.type);
-                    const fileText = await converter(file);
-                    base64Data = window.btoa(unescape(encodeURIComponent(fileText)));
-                } catch (error) {
-                    toastr.error(String(error), t`Could not convert file`);
-                    console.error('Could not convert file', error);
+            // If file is image
+            if (file.type.startsWith('image/')) {
+                const extension = file.type.split('/')[1];
+                const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
+                message.extra.image.push(imageUrl);
+                message.extra.inline_image = true;
+            } else {
+                const uniqueFileName = `${fileNamePrefix}.txt`;
+
+                if (isConvertible(file.type)) {
+                    try {
+                        const converter = getConverter(file.type);
+                        const fileText = await converter(file);
+                        base64Data = window.btoa(unescape(encodeURIComponent(fileText)));
+                    } catch (error) {
+                        toastr.error(String(error), t`Could not convert file`);
+                        console.error('Could not convert file', error);
+                    }
                 }
+
+                const fileUrl = await uploadFileAttachment(uniqueFileName, base64Data);
+
+                if (!fileUrl) {
+                    continue;
+                }
+
+                // For non-image files, we still use the original structure
+                message.extra.file = {
+                    url: fileUrl,
+                    size: file.size,
+                    name: file.name,
+                    created: Date.now(),
+                };
             }
-
-            const fileUrl = await uploadFileAttachment(uniqueFileName, base64Data);
-
-            if (!fileUrl) {
-                return;
-            }
-
-            message.extra.file = {
-                url: fileUrl,
-                size: file.size,
-                name: file.name,
-                created: Date.now(),
-            };
         }
+
+
 
     } catch (error) {
         console.error('Could not upload file', error);
@@ -237,6 +247,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
         $('#file_form').trigger('reset');
     }
 }
+
 
 /**
  * Uploads file to the server.
@@ -330,19 +341,41 @@ export function hasPendingFileAttachment() {
  * @param {File} file File object
  * @returns {Promise<void>}
  */
-async function onFileAttach(file) {
-    if (!file) return;
+async function onFileAttach(files) {
+    if (!files || files.length === 0) return;
 
-    const isValid = await validateFile(file);
+    let allValid = true;
+    let totalSize = 0;
+    let fileNames = [];
 
-    // If file is binary
-    if (!isValid) {
+    // Validate all files and collect information
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const isValid = await validateFile(file);
+
+        if (!isValid) {
+            allValid = false;
+            break;
+        }
+
+        totalSize += file.size;
+        fileNames.push(file.name);
+    }
+
+    // If any file is invalid
+    if (!allValid) {
         $('#file_form').trigger('reset');
         return;
     }
 
-    $('#file_form .file_name').text(file.name);
-    $('#file_form .file_size').text(humanFileSize(file.size));
+    // Update UI to show multiple files
+    if (files.length === 1) {
+        $('#file_form .file_name').text(fileNames[0]);
+    } else {
+        $('#file_form .file_name').text(`${files.length} files selected`);
+    }
+
+    $('#file_form .file_size').text(humanFileSize(totalSize));
     $('#file_form').removeClass('displayNone');
 
     // Reset form on chat change
@@ -414,12 +447,18 @@ function embedMessageFile(messageId, messageBlock) {
         .trigger('click');
 
     async function parseAndUploadEmbed(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        let allValid = true;
+        for (let i = 0; i < files.length; i++) {
+            const isValid = await validateFile(files[i]);
+            if (!isValid) {
+                allValid = false;
+                break;
+            }
+        }
 
-        const isValid = await validateFile(file);
-
-        if (!isValid) {
+        if (!allValid) {
             $('#file_form').trigger('reset');
             return;
         }
@@ -430,6 +469,7 @@ function embedMessageFile(messageId, messageBlock) {
         await saveChatConditional();
     }
 }
+
 
 /**
  * Appends file content to the message text.
@@ -1604,11 +1644,13 @@ jQuery(function () {
     $(document).on('click', '.mes_img_delete', deleteMessageImage);
 
     $('#file_form_input').on('change', async () => {
-        const fileInput = document.getElementById('file_form_input');
-        if (!(fileInput instanceof HTMLInputElement)) return;
-        const file = fileInput.files[0];
-        await onFileAttach(file);
-    });
+		const fileInput = document.getElementById('file_form_input');
+		if (!(fileInput instanceof HTMLInputElement)) return;
+		if (fileInput.files.length === 0) return;
+
+		// Pass all files at once to onFileAttach
+		await onFileAttach(fileInput.files);
+	});
     $('#file_form').on('reset', function () {
         $('#file_form').addClass('displayNone');
     });
@@ -1626,11 +1668,16 @@ jQuery(function () {
 
         // Workaround for Firefox: Use a DataTransfer object to indirectly set fileInput.files
         const dataTransfer = new DataTransfer();
+
+        for (let i = 0; i < fileInput.files.length; i++) {
+            dataTransfer.items.add(fileInput.files[i]);
+        }
+
         for (let i = 0; i < event.clipboardData.files.length; i++) {
             dataTransfer.items.add(event.clipboardData.files[i]);
         }
 
         fileInput.files = dataTransfer.files;
-        await onFileAttach(fileInput.files[0]);
+        await onFileAttach(fileInput.files);
     });
 });
