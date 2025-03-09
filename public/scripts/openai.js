@@ -5176,9 +5176,10 @@ function runProxyCallback(_, value) {
 
 export function initOpenAI() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'proxy',
+        name: 'endpoint-override',
+        aliases: ['proxy'],
         callback: runProxyCallback,
-        returns: 'current proxy',
+        returns: 'current Endpoint Override preset',
         namedArgumentList: [],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -5188,7 +5189,7 @@ export function initOpenAI() {
                 enumProvider: () => proxies.map(preset => new SlashCommandEnumValue(preset.name, preset.url)),
             }),
         ],
-        helpString: 'Sets a proxy preset by name.',
+        helpString: 'Sets an Endpoint Override by its preset name.',
     }));
 
     $('#test_api_button').on('click', testApiConnection);
