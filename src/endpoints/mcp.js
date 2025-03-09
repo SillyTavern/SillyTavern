@@ -1,7 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
-import { EventEmitter } from 'node:events';
 
 import express from 'express';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
@@ -10,12 +8,13 @@ import { jsonParser } from '../express-common.js';
 import { getUserDirectories } from '../users.js';
 import { DEFAULT_USER } from '../constants.js';
 
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+
 export const MCP_SETTINGS_FILE = 'mcp_settings.json';
 
-// Map of active MCP server processes
-const mcpServers = new Map();
-// Map of server event emitters for SSE
-const serverEmitters = new Map();
+/** @type {Map<string, Client>} */
+const mcpClients = new Map();
 
 /**
  * Reads MCP settings from the settings file
@@ -46,7 +45,7 @@ export function writeMcpSettings(directories, settings) {
 }
 
 /**
- * Starts an MCP server process
+ * Starts an MCP server process and connects to it using the MCP SDK
  * @param {string} serverName Name of the server
  * @param {object} config Server configuration
  * @param {string} config.command Command to execute
@@ -55,44 +54,55 @@ export function writeMcpSettings(directories, settings) {
  * @returns {Promise<boolean>} Whether the server was started successfully
  */
 async function startMcpServer(serverName, config) {
-    if (mcpServers.has(serverName)) {
+    if (mcpClients.has(serverName)) {
         console.warn(`[MCP] Server "${serverName}" is already running`);
         return true;
     }
 
     try {
         const env = { ...process.env, ...config.env };
-        const serverProcess = spawn(config.command, config.args || [], {
-            env,
-            stdio: ['pipe', 'pipe', 'pipe'],
-            shell: true,
+        let command = config.command;
+        let args = config.args || [];
+
+        // Windows-specific fix: Wrap the command in cmd /C to ensure proper path resolution
+        // This addresses the "spawn npx ENOENT" error on Windows
+        // See: https://github.com/modelcontextprotocol/typescript-sdk/issues/101
+        if (process.platform === 'win32' && !command.toLowerCase().includes('cmd')) {
+            // If the command is not already cmd, wrap it
+            const originalCommand = command;
+            const originalArgs = [...args];
+            command = 'cmd';
+            args = ['/C', originalCommand, ...originalArgs];
+            console.log(`[MCP] Windows detected, wrapping command: cmd /C ${originalCommand} ${originalArgs.join(' ')}`);
+        }
+
+        // Create a transport using the StdioClientTransport
+        const transport = new StdioClientTransport({
+            command: command,
+            args: args,
+            env: env,
         });
 
-        // Create an event emitter for this server
-        const emitter = new EventEmitter();
-        serverEmitters.set(serverName, emitter);
+        // Create an MCP client
+        const client = new Client(
+            {
+                name: 'sillytavern-client',
+                version: '1.0.0',
+            },
+            {
+                capabilities: {
+                    prompts: {},
+                    resources: {},
+                    tools: {},
+                },
+            },
+        );
 
-        // Set up data handling
-        serverProcess.stdout.on('data', (data) => {
-            const message = data.toString();
-            emitter.emit('message', message);
-            console.log(`[MCP] ${serverName} stdout: ${message}`);
-        });
+        // Connect to the server
+        await client.connect(transport);
+        mcpClients.set(serverName, client);
 
-        serverProcess.stderr.on('data', (data) => {
-            const message = data.toString();
-            emitter.emit('stderr', message); // Changed from 'error' to 'stderr'
-            console.error(`[MCP] ${serverName} stderr: ${message}`);
-        });
-
-        serverProcess.on('close', (code) => {
-            console.log(`[MCP] ${serverName} process exited with code ${code}`);
-            mcpServers.delete(serverName);
-            serverEmitters.delete(serverName);
-            emitter.emit('close', code);
-        });
-
-        mcpServers.set(serverName, serverProcess);
+        console.log(`[MCP] Connected to server "${serverName}" using MCP SDK`);
         return true;
     } catch (error) {
         console.error(`[MCP] Failed to start server "${serverName}":`, error);
@@ -106,15 +116,16 @@ async function startMcpServer(serverName, config) {
  * @returns {Promise<boolean>} Whether the server was stopped successfully
  */
 async function stopMcpServer(serverName) {
-    if (!mcpServers.has(serverName)) {
+    if (!mcpClients.has(serverName)) {
         console.warn(`[MCP] Server "${serverName}" is not running`);
         return true;
     }
 
     try {
-        const serverProcess = mcpServers.get(serverName);
-        serverProcess.kill();
-        mcpServers.delete(serverName);
+        const client = mcpClients.get(serverName);
+        await client?.close();
+        mcpClients.delete(serverName);
+        console.log(`[MCP] Disconnected from server "${serverName}"`);
         return true;
     } catch (error) {
         console.error(`[MCP] Failed to stop server "${serverName}":`, error);
@@ -130,7 +141,7 @@ router.get('/servers', (request, response) => {
         const settings = readMcpSettings(request.user.directories);
         const servers = Object.entries(settings.mcpServers || {}).map(([name, config]) => ({
             name,
-            isRunning: mcpServers.has(name),
+            isRunning: mcpClients.has(name),
             config: {
                 command: config.command,
                 args: config.args,
@@ -184,7 +195,7 @@ router.delete('/servers/:name', (request, response) => {
     try {
         const { name } = request.params;
 
-        if (mcpServers.has(name)) {
+        if (mcpClients.has(name)) {
             stopMcpServer(name);
         } else {
             return response.status(404).json({ error: 'Server not found' });
@@ -241,7 +252,7 @@ router.post('/servers/:name/stop', (request, response) => {
     try {
         const { name } = request.params;
 
-        if (!mcpServers.has(name)) {
+        if (!mcpClients.has(name)) {
             return response.status(400).json({ error: 'Server is not running' });
         }
 
@@ -269,76 +280,18 @@ router.get('/servers/:name/list-tools', async (request, response) => {
     try {
         const { name } = request.params;
 
-        if (!mcpServers.has(name)) {
+        if (!mcpClients.has(name)) {
             return response.status(400).json({ error: 'Server is not running' });
         }
 
-        const serverProcess = mcpServers.get(name);
-
-        // Create a unique request ID for this list tools request
-        const requestId = `list-tools-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-
-        // Create an MCP protocol message for listing tools
-        const mcpRequest = {
-            jsonrpc: '2.0',
-            id: requestId,
-            method: 'listTools',
-            params: {},
-        };
+        const client = mcpClients.get(name);
 
         console.log(`[MCP] Listing tools from server "${name}"`);
 
-        // Create a promise that will be resolved when we get a response
-        const responsePromise = new Promise((resolve, reject) => {
-            // Set up a timeout to prevent hanging if the server doesn't respond
-            const timeout = setTimeout(() => {
-                reject(new Error('List tools request timed out after 30 seconds'));
-            }, 30000);
-
-            // Function to handle data from the server
-            const dataHandler = (data) => {
-                try {
-                    const message = data.toString();
-                    // Try to parse each line as JSON
-                    const lines = message.split('\n').filter(line => line.trim());
-
-                    for (const line of lines) {
-                        try {
-                            const parsed = JSON.parse(line);
-
-                            // Check if this is a response to our request
-                            if (parsed.id === requestId && parsed.jsonrpc === '2.0') {
-                                // Clean up
-                                clearTimeout(timeout);
-                                serverProcess.stdout.removeListener('data', dataHandler);
-
-                                if (parsed.error) {
-                                    reject(new Error(parsed.error.message || 'Unknown error'));
-                                } else {
-                                    resolve(parsed.result?.tools || []);
-                                }
-                                return;
-                            }
-                        } catch (e) {
-                            // Not valid JSON or not our response, continue
-                        }
-                    }
-                } catch (e) {
-                    console.error('[MCP] Error parsing server response:', e);
-                }
-            };
-
-            // Listen for data from the server
-            serverProcess.stdout.on('data', dataHandler);
-        });
-
-        // Send the request to the server
-        serverProcess.stdin.write(JSON.stringify(mcpRequest) + '\n');
-
         try {
-            // Wait for the response
-            const tools = await responsePromise;
-            response.json(tools);
+            // Use the MCP SDK to list tools
+            const tools = await client?.listTools();
+            response.json(tools?.tools || []);
         } catch (error) {
             console.error('[MCP] Error listing tools:', error);
             response.status(500).json({ error: `Failed to list tools: ${error.message}` });
@@ -356,7 +309,7 @@ router.post('/servers/:name/call-tool', jsonParser, async (request, response) =>
         const { name } = request.params;
         const { toolName, arguments: toolArgs } = request.body;
 
-        if (!mcpServers.has(name)) {
+        if (!mcpClients.has(name)) {
             return response.status(400).json({ error: 'Server is not running' });
         }
 
@@ -368,74 +321,16 @@ router.post('/servers/:name/call-tool', jsonParser, async (request, response) =>
             return response.status(400).json({ error: 'Tool arguments must be an object' });
         }
 
-        const serverProcess = mcpServers.get(name);
-
-        // Create a unique request ID for this tool call
-        const requestId = `tool-call-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-
-        // Create an MCP protocol message for calling a tool
-        const mcpRequest = {
-            jsonrpc: '2.0',
-            id: requestId,
-            method: 'callTool',
-            params: {
-                name: toolName,
-                arguments: toolArgs,
-            },
-        };
+        const client = mcpClients.get(name);
 
         console.log(`[MCP] Calling tool "${toolName}" on server "${name}" with arguments:`, toolArgs);
 
-        // Create a promise that will be resolved when we get a response
-        const responsePromise = new Promise((resolve, reject) => {
-            // Set up a timeout to prevent hanging if the server doesn't respond
-            const timeout = setTimeout(() => {
-                reject(new Error('Tool call timed out after 30 seconds'));
-            }, 30000);
-
-            // Function to handle data from the server
-            const dataHandler = (data) => {
-                try {
-                    const message = data.toString();
-                    // Try to parse each line as JSON
-                    const lines = message.split('\n').filter(line => line.trim());
-
-                    for (const line of lines) {
-                        try {
-                            const parsed = JSON.parse(line);
-
-                            // Check if this is a response to our request
-                            if (parsed.id === requestId && parsed.jsonrpc === '2.0') {
-                                // Clean up
-                                clearTimeout(timeout);
-                                serverProcess.stdout.removeListener('data', dataHandler);
-
-                                if (parsed.error) {
-                                    reject(new Error(parsed.error.message || 'Unknown error'));
-                                } else {
-                                    resolve(parsed.result);
-                                }
-                                return;
-                            }
-                        } catch (e) {
-                            // Not valid JSON or not our response, continue
-                        }
-                    }
-                } catch (e) {
-                    console.error('[MCP] Error parsing server response:', e);
-                }
-            };
-
-            // Listen for data from the server
-            serverProcess.stdout.on('data', dataHandler);
-        });
-
-        // Send the request to the server
-        serverProcess.stdin.write(JSON.stringify(mcpRequest) + '\n');
-
         try {
-            // Wait for the response
-            const result = await responsePromise;
+            // Use the MCP SDK to call the tool
+            const result = await client?.callTool({
+                name: toolName,
+                arguments: toolArgs,
+            });
 
             response.json({
                 success: true,
@@ -456,58 +351,6 @@ router.post('/servers/:name/call-tool', jsonParser, async (request, response) =>
         console.error('[MCP] Error calling tool:', error);
         response.status(500).json({ error: 'Failed to call tool on MCP server' });
     }
-});
-
-// SSE endpoint for MCP server communication
-// @ts-ignore
-router.get('/servers/:name/events', (request, response) => {
-    const { name } = request.params;
-
-    if (!mcpServers.has(name)) {
-        return response.status(400).json({ error: 'Server is not running' });
-    }
-
-    const emitter = serverEmitters.get(name);
-
-    if (!emitter) {
-        return response.status(500).json({ error: 'Server emitter not found' });
-    }
-
-    // Set up SSE
-    response.setHeader('Content-Type', 'text/event-stream');
-    response.setHeader('Cache-Control', 'no-cache');
-    response.setHeader('Connection', 'keep-alive');
-    response.flushHeaders();
-
-    const messageListener = (message) => {
-        response.write(`data: ${JSON.stringify({ type: 'message', data: message })}\n\n`);
-    };
-
-    const errorListener = (error) => {
-        response.write(`data: ${JSON.stringify({ type: 'error', data: error })}\n\n`);
-    };
-
-    const stderrListener = (message) => {
-        response.write(`data: ${JSON.stringify({ type: 'stderr', data: message })}\n\n`);
-    };
-
-    const closeListener = (code) => {
-        response.write(`data: ${JSON.stringify({ type: 'close', data: code })}\n\n`);
-        response.end();
-    };
-
-    emitter.on('message', messageListener);
-    emitter.on('error', errorListener);
-    emitter.on('stderr', stderrListener);
-    emitter.on('close', closeListener);
-
-    // Clean up when client disconnects
-    request.on('close', () => {
-        emitter.off('message', messageListener);
-        emitter.off('error', errorListener);
-        emitter.off('stderr', stderrListener);
-        emitter.off('close', closeListener);
-    });
 });
 
 // Initialize MCP servers on startup
