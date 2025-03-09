@@ -52,7 +52,7 @@ const FANCY_NAMES = {
     'api-url': 'Server URL',
     'preset': 'Settings Preset',
     'model': 'Model',
-    'proxy': 'Proxy Preset',
+    'proxy': 'Endpoint Override Configuration',
     'sysprompt-state': 'Use System Prompt',
     'sysprompt': 'System Prompt Name',
     'instruct-state': 'Instruct Mode',
@@ -136,7 +136,7 @@ const profilesProvider = () => [
  * @property {string} [api] API
  * @property {string} [preset] Settings Preset
  * @property {string} [model] Model
- * @property {string} [proxy] Proxy Preset
+ * @property {string} [proxy] Endpoint Override Configuration
  * @property {string} [instruct] Instruct Template
  * @property {string} [context] Context Template
  * @property {string} [instruct-state] Instruct Mode
