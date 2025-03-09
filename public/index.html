@@ -1962,7 +1962,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,ai21">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -3078,7 +3078,15 @@
                             <div>
                                 <h4 data-i18n="AI21 Model">AI21 Model</h4>
                                 <select id="model_ai21_select">
-                                    <optgroup label="Jamba 1.5">
+                                    <optgroup label="Jamba (Latest)">
+                                        <option value="jamba-mini">jamba-mini</option>
+                                        <option value="jamba-large">jamba-large</option>
+                                    </optgroup>
+                                    <optgroup label="Jamba 1.6">
+                                        <option value="jamba-1.6-mini">jamba-1.6-mini</option>
+                                        <option value="jamba-1.6-large">jamba-1.6-large</option>
+                                    </optgroup>
+                                    <optgroup label="Jamba 1.5 (Deprecated)">
                                         <option value="jamba-1.5-mini">jamba-1.5-mini</option>
                                         <option value="jamba-1.5-large">jamba-1.5-large</option>
                                     </optgroup>

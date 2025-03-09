@@ -271,7 +271,7 @@ import { initSettingsSearch } from './scripts/setting-search.js';
 import { initBulkEdit } from './scripts/bulk-edit.js';
 import { deriveTemplatesFromChatTemplate } from './scripts/chat-templates.js';
 import { getContext } from './scripts/st-context.js';
-import { extractReasoningFromData, initReasoning, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
+import { extractReasoningFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
 import { accountStorage } from './scripts/util/AccountStorage.js';
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -2716,7 +2716,16 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
         environment.personality = fields.personality || '';
         environment.scenario = fields.scenario || '';
         environment.persona = fields.persona || '';
-        environment.mesExamples = fields.mesExamples || '';
+        environment.mesExamples = () => {
+            const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
+            const mesExamplesArray = parseMesExamples(fields.mesExamples, isInstruct);
+            if (isInstruct) {
+                const instructExamples = formatInstructModeExamples(mesExamplesArray, name1, name2);
+                return instructExamples.join('');
+            }
+            return mesExamplesArray.join('');
+        };
+        environment.mesExamplesRaw = fields.mesExamples || '';
         environment.charVersion = fields.version || '';
         environment.char_version = fields.version || '';
     }
@@ -3105,6 +3114,27 @@ export function getCharacterCardFields() {
     return result;
 }
 
+/**
+ * Parses an examples string.
+ * @param {string} examplesStr
+ * @returns {string[]} Examples array with block heading
+ */
+export function parseMesExamples(examplesStr, isInstruct) {
+    if (!examplesStr || examplesStr.length === 0 || examplesStr === '<START>') {
+        return [];
+    }
+
+    if (!examplesStr.startsWith('<START>')) {
+        examplesStr = '<START>\n' + examplesStr.trim();
+    }
+
+    const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
+    const blockHeading = main_api === 'openai' ? '<START>\n' : (exampleSeparator || (isInstruct ? '<START>\n' : ''));
+    const splitExamples = examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
+
+    return splitExamples;
+}
+
 export function isStreamingEnabled() {
     const noStreamSources = [chat_completion_sources.SCALE];
     return (
@@ -3174,12 +3204,20 @@ class StreamingProcessor {
         this.promptReasoning = promptReasoning;
     }
 
-    #checkDomElements(messageId) {
+    /**
+     * Initializes DOM elements for the current message.
+     * @param {number} messageId Current message ID
+     * @param {boolean?} continueOnReasoning If continuing on reasoning
+     */
+    async #checkDomElements(messageId, continueOnReasoning = null) {
         if (this.messageDom === null || this.messageTextDom === null) {
             this.messageDom = document.querySelector(`#chat .mes[mesid="${messageId}"]`);
             this.messageTextDom = this.messageDom?.querySelector('.mes_text');
             this.messageTimerDom = this.messageDom?.querySelector('.mes_timer');
             this.messageTokenCounterDom = this.messageDom?.querySelector('.tokenCounterDisplay');
+        }
+        if (continueOnReasoning) {
+            await this.reasoningHandler.process(messageId, false, this.promptReasoning);
         }
         this.reasoningHandler.updateDom(messageId);
     }
@@ -3200,7 +3238,8 @@ class StreamingProcessor {
     }
 
     async onStartStreaming(text) {
-        if (this.type === 'continue' && this.promptReasoning.prefixReasoning) {
+        const continueOnReasoning = !!(this.type === 'continue' && this.promptReasoning.prefixReasoning);
+        if (continueOnReasoning) {
             this.reasoningHandler.initContinue(this.promptReasoning);
         }
 
@@ -3212,7 +3251,7 @@ class StreamingProcessor {
         } else {
             await saveReply(this.type, text, true, '', [], '');
             messageId = chat.length - 1;
-            this.#checkDomElements(messageId);
+            await this.#checkDomElements(messageId, continueOnReasoning);
             this.markUIGenStarted();
         }
         hideSwipeButtons();
@@ -3245,7 +3284,7 @@ class StreamingProcessor {
             this.sendTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         } else {
             const mesChanged = chat[messageId]['mes'] !== processedText;
-            this.#checkDomElements(messageId);
+            await this.#checkDomElements(messageId);
             this.#updateMessageBlockVisibility();
             const currentTime = new Date();
             chat[messageId]['mes'] = processedText;
@@ -3257,7 +3296,7 @@ class StreamingProcessor {
             chat[messageId]['extra']['time_to_first_token'] = this.timeToFirstToken;
 
             // Update reasoning
-            await this.reasoningHandler.process(messageId, mesChanged);
+            await this.reasoningHandler.process(messageId, mesChanged, this.promptReasoning);
             processedText = chat[messageId]['mes'];
 
             // Token count update.
@@ -3276,7 +3315,7 @@ class StreamingProcessor {
                     'send_date': chat[messageId]['send_date'],
                     'gen_started': chat[messageId]['gen_started'],
                     'gen_finished': chat[messageId]['gen_finished'],
-                    'extra': JSON.parse(JSON.stringify(chat[messageId]['extra']))
+                    'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])),
                 };
             }
 
@@ -3316,15 +3355,18 @@ class StreamingProcessor {
 
         if (Array.isArray(this.swipes) && this.swipes.length > 0) {
             const message = chat[messageId];
+            const swipeInfoExtra = structuredClone(message.extra ?? {});
+            delete swipeInfoExtra.token_count;
+            delete swipeInfoExtra.reasoning;
+            delete swipeInfoExtra.reasoning_duration;
             const swipeInfo = {
                 send_date: message.send_date,
                 gen_started: message.gen_started,
                 gen_finished: message.gen_finished,
-                extra: structuredClone(message.extra),
+                extra: swipeInfoExtra,
             };
-            const swipeInfoArray = [];
-            swipeInfoArray.length = this.swipes.length;
-            swipeInfoArray.fill(swipeInfo);
+            const swipeInfoArray = Array(this.swipes.length).fill().map(() => structuredClone(swipeInfo));
+            parseReasoningInSwipes(this.swipes, swipeInfoArray, message.extra?.reasoning_duration);
             chat[messageId].swipes.push(...this.swipes);
             chat[messageId].swipe_info.push(...swipeInfoArray);
         }
@@ -3336,6 +3378,7 @@ class StreamingProcessor {
             await eventSource.emit(event_types.IMPERSONATE_READY, text);
         }
 
+        syncMesToSwipe(messageId);
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
         await saveChatConditional();
         unblockGeneration();
@@ -3993,29 +4036,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         force_name2 = false;
     }
 
-    // TODO (kingbri): Migrate to a utility function
-    /**
-     * Parses an examples string.
-     * @param {string} examplesStr
-     * @returns {string[]} Examples array with block heading
-     */
-    function parseMesExamples(examplesStr) {
-        if (!examplesStr || examplesStr.length === 0 || examplesStr === '<START>') {
-            return [];
-        }
-
-        if (!examplesStr.startsWith('<START>')) {
-            examplesStr = '<START>\n' + examplesStr.trim();
-        }
-
-        const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
-        const blockHeading = main_api === 'openai' ? '<START>\n' : (exampleSeparator || (isInstruct ? '<START>\n' : ''));
-        const splitExamples = examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
-
-        return splitExamples;
-    }
-
-    let mesExamplesArray = parseMesExamples(mesExamples);
+    let mesExamplesArray = parseMesExamples(mesExamples, isInstruct);
 
     //////////////////////////////////
     // Extension added strings
@@ -4040,7 +4061,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
 
         const formattedExample = baseChatReplace(exampleMessage, name1, name2);
-        const cleanedExample = parseMesExamples(formattedExample);
+        const cleanedExample = parseMesExamples(formattedExample, isInstruct);
 
         // Insert depending on before or after position
         if (example.position === wi_anchor_position.before) {
@@ -5945,7 +5966,7 @@ export function cleanUpMessage(getMessage, isImpersonate, isContinue, displayInc
         getMessage = trimToEndSentence(getMessage);
     }
 
-    if (power_user.trim_spaces) {
+    if (power_user.trim_spaces && !PromptReasoning.getLatestPrefix()) {
         getMessage = getMessage.trim();
     }
 
@@ -6109,15 +6130,18 @@ export async function saveReply(type, getMessage, fromStreaming, title, swipes, 
     }
 
     if (Array.isArray(swipes) && swipes.length > 0) {
+        const swipeInfoExtra = structuredClone(item.extra ?? {});
+        delete swipeInfoExtra.token_count;
+        delete swipeInfoExtra.reasoning;
+        delete swipeInfoExtra.reasoning_duration;
         const swipeInfo = {
             send_date: item.send_date,
             gen_started: item.gen_started,
             gen_finished: item.gen_finished,
-            extra: structuredClone(item.extra),
+            extra: swipeInfoExtra,
         };
-        const swipeInfoArray = [];
-        swipeInfoArray.length = swipes.length;
-        swipeInfoArray.fill(swipeInfo, 0, swipes.length);
+        const swipeInfoArray = Array(swipes.length).fill().map(() => structuredClone(swipeInfo));
+        parseReasoningInSwipes(swipes, swipeInfoArray, item.extra?.reasoning_duration);
         item.swipes.push(...swipes);
         item.swipe_info.push(...swipeInfoArray);
     }
@@ -6139,12 +6163,16 @@ export function syncMesToSwipe(messageId = null) {
     }
 
     const targetMessageId = messageId ?? chat.length - 1;
-    if (chat.length > targetMessageId || targetMessageId < 0) {
+    if (targetMessageId >= chat.length || targetMessageId < 0) {
         console.warn(`[syncMesToSwipe] Invalid message ID: ${messageId}`);
         return false;
     }
 
     const targetMessage = chat[targetMessageId];
+
+    if (!targetMessage) {
+        return false;
+    }
 
     // No swipe data there yet, exit out
     if (typeof targetMessage.swipe_id !== 'number') {
@@ -8727,17 +8755,28 @@ function formatSwipeCounter(current, total) {
     return `${current}\u200b/\u200b${total}`;
 }
 
-function swipe_left() {      // when we swipe left..but no generation.
+/**
+ * Handles the swipe to the left event.
+ * @param {JQuery.Event} _event Event.
+ * @param {object} params Additional parameters.
+ * @param {string} [params.source] The source of the swipe event.
+ * @param {boolean} [params.repeated] Is the swipe event repeated.
+ */
+function swipe_left(_event, { source, repeated } = {}) {
     if (chat.length - 1 === Number(this_edit_mes_id)) {
         closeMessageEditor();
     }
-
     if (isStreamingEnabled() && streamingProcessor) {
         streamingProcessor.onStopStreaming();
     }
 
     // Make sure ad-hoc changes to extras are saved before swiping away
     syncMesToSwipe();
+
+    // If the user is holding down the key and we're at the first swipe, don't do anything
+    if (source === 'keyboard' && repeated && chat[chat.length - 1].swipe_id === 0) {
+        return;
+    }
 
     const swipe_duration = 120;
     const swipe_range = '700px';
@@ -8864,8 +8903,14 @@ function swipe_left() {      // when we swipe left..but no generation.
     }
 }
 
-// when we click swipe right button
-const swipe_right = () => {
+/**
+ * Handles the swipe to the right event.
+ * @param {JQuery.Event} _event Event.
+ * @param {object} params Additional parameters.
+ * @param {string} [params.source] The source of the swipe event.
+ * @param {boolean} [params.repeated] Is the swipe event repeated.
+ */
+function swipe_right(_event, { source, repeated } = {}) {
     if (chat.length - 1 === Number(this_edit_mes_id)) {
         closeMessageEditor();
     }
@@ -8898,6 +8943,10 @@ const swipe_right = () => {
     if (chat.length === 1 && chat[0]['swipe_id'] !== undefined && chat[0]['swipe_id'] === chat[0]['swipes'].length - 1) {    // if swipe_right is called on the last alternate greeting, loop back around
         chat[0]['swipe_id'] = 0;
     } else {
+        // If the user is holding down the key and we're at the last swipe, don't do anything
+        if (source === 'keyboard' && repeated && chat[chat.length - 1].swipe_id === chat[chat.length - 1].swipes.length - 1) {
+            return;
+        }
         chat[chat.length - 1]['swipe_id']++;                                // make new slot in array
     }
     if (chat[chat.length - 1].extra) {
@@ -9046,7 +9095,7 @@ const swipe_right = () => {
             },
         });
     }
-};
+}
 
 export const CONNECT_API_MAP = {
     // Default APIs not contined inside text gen / chat gen

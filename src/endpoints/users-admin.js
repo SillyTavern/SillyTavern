@@ -4,7 +4,7 @@ import storage from 'node-persist';
 import express from 'express';
 import lodash from 'lodash';
 import { jsonParser } from '../express-common.js';
-import { checkForNewContent } from './content-manager.js';
+import { checkForNewContent, CONTENT_TYPES } from './content-manager.js';
 import {
     KEY_PREFIX,
     toKey,
@@ -195,7 +195,7 @@ router.post('/create', requireAdminMiddleware, jsonParser, async (request, respo
         console.info('Creating data directories for', newUser.handle);
         await ensurePublicDirectoriesExist();
         const directories = getUserDirectories(newUser.handle);
-        await checkForNewContent([directories]);
+        await checkForNewContent([directories], [CONTENT_TYPES.SETTINGS]);
         return response.json({ handle: newUser.handle });
     } catch (error) {
         console.error('User create failed:', error);

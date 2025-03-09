@@ -31,6 +31,7 @@ const SOURCES = [
     'ollama',
     'llamacpp',
     'vllm',
+    'webllm',
 ];
 
 /**
@@ -64,6 +65,8 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
             return getVllmVector(text, sourceSettings.apiUrl, sourceSettings.model, directories);
         case 'ollama':
             return getOllamaVector(text, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories);
+        case 'webllm':
+            return sourceSettings.embeddings[text];
     }
 
     throw new Error(`Unknown vector source ${source}`);
@@ -113,6 +116,9 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 break;
             case 'ollama':
                 results.push(...await getOllamaBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories));
+                break;
+            case 'webllm':
+                results.push(...texts.map(x => sourceSettings.embeddings[x]));
                 break;
             default:
                 throw new Error(`Unknown vector source ${source}`);
@@ -178,6 +184,11 @@ function getSourceSettings(source, request) {
         case 'nomicai':
             return {
                 model: 'nomic-embed-text-v1.5',
+            };
+        case 'webllm':
+            return {
+                model: String(request.body.model),
+                embeddings: request.body.embeddings ?? {},
             };
         default:
             return {};
