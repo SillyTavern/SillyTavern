@@ -100,7 +100,7 @@ const default_wi_format = '{0}';
 const default_new_chat_prompt = '[Start a new Chat]';
 const default_new_group_chat_prompt = '[Start a new group chat. Group members: {{group}}]';
 const default_new_example_chat_prompt = '[Example Chat]';
-const default_continue_nudge_prompt = '[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message: {{lastChatMessage}}]';
+const default_continue_nudge_prompt = '[Continue your last message without repeating its original content.]';
 const default_bias = 'Default (none)';
 const default_personality_format = '{{personality}}';
 const default_scenario_format = '{{scenario}}';
@@ -792,7 +792,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     }
 
     // Reserve budget for continue nudge
-    let continueMessage = null;
+    let continueMessageCollection = null;
     if (type === 'continue' && cyclePrompt && !oai_settings.continue_prefill) {
         const promptObject = {
             identifier: 'continueNudge',
@@ -800,10 +800,19 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             content: substituteParamsExtended(oai_settings.continue_nudge_prompt, { lastChatMessage: String(cyclePrompt).trim() }),
             system_prompt: true,
         };
-        const continuePrompt = new Prompt(promptObject);
-        const preparedPrompt = promptManager.preparePrompt(continuePrompt);
-        continueMessage = await Message.fromPromptAsync(preparedPrompt);
-        chatCompletion.reserveBudget(continueMessage);
+        continueMessageCollection = new MessageCollection('continueNudge');
+        const continueMessageIndex = messages.findLastIndex(x => !x.injected);
+        if (continueMessageIndex >= 0) {
+            const continueMessage = messages.splice(continueMessageIndex, 1)[0];
+            const prompt = new Prompt(continueMessage);
+            const chatMessage = await Message.fromPromptAsync(promptManager.preparePrompt(prompt));
+            continueMessageCollection.add(chatMessage);
+        }
+        const continueNudgePrompt = new Prompt(promptObject);
+        const preparedNudgePrompt = promptManager.preparePrompt(continueNudgePrompt);
+        const continueNudgeMessage = await Message.fromPromptAsync(preparedNudgePrompt);
+        continueMessageCollection.add(continueNudgeMessage);
+        chatCompletion.reserveBudget(continueMessageCollection);
     }
 
     const lastChatPrompt = messages[messages.length - 1];
@@ -887,9 +896,9 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     }
 
     // Insert and free continue nudge
-    if (type === 'continue' && continueMessage) {
-        chatCompletion.freeBudget(continueMessage);
-        chatCompletion.insertAtEnd(continueMessage, 'chatHistory');
+    if (type === 'continue' && continueMessageCollection) {
+        chatCompletion.freeBudget(continueMessageCollection);
+        chatCompletion.add(continueMessageCollection, -1);
     }
 }
 
@@ -2970,7 +2979,7 @@ export class ChatCompletion {
     /**
      * Checks if the token budget can afford the tokens of the specified message.
      *
-     * @param {Message} message - The message to check for affordability.
+     * @param {Message|MessageCollection} message - The message to check for affordability.
      * @returns {boolean} True if the budget can afford the message, false otherwise.
      */
     canAfford(message) {
@@ -3058,7 +3067,7 @@ export class ChatCompletion {
      * Validates if the given argument is an instance of MessageCollection.
      * Throws an error if the validation fails.
      *
-     * @param {MessageCollection} collection - The collection to validate.
+     * @param {MessageCollection|Message} collection - The collection to validate.
      */
     validateMessageCollection(collection) {
         if (!(collection instanceof MessageCollection)) {
@@ -3084,7 +3093,7 @@ export class ChatCompletion {
      * Checks if the token budget can afford the tokens of the given message.
      * Throws an error if the budget can't afford the message.
      *
-     * @param {Message} message - The message to check.
+     * @param {Message|MessageCollection} message - The message to check.
      * @param {string} identifier - The identifier of the message.
      */
     checkTokenBudget(message, identifier) {

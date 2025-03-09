@@ -3204,12 +3204,20 @@ class StreamingProcessor {
         this.promptReasoning = promptReasoning;
     }
 
-    #checkDomElements(messageId) {
+    /**
+     * Initializes DOM elements for the current message.
+     * @param {number} messageId Current message ID
+     * @param {boolean?} continueOnReasoning If continuing on reasoning
+     */
+    async #checkDomElements(messageId, continueOnReasoning = null) {
         if (this.messageDom === null || this.messageTextDom === null) {
             this.messageDom = document.querySelector(`#chat .mes[mesid="${messageId}"]`);
             this.messageTextDom = this.messageDom?.querySelector('.mes_text');
             this.messageTimerDom = this.messageDom?.querySelector('.mes_timer');
             this.messageTokenCounterDom = this.messageDom?.querySelector('.tokenCounterDisplay');
+        }
+        if (continueOnReasoning) {
+            await this.reasoningHandler.process(messageId, false, this.promptReasoning);
         }
         this.reasoningHandler.updateDom(messageId);
     }
@@ -3230,7 +3238,8 @@ class StreamingProcessor {
     }
 
     async onStartStreaming(text) {
-        if (this.type === 'continue' && this.promptReasoning.prefixReasoning) {
+        const continueOnReasoning = !!(this.type === 'continue' && this.promptReasoning.prefixReasoning);
+        if (continueOnReasoning) {
             this.reasoningHandler.initContinue(this.promptReasoning);
         }
 
@@ -3242,7 +3251,7 @@ class StreamingProcessor {
         } else {
             await saveReply(this.type, text, true, '', [], '');
             messageId = chat.length - 1;
-            this.#checkDomElements(messageId);
+            await this.#checkDomElements(messageId, continueOnReasoning);
             this.markUIGenStarted();
         }
         hideSwipeButtons();
@@ -3275,7 +3284,7 @@ class StreamingProcessor {
             this.sendTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         } else {
             const mesChanged = chat[messageId]['mes'] !== processedText;
-            this.#checkDomElements(messageId);
+            await this.#checkDomElements(messageId);
             this.#updateMessageBlockVisibility();
             const currentTime = new Date();
             chat[messageId]['mes'] = processedText;
@@ -3287,7 +3296,7 @@ class StreamingProcessor {
             chat[messageId]['extra']['time_to_first_token'] = this.timeToFirstToken;
 
             // Update reasoning
-            await this.reasoningHandler.process(messageId, mesChanged);
+            await this.reasoningHandler.process(messageId, mesChanged, this.promptReasoning);
             processedText = chat[messageId]['mes'];
 
             // Token count update.
@@ -5957,7 +5966,7 @@ export function cleanUpMessage(getMessage, isImpersonate, isContinue, displayInc
         getMessage = trimToEndSentence(getMessage);
     }
 
-    if (power_user.trim_spaces) {
+    if (power_user.trim_spaces && !PromptReasoning.getLatestPrefix()) {
         getMessage = getMessage.trim();
     }
 
@@ -8746,17 +8755,28 @@ function formatSwipeCounter(current, total) {
     return `${current}\u200b/\u200b${total}`;
 }
 
-function swipe_left() {      // when we swipe left..but no generation.
+/**
+ * Handles the swipe to the left event.
+ * @param {JQuery.Event} _event Event.
+ * @param {object} params Additional parameters.
+ * @param {string} [params.source] The source of the swipe event.
+ * @param {boolean} [params.repeated] Is the swipe event repeated.
+ */
+function swipe_left(_event, { source, repeated } = {}) {
     if (chat.length - 1 === Number(this_edit_mes_id)) {
         closeMessageEditor();
     }
-
     if (isStreamingEnabled() && streamingProcessor) {
         streamingProcessor.onStopStreaming();
     }
 
     // Make sure ad-hoc changes to extras are saved before swiping away
     syncMesToSwipe();
+
+    // If the user is holding down the key and we're at the first swipe, don't do anything
+    if (source === 'keyboard' && repeated && chat[chat.length - 1].swipe_id === 0) {
+        return;
+    }
 
     const swipe_duration = 120;
     const swipe_range = '700px';
@@ -8883,8 +8903,14 @@ function swipe_left() {      // when we swipe left..but no generation.
     }
 }
 
-// when we click swipe right button
-const swipe_right = () => {
+/**
+ * Handles the swipe to the right event.
+ * @param {JQuery.Event} _event Event.
+ * @param {object} params Additional parameters.
+ * @param {string} [params.source] The source of the swipe event.
+ * @param {boolean} [params.repeated] Is the swipe event repeated.
+ */
+function swipe_right(_event, { source, repeated } = {}) {
     if (chat.length - 1 === Number(this_edit_mes_id)) {
         closeMessageEditor();
     }
@@ -8917,6 +8943,10 @@ const swipe_right = () => {
     if (chat.length === 1 && chat[0]['swipe_id'] !== undefined && chat[0]['swipe_id'] === chat[0]['swipes'].length - 1) {    // if swipe_right is called on the last alternate greeting, loop back around
         chat[0]['swipe_id'] = 0;
     } else {
+        // If the user is holding down the key and we're at the last swipe, don't do anything
+        if (source === 'keyboard' && repeated && chat[chat.length - 1].swipe_id === chat[chat.length - 1].swipes.length - 1) {
+            return;
+        }
         chat[chat.length - 1]['swipe_id']++;                                // make new slot in array
     }
     if (chat[chat.length - 1].extra) {
@@ -9065,7 +9095,7 @@ const swipe_right = () => {
             },
         });
     }
-};
+}
 
 export const CONNECT_API_MAP = {
     // Default APIs not contined inside text gen / chat gen

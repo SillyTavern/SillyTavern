@@ -16,11 +16,18 @@ import { t } from '../../i18n.js';
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
+const EMPTY = '<Empty>';
 
 const DEFAULT_SETTINGS = {
     profiles: [],
     selectedProfile: null,
 };
+
+// Commands that can record an empty value into the profile
+const ALLOW_EMPTY = [
+    'stop-strings',
+    'start-reply-with',
+];
 
 const CC_COMMANDS = [
     'api',
@@ -31,6 +38,7 @@ const CC_COMMANDS = [
     'model',
     'proxy',
     'stop-strings',
+    'start-reply-with',
 ];
 
 const TC_COMMANDS = [
@@ -45,6 +53,7 @@ const TC_COMMANDS = [
     'instruct-state',
     'tokenizer',
     'stop-strings',
+    'start-reply-with',
 ];
 
 const FANCY_NAMES = {
@@ -60,6 +69,7 @@ const FANCY_NAMES = {
     'context': 'Context Template',
     'tokenizer': 'Tokenizer',
     'stop-strings': 'Custom Stopping Strings',
+    'start-reply-with': 'Start Reply With',
 };
 
 /**
@@ -107,6 +117,7 @@ class ConnectionManagerSpinner {
 /**
  * Get named arguments for the command callback.
  * @param {object} [args] Additional named arguments
+ * @param {string} [args.force] Whether to force setting the value
  * @returns {object} Named arguments
  */
 function getNamedArguments(args = {}) {
@@ -142,6 +153,7 @@ const profilesProvider = () => [
  * @property {string} [instruct-state] Instruct Mode
  * @property {string} [tokenizer] Tokenizer
  * @property {string} [stop-strings] Custom Stopping Strings
+ * @property {string} [start-reply-with] Start Reply With
  * @property {string[]} [exclude] Commands to exclude
  */
 
@@ -186,9 +198,10 @@ async function readProfileFromCommands(mode, profile, cleanUp = false) {
                 continue;
             }
 
+            const allowEmpty = ALLOW_EMPTY.includes(command);
             const args = getNamedArguments();
             const result = await SlashCommandParser.commands[command].callback(args, '');
-            if (result) {
+            if (result || (allowEmpty && result === '')) {
                 profile[command] = result;
                 continue;
             }
@@ -309,7 +322,14 @@ async function deleteConnectionProfile() {
  */
 function makeFancyProfile(profile) {
     return Object.entries(FANCY_NAMES).reduce((acc, [key, value]) => {
-        if (!profile[key]) return acc;
+        const allowEmpty = ALLOW_EMPTY.includes(key);
+        if (!profile[key]) {
+            if (profile[key] === '' && allowEmpty) {
+                acc[value] = EMPTY;
+            }
+            return acc;
+        }
+
         acc[value] = profile[key];
         return acc;
     }, {});
@@ -339,11 +359,12 @@ async function applyConnectionProfile(profile) {
         }
 
         const argument = profile[command];
-        if (!argument) {
+        const allowEmpty = ALLOW_EMPTY.includes(command);
+        if (!argument && !(allowEmpty && argument === '')) {
             continue;
         }
         try {
-            const args = getNamedArguments();
+            const args = getNamedArguments(allowEmpty ? { force: 'true' } : {});
             await SlashCommandParser.commands[command].callback(args, argument);
         } catch (error) {
             console.error(`Failed to execute command: ${command} ${argument}`, error);
@@ -539,6 +560,7 @@ async function renderDetailsContent(detailsContent) {
         }, {});
         const template = $(await renderExtensionTemplateAsync(MODULE_NAME, 'edit', { name: profile.name, settings }));
         const newName = await callGenericPopup(template, POPUP_TYPE.INPUT, profile.name, {
+            rows: 2,
             customButtons: [{
                 text: t`Save and Update`,
                 classes: ['popup-button-ok'],

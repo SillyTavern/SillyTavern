@@ -196,7 +196,7 @@ export class ReasoningHandler {
      */
     initContinue(promptReasoning) {
         this.reasoning = promptReasoning.prefixReasoning;
-        this.state = ReasoningState.Done;
+        this.state = promptReasoning.prefixIncomplete ? ReasoningState.None : ReasoningState.Done;
         this.startTime = this.initialTime;
         this.endTime = promptReasoning.prefixDuration ? new Date(this.initialTime.getTime() + promptReasoning.prefixDuration) : null;
     }
@@ -324,10 +324,11 @@ export class ReasoningHandler {
      *
      * @param {number} messageId - The ID of the message to process
      * @param {boolean} mesChanged - Whether the message has changed
+     * @param {PromptReasoning} promptReasoning - Prompt reasoning object
      * @returns {Promise<void>}
      */
-    async process(messageId, mesChanged) {
-        mesChanged = this.#autoParseReasoningFromMessage(messageId, mesChanged);
+    async process(messageId, mesChanged, promptReasoning) {
+        mesChanged = this.#autoParseReasoningFromMessage(messageId, mesChanged, promptReasoning);
 
         if (!this.reasoning && !this.#isHiddenReasoningModel)
             return;
@@ -345,7 +346,14 @@ export class ReasoningHandler {
         }
     }
 
-    #autoParseReasoningFromMessage(messageId, mesChanged) {
+    /**
+     * Parse reasoning from a message during streaming.
+     * @param {number} messageId Message ID
+     * @param {boolean} mesChanged Whether the message has changed before reasoning parsing
+     * @param {PromptReasoning} promptReasoning Prompt reasoning object
+     * @returns {boolean} Whether the message has changed after reasoning parsing
+     */
+    #autoParseReasoningFromMessage(messageId, mesChanged, promptReasoning) {
         if (!power_user.reasoning.auto_parse)
             return;
         if (!power_user.reasoning.prefix || !power_user.reasoning.suffix)
@@ -355,15 +363,17 @@ export class ReasoningHandler {
         const message = chat[messageId];
         if (!message) return mesChanged;
 
+        const parseTarget = promptReasoning?.prefixIncomplete ? (promptReasoning.prefixReasoningFormatted + message.mes) : message.mes;
+
         // If we are done with reasoning parse, we just split the message correctly so the reasoning doesn't show up inside of it.
         if (this.#parsingReasoningMesStartIndex) {
-            message.mes = trimSpaces(message.mes.slice(this.#parsingReasoningMesStartIndex));
+            message.mes = trimSpaces(parseTarget.slice(this.#parsingReasoningMesStartIndex));
             return mesChanged;
         }
 
         if (this.state === ReasoningState.None || this.#isHiddenReasoningModel) {
             // If streamed message starts with the opening, cut it out and put all inside reasoning
-            if (message.mes.startsWith(power_user.reasoning.prefix) && message.mes.length > power_user.reasoning.prefix.length) {
+            if (parseTarget.startsWith(power_user.reasoning.prefix) && parseTarget.length > power_user.reasoning.prefix.length) {
                 this.#isParsingReasoning = true;
 
                 // Manually set starting state here, as we might already have received the ending suffix
@@ -377,15 +387,14 @@ export class ReasoningHandler {
             return mesChanged;
 
         // If we are in manual parsing mode, all currently streaming mes tokens will go the the reasoning block
-        const originalMes = message.mes;
-        this.reasoning = originalMes.slice(power_user.reasoning.prefix.length);
+        this.reasoning = parseTarget.slice(power_user.reasoning.prefix.length);
         message.mes = '';
 
         // If the reasoning contains the ending suffix, we cut that off and continue as message streaming
         if (this.reasoning.includes(power_user.reasoning.suffix)) {
             this.reasoning = this.reasoning.slice(0, this.reasoning.indexOf(power_user.reasoning.suffix));
-            this.#parsingReasoningMesStartIndex = originalMes.indexOf(power_user.reasoning.suffix) + power_user.reasoning.suffix.length;
-            message.mes = trimSpaces(originalMes.slice(this.#parsingReasoningMesStartIndex));
+            this.#parsingReasoningMesStartIndex = parseTarget.indexOf(power_user.reasoning.suffix) + power_user.reasoning.suffix.length;
+            message.mes = trimSpaces(parseTarget.slice(this.#parsingReasoningMesStartIndex));
             this.#isParsingReasoning = false;
         }
 
@@ -525,13 +534,56 @@ export class ReasoningHandler {
  * Keeps track of the number of reasoning additions.
  */
 export class PromptReasoning {
+    /**
+     * An instance initiated during the latest prompt processing.
+     * @type {PromptReasoning}
+     * */
+    static #LATEST = null;
+    /**
+     * @readonly Zero-width space character used as a placeholder for reasoning.
+     * @type {string}
+    */
     static REASONING_PLACEHOLDER = '\u200B';
 
+    /**
+     * Returns the latest formatted reasoning prefix if the prefix is incomplete.
+     * @returns {string} Formatted reasoning prefix
+     */
+    static getLatestPrefix() {
+        if (!PromptReasoning.#LATEST) {
+            return '';
+        }
+
+        if (!PromptReasoning.#LATEST.prefixIncomplete) {
+            return '';
+        }
+
+        return PromptReasoning.#LATEST.prefixReasoningFormatted;
+    }
+
+    /**
+     * Free the latest reasoning instance.
+     * To be called when the generation has ended or stopped.
+     */
+    static clearLatest() {
+        PromptReasoning.#LATEST = null;
+    }
+
     constructor() {
+        PromptReasoning.#LATEST = this;
+
+        /** @type {number} */
         this.counter = 0;
+        /** @type {number} */
         this.prefixLength = -1;
+        /** @type {string} */
         this.prefixReasoning = '';
+        /** @type {string} */
+        this.prefixReasoningFormatted = '';
+        /** @type {number?} */
         this.prefixDuration = null;
+        /** @type {boolean} */
+        this.prefixIncomplete = false;
     }
 
     /**
@@ -578,8 +630,10 @@ export class PromptReasoning {
             const formattedReasoning = `${prefix}${reasoning}`;
             if (isPrefix) {
                 this.prefixReasoning = reasoning;
+                this.prefixReasoningFormatted = formattedReasoning;
                 this.prefixLength = formattedReasoning.length;
                 this.prefixDuration = duration;
+                this.prefixIncomplete = true;
             }
             return formattedReasoning;
         }
@@ -588,8 +642,10 @@ export class PromptReasoning {
         const formattedReasoning = `${prefix}${reasoning}${suffix}${separator}`;
         if (isPrefix) {
             this.prefixReasoning = reasoning;
+            this.prefixReasoningFormatted = formattedReasoning;
             this.prefixLength = formattedReasoning.length;
             this.prefixDuration = duration;
+            this.prefixIncomplete = false;
         }
         return `${formattedReasoning}${content}`;
     }
@@ -1075,12 +1131,13 @@ export function parseReasoningInSwipes(swipes, swipeInfoArray, duration) {
 }
 
 function registerReasoningAppEvents() {
-    const eventHandler = (/** @type {number} */ idx) => {
+    const eventHandler = (/** @type {string} */ type, /** @type {number} */ idx) => {
         if (!power_user.reasoning.auto_parse) {
             return;
         }
 
         console.debug('[Reasoning] Auto-parsing reasoning block for message', idx);
+        const prefix = type === event_types.MESSAGE_RECEIVED ? PromptReasoning.getLatestPrefix() : '';
         const message = chat[idx];
 
         if (!message) {
@@ -1093,12 +1150,12 @@ function registerReasoningAppEvents() {
             return null;
         }
 
-        if (message.extra?.reasoning) {
+        if (message.extra?.reasoning && !prefix) {
             console.debug('[Reasoning] Message already has reasoning', idx);
             return null;
         }
 
-        const parsedReasoning = parseReasoningFromString(message.mes);
+        const parsedReasoning = parseReasoningFromString(prefix + message.mes);
 
         // No reasoning block found
         if (!parsedReasoning) {
@@ -1137,7 +1194,11 @@ function registerReasoningAppEvents() {
     };
 
     for (const event of [event_types.MESSAGE_RECEIVED, event_types.MESSAGE_UPDATED]) {
-        eventSource.on(event, eventHandler);
+        eventSource.on(event, (/** @type {number} */ idx) => eventHandler(event, idx));
+    }
+
+    for (const event of [event_types.GENERATION_STOPPED, event_types.GENERATION_ENDED, event_types.CHAT_CHANGED]) {
+        eventSource.on(event, () => PromptReasoning.clearLatest());
     }
 }
 

@@ -4134,16 +4134,27 @@ $(document).ready(() => {
         helpString: `
             <div>
                 Sets a list of custom stopping strings. Gets the list if no value is provided.
+                Use a "force" argument to force set an empty value.
             </div>
             <div>
                 <strong>Examples:</strong>
             </div>
             <ul>
+                <li>Force set an empty value: <pre><code class="language-stscript">/stop-strings force="true" {{noop}}</code></pre></li>
                 <li>Value must be a JSON-serialized array: <pre><code class="language-stscript">/stop-strings ["goodbye", "farewell"]</code></pre></li>
                 <li>Pipe characters must be escaped with a backslash: <pre><code class="language-stscript">/stop-strings ["left\\|right"]</code></pre></li>
             </ul>
         `,
         returns: ARGUMENT_TYPE.LIST,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'force',
+                description: 'force set a value if empty',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'list of strings',
@@ -4152,21 +4163,80 @@ $(document).ready(() => {
                 isRequired: false,
             }),
         ],
-        callback: (_, value) => {
-            if (String(value ?? '').trim()) {
-                const parsedValue = ((x) => { try { return JSON.parse(x.toString()); } catch { return null; } })(value);
-                if (!parsedValue || !Array.isArray(parsedValue)) {
-                    throw new Error('Invalid list format. The value must be a JSON-serialized array of strings.');
-                }
-                parsedValue.forEach((item, index) => {
-                    parsedValue[index] = String(item);
-                });
-                power_user.custom_stopping_strings = JSON.stringify(parsedValue);
-                $('#custom_stopping_strings').val(power_user.custom_stopping_strings);
-                saveSettingsDebounced();
+        callback: (args, value) => {
+            const force = isTrueBoolean(String(args?.force ?? false));
+            value = String(value ?? '').trim();
+
+            // Skip processing if no value and not forced
+            if (!force && !value) {
+                return power_user.custom_stopping_strings;
             }
 
+            // Use empty array for forced empty value
+            if (force && !value) {
+                value = JSON.stringify([]);
+            }
+
+            const parsedValue = ((x) => { try { return JSON.parse(x.toString()); } catch { return null; } })(value);
+            if (!parsedValue || !Array.isArray(parsedValue)) {
+                throw new Error('Invalid list format. The value must be a JSON-serialized array of strings.');
+            }
+            parsedValue.forEach((item, index) => {
+                parsedValue[index] = String(item);
+            });
+            power_user.custom_stopping_strings = JSON.stringify(parsedValue);
+            $('#custom_stopping_strings').val(power_user.custom_stopping_strings);
+            saveSettingsDebounced();
+
             return power_user.custom_stopping_strings;
+        },
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'start-reply-with',
+        helpString: `
+            <div>
+                Sets a "Start Reply With". Gets the current value if no value is provided.
+                Use a "force" argument to force set an empty value.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+            </div>
+            <ul>
+                <li>Set the field value: <pre><code class="language-stscript">/start-reply-with Sure!</code></pre></li>
+                <li>Force set an empty value: <pre><code class="language-stscript">/start-reply-with force="true" {{noop}}</code></pre></li>
+            </ul>
+        `,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'force',
+                description: 'force set a value if empty',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        unnamedArgumentList:[
+            SlashCommandArgument.fromProps({
+                description: 'value',
+                typeList: [ARGUMENT_TYPE.STRING],
+                acceptsMultiple: false,
+                isRequired: false,
+            }),
+        ],
+        callback: (args, value) => {
+            const force = isTrueBoolean(String(args?.force ?? false));
+            value = String(value ?? '').trim();
+
+            // Skip processing if no value and not forced
+            if (!force && !value) {
+                return power_user.user_prompt_bias;
+            }
+
+            power_user.user_prompt_bias = value;
+            $('#start_reply_with').val(power_user.user_prompt_bias);
+            saveSettingsDebounced();
+
+            return power_user.user_prompt_bias;
         },
     }));
 });
