@@ -737,10 +737,10 @@ export class ToolManager {
                         // If properties is empty for an object type, add a dummy property to satisfy MakerSuite requirements
                         if (obj.type === 'object' && Object.keys(obj.properties).length === 0) {
                             obj.properties = {
-                                "_dummy": {
-                                    "type": "string",
-                                    "description": "This is a placeholder property to satisfy MakerSuite requirements."
-                                }
+                                '_dummy': {
+                                    'type': 'string',
+                                    'description': 'This is a placeholder property to satisfy MakerSuite requirements.',
+                                },
                             };
                         }
                         Object.values(obj.properties).forEach(prop => removeProps(prop));
