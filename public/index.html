@@ -2741,12 +2741,12 @@
                         </select>
                         <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,deepseek">
                             <div class="inline-drawer-toggle inline-drawer-header">
-                                <b data-i18n="Reverse Proxy">Reverse Proxy</b>
+                                <b data-i18n="Endpoint Override">Endpoint Override</b>
                                 <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                             </div>
                             <div class="inline-drawer-content">
-                                <div class="range-block-title justifyLeft" data-i18n="Proxy Presets">
-                                    Proxy Presets
+                                <div class="range-block-title justifyLeft" data-i18n="Endpoint Override Presets">
+                                    Endpoint Override Presets
                                 </div>
                                 <div class="toggle-description justifyLeft">
                                     <span data-i18n="Saved addresses and passwords.">
@@ -2757,27 +2757,27 @@
                                 <div class="openai_logit_bias_preset_form">
                                     <select id="openai_proxy_preset">
                                     </select>
-                                    <i id="save_proxy" class="menu_button fa-solid fa-save" title="Save Proxy" data-i18n="[title]Save Proxy"></i>
-                                    <i id="delete_proxy" class="menu_button fa-solid fa-trash" title="Delete Proxy" data-i18n="[title]Delete Proxy"></i>
+                                    <i id="save_proxy" class="menu_button fa-solid fa-save" title="Save Endpoint Override" data-i18n="[title]Save Endpoint Override"></i>
+                                    <i id="delete_proxy" class="menu_button fa-solid fa-trash" title="Delete Endpoint Override" data-i18n="[title]Delete Endpoint Override"></i>
                                 </div>
-                                <div class="range-block-title justifyLeft" data-i18n="Proxy Name">
-                                    Proxy Name
+                                <div class="range-block-title justifyLeft" data-i18n="Name of Endpoint Override Preset">
+                                    Name of Endpoint Override Preset
                                 </div>
                                 <div class="toggle-description justifyLeft">
-                                    <span data-i18n="This will show up as your saved preset.">
-                                        This will show up as your saved preset.
+                                    <span data-i18n="This will be the name of the preset for the endpoint override.">
+                                        This will be the name of the preset for the endpoint override.
                                     </span>
                                     <br>
                                 </div>
                                 <div class="wide100p">
                                     <input id="openai_reverse_proxy_name" type="text" class="text_pole" placeholder="..." />
                                 </div>
-                                <div class="range-block-title justifyLeft" data-i18n="Proxy Server URL">
-                                    Proxy Server URL
+                                <div class="range-block-title justifyLeft" data-i18n="Override endpoint server URL">
+                                    Override endpoint server URL
                                 </div>
                                 <div class="toggle-description justifyLeft wide100p">
-                                    <span data-i18n="Alternative server URL (leave empty to use the default value).">
-                                        Alternative server URL (leave empty to use the default value).
+                                    <span data-i18n="Override endpoint server URL (leave empty to use the default value).">
+                                        Override endpoint server URL (leave empty to use the default value).
                                     </span>
                                     <br>
                                 </div>
@@ -2787,12 +2787,12 @@
                                         <span data-i18n="Doesn't work? Try adding">Doesn't work? Try adding</span> <code>/v1</code> <span data-i18n="at the end!">at the end!</span>
                                     </small>
                                 </div>
-                                <div class="range-block-title justifyLeft" data-i18n="Proxy Password">
-                                    Proxy Password
+                                <div class="range-block-title justifyLeft" data-i18n="Override Key">
+                                    Override Key
                                 </div>
                                 <div class="toggle-description justifyLeft">
-                                    <span data-i18n="Will be used as a password for the proxy instead of API key.">
-                                        Will be used as a password for the proxy instead of API key.
+                                    <span data-i18n="Will be used as the key instead of the one from the API Key field.">
+                                        Will be used as the key instead of the one from the API Key field.
                                     </span>
                                     <br>
                                 </div>
@@ -2805,11 +2805,11 @@
                         <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite,deepseek">
                             <div class="reverse_proxy_warning">
                                 <b>
-                                    <div data-i18n="Using a proxy that you're not running yourself is a risk to your data privacy.">
-                                        Using a proxy that you're not running yourself is a risk to your data privacy.
+                                    <div data-i18n="Using an endpoint override is a potential risk to your data privacy.">
+                                        Using an endpoint override is a potential risk to your data privacy.
                                     </div>
-                                    <div data-i18n="ANY support requests will be REFUSED if you are using a proxy.">
-                                        ANY support requests will be REFUSED if you are using a proxy.
+                                    <div data-i18n="ANY support requests will be REFUSED if you are using this feature.">
+                                        ANY support requests will be REFUSED if you are using this feature.
                                     </div>
                                     <hr>
                                     <i data-i18n="Do not proceed if you do not agree to this!">
@@ -2819,7 +2819,7 @@
                             </div>
                         </div>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <h4><span data-i18n="OpenAI API key">OpenAI API key</span></h4>
+                            <h4><span data-i18n="OpenAI API Key">OpenAI API Key</span></h4>
                             <div>
                                 <a id="openai_api_usage" href="https://platform.openai.com/account/usage" target="_blank">
                                     <span data-i18n="View API Usage Metrics">View API Usage Metrics</span>
@@ -2842,8 +2842,8 @@
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_openai"></div>
                             </div>
                             <div id="ReverseProxyWarningMessage2" class="reverse_proxy_warning">
-                                <b data-i18n="Use Proxy password field instead. This input will be ignored.">
-                                    Use "Proxy password" field instead. This input will be ignored.
+                                <b data-i18n="Endpoint URL is being overridden, use the Override Key field instead.">
+                                    Endpoint URL is being overridden, use the Override Key field instead.
                                 </b>
                             </div>
                             <div data-for="api_key_openai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
