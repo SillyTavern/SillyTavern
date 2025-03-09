@@ -2016,7 +2016,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     };
 
     if (!canMultiSwipe && ToolManager.canPerformToolCalls(type)) {
-        await ToolManager.registerFunctionToolsOpenAI(generate_data);
+        await ToolManager.registerFunctionToolsOpenAI(generate_data, oai_settings.chat_completion_source);
     }
 
     // Empty array will produce a validation error

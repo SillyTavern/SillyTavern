@@ -712,8 +712,9 @@ export class ToolManager {
     /**
      * Register function tools for the next chat completion request.
      * @param {object} data Generation data
+     * @param {string} [source=null] Generation source
      */
-    static async registerFunctionToolsOpenAI(data) {
+    static async registerFunctionToolsOpenAI(data, source = null) {
         const tools = [];
 
         for (const tool of ToolManager.tools) {
@@ -722,7 +723,45 @@ export class ToolManager {
                 console.log('[ToolManager] Skipping tool registration:', tool);
                 continue;
             }
-            tools.push(tool.toFunctionOpenAI());
+            const toolOpenAI = tool.toFunctionOpenAI();
+
+            // makersuite is a special kid, we need to remove "additionalProperties" and "default" from all levels. Also doesn't accept empty params
+            if (source && source === chat_completion_sources.MAKERSUITE) {
+                const removeProps = (obj) => {
+                    if (typeof obj !== 'object' || obj === null) return;
+                    delete obj.additionalProperties;
+                    delete obj.default;
+
+                    // Process properties if they exist
+                    if (obj.properties) {
+                        // If properties is empty for an object type, add a dummy property to satisfy MakerSuite requirements
+                        if (obj.type === 'object' && Object.keys(obj.properties).length === 0) {
+                            obj.properties = {
+                                "_dummy": {
+                                    "type": "string",
+                                    "description": "This is a placeholder property to satisfy MakerSuite requirements."
+                                }
+                            };
+                        }
+                        Object.values(obj.properties).forEach(prop => removeProps(prop));
+                    }
+
+                    // Process items for arrays
+                    if (obj.items) {
+                        removeProps(obj.items);
+                    }
+
+                    // Process allOf, anyOf, oneOf if they exist
+                    ['allOf', 'anyOf', 'oneOf'].forEach(key => {
+                        if (Array.isArray(obj[key])) {
+                            obj[key].forEach(item => removeProps(item));
+                        }
+                    });
+                };
+
+                removeProps(toolOpenAI.function.parameters);
+            }
+            tools.push(toolOpenAI);
         }
 
         if (tools.length) {
