@@ -2073,7 +2073,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         }
     }
 
-    if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere || isNano) && oai_settings.seed >= 0) {
+    if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere || isNano || isArliAI) && oai_settings.seed >= 0) {
         generate_data['seed'] = oai_settings.seed;
     }
 

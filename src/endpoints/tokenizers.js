@@ -1045,9 +1045,9 @@ router.post('/remote/textgenerationwebui/encode', jsonParser, async function (re
                 args.body = JSON.stringify({ 'model': aphroditeModel, 'prompt': text });
                 break;
             case TEXTGEN_TYPES.ARLIAI:
-                    url += '/tokenize';
-                    args.body = JSON.stringify({ 'model': arliAIModel, 'prompt': text });
-                    break;
+                url += '/tokenize';
+                args.body = JSON.stringify({ 'model': arliAIModel, 'prompt': text });
+                break;
             default:
                 url += '/v1/internal/encode';
                 args.body = JSON.stringify({ 'text': text });

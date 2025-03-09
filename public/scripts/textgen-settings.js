@@ -1445,7 +1445,7 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
             // set params to aphroditeParams
             params = Object.assign(params, aphroditeParams);
             break;
-        
+
         case ARLIAI:
             params = Object.assign(params, aphroditeParams);
             break;
