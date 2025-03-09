@@ -65,6 +65,7 @@ async function startMcpServer(serverName, config) {
         const serverProcess = spawn(config.command, config.args || [], {
             env,
             stdio: ['pipe', 'pipe', 'pipe'],
+            shell: true,
         });
 
         // Create an event emitter for this server
@@ -80,7 +81,7 @@ async function startMcpServer(serverName, config) {
 
         serverProcess.stderr.on('data', (data) => {
             const message = data.toString();
-            emitter.emit('error', message);
+            emitter.emit('stderr', message); // Changed from 'error' to 'stderr'
             console.error(`[MCP] ${serverName} stderr: ${message}`);
         });
 
@@ -397,6 +398,10 @@ router.get('/servers/:name/events', (request, response) => {
         response.write(`data: ${JSON.stringify({ type: 'error', data: error })}\n\n`);
     };
 
+    const stderrListener = (message) => {
+        response.write(`data: ${JSON.stringify({ type: 'stderr', data: message })}\n\n`);
+    };
+
     const closeListener = (code) => {
         response.write(`data: ${JSON.stringify({ type: 'close', data: code })}\n\n`);
         response.end();
@@ -404,12 +409,14 @@ router.get('/servers/:name/events', (request, response) => {
 
     emitter.on('message', messageListener);
     emitter.on('error', errorListener);
+    emitter.on('stderr', stderrListener);
     emitter.on('close', closeListener);
 
     // Clean up when client disconnects
     request.on('close', () => {
         emitter.off('message', messageListener);
         emitter.off('error', errorListener);
+        emitter.off('stderr', stderrListener);
         emitter.off('close', closeListener);
     });
 });

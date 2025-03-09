@@ -242,6 +242,45 @@ export class MCPClient {
     static #connectedServers = new Map();
 
     /**
+     * Adds a new MCP server configuration.
+     * @param {string} name The name of the server to add.
+     * @param {object} config The server configuration.
+     * @returns {Promise<boolean>} Whether the server was added successfully.
+     */
+    static async addServer(name, config) {
+        try {
+            const response = await fetch('/api/mcp/servers', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    name,
+                    config,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                console.log(`[MCPClient] Added server "${name}"`);
+
+                // Start the server immediately if autoStart is true
+                if (config.autoStart) {
+                    console.log(`[MCPClient] Auto-starting server "${name}"`);
+                    await this.connect(name, config);
+                }
+
+                return true;
+            } else {
+                console.error(`[MCPClient] Failed to add server "${name}":`, data.error);
+                return false;
+            }
+        } catch (error) {
+            console.error(`[MCPClient] Error adding server "${name}":`, error);
+            return false;
+        }
+    }
+
+    /**
      * Connects to an MCP server.
      * @param {string} name The name of the server to connect to.
      * @param {object} config The server configuration.
@@ -295,6 +334,38 @@ export class MCPClient {
             }
         } catch (error) {
             console.error(`[MCPClient] Error disconnecting from server "${name}":`, error);
+            return false;
+        }
+    }
+
+    /**
+     * Deletes an MCP server configuration.
+     * @param {string} name The name of the server to delete.
+     * @returns {Promise<boolean>} Whether the deletion was successful.
+     */
+    static async deleteServer(name) {
+        try {
+            // First disconnect if connected
+            if (this.isConnected(name)) {
+                await this.disconnect(name);
+            }
+
+            const response = await fetch(`/api/mcp/servers/${encodeURIComponent(name)}`, {
+                method: 'DELETE',
+                headers: getRequestHeaders(),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                console.log(`[MCPClient] Deleted server "${name}"`);
+                return true;
+            } else {
+                console.error(`[MCPClient] Failed to delete server "${name}":`, data.error);
+                return false;
+            }
+        } catch (error) {
+            console.error(`[MCPClient] Error deleting server "${name}":`, error);
             return false;
         }
     }
@@ -984,7 +1055,7 @@ export class ToolManager {
                     typeList: [ARGUMENT_TYPE.BOOLEAN],
                     isRequired: false,
                     acceptsMultiple: false,
-                    defaultValue: String(false),
+                    defaultValue: String(true),
                 }),
             ],
             callback: async (args) => {
@@ -1006,22 +1077,12 @@ export class ToolManager {
                     autoStart: autoStart && isTrueBoolean(String(autoStart)),
                 };
 
-                // Add the server to the MCP settings
-                const response = await fetch('/api/mcp/servers', {
-                    method: 'POST',
-                    headers: getRequestHeaders(),
-                    body: JSON.stringify({
-                        name,
-                        config,
-                    }),
-                });
+                const success = await MCPClient.addServer(name, config);
 
-                const data = await response.json();
-
-                if (data.success) {
+                if (success) {
                     return `Successfully added MCP server "${name}".`;
                 } else {
-                    throw new Error(`Failed to add MCP server "${name}": ${data.error || 'Unknown error'}`);
+                    throw new Error(`Failed to add MCP server "${name}".`);
                 }
             },
         }));
@@ -1188,6 +1249,35 @@ export class ToolManager {
                         return servers.map(s => `${s.name}: ${s.connected ? 'Connected' : 'Disconnected'}`).join('\n');
                     },
                 });
+            },
+        }));
+
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'mcp-delete-server',
+            aliases: ['mcp-server-delete', 'mcp-remove-server', 'mcp-server-remove'],
+            helpString: 'Deletes an MCP server configuration.',
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'The name of the server to delete.',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    acceptsMultiple: false,
+                    forceEnum: true,
+                    enumProvider: mcpServersEnumProvider,
+                }),
+            ],
+            callback: async (_, name) => {
+                if (!name || typeof name !== 'string') {
+                    throw new Error('The server name must be a non-empty string.');
+                }
+
+                const success = await MCPClient.deleteServer(name);
+
+                if (success) {
+                    return `Successfully deleted MCP server "${name}".`;
+                } else {
+                    throw new Error(`Failed to delete MCP server "${name}".`);
+                }
             },
         }));
 
