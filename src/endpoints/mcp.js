@@ -179,12 +179,15 @@ router.post('/servers', jsonParser, (request, response) => {
 });
 
 // Delete an MCP server
+// @ts-ignore
 router.delete('/servers/:name', (request, response) => {
     try {
         const { name } = request.params;
 
         if (mcpServers.has(name)) {
             stopMcpServer(name);
+        } else {
+            return response.status(404).json({ error: 'Server not found' });
         }
 
         const settings = readMcpSettings(request.user.directories);
@@ -257,6 +260,92 @@ router.post('/servers/:name/stop', (request, response) => {
     } catch (error) {
         console.error('[MCP] Error stopping server:', error);
         response.status(500).json({ error: 'Failed to stop MCP server' });
+    }
+});
+
+// List tools from an MCP server
+// @ts-ignore
+router.get('/servers/:name/list-tools', async (request, response) => {
+    try {
+        const { name } = request.params;
+
+        if (!mcpServers.has(name)) {
+            return response.status(400).json({ error: 'Server is not running' });
+        }
+
+        const serverProcess = mcpServers.get(name);
+
+        // Create a unique request ID for this list tools request
+        const requestId = `list-tools-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+
+        // Create an MCP protocol message for listing tools
+        const mcpRequest = {
+            jsonrpc: '2.0',
+            id: requestId,
+            method: 'listTools',
+            params: {},
+        };
+
+        console.log(`[MCP] Listing tools from server "${name}"`);
+
+        // Create a promise that will be resolved when we get a response
+        const responsePromise = new Promise((resolve, reject) => {
+            // Set up a timeout to prevent hanging if the server doesn't respond
+            const timeout = setTimeout(() => {
+                reject(new Error('List tools request timed out after 30 seconds'));
+            }, 30000);
+
+            // Function to handle data from the server
+            const dataHandler = (data) => {
+                try {
+                    const message = data.toString();
+                    // Try to parse each line as JSON
+                    const lines = message.split('\n').filter(line => line.trim());
+
+                    for (const line of lines) {
+                        try {
+                            const parsed = JSON.parse(line);
+
+                            // Check if this is a response to our request
+                            if (parsed.id === requestId && parsed.jsonrpc === '2.0') {
+                                // Clean up
+                                clearTimeout(timeout);
+                                serverProcess.stdout.removeListener('data', dataHandler);
+
+                                if (parsed.error) {
+                                    reject(new Error(parsed.error.message || 'Unknown error'));
+                                } else {
+                                    resolve(parsed.result?.tools || []);
+                                }
+                                return;
+                            }
+                        } catch (e) {
+                            // Not valid JSON or not our response, continue
+                        }
+                    }
+                } catch (e) {
+                    console.error('[MCP] Error parsing server response:', e);
+                }
+            };
+
+            // Listen for data from the server
+            serverProcess.stdout.on('data', dataHandler);
+        });
+
+        // Send the request to the server
+        serverProcess.stdin.write(JSON.stringify(mcpRequest) + '\n');
+
+        try {
+            // Wait for the response
+            const tools = await responsePromise;
+            response.json(tools);
+        } catch (error) {
+            console.error('[MCP] Error listing tools:', error);
+            response.status(500).json({ error: `Failed to list tools: ${error.message}` });
+        }
+    } catch (error) {
+        console.error('[MCP] Error listing tools:', error);
+        response.status(500).json({ error: 'Failed to list tools from MCP server' });
     }
 });
 

@@ -263,7 +263,7 @@ import { initInputMarkdown } from './scripts/input-md-formatting.js';
 import { AbortReason } from './scripts/util/AbortReason.js';
 import { initSystemPrompts } from './scripts/sysprompt.js';
 import { registerExtensionSlashCommands as initExtensionSlashCommands } from './scripts/extensions-slashcommands.js';
-import { ToolManager } from './scripts/tool-calling.js';
+import { MCPClient, ToolManager } from './scripts/tool-calling.js';
 import { addShowdownPatch } from './scripts/util/showdown-patch.js';
 import { applyBrowserFixes } from './scripts/browser-fixes.js';
 import { initServerHistory } from './scripts/server-history.js';
@@ -7175,6 +7175,8 @@ export async function getSettings() {
 
         // Load proxy presets
         loadProxyPresets(settings);
+
+        MCPClient.init();
 
         // Allow subscribers to mutate settings
         await eventSource.emit(event_types.SETTINGS_LOADED_AFTER, settings);

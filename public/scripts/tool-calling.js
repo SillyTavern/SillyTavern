@@ -242,6 +242,121 @@ export class MCPClient {
     static #connectedServers = new Map();
 
     /**
+     * A map of MCP server tools.
+     * @type {Map<string, Array<{name: string, description: string, inputSchema: object}>>}
+     */
+    static #serverTools = new Map();
+
+    /**
+     * Initializes the MCP client by fetching servers from the backend and registering MCP tools.
+     * @returns {Promise<boolean>} Whether the initialization was successful.
+     */
+    static async init() {
+        try {
+            console.log('[MCPClient] Initializing MCP client');
+
+            // Fetch servers from the backend
+            const response = await fetch('/api/mcp/servers', {
+                method: 'GET',
+                headers: getRequestHeaders(),
+            });
+
+            if (!response.ok) {
+                console.error('[MCPClient] Failed to fetch servers:', response.statusText);
+                return false;
+            }
+
+            const servers = await response.json();
+
+            // Clear existing connected servers
+            this.#connectedServers.clear();
+            this.#serverTools.clear();
+
+            // Add running servers to the connected servers map
+            for (const server of servers) {
+                if (server.isRunning) {
+                    this.#connectedServers.set(server.name, server.config);
+                    console.log(`[MCPClient] Added running server "${server.name}" to connected servers`);
+
+                    // Fetch and register tools for this server
+                    await this.#fetchAndRegisterServerTools(server.name);
+                }
+            }
+
+            console.log('[MCPClient] Initialization complete');
+            return true;
+        } catch (error) {
+            console.error('[MCPClient] Error initializing MCP client:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Fetches tools from an MCP server and registers them with the ToolManager.
+     * @param {string} serverName The name of the server to fetch tools from.
+     * @returns {Promise<boolean>} Whether the tools were fetched and registered successfully.
+     */
+    static async #fetchAndRegisterServerTools(serverName) {
+        try {
+            // Fetch tools from the server
+            const response = await fetch(`/api/mcp/servers/${serverName}/list-tools`, {
+                method: 'GET',
+                headers: getRequestHeaders(),
+            });
+
+            if (!response.ok) {
+                console.error(`[MCPClient] Failed to fetch tools for server "${serverName}":`, response.statusText);
+                return false;
+            }
+
+            const tools = await response.json();
+
+            if (!Array.isArray(tools) || tools.length === 0) {
+                console.log(`[MCPClient] No tools found for server "${serverName}"`);
+                return true;
+            }
+
+            // Store the tools for this server
+            this.#serverTools.set(serverName, tools);
+
+            // Register each tool with the ToolManager
+            for (const tool of tools) {
+                this.#registerMcpTool(serverName, tool);
+            }
+
+            console.log(`[MCPClient] Registered ${tools.length} tools for server "${serverName}"`);
+            return true;
+        } catch (error) {
+            console.error(`[MCPClient] Error fetching tools for server "${serverName}":`, error);
+            return false;
+        }
+    }
+
+    /**
+     * Registers an MCP tool with the ToolManager.
+     * @param {string} serverName The name of the server the tool belongs to.
+     * @param {object} tool The tool to register.
+     */
+    static #registerMcpTool(serverName, tool) {
+        const toolId = `mcp_${serverName}_${tool.name}`;
+
+        ToolManager.registerFunctionTool({
+            name: toolId,
+            displayName: `${serverName}: ${tool.name}`,
+            description: tool.description || `Tool from MCP server "${serverName}"`,
+            parameters: tool.inputSchema || { type: 'object', properties: {} },
+            action: async (parameters) => {
+                return await this.callTool(serverName, tool.name, parameters);
+            },
+            formatMessage: async (parameters) => {
+                return `Calling MCP tool "${tool.name}" on server "${serverName}"`;
+            },
+        });
+
+        console.log(`[MCPClient] Registered tool "${tool.name}" from server "${serverName}"`);
+    }
+
+    /**
      * Adds a new MCP server configuration.
      * @param {string} name The name of the server to add.
      * @param {object} config The server configuration.
@@ -299,6 +414,10 @@ export class MCPClient {
             if (data.success) {
                 this.#connectedServers.set(name, config);
                 console.log(`[MCPClient] Connected to server "${name}"`);
+
+                // Fetch and register tools for this server
+                await this.#fetchAndRegisterServerTools(name);
+
                 return true;
             } else {
                 console.error(`[MCPClient] Failed to connect to server "${name}":`, data.error);
@@ -327,6 +446,10 @@ export class MCPClient {
             if (data.success) {
                 this.#connectedServers.delete(name);
                 console.log(`[MCPClient] Disconnected from server "${name}"`);
+
+                // Unregister all tools for this server
+                this.#unregisterServerTools(name);
+
                 return true;
             } else {
                 console.error(`[MCPClient] Failed to disconnect from server "${name}":`, data.error);
@@ -336,6 +459,23 @@ export class MCPClient {
             console.error(`[MCPClient] Error disconnecting from server "${name}":`, error);
             return false;
         }
+    }
+
+    /**
+     * Unregisters all tools for a server from the ToolManager.
+     * @param {string} serverName The name of the server to unregister tools for.
+     */
+    static #unregisterServerTools(serverName) {
+        const tools = this.#serverTools.get(serverName) || [];
+
+        for (const tool of tools) {
+            const toolId = `mcp_${serverName}_${tool.name}`;
+            ToolManager.unregisterFunctionTool(toolId);
+            console.log(`[MCPClient] Unregistered tool "${tool.name}" from server "${serverName}"`);
+        }
+
+        this.#serverTools.delete(serverName);
+        console.log(`[MCPClient] Unregistered all tools for server "${serverName}"`);
     }
 
     /**
