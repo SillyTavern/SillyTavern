@@ -5179,17 +5179,17 @@ export function initOpenAI() {
         name: 'endpoint-override',
         aliases: ['proxy'],
         callback: runProxyCallback,
-        returns: 'current Endpoint Override preset',
+        returns: 'current Endpoint Override configuration',
         namedArgumentList: [],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: () => proxies.map(preset => new SlashCommandEnumValue(preset.name, preset.url)),
+                enumProvider: () => proxies.map(config => new SlashCommandEnumValue(config.name, config.url)),
             }),
         ],
-        helpString: 'Sets an Endpoint Override by its preset name.',
+        helpString: 'Sets an Endpoint Override by its configuration name.',
     }));
 
     $('#test_api_button').on('click', testApiConnection);
