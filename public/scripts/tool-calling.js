@@ -1,6 +1,6 @@
 import { DOMPurify } from '../lib.js';
 
-import { addOneMessage, chat, event_types, eventSource, main_api, saveChatConditional, system_avatar, systemUserName } from '../script.js';
+import { addOneMessage, chat, event_types, eventSource, getRequestHeaders, main_api, saveChatConditional, system_avatar, systemUserName } from '../script.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { Popup } from './popup.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -227,6 +227,130 @@ class ToolDefinition {
 
     get stealth() {
         return this.#stealth;
+    }
+}
+
+/**
+ * A class for interacting with MCP servers.
+ * TODO: Move to a separate file
+ */
+export class MCPClient {
+    /**
+     * A map of connected MCP servers.
+     * @type {Map<string, object>}
+     */
+    static #connectedServers = new Map();
+
+    /**
+     * Connects to an MCP server.
+     * @param {string} name The name of the server to connect to.
+     * @param {object} config The server configuration.
+     * @returns {Promise<boolean>} Whether the connection was successful.
+     */
+    static async connect(name, config) {
+        try {
+            const response = await fetch(`/api/mcp/servers/${name}/start`, {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify(config),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.#connectedServers.set(name, config);
+                console.log(`[MCPClient] Connected to server "${name}"`);
+                return true;
+            } else {
+                console.error(`[MCPClient] Failed to connect to server "${name}":`, data.error);
+                return false;
+            }
+        } catch (error) {
+            console.error(`[MCPClient] Error connecting to server "${name}":`, error);
+            return false;
+        }
+    }
+
+    /**
+     * Disconnects from an MCP server.
+     * @param {string} name The name of the server to disconnect from.
+     * @returns {Promise<boolean>} Whether the disconnection was successful.
+     */
+    static async disconnect(name) {
+        try {
+            const response = await fetch(`/api/mcp/servers/${name}/stop`, {
+                method: 'POST',
+                headers: getRequestHeaders(),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.#connectedServers.delete(name);
+                console.log(`[MCPClient] Disconnected from server "${name}"`);
+                return true;
+            } else {
+                console.error(`[MCPClient] Failed to disconnect from server "${name}":`, data.error);
+                return false;
+            }
+        } catch (error) {
+            console.error(`[MCPClient] Error disconnecting from server "${name}":`, error);
+            return false;
+        }
+    }
+
+    /**
+     * Gets a list of connected MCP servers.
+     * @returns {string[]} A list of connected MCP server names.
+     */
+    static getConnectedServers() {
+        return Array.from(this.#connectedServers.keys());
+    }
+
+    /**
+     * Checks if an MCP server is connected.
+     * @param {string} name The name of the server to check.
+     * @returns {boolean} Whether the server is connected.
+     */
+    static isConnected(name) {
+        return this.#connectedServers.has(name);
+    }
+
+    /**
+     * Calls a tool on an MCP server.
+     * @param {string} serverName The name of the server to call the tool on.
+     * @param {string} toolName The name of the tool to call.
+     * @param {object} args The arguments to pass to the tool.
+     * @returns {Promise<any>} The result of the tool call.
+     */
+    static async callTool(serverName, toolName, args) {
+        try {
+            if (!this.isConnected(serverName)) {
+                throw new Error(`MCP server "${serverName}" is not connected.`);
+            }
+
+            const response = await fetch(`/api/mcp/servers/${serverName}/call-tool`, {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    toolName,
+                    arguments: args,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                console.log(`[MCPClient] Successfully called tool "${toolName}" on server "${serverName}":`, data.result);
+                return data.result;
+            } else {
+                console.error(`[MCPClient] Failed to call tool "${toolName}" on server "${serverName}":`, data.error);
+                throw new Error(data.error || 'Unknown error');
+            }
+        } catch (error) {
+            console.error(`[MCPClient] Error calling tool "${toolName}" on server "${serverName}":`, error);
+            throw error;
+        }
     }
 }
 
@@ -811,6 +935,263 @@ export class ToolManager {
             return new SlashCommandEnumValue(toolOpenAI.function.name, toolOpenAI.function.description, enumTypes.enum, enumIcons.closure);
         });
 
+        const mcpServersEnumProvider = () => {
+            const servers = [];
+            for (const serverName of MCPClient.getConnectedServers()) {
+                servers.push(new SlashCommandEnumValue(serverName, `MCP Server: ${serverName}`, enumTypes.enum, enumIcons.server));
+            }
+            return servers;
+        };
+
+        // MCP Server Commands
+        // TODO: Move this to a separate file
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'mcp-add-server',
+            aliases: ['mcp-server-add'],
+            helpString: 'Adds a new MCP server configuration.',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'name',
+                    description: 'The name of the server to add.',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    acceptsMultiple: false,
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'command',
+                    description: 'The command to execute for stdio transport.',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    acceptsMultiple: false,
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'args',
+                    description: 'The arguments to pass to the command.',
+                    typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.LIST],
+                    isRequired: false,
+                    acceptsMultiple: true,
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'env',
+                    description: 'Environment variables to set (JSON object).',
+                    typeList: [ARGUMENT_TYPE.DICTIONARY],
+                    isRequired: false,
+                    acceptsMultiple: false,
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'autoStart',
+                    description: 'Whether to automatically start the server on startup.',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    isRequired: false,
+                    acceptsMultiple: false,
+                    defaultValue: String(false),
+                }),
+            ],
+            callback: async (args) => {
+                const { name, command, args: commandArgs, env, autoStart } = args;
+
+                if (!name || typeof name !== 'string') {
+                    throw new Error('The "name" argument must be a non-empty string.');
+                }
+
+                if (!command || typeof command !== 'string') {
+                    throw new Error('The "command" argument must be a non-empty string.');
+                }
+
+                // Create the server configuration
+                const config = {
+                    command,
+                    args: Array.isArray(commandArgs) ? commandArgs : [],
+                    env: env && typeof env === 'string' && isJson(env) ? JSON.parse(env) : {},
+                    autoStart: autoStart && isTrueBoolean(String(autoStart)),
+                };
+
+                // Add the server to the MCP settings
+                const response = await fetch('/api/mcp/servers', {
+                    method: 'POST',
+                    headers: getRequestHeaders(),
+                    body: JSON.stringify({
+                        name,
+                        config,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    return `Successfully added MCP server "${name}".`;
+                } else {
+                    throw new Error(`Failed to add MCP server "${name}": ${data.error || 'Unknown error'}`);
+                }
+            },
+        }));
+
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'mcp-connect',
+            aliases: ['mcp-server-connect'],
+            helpString: 'Connects to an MCP server.',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'name',
+                    description: 'The name of the server to connect to.',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    acceptsMultiple: false,
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'type',
+                    description: 'The type of transport to use (stdio or sse).',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    acceptsMultiple: false,
+                    enumList: [
+                        new SlashCommandEnumValue('stdio', 'Standard IO Transport', enumTypes.enum, enumIcons.server),
+                        new SlashCommandEnumValue('sse', 'Server-Sent Events Transport', enumTypes.enum, enumIcons.server),
+                    ],
+                    forceEnum: true,
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'command',
+                    description: 'The command to execute for stdio transport.',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: false,
+                    acceptsMultiple: false,
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'args',
+                    description: 'The arguments to pass to the command for stdio transport.',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: false,
+                    acceptsMultiple: true,
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'url',
+                    description: 'The URL to connect to for SSE transport.',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: false,
+                    acceptsMultiple: false,
+                }),
+            ],
+            callback: async (args) => {
+                const { name, type, command, args: commandArgs, url } = args;
+
+                if (!name || typeof name !== 'string') {
+                    throw new Error('The "name" argument must be a non-empty string.');
+                }
+
+                if (!type || typeof type !== 'string') {
+                    throw new Error('The "type" argument must be a non-empty string.');
+                }
+
+                const config = { type };
+
+                if (type === 'stdio') {
+                    if (!command || typeof command !== 'string') {
+                        throw new Error('The "command" argument is required for stdio transport.');
+                    }
+                    config.command = command;
+                    if (Array.isArray(commandArgs)) {
+                        config.args = commandArgs;
+                    }
+                } else if (type === 'sse') {
+                    if (!url || typeof url !== 'string') {
+                        throw new Error('The "url" argument is required for SSE transport.');
+                    }
+                    config.url = url;
+                } else {
+                    throw new Error(`Unsupported transport type: ${type}`);
+                }
+
+                const success = await MCPClient.connect(name, config);
+
+                if (success) {
+                    return `Successfully connected to MCP server "${name}".`;
+                } else {
+                    throw new Error(`Failed to connect to MCP server "${name}".`);
+                }
+            },
+        }));
+
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'mcp-disconnect',
+            aliases: ['mcp-server-disconnect'],
+            helpString: 'Disconnects from an MCP server.',
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'The name of the server to disconnect from.',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    acceptsMultiple: false,
+                    forceEnum: true,
+                    enumProvider: mcpServersEnumProvider,
+                }),
+            ],
+            callback: async (_, name) => {
+                if (!name || typeof name !== 'string') {
+                    throw new Error('The server name must be a non-empty string.');
+                }
+
+                const success = await MCPClient.disconnect(name);
+
+                if (success) {
+                    return `Successfully disconnected from MCP server "${name}".`;
+                } else {
+                    throw new Error(`Failed to disconnect from MCP server "${name}".`);
+                }
+            },
+        }));
+
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'mcp-list',
+            aliases: ['mcp-servers', 'mcp-server-list'],
+            helpString: 'Lists all connected MCP servers.',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'return',
+                    description: 'The way how you want the return value to be provided',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    defaultValue: 'none',
+                    enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                    forceEnum: true,
+                }),
+            ],
+            callback: async (args) => {
+                const servers = MCPClient.getConnectedServers();
+                // Get the return type from args, defaulting to 'popup-html'
+                const returnTypeStr = String(args?.return ?? 'popup-html').trim().toLowerCase();
+
+                // Validate that it's a valid SlashCommandReturnType
+                /** @type {import('./slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} */
+                let returnType;
+
+                // Check if the string is a valid return type
+                if (['pipe', 'object', 'chat-html', 'chat-text', 'popup-html', 'popup-text', 'toast-html', 'toast-text', 'console', 'none'].includes(returnTypeStr)) {
+                    returnType = /** @type {import('./slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} */ (returnTypeStr);
+                } else {
+                    returnType = 'popup-html';
+                }
+
+                if (servers.length === 0) {
+                    return 'No MCP servers connected.';
+                }
+
+                const serverInfo = servers.map(name => ({
+                    name,
+                    connected: MCPClient.isConnected(name),
+                }));
+
+                return await slashCommandReturnHelper.doReturn(returnType, serverInfo ?? [], {
+                    objectToStringFunc: (servers) => {
+                        if (!Array.isArray(servers) || servers.length === 0) {
+                            return 'No MCP servers connected.';
+                        }
+                        return servers.map(s => `${s.name}: ${s.connected ? 'Connected' : 'Disconnected'}`).join('\n');
+                    },
+                });
+            },
+        }));
+
+        // Tool Commands
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'tools-list',
             aliases: ['tool-list'],
