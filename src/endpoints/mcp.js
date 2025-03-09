@@ -210,69 +210,24 @@ class McpJsonRpcClient {
             throw new Error('URL is required for SSE transport');
         }
 
-        return new Promise((resolve, reject) => {
-            try {
-                // Move to frontend
-                const EventSource = globalThis.EventSource || require('eventsource');
+        // For SSE transport, we just mark the connection as established
+        // The actual SSE connection will be handled by the frontend
+        this.connected = true;
+        console.log('[MCP] SSE transport configured, connection will be handled by frontend');
 
-                const url = new URL(config.url);
-                this.eventSource = new EventSource(url.toString());
+        // Send initialization message via POST with ignoreConnectionCheck=true
+        try {
+            await this.sendJsonRpcRequest('initialize', {
+                clientInfo: this.clientInfo,
+                capabilities: this.capabilities,
+                protocolVersion: this.protocolVersion,
+            }, true);
+        } catch (error) {
+            console.error('[MCP] Error sending initialization message:', error);
+            throw error;
+        }
 
-                this.eventSource.onopen = () => {
-                    console.log('[MCP] SSE connection opened');
-
-                    // Send initialization message via POST with ignoreConnectionCheck=true
-                    this.sendJsonRpcRequest('initialize', {
-                        clientInfo: this.clientInfo,
-                        capabilities: this.capabilities,
-                        protocolVersion: this.protocolVersion,
-                    }, true).catch(error => {
-                        console.error('[MCP] Error sending initialization message:', error);
-                    });
-
-                    resolve();
-                };
-
-                this.eventSource.onerror = (error) => {
-                    console.error('[MCP] SSE connection error:', error);
-                    this.connected = false;
-                    reject(error);
-                };
-
-                this.eventSource.onmessage = (event) => {
-                    try {
-                        const message = JSON.parse(event.data);
-                        console.log('[MCP] Received SSE message:', message);
-
-                        // Check if this is a response to a pending request
-                        if (message.jsonrpc === '2.0' && message.id !== undefined) {
-                            const pendingRequest = this.pendingRequests.get(message.id);
-                            if (pendingRequest) {
-                                // Clear the timeout
-                                if (pendingRequest.timeoutId) {
-                                    clearTimeout(pendingRequest.timeoutId);
-                                }
-
-                                // Resolve or reject the promise
-                                if (message.error) {
-                                    pendingRequest.reject(new Error(`JSON-RPC error ${message.error.code}: ${message.error.message}`));
-                                } else {
-                                    pendingRequest.resolve(message);
-                                }
-
-                                // Remove from pending requests
-                                this.pendingRequests.delete(message.id);
-                            }
-                        }
-                    } catch (error) {
-                        console.error('[MCP] Error parsing SSE message:', error);
-                    }
-                };
-            } catch (error) {
-                console.error('[MCP] Error creating SSE connection:', error);
-                reject(error);
-            }
-        });
+        return Promise.resolve();
     }
 
     /**
@@ -294,7 +249,7 @@ class McpJsonRpcClient {
             params,
         };
 
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             try {
                 // For initialization and shutdown, we don't need to wait for a response
                 const isSpecialMethod = method === 'initialize' || method === 'shutdown';
@@ -341,90 +296,45 @@ class McpJsonRpcClient {
                         }
                     });
                 } else if (this.transport.type === 'sse') {
-                    // For SSE, we use fetch for sending requests and EventSource for receiving responses
-
-                    // For initialization and shutdown, we don't need to wait for a response via EventSource
+                    // For SSE transport, we only handle special methods (initialize, shutdown) directly
+                    // Regular methods will be handled by the frontend
                     if (isSpecialMethod) {
-                        (async () => {
-                            try {
-                                const url = new URL(this.transport.url);
-                                const response = await fetch(`${url.origin}${url.pathname}`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify(request),
-                                });
+                        try {
+                            const url = new URL(this.transport.url);
+                            const response = await fetch(`${url.origin}${url.pathname}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify(request),
+                            });
 
-                                if (!response.ok) {
-                                    throw new Error(`HTTP error! status: ${response.status}`);
-                                }
-
-                                // For special methods, resolve immediately
-                                resolve({
-                                    jsonrpc: '2.0',
-                                    id: request.id,
-                                    result: { success: true },
-                                });
-                            } catch (error) {
-                                console.error('[MCP] Error sending request via fetch:', error);
-                                reject(error);
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
                             }
-                        })();
+
+                            // For special methods, resolve immediately
+                            resolve({
+                                jsonrpc: '2.0',
+                                id: request.id,
+                                result: { success: true },
+                            });
+                        } catch (error) {
+                            console.error('[MCP] Error sending request via fetch:', error);
+                            reject(error);
+                        }
                     } else {
-                        // For regular methods, store the request and wait for a response via EventSource
-                        // Set up timeout
-                        const timeoutId = setTimeout(() => {
-                            if (this.pendingRequests.has(request.id)) {
-                                this.pendingRequests.delete(request.id);
-                                reject(new Error(`Request timed out after ${this.requestTimeout}ms`));
-                            }
-                        }, this.requestTimeout);
-
-                        // Store the request
-                        this.pendingRequests.set(request.id, { resolve, reject, timeoutId });
-
-                        // Send the request
-                        (async () => {
-                            try {
-                                const url = new URL(this.transport.url);
-                                const response = await fetch(`${url.origin}${url.pathname}`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify(request),
-                                });
-
-                                if (!response.ok) {
-                                    // Clean up the pending request
-                                    if (this.pendingRequests.has(request.id)) {
-                                        const pendingRequest = this.pendingRequests.get(request.id);
-                                        if (pendingRequest.timeoutId) {
-                                            clearTimeout(pendingRequest.timeoutId);
-                                        }
-                                        this.pendingRequests.delete(request.id);
-                                    }
-
-                                    throw new Error(`HTTP error! status: ${response.status}`);
-                                }
-
-                                // The actual response will come via EventSource
-                            } catch (error) {
-                                console.error('[MCP] Error sending request via fetch:', error);
-
-                                // Clean up the pending request
-                                if (this.pendingRequests.has(request.id)) {
-                                    const pendingRequest = this.pendingRequests.get(request.id);
-                                    if (pendingRequest.timeoutId) {
-                                        clearTimeout(pendingRequest.timeoutId);
-                                    }
-                                    this.pendingRequests.delete(request.id);
-                                }
-
-                                reject(error);
-                            }
-                        })();
+                        // For regular methods, we'll just resolve with a message indicating
+                        // that the request should be handled by the frontend
+                        console.log('[MCP] SSE request will be handled by frontend:', request);
+                        resolve({
+                            jsonrpc: '2.0',
+                            id: request.id,
+                            result: {
+                                handled_by_frontend: true,
+                                request: request,
+                            },
+                        });
                     }
                 } else {
                     reject(new Error('No valid transport available'));
