@@ -34,6 +34,7 @@ export const textgen_types = {
     OPENROUTER: 'openrouter',
     FEATHERLESS: 'featherless',
     HUGGINGFACE: 'huggingface',
+    ARLIAI: 'arliai',
     GENERIC: 'generic',
 };
 
@@ -53,6 +54,7 @@ const {
     KOBOLDCPP,
     HUGGINGFACE,
     FEATHERLESS,
+    ARLIAI,
 } = textgen_types;
 
 const LLAMACPP_DEFAULT_ORDER = [
@@ -114,6 +116,7 @@ let INFERMATICAI_SERVER = 'https://api.totalgpt.ai';
 let DREAMGEN_SERVER = 'https://dreamgen.com';
 let OPENROUTER_SERVER = 'https://openrouter.ai/api';
 let FEATHERLESS_SERVER = 'https://api.featherless.ai/v1';
+let ARLIAI_SERVER = 'https://api.arliai.com/v1';
 
 export const SERVER_INPUTS = {
     [textgen_types.OOBA]: '#textgenerationwebui_api_url_text',
@@ -200,6 +203,7 @@ const settings = {
     openrouter_providers: [],
     vllm_model: '',
     aphrodite_model: '',
+    arliai_model: '',
     dreamgen_model: 'opus-v1-xl/text',
     tabby_model: '',
     sampler_order: KOBOLDCPP_ORDER,
@@ -332,6 +336,8 @@ export function getTextGenServer() {
             return DREAMGEN_SERVER;
         case OPENROUTER:
             return OPENROUTER_SERVER;
+        case ARLIAI:
+            return ARLIAI_SERVER;
         default:
             return settings.server_urls[settings.type] ?? '';
     }
@@ -714,7 +720,7 @@ jQuery(function () {
         const type = String($(this).val());
         settings.type = type;
 
-        if ([VLLM, APHRODITE, INFERMATICAI].includes(settings.type)) {
+        if ([VLLM, APHRODITE, ARLIAI, INFERMATICAI].includes(settings.type)) {
             $('#mirostat_mode_textgenerationwebui').attr('step', 2); //Aphro disallows mode 1
             $('#do_sample_textgenerationwebui').prop('checked', true); //Aphro should always do sample; 'otherwise set temp to 0 to mimic no sample'
             $('#ban_eos_token_textgenerationwebui').prop('checked', false); //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
@@ -755,7 +761,7 @@ jQuery(function () {
     $('#samplerResetButton').off('click').on('click', function () {
         const inputs = {
             'temp_textgenerationwebui': 1,
-            'top_k_textgenerationwebui': [INFERMATICAI, APHRODITE, VLLM].includes(settings.type) ? -1 : 0,
+            'top_k_textgenerationwebui': [INFERMATICAI, APHRODITE, ARLIAI, VLLM].includes(settings.type) ? -1 : 0,
             'top_p_textgenerationwebui': 1,
             'min_p_textgenerationwebui': 0,
             'rep_pen_textgenerationwebui': 1,
@@ -841,7 +847,7 @@ jQuery(function () {
                 $(`#${id}_counter_textgenerationwebui`).val(value);
                 settings[id] = value;
                 //special handling for vLLM/Aphrodite using -1 as disabled instead of 0
-                if ($(this).attr('id') === 'top_k_textgenerationwebui' && [INFERMATICAI, APHRODITE, VLLM].includes(settings.type) && value === 0) {
+                if ($(this).attr('id') === 'top_k_textgenerationwebui' && [INFERMATICAI, APHRODITE, ARLIAI, VLLM].includes(settings.type) && value === 0) {
                     settings[id] = -1;
                     $(this).val(-1);
                 }
@@ -1062,6 +1068,7 @@ export function parseTextgenLogprobs(token, logprobs) {
         case TABBY:
         case VLLM:
         case APHRODITE:
+        case ARLIAI:
         case MANCER:
         case INFERMATICAI:
         case OOBA: {
@@ -1185,6 +1192,8 @@ export function getTextGenModel() {
             return settings.vllm_model;
         case APHRODITE:
             return settings.aphrodite_model;
+        case ARLIAI:
+            return settings.arliai_model;
         case OLLAMA:
             if (!settings.ollama_model) {
                 toastr.error('No Ollama model selected.', 'Text Completion API');
@@ -1434,6 +1443,10 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
 
         case APHRODITE:
             // set params to aphroditeParams
+            params = Object.assign(params, aphroditeParams);
+            break;
+        
+        case ARLIAI:
             params = Object.assign(params, aphroditeParams);
             break;
 

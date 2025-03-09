@@ -95,6 +95,19 @@ function getAphroditeHeaders(directories) {
 }
 
 /**
+ * Gets the headers for the ArliAI API.
+ * @param {import('./users.js').UserDirectoryList} directories User directories
+ * @returns {object} Headers for the request
+ */
+function getArliAIHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.ARLIAI);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
+/**
  * Gets the headers for the Tabby API.
  * @param {import('./users.js').UserDirectoryList} directories User directories
  * @returns {object} Headers for the request
@@ -227,6 +240,7 @@ export function setAdditionalHeadersByType(requestHeaders, type, server, directo
         [TEXTGEN_TYPES.LLAMACPP]: getLlamaCppHeaders,
         [TEXTGEN_TYPES.FEATHERLESS]: getFeatherlessHeaders,
         [TEXTGEN_TYPES.HUGGINGFACE]: getHuggingFaceHeaders,
+        [TEXTGEN_TYPES.ARLIAI]: getArliAIHeaders,
         [TEXTGEN_TYPES.GENERIC]: getGenericHeaders,
     };
 

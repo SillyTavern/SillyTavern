@@ -14,6 +14,7 @@ import {
     DREAMGEN_KEYS,
     FEATHERLESS_KEYS,
     OPENAI_KEYS,
+    ARLIAI_KEYS,
 } from '../../constants.js';
 import { forwardFetchResponse, trimV1, getConfigValue } from '../../util.js';
 import { setAdditionalHeaders } from '../../additional-headers.js';
@@ -119,6 +120,7 @@ router.post('/status', jsonParser, async function (request, response) {
             case TEXTGEN_TYPES.OOBA:
             case TEXTGEN_TYPES.VLLM:
             case TEXTGEN_TYPES.APHRODITE:
+            case TEXTGEN_TYPES.ARLIAI:
             case TEXTGEN_TYPES.KOBOLDCPP:
             case TEXTGEN_TYPES.LLAMACPP:
             case TEXTGEN_TYPES.INFERMATICAI:
@@ -290,6 +292,7 @@ router.post('/generate', jsonParser, async function (request, response) {
             case TEXTGEN_TYPES.VLLM:
             case TEXTGEN_TYPES.FEATHERLESS:
             case TEXTGEN_TYPES.APHRODITE:
+            case TEXTGEN_TYPES.ARLIAI:
             case TEXTGEN_TYPES.OOBA:
             case TEXTGEN_TYPES.TABBY:
             case TEXTGEN_TYPES.KOBOLDCPP:
@@ -337,6 +340,11 @@ router.post('/generate', jsonParser, async function (request, response) {
 
         if (request.body.api_type === TEXTGEN_TYPES.FEATHERLESS) {
             request.body = _.pickBy(request.body, (_, key) => FEATHERLESS_KEYS.includes(key));
+            args.body = JSON.stringify(request.body);
+        }
+
+        if (request.body.api_type === TEXTGEN_TYPES.ARLIAI) {
+            request.body = _.pickBy(request.body, (_, key) => ARLIAI_KEYS.includes(key));
             args.body = JSON.stringify(request.body);
         }
 

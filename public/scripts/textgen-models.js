@@ -14,6 +14,7 @@ let infermaticAIModels = [];
 let dreamGenModels = [];
 let vllmModels = [];
 let aphroditeModels = [];
+let arliAIModels = [];
 let featherlessModels = [];
 let tabbyModels = [];
 export let openRouterModels = [];
@@ -310,6 +311,28 @@ export async function loadAphroditeModels(data) {
         option.text = model.id;
         option.selected = model.id === textgen_settings.aphrodite_model;
         $('#aphrodite_model').append(option);
+    }
+}
+
+export async function loadArliAIModels(data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid ArliAI models data', data);
+        return;
+    }
+
+    arliAIModels = data;
+
+    if (!data.find(x => x.id === textgen_settings.arliai_model)) {
+        textgen_settings.arliai_model = data[0]?.id || '';
+    }
+
+    $('#arliai_model').empty();
+    for (const model of data) {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.arliai_model;
+        $('#arliai_model').append(option);
     }
 }
 
@@ -640,6 +663,12 @@ function onAphroditeModelSelect() {
     $('#api_button_textgenerationwebui').trigger('click');
 }
 
+function onArliAIModelSelect() {
+    const modelId = String($('#arliai_model').val());
+    textgen_settings.arliai_model = modelId;
+    $('#api_button_textgenerationwebui').trigger('click');
+}
+
 function getMancerModelTemplate(option) {
     const model = mancerModels.find(x => x.id === option?.element?.value);
 
@@ -736,6 +765,20 @@ function getVllmModelTemplate(option) {
 
 function getAphroditeModelTemplate(option) {
     const model = aphroditeModels.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    return $((`
+        <div class="flex-container flexFlowColumn">
+            <div><strong>${DOMPurify.sanitize(model.id)}</strong></div>
+        </div>
+    `));
+}
+
+function getArliAIModelTemplate(option) {
+    const model = arliAIModels.find(x => x.id === option?.element?.value);
 
     if (!option.id || !model) {
         return option.text;
@@ -935,6 +978,7 @@ export function initTextGenModels() {
     $('#ollama_download_model').on('click', downloadOllamaModel);
     $('#vllm_model').on('change', onVllmModelSelect);
     $('#aphrodite_model').on('change', onAphroditeModelSelect);
+    $('#arliai_model').on('change', onArliAIModelSelect);
     $('#tabby_download_model').on('click', downloadTabbyModel);
     $('#tabby_model').on('change', onTabbyModelSelect);
     $('#featherless_model').on('change', () => onFeatherlessModelSelect(String($('#featherless_model').val())));
@@ -1009,6 +1053,13 @@ export function initTextGenModels() {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getAphroditeModelTemplate,
+        });
+        $('#arliai_model').select2({
+            placeholder: t`Select a model`,
+            searchInputPlaceholder: t`Search models...`,
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getArliAIModelTemplate,
         });
         providersSelect.select2({
             sorter: data => data.sort((a, b) => a.text.localeCompare(b.text)),

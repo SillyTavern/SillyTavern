@@ -369,6 +369,7 @@ function RA_autoconnect(PrevApi) {
                     || (textgen_settings.type === textgen_types.DREAMGEN && secret_state[SECRET_KEYS.DREAMGEN])
                     || (textgen_settings.type === textgen_types.OPENROUTER && secret_state[SECRET_KEYS.OPENROUTER])
                     || (textgen_settings.type === textgen_types.FEATHERLESS && secret_state[SECRET_KEYS.FEATHERLESS])
+                    || (textgen_settings.type === textgen_types.ARLIAI && secret_state[SECRET_KEYS.ARLIAI])
                 ) {
                     $('#api_button_textgenerationwebui').trigger('click');
                 }
@@ -391,6 +392,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.ZEROONEAI] && oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI)
                     || (secret_state[SECRET_KEYS.BLOCKENTROPY] && oai_settings.chat_completion_source == chat_completion_sources.BLOCKENTROPY)
                     || (secret_state[SECRET_KEYS.NANOGPT] && oai_settings.chat_completion_source == chat_completion_sources.NANOGPT)
+                    || (secret_state[SECRET_KEYS.ARLIAI] && oai_settings.chat_completion_source == chat_completion_sources.ARLIAI)
                     || (secret_state[SECRET_KEYS.DEEPSEEK] && oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                 ) {
