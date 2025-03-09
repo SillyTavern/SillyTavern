@@ -73,7 +73,7 @@ import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { tag_map, tags } from './tags.js';
 import { getTextGenServer, textgenerationwebui_settings } from './textgen-settings.js';
 import { tokenizers, getTextTokens, getTokenCount, getTokenCountAsync, getTokenizerModel } from './tokenizers.js';
-import { ToolManager } from './tool-calling.js';
+import { MCPClient, ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { timestampToMoment, uuidv4 } from './utils.js';
 import { getGlobalVariable, getLocalVariable, setGlobalVariable, setLocalVariable } from './variables.js';
@@ -215,6 +215,7 @@ export function getContext() {
         updateReasoningUI,
         unshallowCharacter,
         unshallowGroupMembers,
+        MCPClient,
     };
 }
 

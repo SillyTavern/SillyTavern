@@ -216,6 +216,10 @@ export const extension_settings = {
         /** @type {string} */
         sort: 'dateAsc',
     },
+    mcp: {
+        /** @type {boolean} */
+        enabled: false,
+    },
 };
 
 function showHideExtensionsMenu() {

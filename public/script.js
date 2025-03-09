@@ -7176,8 +7176,6 @@ export async function getSettings() {
         // Load proxy presets
         loadProxyPresets(settings);
 
-        MCPClient.init();
-
         // Allow subscribers to mutate settings
         await eventSource.emit(event_types.SETTINGS_LOADED_AFTER, settings);
 

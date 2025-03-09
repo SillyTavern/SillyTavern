@@ -7,8 +7,17 @@ import express from 'express';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { jsonParser } from '../express-common.js';
 
-import { getUserDirectories } from '../users.js';
-import { DEFAULT_USER } from '../constants.js';
+/** @typedef McpServerEntry
+ * @property {string} name
+ * @property {string} command
+ * @property {string[]} args
+ * @property {object} env
+ * @property {string} type
+ */
+
+/** @typedef McpServerDictionary
+ * @property {Object.<string, McpServerEntry>} mcpServers
+ */
 
 export const MCP_SETTINGS_FILE = 'mcp_settings.json';
 
@@ -18,7 +27,7 @@ const mcpClients = new Map();
 /**
  * Reads MCP settings from the settings file
  * @param {import('../users.js').UserDirectoryList} directories User directories
- * @returns {object} MCP settings
+ * @returns {McpServerDictionary} MCP settings
  */
 export function readMcpSettings(directories) {
     const filePath = path.join(directories.root, MCP_SETTINGS_FILE);
@@ -390,23 +399,21 @@ class McpJsonRpcClient {
             // Send shutdown request
             await this.sendJsonRpcRequest('shutdown', {}, true);
 
-            if (this.childProcess) {
-                // Give the process a chance to exit gracefully
-                setTimeout(() => {
-                    if (this.childProcess) {
-                        this.childProcess.kill();
-                    }
-                }, 1000);
-            }
-
             if (this.eventSource) {
                 this.eventSource.close();
             }
         } catch (error) {
             console.error('[MCP] Error closing connection:', error);
         } finally {
+            if (this.childProcess) {
+                // Give the process a chance to exit gracefully
+                setTimeout(() => {
+                    this.childProcess?.kill();
+                    this.childProcess = null;
+                }, 1000);
+            }
+
             this.connected = false;
-            this.childProcess = null;
             this.eventSource = null;
         }
     }
@@ -714,24 +721,3 @@ router.post('/servers/:name/call-tool', jsonParser, async (request, response) =>
         response.status(500).json({ error: 'Failed to call tool on MCP server' });
     }
 });
-
-// Initialize MCP servers on startup
-export async function init() {
-    try {
-        // Use the default user's directories
-        const defaultUserDirectories = getUserDirectories(DEFAULT_USER.handle);
-
-        const settings = readMcpSettings(defaultUserDirectories);
-
-        if (settings.mcpServers) {
-            for (const [name, config] of Object.entries(settings.mcpServers)) {
-                if (config.autoStart) {
-                    console.log(`[MCP] Auto-starting server "${name}"`);
-                    await startMcpServer(name, config);
-                }
-            }
-        }
-    } catch (error) {
-        console.error('[MCP] Error initializing MCP servers:', error);
-    }
-}

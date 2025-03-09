@@ -1,6 +1,7 @@
 import { DOMPurify } from '../lib.js';
 
 import { addOneMessage, chat, event_types, eventSource, getRequestHeaders, main_api, saveChatConditional, system_avatar, systemUserName } from '../script.js';
+import { extension_settings } from './extensions.js';
 import { McpSseClient } from './mcp-sse-client.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { Popup } from './popup.js';
@@ -254,58 +255,19 @@ export class MCPClient {
      */
     static #sseClients = new Map();
 
-    /**
-     * Initializes the MCP client by fetching servers from the backend and registering MCP tools.
-     * @returns {Promise<boolean>} Whether the initialization was successful.
-     */
-    static async init() {
-        try {
-            console.log('[MCPClient] Initializing MCP client');
+    static async getServers() {
+        const response = await fetch('/api/mcp/servers', {
+            method: 'GET',
+            headers: getRequestHeaders(),
+        });
 
-            // Fetch servers from the backend
-            const response = await fetch('/api/mcp/servers', {
-                method: 'GET',
-                headers: getRequestHeaders(),
-            });
-
-            if (!response.ok) {
-                console.error('[MCPClient] Failed to fetch servers:', response.statusText);
-                return false;
-            }
-
-            const servers = await response.json();
-
-            // Clear existing connected servers
-            this.#connectedServers.clear();
-            this.#serverTools.clear();
-
-            // Close any existing SSE connections
-            for (const [serverName] of this.#sseClients.entries()) {
-                this.closeSseConnection(serverName);
-            }
-
-            // Add running servers to the connected servers map
-            for (const server of servers) {
-                if (server.isRunning) {
-                    this.#connectedServers.set(server.name, server.config);
-                    console.log(`[MCPClient] Added running server "${server.name}" to connected servers`);
-
-                    // Create SSE connection if needed
-                    if (server.config.type === 'sse' && server.config.url) {
-                        await this.createSseConnection(server.name, server.config.url);
-                    }
-
-                    // Fetch and register tools for this server
-                    await this.#fetchAndRegisterServerTools(server.name);
-                }
-            }
-
-            console.log('[MCPClient] Initialization complete');
-            return true;
-        } catch (error) {
-            console.error('[MCPClient] Error initializing MCP client:', error);
-            return false;
+        if (!response.ok) {
+            console.error('[MCPClient] Failed to fetch servers:', response.statusText);
+            return [];
         }
+
+        const servers = await response.json();
+        return servers;
     }
 
     /**
@@ -313,7 +275,7 @@ export class MCPClient {
      * @param {string} serverName The name of the server to fetch tools from.
      * @returns {Promise<boolean>} Whether the tools were fetched and registered successfully.
      */
-    static async #fetchAndRegisterServerTools(serverName) {
+    static async #fetchTools(serverName) {
         try {
             let tools = [];
 
@@ -353,16 +315,21 @@ export class MCPClient {
             // Store the tools for this server
             this.#serverTools.set(serverName, tools);
 
-            // Register each tool with the ToolManager
-            for (const tool of tools) {
-                this.#registerMcpTool(serverName, tool);
-            }
-
-            console.log(`[MCPClient] Registered ${tools.length} tools for server "${serverName}"`);
             return true;
         } catch (error) {
             console.error(`[MCPClient] Error fetching tools for server "${serverName}":`, error);
             return false;
+        }
+    }
+
+    static registerTools(name) {
+        const tools = this.#serverTools.get(name);
+        if (tools) {
+            for (const tool of tools) {
+                this.#registerMcpTool(name, tool);
+            }
+
+            console.log(`[MCPClient] Registered ${tools.length} tools for server "${name}"`);
         }
     }
 
@@ -412,10 +379,15 @@ export class MCPClient {
             if (data.success) {
                 console.log(`[MCPClient] Added server "${name}"`);
 
-                // Start the server immediately if autoStart is true
-                if (config.autoStart) {
+                if (extension_settings.mcp?.enabled) {
                     console.log(`[MCPClient] Auto-starting server "${name}"`);
                     await this.connect(name, config);
+
+                    if (!this.#serverTools.has(name)) {
+                        await this.#fetchTools(name);
+                    }
+
+                    this.registerTools(name);
                 }
 
                 return true;
@@ -454,9 +426,6 @@ export class MCPClient {
                     await this.createSseConnection(name, config.url);
                 }
 
-                // Fetch and register tools for this server
-                await this.#fetchAndRegisterServerTools(name);
-
                 return true;
             } else {
                 console.error(`[MCPClient] Failed to connect to server "${name}":`, data.error);
@@ -469,7 +438,7 @@ export class MCPClient {
     }
 
     /**
-     * Disconnects from an MCP server.
+     * Disconnects from an MCP server. Also unregisters all tools for this server.
      * @param {string} name The name of the server to disconnect from.
      * @returns {Promise<boolean>} Whether the disconnection was successful.
      */
@@ -560,6 +529,43 @@ export class MCPClient {
      */
     static getConnectedServers() {
         return Array.from(this.#connectedServers.keys());
+    }
+
+    /**
+     * Handles MCP tools and server connections
+     * @param {boolean} enabled Whether to enable or disable MCP functionality
+     */
+    static async handleTools(enabled) {
+        if (extension_settings.mcp?.enabled !== enabled) {
+            return;
+        }
+
+        if (enabled) {
+            // For each configured server
+            const allServers = await this.getServers();
+            for (const server of allServers) {
+                const { name, config } = server;
+                // Connect to server if not already connected
+                if (!this.isConnected(name)) {
+                    await this.connect(name, config);
+                }
+
+                // Fetch tools if we don't have them cached
+                if (!this.#serverTools.has(name)) {
+                    await this.#fetchTools(name);
+                }
+
+                // Register tools
+                this.registerTools(name);
+            }
+        } else {
+            // When disabling, disconnect servers and unregister tools
+            const connectedServers = this.getConnectedServers();
+            for (const serverName of connectedServers) {
+                // Disconnect server
+                await this.disconnect(serverName);
+            }
+        }
     }
 
     /**
@@ -1392,17 +1398,9 @@ export class ToolManager {
                     isRequired: false,
                     acceptsMultiple: false,
                 }),
-                SlashCommandNamedArgument.fromProps({
-                    name: 'autoStart',
-                    description: 'Whether to automatically start the server on startup.',
-                    typeList: [ARGUMENT_TYPE.BOOLEAN],
-                    isRequired: false,
-                    acceptsMultiple: false,
-                    defaultValue: String(true),
-                }),
             ],
             callback: async (args) => {
-                const { name, type, command, args: commandArgs, env, url, autoStart } = args;
+                const { name, type, command, args: commandArgs, env, url } = args;
 
                 if (!name || typeof name !== 'string') {
                     throw new Error('The "name" argument must be a non-empty string.');
@@ -1415,7 +1413,6 @@ export class ToolManager {
                 // Create the server configuration
                 const config = {
                     type,
-                    autoStart: autoStart && isTrueBoolean(String(autoStart)),
                 };
 
                 if (type === 'stdio') {
