@@ -5179,7 +5179,7 @@ export function initOpenAI() {
         name: 'endpoint-override',
         aliases: ['proxy'],
         callback: runProxyCallback,
-        returns: 'current Endpoint Override configuration',
+        returns: 'current Endpoint Override Configuration',
         namedArgumentList: [],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
