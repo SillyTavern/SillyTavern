@@ -355,7 +355,7 @@
     "Proxy Password": "كلمة مرور الوكيل",
     "Will be used as a password for the proxy instead of API key.": "سيتم استخدامها ككلمة مرور للوكيل بدلاً من مفتاح API.",
     "Peek a password": "نظرة خاطفة على كلمة المرور",
-    "OpenAI API key": "مفتاح API لـ OpenAI",
+    "OpenAI API Key": "مفتاح API لـ OpenAI",
     "View API Usage Metrics": "عرض مقاييس استخدام واجهة برمجة التطبيقات",
     "Follow": "اتبع",
     "these directions": "هذه التوجيهات",

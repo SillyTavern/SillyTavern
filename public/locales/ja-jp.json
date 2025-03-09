@@ -355,7 +355,7 @@
     "Proxy Password": "プロキシパスワード",
     "Will be used as a password for the proxy instead of API key.": "API キーの代わりにプロキシのパスワードとして使用されます。",
     "Peek a password": "パスワードを覗く",
-    "OpenAI API key": "OpenAI APIキー",
+    "OpenAI API Key": "OpenAI APIキー",
     "View API Usage Metrics": "API使用メトリクスを表示",
     "Follow": "フォロー",
     "these directions": "これらの指示",

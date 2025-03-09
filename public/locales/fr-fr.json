@@ -336,7 +336,7 @@
     "Proxy Password": "Mot de passe proxy",
     "Will be used as a password for the proxy instead of API key.": "Sera utilisé comme mot de passe pour le proxy au lieu de la clé API.",
     "Peek a password": "Jetez un œil à un mot de passe",
-    "OpenAI API key": "Clé API OpenAI",
+    "OpenAI API Key": "Clé API OpenAI",
     "View API Usage Metrics": "Afficher les statistiques d'utilisation de l'API",
     "Follow": "Suivre",
     "these directions": "ces instructions",

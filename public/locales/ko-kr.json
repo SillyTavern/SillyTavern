@@ -359,7 +359,7 @@
     "Proxy Password": "프록시 비밀번호",
     "Will be used as a password for the proxy instead of API key.": "API 키 대신 프록시의 비밀번호로 사용됩니다.",
     "Peek a password": "비밀번호를 엿보세요",
-    "OpenAI API key": "OpenAI API 키",
+    "OpenAI API Key": "OpenAI API 키",
     "View API Usage Metrics": "API 사용 지표 보기",
     "Follow": "OpenAI API 키를 얻으려면",
     "these directions": "이 지시 사항",

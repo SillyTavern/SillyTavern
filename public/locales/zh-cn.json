@@ -406,7 +406,7 @@
     "Using a proxy that you're not running yourself is a risk to your data privacy.": "使用您自己未运行的代理会对您的数据隐私造成风险。",
     "ANY support requests will be REFUSED if you are using a proxy.": "如果您使用代理，任何支持请求都将被拒绝。",
     "Do not proceed if you do not agree to this!": "如果您不同意，请不要继续！",
-    "OpenAI API key": "OpenAI API 密钥",
+    "OpenAI API Key": "OpenAI API 密钥",
     "View API Usage Metrics": "查看API使用情况",
     "Follow": "按照",
     "these directions": "这些步骤",

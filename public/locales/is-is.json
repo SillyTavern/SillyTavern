@@ -355,7 +355,7 @@
     "Proxy Password": "Lykilorð umboðsmanns",
     "Will be used as a password for the proxy instead of API key.": "Verður notað sem lykilorð fyrir proxy í stað API lykils.",
     "Peek a password": "Skoðaðu lykilorð",
-    "OpenAI API key": "OpenAI API lykill",
+    "OpenAI API Key": "OpenAI API lykill",
     "View API Usage Metrics": "Skoða notkun gagnafræði API",
     "Follow": "Fylgja",
     "these directions": "þessum leiðbeiningum",
