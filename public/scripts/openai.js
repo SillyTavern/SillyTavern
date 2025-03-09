@@ -2585,48 +2585,48 @@ class Message {
      */
     async addImage(image) {
         const textContent = this.content;
-		const quality = oai_settings.inline_image_quality || default_settings.inline_image_quality;
-		
-		const ImageList = [];
-		for (let img of image) {
-			const isDataUrl = isDataURL(img);
-			
-			if (!isDataUrl) {
-				try {
-					const response = await fetch(img, { method: 'GET', cache: 'force-cache' });
-					if (!response.ok) throw new Error('Failed to fetch image');
-					const blob = await response.blob();
-					img = await getBase64Async(blob);
-				} catch (error) {
-					console.error('Image adding skipped', error);
-					return;
-				}
-			} 
+        const quality = oai_settings.inline_image_quality || default_settings.inline_image_quality;
 
-			img = await this.compressImage(img);
-			
-			ImageList.push(img);
-			
-			try {
-				const tokens = await this.getImageTokenCost(img, quality);
-				this.tokens += tokens;
-				
-			} catch (error) {
-				this.tokens += Message.tokensPerImage;
-				console.error('Failed to get image token cost', error);
-			}
-		}
-		
-		this.content = [
-            { type: 'text', text: textContent }  
+        const imageList = [];
+        for (let img of image) {
+            const isDataUrl = isDataURL(img);
+
+            if (!isDataUrl) {
+                try {
+                    const response = await fetch(img, { method: 'GET', cache: 'force-cache' });
+                    if (!response.ok) throw new Error('Failed to fetch image');
+                    const blob = await response.blob();
+                    img = await getBase64Async(blob);
+                } catch (error) {
+                    console.error('Image adding skipped', error);
+                    return;
+                }
+            }
+
+            img = await this.compressImage(img);
+
+            imageList.push(img);
+
+            try {
+                const tokens = await this.getImageTokenCost(img, quality);
+                this.tokens += tokens;
+
+            } catch (error) {
+                this.tokens += Message.tokensPerImage;
+                console.error('Failed to get image token cost', error);
+            }
+        }
+
+        this.content = [
+            { type: 'text', text: textContent }
         ];
-		
-		for (const img of ImageList) {
-			this.content.push(
-			{ type: 'image_url', image_url: { 'url': img, 'detail': quality } },
-			)
-		}
-        
+
+        for (const img of imageList) {
+            this.content.push(
+            { type: 'image_url', image_url: { 'url': img, 'detail': quality } },
+            )
+        }
+
     }
 
     /**

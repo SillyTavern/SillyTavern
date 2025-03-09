@@ -2406,8 +2406,6 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
     }
 }
 
-
-
 /**
  * @deprecated Use appendMediaToMessage instead.
  */
@@ -2430,7 +2428,6 @@ export function addCopyToCodeBlocks(messageElement) {
         });
     }
 }
-
 
 /**
  * Adds a single message to the chat.

@@ -196,8 +196,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
         message.extra.image = [];
 
         // Process each file
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
+        for (const file of files) {
             const slug = getStringHash(file.name);
             const fileNamePrefix = `${Date.now()}_${slug}`;
             const fileBase64 = await getBase64Async(file);
@@ -349,8 +348,7 @@ async function onFileAttach(files) {
     let fileNames = [];
 
     // Validate all files and collect information
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+    for (const file of files) {
         const isValid = await validateFile(file);
 
         if (!isValid) {
@@ -370,9 +368,9 @@ async function onFileAttach(files) {
 
     // Update UI to show multiple files
     if (files.length === 1) {
-        $('#file_form .file_name').text(fileNames[0]);
+        $('#file_form .file_name').text(files[0].name);
     } else {
-        $('#file_form .file_name').text(`${files.length} files selected`);
+        $('#file_form .file_name').text(t`${files.length} files selected`);
     }
 
     $('#file_form .file_size').text(humanFileSize(totalSize));
@@ -450,8 +448,8 @@ function embedMessageFile(messageId, messageBlock) {
         const files = e.target.files;
         if (!files || files.length === 0) return;
         let allValid = true;
-        for (let i = 0; i < files.length; i++) {
-            const isValid = await validateFile(files[i]);
+        for (const file of files) {
+            const isValid = await validateFile(file);
             if (!isValid) {
                 allValid = false;
                 break;
