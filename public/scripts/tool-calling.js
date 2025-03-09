@@ -1169,23 +1169,42 @@ export class ToolManager {
                     acceptsMultiple: false,
                 }),
                 SlashCommandNamedArgument.fromProps({
+                    name: 'type',
+                    description: 'The type of transport to use (stdio or sse).',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    acceptsMultiple: false,
+                    enumList: [
+                        new SlashCommandEnumValue('stdio', 'Standard IO Transport', enumTypes.enum, enumIcons.server),
+                        new SlashCommandEnumValue('sse', 'Server-Sent Events Transport', enumTypes.enum, enumIcons.server),
+                    ],
+                    forceEnum: true,
+                }),
+                SlashCommandNamedArgument.fromProps({
                     name: 'command',
                     description: 'The command to execute for stdio transport.',
                     typeList: [ARGUMENT_TYPE.STRING],
-                    isRequired: true,
+                    isRequired: false,
                     acceptsMultiple: false,
                 }),
                 SlashCommandNamedArgument.fromProps({
                     name: 'args',
-                    description: 'The arguments to pass to the command.',
+                    description: 'The arguments to pass to the command for stdio transport.',
                     typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.LIST],
                     isRequired: false,
                     acceptsMultiple: true,
                 }),
                 SlashCommandNamedArgument.fromProps({
                     name: 'env',
-                    description: 'Environment variables to set (JSON object).',
+                    description: 'Environment variables to set for stdio transport (JSON object).',
                     typeList: [ARGUMENT_TYPE.DICTIONARY],
+                    isRequired: false,
+                    acceptsMultiple: false,
+                }),
+                SlashCommandNamedArgument.fromProps({
+                    name: 'url',
+                    description: 'The URL to connect to for SSE transport.',
+                    typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: false,
                     acceptsMultiple: false,
                 }),
@@ -1199,23 +1218,39 @@ export class ToolManager {
                 }),
             ],
             callback: async (args) => {
-                const { name, command, args: commandArgs, env, autoStart } = args;
+                const { name, type, command, args: commandArgs, env, url, autoStart } = args;
 
                 if (!name || typeof name !== 'string') {
                     throw new Error('The "name" argument must be a non-empty string.');
                 }
 
-                if (!command || typeof command !== 'string') {
-                    throw new Error('The "command" argument must be a non-empty string.');
+                if (!type || typeof type !== 'string') {
+                    throw new Error('The "type" argument must be a non-empty string.');
                 }
 
                 // Create the server configuration
                 const config = {
-                    command,
-                    args: Array.isArray(commandArgs) ? commandArgs : [],
-                    env: env && typeof env === 'string' && isJson(env) ? JSON.parse(env) : {},
+                    type,
                     autoStart: autoStart && isTrueBoolean(String(autoStart)),
                 };
+
+                if (type === 'stdio') {
+                    if (!command || typeof command !== 'string') {
+                        throw new Error('The "command" argument is required for stdio transport.');
+                    }
+
+                    config.command = command;
+                    config.args = Array.isArray(commandArgs) ? commandArgs : [];
+                    config.env = env && typeof env === 'string' && isJson(env) ? JSON.parse(env) : {};
+                } else if (type === 'sse') {
+                    if (!url || typeof url !== 'string') {
+                        throw new Error('The "url" argument is required for SSE transport.');
+                    }
+
+                    config.url = url;
+                } else {
+                    throw new Error(`Unsupported transport type: ${type}`);
+                }
 
                 const success = await MCPClient.addServer(name, config);
 

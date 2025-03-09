@@ -10,6 +10,8 @@ import { DEFAULT_USER } from '../constants.js';
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { URL } from 'node:url';
 
 export const MCP_SETTINGS_FILE = 'mcp_settings.json';
 
@@ -43,14 +45,15 @@ export function writeMcpSettings(directories, settings) {
     const filePath = path.join(directories.root, MCP_SETTINGS_FILE);
     writeFileAtomicSync(filePath, JSON.stringify(settings, null, 4), 'utf-8');
 }
-
 /**
  * Starts an MCP server process and connects to it using the MCP SDK
  * @param {string} serverName Name of the server
  * @param {object} config Server configuration
- * @param {string} config.command Command to execute
- * @param {string[]} config.args Arguments to pass to the command
- * @param {object} config.env Environment variables to set
+ * @param {string} config.type Transport type ('stdio' or 'sse')
+ * @param {string} [config.command] Command to execute (for stdio transport)
+ * @param {string[]} [config.args] Arguments to pass to the command (for stdio transport)
+ * @param {object} [config.env] Environment variables to set (for stdio transport)
+ * @param {string} [config.url] URL to connect to (for sse transport)
  * @returns {Promise<boolean>} Whether the server was started successfully
  */
 async function startMcpServer(serverName, config) {
@@ -60,29 +63,6 @@ async function startMcpServer(serverName, config) {
     }
 
     try {
-        const env = { ...process.env, ...config.env };
-        let command = config.command;
-        let args = config.args || [];
-
-        // Windows-specific fix: Wrap the command in cmd /C to ensure proper path resolution
-        // This addresses the "spawn npx ENOENT" error on Windows
-        // See: https://github.com/modelcontextprotocol/typescript-sdk/issues/101
-        if (process.platform === 'win32' && !command.toLowerCase().includes('cmd')) {
-            // If the command is not already cmd, wrap it
-            const originalCommand = command;
-            const originalArgs = [...args];
-            command = 'cmd';
-            args = ['/C', originalCommand, ...originalArgs];
-            console.log(`[MCP] Windows detected, wrapping command: cmd /C ${originalCommand} ${originalArgs.join(' ')}`);
-        }
-
-        // Create a transport using the StdioClientTransport
-        const transport = new StdioClientTransport({
-            command: command,
-            args: args,
-            env: env,
-        });
-
         // Create an MCP client
         const client = new Client(
             {
@@ -98,11 +78,54 @@ async function startMcpServer(serverName, config) {
             },
         );
 
+        let transport;
+        const transportType = config.type || 'stdio';
+
+        if (transportType === 'stdio') {
+            const env = { ...process.env, ...config.env };
+            let command = config.command || '';
+            let args = config.args || [];
+
+            if (!command) {
+                throw new Error('Command is required for stdio transport');
+            }
+
+            // Windows-specific fix: Wrap the command in cmd /C to ensure proper path resolution
+            // This addresses the "spawn npx ENOENT" error on Windows
+            // See: https://github.com/modelcontextprotocol/typescript-sdk/issues/101
+            if (process.platform === 'win32' && !command.toLowerCase().includes('cmd')) {
+                // If the command is not already cmd, wrap it
+                const originalCommand = command;
+                const originalArgs = [...args];
+                command = 'cmd';
+                args = ['/C', originalCommand, ...originalArgs];
+                console.log(`[MCP] Windows detected, wrapping command: cmd /C ${originalCommand} ${originalArgs.join(' ')}`);
+            }
+
+            transport = new StdioClientTransport({
+                command: command,
+                args: args,
+                env: env,
+            });
+
+            console.log(`[MCP] Using stdio transport for server "${serverName}"`);
+        } else if (transportType === 'sse') {
+            if (!config.url) {
+                throw new Error('URL is required for SSE transport');
+            }
+
+            transport = new SSEClientTransport(new URL(config.url));
+
+            console.log(`[MCP] Using SSE transport for server "${serverName}" with URL: ${config.url}`);
+        } else {
+            throw new Error(`Unsupported transport type: ${transportType}`);
+        }
+
         // Connect to the server
         await client.connect(transport);
         mcpClients.set(serverName, client);
 
-        console.log(`[MCP] Connected to server "${serverName}" using MCP SDK`);
+        console.log(`[MCP] Connected to server "${serverName}" using MCP SDK with ${transportType} transport`);
         return true;
     } catch (error) {
         console.error(`[MCP] Failed to start server "${serverName}":`, error);
@@ -169,8 +192,18 @@ router.post('/servers', jsonParser, (request, response) => {
             return response.status(400).json({ error: 'Server configuration is required' });
         }
 
-        if (!config.command || typeof config.command !== 'string') {
-            return response.status(400).json({ error: 'Server command is required' });
+        // Validate based on transport type
+        const transportType = config.type || 'stdio';
+        if (transportType === 'stdio') {
+            if (!config.command || typeof config.command !== 'string') {
+                return response.status(400).json({ error: 'Server command is required for stdio transport' });
+            }
+        } else if (transportType === 'sse') {
+            if (!config.url || typeof config.url !== 'string') {
+                return response.status(400).json({ error: 'Server URL is required for SSE transport' });
+            }
+        } else {
+            return response.status(400).json({ error: `Unsupported transport type: ${transportType}` });
         }
 
         const settings = readMcpSettings(request.user.directories);
