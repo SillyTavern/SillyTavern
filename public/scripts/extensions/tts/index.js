@@ -95,6 +95,7 @@ const ttsProviders = {
     'Google Translate': GoogleTranslateTtsProvider,
     GSVI: GSVITtsProvider,
     'GPT-SoVITS-V2 (Unofficial)': GptSovitsV2Provider,
+    Kokoro: KokoroTtsProvider,
     Novel: NovelTtsProvider,
     OpenAI: OpenAITtsProvider,
     'OpenAI Compatible': OpenAICompatibleTtsProvider,
@@ -102,7 +103,6 @@ const ttsProviders = {
     Silero: SileroTtsProvider,
     SpeechT5: SpeechT5TtsProvider,
     System: SystemTtsProvider,
-    Kokoro: KokoroTtsProvider,
     VITS: VITSTtsProvider,
     XTTSv2: XTTSTtsProvider,
 };
