@@ -718,6 +718,9 @@ async function loadTtsProvider(provider) {
 }
 
 function onTtsProviderChange() {
+    if (typeof ttsProvider?.dispose === 'function') {
+        ttsProvider.dispose();
+    }
     const ttsProviderSelection = $('#tts_provider').val();
     extension_settings.tts.currentProvider = ttsProviderSelection;
     $('#playback_rate_block').toggle(extension_settings.tts.currentProvider !== 'System');
