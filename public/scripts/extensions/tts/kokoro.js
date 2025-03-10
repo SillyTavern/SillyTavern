@@ -1,4 +1,4 @@
-import { saveTtsProviderSettings } from './index.js';
+import { getPreviewString, saveTtsProviderSettings } from './index.js';
 
 export class KokoroTtsProvider {
     constructor() {
@@ -159,8 +159,14 @@ export class KokoroTtsProvider {
             await this.checkReady();
         }
 
-        const previewText = 'Hello';
-        return await this.generateTts(previewText, voiceId);
+        const previewText = getPreviewString('en-US');
+        const response = await this.generateTts(previewText, voiceId);
+        const audio = await response.blob();
+        const url = URL.createObjectURL(audio);
+        const audioElement = new Audio();
+        audioElement.src = url;
+        audioElement.play();
+        audioElement.onended = () => URL.revokeObjectURL(url);
     }
 
     getVoiceDisplayName(voiceId) {
