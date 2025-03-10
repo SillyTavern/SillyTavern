@@ -437,6 +437,33 @@ export function debounce(func, timeout = debounce_timeout.standard) {
 }
 
 /**
+ * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed since the last time the debounced function was invoked.
+ * @param {Function} func The function to debounce.
+ * @param {Number} [timeout=300] The timeout in milliseconds.
+ * @returns {Function} The debounced function.
+ */
+export function debounceAsync(func, timeout = debounce_timeout.standard) {
+    let timer;
+    /**@type {Promise}*/
+    let debouncePromise;
+    /**@type {Function}*/
+    let debounceResolver;
+    return (...args) => {
+        clearTimeout(timer);
+        if (!debouncePromise) {
+            debouncePromise = new Promise(resolve => {
+                debounceResolver = resolve;
+            });
+        }
+        timer = setTimeout(() => {
+            debounceResolver(func.apply(this, args));
+            debouncePromise = null;
+        }, timeout);
+        return debouncePromise;
+    };
+}
+
+/**
  * Cancels a scheduled debounced function.
  * Does nothing if the function is not debounced or not scheduled.
  * @param {function} func The function to cancel. Either the original or the debounced function.

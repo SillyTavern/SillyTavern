@@ -1,3 +1,5 @@
+import { debounce_timeout } from '../../constants.js';
+import { debounceAsync } from '../../utils.js';
 import { getPreviewString, saveTtsProviderSettings } from './index.js';
 
 export class KokoroTtsProvider {
@@ -44,6 +46,12 @@ export class KokoroTtsProvider {
         ];
         this.tts = null;
         this.separator = ' ... ... ... ';
+
+        // Update display values immediately but only reinitialize TTS after a delay
+        this.initTtsDebounced = debounceAsync(() => {
+            this.tts = null;
+            this.checkReady();
+        }, debounce_timeout.relaxed);
     }
 
     async loadSettings(settings) {
@@ -52,6 +60,14 @@ export class KokoroTtsProvider {
         if (settings.device !== undefined) this.settings.device = settings.device;
         if (settings.voiceMap !== undefined) this.settings.voiceMap = settings.voiceMap;
         if (settings.defaultVoice !== undefined) this.settings.defaultVoice = settings.defaultVoice;
+        if (settings.speakingRate !== undefined) this.settings.speakingRate = settings.speakingRate;
+        if (settings.volumeGainDb !== undefined) this.settings.volumeGainDb = settings.volumeGainDb;
+
+        $('#kokoro_model_id').val(this.settings.modelId).on('input',this.onSettingsChange.bind(this));
+        $('#kokoro_dtype').val(this.settings.dtype).on('change', this.onSettingsChange.bind(this));
+        $('#kokoro_device').val(this.settings.device).on('change', this.onSettingsChange.bind(this));
+        $('#kokoro_speaking_rate').val(this.settings.speakingRate).on('input', this.onSettingsChange.bind(this));
+        $('#kokoro_volume_gain').val(this.settings.volumeGainDb).on('input', this.onSettingsChange.bind(this));
     }
 
     async checkReady() {
@@ -128,7 +144,6 @@ export class KokoroTtsProvider {
         this.settings.modelId = $('#kokoro_model_id').val().toString();
         this.settings.dtype = $('#kokoro_dtype').val().toString();
         this.settings.device = $('#kokoro_device').val().toString();
-        this.settings.defaultVoice = $('#kokoro_default_voice').val().toString();
         this.settings.speakingRate = parseFloat($('#kokoro_speaking_rate').val().toString());
         this.settings.volumeGainDb = parseFloat($('#kokoro_volume_gain').val().toString());
 
@@ -137,8 +152,7 @@ export class KokoroTtsProvider {
         $('#kokoro_volume_gain_output').text(this.settings.volumeGainDb + 'dB');
 
         // Reinitialize TTS engine
-        this.tts = null;
-        await this.checkReady();
+        this.initTtsDebounced();
         saveTtsProviderSettings();
 
         // Update status display
