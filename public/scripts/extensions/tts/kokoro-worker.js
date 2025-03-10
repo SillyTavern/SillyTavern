@@ -1,7 +1,10 @@
 // kokoro-worker.js
 /** @type {import('./lib/kokoro.web.js').KokoroTTS} */
 let tts = null;
+/** @type {boolean} */
 let ready = false;
+/** @type {string[]} */
+let voices = [];
 
 // Handle messages from the main thread
 self.onmessage = async function(e) {
@@ -11,7 +14,11 @@ self.onmessage = async function(e) {
         case 'initialize':
             try {
                 const result = await initializeTts(data);
-                self.postMessage({ action: 'initialized', success: result });
+                self.postMessage({
+                    action: 'initialized',
+                    success: result,
+                    voices,
+                });
             } catch (error) {
                 self.postMessage({
                     action: 'initialized',
@@ -63,6 +70,9 @@ async function initializeTts(settings) {
             dtype: settings.dtype,
             device: settings.device,
         });
+
+        // Get available voices
+        voices = Object.keys(tts.voices);
 
         // Check if generate method exists
         if (typeof tts.generate !== 'function') {
