@@ -151,7 +151,7 @@ export class KokoroTtsProvider {
         if (!this.ready) {
             await this.checkReady();
         }
-        return this.voices.map(voice => ({ name: voice, voice_id: voice }));
+        return this.voices.map(voice => ({ name: voice, voice_id: voice, preview_url: null, lang: voice.startsWith('b') ? 'en-GB' : 'en-US' }));
     }
 
     async previewTtsVoice(voiceId) {
@@ -159,7 +159,8 @@ export class KokoroTtsProvider {
             await this.checkReady();
         }
 
-        const previewText = getPreviewString('en-US');
+        const voice = this.getVoice(voiceId);
+        const previewText = getPreviewString(voice.lang);
         const response = await this.generateTts(previewText, voiceId);
         const audio = await response.blob();
         const url = URL.createObjectURL(audio);
