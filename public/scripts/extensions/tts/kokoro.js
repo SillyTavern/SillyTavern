@@ -3,17 +3,44 @@ import { saveTtsProviderSettings } from './index.js';
 export class KokoroTtsProvider {
     constructor() {
         this.settings = {
-            modelId: "onnx-community/Kokoro-82M-v1.0-ONNX",
-            dtype: "q8",
-            device: "wasm",
+            modelId: 'onnx-community/Kokoro-82M-v1.0-ONNX',
+            dtype: 'q8',
+            device: 'wasm',
             voiceMap: {},
-            defaultVoice: "af_heart",
+            defaultVoice: 'af_heart',
             speakingRate: 1.0,
-            volumeGainDb: 0.0
+            volumeGainDb: 0.0,
         };
         this.ready = false;
         this.voices = [
-            "af_heart", "af_alloy", "af_aoede", "af_bella", "af_jessica", "af_kore", "af_nicole", "af_nova", "af_river", "af_sarah", "af_sky", "am_adam", "am_echo", "am_eric", "am_fenrir", "am_liam", "am_michael", "am_onyx", "am_puck", "am_santa", "bf_emma", "bf_isabella", "bm_george", "bm_lewis", "bf_alice", "bf_lily", "bm_daniel", "bm_fable"
+            'af_heart',
+            'af_alloy',
+            'af_aoede',
+            'af_bella',
+            'af_jessica',
+            'af_kore',
+            'af_nicole',
+            'af_nova',
+            'af_river',
+            'af_sarah',
+            'af_sky',
+            'am_adam',
+            'am_echo',
+            'am_eric',
+            'am_fenrir',
+            'am_liam',
+            'am_michael',
+            'am_onyx',
+            'am_puck',
+            'am_santa',
+            'bf_emma',
+            'bf_isabella',
+            'bm_george',
+            'bm_lewis',
+            'bf_alice',
+            'bf_lily',
+            'bm_daniel',
+            'bm_fable',
         ];
         this.tts = null;
         this.separator = ' ... ... ... ';
@@ -30,17 +57,17 @@ export class KokoroTtsProvider {
     async checkReady() {
         try {
             if (!this.tts) {
-                const { KokoroTTS } = await import('../../../lib/kokoro.web.js');
+                const { KokoroTTS } = await import('./lib/kokoro.web.js');
                 console.log('Initializing Kokoro TTS with settings:', {
                     modelId: this.settings.modelId,
                     dtype: this.settings.dtype,
-                    device: this.settings.device
+                    device: this.settings.device,
                 });
 
                 // Use KokoroTTS class
                 const tts = await KokoroTTS.from_pretrained(this.settings.modelId, {
                     dtype: this.settings.dtype,
-                    device: this.settings.device
+                    device: this.settings.device,
                 });
 
                 // Check if generate method exists
@@ -55,7 +82,7 @@ export class KokoroTtsProvider {
             this.ready = true;
             return true;
         } catch (error) {
-            console.error("Kokoro TTS initialization failed:", error);
+            console.error('Kokoro TTS initialization failed:', error);
             this.ready = false;
             return false;
         }
@@ -98,12 +125,12 @@ export class KokoroTtsProvider {
     }
 
     async onSettingsChange() {
-        this.settings.modelId = $('#kokoro_model_id').val();
-        this.settings.dtype = $('#kokoro_dtype').val();
-        this.settings.device = $('#kokoro_device').val();
-        this.settings.defaultVoice = $('#kokoro_default_voice').val();
-        this.settings.speakingRate = parseFloat($('#kokoro_speaking_rate').val());
-        this.settings.volumeGainDb = parseFloat($('#kokoro_volume_gain').val());
+        this.settings.modelId = $('#kokoro_model_id').val().toString();
+        this.settings.dtype = $('#kokoro_dtype').val().toString();
+        this.settings.device = $('#kokoro_device').val().toString();
+        this.settings.defaultVoice = $('#kokoro_default_voice').val().toString();
+        this.settings.speakingRate = parseFloat($('#kokoro_speaking_rate').val().toString());
+        this.settings.volumeGainDb = parseFloat($('#kokoro_volume_gain').val().toString());
 
         // Update UI display
         $('#kokoro_speaking_rate_output').text(this.settings.speakingRate + 'x');
@@ -132,7 +159,7 @@ export class KokoroTtsProvider {
             await this.checkReady();
         }
 
-        const previewText = "Hello";
+        const previewText = 'Hello';
         return await this.generateTts(previewText, voiceId);
     }
 
@@ -147,7 +174,7 @@ export class KokoroTtsProvider {
             name: actualVoiceName,
             voice_id: actualVoiceName,
             preview_url: null,
-            lang: actualVoiceName.startsWith('b') ? 'en-GB' : 'en-US'
+            lang: actualVoiceName.startsWith('b') ? 'en-GB' : 'en-US',
         };
     }
 
@@ -166,28 +193,25 @@ export class KokoroTtsProvider {
             console.log('Using voice:', voice);
             console.log('Text to speak:', text);
 
-
             if (text.trim().length === 0) {
                 throw new Error('Empty text');
             }
 
             const audio = await this.tts.generate(text, {
                 voice: voice.voice_id,
-                speed: this.settings.speakingRate || 1.0
+                speed: this.settings.speakingRate || 1.0,
             });
 
-            const blob = audio.toBlob()
+            const blob = audio.toBlob();
 
             return new Response(blob, {
                 headers: {
-                    'Content-Type': 'audio/wav'
-                }
+                    'Content-Type': 'audio/wav',
+                },
             });
         } catch (error) {
-            console.error("Kokoro TTS generation failed:", error);
+            console.error('Kokoro TTS generation failed:', error);
             throw error;
         }
-
-
     }
 }
