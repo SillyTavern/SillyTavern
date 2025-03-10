@@ -64,6 +64,7 @@ export class KokoroTtsProvider {
         $('#kokoro_dtype').val(this.settings.dtype).on('change', this.onSettingsChange.bind(this));
         $('#kokoro_device').val(this.settings.device).on('change', this.onSettingsChange.bind(this));
         $('#kokoro_speaking_rate').val(this.settings.speakingRate).on('input', this.onSettingsChange.bind(this));
+        $('#kokoro_speaking_rate_output').text(this.settings.speakingRate + 'x');
     }
 
     initializeWorker() {
