@@ -103,7 +103,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
             }
 
             // Check if the depth is within the min/max depth
-            if (typeof depth === 'number' && depth !== undefined) {
+            if (typeof depth === 'number') {
                 if (!isNaN(script.minDepth) && script.minDepth !== null && script.minDepth >= 0 && depth < script.minDepth) {
                     console.debug(`getRegexedString: Skipping script ${script.scriptName} because depth ${depth} is less than minDepth ${script.minDepth}`);
                     return;
