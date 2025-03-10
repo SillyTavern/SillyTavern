@@ -6,7 +6,6 @@ import sanitize from 'sanitize-filename';
 import { default as simpleGit } from 'simple-git';
 
 import { PUBLIC_DIRECTORIES } from '../constants.js';
-import { jsonParser } from '../express-common.js';
 
 /**
  * This function extracts the extension information from the manifest file.
@@ -60,7 +59,7 @@ export const router = express.Router();
  *
  * @returns {void}
  */
-router.post('/install', jsonParser, async (request, response) => {
+router.post('/install', async (request, response) => {
     if (!request.body.url) {
         return response.status(400).send('Bad Request: URL is required in the request body.');
     }
@@ -114,7 +113,7 @@ router.post('/install', jsonParser, async (request, response) => {
  *
  * @returns {void}
  */
-router.post('/update', jsonParser, async (request, response) => {
+router.post('/update', async (request, response) => {
     const git = simpleGit();
     if (!request.body.extensionName) {
         return response.status(400).send('Bad Request: extensionName is required in the request body.');
@@ -155,7 +154,7 @@ router.post('/update', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/move', jsonParser, async (request, response) => {
+router.post('/move', async (request, response) => {
     try {
         const { extensionName, source, destination } = request.body;
 
@@ -209,7 +208,7 @@ router.post('/move', jsonParser, async (request, response) => {
  *
  * @returns {void}
  */
-router.post('/version', jsonParser, async (request, response) => {
+router.post('/version', async (request, response) => {
     const git = simpleGit();
     if (!request.body.extensionName) {
         return response.status(400).send('Bad Request: extensionName is required in the request body.');
@@ -256,7 +255,7 @@ router.post('/version', jsonParser, async (request, response) => {
  *
  * @returns {void}
  */
-router.post('/delete', jsonParser, async (request, response) => {
+router.post('/delete', async (request, response) => {
     if (!request.body.extensionName) {
         return response.status(400).send('Bad Request: extensionName is required in the request body.');
     }
@@ -291,7 +290,7 @@ router.post('/delete', jsonParser, async (request, response) => {
  * Discover the extension folders
  * If the folder is called third-party, search for subfolders instead
  */
-router.get('/discover', jsonParser, function (request, response) {
+router.get('/discover', function (request, response) {
     if (!fs.existsSync(path.join(request.user.directories.extensions))) {
         fs.mkdirSync(path.join(request.user.directories.extensions));
     }

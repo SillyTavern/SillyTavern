@@ -506,6 +506,26 @@ export class ToolManager {
                 }
             }
         }
+        if (Array.isArray(parsed?.candidates)) {
+            for (let choiceIndex = 0; choiceIndex < parsed.candidates.length; choiceIndex++) {
+                const candidate = parsed.candidates[choiceIndex];
+                if (Array.isArray(candidate?.content?.parts)) {
+                    for (let toolCallIndex = 0; toolCallIndex < candidate.content.parts.length; toolCallIndex++) {
+                        const part = candidate.content.parts[toolCallIndex];
+                        if (part.functionCall) {
+                            if (!Array.isArray(toolCalls[choiceIndex])) {
+                                toolCalls[choiceIndex] = [];
+                            }
+                            if (toolCalls[choiceIndex][toolCallIndex] === undefined) {
+                                toolCalls[choiceIndex][toolCallIndex] = {};
+                            }
+                            const targetToolCall = toolCalls[choiceIndex][toolCallIndex];
+                            ToolManager.#applyToolCallDelta(targetToolCall, part.functionCall);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -564,6 +584,8 @@ export class ToolManager {
             chat_completion_sources.GROQ,
             chat_completion_sources.COHERE,
             chat_completion_sources.DEEPSEEK,
+            chat_completion_sources.MAKERSUITE,
+            chat_completion_sources.AI21,
         ];
         return supportedSources.includes(oai_settings.chat_completion_source);
     }
@@ -585,8 +607,11 @@ export class ToolManager {
      * @returns {any[]} Tool calls from the response data
      */
     static #getToolCallsFromData(data) {
+        const getRandomId = () => Math.random().toString(36).substring(2);
         const isClaudeToolCall = c => Array.isArray(c) ? c.filter(x => x).every(isClaudeToolCall) : c?.input && c?.name && c?.id;
+        const isGoogleToolCall = c => Array.isArray(c) ? c.filter(x => x).every(isGoogleToolCall) : c?.name && c?.args;
         const convertClaudeToolCall = c => ({ id: c.id, function: { name: c.name, arguments: c.input } });
+        const convertGoogleToolCall = (c) => ({ id: getRandomId(), function: { name: c.name, arguments: c.args } });
 
         // Parsed tool calls from streaming data
         if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
@@ -594,11 +619,20 @@ export class ToolManager {
                 return data[0].filter(x => x).map(convertClaudeToolCall);
             }
 
+            if (isGoogleToolCall(data[0])) {
+                return data[0].filter(x => x).map(convertGoogleToolCall);
+            }
+
             if (typeof data[0]?.[0]?.tool_calls === 'object') {
                 return Array.isArray(data[0]?.[0]?.tool_calls) ? data[0][0].tool_calls : [data[0][0].tool_calls];
             }
 
             return data[0];
+        }
+
+        // Google AI Studio tool calls
+        if (Array.isArray(data?.responseContent?.parts)) {
+            return data.responseContent.parts.filter(p => p.functionCall).map(p => convertGoogleToolCall(p.functionCall));
         }
 
         // Parsed tool calls from non-streaming data

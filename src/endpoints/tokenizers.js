@@ -11,7 +11,6 @@ import tiktoken from 'tiktoken';
 
 import { convertClaudePrompt } from '../prompt-converters.js';
 import { TEXTGEN_TYPES } from '../constants.js';
-import { jsonParser } from '../express-common.js';
 import { setAdditionalHeaders } from '../additional-headers.js';
 import { getConfigValue, isValidUrl } from '../util.js';
 
@@ -689,36 +688,36 @@ function createWebTokenizerDecodingHandler(tokenizer) {
 
 export const router = express.Router();
 
-router.post('/llama/encode', jsonParser, createSentencepieceEncodingHandler(spp_llama));
-router.post('/nerdstash/encode', jsonParser, createSentencepieceEncodingHandler(spp_nerd));
-router.post('/nerdstash_v2/encode', jsonParser, createSentencepieceEncodingHandler(spp_nerd_v2));
-router.post('/mistral/encode', jsonParser, createSentencepieceEncodingHandler(spp_mistral));
-router.post('/yi/encode', jsonParser, createSentencepieceEncodingHandler(spp_yi));
-router.post('/gemma/encode', jsonParser, createSentencepieceEncodingHandler(spp_gemma));
-router.post('/jamba/encode', jsonParser, createSentencepieceEncodingHandler(spp_jamba));
-router.post('/gpt2/encode', jsonParser, createTiktokenEncodingHandler('gpt2'));
-router.post('/claude/encode', jsonParser, createWebTokenizerEncodingHandler(claude_tokenizer));
-router.post('/llama3/encode', jsonParser, createWebTokenizerEncodingHandler(llama3_tokenizer));
-router.post('/qwen2/encode', jsonParser, createWebTokenizerEncodingHandler(qwen2Tokenizer));
-router.post('/command-r/encode', jsonParser, createWebTokenizerEncodingHandler(commandTokenizer));
-router.post('/nemo/encode', jsonParser, createWebTokenizerEncodingHandler(nemoTokenizer));
-router.post('/deepseek/encode', jsonParser, createWebTokenizerEncodingHandler(deepseekTokenizer));
-router.post('/llama/decode', jsonParser, createSentencepieceDecodingHandler(spp_llama));
-router.post('/nerdstash/decode', jsonParser, createSentencepieceDecodingHandler(spp_nerd));
-router.post('/nerdstash_v2/decode', jsonParser, createSentencepieceDecodingHandler(spp_nerd_v2));
-router.post('/mistral/decode', jsonParser, createSentencepieceDecodingHandler(spp_mistral));
-router.post('/yi/decode', jsonParser, createSentencepieceDecodingHandler(spp_yi));
-router.post('/gemma/decode', jsonParser, createSentencepieceDecodingHandler(spp_gemma));
-router.post('/jamba/decode', jsonParser, createSentencepieceDecodingHandler(spp_jamba));
-router.post('/gpt2/decode', jsonParser, createTiktokenDecodingHandler('gpt2'));
-router.post('/claude/decode', jsonParser, createWebTokenizerDecodingHandler(claude_tokenizer));
-router.post('/llama3/decode', jsonParser, createWebTokenizerDecodingHandler(llama3_tokenizer));
-router.post('/qwen2/decode', jsonParser, createWebTokenizerDecodingHandler(qwen2Tokenizer));
-router.post('/command-r/decode', jsonParser, createWebTokenizerDecodingHandler(commandTokenizer));
-router.post('/nemo/decode', jsonParser, createWebTokenizerDecodingHandler(nemoTokenizer));
-router.post('/deepseek/decode', jsonParser, createWebTokenizerDecodingHandler(deepseekTokenizer));
+router.post('/llama/encode', createSentencepieceEncodingHandler(spp_llama));
+router.post('/nerdstash/encode', createSentencepieceEncodingHandler(spp_nerd));
+router.post('/nerdstash_v2/encode', createSentencepieceEncodingHandler(spp_nerd_v2));
+router.post('/mistral/encode', createSentencepieceEncodingHandler(spp_mistral));
+router.post('/yi/encode', createSentencepieceEncodingHandler(spp_yi));
+router.post('/gemma/encode', createSentencepieceEncodingHandler(spp_gemma));
+router.post('/jamba/encode', createSentencepieceEncodingHandler(spp_jamba));
+router.post('/gpt2/encode', createTiktokenEncodingHandler('gpt2'));
+router.post('/claude/encode', createWebTokenizerEncodingHandler(claude_tokenizer));
+router.post('/llama3/encode', createWebTokenizerEncodingHandler(llama3_tokenizer));
+router.post('/qwen2/encode', createWebTokenizerEncodingHandler(qwen2Tokenizer));
+router.post('/command-r/encode', createWebTokenizerEncodingHandler(commandTokenizer));
+router.post('/nemo/encode', createWebTokenizerEncodingHandler(nemoTokenizer));
+router.post('/deepseek/encode', createWebTokenizerEncodingHandler(deepseekTokenizer));
+router.post('/llama/decode', createSentencepieceDecodingHandler(spp_llama));
+router.post('/nerdstash/decode', createSentencepieceDecodingHandler(spp_nerd));
+router.post('/nerdstash_v2/decode', createSentencepieceDecodingHandler(spp_nerd_v2));
+router.post('/mistral/decode', createSentencepieceDecodingHandler(spp_mistral));
+router.post('/yi/decode', createSentencepieceDecodingHandler(spp_yi));
+router.post('/gemma/decode', createSentencepieceDecodingHandler(spp_gemma));
+router.post('/jamba/decode', createSentencepieceDecodingHandler(spp_jamba));
+router.post('/gpt2/decode', createTiktokenDecodingHandler('gpt2'));
+router.post('/claude/decode', createWebTokenizerDecodingHandler(claude_tokenizer));
+router.post('/llama3/decode', createWebTokenizerDecodingHandler(llama3_tokenizer));
+router.post('/qwen2/decode', createWebTokenizerDecodingHandler(qwen2Tokenizer));
+router.post('/command-r/decode', createWebTokenizerDecodingHandler(commandTokenizer));
+router.post('/nemo/decode', createWebTokenizerDecodingHandler(nemoTokenizer));
+router.post('/deepseek/decode', createWebTokenizerDecodingHandler(deepseekTokenizer));
 
-router.post('/openai/encode', jsonParser, async function (req, res) {
+router.post('/openai/encode', async function (req, res) {
     try {
         const queryModel = String(req.query.model || '');
 
@@ -786,7 +785,7 @@ router.post('/openai/encode', jsonParser, async function (req, res) {
     }
 });
 
-router.post('/openai/decode', jsonParser, async function (req, res) {
+router.post('/openai/decode', async function (req, res) {
     try {
         const queryModel = String(req.query.model || '');
 
@@ -854,7 +853,7 @@ router.post('/openai/decode', jsonParser, async function (req, res) {
     }
 });
 
-router.post('/openai/count', jsonParser, async function (req, res) {
+router.post('/openai/count', async function (req, res) {
     try {
         if (!req.body) return res.sendStatus(400);
 
@@ -968,7 +967,7 @@ router.post('/openai/count', jsonParser, async function (req, res) {
     }
 });
 
-router.post('/remote/kobold/count', jsonParser, async function (request, response) {
+router.post('/remote/kobold/count', async function (request, response) {
     if (!request.body) {
         return response.sendStatus(400);
     }
@@ -1002,7 +1001,7 @@ router.post('/remote/kobold/count', jsonParser, async function (request, respons
     }
 });
 
-router.post('/remote/textgenerationwebui/encode', jsonParser, async function (request, response) {
+router.post('/remote/textgenerationwebui/encode', async function (request, response) {
     if (!request.body) {
         return response.sendStatus(400);
     }

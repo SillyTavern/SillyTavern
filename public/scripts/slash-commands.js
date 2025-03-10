@@ -69,7 +69,7 @@ import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortController.js';
 import { SlashCommandNamedArgumentAssignment } from './slash-commands/SlashCommandNamedArgumentAssignment.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
-import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
 import { SlashCommandExecutionError } from './slash-commands/SlashCommandExecutionError.js';
@@ -1287,26 +1287,52 @@ export function initDefaultSlashCommands() {
         callback: inputCallback,
         returns: 'user input',
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'default', 'default value of the input field', [ARGUMENT_TYPE.STRING], false, false, '"string"',
-            ),
-            new SlashCommandNamedArgument(
-                'large', 'show large input field', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', commonEnumProviders.boolean('onOff')(),
-            ),
-            new SlashCommandNamedArgument(
-                'wide', 'show wide input field', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', commonEnumProviders.boolean('onOff')(),
-            ),
-            new SlashCommandNamedArgument(
-                'okButton', 'text for the ok button', [ARGUMENT_TYPE.STRING], false,
-            ),
-            new SlashCommandNamedArgument(
-                'rows', 'number of rows for the input field', [ARGUMENT_TYPE.NUMBER], false,
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'default',
+                description: 'default value of the input field',
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'large',
+                description: 'popup window will be shown larger in height, with more space for content (input field needs to be sized via \'rows\' argument)',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'off',
+                enumList: commonEnumProviders.boolean('onOff')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'wide',
+                description: 'popup window will be shown wider, with a wider input field',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'off',
+                enumList: commonEnumProviders.boolean('onOff')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'okButton',
+                description: 'text for the ok button',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'Ok',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'rows',
+                description: 'number of rows for the input field (lines being displayed)',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'onSuccess',
+                description: 'closure to execute when the ok button is clicked or the input is closed as successful (via Enter, etc)',
+                typeList: [ARGUMENT_TYPE.CLOSURE],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'onCancel',
+                description: 'closure to execute when the cancel button is clicked or the input is closed as cancelled (via Escape, etc)',
+                typeList: [ARGUMENT_TYPE.CLOSURE],
+            }),
         ],
         unnamedArgumentList: [
-            new SlashCommandArgument(
-                'text to display', [ARGUMENT_TYPE.STRING], false,
-            ),
+            SlashCommandArgument.fromProps({
+                description: 'text to display',
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
         ],
         helpString: `
         <div>
@@ -2546,6 +2572,7 @@ async function delayCallback(_, amount) {
     return '';
 }
 
+
 async function inputCallback(args, prompt) {
     const safeValue = DOMPurify.sanitize(prompt || '');
     const defaultInput = args?.default !== undefined && typeof args?.default === 'string' ? args.default : '';
@@ -2559,6 +2586,26 @@ async function inputCallback(args, prompt) {
     await delay(1);
     const result = await callGenericPopup(safeValue, POPUP_TYPE.INPUT, defaultInput, popupOptions);
     await delay(1);
+
+    // Input will return null on nothing entered, and false on cancel clicked
+    if (result === null || result === false) {
+        // Veryify if a cancel handler exists and it is valid
+        if (args?.onCancel) {
+            if (!(args.onCancel instanceof SlashCommandClosure)) {
+                throw new Error('argument \'onCancel\' must be a closure for command /input');
+            }
+            await args.onCancel.execute();
+        }
+    } else {
+        // Verify if an ok handler exists and it is valid
+        if (args?.onSuccess) {
+            if (!(args.onSuccess instanceof SlashCommandClosure)) {
+                throw new Error('argument \'onSuccess\' must be a closure for command /input');
+            }
+            await args.onSuccess.execute();
+        }
+    }
+
     return String(result || '');
 }
 

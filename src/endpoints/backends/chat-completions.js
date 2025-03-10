@@ -2,7 +2,6 @@ import process from 'node:process';
 import express from 'express';
 import fetch from 'node-fetch';
 
-import { jsonParser } from '../../express-common.js';
 import {
     CHAT_COMPLETION_SOURCES,
     GEMINI_SAFETY,
@@ -96,6 +95,21 @@ function getOpenRouterTransforms(request) {
         case 'auto':
             return undefined;
     }
+}
+
+/**
+ * Gets OpenRouter plugins based on the request.
+ * @param {import('express').Request} request
+ * @returns {any[]} OpenRouter plugins
+ */
+function getOpenRouterPlugins(request) {
+    const plugins = [];
+
+    if (request.body.enable_web_search) {
+        plugins.push({ 'id': 'web' });
+    }
+
+    return plugins;
 }
 
 /**
@@ -323,6 +337,7 @@ async function sendMakerSuiteRequest(request, response) {
 
     const model = String(request.body.model);
     const stream = Boolean(request.body.stream);
+    const enableWebSearch = Boolean(request.body.enable_web_search);
     const isThinking = model.includes('thinking');
 
     const generationConfig = {
@@ -332,6 +347,8 @@ async function sendMakerSuiteRequest(request, response) {
         temperature: request.body.temperature,
         topP: request.body.top_p,
         topK: request.body.top_k || undefined,
+        responseMimeType: request.body.responseMimeType,
+        responseSchema: request.body.responseSchema,
     };
 
     function getGeminiBody() {
@@ -348,6 +365,7 @@ async function sendMakerSuiteRequest(request, response) {
             model.startsWith('gemini-exp')
         ) && request.body.use_makersuite_sysprompt;
 
+        const tools = [];
         const prompt = convertGooglePrompt(request.body.messages, model, should_use_system_prompt, getPromptNames(request));
         let safetySettings = GEMINI_SAFETY;
 
@@ -361,6 +379,26 @@ async function sendMakerSuiteRequest(request, response) {
         }
         // Most of the other models allow for setting the threshold of filters, except for HARM_CATEGORY_CIVIC_INTEGRITY, to OFF.
 
+        if (enableWebSearch) {
+            const searchTool = model.includes('1.5') || model.includes('1.0')
+                ? ({ google_search_retrieval: {} })
+                : ({ google_search: {} });
+            tools.push(searchTool);
+        }
+
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            const functionDeclarations = [];
+            for (const tool of request.body.tools) {
+                if (tool.type === 'function') {
+                    if (tool.function.parameters?.$schema) {
+                        delete tool.function.parameters.$schema;
+                    }
+                    functionDeclarations.push(tool.function);
+                }
+            }
+            tools.push({ function_declarations: functionDeclarations });
+        }
+
         let body = {
             contents: prompt.contents,
             safetySettings: safetySettings,
@@ -369,6 +407,10 @@ async function sendMakerSuiteRequest(request, response) {
 
         if (should_use_system_prompt) {
             body.systemInstruction = prompt.system_instruction;
+        }
+
+        if (tools.length) {
+            body.tools = tools;
         }
 
         return body;
@@ -426,10 +468,11 @@ async function sendMakerSuiteRequest(request, response) {
             }
 
             const responseContent = candidates[0].content ?? candidates[0].output;
+            const functionCall = (candidates?.[0]?.content?.parts ?? []).some(part => part.functionCall);
             console.warn('Google AI Studio response:', responseContent);
 
             const responseText = typeof responseContent === 'string' ? responseContent : responseContent?.parts?.filter(part => !part.thought)?.map(part => part.text)?.join('\n\n');
-            if (!responseText) {
+            if (!responseText && !functionCall) {
                 let message = 'Google AI Studio Candidate text empty';
                 console.warn(message, generateResponseJson);
                 return response.send({ error: { message } });
@@ -455,6 +498,12 @@ async function sendMakerSuiteRequest(request, response) {
 async function sendAI21Request(request, response) {
     if (!request.body) return response.sendStatus(400);
 
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.AI21);
+    if (!apiKey) {
+        console.warn('AI21 API key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
     const controller = new AbortController();
     console.debug(request.body.messages);
     request.socket.removeAllListeners('close');
@@ -470,13 +519,14 @@ async function sendAI21Request(request, response) {
         top_p: request.body.top_p,
         stop: request.body.stop,
         stream: request.body.stream,
+        tools: request.body.tools,
     };
     const options = {
         method: 'POST',
         headers: {
             accept: 'application/json',
             'content-type': 'application/json',
-            Authorization: `Bearer ${readSecret(request.user.directories, SECRET_KEYS.AI21)}`,
+            Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(body),
         signal: controller.signal,
@@ -542,6 +592,7 @@ async function sendMistralAIRequest(request, response) {
             'stream': request.body.stream,
             'safe_prompt': request.body.safe_prompt,
             'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
+            'stop': Array.isArray(request.body.stop) && request.body.stop.length > 0 ? request.body.stop : undefined,
         };
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
@@ -769,7 +820,7 @@ async function sendDeepSeekRequest(request, response) {
 
 export const router = express.Router();
 
-router.post('/status', jsonParser, async function (request, response_getstatus_openai) {
+router.post('/status', async function (request, response_getstatus_openai) {
     if (!request.body) return response_getstatus_openai.sendStatus(400);
 
     let api_url;
@@ -885,7 +936,7 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     }
 });
 
-router.post('/bias', jsonParser, async function (request, response) {
+router.post('/bias', async function (request, response) {
     if (!request.body || !Array.isArray(request.body))
         return response.sendStatus(400);
 
@@ -970,7 +1021,7 @@ router.post('/bias', jsonParser, async function (request, response) {
 });
 
 
-router.post('/generate', jsonParser, function (request, response) {
+router.post('/generate', function (request, response) {
     if (!request.body) return response.status(400).send({ error: true });
 
     switch (request.body.chat_completion_source) {
@@ -1014,6 +1065,7 @@ router.post('/generate', jsonParser, function (request, response) {
         headers = { ...OPENROUTER_HEADERS };
         bodyParams = {
             'transforms': getOpenRouterTransforms(request),
+            'plugins': getOpenRouterPlugins(request),
             'include_reasoning': Boolean(request.body.include_reasoning),
         };
 

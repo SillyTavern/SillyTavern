@@ -113,6 +113,9 @@ app.use(helmet({
 app.use(compression());
 app.use(responseTime());
 
+app.use(bodyParser.json({ limit: '200mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '200mb' }));
+
 // CORS Settings //
 const CORS = cors({
     origin: 'null',
@@ -135,9 +138,6 @@ if (cliArgs.listen) {
 }
 
 if (cliArgs.enableCorsProxy) {
-    app.use(bodyParser.json({
-        limit: '200mb',
-    }));
     app.use('/proxy/:url(*)', corsProxyMiddleware);
 } else {
     app.use('/proxy/:url(*)', async (_, res) => {

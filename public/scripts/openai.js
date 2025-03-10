@@ -100,7 +100,7 @@ const default_wi_format = '{0}';
 const default_new_chat_prompt = '[Start a new Chat]';
 const default_new_group_chat_prompt = '[Start a new group chat. Group members: {{group}}]';
 const default_new_example_chat_prompt = '[Example Chat]';
-const default_continue_nudge_prompt = '[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message: {{lastChatMessage}}]';
+const default_continue_nudge_prompt = '[Continue your last message without repeating its original content.]';
 const default_bias = 'Default (none)';
 const default_personality_format = '{{personality}}';
 const default_scenario_format = '{{scenario}}';
@@ -300,6 +300,7 @@ export const settingsToUpdate = {
     function_calling: ['#openai_function_calling', 'function_calling', true],
     show_thoughts: ['#openai_show_thoughts', 'show_thoughts', true],
     reasoning_effort: ['#openai_reasoning_effort', 'reasoning_effort', false],
+    enable_web_search: ['#openai_enable_web_search', 'enable_web_search', true],
     seed: ['#seed_openai', 'seed', false],
     n: ['#n_openai', 'n', false],
     bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true],
@@ -336,7 +337,7 @@ const default_settings = {
     openai_model: 'gpt-4-turbo',
     claude_model: 'claude-3-5-sonnet-20240620',
     google_model: 'gemini-1.5-pro',
-    ai21_model: 'jamba-1.5-large',
+    ai21_model: 'jamba-1.6-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
@@ -380,6 +381,7 @@ const default_settings = {
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
     show_thoughts: true,
     reasoning_effort: 'medium',
+    enable_web_search: false,
     seed: -1,
     n: 1,
 };
@@ -415,7 +417,7 @@ const oai_settings = {
     openai_model: 'gpt-4-turbo',
     claude_model: 'claude-3-5-sonnet-20240620',
     google_model: 'gemini-1.5-pro',
-    ai21_model: 'jamba-1.5-large',
+    ai21_model: 'jamba-1.6-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
@@ -459,6 +461,7 @@ const oai_settings = {
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
     show_thoughts: true,
     reasoning_effort: 'medium',
+    enable_web_search: false,
     seed: -1,
     n: 1,
 };
@@ -789,7 +792,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     }
 
     // Reserve budget for continue nudge
-    let continueMessage = null;
+    let continueMessageCollection = null;
     if (type === 'continue' && cyclePrompt && !oai_settings.continue_prefill) {
         const promptObject = {
             identifier: 'continueNudge',
@@ -797,10 +800,19 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             content: substituteParamsExtended(oai_settings.continue_nudge_prompt, { lastChatMessage: String(cyclePrompt).trim() }),
             system_prompt: true,
         };
-        const continuePrompt = new Prompt(promptObject);
-        const preparedPrompt = promptManager.preparePrompt(continuePrompt);
-        continueMessage = await Message.fromPromptAsync(preparedPrompt);
-        chatCompletion.reserveBudget(continueMessage);
+        continueMessageCollection = new MessageCollection('continueNudge');
+        const continueMessageIndex = messages.findLastIndex(x => !x.injected);
+        if (continueMessageIndex >= 0) {
+            const continueMessage = messages.splice(continueMessageIndex, 1)[0];
+            const prompt = new Prompt(continueMessage);
+            const chatMessage = await Message.fromPromptAsync(promptManager.preparePrompt(prompt));
+            continueMessageCollection.add(chatMessage);
+        }
+        const continueNudgePrompt = new Prompt(promptObject);
+        const preparedNudgePrompt = promptManager.preparePrompt(continueNudgePrompt);
+        const continueNudgeMessage = await Message.fromPromptAsync(preparedNudgePrompt);
+        continueMessageCollection.add(continueNudgeMessage);
+        chatCompletion.reserveBudget(continueMessageCollection);
     }
 
     const lastChatPrompt = messages[messages.length - 1];
@@ -884,9 +896,9 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     }
 
     // Insert and free continue nudge
-    if (type === 'continue' && continueMessage) {
-        chatCompletion.freeBudget(continueMessage);
-        chatCompletion.insertAtEnd(continueMessage, 'chatHistory');
+    if (type === 'continue' && continueMessageCollection) {
+        chatCompletion.freeBudget(continueMessageCollection);
+        chatCompletion.add(continueMessageCollection, -1);
     }
 }
 
@@ -2000,6 +2012,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         'group_names': getGroupNames(),
         'include_reasoning': Boolean(oai_settings.show_thoughts),
         'reasoning_effort': String(oai_settings.reasoning_effort),
+        'enable_web_search': Boolean(oai_settings.enable_web_search),
     };
 
     if (!canMultiSwipe && ToolManager.canPerformToolCalls(type)) {
@@ -2023,10 +2036,14 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['logprobs'] = 5;
     }
 
-    // Remove logit bias, logprobs and stop strings if it's not supported by the model
-    if (isOAI && oai_settings.openai_model.includes('vision') || isOpenRouter && oai_settings.openrouter_model.includes('vision') || isOAI && oai_settings.openai_model.includes('gpt-4.5-preview')) {
+    // Remove logit bias/logprobs/stop-strings if not supported by the model
+    const isVision = (m) => ['gpt', 'vision'].every(x => m.includes(x));
+    if (isOAI && isVision(oai_settings.openai_model) || isOpenRouter && isVision(oai_settings.openrouter_model)) {
         delete generate_data.logit_bias;
         delete generate_data.stop;
+        delete generate_data.logprobs;
+    }
+    if (isOAI && oai_settings.openai_model.includes('gpt-4.5-preview') || isOpenRouter && oai_settings.openrouter_model.includes('gpt-4.5-preview')) {
         delete generate_data.logprobs;
     }
 
@@ -2068,6 +2085,7 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     if (isMistral) {
         generate_data['safe_prompt'] = false; // already defaults to false, but just incase they change that in the future.
+        generate_data['stop'] = getCustomStoppingStrings(); // Mistral shouldn't have limits on stop strings.
     }
 
     if (isCustom) {
@@ -2961,7 +2979,7 @@ export class ChatCompletion {
     /**
      * Checks if the token budget can afford the tokens of the specified message.
      *
-     * @param {Message} message - The message to check for affordability.
+     * @param {Message|MessageCollection} message - The message to check for affordability.
      * @returns {boolean} True if the budget can afford the message, false otherwise.
      */
     canAfford(message) {
@@ -3049,7 +3067,7 @@ export class ChatCompletion {
      * Validates if the given argument is an instance of MessageCollection.
      * Throws an error if the validation fails.
      *
-     * @param {MessageCollection} collection - The collection to validate.
+     * @param {MessageCollection|Message} collection - The collection to validate.
      */
     validateMessageCollection(collection) {
         if (!(collection instanceof MessageCollection)) {
@@ -3075,7 +3093,7 @@ export class ChatCompletion {
      * Checks if the token budget can afford the tokens of the given message.
      * Throws an error if the budget can't afford the message.
      *
-     * @param {Message} message - The message to check.
+     * @param {Message|MessageCollection} message - The message to check.
      * @param {string} identifier - The identifier of the message.
      */
     checkTokenBudget(message, identifier) {
@@ -3222,6 +3240,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.bypass_status_check = settings.bypass_status_check ?? default_settings.bypass_status_check;
     oai_settings.show_thoughts = settings.show_thoughts ?? default_settings.show_thoughts;
     oai_settings.reasoning_effort = settings.reasoning_effort ?? default_settings.reasoning_effort;
+    oai_settings.enable_web_search = settings.enable_web_search ?? default_settings.enable_web_search;
     oai_settings.seed = settings.seed ?? default_settings.seed;
     oai_settings.n = settings.n ?? default_settings.n;
 
@@ -3245,7 +3264,7 @@ function loadOpenAISettings(data, settings) {
     }
 
     if (oai_settings.ai21_model.startsWith('j2-')) {
-        oai_settings.ai21_model = 'jamba-1.5-large';
+        oai_settings.ai21_model = 'jamba-1.6-large';
     }
 
     if (settings.wrap_in_quotes !== undefined) oai_settings.wrap_in_quotes = !!settings.wrap_in_quotes;
@@ -3349,6 +3368,7 @@ function loadOpenAISettings(data, settings) {
     $('#seed_openai').val(oai_settings.seed);
     $('#n_openai').val(oai_settings.n);
     $('#openai_show_thoughts').prop('checked', oai_settings.show_thoughts);
+    $('#openai_enable_web_search').prop('checked', oai_settings.enable_web_search);
 
     $('#openai_reasoning_effort').val(oai_settings.reasoning_effort);
     $(`#openai_reasoning_effort option[value="${oai_settings.reasoning_effort}"]`).prop('selected', true);
@@ -3613,6 +3633,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         function_calling: settings.function_calling,
         show_thoughts: settings.show_thoughts,
         reasoning_effort: settings.reasoning_effort,
+        enable_web_search: settings.enable_web_search,
         seed: settings.seed,
         n: settings.n,
     };
@@ -4200,7 +4221,7 @@ async function onModelChange() {
 
     if ($(this).is('#model_ai21_select')) {
         if (value === '' || value.startsWith('j2-')) {
-            value = 'jamba-1.5-large';
+            value = 'jamba-1.6-large';
             $('#model_ai21_select').val(value);
         }
 
@@ -4477,7 +4498,7 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (oai_settings.ai21_model.includes('jamba-1.5') || oai_settings.ai21_model.includes('jamba-instruct')) {
+        } else if (oai_settings.ai21_model.startsWith('jamba-')) {
             $('#openai_max_context').attr('max', max_256k);
         }
 
@@ -5569,6 +5590,11 @@ export function initOpenAI() {
 
     $('#openai_reasoning_effort').on('input', function () {
         oai_settings.reasoning_effort = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#openai_enable_web_search').on('input', function () {
+        oai_settings.enable_web_search = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

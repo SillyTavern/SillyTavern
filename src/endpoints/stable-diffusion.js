@@ -10,7 +10,6 @@ import urlJoin from 'url-join';
 import _ from 'lodash';
 
 import { delay, getBasicAuthHeader, tryParse } from '../util.js';
-import { jsonParser } from '../express-common.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
 
 /**
@@ -27,7 +26,7 @@ function getComfyWorkflows(directories) {
 
 export const router = express.Router();
 
-router.post('/ping', jsonParser, async (request, response) => {
+router.post('/ping', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/options';
@@ -50,7 +49,7 @@ router.post('/ping', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/upscalers', jsonParser, async (request, response) => {
+router.post('/upscalers', async (request, response) => {
     try {
         async function getUpscalerModels() {
             const url = new URL(request.body.url);
@@ -104,7 +103,7 @@ router.post('/upscalers', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/vaes', jsonParser, async (request, response) => {
+router.post('/vaes', async (request, response) => {
     try {
         const autoUrl = new URL(request.body.url);
         autoUrl.pathname = '/sdapi/v1/sd-vae';
@@ -136,7 +135,7 @@ router.post('/vaes', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/samplers', jsonParser, async (request, response) => {
+router.post('/samplers', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/samplers';
@@ -163,7 +162,7 @@ router.post('/samplers', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/schedulers', jsonParser, async (request, response) => {
+router.post('/schedulers', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/schedulers';
@@ -189,7 +188,7 @@ router.post('/schedulers', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/models', jsonParser, async (request, response) => {
+router.post('/models', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/sd-models';
@@ -215,7 +214,7 @@ router.post('/models', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/get-model', jsonParser, async (request, response) => {
+router.post('/get-model', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/options';
@@ -235,7 +234,7 @@ router.post('/get-model', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/set-model', jsonParser, async (request, response) => {
+router.post('/set-model', async (request, response) => {
     try {
         async function getProgress() {
             const url = new URL(request.body.url);
@@ -294,7 +293,7 @@ router.post('/set-model', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/generate', jsonParser, async (request, response) => {
+router.post('/generate', async (request, response) => {
     try {
         try {
             const optionsUrl = new URL(request.body.url);
@@ -349,7 +348,7 @@ router.post('/generate', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/sd-next/upscalers', jsonParser, async (request, response) => {
+router.post('/sd-next/upscalers', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/upscalers';
@@ -384,7 +383,7 @@ router.post('/sd-next/upscalers', jsonParser, async (request, response) => {
 
 const comfy = express.Router();
 
-comfy.post('/ping', jsonParser, async (request, response) => {
+comfy.post('/ping', async (request, response) => {
     try {
         const url = new URL(urlJoin(request.body.url, '/system_stats'));
 
@@ -400,7 +399,7 @@ comfy.post('/ping', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/samplers', jsonParser, async (request, response) => {
+comfy.post('/samplers', async (request, response) => {
     try {
         const url = new URL(urlJoin(request.body.url, '/object_info'));
 
@@ -418,7 +417,7 @@ comfy.post('/samplers', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/models', jsonParser, async (request, response) => {
+comfy.post('/models', async (request, response) => {
     try {
         const url = new URL(urlJoin(request.body.url, '/object_info'));
 
@@ -446,7 +445,7 @@ comfy.post('/models', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/schedulers', jsonParser, async (request, response) => {
+comfy.post('/schedulers', async (request, response) => {
     try {
         const url = new URL(urlJoin(request.body.url, '/object_info'));
 
@@ -464,7 +463,7 @@ comfy.post('/schedulers', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/vaes', jsonParser, async (request, response) => {
+comfy.post('/vaes', async (request, response) => {
     try {
         const url = new URL(urlJoin(request.body.url, '/object_info'));
 
@@ -482,7 +481,7 @@ comfy.post('/vaes', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/workflows', jsonParser, async (request, response) => {
+comfy.post('/workflows', async (request, response) => {
     try {
         const data = getComfyWorkflows(request.user.directories);
         return response.send(data);
@@ -492,7 +491,7 @@ comfy.post('/workflows', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/workflow', jsonParser, async (request, response) => {
+comfy.post('/workflow', async (request, response) => {
     try {
         let filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
         if (!fs.existsSync(filePath)) {
@@ -506,7 +505,7 @@ comfy.post('/workflow', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/save-workflow', jsonParser, async (request, response) => {
+comfy.post('/save-workflow', async (request, response) => {
     try {
         const filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
         writeFileAtomicSync(filePath, request.body.workflow, 'utf8');
@@ -518,7 +517,7 @@ comfy.post('/save-workflow', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/delete-workflow', jsonParser, async (request, response) => {
+comfy.post('/delete-workflow', async (request, response) => {
     try {
         const filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
         if (fs.existsSync(filePath)) {
@@ -531,7 +530,7 @@ comfy.post('/delete-workflow', jsonParser, async (request, response) => {
     }
 });
 
-comfy.post('/generate', jsonParser, async (request, response) => {
+comfy.post('/generate', async (request, response) => {
     try {
         let item;
         const url = new URL(urlJoin(request.body.url, '/prompt'));
@@ -599,7 +598,7 @@ comfy.post('/generate', jsonParser, async (request, response) => {
 
 const together = express.Router();
 
-together.post('/models', jsonParser, async (request, response) => {
+together.post('/models', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.TOGETHERAI);
 
@@ -638,7 +637,7 @@ together.post('/models', jsonParser, async (request, response) => {
     }
 });
 
-together.post('/generate', jsonParser, async (request, response) => {
+together.post('/generate', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.TOGETHERAI);
 
@@ -694,7 +693,7 @@ together.post('/generate', jsonParser, async (request, response) => {
 
 const drawthings = express.Router();
 
-drawthings.post('/ping', jsonParser, async (request, response) => {
+drawthings.post('/ping', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/';
@@ -714,7 +713,7 @@ drawthings.post('/ping', jsonParser, async (request, response) => {
     }
 });
 
-drawthings.post('/get-model', jsonParser, async (request, response) => {
+drawthings.post('/get-model', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/';
@@ -733,7 +732,7 @@ drawthings.post('/get-model', jsonParser, async (request, response) => {
     }
 });
 
-drawthings.post('/get-upscaler', jsonParser, async (request, response) => {
+drawthings.post('/get-upscaler', async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/';
@@ -752,7 +751,7 @@ drawthings.post('/get-upscaler', jsonParser, async (request, response) => {
     }
 });
 
-drawthings.post('/generate', jsonParser, async (request, response) => {
+drawthings.post('/generate', async (request, response) => {
     try {
         console.debug('SD DrawThings API request:', request.body);
 
@@ -788,7 +787,7 @@ drawthings.post('/generate', jsonParser, async (request, response) => {
 
 const pollinations = express.Router();
 
-pollinations.post('/models', jsonParser, async (_request, response) => {
+pollinations.post('/models', async (_request, response) => {
     try {
         const modelsUrl = new URL('https://image.pollinations.ai/models');
         const result = await fetch(modelsUrl);
@@ -813,7 +812,7 @@ pollinations.post('/models', jsonParser, async (_request, response) => {
     }
 });
 
-pollinations.post('/generate', jsonParser, async (request, response) => {
+pollinations.post('/generate', async (request, response) => {
     try {
         const promptUrl = new URL(`https://image.pollinations.ai/prompt/${encodeURIComponent(request.body.prompt)}`);
         const params = new URLSearchParams({
@@ -850,7 +849,7 @@ pollinations.post('/generate', jsonParser, async (request, response) => {
 
 const stability = express.Router();
 
-stability.post('/generate', jsonParser, async (request, response) => {
+stability.post('/generate', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.STABILITY);
 
@@ -910,7 +909,7 @@ stability.post('/generate', jsonParser, async (request, response) => {
 
 const blockentropy = express.Router();
 
-blockentropy.post('/models', jsonParser, async (request, response) => {
+blockentropy.post('/models', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.BLOCKENTROPY);
 
@@ -946,7 +945,7 @@ blockentropy.post('/models', jsonParser, async (request, response) => {
     }
 });
 
-blockentropy.post('/generate', jsonParser, async (request, response) => {
+blockentropy.post('/generate', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.BLOCKENTROPY);
 
@@ -993,7 +992,7 @@ blockentropy.post('/generate', jsonParser, async (request, response) => {
 
 const huggingface = express.Router();
 
-huggingface.post('/generate', jsonParser, async (request, response) => {
+huggingface.post('/generate', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.HUGGINGFACE);
 
@@ -1032,7 +1031,7 @@ huggingface.post('/generate', jsonParser, async (request, response) => {
 
 const nanogpt = express.Router();
 
-nanogpt.post('/models', jsonParser, async (request, response) => {
+nanogpt.post('/models', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
 
@@ -1072,7 +1071,7 @@ nanogpt.post('/models', jsonParser, async (request, response) => {
     }
 });
 
-nanogpt.post('/generate', jsonParser, async (request, response) => {
+nanogpt.post('/generate', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
 
@@ -1116,7 +1115,7 @@ nanogpt.post('/generate', jsonParser, async (request, response) => {
 
 const bfl = express.Router();
 
-bfl.post('/generate', jsonParser, async (request, response) => {
+bfl.post('/generate', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.BFL);
 
@@ -1230,7 +1229,7 @@ bfl.post('/generate', jsonParser, async (request, response) => {
 
 const falai = express.Router();
 
-falai.post('/models', jsonParser, async (_request, response) => {
+falai.post('/models', async (_request, response) => {
     try {
         const modelsUrl = new URL('https://fal.ai/api/models?categories=text-to-image');
         const result = await fetch(modelsUrl);
@@ -1260,7 +1259,7 @@ falai.post('/models', jsonParser, async (_request, response) => {
     }
 });
 
-falai.post('/generate', jsonParser, async (request, response) => {
+falai.post('/generate', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.FALAI);
 
@@ -1276,7 +1275,7 @@ falai.post('/generate', jsonParser, async (request, response) => {
             seed: request.body.seed ?? null,
             guidance_scale: request.body.guidance,
             enable_safety_checker: false, // Disable general safety checks
-            safety_tolerance: 6 // Make Flux the least strict
+            safety_tolerance: 6, // Make Flux the least strict
         };
 
         console.debug('FAL.AI request:', requestBody);

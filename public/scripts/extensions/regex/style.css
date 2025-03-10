@@ -105,3 +105,24 @@ input.enable_scoped {
 .disable_regex:not(:checked) ~ .regex-toggle-on {
     display: block;
 }
+
+#regex_info_block_wrapper {
+    position: relative;
+}
+
+#regex_info_block {
+    margin: 10px 0;
+    padding: 5px 20px;
+    font-size: 0.9em;
+}
+
+#regex_info_block_wrapper:has(#regex_info_block:empty) {
+    display: none;
+}
+
+#regex_info_block_flags_hint {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+}

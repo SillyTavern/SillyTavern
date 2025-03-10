@@ -5,7 +5,6 @@ import fetch from 'node-fetch';
 import FormData from 'form-data';
 import express from 'express';
 
-import { jsonParser, urlencodedParser } from '../express-common.js';
 import { getConfigValue, mergeObjectWithYaml, excludeKeysByYaml, trimV1 } from '../util.js';
 import { setAdditionalHeaders } from '../additional-headers.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
@@ -13,7 +12,7 @@ import { OPENROUTER_HEADERS } from '../constants.js';
 
 export const router = express.Router();
 
-router.post('/caption-image', jsonParser, async (request, response) => {
+router.post('/caption-image', async (request, response) => {
     try {
         let key = '';
         let headers = {};
@@ -189,7 +188,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/transcribe-audio', urlencodedParser, async (request, response) => {
+router.post('/transcribe-audio', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
 
@@ -237,7 +236,7 @@ router.post('/transcribe-audio', urlencodedParser, async (request, response) => 
     }
 });
 
-router.post('/generate-voice', jsonParser, async (request, response) => {
+router.post('/generate-voice', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
 
@@ -276,7 +275,7 @@ router.post('/generate-voice', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/generate-image', jsonParser, async (request, response) => {
+router.post('/generate-image', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
 
@@ -312,7 +311,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
 
 const custom = express.Router();
 
-custom.post('/generate-voice', jsonParser, async (request, response) => {
+custom.post('/generate-voice', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.CUSTOM_OPENAI_TTS);
         const { input, provider_endpoint, response_format, voice, speed, model } = request.body;
