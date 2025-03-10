@@ -27,6 +27,7 @@ import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashComm
 import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { GoogleTranslateTtsProvider } from './google-translate.js';
+import { KokoroTtsProvider } from './kokoro.js';
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000;
@@ -103,6 +104,7 @@ const ttsProviders = {
     Silero: SileroTtsProvider,
     SpeechT5: SpeechT5TtsProvider,
     System: SystemTtsProvider,
+    Kokoro: KokoroTtsProvider,
     VITS: VITSTtsProvider,
     XTTSv2: XTTSTtsProvider,
 };
