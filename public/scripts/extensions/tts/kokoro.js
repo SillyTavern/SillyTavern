@@ -96,7 +96,7 @@ export class KokoroTtsProvider {
                 const initPromise = new Promise((initResolve, initReject) => {
                     const timeoutId = setTimeout(() => {
                         initReject(new Error('Worker initialization timed out'));
-                    }, 300000); // 300 second timeout
+                    }, 600000); // 600 second timeout
 
                     this.pendingRequests.set('initialization', {
                         resolve: (result) => {
