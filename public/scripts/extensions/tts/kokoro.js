@@ -73,6 +73,7 @@ export class KokoroTtsProvider {
                 // Terminate the existing worker if it exists
                 if (this.worker) {
                     this.worker.terminate();
+                    $('#kokoro_status_text').text('Initializing...').removeAttr('style');
                 }
 
                 // Create a new worker
