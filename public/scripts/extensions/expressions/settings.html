@@ -6,17 +6,17 @@
         </div>
 
         <div class="inline-drawer-content">
-            <label class="checkbox_label" for="expression_translate" title="Use the selected API from Chat Translation extension settings.">
+            <label class="checkbox_label" for="expression_translate" title="Use the selected API from Chat Translation extension settings." data-i18n="[title]Use the selected API from Chat Translation extension settings.">
                 <input id="expression_translate" type="checkbox">
                 <span data-i18n="Translate text to English before classification">Translate text to English before classification</span>
             </label>
-            <label class="checkbox_label" for="expressions_show_default">
-                <input id="expressions_show_default" type="checkbox">
-                <span data-i18n="Show default images (emojis) if sprite missing">Show default images (emojis) if sprite missing</span>
+            <label class="checkbox_label" for="expressions_allow_multiple" title="A single expression can have multiple sprites. Whenever the expression is chosen, a random sprite for this expression will be selected." data-i18n="[title]A single expression can have multiple sprites. Whenever the expression is chosen, a random sprite for this expression will be selected.">
+                <input id="expressions_allow_multiple" type="checkbox">
+                <span data-i18n="Allow multiple sprites per expression">Allow multiple sprites per expression</span>
             </label>
-            <label id="image_type_block" class="checkbox_label" for="image_type_toggle">
-                <input id="image_type_toggle" type="checkbox">
-                <span data-i18n="Image Type - talkinghead (extras)">Image Type - talkinghead (extras)</span>
+            <label class="checkbox_label" for="expressions_reroll_if_same" title="If the same expression is used again, re-roll the sprite. This only applies to expressions that have multiple available sprites assigned." data-i18n="[title]If the same expression is used again, re-roll the sprite. This only applies to expressions that have multiple available sprites assigned.">
+                <input id="expressions_reroll_if_same" type="checkbox">
+                <span data-i18n="Re-roll if same expression is used again">Re-roll if same sprite is used again</span>
             </label>
             <div class="expression_api_block m-b-1 m-t-1">
                 <label for="expression_api" data-i18n="Classifier API">Classifier API</label>
@@ -75,8 +75,20 @@
                         <span data-i18n="Remove all image overrides">Remove all image overrides</span>
                     </div>
                 </div>
-                <p class="hint"><b data-i18n="Hint:">Hint:</b> <i><span data-i18n="Create new folder in the _space">Create new folder in the </span><b>/characters/</b> <span data-i18n="folder of your user data directory and name it as the name of the character.">folder of your user data directory and name it as the name of the character.</span>
-                <span data-i18n="Put images with expressions there. File names should follow the pattern:">Put images with expressions there. File names should follow the pattern: </span><tt data-i18n="expression_label_pattern">[expression_label].[image_format]</tt></i></p>
+                <p class="hint">
+                    <b data-i18n="Hint:">Hint:</b>
+                    <i>
+                        <span data-i18n="Create new folder in the _space">Create new folder in the </span><b>/characters/</b> <span data-i18n="folder of your user data directory and name it as the name of the character.">folder of your user data directory and name it as the name of the character.</span>
+                        <span data-i18n="Put images with expressions there. File names should follow the pattern:">Put images with expressions there. File names should follow the pattern: </span><tt data-i18n="expression_label_pattern">[expression_label].[image_format]</tt>
+                    </i>
+                </p>
+                <p>
+                    <i>
+                        <span>In case of multiple files per expression, file names can contain a suffix, either separated by a dot or a
+                            dash.
+                            Examples: </span><tt>joy.png</tt>, <tt>joy-1.png</tt>, <tt>joy.expressive.png</tt>
+                    </i>
+                </p>
                 <h3 id="image_list_header">
                     <strong data-i18n="Sprite set:">Sprite set:</strong>&nbsp;<span id="image_list_header_name"></span>
                 </h3>

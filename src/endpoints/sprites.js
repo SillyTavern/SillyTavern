@@ -7,7 +7,6 @@ import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 import { getImageBuffers } from '../util.js';
-import { jsonParser, urlencodedParser } from '../express-common.js';
 
 /**
  * Gets the path to the sprites folder for the provided character name
@@ -109,7 +108,7 @@ export function importRisuSprites(directories, data) {
 
 export const router = express.Router();
 
-router.get('/get', jsonParser, function (request, response) {
+router.get('/get', function (request, response) {
     const name = String(request.query.name);
     const isSubfolder = name.includes('/');
     const spritesPath = getSpritesPath(request.user.directories, name, isSubfolder);
@@ -125,8 +124,14 @@ router.get('/get', jsonParser, function (request, response) {
                 .map((file) => {
                     const pathToSprite = path.join(spritesPath, file);
                     const mtime = fs.statSync(pathToSprite).mtime?.toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+
+                    const fileName = path.parse(pathToSprite).name.toLowerCase();
+                    // Extract the label from the filename via regex, which can be suffixed with a sub-name, either connected with a dash or a dot.
+                    // Examples: joy.png, joy-1.png, joy.expressive.png
+                    const label = fileName.match(/^(.+?)(?:[-\\.].*?)?$/)?.[1] ?? fileName;
+
                     return {
-                        label: path.parse(pathToSprite).name.toLowerCase(),
+                        label: label,
                         path: `/characters/${name}/${file}` + (mtime ? `?t=${mtime}` : ''),
                     };
                 });
@@ -138,11 +143,12 @@ router.get('/get', jsonParser, function (request, response) {
     return response.send(sprites);
 });
 
-router.post('/delete', jsonParser, async (request, response) => {
+router.post('/delete', async (request, response) => {
     const label = request.body.label;
     const name = request.body.name;
+    const spriteName = request.body.spriteName || label;
 
-    if (!label || !name) {
+    if (!spriteName || !name) {
         return response.sendStatus(400);
     }
 
@@ -158,7 +164,7 @@ router.post('/delete', jsonParser, async (request, response) => {
 
         // Remove existing sprite with the same label
         for (const file of files) {
-            if (path.parse(file).name === label) {
+            if (path.parse(file).name === spriteName) {
                 fs.rmSync(path.join(spritesPath, file));
             }
         }
@@ -170,7 +176,7 @@ router.post('/delete', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/upload-zip', urlencodedParser, async (request, response) => {
+router.post('/upload-zip', async (request, response) => {
     const file = request.file;
     const name = request.body.name;
 
@@ -217,10 +223,11 @@ router.post('/upload-zip', urlencodedParser, async (request, response) => {
     }
 });
 
-router.post('/upload', urlencodedParser, async (request, response) => {
+router.post('/upload', async (request, response) => {
     const file = request.file;
     const label = request.body.label;
     const name = request.body.name;
+    const spriteName = request.body.spriteName || label;
 
     if (!file || !label || !name) {
         return response.sendStatus(400);
@@ -243,12 +250,12 @@ router.post('/upload', urlencodedParser, async (request, response) => {
 
         // Remove existing sprite with the same label
         for (const file of files) {
-            if (path.parse(file).name === label) {
+            if (path.parse(file).name === spriteName) {
                 fs.rmSync(path.join(spritesPath, file));
             }
         }
 
-        const filename = label + path.parse(file.originalname).ext;
+        const filename = spriteName + path.parse(file.originalname).ext;
         const spritePath = path.join(file.destination, file.filename);
         const pathToFile = path.join(spritesPath, filename);
         // Copy uploaded file to sprites folder

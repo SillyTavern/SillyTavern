@@ -10,16 +10,18 @@
         <div class="inline-drawer-content">
             <div id="summaryExtensionDrawerContents">
                 <label for="summary_source" data-i18n="ext_sum_with">Summarize with:</label>
-                <select id="summary_source">
+                <select id="summary_source" class="text_pole">
                     <option value="main" data-i18n="ext_sum_main_api">Main API</option>
                     <option value="extras">Extras API (deprecated)</option>
                     <option value="webllm" data-i18n="ext_sum_webllm">WebLLM Extension</option>
                 </select><br>
 
                 <div class="flex-container justifyspacebetween alignitemscenter">
-                    <span class="flex1" data-i18n="ext_sum_current_summary">Current summary:</span>
-                    <div id="memory_restore" class="menu_button flex1 margin0" data-i18n="[title]ext_sum_restore_tip" title="Restore a previous summary; use repeatedly to clear summarization state for this chat.">
-                        <span data-i18n="ext_sum_restore_previous">Restore Previous</span>
+                    <span data-i18n="ext_sum_current_summary">Current summary:</span>
+                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="memory_contents" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                    <span class="flex1">&nbsp;</span>
+                    <div id="memory_restore" class="menu_button margin0" data-i18n="[title]ext_sum_restore_tip" title="Restore a previous summary; use repeatedly to clear summarization state for this chat.">
+                        <small data-i18n="ext_sum_restore_previous">Restore Previous</small>
                     </div>
                 </div>
 

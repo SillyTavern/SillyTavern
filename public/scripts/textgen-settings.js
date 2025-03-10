@@ -108,12 +108,12 @@ const BIAS_KEY = '#textgenerationwebui_api-settings';
 // (7 days later) The future has come.
 const MANCER_SERVER_KEY = 'mancer_server';
 const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
-let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
-let TOGETHERAI_SERVER = 'https://api.together.xyz';
-let INFERMATICAI_SERVER = 'https://api.totalgpt.ai';
-let DREAMGEN_SERVER = 'https://dreamgen.com';
-let OPENROUTER_SERVER = 'https://openrouter.ai/api';
-let FEATHERLESS_SERVER = 'https://api.featherless.ai/v1';
+export let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
+export let TOGETHERAI_SERVER = 'https://api.together.xyz';
+export let INFERMATICAI_SERVER = 'https://api.totalgpt.ai';
+export let DREAMGEN_SERVER = 'https://dreamgen.com';
+export let OPENROUTER_SERVER = 'https://openrouter.ai/api';
+export let FEATHERLESS_SERVER = 'https://api.featherless.ai/v1';
 
 export const SERVER_INPUTS = {
     [textgen_types.OOBA]: '#textgenerationwebui_api_url_text',
@@ -311,15 +311,21 @@ export function validateTextGenUrl() {
     const formattedUrl = formatTextGenURL(url);
 
     if (!formattedUrl) {
-        toastr.error('Enter a valid API URL', 'Text Completion API');
+        toastr.error(t`Enter a valid API URL`, 'Text Completion API');
         return;
     }
 
     control.val(formattedUrl);
 }
 
-export function getTextGenServer() {
-    switch (settings.type) {
+/**
+ * Gets the API URL for the selected text generation type.
+ * @param {string} type If it's set, ignores active type
+ * @returns {string} API URL
+ */
+export function getTextGenServer(type = null) {
+    const selectedType = type ?? settings.type;
+    switch (selectedType) {
         case FEATHERLESS:
             return FEATHERLESS_SERVER;
         case MANCER:
@@ -333,7 +339,7 @@ export function getTextGenServer() {
         case OPENROUTER:
             return OPENROUTER_SERVER;
         default:
-            return settings.server_urls[settings.type] ?? '';
+            return settings.server_urls[selectedType] ?? '';
     }
 }
 
@@ -797,16 +803,18 @@ jQuery(function () {
             'dry_penalty_last_n_textgenerationwebui': 0,
             'xtc_threshold_textgenerationwebui': 0.1,
             'xtc_probability_textgenerationwebui': 0,
+            'nsigma_textgenerationwebui': 0,
         };
 
         for (const [id, value] of Object.entries(inputs)) {
             const inputElement = $(`#${id}`);
+            const valueToSet = typeof value === 'boolean' ? String(value) : value;
             if (inputElement.prop('type') === 'checkbox') {
                 inputElement.prop('checked', value).trigger('input');
             } else if (inputElement.prop('type') === 'number') {
-                inputElement.val(value).trigger('input');
+                inputElement.val(valueToSet).trigger('input');
             } else {
-                inputElement.val(value).trigger('input');
+                inputElement.val(valueToSet).trigger('input');
                 if (power_user.enableZenSliders) {
                     let masterElementID = inputElement.prop('id');
                     console.log(masterElementID);
@@ -1187,7 +1195,7 @@ export function getTextGenModel() {
             return settings.aphrodite_model;
         case OLLAMA:
             if (!settings.ollama_model) {
-                toastr.error('No Ollama model selected.', 'Text Completion API');
+                toastr.error(t`No Ollama model selected.`, 'Text Completion API');
                 throw new Error('No Ollama model selected');
             }
             return settings.ollama_model;
@@ -1215,8 +1223,14 @@ function isDynamicTemperatureSupported() {
     return settings.dynatemp && DYNATEMP_BLOCK?.dataset?.tgType?.includes(settings.type);
 }
 
-function getLogprobsNumber() {
-    if (settings.type === VLLM || settings.type === INFERMATICAI) {
+/**
+ * Gets the number of logprobs to request based on the selected type.
+ * @param {string} type If it's set, ignores active type
+ * @returns {number} Number of logprobs to request
+ */
+export function getLogprobsNumber(type = null) {
+    const selectedType = type ?? settings.type;
+    if (selectedType === VLLM || selectedType === INFERMATICAI) {
         return 5;
     }
 
@@ -1228,7 +1242,7 @@ function getLogprobsNumber() {
  * @param {string} str Input string
  * @returns {string} Output string
  */
-function replaceMacrosInList(str) {
+export function replaceMacrosInList(str) {
     if (!str || typeof str !== 'string') {
         return str;
     }

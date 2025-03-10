@@ -6,6 +6,8 @@ import { getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, tokenizers
 import { resetScrollHeight, debounce } from '../../utils.js';
 import { debounce_timeout } from '../../constants.js';
 import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
+import { renderExtensionTemplateAsync } from '../../extensions.js';
+import { t } from '../../i18n.js';
 
 function rgb2hex(rgb) {
     rgb = rgb.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?/i);
@@ -22,23 +24,7 @@ $('button').click(function () {
 
 async function doTokenCounter() {
     const { tokenizerName, tokenizerId } = getFriendlyTokenizerName(main_api);
-    const html = `
-    <div class="wide100p">
-        <h3>Token Counter</h3>
-        <div class="justifyLeft flex-container flexFlowColumn">
-            <h4>Type / paste in the box below to see the number of tokens in the text.</h4>
-            <p>Selected tokenizer: ${tokenizerName}</p>
-            <div>Input:</div>
-            <textarea id="token_counter_textarea" class="wide100p textarea_compact" rows="1"></textarea>
-            <div>Tokens: <span id="token_counter_result">0</span></div>
-            <hr>
-            <div>Tokenized text:</div>
-            <div id="tokenized_chunks_display" class="wide100p">—</div>
-            <hr>
-            <div>Token IDs:</div>
-            <textarea id="token_counter_ids" class="wide100p textarea_compact" readonly rows="1">—</textarea>
-        </div>
-    </div>`;
+    const html = await renderExtensionTemplateAsync('token-counter', 'window', {tokenizerName});
 
     const dialog = $(html);
     const countDebounced = debounce(async () => {
@@ -131,9 +117,9 @@ async function doCount() {
 jQuery(() => {
     const buttonHtml = `
         <div id="token_counter" class="list-group-item flex-container flexGap5">
-            <div class="fa-solid fa-1 extensionsMenuExtensionButton" /></div>
-            Token Counter
-        </div>`;
+            <div class="fa-solid fa-1 extensionsMenuExtensionButton" /></div>` +
+            t`Token Counter` +
+        '</div>';
     $('#token_counter_wand_container').append(buttonHtml);
     $('#token_counter').on('click', doTokenCounter);
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({

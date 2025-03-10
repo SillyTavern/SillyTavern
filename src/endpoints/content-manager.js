@@ -9,7 +9,6 @@ import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from  'write-file-atomic';
 
 import { getConfigValue, color } from '../util.js';
-import { jsonParser } from '../express-common.js';
 import { write } from '../character-card-parser.js';
 
 const contentDirectory = path.join(process.cwd(), 'default/content');
@@ -165,7 +164,7 @@ async function seedContentForUser(contentIndex, directories, forceCategories) {
  */
 export async function checkForNewContent(directoriesList, forceCategories = []) {
     try {
-        const contentCheckSkip = getConfigValue('skipContentCheck', false);
+        const contentCheckSkip = getConfigValue('skipContentCheck', false, 'boolean');
         if (contentCheckSkip && forceCategories?.length === 0) {
             return;
         }
@@ -627,7 +626,7 @@ function isHostWhitelisted(host) {
 
 export const router = express.Router();
 
-router.post('/importURL', jsonParser, async (request, response) => {
+router.post('/importURL', async (request, response) => {
     if (!request.body.url) {
         return response.sendStatus(400);
     }
@@ -713,7 +712,7 @@ router.post('/importURL', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/importUUID', jsonParser, async (request, response) => {
+router.post('/importUUID', async (request, response) => {
     if (!request.body.url) {
         return response.sendStatus(400);
     }

@@ -72,6 +72,7 @@ import {
     animation_duration,
     depth_prompt_role_default,
     shouldAutoContinue,
+    unshallowCharacter,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -216,6 +217,7 @@ export async function getGroupChat(groupId, reload = false) {
 
     // Run validation before any loading
     validateGroup(group);
+    await unshallowGroupMembers(groupId);
 
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
@@ -228,9 +230,6 @@ export async function getGroupChat(groupId, reload = false) {
         chat.splice(0, chat.length, ...data);
         await printMessages();
     } else {
-        sendSystemMessage(system_message_types.GROUP, '', { isSmallSys: true });
-        await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
-        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
         if (group && Array.isArray(group.members)) {
             for (let member of group.members) {
                 const character = characters.find(x => x.avatar === member || x.name === member);
@@ -691,7 +690,7 @@ export function getGroupBlock(group) {
 
     const template = $('#group_list_template .group_select').clone();
     template.data('id', group.id);
-    template.attr('grid', group.id);
+    template.attr('data-grid', group.id);
     template.find('.ch_name').text(group.name).attr('title', `[Group] ${group.name}`);
     template.find('.group_fav_icon').css('display', 'none');
     template.addClass(group.fav ? 'is_fav' : '');
@@ -827,6 +826,8 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
     }
 
     try {
+        await unshallowGroupMembers(selected_group);
+
         throwIfAborted();
         hideSwipeButtons();
         is_group_generating = true;
@@ -1140,6 +1141,29 @@ export async function editGroup(id, immediately, reload = true) {
     saveGroupDebounced(group, reload);
 }
 
+/**
+ * Unshallows all definitions of group members.
+ * @param {string} groupId Id of the group
+ * @returns {Promise<void>} Promise that resolves when all group members are unshallowed
+ */
+export async function unshallowGroupMembers(groupId) {
+    const group = groups.find(x => x.id == groupId);
+    if (!group) {
+        return;
+    }
+    const members = group.members;
+    if (!Array.isArray(members)) {
+        return;
+    }
+    for (const member of members) {
+        const index = characters.findIndex(x => x.avatar === member);
+        if (index === -1) {
+            continue;
+        }
+        await unshallowCharacter(String(index));
+    }
+}
+
 let groupAutoModeAbortController = null;
 
 async function groupChatAutoModeWorker() {
@@ -1161,9 +1185,9 @@ async function groupChatAutoModeWorker() {
     await generateGroupWrapper(true, 'auto', { signal: groupAutoModeAbortController.signal });
 }
 
-async function modifyGroupMember(chat_id, groupMember, isDelete) {
+async function modifyGroupMember(groupId, groupMember, isDelete) {
     const id = groupMember.data('id');
-    const thisGroup = groups.find((x) => x.id == chat_id);
+    const thisGroup = groups.find((x) => x.id == groupId);
     const membersArray = thisGroup?.members ?? newGroupMembers;
 
     if (isDelete) {
@@ -1176,6 +1200,7 @@ async function modifyGroupMember(chat_id, groupMember, isDelete) {
     }
 
     if (openGroupId) {
+        await unshallowGroupMembers(openGroupId);
         await editGroup(openGroupId, false, false);
         updateGroupAvatar(thisGroup);
     }
@@ -1359,7 +1384,7 @@ function getGroupCharacterBlock(character) {
     template.data('id', character.avatar);
     template.find('.avatar img').attr({ 'src': avatar, 'title': character.avatar });
     template.find('.ch_name').text(character.name);
-    template.attr('chid', characters.indexOf(character));
+    template.attr('data-chid', characters.indexOf(character));
     template.find('.ch_fav').val(isFav);
     template.toggleClass('is_fav', isFav);
 
@@ -1641,11 +1666,11 @@ async function onGroupActionClick(event) {
     }
 
     if (action === 'view') {
-        openCharacterDefinition(member);
+        await openCharacterDefinition(member);
     }
 
     if (action === 'speak') {
-        const chid = Number(member.attr('chid'));
+        const chid = Number(member.attr('data-chid'));
         if (Number.isInteger(chid)) {
             Generate('normal', { force_chid: chid });
         }
@@ -1664,12 +1689,12 @@ function updateFavButtonState(state) {
 export async function openGroupById(groupId) {
     if (isChatSaving) {
         toastr.info(t`Please wait until the chat is saved before switching characters.`, t`Your chat is still saving...`);
-        return;
+        return false;
     }
 
     if (!groups.find(x => x.id === groupId)) {
         console.log('Group not found', groupId);
-        return;
+        return false;
     }
 
     if (!is_send_press && !is_group_generating) {
@@ -1686,23 +1711,27 @@ export async function openGroupById(groupId) {
             updateChatMetadata({}, true);
             chat.length = 0;
             await getGroupChat(groupId);
+            return true;
         }
     }
+
+    return false;
 }
 
-function openCharacterDefinition(characterSelect) {
+async function openCharacterDefinition(characterSelect) {
     if (is_group_generating) {
         toastr.warning(t`Can't peek a character while group reply is being generated`);
         console.warn('Can\'t peek a character def while group reply is being generated');
         return;
     }
 
-    const chid = characterSelect.attr('chid');
+    const chid = characterSelect.attr('data-chid');
 
     if (chid === null || chid === undefined) {
         return;
     }
 
+    await unshallowCharacter(chid);
     setCharacterId(chid);
     select_selected_character(chid);
     // Gentle nudge to recalculate tokens
@@ -2015,7 +2044,7 @@ jQuery(() => {
     }
 
     $(document).on('click', '.group_select', function () {
-        const groupId = $(this).attr('chid') || $(this).attr('grid') || $(this).data('id');
+        const groupId = $(this).attr('data-chid') || $(this).attr('data-grid');
         openGroupById(groupId);
     });
     $('#rm_group_filter').on('input', filterGroupMembers);

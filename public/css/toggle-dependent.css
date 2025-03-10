@@ -96,11 +96,6 @@ body.charListGrid #rm_print_characters_block .group_select .group_name_block,
     flex-direction: column;
 }
 
-#user_avatar_block.gridView .avatar-container .avatar-buttons {
-    flex-wrap: wrap;
-    justify-content: space-evenly;
-}
-
 body.charListGrid #rm_print_characters_block .bogus_folder_select .character_select_container,
 body.charListGrid #rm_print_characters_block .character_select .character_select_container,
 body.charListGrid #rm_print_characters_block .group_select .group_select_container,
@@ -231,9 +226,15 @@ body.big-avatars .avatars_inline_small .avatar img {
 body.big-avatars .avatars_inline {
     max-height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor) + 2 * var(--avatar-base-border-radius));
 }
+body.big-avatars .avatars_inline.avatars_multiline {
+    max-height: fit-content;
+}
 
 body.big-avatars .avatars_inline.avatars_inline_small {
     height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor) * var(--inline-avatar-small-factor) + 2 * var(--avatar-base-border-radius));
+}
+body.big-avatars .avatars_inline.avatars_inline_small.avatars_multiline {
+    height: inherit;
 }
 
 body:not(.big-avatars) .avatars_inline_small .avatar_collage {

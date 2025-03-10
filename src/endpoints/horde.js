@@ -3,7 +3,6 @@ import express from 'express';
 import { AIHorde, ModelGenerationInputStableSamplers, ModelInterrogationFormTypes, HordeAsyncRequestStates } from '@zeldafan0225/ai_horde';
 import { getVersion, delay, Cache } from '../util.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
-import { jsonParser } from '../express-common.js';
 
 const ANONYMOUS_KEY = '0000000000';
 const HORDE_TEXT_MODEL_METADATA_URL = 'https://raw.githubusercontent.com/db0/AI-Horde-text-model-reference/main/db.json';
@@ -56,7 +55,7 @@ function sanitizeHordeImagePrompt(prompt) {
     return prompt;
 }
 
-router.post('/text-workers', jsonParser, async (request, response) => {
+router.post('/text-workers', async (request, response) => {
     try {
         const cachedWorkers = cache.get('workers');
 
@@ -94,7 +93,7 @@ async function mergeModelsAndMetadata(models, metadata) {
     });
 }
 
-router.post('/text-models', jsonParser, async (request, response) => {
+router.post('/text-models', async (request, response) => {
     try {
         const cachedModels = cache.get('models');
         if (cachedModels && !request.body.force) {
@@ -127,7 +126,7 @@ router.post('/text-models', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/status', jsonParser, async (_, response) => {
+router.post('/status', async (_, response) => {
     try {
         const agent = await getClientAgent();
         const fetchResult = await fetch('https://aihorde.net/api/v2/status/heartbeat', {
@@ -143,7 +142,7 @@ router.post('/status', jsonParser, async (_, response) => {
     }
 });
 
-router.post('/cancel-task', jsonParser, async (request, response) => {
+router.post('/cancel-task', async (request, response) => {
     try {
         const taskId = request.body.taskId;
         const agent = await getClientAgent();
@@ -163,7 +162,7 @@ router.post('/cancel-task', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/task-status', jsonParser, async (request, response) => {
+router.post('/task-status', async (request, response) => {
     try {
         const taskId = request.body.taskId;
         const agent = await getClientAgent();
@@ -182,7 +181,7 @@ router.post('/task-status', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/generate-text', jsonParser, async (request, response) => {
+router.post('/generate-text', async (request, response) => {
     const apiKey = readSecret(request.user.directories, SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
     const url = 'https://aihorde.net/api/v2/generate/text/async';
     const agent = await getClientAgent();
@@ -213,7 +212,7 @@ router.post('/generate-text', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/sd-samplers', jsonParser, async (_, response) => {
+router.post('/sd-samplers', async (_, response) => {
     try {
         const samplers = Object.values(ModelGenerationInputStableSamplers);
         response.send(samplers);
@@ -223,7 +222,7 @@ router.post('/sd-samplers', jsonParser, async (_, response) => {
     }
 });
 
-router.post('/sd-models', jsonParser, async (_, response) => {
+router.post('/sd-models', async (_, response) => {
     try {
         const ai_horde = await getHordeClient();
         const models = await ai_horde.getModels();
@@ -234,7 +233,7 @@ router.post('/sd-models', jsonParser, async (_, response) => {
     }
 });
 
-router.post('/caption-image', jsonParser, async (request, response) => {
+router.post('/caption-image', async (request, response) => {
     try {
         const api_key_horde = readSecret(request.user.directories, SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
         const ai_horde = await getHordeClient();
@@ -286,7 +285,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/user-info', jsonParser, async (request, response) => {
+router.post('/user-info', async (request, response) => {
     const api_key_horde = readSecret(request.user.directories, SECRET_KEYS.HORDE);
 
     if (!api_key_horde) {
@@ -303,7 +302,7 @@ router.post('/user-info', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/generate-image', jsonParser, async (request, response) => {
+router.post('/generate-image', async (request, response) => {
     if (!request.body.prompt) {
         return response.sendStatus(400);
     }

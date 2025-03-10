@@ -318,16 +318,6 @@ export async function convertSoloToGroupChat() {
     const groupChat = chat.slice();
     const genIdFirst = Date.now();
 
-    // Add something if the chat is empty
-    if (groupChat.length === 0) {
-        const newMessage = {
-            ...system_messages[system_message_types.GROUP],
-            send_date: getMessageTimeStamp(),
-            extra: { type: system_message_types.GROUP },
-        };
-        groupChat.push(newMessage);
-    }
-
     for (let index = 0; index < groupChat.length; index++) {
         const message = groupChat[index];
 

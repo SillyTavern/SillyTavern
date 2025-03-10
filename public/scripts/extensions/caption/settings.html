@@ -19,6 +19,7 @@
                     <select id="caption_multimodal_api" class="flex1 text_pole">
                         <option value="zerooneai">01.AI (Yi)</option>
                         <option value="anthropic">Anthropic</option>
+                        <option value="cohere">Cohere</option>
                         <option value="custom" data-i18n="Custom (OpenAI-compatible)">Custom (OpenAI-compatible)</option>
                         <option value="google">Google AI Studio</option>
                         <option value="groq">Groq</option>
@@ -35,6 +36,8 @@
                 <div class="flex1 flex-container flexFlowColumn flexNoGap">
                     <label for="caption_multimodal_model" data-i18n="Model">Model</label>
                     <select id="caption_multimodal_model" class="flex1 text_pole">
+                        <option data-type="cohere" value="c4ai-aya-vision-8b">c4ai-aya-vision-8b</option>
+                        <option data-type="cohere" value="c4ai-aya-vision-32b">c4ai-aya-vision-32b</option>
                         <option data-type="mistral" value="pixtral-12b-latest">pixtral-12b-latest</option>
                         <option data-type="mistral" value="pixtral-12b-2409">pixtral-12b-2409</option>
                         <option data-type="mistral" value="pixtral-large-latest">pixtral-large-latest</option>
@@ -45,6 +48,12 @@
                         <option data-type="openai" value="gpt-4o">gpt-4o</option>
                         <option data-type="openai" value="gpt-4o-mini">gpt-4o-mini</option>
                         <option data-type="openai" value="chatgpt-4o-latest">chatgpt-4o-latest</option>
+                        <option data-type="openai" value="o1">o1</option>
+                        <option data-type="openai" value="o1-2024-12-17">o1-2024-12-17</option>
+                        <option data-type="openai" value="gpt-4.5-preview">gpt-4.5-preview</option>
+                        <option data-type="openai" value="gpt-4.5-preview-2025-02-27">gpt-4.5-preview-2025-02-27</option>
+                        <option data-type="anthropic" value="claude-3-7-sonnet-latest">claude-3-7-sonnet-latest</option>
+                        <option data-type="anthropic" value="claude-3-7-sonnet-20250219">claude-3-7-sonnet-20250219</option>
                         <option data-type="anthropic" value="claude-3-5-sonnet-latest">claude-3-5-sonnet-latest</option>
                         <option data-type="anthropic" value="claude-3-5-sonnet-20241022">claude-3-5-sonnet-20241022</option>
                         <option data-type="anthropic" value="claude-3-5-sonnet-20240620">claude-3-5-sonnet-20240620</option>

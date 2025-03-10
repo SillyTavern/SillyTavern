@@ -1,8 +1,6 @@
 # -- DATA CONFIGURATION --
 # Root directory for user data storage
 dataRoot: ./data
-# The maximum amount of memory that parsed character cards can use in MB
-cardsCacheCapacity: 100
 # -- SERVER CONFIGURATION --
 # Listen for incoming connections
 listen: false
@@ -28,6 +26,11 @@ port: 8000
 # - Use -1 to use the server port.
 # - Specify a port to override the default.
 autorunPortOverride: -1
+# -- SSL options --
+ssl:
+  enabled: false
+  certPath: "./certs/cert.pem"
+  keyPath: "./certs/privkey.pem"
 # -- SECURITY CONFIGURATION --
 # Toggle whitelist mode
 whitelistMode: true
@@ -37,6 +40,8 @@ enableForwardedWhitelist: true
 whitelist:
   - ::1
   - 127.0.0.1
+# Automatically whitelist Docker host and gateway IPs
+whitelistDockerHosts: true
 # Toggle basic authentication for endpoints
 basicAuthMode: false
 # Basic authentication credentials
@@ -71,20 +76,28 @@ autheliaAuth: false
 # the username and passwords for basic auth are the same as those
 # for the individual accounts
 perUserBasicAuth: false
-# Minimum log level to display in the terminal (DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3)
-minLogLevel: 0
 
 # User session timeout *in seconds* (defaults to 24 hours).
 ## Set to a positive number to expire session after a certain time of inactivity
 ## Set to 0 to expire session when the browser is closed
 ## Set to a negative number to disable session expiration
 sessionTimeout: -1
-# Used to sign session cookies. Will be auto-generated if not set
-cookieSecret: ''
 # Disable CSRF protection - NOT RECOMMENDED
 disableCsrfProtection: false
 # Disable startup security checks - NOT RECOMMENDED
 securityOverride: false
+# -- LOGGING CONFIGURATION --
+logging:
+  # Enable access logging to access.log file
+  # Records new connections with timestamp, IP address and user agent
+  enableAccessLog: true
+  # Minimum log level to display in the terminal (DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3)
+  minLogLevel: 0
+# -- RATE LIMITING CONFIGURATION --
+rateLimiting:
+  # Use X-Real-IP header instead of socket IP for rate limiting
+  # Only enable this if you are using a properly configured reverse proxy (like Nginx/traefik/Caddy)
+  preferRealIpHeader: false
 # -- ADVANCED CONFIGURATION --
 # Open the browser automatically
 autorun: true
@@ -119,6 +132,14 @@ thumbnails:
   quality: 95
   # Maximum thumbnail dimensions per type [width, height]
   dimensions: { 'bg': [160, 90], 'avatar': [96, 144] }
+
+# PERFORMANCE-RELATED CONFIGURATION
+performance:
+  # Enables lazy loading of character cards. Improves performances with large card libraries.
+  # May have compatibility issues with some extensions.
+  lazyLoadCharacters: false
+  # The maximum amount of memory that parsed character cards can use. Set to 0 to disable memory caching.
+  memoryCacheCapacity: '100mb'
 
 # Allow secret keys exposure via API
 allowKeysExposure: false

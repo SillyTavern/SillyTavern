@@ -40,4 +40,12 @@ declare global {
             searchInputCssClass?: string;
         }
     }
+
+    /**
+     * Translates a text to a target language using a translation provider.
+     * @param text Text to translate
+     * @param lang Target language
+     * @param provider Translation provider
+     */
+    async function translate(text: string, lang: string, provider: string = null): Promise<string>;
 }

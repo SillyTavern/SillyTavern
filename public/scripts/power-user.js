@@ -644,7 +644,6 @@ async function CreateZenSliders(elmnt) {
     }
     if (sliderID == 'min_temp_textgenerationwebui' ||
         sliderID == 'max_temp_textgenerationwebui' ||
-        sliderID == 'dynatemp_exponent_textgenerationwebui' ||
         sliderID == 'smoothing_curve_textgenerationwebui' ||
         sliderID == 'smoothing_factor_textgenerationwebui' ||
         sliderID == 'dry_multiplier_textgenerationwebui' ||
@@ -1489,6 +1488,8 @@ async function loadPowerUserSettings(settings, data) {
     $('#custom_stopping_strings_macro').prop('checked', power_user.custom_stopping_strings_macro);
     $('#fuzzy_search_checkbox').prop('checked', power_user.fuzzy_search);
     $('#persona_show_notifications').prop('checked', power_user.persona_show_notifications);
+    $('#persona_allow_multi_connections').prop('checked', power_user.persona_allow_multi_connections);
+    $('#persona_auto_lock').prop('checked', power_user.persona_auto_lock);
     $('#encode_tags').prop('checked', power_user.encode_tags);
     $('#example_messages_behavior').val(getExampleMessagesBehavior());
     $(`#example_messages_behavior option[value="${getExampleMessagesBehavior()}"]`).prop('selected', true);
@@ -1556,9 +1557,9 @@ async function loadPowerUserSettings(settings, data) {
     $('#stscript_autocomplete_font_scale_counter').val(power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale);
     document.body.style.setProperty('--ac-font-scale', power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale.toString());
     $('#stscript_autocomplete_width_left').val(power_user.stscript.autocomplete.width.left ?? AUTOCOMPLETE_WIDTH.CHAT);
-    document.querySelector('#stscript_autocomplete_width_left').dispatchEvent(new Event('input', { bubbles: true }));
+    document.querySelector('#stscript_autocomplete_width_left')?.dispatchEvent(new Event('input', { bubbles: true }));
     $('#stscript_autocomplete_width_right').val(power_user.stscript.autocomplete.width.right ?? AUTOCOMPLETE_WIDTH.CHAT);
-    document.querySelector('#stscript_autocomplete_width_right').dispatchEvent(new Event('input', { bubbles: true }));
+    document.querySelector('#stscript_autocomplete_width_right')?.dispatchEvent(new Event('input', { bubbles: true }));
 
     $('#restore_user_input').prop('checked', power_user.restore_user_input);
 
@@ -1845,14 +1846,15 @@ async function loadContextSettings() {
 
 /**
  * Common function to perform fuzzy search with optional caching
+ * @template T
  * @param {string} type - Type of search from fuzzySearchCategories
- * @param {any[]} data - Data array to search in
- * @param {Array<{name: string, weight: number, getFn?: (obj: any) => string}>} keys - Fuse.js keys configuration
+ * @param {T[]} data - Data array to search in
+ * @param {Array<{name: string, weight: number, getFn?: (obj: T) => string}>} keys - Fuse.js keys configuration
  * @param {string} searchValue - The search term
  * @param {Object.<string, { resultMap: Map<string, any> }>} [fuzzySearchCaches=null] - Optional fuzzy search caches
- * @returns {import('fuse.js').FuseResult<any>[]} Results as items with their score
+ * @returns {import('fuse.js').FuseResult<T>[]} Results as items with their score
  */
-function performFuzzySearch(type, data, keys, searchValue, fuzzySearchCaches = null) {
+export function performFuzzySearch(type, data, keys, searchValue, fuzzySearchCaches = null) {
     // Check cache if provided
     if (fuzzySearchCaches) {
         const cache = fuzzySearchCaches[type];
@@ -3704,6 +3706,16 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $('#persona_allow_multi_connections').on('input', function () {
+        power_user.persona_allow_multi_connections = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#persona_auto_lock').on('input', function () {
+        power_user.persona_auto_lock = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
     $('#encode_tags').on('input', async function () {
         power_user.encode_tags = !!$(this).prop('checked');
         await reloadCurrentChat();
@@ -4122,16 +4134,27 @@ $(document).ready(() => {
         helpString: `
             <div>
                 Sets a list of custom stopping strings. Gets the list if no value is provided.
+                Use a "force" argument to force set an empty value.
             </div>
             <div>
                 <strong>Examples:</strong>
             </div>
             <ul>
+                <li>Force set an empty value: <pre><code class="language-stscript">/stop-strings force="true" {{noop}}</code></pre></li>
                 <li>Value must be a JSON-serialized array: <pre><code class="language-stscript">/stop-strings ["goodbye", "farewell"]</code></pre></li>
                 <li>Pipe characters must be escaped with a backslash: <pre><code class="language-stscript">/stop-strings ["left\\|right"]</code></pre></li>
             </ul>
         `,
         returns: ARGUMENT_TYPE.LIST,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'force',
+                description: 'force set a value if empty',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'list of strings',
@@ -4140,21 +4163,80 @@ $(document).ready(() => {
                 isRequired: false,
             }),
         ],
-        callback: (_, value) => {
-            if (String(value ?? '').trim()) {
-                const parsedValue = ((x) => { try { return JSON.parse(x.toString()); } catch { return null; } })(value);
-                if (!parsedValue || !Array.isArray(parsedValue)) {
-                    throw new Error('Invalid list format. The value must be a JSON-serialized array of strings.');
-                }
-                parsedValue.forEach((item, index) => {
-                    parsedValue[index] = String(item);
-                });
-                power_user.custom_stopping_strings = JSON.stringify(parsedValue);
-                $('#custom_stopping_strings').val(power_user.custom_stopping_strings);
-                saveSettingsDebounced();
+        callback: (args, value) => {
+            const force = isTrueBoolean(String(args?.force ?? false));
+            value = String(value ?? '').trim();
+
+            // Skip processing if no value and not forced
+            if (!force && !value) {
+                return power_user.custom_stopping_strings;
             }
 
+            // Use empty array for forced empty value
+            if (force && !value) {
+                value = JSON.stringify([]);
+            }
+
+            const parsedValue = ((x) => { try { return JSON.parse(x.toString()); } catch { return null; } })(value);
+            if (!parsedValue || !Array.isArray(parsedValue)) {
+                throw new Error('Invalid list format. The value must be a JSON-serialized array of strings.');
+            }
+            parsedValue.forEach((item, index) => {
+                parsedValue[index] = String(item);
+            });
+            power_user.custom_stopping_strings = JSON.stringify(parsedValue);
+            $('#custom_stopping_strings').val(power_user.custom_stopping_strings);
+            saveSettingsDebounced();
+
             return power_user.custom_stopping_strings;
+        },
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'start-reply-with',
+        helpString: `
+            <div>
+                Sets a "Start Reply With". Gets the current value if no value is provided.
+                Use a "force" argument to force set an empty value.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+            </div>
+            <ul>
+                <li>Set the field value: <pre><code class="language-stscript">/start-reply-with Sure!</code></pre></li>
+                <li>Force set an empty value: <pre><code class="language-stscript">/start-reply-with force="true" {{noop}}</code></pre></li>
+            </ul>
+        `,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'force',
+                description: 'force set a value if empty',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        unnamedArgumentList:[
+            SlashCommandArgument.fromProps({
+                description: 'value',
+                typeList: [ARGUMENT_TYPE.STRING],
+                acceptsMultiple: false,
+                isRequired: false,
+            }),
+        ],
+        callback: (args, value) => {
+            const force = isTrueBoolean(String(args?.force ?? false));
+            value = String(value ?? '').trim();
+
+            // Skip processing if no value and not forced
+            if (!force && !value) {
+                return power_user.user_prompt_bias;
+            }
+
+            power_user.user_prompt_bias = value;
+            $('#start_reply_with').val(power_user.user_prompt_bias);
+            saveSettingsDebounced();
+
+            return power_user.user_prompt_bias;
         },
     }));
 });

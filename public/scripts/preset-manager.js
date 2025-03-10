@@ -21,6 +21,7 @@ import { groups, selected_group } from './group-chats.js';
 import { instruct_presets } from './instruct-mode.js';
 import { kai_settings } from './kai-settings.js';
 import { convertNovelPreset } from './nai-settings.js';
+import { openai_settings, openai_setting_names, oai_settings } from './openai.js';
 import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -438,11 +439,16 @@ class PresetManager {
 
     }
 
-    getPresetList() {
+    getPresetList(api) {
         let presets = [];
         let preset_names = {};
 
-        switch (this.apiId) {
+        // If no API specified, use the current API
+        if (api === undefined) {
+            api = this.apiId;
+        }
+
+        switch (api) {
             case 'koboldhorde':
             case 'kobold':
                 presets = koboldai_settings;
@@ -455,6 +461,10 @@ class PresetManager {
             case 'textgenerationwebui':
                 presets = textgenerationwebui_presets;
                 preset_names = textgenerationwebui_preset_names;
+                break;
+            case 'openai':
+                presets = openai_settings;
+                preset_names = openai_setting_names;
                 break;
             case 'context':
                 presets = context_presets;
@@ -469,7 +479,7 @@ class PresetManager {
                 preset_names = system_prompts.map(x => x.name);
                 break;
             default:
-                console.warn(`Unknown API ID ${this.apiId}`);
+                console.warn(`Unknown API ID ${api}`);
         }
 
         return { presets, preset_names };
@@ -604,6 +614,30 @@ class PresetManager {
         }
 
         return settings;
+    }
+
+    getCompletionPresetByName(name) {
+        // Retrieve a completion preset by name. Return undefined if not found.
+        let { presets, preset_names } = this.getPresetList();
+        let preset;
+
+        // Some APIs use an array of names, others use an object of {name: index}
+        if (Array.isArray(preset_names)) {  // array of names
+            if (preset_names.includes(name)) {
+                preset = presets[preset_names.indexOf(name)];
+            }
+        } else {  // object of {names: index}
+            if (preset_names[name] !== undefined) {
+                preset = presets[preset_names[name]];
+            }
+        }
+
+        if (preset === undefined) {
+            console.error(`Preset ${name} not found`);
+        }
+
+        // if the preset isn't found, returns undefined
+        return preset;
     }
 
     // pass no arguments to delete current preset

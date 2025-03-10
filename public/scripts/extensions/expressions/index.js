@@ -1,11 +1,11 @@
 import { Fuse } from '../../../lib.js';
 
-import { callPopup, eventSource, event_types, generateRaw, getRequestHeaders, main_api, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types } from '../../../script.js';
+import { characters, eventSource, event_types, generateRaw, getRequestHeaders, main_api, online_status, saveSettingsDebounced, substituteParams, substituteParamsExtended, system_message_types, this_chid } from '../../../script.js';
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
-import { loadMovingUIState, power_user } from '../../power-user.js';
+import { loadMovingUIState, performFuzzySearch, power_user } from '../../power-user.js';
 import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence, waitUntilCondition, findChar } from '../../utils.js';
-import { hideMutedSprites } from '../../group-chats.js';
+import { hideMutedSprites, selected_group } from '../../group-chats.js';
 import { isJsonSchemaSupported } from '../../textgen-settings.js';
 import { debounce_timeout } from '../../constants.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -15,16 +15,32 @@ import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashComm
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { slashCommandReturnHelper } from '../../slash-commands/SlashCommandReturnHelper.js';
 import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
+import { Popup, POPUP_RESULT } from '../../popup.js';
+import { t } from '../../i18n.js';
 export { MODULE_NAME };
+
+/**
+* @typedef {object} Expression Expression definition with label and file path
+* @property {string} label The label of the expression
+* @property {ExpressionImage[]} files One or more images to represent this expression
+*/
+
+/**
+ * @typedef {object} ExpressionImage An expression image
+ * @property {string} expression - The expression
+ * @property {boolean} [isCustom=false] - If the expression is added by user
+ * @property {string} fileName - The filename with extension
+ * @property {string} title - The title for the image
+ * @property {string} imageSrc - The image source / full path
+ * @property {'success' | 'additional' | 'failure'} type - The type of the image
+ */
 
 const MODULE_NAME = 'expressions';
 const UPDATE_INTERVAL = 2000;
 const STREAMING_UPDATE_INTERVAL = 10000;
-const TALKINGCHECK_UPDATE_INTERVAL = 500;
 const DEFAULT_FALLBACK_EXPRESSION = 'joy';
 const DEFAULT_LLM_PROMPT = 'Ignore previous instructions. Classify the emotion of the last message. Output just one word, e.g. "joy" or "anger". Choose only one of the following labels: {{labels}}';
 const DEFAULT_EXPRESSIONS = [
-    'talkinghead',
     'admiration',
     'amusement',
     'anger',
@@ -54,6 +70,12 @@ const DEFAULT_EXPRESSIONS = [
     'surprise',
     'neutral',
 ];
+
+const OPTION_NO_FALLBACK = '#none';
+const OPTION_EMOJI_FALLBACK = '#emoji';
+const RESET_SPRITE_LABEL = '#reset';
+
+
 /** @enum {number} */
 const EXPRESSION_API = {
     local: 0,
@@ -65,35 +87,29 @@ const EXPRESSION_API = {
 let expressionsList = null;
 let lastCharacter = undefined;
 let lastMessage = null;
-let lastTalkingState = false;
-let lastTalkingStateMessage = null;  // last message as seen by `updateTalkingState` (tracked separately, different timer)
+/** @type {{[characterKey: string]: Expression[]}} */
 let spriteCache = {};
 let inApiCall = false;
 let lastServerResponseTime = 0;
+
+/** @type {{[characterName: string]: string}} */
 export let lastExpression = {};
 
-function isTalkingHeadEnabled() {
-    return extension_settings.expressions.talkinghead && extension_settings.expressions.api == EXPRESSION_API.extras;
-}
-
 /**
- * Returns the fallback expression if explicitly chosen, otherwise the default one
- * @returns {string} expression name
+ * Returns a placeholder image object for a given expression
+ * @param {string} expression - The expression label
+ * @param {boolean} [isCustom=false] - Whether the expression is custom
+ * @returns {ExpressionImage} The placeholder image object
  */
-function getFallbackExpression() {
-    return extension_settings.expressions.fallback_expression ?? DEFAULT_FALLBACK_EXPRESSION;
-}
-
-/**
- * Toggles Talkinghead mode on/off.
- *
- * Implements the `/th` slash command, which is meant to be bound to a Quick Reply button
- * as a quick way to switch Talkinghead on or off (e.g. to conserve GPU resources when AFK
- * for a long time).
- */
-function toggleTalkingHeadCommand(_) {
-    setTalkingHeadState(!extension_settings.expressions.talkinghead);
-    return String(extension_settings.expressions.talkinghead);
+function getPlaceholderImage(expression, isCustom = false) {
+    return {
+        expression: expression,
+        isCustom: isCustom,
+        title: 'No Image',
+        type: 'failure',
+        fileName: 'No-Image-Placeholder.svg',
+        imageSrc: '/img/No-Image-Placeholder.svg',
+    };
 }
 
 function isVisualNovelMode() {
@@ -108,21 +124,21 @@ async function forceUpdateVisualNovelMode() {
 
 const updateVisualNovelModeDebounced = debounce(forceUpdateVisualNovelMode, debounce_timeout.quick);
 
-async function updateVisualNovelMode(name, expression) {
-    const container = $('#visual-novel-wrapper');
+async function updateVisualNovelMode(spriteFolderName, expression) {
+    const vnContainer = $('#visual-novel-wrapper');
 
-    await visualNovelRemoveInactive(container);
+    await visualNovelRemoveInactive(vnContainer);
 
-    const setSpritePromises = await visualNovelSetCharacterSprites(container, name, expression);
+    const setSpritePromises = await visualNovelSetCharacterSprites(vnContainer, spriteFolderName, expression);
 
     // calculate layer indices based on recent messages
-    await visualNovelUpdateLayers(container);
+    await visualNovelUpdateLayers(vnContainer);
 
     await Promise.allSettled(setSpritePromises);
 
     // update again based on new sprites
     if (setSpritePromises.length > 0) {
-        await visualNovelUpdateLayers(container);
+        await visualNovelUpdateLayers(vnContainer);
     }
 }
 
@@ -153,52 +169,60 @@ async function visualNovelRemoveInactive(container) {
     await Promise.allSettled(removeInactiveCharactersPromises);
 }
 
-async function visualNovelSetCharacterSprites(container, name, expression) {
+/**
+ * Sets the character sprites for visual novel mode based on the provided container, name, and expression.
+ *
+ * @param {JQuery<HTMLElement>} vnContainer - The container element where the sprites will be set
+ * @param {string} spriteFolderName - The name of the sprite folder
+ * @param {string} expression - The expression to set for the characters
+ * @returns {Promise<Array>} - An array of promises that resolve when the sprites are set
+ */
+async function visualNovelSetCharacterSprites(vnContainer, spriteFolderName, expression) {
+    const originalExpression = expression;
     const context = getContext();
     const group = context.groups.find(x => x.id == context.groupId);
-    const labels = await getExpressionsList();
 
-    const createCharacterPromises = [];
     const setSpritePromises = [];
 
     for (const avatar of group.members) {
-        const isDisabled = group.disabled_members.includes(avatar);
-
         // skip disabled characters
+        const isDisabled = group.disabled_members.includes(avatar);
         if (isDisabled && hideMutedSprites) {
             continue;
         }
 
         const character = context.characters.find(x => x.avatar == avatar);
-
         if (!character) {
             continue;
         }
 
-        const spriteFolderName = getSpriteFolderName({ original_avatar: character.avatar }, character.name);
+        const expressionImage = vnContainer.find(`.expression-holder[data-avatar="${avatar}"]`);
+        /** @type {JQuery<HTMLElement>} */
+        let img;
+
+        const memberSpriteFolderName = getSpriteFolderName({ original_avatar: character.avatar }, character.name);
 
         // download images if not downloaded yet
-        if (spriteCache[spriteFolderName] === undefined) {
-            spriteCache[spriteFolderName] = await getSpritesList(spriteFolderName);
+        if (spriteCache[memberSpriteFolderName] === undefined) {
+            spriteCache[memberSpriteFolderName] = await getSpritesList(memberSpriteFolderName);
         }
 
-        const sprites = spriteCache[spriteFolderName];
-        const expressionImage = container.find(`.expression-holder[data-avatar="${avatar}"]`);
-        const defaultExpression = getFallbackExpression();
-        const defaultSpritePath = sprites.find(x => x.label === defaultExpression)?.path;
-        const noSprites = sprites.length === 0;
+        const prevExpressionSrc = expressionImage.find('img').attr('src') || null;
 
-        if (expressionImage.length > 0) {
-            if (name == spriteFolderName) {
-                await validateImages(spriteFolderName, true);
+        if (!originalExpression && Array.isArray(spriteCache[memberSpriteFolderName]) && spriteCache[memberSpriteFolderName].length > 0) {
+            expression = await getLastMessageSprite(avatar);
+        }
+
+        const spriteFile = chooseSpriteForExpression(memberSpriteFolderName, expression, { prevExpressionSrc: prevExpressionSrc });
+        if (expressionImage.length) {
+            if (!spriteFolderName || spriteFolderName == memberSpriteFolderName) {
+                await validateImages(memberSpriteFolderName, true);
                 setExpressionOverrideHtml(true); // <= force clear expression override input
-                const currentSpritePath = labels.includes(expression) ? sprites.find(x => x.label === expression)?.path : '';
-
-                const path = currentSpritePath || defaultSpritePath || '';
-                const img = expressionImage.find('img');
+                const path = spriteFile?.imageSrc || '';
+                img = expressionImage.find('img');
                 await setImage(img, path);
             }
-            expressionImage.toggleClass('hidden', noSprites);
+            expressionImage.toggleClass('hidden', !spriteFile);
         } else {
             const template = $('#expression-holder').clone();
             template.attr('id', `expression-${avatar}`);
@@ -206,19 +230,47 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
             template.find('.drag-grabber').attr('id', `expression-${avatar}header`);
             $('#visual-novel-wrapper').append(template);
             dragElement($(template[0]));
-            template.toggleClass('hidden', noSprites);
-            await setImage(template.find('img'), defaultSpritePath || '');
+            template.toggleClass('hidden', !spriteFile);
+            img = template.find('img');
+            await setImage(img, spriteFile?.imageSrc || '');
             const fadeInPromise = new Promise(resolve => {
                 template.fadeIn(250, () => resolve());
             });
-            createCharacterPromises.push(fadeInPromise);
-            const setSpritePromise = setLastMessageSprite(template.find('img'), avatar, labels);
-            setSpritePromises.push(setSpritePromise);
+            setSpritePromises.push(fadeInPromise);
         }
+
+        if (!img) {
+            continue;
+        }
+
+        img.attr('data-sprite-folder-name', spriteFolderName);
+        img.attr('data-expression', expression);
+        img.attr('data-sprite-filename', spriteFile?.fileName || null);
+        img.attr('title', expression);
+
+        if (spriteFile) console.info(`Expression set for group member ${character.name}`, { expression: spriteFile.expression, file: spriteFile.fileName });
+        else if (expressionImage.length) console.info(`Expression unset for group member ${character.name} - No sprite found`, { expression: expression });
+        else console.info(`Expression not available for group member ${character.name}`, { expression: expression });
     }
 
-    await Promise.allSettled(createCharacterPromises);
     return setSpritePromises;
+}
+
+/**
+ * Classifies the text of the latest message and returns the expression label.
+ * @param {string} avatar - The avatar of the character to get the last message for
+ * @returns {Promise<string>} - The expression label
+ */
+async function getLastMessageSprite(avatar) {
+    const context = getContext();
+    const lastMessage = context.chat.slice().reverse().find(x => x.original_avatar == avatar || (x.force_avatar && x.force_avatar.includes(encodeURIComponent(avatar))));
+
+    if (lastMessage) {
+        const text = lastMessage.mes || '';
+        return await getExpressionLabel(text);
+    }
+
+    return null;
 }
 
 async function visualNovelUpdateLayers(container) {
@@ -256,11 +308,17 @@ async function visualNovelUpdateLayers(container) {
     const containerWidth = container.width();
     const pivotalPoint = containerWidth * 0.5;
 
-    let images = $('#visual-novel-wrapper .expression-holder');
+    let images = Array.from($('#visual-novel-wrapper .expression-holder')).sort(sortFunction);
     let imagesWidth = [];
 
-    images.sort(sortFunction).each(function () {
-        imagesWidth.push($(this).width());
+    for (const image of images) {
+        if (image instanceof HTMLImageElement && !image.complete) {
+            await new Promise(resolve => image.addEventListener('load', resolve, { once: true }));
+        }
+    }
+
+    images.forEach(image => {
+        imagesWidth.push($(image).width());
     });
 
     let totalWidth = imagesWidth.reduce((a, b) => a + b, 0);
@@ -274,7 +332,7 @@ async function visualNovelUpdateLayers(container) {
         currentPosition = 0; // Reset the initial position to 0
     }
 
-    images.sort(sortFunction).each((index, current) => {
+    images.forEach((current, index) => {
         const element = $(current);
         const elementID = element.attr('id');
 
@@ -294,9 +352,15 @@ async function visualNovelUpdateLayers(container) {
         element.show();
 
         const promise = new Promise(resolve => {
-            element.animate({ left: currentPosition + 'px' }, 500, () => {
-                resolve();
-            });
+            if (power_user.reduced_motion) {
+                element.css('left', currentPosition + 'px');
+                requestAnimationFrame(() => resolve());
+            }
+            else {
+                element.animate({ left: currentPosition + 'px' }, 500, () => {
+                    resolve();
+                });
+            }
         });
 
         currentPosition += imagesWidth[index];
@@ -307,23 +371,12 @@ async function visualNovelUpdateLayers(container) {
     await Promise.allSettled(setLayerIndicesPromises);
 }
 
-async function setLastMessageSprite(img, avatar, labels) {
-    const context = getContext();
-    const lastMessage = context.chat.slice().reverse().find(x => x.original_avatar == avatar || (x.force_avatar && x.force_avatar.includes(encodeURIComponent(avatar))));
-
-    if (lastMessage) {
-        const text = lastMessage.mes || '';
-        const spriteFolderName = getSpriteFolderName(lastMessage, lastMessage.name);
-        const sprites = spriteCache[spriteFolderName] || [];
-        const label = await getExpressionLabel(text);
-        const path = labels.includes(label) ? sprites.find(x => x.label === label)?.path : '';
-
-        if (path) {
-            setImage(img, path);
-        }
-    }
-}
-
+/**
+ * Sets the expression for the given character image.
+ * @param {JQuery<HTMLElement>} img - The image element to set the image on
+ * @param {string} path - The path to the image
+ * @returns {Promise<void>} - A promise that resolves when the image is set
+ */
 async function setImage(img, path) {
     // Cohee: If something goes wrong, uncomment this to return to the old behavior
     /*
@@ -340,7 +393,7 @@ async function setImage(img, path) {
     return new Promise(resolve => {
         const prevExpressionSrc = img.attr('src');
         const expressionClone = img.clone();
-        const originalId = img.attr('id');
+        const originalId = img.data('filename');
 
         //only swap expressions when necessary
         if (prevExpressionSrc !== path && !img.hasClass('expression-animating')) {
@@ -348,7 +401,7 @@ async function setImage(img, path) {
             expressionClone.addClass('expression-clone');
             //make invisible and remove id to prevent double ids
             //must be made invisible to start because they share the same Z-index
-            expressionClone.attr('id', '').css({ opacity: 0 });
+            expressionClone.data('filename', '').css({ opacity: 0 });
             //add new sprite path to clone src
             expressionClone.attr('src', path);
             //add invisible clone to html
@@ -384,14 +437,18 @@ async function setImage(img, path) {
                     //remove old expression
                     img.remove();
                     //replace ID so it becomes the new 'original' expression for next change
-                    expressionClone.attr('id', originalId);
+                    expressionClone.data('filename', originalId);
                     expressionClone.removeClass('expression-animating');
 
                     // Reset the expression holder min height and width
                     expressionHolder.css('min-width', 100);
                     expressionHolder.css('min-height', 100);
 
-                    resolve();
+                    if (expressionClone.prop('complete')) {
+                        resolve();
+                    } else {
+                        expressionClone.one('load', () => resolve());
+                    }
                 });
 
             expressionClone.removeClass('expression-clone');
@@ -410,215 +467,8 @@ async function setImage(img, path) {
     });
 }
 
-function onExpressionsShowDefaultInput() {
-    const value = $(this).prop('checked');
-    extension_settings.expressions.showDefault = value;
-    saveSettingsDebounced();
-
-    const existingImageSrc = $('img.expression').prop('src');
-    if (existingImageSrc !== undefined) {                      //if we have an image in src
-        if (!value && existingImageSrc.includes('/img/default-expressions/')) {    //and that image is from /img/ (default)
-            $('img.expression').prop('src', '');               //remove it
-            lastMessage = null;
-        }
-        if (value) {
-            lastMessage = null;
-        }
-    }
-}
-
-/**
-  * Stops animating Talkinghead.
-  */
-async function unloadTalkingHead() {
-    if (!modules.includes('talkinghead')) {
-        console.debug('talkinghead module is disabled');
-        return;
-    }
-    console.debug('expressions: Stopping Talkinghead');
-
-    try {
-        const url = new URL(getApiUrl());
-        url.pathname = '/api/talkinghead/unload';
-        const loadResponse = await doExtrasFetch(url);
-        if (!loadResponse.ok) {
-            throw new Error(loadResponse.statusText);
-        }
-        //console.log(`Response: ${loadResponseText}`);
-    } catch (error) {
-        //console.error(`Error unloading - ${error}`);
-    }
-}
-
-/**
-  * Posts `talkinghead.png` of the current character to the talkinghead module in SillyTavern-extras, to start animating it.
-  */
-async function loadTalkingHead() {
-    if (!modules.includes('talkinghead')) {
-        console.debug('talkinghead module is disabled');
-        return;
-    }
-    console.debug('expressions: Starting Talkinghead');
-
-    const spriteFolderName = getSpriteFolderName();
-
-    const talkingheadPath = `/characters/${encodeURIComponent(spriteFolderName)}/talkinghead.png`;
-    const emotionsSettingsPath = `/characters/${encodeURIComponent(spriteFolderName)}/_emotions.json`;
-    const animatorSettingsPath = `/characters/${encodeURIComponent(spriteFolderName)}/_animator.json`;
-
-    try {
-        const spriteResponse = await fetch(talkingheadPath);
-
-        if (!spriteResponse.ok) {
-            throw new Error(spriteResponse.statusText);
-        }
-
-        const spriteBlob = await spriteResponse.blob();
-        const spriteFile = new File([spriteBlob], 'talkinghead.png', { type: 'image/png' });
-        const formData = new FormData();
-        formData.append('file', spriteFile);
-
-        const url = new URL(getApiUrl());
-        url.pathname = '/api/talkinghead/load';
-
-        const loadResponse = await doExtrasFetch(url, {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!loadResponse.ok) {
-            throw new Error(loadResponse.statusText);
-        }
-
-        const loadResponseText = await loadResponse.text();
-        console.log(`Load talkinghead response: ${loadResponseText}`);
-
-        // Optional: per-character emotion templates
-        let emotionsSettings;
-        try {
-            const emotionsResponse = await fetch(emotionsSettingsPath);
-            if (emotionsResponse.ok) {
-                emotionsSettings = await emotionsResponse.json();
-                console.log(`Loaded ${emotionsSettingsPath}`);
-            } else {
-                throw new Error();
-            }
-        }
-        catch (error) {
-            emotionsSettings = {};  // blank -> use server defaults (to unload the previous character's customizations)
-            console.log(`No valid config at ${emotionsSettingsPath}, using server defaults`);
-        }
-        try {
-            const url = new URL(getApiUrl());
-            url.pathname = '/api/talkinghead/load_emotion_templates';
-            const apiResult = await doExtrasFetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Bypass-Tunnel-Reminder': 'bypass',
-                },
-                body: JSON.stringify(emotionsSettings),
-            });
-
-            if (!apiResult.ok) {
-                throw new Error(apiResult.statusText);
-            }
-        }
-        catch (error) {
-            // it's ok if not supported
-            console.log('Failed to send _emotions.json (backend too old?), ignoring');
-        }
-
-        // Optional: per-character animator and postprocessor config
-        let animatorSettings;
-        try {
-            const animatorResponse = await fetch(animatorSettingsPath);
-            if (animatorResponse.ok) {
-                animatorSettings = await animatorResponse.json();
-                console.log(`Loaded ${animatorSettingsPath}`);
-            } else {
-                throw new Error();
-            }
-        }
-        catch (error) {
-            animatorSettings = {};  // blank -> use server defaults (to unload the previous character's customizations)
-            console.log(`No valid config at ${animatorSettingsPath}, using server defaults`);
-        }
-        try {
-            const url = new URL(getApiUrl());
-            url.pathname = '/api/talkinghead/load_animator_settings';
-            const apiResult = await doExtrasFetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Bypass-Tunnel-Reminder': 'bypass',
-                },
-                body: JSON.stringify(animatorSettings),
-            });
-
-            if (!apiResult.ok) {
-                throw new Error(apiResult.statusText);
-            }
-        }
-        catch (error) {
-            // it's ok if not supported
-            console.log('Failed to send _animator.json (backend too old?), ignoring');
-        }
-    } catch (error) {
-        console.error(`Error loading talkinghead image: ${talkingheadPath} - ${error}`);
-    }
-}
-
-function handleImageChange() {
-    const imgElement = document.querySelector('img#expression-image.expression');
-
-    if (!imgElement || !(imgElement instanceof HTMLImageElement)) {
-        console.log('Cannot find addExpressionImage()');
-        return;
-    }
-
-    if (isTalkingHeadEnabled() && modules.includes('talkinghead')) {
-        const talkingheadResultFeedSrc = `${getApiUrl()}/api/talkinghead/result_feed`;
-        $('#expression-holder').css({ display: '' });
-        if (imgElement.src !== talkingheadResultFeedSrc) {
-            const expressionImageElement = document.querySelector('.expression_list_image');
-
-            if (expressionImageElement && expressionImageElement instanceof HTMLImageElement) {
-                doExtrasFetch(expressionImageElement.src, {
-                    method: 'HEAD',
-                })
-                    .then(response => {
-                        if (response.ok) {
-                            imgElement.src = talkingheadResultFeedSrc;
-                        }
-                    })
-                    .catch(error => {
-                        console.error(error);
-                    });
-            }
-        }
-    } else {
-        imgElement.src = '';  // remove in case char doesn't have expressions
-
-        // When switching Talkinghead off, force-set the character to the last known expression, if any.
-        // This preserves the same expression Talkinghead had at the moment it was switched off.
-        const charName = getContext().name2;
-        const last = lastExpression[charName];
-        const targetExpression = last ? last : getFallbackExpression();
-        setExpression(charName, targetExpression, true);
-    }
-}
-
-async function moduleWorker() {
+async function moduleWorker({ newChat = false } = {}) {
     const context = getContext();
-
-    // Hide and disable Talkinghead while not in extras
-    $('#image_type_block').toggle(extension_settings.expressions.api == EXPRESSION_API.extras);
-
-    if (extension_settings.expressions.api != EXPRESSION_API.extras && extension_settings.expressions.talkinghead) {
-        $('#image_type_toggle').prop('checked', false);
-        setTalkingHeadState(false);
-    }
 
     // non-characters not supported
     if (!context.groupId && context.characterId === undefined) {
@@ -646,7 +496,7 @@ async function moduleWorker() {
     }
 
     const currentLastMessage = getLastCharacterMessage();
-    let spriteFolderName = context.groupId ? getSpriteFolderName(currentLastMessage, currentLastMessage.name) : getSpriteFolderName();
+    let spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage.name);
 
     // character has no expressions or it is not loaded
     if (Object.keys(spriteCache).length === 0) {
@@ -684,6 +534,10 @@ async function moduleWorker() {
         }
 
         offlineMode.css('display', 'none');
+    }
+
+    if (context.groupId && vnMode && newChat) {
+        await forceUpdateVisualNovelMode();
     }
 
     // Don't bother classifying if current char has no sprites and no default expressions are enabled
@@ -732,11 +586,11 @@ async function moduleWorker() {
         const force = !!context.groupId;
 
         // Character won't be angry on you for swiping
-        if (currentLastMessage.mes == '...' && expressionsList.includes(getFallbackExpression())) {
-            expression = getFallbackExpression();
+        if (currentLastMessage.mes == '...' && expressionsList.includes(extension_settings.expressions.fallback_expression)) {
+            expression = extension_settings.expressions.fallback_expression;
         }
 
-        await sendExpressionCall(spriteFolderName, expression, force, vnMode);
+        await sendExpressionCall(spriteFolderName, expression, { force: force, vnMode: vnMode });
     }
     catch (error) {
         console.log(error);
@@ -746,91 +600,6 @@ async function moduleWorker() {
         lastCharacter = context.groupId || context.characterId;
         lastMessage = currentLastMessage.mes;
         lastServerResponseTime = Date.now();
-    }
-}
-
-/**
-  * Starts/stops Talkinghead talking animation.
-  *
-  * Talking starts only when all the following conditions are met:
-  *   - The LLM is currently streaming its output.
-  *   - The AI's current last message is non-empty, and also not just '...' (as produced by a swipe).
-  *   - The AI's current last message has changed from what we saw during the previous call.
-  *
-  * In all other cases, talking stops.
-  *
-  * A Talkinghead API call is made only when the talking state changes.
-  *
-  * Note that also the TTS system, if enabled, starts/stops the Talkinghead talking animation.
-  * See `talkingAnimation` in `SillyTavern/public/scripts/extensions/tts/index.js`.
-  */
-async function updateTalkingState() {
-    // Don't bother if Talkinghead is disabled or not loaded.
-    if (!isTalkingHeadEnabled() || !modules.includes('talkinghead')) {
-        return;
-    }
-
-    const context = getContext();
-    const currentLastMessage = getLastCharacterMessage();
-
-    try {
-        // TODO: Not sure if we need also "&& !context.groupId" here - the classify check in `moduleWorker`
-        //       (that similarly checks the streaming processor state) does that for some reason.
-        //       Talkinghead isn't currently designed to work with groups.
-        const lastMessageChanged = !((lastCharacter === context.characterId || lastCharacter === context.groupId) && lastTalkingStateMessage === currentLastMessage.mes);
-        const url = new URL(getApiUrl());
-        let newTalkingState;
-        if (context.streamingProcessor && !context.streamingProcessor.isFinished &&
-            currentLastMessage.mes.length !== 0 && currentLastMessage.mes !== '...' && lastMessageChanged) {
-            url.pathname = '/api/talkinghead/start_talking';
-            newTalkingState = true;
-        } else {
-            url.pathname = '/api/talkinghead/stop_talking';
-            newTalkingState = false;
-        }
-        try {
-            // Call the Talkinghead API only if the talking state changed.
-            if (newTalkingState !== lastTalkingState) {
-                console.debug(`updateTalkingState: calling ${url.pathname}`);
-                await doExtrasFetch(url);
-            }
-        }
-        catch (error) {
-            // it's ok if not supported
-        }
-        finally {
-            lastTalkingState = newTalkingState;
-        }
-    }
-    catch (error) {
-        // console.log(error);
-    }
-    finally {
-        lastTalkingStateMessage = currentLastMessage.mes;
-    }
-}
-
-/**
- * Checks whether the current character has a talkinghead image available.
- * @returns {Promise<boolean>} True if the character has a talkinghead image available, false otherwise.
- */
-async function isTalkingHeadAvailable() {
-    let spriteFolderName = getSpriteFolderName();
-
-    try {
-        await validateImages(spriteFolderName);
-
-        let talkingheadObj = spriteCache[spriteFolderName].find(obj => obj.label === 'talkinghead');
-        let talkingheadPath = talkingheadObj ? talkingheadObj.path : null;
-
-        if (talkingheadPath != null) {
-            return true;
-        } else {
-            await unloadTalkingHead();
-            return false;
-        }
-    } catch (err) {
-        return err;
     }
 }
 
@@ -848,33 +617,6 @@ function getSpriteFolderName(characterMessage = null, characterName = null) {
     return spriteFolderName;
 }
 
-function setTalkingHeadState(newState) {
-    console.debug(`expressions: New talkinghead state: ${newState}`);
-    extension_settings.expressions.talkinghead = newState; // Store setting
-    saveSettingsDebounced();
-
-    if ([EXPRESSION_API.local, EXPRESSION_API.llm, EXPRESSION_API.webllm].includes(extension_settings.expressions.api)) {
-        return;
-    }
-
-    isTalkingHeadAvailable().then(result => {
-        if (result) {
-            //console.log("talkinghead exists!");
-
-            if (extension_settings.expressions.talkinghead) {
-                loadTalkingHead();
-            } else {
-                unloadTalkingHead();
-            }
-            handleImageChange(); // Change image as needed
-
-
-        } else {
-            //console.log("talkinghead does not exist.");
-        }
-    });
-}
-
 function getFolderNameByMessage(message) {
     const context = getContext();
     let avatarPath = '';
@@ -882,7 +624,7 @@ function getFolderNameByMessage(message) {
     if (context.groupId) {
         avatarPath = message.original_avatar || context.characters.find(x => message.force_avatar && message.force_avatar.includes(encodeURIComponent(x.avatar)))?.avatar;
     }
-    else if (context.characterId) {
+    else if (context.characterId !== undefined) {
         avatarPath = getCharaFilename();
     }
 
@@ -894,48 +636,55 @@ function getFolderNameByMessage(message) {
     return folderName;
 }
 
-async function sendExpressionCall(name, expression, force, vnMode) {
-    lastExpression[name.split('/')[0]] = expression;
-    if (!vnMode) {
+/**
+ * Update the expression for the given character.
+ *
+ * @param {string} spriteFolderName The character name, optionally with a sprite folder override, e.g. "folder/expression".
+ * @param {string} expression The expression label, e.g. "amusement", "joy", etc.
+ * @param {Object} [options] Additional options
+ * @param {boolean} [options.force=false] If true, the expression will be sent even if it is the same as the current expression.
+ * @param {boolean} [options.vnMode=null] If true, the expression will be sent in Visual Novel mode. If null, it will be determined by the current chat mode.
+ * @param {string?} [options.overrideSpriteFile=null] - Set if a specific sprite file should be used. Must be sprite file name.
+ */
+export async function sendExpressionCall(spriteFolderName, expression, { force = false, vnMode = null, overrideSpriteFile = null } = {}) {
+    lastExpression[spriteFolderName.split('/')[0]] = expression;
+    if (vnMode === null) {
         vnMode = isVisualNovelMode();
     }
 
     if (vnMode) {
-        await updateVisualNovelMode(name, expression);
+        await updateVisualNovelMode(spriteFolderName, expression);
     } else {
-        setExpression(name, expression, force);
+        setExpression(spriteFolderName, expression, { force: force, overrideSpriteFile: overrideSpriteFile });
     }
 }
 
-async function setSpriteSetCommand(_, folder) {
+async function setSpriteFolderCommand(_, folder) {
     if (!folder) {
         console.log('Clearing sprite set');
         folder = '';
     }
 
     if (folder.startsWith('/') || folder.startsWith('\\')) {
-        folder = folder.slice(1);
-
         const currentLastMessage = getLastCharacterMessage();
+        folder = folder.slice(1);
         folder = `${currentLastMessage.name}/${folder}`;
     }
 
     $('#expression_override').val(folder.trim());
     onClickExpressionOverrideButton();
-    // removeExpression();
-    // moduleWorker();
-    const vnMode = isVisualNovelMode();
-    await sendExpressionCall(folder, lastExpression, true, vnMode);
+
+    // No need to resend the expression, the folder override will automatically update the currently displayed one.
     return '';
 }
 
 async function classifyCallback(/** @type {{api: string?, prompt: string?}} */ { api = null, prompt = null }, text) {
     if (!text) {
-        toastr.warning('No text provided');
+        toastr.error('No text provided');
         return '';
     }
     if (api && !Object.keys(EXPRESSION_API).includes(api)) {
-        toastr.warning('Invalid API provided');
+        toastr.error('Invalid API provided');
         return '';
     }
 
@@ -951,37 +700,69 @@ async function classifyCallback(/** @type {{api: string?, prompt: string?}} */ {
     return label;
 }
 
-async function setSpriteSlashCommand(_, spriteId) {
-    if (!spriteId) {
-        console.log('No sprite id provided');
+/** @type {(args: {type: 'expression' | 'sprite'}, searchTerm: string) => Promise<string>} */
+async function setSpriteSlashCommand({ type }, searchTerm) {
+    type ??= 'expression';
+    searchTerm = searchTerm.trim().toLowerCase();
+    if (!searchTerm) {
+        toastr.error(t`No expression or sprite name provided`, t`Set Sprite`);
         return '';
     }
 
-    spriteId = spriteId.trim().toLowerCase();
+    const currentLastMessage = selected_group ? getLastCharacterMessage() : null;
+    const spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage?.name);
 
-    // In Talkinghead mode, don't check for the existence of the sprite
-    // (emotion names are the same as for sprites, but it only needs "talkinghead.png").
-    const currentLastMessage = getLastCharacterMessage();
-    const spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage.name);
-    let label = spriteId;
-    if (!isTalkingHeadEnabled() || !modules.includes('talkinghead')) {
-        await validateImages(spriteFolderName);
+    let label = searchTerm;
 
-        // Fuzzy search for sprite
-        const fuse = new Fuse(spriteCache[spriteFolderName], { keys: ['label'] });
-        const results = fuse.search(spriteId);
-        const spriteItem = results[0]?.item;
+    /** @type {string?} */
+    let spriteFile = null;
 
-        if (!spriteItem) {
-            console.log('No sprite found for search term ' + spriteId);
-            return '';
-        }
+    await validateImages(spriteFolderName);
 
-        label = spriteItem.label;
+    // Handle reset as a special term and just reset the sprite via expression call
+    if (searchTerm === RESET_SPRITE_LABEL) {
+        await sendExpressionCall(spriteFolderName, label, { force: true });
+        return lastExpression[spriteFolderName] ?? '';
     }
 
-    const vnMode = isVisualNovelMode();
-    await sendExpressionCall(spriteFolderName, label, true, vnMode);
+    switch (type) {
+        case 'expression': {
+            // Fuzzy search for expression
+            const existingExpressions = getCachedExpressions().map(x => ({ label: x }));
+            const results = performFuzzySearch('expression-expressions', existingExpressions, [
+                { name: 'label', weight: 1 },
+            ], searchTerm);
+            const matchedExpression = results[0]?.item;
+            if (!matchedExpression) {
+                toastr.warning(t`No expression found for search term ${searchTerm}`, t`Set Sprite`);
+                return '';
+            }
+
+            label = matchedExpression.label;
+            break;
+        }
+        case 'sprite': {
+            // Fuzzy search for sprite file
+            const sprites = spriteCache[spriteFolderName].map(x => x.files).flat();
+            const results = performFuzzySearch('expression-expressions', sprites, [
+                { name: 'title', weight: 1 },
+                { name: 'fileName', weight: 1 },
+            ], searchTerm);
+            const matchedSprite = results[0]?.item;
+            if (!matchedSprite) {
+                toastr.warning(t`No sprite file found for search term ${searchTerm}`, t`Set Sprite`);
+                return '';
+            }
+
+            label = matchedSprite.expression;
+            spriteFile = matchedSprite.fileName;
+            break;
+        }
+        default: throw Error('Invalid sprite set type: ' + type);
+    }
+
+    await sendExpressionCall(spriteFolderName, label, { force: true, overrideSpriteFile: spriteFile });
+
     return label;
 }
 
@@ -999,6 +780,21 @@ function spriteFolderNameFromCharacter(char) {
 }
 
 /**
+ * Generates a unique sprite name by appending an index to the given expression. *
+ * @param {string} expression - The base expression to be used as the prefix for the sprite name.
+ * @param {ExpressionImage[]} existingFiles - An array of existing file objects, each containing a fileName property.
+ * @returns {string} - A unique sprite name with the format "expression-index".
+ */
+function generateUniqueSpriteName(expression, existingFiles) {
+    let index = existingFiles.length;
+    let newSpriteName;
+    do {
+        newSpriteName = `${expression}-${index++}`;
+    } while (existingFiles.some(file => withoutExtension(file.fileName) === newSpriteName));
+    return newSpriteName;
+}
+
+/**
  * Slash command callback for /uploadsprite
  *
  * label= is required
@@ -1011,16 +807,29 @@ function spriteFolderNameFromCharacter(char) {
  * @param {object} args
  * @param {string} args.name Character name or avatar key, passed through findChar
  * @param {string} args.label Expression label
- * @param {string} args.folder Sprite folder path, processed using backslash rules
+ * @param {string} [args.folder=null] Optional sprite folder path, processed using backslash rules
+ * @param {string?} [args.spriteName=null] Optional sprite name
  * @param {string} imageUrl Image URI to fetch and upload
- * @returns {Promise<void>}
+ * @returns {Promise<string>} the sprite name
  */
-async function uploadSpriteCommand({ name, label, folder }, imageUrl) {
+async function uploadSpriteCommand({ name, label, folder = null, spriteName = null }, imageUrl) {
     if (!imageUrl) throw new Error('Image URL is required');
-    if (!label || typeof label !== 'string') throw new Error('Expression label is required');
+    if (!label || typeof label !== 'string') {
+        toastr.error(t`Expression label is required`, t`Error Uploading Sprite`);
+        return '';
+    }
 
     label = label.replace(/[^a-z]/gi, '').toLowerCase().trim();
-    if (!label) throw new Error('Expression label must contain at least one letter');
+    if (!label) {
+        toastr.error(t`Expression label must contain at least one letter`, t`Error Uploading Sprite`);
+        return '';
+    }
+
+    spriteName = spriteName || label;
+    if (!validateExpressionSpriteName(label, spriteName)) {
+        toastr.error(t`Invalid sprite name. Must follow the naming pattern for expression sprites.`, t`Error Uploading Sprite`);
+        return '';
+    }
 
     name = name || getLastCharacterMessage().original_avatar || getLastCharacterMessage().name;
     const char = findChar({ name });
@@ -1040,7 +849,8 @@ async function uploadSpriteCommand({ name, label, folder }, imageUrl) {
         const formData = new FormData();
         formData.append('name', folder); // this is the folder or character name
         formData.append('label', label); // this is the expression label
-        formData.append('avatar', file);  // this is the image file
+        formData.append('avatar', file); // this is the image file
+        formData.append('spriteName', spriteName); // this is a redundant comment
 
         await handleFileUpload('/api/sprites/upload', formData);
         console.debug(`[${MODULE_NAME}] Upload of ${imageUrl} completed for ${name} with label ${label}`);
@@ -1048,6 +858,8 @@ async function uploadSpriteCommand({ name, label, folder }, imageUrl) {
         console.error(`[${MODULE_NAME}] Error uploading file:`, error);
         throw error;
     }
+
+    return spriteName;
 }
 
 /**
@@ -1159,7 +971,7 @@ function getJsonSchema(emotions) {
 function onTextGenSettingsReady(args) {
     // Only call if inside an API call
     if (inApiCall && extension_settings.expressions.api === EXPRESSION_API.llm && isJsonSchemaSupported()) {
-        const emotions = DEFAULT_EXPRESSIONS.filter((e) => e != 'talkinghead');
+        const emotions = DEFAULT_EXPRESSIONS;
         Object.assign(args, {
             top_k: 1,
             stop: [],
@@ -1177,16 +989,16 @@ function onTextGenSettingsReady(args) {
  * @param {EXPRESSION_API} [expressionsApi=extension_settings.expressions.api] - The expressions API to use for classification.
  * @param {object} [options={}] - Optional arguments.
  * @param {string?} [options.customPrompt=null] - The custom prompt to use for classification.
- * @returns {Promise<string>} - The label of the expression.
+ * @returns {Promise<string?>} - The label of the expression.
  */
 export async function getExpressionLabel(text, expressionsApi = extension_settings.expressions.api, { customPrompt = null } = {}) {
     // Return if text is undefined, saving a costly fetch request
     if ((!modules.includes('classify') && expressionsApi == EXPRESSION_API.extras) || !text) {
-        return getFallbackExpression();
+        return extension_settings.expressions.fallback_expression;
     }
 
-    if (extension_settings.expressions.translate && typeof window['translate'] === 'function') {
-        text = await window['translate'](text, 'en');
+    if (extension_settings.expressions.translate && typeof globalThis.translate === 'function') {
+        text = await globalThis.translate(text, 'en');
     }
 
     text = sampleClassifyText(text);
@@ -1212,7 +1024,7 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
                     await waitUntilCondition(() => online_status !== 'no_connection', 3000, 250);
                 } catch (error) {
                     console.warn('No LLM connection. Using fallback expression', error);
-                    return getFallbackExpression();
+                    return extension_settings.expressions.fallback_expression;
                 }
 
                 const expressionsList = await getExpressionsList();
@@ -1225,7 +1037,7 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
             case EXPRESSION_API.webllm: {
                 if (!isWebLlmSupported()) {
                     console.warn('WebLLM is not supported. Using fallback expression');
-                    return getFallbackExpression();
+                    return extension_settings.expressions.fallback_expression;
                 }
 
                 const expressionsList = await getExpressionsList();
@@ -1258,9 +1070,9 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
             } break;
         }
     } catch (error) {
-        toastr.info('Could not classify expression. Check the console or your backend for more information.');
+        toastr.error('Could not classify expression. Check the console or your backend for more information.');
         console.error(error);
-        return getFallbackExpression();
+        return extension_settings.expressions.fallback_expression;
     }
 }
 
@@ -1288,75 +1100,155 @@ function removeExpression() {
     $('#no_chat_expressions').show();
 }
 
-async function validateImages(character, forceRedrawCached) {
-    if (!character) {
+/**
+ * Validate a character's sprites, and redraw the sprites list if not done before or forced to redraw.
+ * @param {string} spriteFolderName - The character sprite folder to validate
+ * @param {boolean} [forceRedrawCached=false] - Whether to force redrawing the sprites list even if it's already been drawn before
+ */
+async function validateImages(spriteFolderName, forceRedrawCached = false) {
+    if (!spriteFolderName) {
         return;
     }
 
     const labels = await getExpressionsList();
 
-    if (spriteCache[character]) {
-        if (forceRedrawCached && $('#image_list').data('name') !== character) {
+    if (spriteCache[spriteFolderName]) {
+        if (forceRedrawCached && $('#image_list').data('name') !== spriteFolderName) {
             console.debug('force redrawing character sprites list');
-            await drawSpritesList(character, labels, spriteCache[character]);
+            await drawSpritesList(spriteFolderName, labels, spriteCache[spriteFolderName]);
         }
 
         return;
     }
 
-    const sprites = await getSpritesList(character);
-    let validExpressions = await drawSpritesList(character, labels, sprites);
-    spriteCache[character] = validExpressions;
+    const sprites = await getSpritesList(spriteFolderName);
+    let validExpressions = await drawSpritesList(spriteFolderName, labels, sprites);
+    spriteCache[spriteFolderName] = validExpressions;
 }
 
-async function drawSpritesList(character, labels, sprites) {
+/**
+ * Takes a given sprite as returned from the server, and enriches it with additional data for display/sorting
+ * @param {{ path: string, label: string }} sprite
+ * @returns {ExpressionImage}
+ */
+function getExpressionImageData(sprite) {
+    const fileName = sprite.path.split('/').pop().split('?')[0];
+    const fileNameWithoutExtension = fileName.replace(/\.[^/.]+$/, '');
+    return {
+        expression: sprite.label,
+        fileName: fileName,
+        title: fileNameWithoutExtension,
+        imageSrc: sprite.path,
+        type: 'success',
+        isCustom: extension_settings.expressions.custom?.includes(sprite.label),
+    };
+}
+
+/**
+ * Populate the character expression list with sprites for the given character.
+ * @param {string} spriteFolderName - The name of the character to populate the list for
+ * @param {string[]} labels - An array of expression labels that are valid
+ * @param {Expression[]} sprites - An array of sprites
+ * @returns {Promise<Expression[]>} An array of valid expression labels
+ */
+async function drawSpritesList(spriteFolderName, labels, sprites) {
+    /** @type {Expression[]} */
     let validExpressions = [];
+
     $('#no_chat_expressions').hide();
     $('#open_chat_expressions').show();
     $('#image_list').empty();
-    $('#image_list').data('name', character);
-    $('#image_list_header_name').text(character);
+    $('#image_list').data('name', spriteFolderName);
+    $('#image_list_header_name').text(spriteFolderName);
 
     if (!Array.isArray(labels)) {
         return [];
     }
 
-    for (const item of labels.sort()) {
-        const sprite = sprites.find(x => x.label == item);
-        const isCustom = extension_settings.expressions.custom.includes(item);
+    for (const expression of labels.sort()) {
+        const isCustom = extension_settings.expressions.custom?.includes(expression);
+        const images = sprites
+            .filter(s => s.label === expression)
+            .map(s => s.files)
+            .flat();
 
-        if (sprite) {
-            validExpressions.push(sprite);
-            const listItem = await getListItem(item, sprite.path, 'success', isCustom);
+        if (images.length === 0) {
+            const listItem = await getListItem(expression, {
+                isCustom,
+                images: [getPlaceholderImage(expression, isCustom)],
+            });
             $('#image_list').append(listItem);
+            continue;
         }
-        else {
-            const listItem = await getListItem(item, '/img/No-Image-Placeholder.svg', 'failure', isCustom);
-            $('#image_list').append(listItem);
-        }
+
+        validExpressions.push({ label: expression, files: images });
+
+        // Render main = first file, additional = rest
+        let listItem = await getListItem(expression, {
+            isCustom,
+            images,
+        });
+        $('#image_list').append(listItem);
     }
     return validExpressions;
 }
 
 /**
  * Renders a list item template for the expressions list.
- * @param {string} item Expression name
- * @param {string} imageSrc Path to image
- * @param {'success' | 'failure'} textClass 'success' or 'failure'
- * @param {boolean} isCustom If expression is added by user
+ * @param {string} expression Expression name
+ * @param {object} args Arguments object
+ * @param {ExpressionImage[]} [args.images] Array of image objects
+ * @param {boolean} [args.isCustom=false] If expression is added by user
  * @returns {Promise<string>} Rendered list item template
  */
-async function getListItem(item, imageSrc, textClass, isCustom) {
-    return renderExtensionTemplateAsync(MODULE_NAME, 'list-item', { item, imageSrc, textClass, isCustom });
+async function getListItem(expression, { images, isCustom = false } = {}) {
+    return renderExtensionTemplateAsync(MODULE_NAME, 'list-item', { expression, images, isCustom: isCustom ?? false });
 }
+
+/**
+ * Fetches and processes the list of sprites for a given character name.
+ * Retrieves sprite data from the server and organizes it into labeled groups.
+ *
+ * @param {string} name - The character name to fetch sprites for
+ * @returns {Promise<Expression[]>} A promise that resolves to an array of grouped expression objects, each containing a label and associated image data
+ */
 
 async function getSpritesList(name) {
     console.debug('getting sprites list');
 
     try {
         const result = await fetch(`/api/sprites/get?name=${encodeURIComponent(name)}`);
+        /** @type {{ label: string, path: string }[]} */
         let sprites = result.ok ? (await result.json()) : [];
-        return sprites;
+
+        /** @type {Expression[]} */
+        const grouped = sprites.reduce((acc, sprite) => {
+            const imageData = getExpressionImageData(sprite);
+            let existingExpression = acc.find(exp => exp.label === sprite.label);
+            if (existingExpression) {
+                existingExpression.files.push(imageData);
+            } else {
+                acc.push({ label: sprite.label, files: [imageData] });
+            }
+
+            return acc;
+        }, []);
+
+        // Sort the sprites for each expression alphabetically, but keep the main expression file at the front
+        for (const expression of grouped) {
+            expression.files.sort((a, b) => {
+                if (a.title === expression.label) return -1;
+                if (b.title === expression.label) return 1;
+                return a.title.localeCompare(b.title);
+            });
+
+            // Mark all besides the first sprite as 'additional'
+            for (let i = 1; i < expression.files.length; i++) {
+                expression.files[i].type = 'additional';
+            }
+        }
+
+        return grouped;
     }
     catch (err) {
         console.log(err);
@@ -1395,16 +1287,30 @@ async function renderFallbackExpressionPicker() {
     const defaultPicker = $('#expression_fallback');
     defaultPicker.empty();
 
-    const fallbackExpression = getFallbackExpression();
+
+    addOption(OPTION_NO_FALLBACK, '[ No fallback ]', !extension_settings.expressions.fallback_expression);
+    addOption(OPTION_EMOJI_FALLBACK, '[ Default emojis ]', !!extension_settings.expressions.showDefault);
 
     for (const expression of expressions) {
+        addOption(expression, expression, expression == extension_settings.expressions.fallback_expression);
+    }
+
+    /** @type {(value: string, label: string, isSelected: boolean) => void} */
+    function addOption(value, label, isSelected) {
         const option = document.createElement('option');
-        option.value = expression;
-        option.text = expression;
-        option.selected = expression == fallbackExpression;
+        option.value = value;
+        option.text = label;
+        option.selected = isSelected;
         defaultPicker.append(option);
     }
 }
+
+/**
+ * Retrieves a unique list of cached expressions.
+ * Combines the default expressions list with custom user-defined expressions.
+ *
+ * @returns {string[]} An array of unique expression labels
+ */
 
 function getCachedExpressions() {
     if (!Array.isArray(expressionsList)) {
@@ -1463,7 +1369,7 @@ export async function getExpressionsList() {
         }
 
         // If there was no specific list, or an error, just return the default expressions
-        expressionsList = DEFAULT_EXPRESSIONS.filter(e => e !== 'talkinghead').slice();
+        expressionsList = DEFAULT_EXPRESSIONS.slice();
         return expressionsList;
     }
 
@@ -1471,161 +1377,221 @@ export async function getExpressionsList() {
     return [...result, ...extension_settings.expressions.custom].filter(onlyUnique);
 }
 
-async function setExpression(character, expression, force) {
-    if (!isTalkingHeadEnabled() || !modules.includes('talkinghead')) {
-        console.debug('entered setExpressions');
-        await validateImages(character);
-        const img = $('img.expression');
-        const prevExpressionSrc = img.attr('src');
-        const expressionClone = img.clone();
+/**
+ * Selects a sprite from the given sprite folder for the given expression.
+ *
+ * If multiple sprites are allowed for the expression, it will randomly select one.
+ * If the rerollIfSame option is enabled, it will only select a different sprite if the previous sprite was the same.
+ * If the overrideSpriteFile option is set, it will look for the sprite with the given file name instead of randomly selecting one.
+ *
+ * @param {string} spriteFolderName - The name of the sprite folder
+ * @param {string} expression - The expression to find the sprite for
+ * @param {object} [options] - Options to select the sprite
+ * @param {string} [options.prevExpressionSrc=null] - The source of the previous expression
+ * @param {string} [options.overrideSpriteFile=null] - The file name of the sprite to select
+ * @returns {ExpressionImage?} - The selected sprite
+ */
+function chooseSpriteForExpression(spriteFolderName, expression, { prevExpressionSrc = null, overrideSpriteFile = null } = {}) {
+    if (!spriteCache[spriteFolderName]) return null;
+    if (expression === RESET_SPRITE_LABEL) return null;
 
-        const sprite = (spriteCache[character] && spriteCache[character].find(x => x.label === expression));
-        console.debug('checking for expression images to show..');
-        if (sprite) {
-            console.debug('setting expression from character images folder');
-
-            if (force && isVisualNovelMode()) {
-                const context = getContext();
-                const group = context.groups.find(x => x.id === context.groupId);
-
-                for (const member of group.members) {
-                    const groupMember = context.characters.find(x => x.avatar === member);
-
-                    if (!groupMember) {
-                        continue;
-                    }
-
-                    if (groupMember.name == character) {
-                        await setImage($(`.expression-holder[data-avatar="${member}"] img`), sprite.path);
-                        return;
-                    }
-                }
-            }
-            //only swap expressions when necessary
-            if (prevExpressionSrc !== sprite.path
-                && !img.hasClass('expression-animating')) {
-                //clone expression
-                expressionClone.addClass('expression-clone');
-                //make invisible and remove id to prevent double ids
-                //must be made invisible to start because they share the same Z-index
-                expressionClone.attr('id', '').css({ opacity: 0 });
-                //add new sprite path to clone src
-                expressionClone.attr('src', sprite.path);
-                //add invisible clone to html
-                expressionClone.appendTo($('#expression-holder'));
-
-                const duration = 200;
-
-                //add animation flags to both images
-                //to prevent multiple expression changes happening simultaneously
-                img.addClass('expression-animating');
-
-                // Set the parent container's min width and height before running the transition
-                const imgWidth = img.width();
-                const imgHeight = img.height();
-                const expressionHolder = img.parent();
-                expressionHolder.css('min-width', imgWidth > 100 ? imgWidth : 100);
-                expressionHolder.css('min-height', imgHeight > 100 ? imgHeight : 100);
-
-                //position absolute prevent the original from jumping around during transition
-                img.css('position', 'absolute').width(imgWidth).height(imgHeight);
-                expressionClone.addClass('expression-animating');
-                //fade the clone in
-                expressionClone.css({
-                    opacity: 0,
-                }).animate({
-                    opacity: 1,
-                }, duration)
-                    //when finshed fading in clone, fade out the original
-                    .promise().done(function () {
-                        img.animate({
-                            opacity: 0,
-                        }, duration);
-                        //remove old expression
-                        img.remove();
-                        //replace ID so it becomes the new 'original' expression for next change
-                        expressionClone.attr('id', 'expression-image');
-                        expressionClone.removeClass('expression-animating');
-
-                        // Reset the expression holder min height and width
-                        expressionHolder.css('min-width', 100);
-                        expressionHolder.css('min-height', 100);
-                    });
-
-
-                expressionClone.removeClass('expression-clone');
-
-                expressionClone.removeClass('default');
-                expressionClone.off('error');
-                expressionClone.on('error', function () {
-                    console.debug('Expression image error', sprite.path);
-                    $(this).attr('src', '');
-                    $(this).off('error');
-                    if (force && extension_settings.expressions.showDefault) {
-                        setDefault();
-                    }
-                });
-            }
-        }
-        else {
-            if (extension_settings.expressions.showDefault) {
-                setDefault();
-            }
-        }
-
-        function setDefault() {
-            console.debug('setting default');
-            const defImgUrl = `/img/default-expressions/${expression}.png`;
-            //console.log(defImgUrl);
-            img.attr('src', defImgUrl);
-            img.addClass('default');
-        }
-        document.getElementById('expression-holder').style.display = '';
-
-    } else {
-        // Set the Talkinghead emotion to the specified expression
-        // TODO: For now, Talkinghead emote only supported when VN mode is off; see also updateVisualNovelMode.
-        try {
-            let result = await isTalkingHeadAvailable();
-            if (result) {
-                const url = new URL(getApiUrl());
-                url.pathname = '/api/talkinghead/set_emotion';
-                await doExtrasFetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ emotion_name: expression }),
-                });
-            }
-        }
-        catch (error) {
-            // `set_emotion` is not present in old versions, so let it 404.
-        }
-
-        try {
-            // Find the <img> element with id="expression-image" and class="expression"
-            const imgElement = document.querySelector('img#expression-image.expression');
-            //console.log("searching");
-            if (imgElement && imgElement instanceof HTMLImageElement) {
-                //console.log("setting value");
-                imgElement.src = getApiUrl() + '/api/talkinghead/result_feed';
-            }
-        }
-        catch (error) {
-            //console.log("The fetch failed!");
-        }
+    // Search for sprites of that expression - or fallback expression sprites if enabled
+    let sprite = spriteCache[spriteFolderName].find(x => x.label === expression);
+    if (!(sprite?.files.length > 0) && extension_settings.expressions.fallback_expression) {
+        sprite = spriteCache[spriteFolderName].find(x => x.label === extension_settings.expressions.fallback_expression);
+        console.debug('Expression', expression, 'not found. Using fallback expression', extension_settings.expressions.fallback_expression);
     }
+    if (!(sprite?.files.length > 0)) return null;
+
+    let spriteFile = sprite.files[0];
+
+    // If a specific sprite file should be set, we are looking it up here
+    if (overrideSpriteFile) {
+        const searched = sprite.files.find(x => x.fileName === overrideSpriteFile);
+        if (searched) spriteFile = searched;
+        else toastr.warning(t`Couldn't find sprite file ${overrideSpriteFile} for expression ${expression}.`, t`Sprite Not Found`);
+    }
+    // Else calculate next expression, if multiple are allowed
+    else if (extension_settings.expressions.allowMultiple && sprite.files.length > 1) {
+        let possibleFiles = sprite.files;
+        if (extension_settings.expressions.rerollIfSame) {
+            possibleFiles = possibleFiles.filter(x => !prevExpressionSrc || x.imageSrc !== prevExpressionSrc);
+        }
+        spriteFile = possibleFiles[Math.floor(Math.random() * possibleFiles.length)];
+    }
+
+    return spriteFile;
+
+}
+
+/**
+ * Set the expression of a character.
+ * @param {string} spriteFolderName - The name of the character (folder name - can also be a costume override)
+ * @param {string} expression - The expression or sprite name to set
+ * @param {Object} options - Optional parameters
+ * @param {boolean} [options.force=false] - Whether to force the expression change even if Visual Novel mode is on
+ * @param {string?} [options.overrideSpriteFile=null] - Set if a specific sprite file should be used. Must be sprite file name.
+ * @returns {Promise<void>} A promise that resolves when the expression has been set.
+ */
+async function setExpression(spriteFolderName, expression, { force = false, overrideSpriteFile = null } = {}) {
+    await validateImages(spriteFolderName);
+    const img = $('img.expression');
+    const prevExpressionSrc = img.attr('src');
+    const expressionClone = img.clone();
+
+    const spriteFile = chooseSpriteForExpression(spriteFolderName, expression, { prevExpressionSrc: prevExpressionSrc, overrideSpriteFile: overrideSpriteFile });
+    if (spriteFile) {
+        if (force && isVisualNovelMode()) {
+            const context = getContext();
+            const group = context.groups.find(x => x.id === context.groupId);
+
+            // If it's a folder, make sure we find the group member based on the actual name
+            const memberName = spriteFolderName.split('/')[0] ?? spriteFolderName;
+
+            const groupMember = group.members
+                .map(member => context.characters.find(x => x.avatar === member))
+                .find(groupMember => groupMember && groupMember.name === memberName);
+            if (groupMember) {
+                await setImage($(`.expression-holder[data-avatar="${groupMember.avatar}"] img`), spriteFile.imageSrc);
+                return;
+            }
+        }
+
+        //only swap expressions when necessary
+        if (prevExpressionSrc !== spriteFile.imageSrc
+            && !img.hasClass('expression-animating')) {
+            //clone expression
+            expressionClone.addClass('expression-clone');
+            //make invisible and remove id to prevent double ids
+            //must be made invisible to start because they share the same Z-index
+            expressionClone.attr('id', '').css({ opacity: 0 });
+            //add new sprite path to clone src
+            expressionClone.attr('src', spriteFile.imageSrc);
+            //set relevant data tags
+            expressionClone.attr('data-sprite-folder-name', spriteFolderName);
+            expressionClone.attr('data-expression', expression);
+            expressionClone.attr('data-sprite-filename', spriteFile.fileName);
+            expressionClone.attr('title', expression);
+            //add invisible clone to html
+            expressionClone.appendTo($('#expression-holder'));
+
+            const duration = 200;
+
+            //add animation flags to both images
+            //to prevent multiple expression changes happening simultaneously
+            img.addClass('expression-animating');
+
+            // Set the parent container's min width and height before running the transition
+            const imgWidth = img.width();
+            const imgHeight = img.height();
+            const expressionHolder = img.parent();
+            expressionHolder.css('min-width', imgWidth > 100 ? imgWidth : 100);
+            expressionHolder.css('min-height', imgHeight > 100 ? imgHeight : 100);
+
+            //position absolute prevent the original from jumping around during transition
+            img.css('position', 'absolute').width(imgWidth).height(imgHeight);
+            expressionClone.addClass('expression-animating');
+            //fade the clone in
+            expressionClone.css({
+                opacity: 0,
+            }).animate({
+                opacity: 1,
+            }, duration)
+                //when finshed fading in clone, fade out the original
+                .promise().done(function () {
+                    img.animate({
+                        opacity: 0,
+                    }, duration);
+                    //remove old expression
+                    img.remove();
+                    //replace ID so it becomes the new 'original' expression for next change
+                    expressionClone.attr('id', 'expression-image');
+                    expressionClone.removeClass('expression-animating');
+
+                    // Reset the expression holder min height and width
+                    expressionHolder.css('min-width', 100);
+                    expressionHolder.css('min-height', 100);
+                });
+
+            expressionClone.removeClass('expression-clone');
+
+            expressionClone.removeClass('default');
+            expressionClone.off('error');
+            expressionClone.on('error', function (error) {
+                console.debug('Expression image error', spriteFile.imageSrc, error);
+                $(this).attr('src', '');
+                $(this).off('error');
+                if (force && extension_settings.expressions.showDefault) {
+                    setDefaultEmojiForImage(img, expression);
+                }
+            });
+        }
+
+        console.info('Expression set', { expression: spriteFile.expression, file: spriteFile.fileName });
+    }
+    else {
+        img.attr('data-sprite-folder-name', spriteFolderName);
+
+        img.off('error');
+
+        if (extension_settings.expressions.showDefault && expression !== RESET_SPRITE_LABEL) {
+            setDefaultEmojiForImage(img, expression);
+        } else {
+            setNoneForImage(img, expression);
+        }
+        console.debug('Expression unset - No sprite found', { expression: expression });
+    }
+
+    document.getElementById('expression-holder').style.display = '';
+}
+
+/**
+ * Sets the default expression image for the given image element and expression
+ * @param {JQuery<HTMLElement>} img - The image element to set the default expression for
+ * @param {string} expression - The expression label to use for the default image
+ */
+function setDefaultEmojiForImage(img, expression) {
+    if (extension_settings.expressions.custom?.includes(expression)) {
+        console.debug(`Can't set default emoji for a custom expression (${expression}). setting to ${DEFAULT_FALLBACK_EXPRESSION} instead.`);
+        expression = DEFAULT_FALLBACK_EXPRESSION;
+    }
+
+    const defImgUrl = `/img/default-expressions/${expression}.png`;
+    img.attr('src', defImgUrl);
+    img.attr('data-expression', expression);
+    img.attr('data-sprite-filename', null);
+    img.attr('title', expression);
+    img.addClass('default');
+}
+
+/**
+ * Sets the image element to display no expression by clearing its source attribute.
+ * @param {JQuery<HTMLElement>} img - The image element to clear the expression for
+ * @param {string} expression - The expression label to use
+ */
+function setNoneForImage(img, expression) {
+    img.attr('src', '');
+    img.attr('data-expression', expression);
+    img.attr('data-sprite-filename', null);
+    img.attr('title', expression);
+    img.removeClass('default');
 }
 
 function onClickExpressionImage() {
-    const expression = $(this).attr('id');
-    setSpriteSlashCommand({}, expression);
+    // If there is no expression image and we clicked on the placeholder, we remove the sprite by calling via the expression label
+    if ($(this).attr('data-expression-type') === 'failure') {
+        const label = $(this).attr('data-expression');
+        setSpriteSlashCommand({ type: 'expression' }, label);
+        return;
+    }
+
+    const spriteFile = $(this).attr('data-filename');
+    setSpriteSlashCommand({ type: 'sprite' }, spriteFile);
 }
 
 async function onClickExpressionAddCustom() {
     const template = await renderExtensionTemplateAsync(MODULE_NAME, 'add-custom-expression');
-    let expressionName = await callPopup(template, 'input');
+    let expressionName = await Popup.show.input(null, template);
 
     if (!expressionName) {
         console.debug('No custom expression name provided');
@@ -1636,19 +1602,15 @@ async function onClickExpressionAddCustom() {
 
     // a-z, 0-9, dashes and underscores only
     if (!/^[a-z0-9-_]+$/.test(expressionName)) {
-        toastr.info('Invalid custom expression name provided');
+        toastr.warning('Invalid custom expression name provided', 'Add Custom Expression');
         return;
     }
-
-    // Check if expression name already exists in default expressions
-    if (DEFAULT_EXPRESSIONS.includes(expressionName)) {
-        toastr.info('Expression name already exists');
+    if (DEFAULT_EXPRESSIONS.includes(expressionName) || DEFAULT_EXPRESSIONS.some(x => expressionName.startsWith(x))) {
+        toastr.warning('Expression name already exists', 'Add Custom Expression');
         return;
     }
-
-    // Check if expression name already exists in custom expressions
     if (extension_settings.expressions.custom.includes(expressionName)) {
-        toastr.info('Custom expression already exists');
+        toastr.warning('Custom expression already exists', 'Add Custom Expression');
         return;
     }
 
@@ -1665,14 +1627,15 @@ async function onClickExpressionAddCustom() {
 
 async function onClickExpressionRemoveCustom() {
     const selectedExpression = String($('#expression_custom').val());
+    const noCustomExpressions = extension_settings.expressions.custom.length === 0;
 
-    if (!selectedExpression) {
+    if (!selectedExpression || noCustomExpressions) {
         console.debug('No custom expression selected');
         return;
     }
 
     const template = await renderExtensionTemplateAsync(MODULE_NAME, 'remove-custom-expression', { expression: selectedExpression });
-    const confirmation = await callPopup(template, 'confirm');
+    const confirmation = await Popup.show.confirm(null, template);
 
     if (!confirmation) {
         console.debug('Custom expression removal cancelled');
@@ -1682,8 +1645,8 @@ async function onClickExpressionRemoveCustom() {
     // Remove custom expression from settings
     const index = extension_settings.expressions.custom.indexOf(selectedExpression);
     extension_settings.expressions.custom.splice(index, 1);
-    if (selectedExpression == getFallbackExpression()) {
-        toastr.warning(`Deleted custom expression '${selectedExpression}' that was also selected as the fallback expression.\nFallback expression has been reset to '${DEFAULT_FALLBACK_EXPRESSION}'.`);
+    if (selectedExpression == extension_settings.expressions.fallback_expression) {
+        toastr.warning(`Deleted custom expression '${selectedExpression}' that was also selected as the fallback expression.\nFallback expression has been reset to '${DEFAULT_FALLBACK_EXPRESSION}'.`, 'Remove Custom Expression');
         extension_settings.expressions.fallback_expression = DEFAULT_FALLBACK_EXPRESSION;
     }
     await renderAdditionalExpressionSettings();
@@ -1707,12 +1670,35 @@ function onExpressionApiChanged() {
     }
 }
 
-function onExpressionFallbackChanged() {
-    const expression = this.value;
-    if (expression) {
-        extension_settings.expressions.fallback_expression = expression;
-        saveSettingsDebounced();
+async function onExpressionFallbackChanged() {
+    /** @type {HTMLSelectElement} */
+    const select = this;
+    const selectedValue = select.value;
+
+    switch (selectedValue) {
+        case OPTION_NO_FALLBACK:
+            extension_settings.expressions.fallback_expression = null;
+            extension_settings.expressions.showDefault = false;
+            break;
+        case OPTION_EMOJI_FALLBACK:
+            extension_settings.expressions.fallback_expression = null;
+            extension_settings.expressions.showDefault = true;
+            break;
+        default:
+            extension_settings.expressions.fallback_expression = selectedValue;
+            extension_settings.expressions.showDefault = false;
+            break;
     }
+
+    const img = $('img.expression');
+    const spriteFolderName = img.attr('data-sprite-folder-name');
+    const expression = img.attr('data-expression');
+
+    if (spriteFolderName && expression) {
+        await sendExpressionCall(spriteFolderName, expression, { force: true });
+    }
+
+    saveSettingsDebounced();
 }
 
 async function handleFileUpload(url, formData) {
@@ -1739,34 +1725,111 @@ async function handleFileUpload(url, formData) {
     }
 }
 
+/**
+ * Removes the file extension from a file name
+ * @param {string} fileName The file name to remove the extension from
+ * @returns {string} The file name without the extension
+ */
+function withoutExtension(fileName) {
+    return fileName.replace(/\.[^/.]+$/, '');
+}
+
+function validateExpressionSpriteName(expression, spriteName) {
+    const filenameValidationRegex = new RegExp(`^${expression}(?:[-\\.].*?)?$`);
+    const validFileName = filenameValidationRegex.test(spriteName);
+    return validFileName;
+}
+
 async function onClickExpressionUpload(event) {
     // Prevents the expression from being set
     event.stopPropagation();
 
-    const id = $(this).closest('.expression_list_item').attr('id');
+    const expressionListItem = $(this).closest('.expression_list_item');
+
+    const clickedFileName = expressionListItem.attr('data-expression-type') !== 'failure' ? expressionListItem.attr('data-filename') : null;
+    const expression = expressionListItem.data('expression');
     const name = $('#image_list').data('name');
 
     const handleExpressionUploadChange = async (e) => {
         const file = e.target.files[0];
 
-        if (!file) {
+        if (!file || !file.name) {
+            console.debug('No valid file selected');
+            return;
+        }
+
+        const existingFiles = spriteCache[name]?.find(x => x.label === expression)?.files || [];
+
+        let spriteName = expression;
+
+        if (extension_settings.expressions.allowMultiple) {
+            const matchesExisting = existingFiles.some(x => x.fileName === file.name);
+            const fileNameWithoutExtension = withoutExtension(file.name);
+            const validFileName = validateExpressionSpriteName(expression, fileNameWithoutExtension);
+
+            // If there is no expression yet and it's a valid expression, we just take it
+            if (!clickedFileName && validFileName) {
+                spriteName = fileNameWithoutExtension;
+            }
+            // If the filename matches the one that was clicked, we just take it and replace it
+            else if (clickedFileName === file.name) {
+                spriteName = fileNameWithoutExtension;
+            }
+            // If it's a valid filename and there's no existing file with the same name, we just take it
+            else if (!matchesExisting && validFileName) {
+                spriteName = fileNameWithoutExtension;
+            }
+            else {
+                /** @type {import('../../popup.js').CustomPopupButton[]} */
+                const customButtons = [];
+                if (clickedFileName) {
+                    customButtons.push({
+                        text: t`Replace Existing`,
+                        result: POPUP_RESULT.NEGATIVE,
+                        action: () => {
+                            console.debug('Replacing existing sprite');
+                            spriteName = withoutExtension(clickedFileName);
+                        },
+                    });
+                }
+
+                spriteName = null;
+                const suggestedSpriteName = generateUniqueSpriteName(expression, existingFiles);
+
+                const message = await renderExtensionTemplateAsync(MODULE_NAME, 'templates/upload-expression', { expression, clickedFileName });
+
+                const input = await Popup.show.input(t`Upload Expression Sprite`, message,
+                    suggestedSpriteName, { customButtons: customButtons });
+
+                if (input) {
+                    if (!validateExpressionSpriteName(expression, input)) {
+                        toastr.warning(t`The name you entered does not follow the naming schema for the selected expression '${expression}'.`, t`Invalid Expression Sprite Name`);
+                        return;
+                    }
+                    spriteName = input;
+                }
+            }
+        } else {
+            spriteName = withoutExtension(clickedFileName);
+        }
+
+        if (!spriteName) {
+            toastr.warning(t`Cancelled uploading sprite.`, t`Upload Cancelled`);
+            // Reset the input
+            e.target.form.reset();
             return;
         }
 
         const formData = new FormData();
         formData.append('name', name);
-        formData.append('label', id);
+        formData.append('label', expression);
         formData.append('avatar', file);
+        formData.append('spriteName', spriteName);
 
         await handleFileUpload('/api/sprites/upload', formData);
 
         // Reset the input
         e.target.form.reset();
-
-        // In Talkinghead mode, when a new talkinghead image is uploaded, refresh the live char.
-        if (id === 'talkinghead' && isTalkingHeadEnabled() && modules.includes('talkinghead')) {
-            await loadTalkingHead();
-        }
     };
 
     $('#expression_upload')
@@ -1822,8 +1885,9 @@ async function onClickExpressionOverrideButton() {
         inApiCall = true;
         $('#visual-novel-wrapper').empty();
         await validateImages(overridePath.length === 0 ? currentLastMessage.name : overridePath, true);
+        const name = overridePath.length === 0 ? currentLastMessage.name : overridePath;
         const expression = await getExpressionLabel(currentLastMessage.mes);
-        await sendExpressionCall(overridePath.length === 0 ? currentLastMessage.name : overridePath, expression, true);
+        await sendExpressionCall(name, expression, { force: true });
         forceUpdateVisualNovelMode();
     } catch (error) {
         console.debug(`Setting expression override for ${avatarFileName} failed with error: ${error}`);
@@ -1849,7 +1913,7 @@ async function onClickExpressionOverrideRemoveAllButton() {
         const currentLastMessage = getLastCharacterMessage();
         await validateImages(currentLastMessage.name, true);
         const expression = await getExpressionLabel(currentLastMessage.mes);
-        await sendExpressionCall(currentLastMessage.name, expression, true);
+        await sendExpressionCall(currentLastMessage.name, expression, { force: true });
         forceUpdateVisualNovelMode();
 
         console.debug(extension_settings.expressionOverrides);
@@ -1872,16 +1936,13 @@ async function onClickExpressionUploadPackButton() {
         formData.append('name', name);
         formData.append('avatar', file);
 
+        const uploadToast = toastr.info('Please wait...', 'Upload is processing', { timeOut: 0, extendedTimeOut: 0 });
         const { count } = await handleFileUpload('/api/sprites/upload-zip', formData);
+        toastr.clear(uploadToast);
         toastr.success(`Uploaded ${count} image(s) for ${name}`);
 
         // Reset the input
         e.target.form.reset();
-
-        // In Talkinghead mode, refresh the live char.
-        if (isTalkingHeadEnabled() && modules.includes('talkinghead')) {
-            await loadTalkingHead();
-        }
     };
 
     $('#expression_upload_pack')
@@ -1894,20 +1955,28 @@ async function onClickExpressionDelete(event) {
     // Prevents the expression from being set
     event.stopPropagation();
 
-    const confirmation = await callPopup('<h3>Are you sure?</h3>Once deleted, it\'s gone forever!', 'confirm');
+    const expressionListItem = $(this).closest('.expression_list_item');
+    const expression = expressionListItem.data('expression');
 
+    if (expressionListItem.attr('data-expression-type') === 'failure') {
+        return;
+    }
+
+    const confirmation = await Popup.show.confirm(t`Delete Expression`, t`Are you sure you want to delete this expression? Once deleted, it\'s gone forever!`
+        + '<br /><br />'
+        + t`Expression:` + ' <tt>' + expressionListItem.attr('data-filename') + '</tt>');
     if (!confirmation) {
         return;
     }
 
-    const id = $(this).closest('.expression_list_item').attr('id');
+    const fileName = withoutExtension(expressionListItem.attr('data-filename'));
     const name = $('#image_list').data('name');
 
     try {
         await fetch('/api/sprites/delete', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ name, label: id }),
+            body: JSON.stringify({ name, label: expression, spriteName: fileName }),
         });
     } catch (error) {
         toastr.error('Failed to delete image. Try again later.');
@@ -1984,6 +2053,16 @@ function migrateSettings() {
         extension_settings.expressions.llmPrompt = DEFAULT_LLM_PROMPT;
         saveSettingsDebounced();
     }
+
+    if (extension_settings.expressions.allowMultiple === undefined) {
+        extension_settings.expressions.allowMultiple = true;
+        saveSettingsDebounced();
+    }
+
+    if (extension_settings.expressions.showDefault && extension_settings.expressions.fallback_expression !== undefined) {
+        extension_settings.expressions.showDefault = false;
+        saveSettingsDebounced();
+    }
 }
 
 (async function () {
@@ -2010,11 +2089,17 @@ function migrateSettings() {
         const template = await renderExtensionTemplateAsync(MODULE_NAME, 'settings');
         $('#expressions_container').append(template);
         $('#expression_override_button').on('click', onClickExpressionOverrideButton);
-        $('#expressions_show_default').on('input', onExpressionsShowDefaultInput);
         $('#expression_upload_pack_button').on('click', onClickExpressionUploadPackButton);
-        $('#expressions_show_default').prop('checked', extension_settings.expressions.showDefault).trigger('input');
         $('#expression_translate').prop('checked', extension_settings.expressions.translate).on('input', function () {
             extension_settings.expressions.translate = !!$(this).prop('checked');
+            saveSettingsDebounced();
+        });
+        $('#expressions_allow_multiple').prop('checked', extension_settings.expressions.allowMultiple).on('input', function () {
+            extension_settings.expressions.allowMultiple = !!$(this).prop('checked');
+            saveSettingsDebounced();
+        });
+        $('#expressions_reroll_if_same').prop('checked', extension_settings.expressions.rerollIfSame).on('input', function () {
+            extension_settings.expressions.rerollIfSame = !!$(this).prop('checked');
             saveSettingsDebounced();
         });
         $('#expression_override_cleanup_button').on('click', onClickExpressionOverrideRemoveAllButton);
@@ -2025,21 +2110,15 @@ function migrateSettings() {
         $(document).on('click', '.expression_list_item', onClickExpressionImage);
         $(document).on('click', '.expression_list_upload', onClickExpressionUpload);
         $(document).on('click', '.expression_list_delete', onClickExpressionDelete);
-        $(window).on('resize', updateVisualNovelModeDebounced);
+        $(window).on('resize', () => updateVisualNovelModeDebounced());
         $('#open_chat_expressions').hide();
-
-        $('#image_type_toggle').on('click', function () {
-            if (this instanceof HTMLInputElement) {
-                setTalkingHeadState(this.checked);
-            }
-        });
 
         await renderAdditionalExpressionSettings();
         $('#expression_api').val(extension_settings.expressions.api ?? EXPRESSION_API.extras);
         $('.expression_llm_prompt_block').toggle([EXPRESSION_API.llm, EXPRESSION_API.webllm].includes(extension_settings.expressions.api));
         $('#expression_llm_prompt').val(extension_settings.expressions.llmPrompt ?? '');
         $('#expression_llm_prompt').on('input', function () {
-            extension_settings.expressions.llmPrompt = $(this).val();
+            extension_settings.expressions.llmPrompt = String($(this).val());
             saveSettingsDebounced();
         });
         $('#expression_llm_prompt_restore').on('click', function () {
@@ -2054,34 +2133,6 @@ function migrateSettings() {
         $('#expression_api').on('change', onExpressionApiChanged);
     }
 
-    // Pause Talkinghead to save resources when the ST tab is not visible or the window is minimized.
-    // We currently do this via loading/unloading. Could be improved by adding new pause/unpause endpoints to Extras.
-    document.addEventListener('visibilitychange', function (event) {
-        let pageIsVisible;
-        if (document.hidden) {
-            console.debug('expressions: SillyTavern is now hidden');
-            pageIsVisible = false;
-        } else {
-            console.debug('expressions: SillyTavern is now visible');
-            pageIsVisible = true;
-        }
-
-        if (isTalkingHeadEnabled() && modules.includes('talkinghead')) {
-            isTalkingHeadAvailable().then(result => {
-                if (result) {
-                    if (pageIsVisible) {
-                        loadTalkingHead();
-                    } else {
-                        unloadTalkingHead();
-                    }
-                    handleImageChange(); // Change image as needed
-                } else {
-                    //console.log("talkinghead does not exist.");
-                }
-            });
-        }
-    });
-
     addExpressionImage();
     addVisualNovelMode();
     migrateSettings();
@@ -2090,11 +2141,6 @@ function migrateSettings() {
     const updateFunction = wrapper.update.bind(wrapper);
     setInterval(updateFunction, UPDATE_INTERVAL);
     moduleWorker();
-    // For setting the Talkinghead talking animation on/off quickly enough for realtime use, we need another timer on a shorter schedule.
-    const wrapperTalkingState = new ModuleWorkerWrapper(updateTalkingState);
-    const updateTalkingStateFunction = wrapperTalkingState.update.bind(wrapperTalkingState);
-    setInterval(updateTalkingStateFunction, TALKINGCHECK_UPDATE_INTERVAL);
-    updateTalkingState();
     dragElement($('#expression-holder'));
     eventSource.on(event_types.CHAT_CHANGED, () => {
         // character changed
@@ -2108,110 +2154,137 @@ function migrateSettings() {
             imgElement.src = '';
         }
 
-        //set checkbox to global var
-        $('#image_type_toggle').prop('checked', extension_settings.expressions.talkinghead);
-        if (extension_settings.expressions.talkinghead) {
-            setTalkingHeadState(extension_settings.expressions.talkinghead);
-        }
-
         setExpressionOverrideHtml();
 
         if (isVisualNovelMode()) {
             $('#visual-novel-wrapper').empty();
         }
 
-        updateFunction();
+        updateFunction({ newChat: true });
     });
     eventSource.on(event_types.MOVABLE_PANELS_RESET, updateVisualNovelModeDebounced);
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
-    eventSource.on(event_types.EXTRAS_CONNECTED, () => {
-        if (extension_settings.expressions.talkinghead) {
-            setTalkingHeadState(extension_settings.expressions.talkinghead);
-        }
-    });
 
     const localEnumProviders = {
-        expressions: () => getCachedExpressions().map(expression => {
-            const isCustom = extension_settings.expressions.custom?.includes(expression);
-            return new SlashCommandEnumValue(expression, null, isCustom ? enumTypes.name : enumTypes.enum, isCustom ? 'C' : 'D');
-        }),
+        expressions: () => {
+            const currentLastMessage = selected_group ? getLastCharacterMessage() : null;
+            const spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage?.name);
+            const expressions = getCachedExpressions();
+            return expressions.map(expression => {
+                const spriteCount = spriteCache[spriteFolderName]?.find(x => x.label === expression)?.files.length ?? 0;
+                const isCustom = extension_settings.expressions.custom?.includes(expression);
+                const subtitle = spriteCount == 0 ? '❌ No sprites available for this expression' :
+                    spriteCount > 1 ? `${spriteCount} sprites` : null;
+                return new SlashCommandEnumValue(expression,
+                    subtitle,
+                    isCustom ? enumTypes.name : enumTypes.enum,
+                    isCustom ? 'C' : 'D');
+            });
+        },
+        sprites: () => {
+            const currentLastMessage = selected_group ? getLastCharacterMessage() : null;
+            const spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage?.name);
+            const sprites = spriteCache[spriteFolderName]?.map(x => x.files)?.flat() ?? [];
+            return sprites.map(x => {
+                return new SlashCommandEnumValue(x.title,
+                    x.title !== x.expression ? x.expression : null,
+                    x.isCustom ? enumTypes.name : enumTypes.enum,
+                    x.isCustom ? 'C' : 'D');
+            });
+        },
     };
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'sprite',
-        aliases: ['emote'],
+        name: 'expression-set',
+        aliases: ['sprite', 'emote'],
         callback: setSpriteSlashCommand,
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'spriteId',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'type',
+                description: 'Whether to set an expression or a specific sprite.',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-                enumProvider: localEnumProviders.expressions,
+                isRequired: false,
+                defaultValue: 'expression',
+                enumList: ['expression', 'sprite'],
             }),
         ],
-        helpString: 'Force sets the sprite for the current character.',
-        returns: 'the currently set sprite label after setting it.',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'expression label to set',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: (executor, _) => {
+                    // Check if command is used to set a sprite, then use those enums
+                    const type = executor.namedArgumentList.find(it => it.name == 'type')?.value || 'expression';
+                    if (type == 'sprite') return localEnumProviders.sprites();
+                    else return [
+                        ...localEnumProviders.expressions(),
+                        new SlashCommandEnumValue(RESET_SPRITE_LABEL, 'Resets the expression (to either default or no sprite)', enumTypes.enum, '❌'),
+                    ];
+                },
+            }),
+        ],
+        helpString: 'Force sets the expression for the current character.',
+        returns: 'The currently set expression label after setting it.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'spriteoverride',
-        aliases: ['costume'],
-        callback: setSpriteSetCommand,
+        name: 'expression-folder-override',
+        aliases: ['spriteoverride', 'costume'],
+        callback: setSpriteFolderCommand,
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'optional folder', [ARGUMENT_TYPE.STRING], false,
             ),
         ],
-        helpString: 'Sets an override sprite folder for the current character. If the name starts with a slash or a backslash, selects a sub-folder in the character-named folder. Empty value to reset to default.',
+        helpString: `
+            <div>
+                Sets an override sprite folder for the current character.<br />
+                In groups, this will apply to the character who last sent a message.
+            </div>
+            <div>
+                If the name starts with a slash or a backslash, selects a sub-folder in the character-named folder. Empty value to reset to default.
+            </div>
+        `,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'lastsprite',
-        callback: (_, name) => {
+        name: 'expression-last',
+        aliases: ['lastsprite'],
+        /** @type {(args: object, name: string) => Promise<string>} */
+        callback: async (_, name) => {
             if (typeof name !== 'string') throw new Error('name must be a string');
+            if (!name) {
+                if (selected_group) {
+                    toastr.error(t`In group chats, you must specify a character name.`, t`No character name specified`);
+                    return '';
+                }
+                name = characters[this_chid]?.avatar;
+            }
+
             const char = findChar({ name: name });
+            if (!char) toastr.warning(t`Couldn't find character ${name}.`, t`Character not found`);
+
             const sprite = lastExpression[char?.name ?? name] ?? '';
             return sprite;
         },
-        returns: 'the last set sprite / expression for the named character.',
+        returns: 'the last set expression for the named character.',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'Character name - or unique character identifier (avatar key)',
+                description: 'Character name - or unique character identifier (avatar key). If not provided, the current character for this chat will be used (does not work in group chats)',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
                 enumProvider: commonEnumProviders.characters('character'),
             }),
         ],
-        helpString: 'Returns the last set sprite / expression for the named character.',
+        helpString: 'Returns the last set expression for the named character.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'th',
-        callback: toggleTalkingHeadCommand,
-        aliases: ['talkinghead'],
-        helpString: 'Character Expressions: toggles <i>Image Type - talkinghead (extras)</i> on/off.',
-        returns: 'the current state of the <i>Image Type - talkinghead (extras)</i> on/off.',
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'classify-expressions',
+        name: 'expression-list',
         aliases: ['expressions'],
+        /** @type {(args: {return: string}) => Promise<string>} */
         callback: async (args) => {
-            /** @type {import('../../slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} */
-            // @ts-ignore
-            let returnType = args.return;
+            let returnType =
+                /** @type {import('../../slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} */
+                (args.return);
 
-            // Old legacy return type handling
-            if (args.format) {
-                toastr.warning(`Legacy argument 'format' with value '${args.format}' is deprecated. Please use 'return' instead. Routing to the correct return type...`, 'Deprecation warning');
-                const type = String(args?.format).toLowerCase().trim();
-                switch (type) {
-                    case 'json':
-                        returnType = 'object';
-                        break;
-                    default:
-                        returnType = 'pipe';
-                        break;
-                }
-            }
-
-            // Now the actual new return type handling
             const list = await getExpressionsList();
 
             return await slashCommandReturnHelper.doReturn(returnType ?? 'pipe', list, { objectToStringFunc: list => list.join(', ') });
@@ -2225,22 +2298,13 @@ function migrateSettings() {
                 enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
                 forceEnum: true,
             }),
-            // TODO remove some day
-            SlashCommandNamedArgument.fromProps({
-                name: 'format',
-                description: '!!! DEPRECATED - use "return" instead !!! The format to return the list in: comma-separated plain text or JSON array. Default is plain text.',
-                typeList: [ARGUMENT_TYPE.STRING],
-                enumList: [
-                    new SlashCommandEnumValue('plain', null, enumTypes.enum, ', '),
-                    new SlashCommandEnumValue('json', null, enumTypes.enum, '[]'),
-                ],
-            }),
         ],
         returns: 'The comma-separated list of available expressions, including custom expressions.',
         helpString: 'Returns a list of available expressions, including custom expressions.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'classify',
+        name: 'expression-classify',
+        aliases: ['classify'],
         callback: classifyCallback,
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
@@ -2279,11 +2343,13 @@ function migrateSettings() {
         `,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'uploadsprite',
+        name: 'expression-upload',
+        aliases: ['uploadsprite'],
+        /** @type {(args: {name: string, label: string, folder: string?, spriteName: string?}, url: string) => Promise<string>} */
         callback: async (args, url) => {
-            await uploadSpriteCommand(args, url);
-            return '';
+            return await uploadSpriteCommand(args, url);
         },
+        returns: 'the resulting sprite name',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'URL of the image to upload',
@@ -2297,7 +2363,6 @@ function migrateSettings() {
                 description: 'Character name or avatar key (default is current character)',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: false,
-                acceptsMultiple: false,
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'label',
@@ -2305,16 +2370,32 @@ function migrateSettings() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumProvider: localEnumProviders.expressions,
                 isRequired: true,
-                acceptsMultiple: false,
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'folder',
                 description: 'Override folder to upload into',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: false,
-                acceptsMultiple: false,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'spriteName',
+                description: 'Override sprite name to allow multiple sprites per expressions. Has to follow the naming pattern. If unspecified, the label will be used as sprite name.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
             }),
         ],
-        helpString: '<div>Upload a sprite from a URL.</div><div>Example:</div><pre><code>/uploadsprite name=Seraphina label=joy /user/images/Seraphina/Seraphina_2024-12-22@12h37m57s.png</code></pre>',
+        helpString: `
+            <div>
+                Upload a sprite from a URL.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/uploadsprite name=Seraphina label=joy /user/images/Seraphina/Seraphina_2024-12-22@12h37m57s.png</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
     }));
 })();

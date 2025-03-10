@@ -1,19 +1,32 @@
 import {
     moment,
 } from '../lib.js';
-import { chat, closeMessageEditor, event_types, eventSource, main_api, messageFormatting, saveChatConditional, saveSettingsDebounced, substituteParams, updateMessageBlock } from '../script.js';
+import { chat, closeMessageEditor, event_types, eventSource, main_api, messageFormatting, saveChatConditional, saveChatDebounced, saveSettingsDebounced, substituteParams, syncMesToSwipe, updateMessageBlock } from '../script.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
-import { getCurrentLocale, t } from './i18n.js';
+import { getCurrentLocale, t, translate } from './i18n.js';
 import { MacrosParser } from './macros.js';
 import { chat_completion_sources, getChatCompletionModel, oai_settings } from './openai.js';
 import { Popup } from './popup.js';
 import { power_user } from './power-user.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
-import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
-import { copyText, escapeRegex, isFalseBoolean, setDatasetProperty } from './utils.js';
+import { copyText, escapeRegex, isFalseBoolean, setDatasetProperty, trimSpaces } from './utils.js';
+
+/**
+ * Enum representing the type of the reasoning for a message (where it came from)
+ * @enum {string}
+ * @readonly
+ */
+export const ReasoningType = {
+    Model: 'model',
+    Parsed: 'parsed',
+    Manual: 'manual',
+    Edited: 'edited',
+};
 
 /**
  * Gets a message from a jQuery element.
@@ -63,6 +76,13 @@ export function extractReasoningFromData(data) {
                     return data?.choices?.[0]?.message?.reasoning ?? '';
                 case chat_completion_sources.MAKERSUITE:
                     return data?.responseContent?.parts?.filter(part => part.thought)?.map(part => part.text)?.join('\n\n') ?? '';
+                case chat_completion_sources.CLAUDE:
+                    return data?.content?.find(part => part.type === 'thinking')?.thinking ?? '';
+                case chat_completion_sources.CUSTOM: {
+                    return data?.choices?.[0]?.message?.reasoning_content
+                        ?? data?.choices?.[0]?.message?.reasoning
+                        ?? '';
+                }
             }
             break;
     }
@@ -88,6 +108,7 @@ export function isHiddenReasoningModel() {
 
     /** @type {{ name: string; func: MatchingFunc; }[]} */
     const hiddenReasoningModels = [
+        { name: 'gpt-4.5', func: FUNCS.startsWith },
         { name: 'o1', func: FUNCS.startsWith },
         { name: 'o3', func: FUNCS.startsWith },
         { name: 'gemini-2.0-flash-thinking-exp', func: FUNCS.startsWith },
@@ -129,7 +150,12 @@ export const ReasoningState = {
  * This class is used inside the {@link StreamingProcessor} to manage reasoning states and UI updates.
  */
 export class ReasoningHandler {
+    /** @type {boolean} True if the model supports reasoning, but hides the reasoning output */
     #isHiddenReasoningModel;
+    /** @type {boolean} True if the handler is currently handling a manual parse of reasoning blocks */
+    #isParsingReasoning = false;
+    /** @type {number?} When reasoning is being parsed manually, and the reasoning has ended, this will be the index at which the actual messages starts */
+    #parsingReasoningMesStartIndex = null;
 
     /**
      * @param {Date?} [timeStarted=null] - When the generation started
@@ -137,8 +163,12 @@ export class ReasoningHandler {
     constructor(timeStarted = null) {
         /** @type {ReasoningState} The current state of the reasoning process */
         this.state = ReasoningState.None;
+        /** @type {ReasoningType?} The type of the reasoning (where it came from) */
+        this.type = null;
         /** @type {string} The reasoning output */
         this.reasoning = '';
+        /** @type {string?} The reasoning output display in case of translate or other */
+        this.reasoningDisplayText = null;
         /** @type {Date} When the reasoning started */
         this.startTime = null;
         /** @type {Date} When the reasoning ended */
@@ -147,7 +177,6 @@ export class ReasoningHandler {
         /** @type {Date} Initial starting time of the generation */
         this.initialTime = timeStarted ?? new Date();
 
-        /** @type {boolean} True if the model supports reasoning, but hides the reasoning output */
         this.#isHiddenReasoningModel = isHiddenReasoningModel();
 
         // Cached DOM elements for reasoning
@@ -159,6 +188,17 @@ export class ReasoningHandler {
         this.messageReasoningContentDom = null;
         /** @type {HTMLElement} Reasoning header DOM element `.mes_reasoning_header_title` */
         this.messageReasoningHeaderDom = null;
+    }
+
+    /**
+     * Sets the reasoning state when continuing a prompt.
+     * @param {PromptReasoning} promptReasoning Prompt reasoning object
+     */
+    initContinue(promptReasoning) {
+        this.reasoning = promptReasoning.prefixReasoning;
+        this.state = promptReasoning.prefixIncomplete ? ReasoningState.None : ReasoningState.Done;
+        this.startTime = this.initialTime;
+        this.endTime = promptReasoning.prefixDuration ? new Date(this.initialTime.getTime() + promptReasoning.prefixDuration) : null;
     }
 
     /**
@@ -194,7 +234,9 @@ export class ReasoningHandler {
             this.state = ReasoningState.Hidden;
         }
 
+        this.type = extra?.reasoning_type;
         this.reasoning = extra?.reasoning ?? '';
+        this.reasoningDisplayText = extra?.reasoning_display_text ?? null;
 
         if (this.state !== ReasoningState.None) {
             this.initialTime = new Date(chat[messageId].gen_started);
@@ -208,7 +250,9 @@ export class ReasoningHandler {
         // Make sure reset correctly clears all relevant states
         if (reset) {
             this.state = this.#isHiddenReasoningModel ? ReasoningState.Thinking : ReasoningState.None;
+            this.type = null;
             this.reasoning = '';
+            this.reasoningDisplayText = null;
             this.initialTime = new Date();
             this.startTime = null;
             this.endTime = null;
@@ -237,18 +281,19 @@ export class ReasoningHandler {
      * Updates the reasoning text/string for a message.
      *
      * @param {number} messageId - The ID of the message to update
-     * @param {string?} [reasoning=null] - The reasoning text to update - If null, uses the current reasoning
+     * @param {string?} [reasoning=null] - The reasoning text to update - If null or empty, uses the current reasoning
      * @param {Object} [options={}] - Optional arguments
      * @param {boolean} [options.persist=false] - Whether to persist the reasoning to the message object
+     * @param {boolean} [options.allowReset=false] - Whether to allow empty reasoning provided to reset the reasoning, instead of just taking the existing one
      * @returns {boolean} - Returns true if the reasoning was changed, otherwise false
      */
-    updateReasoning(messageId, reasoning = null, { persist = false } = {}) {
+    updateReasoning(messageId, reasoning = null, { persist = false, allowReset = false } = {}) {
         if (messageId == -1 || !chat[messageId]) {
             return false;
         }
 
-        reasoning = reasoning ?? this.reasoning;
-        reasoning = power_user.trim_spaces ? reasoning.trim() : reasoning;
+        reasoning = allowReset ? reasoning ?? this.reasoning : reasoning || this.reasoning;
+        reasoning = trimSpaces(reasoning);
 
         // Ensure the chat extra exists
         if (!chat[messageId].extra) {
@@ -259,10 +304,13 @@ export class ReasoningHandler {
         const reasoningChanged = extra.reasoning !== reasoning;
         this.reasoning = getRegexedString(reasoning ?? '', regex_placement.REASONING);
 
+        this.type = (this.#isParsingReasoning || this.#parsingReasoningMesStartIndex) ? ReasoningType.Parsed : ReasoningType.Model;
+
         if (persist) {
             // Build and save the reasoning data to message extras
             extra.reasoning = this.reasoning;
             extra.reasoning_duration = this.getDuration();
+            extra.reasoning_type = (this.#isParsingReasoning || this.#parsingReasoningMesStartIndex) ? ReasoningType.Parsed : ReasoningType.Model;
         }
 
         return reasoningChanged;
@@ -276,10 +324,14 @@ export class ReasoningHandler {
      *
      * @param {number} messageId - The ID of the message to process
      * @param {boolean} mesChanged - Whether the message has changed
+     * @param {PromptReasoning} promptReasoning - Prompt reasoning object
      * @returns {Promise<void>}
      */
-    async process(messageId, mesChanged) {
-        if (!this.reasoning && !this.#isHiddenReasoningModel) return;
+    async process(messageId, mesChanged, promptReasoning) {
+        mesChanged = this.#autoParseReasoningFromMessage(messageId, mesChanged, promptReasoning);
+
+        if (!this.reasoning && !this.#isHiddenReasoningModel)
+            return;
 
         // Ensure reasoning string is updated and regexes are applied correctly
         const reasoningChanged = this.updateReasoning(messageId, null, { persist: true });
@@ -292,6 +344,62 @@ export class ReasoningHandler {
             this.endTime = new Date();
             await this.finish(messageId);
         }
+    }
+
+    /**
+     * Parse reasoning from a message during streaming.
+     * @param {number} messageId Message ID
+     * @param {boolean} mesChanged Whether the message has changed before reasoning parsing
+     * @param {PromptReasoning} promptReasoning Prompt reasoning object
+     * @returns {boolean} Whether the message has changed after reasoning parsing
+     */
+    #autoParseReasoningFromMessage(messageId, mesChanged, promptReasoning) {
+        if (!power_user.reasoning.auto_parse)
+            return;
+        if (!power_user.reasoning.prefix || !power_user.reasoning.suffix)
+            return mesChanged;
+
+        /** @type {{ mes: string, [key: string]: any}} */
+        const message = chat[messageId];
+        if (!message) return mesChanged;
+
+        const parseTarget = promptReasoning?.prefixIncomplete ? (promptReasoning.prefixReasoningFormatted + message.mes) : message.mes;
+
+        // If we are done with reasoning parse, we just split the message correctly so the reasoning doesn't show up inside of it.
+        if (this.#parsingReasoningMesStartIndex) {
+            message.mes = trimSpaces(parseTarget.slice(this.#parsingReasoningMesStartIndex));
+            return mesChanged;
+        }
+
+        if (this.state === ReasoningState.None || this.#isHiddenReasoningModel) {
+            // If streamed message starts with the opening, cut it out and put all inside reasoning
+            if (parseTarget.startsWith(power_user.reasoning.prefix) && parseTarget.length > power_user.reasoning.prefix.length) {
+                this.#isParsingReasoning = true;
+
+                // Manually set starting state here, as we might already have received the ending suffix
+                this.state = ReasoningState.Thinking;
+                this.startTime = this.startTime ?? this.initialTime;
+                this.endTime = null;
+            }
+        }
+
+        if (!this.#isParsingReasoning)
+            return mesChanged;
+
+        // If we are in manual parsing mode, all currently streaming mes tokens will go the the reasoning block
+        this.reasoning = parseTarget.slice(power_user.reasoning.prefix.length);
+        message.mes = '';
+
+        // If the reasoning contains the ending suffix, we cut that off and continue as message streaming
+        if (this.reasoning.includes(power_user.reasoning.suffix)) {
+            this.reasoning = this.reasoning.slice(0, this.reasoning.indexOf(power_user.reasoning.suffix));
+            this.#parsingReasoningMesStartIndex = parseTarget.indexOf(power_user.reasoning.suffix) + power_user.reasoning.suffix.length;
+            message.mes = trimSpaces(parseTarget.slice(this.#parsingReasoningMesStartIndex));
+            this.#isParsingReasoning = false;
+        }
+
+        // Only return the original mesChanged value if we haven't cut off the complete message
+        return message.mes.length ? mesChanged : false;
     }
 
     /**
@@ -336,9 +444,10 @@ export class ReasoningHandler {
         // Update states to the relevant DOM elements
         setDatasetProperty(this.messageDom, 'reasoningState', this.state !== ReasoningState.None ? this.state : null);
         setDatasetProperty(this.messageReasoningDetailsDom, 'state', this.state);
+        setDatasetProperty(this.messageReasoningDetailsDom, 'type', this.type);
 
         // Update the reasoning message
-        const reasoning = power_user.trim_spaces ? this.reasoning.trim() : this.reasoning;
+        const reasoning = trimSpaces(this.reasoningDisplayText ?? this.reasoning);
         const displayReasoning = messageFormatting(reasoning, '', false, false, messageId, {}, true);
         this.messageReasoningContentDom.innerHTML = displayReasoning;
 
@@ -393,17 +502,14 @@ export class ReasoningHandler {
         const element = this.messageReasoningHeaderDom;
         const duration = this.getDuration();
         let data = null;
+        let title = '';
         if (duration) {
+            const seconds = moment.duration(duration).asSeconds();
+
             const durationStr = moment.duration(duration).locale(getCurrentLocale()).humanize({ s: 50, ss: 3 });
-            const secondsStr = moment.duration(duration).asSeconds();
-
-            const span = document.createElement('span');
-            span.title = t`${secondsStr} seconds`;
-            span.textContent = durationStr;
-
-            element.textContent = t`Thought for `;
-            element.appendChild(span);
-            data = String(secondsStr);
+            element.textContent = t`Thought for ${durationStr}`;
+            data = String(seconds);
+            title = `${seconds} seconds`;
         } else if ([ReasoningState.Done, ReasoningState.Hidden].includes(this.state)) {
             element.textContent = t`Thought for some time`;
             data = 'unknown';
@@ -411,6 +517,12 @@ export class ReasoningHandler {
             element.textContent = t`Thinking...`;
             data = null;
         }
+
+        if (this.type && this.type !== ReasoningType.Model) {
+            title += ` [${translate(this.type)}]`;
+            title = title.trim();
+        }
+        element.title = title;
 
         setDatasetProperty(this.messageReasoningDetailsDom, 'duration', data);
         setDatasetProperty(element, 'duration', data);
@@ -422,10 +534,56 @@ export class ReasoningHandler {
  * Keeps track of the number of reasoning additions.
  */
 export class PromptReasoning {
+    /**
+     * An instance initiated during the latest prompt processing.
+     * @type {PromptReasoning}
+     * */
+    static #LATEST = null;
+    /**
+     * @readonly Zero-width space character used as a placeholder for reasoning.
+     * @type {string}
+    */
     static REASONING_PLACEHOLDER = '\u200B';
 
+    /**
+     * Returns the latest formatted reasoning prefix if the prefix is incomplete.
+     * @returns {string} Formatted reasoning prefix
+     */
+    static getLatestPrefix() {
+        if (!PromptReasoning.#LATEST) {
+            return '';
+        }
+
+        if (!PromptReasoning.#LATEST.prefixIncomplete) {
+            return '';
+        }
+
+        return PromptReasoning.#LATEST.prefixReasoningFormatted;
+    }
+
+    /**
+     * Free the latest reasoning instance.
+     * To be called when the generation has ended or stopped.
+     */
+    static clearLatest() {
+        PromptReasoning.#LATEST = null;
+    }
+
     constructor() {
+        PromptReasoning.#LATEST = this;
+
+        /** @type {number} */
         this.counter = 0;
+        /** @type {number} */
+        this.prefixLength = -1;
+        /** @type {string} */
+        this.prefixReasoning = '';
+        /** @type {string} */
+        this.prefixReasoningFormatted = '';
+        /** @type {number?} */
+        this.prefixDuration = null;
+        /** @type {boolean} */
+        this.prefixIncomplete = false;
     }
 
     /**
@@ -445,9 +603,10 @@ export class PromptReasoning {
      * @param {string} content Message content
      * @param {string} reasoning Message reasoning
      * @param {boolean} isPrefix Whether this is the last message prefix
+     * @param {number?} duration Duration of the reasoning
      * @returns {string} Message content with reasoning
      */
-    addToMessage(content, reasoning, isPrefix) {
+    addToMessage(content, reasoning, isPrefix, duration) {
         // Disabled or reached limit of additions
         if (!isPrefix && (!power_user.reasoning.add_to_prompts || this.counter >= power_user.reasoning.max_additions)) {
             return content;
@@ -468,11 +627,39 @@ export class PromptReasoning {
 
         // Combine parts with reasoning only
         if (isPrefix && !content) {
-            return `${prefix}${reasoning}`;
+            const formattedReasoning = `${prefix}${reasoning}`;
+            if (isPrefix) {
+                this.prefixReasoning = reasoning;
+                this.prefixReasoningFormatted = formattedReasoning;
+                this.prefixLength = formattedReasoning.length;
+                this.prefixDuration = duration;
+                this.prefixIncomplete = true;
+            }
+            return formattedReasoning;
         }
 
         // Combine parts with reasoning and content
-        return `${prefix}${reasoning}${suffix}${separator}${content}`;
+        const formattedReasoning = `${prefix}${reasoning}${suffix}${separator}`;
+        if (isPrefix) {
+            this.prefixReasoning = reasoning;
+            this.prefixReasoningFormatted = formattedReasoning;
+            this.prefixLength = formattedReasoning.length;
+            this.prefixDuration = duration;
+            this.prefixIncomplete = false;
+        }
+        return `${formattedReasoning}${content}`;
+    }
+
+    /**
+     * Removes the reasoning prefix from the content.
+     * @param {string} content Content with the reasoning prefix
+     * @returns {string} Content without the reasoning prefix
+     */
+    removePrefix(content) {
+        if (this.prefixLength > 0) {
+            return content.slice(this.prefixLength);
+        }
+        return content;
     }
 }
 
@@ -573,11 +760,16 @@ function registerReasoningSlashCommands() {
         callback: async (args, value) => {
             const messageId = !isNaN(Number(args.at)) ? Number(args.at) : chat.length - 1;
             const message = chat[messageId];
-            if (!message?.extra) {
+            if (!message) {
                 return '';
+            }
+            // Make sure the message has an extra object
+            if (!message.extra || typeof message.extra !== 'object') {
+                message.extra = {};
             }
 
             message.extra.reasoning = String(value ?? '');
+            message.extra.reasoning_type = ReasoningType.Manual;
             await saveChatConditional();
 
             closeMessageEditor('reasoning');
@@ -598,7 +790,26 @@ function registerReasoningSlashCommands() {
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
                 defaultValue: 'true',
                 isRequired: false,
-                enumProvider: commonEnumProviders.boolean('trueFalse'),
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'Whether to return the parsed reasoning or the content without reasoning',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'reasoning',
+                isRequired: false,
+                enumList: [
+                    new SlashCommandEnumValue('reasoning', null, enumTypes.enum, enumIcons.reasoning),
+                    new SlashCommandEnumValue('content', null, enumTypes.enum, enumIcons.message),
+                ],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'strict',
+                description: 'Whether to require the reasoning block to be at the beginning of the string (excluding whitespaces).',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                isRequired: false,
+                enumList: commonEnumProviders.boolean('trueFalse')(),
             }),
         ],
         unnamedArgumentList: [
@@ -608,19 +819,27 @@ function registerReasoningSlashCommands() {
             }),
         ],
         callback: (args, value) => {
-            if (!value) {
+            if (!value || typeof value !== 'string') {
                 return '';
             }
 
             if (!power_user.reasoning.prefix || !power_user.reasoning.suffix) {
-                toastr.warning(t`Both prefix and suffix must be set in the Reasoning Formatting settings.`);
-                return String(value);
+                toastr.warning(t`Both prefix and suffix must be set in the Reasoning Formatting settings.`, t`Reasoning Parse`);
+                return value;
+            }
+            if (typeof args.return !== 'string' || !['reasoning', 'content'].includes(args.return)) {
+                toastr.warning(t`Invalid return type '${args.return}', defaulting to 'reasoning'.`, t`Reasoning Parse`);
             }
 
-            const parsedReasoning = parseReasoningFromString(String(value));
+            const returnMessage = args.return === 'content';
 
+            const parsedReasoning = parseReasoningFromString(value, { strict: !isFalseBoolean(String(args.strict ?? '')) });
             if (!parsedReasoning) {
-                return '';
+                return returnMessage ? value : '';
+            }
+
+            if (returnMessage) {
+                return parsedReasoning.content;
             }
 
             const applyRegex = !isFalseBoolean(String(args.regex ?? ''));
@@ -638,6 +857,17 @@ function registerReasoningMacros() {
 }
 
 function setReasoningEventHandlers() {
+    /**
+     * Updates the reasoning block of a message from a value.
+     * @param {object} message Message object
+     * @param {string} value Reasoning value
+     */
+    function updateReasoningFromValue(message, value) {
+        const reasoning = getRegexedString(value, regex_placement.REASONING, { isEdit: true });
+        message.extra.reasoning = reasoning;
+        message.extra.reasoning_type = message.extra.reasoning_type ? ReasoningType.Edited : ReasoningType.Manual;
+    }
+
     $(document).on('click', '.mes_reasoning_details', function (e) {
         if (!e.target.closest('.mes_reasoning_actions') && !e.target.closest('.mes_reasoning_header')) {
             e.preventDefault();
@@ -718,13 +948,17 @@ function setReasoningEventHandlers() {
         }
 
         const textarea = messageBlock.find('.reasoning_edit_textarea');
-        const reasoning = getRegexedString(String(textarea.val()), regex_placement.REASONING, { isEdit: true });
-        message.extra.reasoning = reasoning;
+        const newReasoning = String(textarea.val());
+        textarea.remove();
+        if (newReasoning === message.extra.reasoning) {
+            return;
+        }
+        updateReasoningFromValue(message, newReasoning);
         await saveChatConditional();
         updateMessageBlock(messageId, message);
-        textarea.remove();
 
         messageBlock.find('.mes_edit_done:visible').trigger('click');
+        await eventSource.emit(event_types.MESSAGE_REASONING_EDITED, messageId);
     });
 
     $(document).on('click', '.mes_reasoning_edit_cancel', function (e) {
@@ -780,10 +1014,13 @@ function setReasoningEventHandlers() {
             return;
         }
         message.extra.reasoning = '';
+        delete message.extra.reasoning_type;
+        delete message.extra.reasoning_duration;
         await saveChatConditional();
         updateMessageBlock(messageId, message);
         const textarea = messageBlock.find('.reasoning_edit_textarea');
         textarea.remove();
+        await eventSource.emit(event_types.MESSAGE_REASONING_DELETED, messageId);
     });
 
     $(document).on('pointerup', '.mes_reasoning_copy', async function () {
@@ -796,6 +1033,21 @@ function setReasoningEventHandlers() {
 
         await copyText(reasoning);
         toastr.info(t`Copied!`, '', { timeOut: 2000 });
+    });
+
+    $(document).on('input', '.reasoning_edit_textarea', function () {
+        if (!power_user.auto_save_msg_edits) {
+            return;
+        }
+
+        const { message, messageBlock } = getMessageFromJquery(this);
+        if (!message?.extra) {
+            return;
+        }
+
+        updateReasoningFromValue(message, String($(this).val()));
+        updateReasoningUI(messageBlock);
+        saveChatDebounced();
     });
 }
 
@@ -819,16 +1071,18 @@ export function removeReasoningFromString(str) {
  * @property {string} reasoning Reasoning block
  * @property {string} content Message content
  * @param {string} str Content of the message
+ * @param {Object} options Optional arguments
+ * @param {boolean} [options.strict=true] Whether the reasoning block **has** to be at the beginning of the provided string (excluding whitespaces), or can be anywhere in it
  * @returns {ParsedReasoning|null} Parsed reasoning block and message content
  */
-function parseReasoningFromString(str) {
+function parseReasoningFromString(str, { strict = true } = {}) {
     // Both prefix and suffix must be defined
     if (!power_user.reasoning.prefix || !power_user.reasoning.suffix) {
         return null;
     }
 
     try {
-        const regex = new RegExp(`${escapeRegex(power_user.reasoning.prefix)}(.*?)${escapeRegex(power_user.reasoning.suffix)}`, 's');
+        const regex = new RegExp(`${(strict ? '^\\s*?' : '')}${escapeRegex(power_user.reasoning.prefix)}(.*?)${escapeRegex(power_user.reasoning.suffix)}`, 's');
 
         let didReplace = false;
         let reasoning = '';
@@ -838,9 +1092,9 @@ function parseReasoningFromString(str) {
             return '';
         });
 
-        if (didReplace && power_user.trim_spaces) {
-            reasoning = reasoning.trim();
-            content = content.trim();
+        if (didReplace) {
+            reasoning = trimSpaces(reasoning);
+            content = trimSpaces(content);
         }
 
         return { reasoning, content };
@@ -850,13 +1104,45 @@ function parseReasoningFromString(str) {
     }
 }
 
+/**
+ * Parse reasoning in an array of swipe strings if auto-parsing is enabled.
+ * @param {string[]} swipes Array of swipe strings
+ * @param {{extra: ReasoningMessageExtra}[]} swipeInfoArray Array of swipe info objects
+ * @param {number?} duration Duration of the reasoning
+ * @typedef {object} ReasoningMessageExtra Extra reasoning data
+ * @property {string} reasoning Reasoning block
+ * @property {number} reasoning_duration Duration of the reasoning block
+ * @property {string} reasoning_type Type of reasoning block
+ */
+export function parseReasoningInSwipes(swipes, swipeInfoArray, duration) {
+    if (!power_user.reasoning.auto_parse) {
+        return;
+    }
+
+    // Something ain't right, don't parse
+    if (!Array.isArray(swipes) || !Array.isArray(swipeInfoArray) || swipes.length !== swipeInfoArray.length) {
+        return;
+    }
+
+    for (let index = 0; index < swipes.length; index++) {
+        const parsedReasoning = parseReasoningFromString(swipes[index]);
+        if (parsedReasoning) {
+            swipes[index] = getRegexedString(parsedReasoning.content, regex_placement.REASONING);
+            swipeInfoArray[index].extra.reasoning = parsedReasoning.reasoning;
+            swipeInfoArray[index].extra.reasoning_duration = duration;
+            swipeInfoArray[index].extra.reasoning_type = ReasoningType.Parsed;
+        }
+    }
+}
+
 function registerReasoningAppEvents() {
-    eventSource.makeFirst(event_types.MESSAGE_RECEIVED, (/** @type {number} */ idx) => {
+    const eventHandler = (/** @type {string} */ type, /** @type {number} */ idx) => {
         if (!power_user.reasoning.auto_parse) {
             return;
         }
 
         console.debug('[Reasoning] Auto-parsing reasoning block for message', idx);
+        const prefix = type === event_types.MESSAGE_RECEIVED ? PromptReasoning.getLatestPrefix() : '';
         const message = chat[idx];
 
         if (!message) {
@@ -869,7 +1155,12 @@ function registerReasoningAppEvents() {
             return null;
         }
 
-        const parsedReasoning = parseReasoningFromString(message.mes);
+        if (message.extra?.reasoning && !prefix) {
+            console.debug('[Reasoning] Message already has reasoning', idx);
+            return null;
+        }
+
+        const parsedReasoning = parseReasoningFromString(prefix + message.mes);
 
         // No reasoning block found
         if (!parsedReasoning) {
@@ -886,6 +1177,7 @@ function registerReasoningAppEvents() {
         // If reasoning was found, add it to the message
         if (parsedReasoning.reasoning) {
             message.extra.reasoning = getRegexedString(parsedReasoning.reasoning, regex_placement.REASONING);
+            message.extra.reasoning_type = ReasoningType.Parsed;
         }
 
         // Update the message text if it was changed
@@ -893,15 +1185,26 @@ function registerReasoningAppEvents() {
             message.mes = parsedReasoning.content;
         }
 
-        // Find if a message already exists in DOM and must be updated
         if (contentUpdated) {
+            syncMesToSwipe();
+            saveChatDebounced();
+
+            // Find if a message already exists in DOM and must be updated
             const messageRendered = document.querySelector(`.mes[mesid="${idx}"]`) !== null;
             if (messageRendered) {
                 console.debug('[Reasoning] Updating message block', idx);
                 updateMessageBlock(idx, message);
             }
         }
-    });
+    };
+
+    for (const event of [event_types.MESSAGE_RECEIVED, event_types.MESSAGE_UPDATED]) {
+        eventSource.on(event, (/** @type {number} */ idx) => eventHandler(event, idx));
+    }
+
+    for (const event of [event_types.GENERATION_STOPPED, event_types.GENERATION_ENDED, event_types.CHAT_CHANGED]) {
+        eventSource.on(event, () => PromptReasoning.clearLatest());
+    }
 }
 
 export function initReasoning() {

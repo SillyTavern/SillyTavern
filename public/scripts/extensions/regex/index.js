@@ -7,7 +7,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
-import { download, getFileText, getSortableDelay, uuidv4 } from '../../utils.js';
+import { download, getFileText, getSortableDelay, regexFromString, setInfoBlock, uuidv4 } from '../../utils.js';
 import { regex_placement, runRegexScript, substitute_find_regex } from './engine.js';
 import { t } from '../../i18n.js';
 import { accountStorage } from '../../util/AccountStorage.js';
@@ -258,6 +258,8 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
     });
 
     function updateTestResult() {
+        updateInfoBlock(editorHtml);
+
         if (!editorHtml.find('#regex_test_mode').is(':visible')) {
             return;
         }
@@ -276,6 +278,7 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
     }
 
     editorHtml.find('input, textarea, select').on('input', updateTestResult);
+    updateInfoBlock(editorHtml);
 
     const popupResult = await callPopup(editorHtml, 'confirm', undefined, { okButton: t`Save` });
     if (popupResult) {
@@ -302,6 +305,40 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
         };
 
         saveRegexScript(newRegexScript, existingScriptIndex, isScoped);
+    }
+}
+
+/**
+ * Updates the info block in the regex editor with hints regarding the find regex.
+ * @param {JQuery<HTMLElement>} editorHtml The editor HTML
+ */
+function updateInfoBlock(editorHtml) {
+    const infoBlock = editorHtml.find('.info-block').get(0);
+    const infoBlockFlagsHint = editorHtml.find('#regex_info_block_flags_hint');
+    const findRegex = String(editorHtml.find('.find_regex').val());
+
+    infoBlockFlagsHint.hide();
+
+    // Clear the info block if the find regex is empty
+    if (!findRegex) {
+        setInfoBlock(infoBlock, t`Find Regex is empty`, 'info');
+        return;
+    }
+
+    try {
+        const regex = regexFromString(findRegex);
+        if (!regex) {
+            throw new Error(t`Invalid Find Regex`);
+        }
+
+        const flagInfo = [];
+        flagInfo.push(regex.flags.includes('g') ? t`Applies to all matches` : t`Applies to the first match`);
+        flagInfo.push(regex.flags.includes('i') ? t`Case insensitive` : t`Case sensitive`);
+
+        setInfoBlock(infoBlock, flagInfo.join('. '), 'hint');
+        infoBlockFlagsHint.show();
+    } catch (error) {
+        setInfoBlock(infoBlock, error.message, 'error');
     }
 }
 
@@ -418,7 +455,7 @@ async function onRegexImportFileChange(file, isScoped) {
     }
 }
 
-function purgeEmbeddedRegexScripts( { character }){
+function purgeEmbeddedRegexScripts({ character }) {
     const avatar = character?.avatar;
 
     if (avatar && extension_settings.character_allowed_regex?.includes(avatar)) {

@@ -3,7 +3,6 @@ import fetch from 'node-fetch';
 import express from 'express';
 import _ from 'lodash';
 
-import { jsonParser } from '../../express-common.js';
 import {
     TEXTGEN_TYPES,
     TOGETHERAI_KEYS,
@@ -93,7 +92,7 @@ async function abortKoboldCppRequest(url) {
 }
 
 //************** Ooba/OpenAI text completions API
-router.post('/status', jsonParser, async function (request, response) {
+router.post('/status', async function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     try {
@@ -227,7 +226,7 @@ router.post('/status', jsonParser, async function (request, response) {
     }
 });
 
-router.post('/props', jsonParser, async function (request, response) {
+router.post('/props', async function (request, response) {
     if (!request.body.api_server) return response.sendStatus(400);
 
     try {
@@ -261,7 +260,7 @@ router.post('/props', jsonParser, async function (request, response) {
     }
 });
 
-router.post('/generate', jsonParser, async function (request, response) {
+router.post('/generate', async function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     try {
@@ -372,8 +371,8 @@ router.post('/generate', jsonParser, async function (request, response) {
         }
 
         if (request.body.api_type === TEXTGEN_TYPES.OLLAMA) {
-            const keepAlive = getConfigValue('ollama.keepAlive', -1);
-            const numBatch = getConfigValue('ollama.batchSize', -1);
+            const keepAlive = Number(getConfigValue('ollama.keepAlive', -1, 'number'));
+            const numBatch = Number(getConfigValue('ollama.batchSize', -1, 'number'));
             if (numBatch > 0) {
                 request.body['num_batch'] = numBatch;
             }
@@ -432,12 +431,13 @@ router.post('/generate', jsonParser, async function (request, response) {
 
 const ollama = express.Router();
 
-ollama.post('/download', jsonParser, async function (request, response) {
+ollama.post('/download', async function (request, response) {
     try {
         if (!request.body.name || !request.body.api_server) return response.sendStatus(400);
 
         const name = request.body.name;
         const url = String(request.body.api_server).replace(/\/$/, '');
+        console.debug('Pulling Ollama model:', name);
 
         const fetchResponse = await fetch(`${url}/api/pull`, {
             method: 'POST',
@@ -453,6 +453,7 @@ ollama.post('/download', jsonParser, async function (request, response) {
             return response.status(fetchResponse.status).send({ error: true });
         }
 
+        console.debug('Ollama pull response:', await fetchResponse.json());
         return response.send({ ok: true });
     } catch (error) {
         console.error(error);
@@ -460,7 +461,7 @@ ollama.post('/download', jsonParser, async function (request, response) {
     }
 });
 
-ollama.post('/caption-image', jsonParser, async function (request, response) {
+ollama.post('/caption-image', async function (request, response) {
     try {
         if (!request.body.server_url || !request.body.model) {
             return response.sendStatus(400);
@@ -505,7 +506,7 @@ ollama.post('/caption-image', jsonParser, async function (request, response) {
 
 const llamacpp = express.Router();
 
-llamacpp.post('/caption-image', jsonParser, async function (request, response) {
+llamacpp.post('/caption-image', async function (request, response) {
     try {
         if (!request.body.server_url) {
             return response.sendStatus(400);
@@ -550,7 +551,7 @@ llamacpp.post('/caption-image', jsonParser, async function (request, response) {
     }
 });
 
-llamacpp.post('/props', jsonParser, async function (request, response) {
+llamacpp.post('/props', async function (request, response) {
     try {
         if (!request.body.server_url) {
             return response.sendStatus(400);
@@ -579,7 +580,7 @@ llamacpp.post('/props', jsonParser, async function (request, response) {
     }
 });
 
-llamacpp.post('/slots', jsonParser, async function (request, response) {
+llamacpp.post('/slots', async function (request, response) {
     try {
         if (!request.body.server_url) {
             return response.sendStatus(400);
@@ -631,7 +632,7 @@ llamacpp.post('/slots', jsonParser, async function (request, response) {
 
 const tabby = express.Router();
 
-tabby.post('/download', jsonParser, async function (request, response) {
+tabby.post('/download', async function (request, response) {
     try {
         const baseUrl = String(request.body.api_server).replace(/\/$/, '');
 

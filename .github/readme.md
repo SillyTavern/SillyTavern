@@ -317,29 +317,34 @@ Start.bat --port 8000 --listen false
 
 ### Supported arguments
 
-| Option                  | Description                                                                                          | Type     |
-|-------------------------|------------------------------------------------------------------------------------------------------|----------|
-| `--version`             | Show version number                                                                                  | boolean  |
-| `--enableIPv6`          | Enables IPv6.                                                                                        | boolean  |
-| `--enableIPv4`          | Enables IPv4.                                                                                        | boolean  |
-| `--port`                | Sets the port under which SillyTavern will run. If not provided falls back to yaml config 'port'.    | number   |
-| `--dnsPreferIPv6`       | Prefers IPv6 for dns. If not provided falls back to yaml config 'preferIPv6'.                        | boolean  |
-| `--autorun`             | Automatically launch SillyTavern in the browser. If not provided falls back to yaml config 'autorun'.| boolean  |
-| `--autorunHostname`     | The autorun hostname, probably best left on 'auto'.                                                  | string   |
-| `--autorunPortOverride` | Overrides the port for autorun.                                                                      | string   |
-| `--listen`              | SillyTavern is listening on all network interfaces. If not provided falls back to yaml config 'listen'.| boolean  |
-| `--corsProxy`           | Enables CORS proxy. If not provided falls back to yaml config 'enableCorsProxy'.                     | boolean  |
-| `--disableCsrf`         | Disables CSRF protection                                                                             | boolean  |
-| `--ssl`                 | Enables SSL                                                                                          | boolean  |
-| `--certPath`            | Path to your certificate file.                                                                       | string   |
-| `--keyPath`             | Path to your private key file.                                                                       | string   |
-| `--whitelist`           | Enables whitelist mode                                                                               | boolean  |
-| `--dataRoot`            | Root directory for data storage                                                                      | string   |
-| `--avoidLocalhost`      | Avoids using 'localhost' for autorun in auto mode.                                                   | boolean  |
-| `--basicAuthMode`       | Enables basic authentication                                                                         | boolean  |
-| `--requestProxyEnabled` | Enables a use of proxy for outgoing requests                                                         | boolean  |
-| `--requestProxyUrl`     | Request proxy URL (HTTP or SOCKS protocols)                                                          | string   |
-| `--requestProxyBypass`  | Request proxy bypass list (space separated list of hosts)                                            | array    |
+> \[!TIP]
+> None of the arguments are required. If you don't provide them, SillyTavern will use the settings in `config.yaml`.
+
+| Option                  | Description                                                          | Type     |
+|-------------------------|----------------------------------------------------------------------|----------|
+| `--version`             | Show version number                                                  | boolean  |
+| `--dataRoot`            | Root directory for data storage                                      | string   |
+| `--port`                | Sets the port under which SillyTavern will run                       | number   |
+| `--listen`              | SillyTavern will listen on all network interfaces                    | boolean  |
+| `--whitelist`           | Enables whitelist mode                                               | boolean  |
+| `--basicAuthMode`       | Enables basic authentication                                         | boolean  |
+| `--enableIPv4`          | Enables IPv4 protocol                                                | boolean  |
+| `--enableIPv6`          | Enables IPv6 protocol                                                | boolean  |
+| `--listenAddressIPv4`   | Specific IPv4 address to listen to                                   | string   |
+| `--listenAddressIPv6`   | Specific IPv6 address to listen to                                   | string   |
+| `--dnsPreferIPv6`       | Prefers IPv6 for DNS                                                 | boolean  |
+| `--ssl`                 | Enables SSL                                                          | boolean  |
+| `--certPath`            | Path to your certificate file                                        | string   |
+| `--keyPath`             | Path to your private key file                                        | string   |
+| `--autorun`             | Automatically launch SillyTavern in the browser                      | boolean  |
+| `--autorunHostname`     | Autorun hostname                                                     | string   |
+| `--autorunPortOverride` | Overrides the port for autorun                                       | string   |
+| `--avoidLocalhost`      | Avoids using 'localhost' for autorun in auto mode                    | boolean  |
+| `--corsProxy`           | Enables CORS proxy                                                   | boolean  |
+| `--requestProxyEnabled` | Enables a use of proxy for outgoing requests                         | boolean  |
+| `--requestProxyUrl`     | Request proxy URL (HTTP or SOCKS protocols)                          | string   |
+| `--requestProxyBypass`  | Request proxy bypass list (space separated list of hosts)            | array    |
+| `--disableCsrf`         | Disables CSRF protection (NOT RECOMMENDED)                           | boolean  |
 
 ## Remote connections
 
@@ -351,9 +356,28 @@ You may also want to configure SillyTavern user profiles with (optional) passwor
 
 ## Performance issues?
 
+### General tips
+
 1. Disable the Blur Effect and enable Reduced Motion on the User Settings panel (UI Theme toggles category).
 2. If using response streaming, set the streaming FPS to a lower value (10-15 FPS is recommended).
 3. Make sure the browser is enabled to use GPU acceleration for rendering.
+
+### Input lag
+
+Performance degradation, particularly input lag, is most commonly attributed to browser extensions. Known problematic extensions include:
+
+* iCloud Password Manager
+* DeepL Translation
+* AI-based grammar correction tools
+* Various ad-blocking extensions
+
+If you experience performance issues and cannot identify the cause, or suspect an issue with SillyTavern itself, please:
+
+1. [Record a performance profile](https://developer.chrome.com/docs/devtools/performance/reference)
+2. Export the profile as a JSON file
+3. Submit it to the development team for analysis
+
+We recommend first testing with all browser extensions and third-party SillyTavern extensions disabled to isolate the source of the performance degradation.
 
 ## License and credits
 

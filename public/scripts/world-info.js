@@ -4264,8 +4264,10 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         if (scanState) {
             const text = successfulNewEntriesForRecursion
                 .map(x => x.content).join('\n');
-            buffer.addRecurse(text);
-            allActivatedText = (text + '\n' + allActivatedText);
+            if (text) {
+                buffer.addRecurse(text);
+                allActivatedText = (text + '\n' + allActivatedText);
+            }
         } else {
             logNextState('[WI] Scan done. No new entries to prompt. Stopping.');
         }
@@ -4732,7 +4734,7 @@ export function setWorldInfoButtonClass(chid, forceValue = undefined) {
         return;
     }
 
-    if (!chid) {
+    if (chid === undefined) {
         return;
     }
 
@@ -4785,7 +4787,13 @@ export function checkEmbeddedWorld(chid) {
 export async function importEmbeddedWorldInfo(skipPopup = false) {
     const chid = $('#import_character_info').data('chid');
 
-    if (chid === undefined) {
+    if (chid === undefined || chid === -1) {
+        return;
+    }
+
+    const hasEmbed = checkEmbeddedWorld(chid);
+
+    if (!hasEmbed) {
         return;
     }
 
@@ -5167,20 +5175,24 @@ jQuery(() => {
     });
 
     $('#world_button').on('click', async function (event) {
+        const openSetWorldMenu = () => $('#char-management-dropdown').val($('#set_character_world').val()).trigger('change');
         const chid = $('#set_character_world').data('chid');
 
-        if (chid) {
-            const worldName = characters[chid]?.data?.extensions?.world;
-            const hasEmbed = checkEmbeddedWorld(chid);
-            if (worldName && world_names.includes(worldName) && !event.shiftKey) {
-                openWorldInfoEditor(worldName);
-            } else if (hasEmbed && !event.shiftKey) {
-                await importEmbeddedWorldInfo();
-                saveCharacterDebounced();
-            }
-            else {
-                $('#char-management-dropdown').val($('#set_character_world').val()).trigger('change');
-            }
+        if (chid === -1) {
+            openSetWorldMenu();
+            return;
+        }
+
+        const worldName = characters[chid]?.data?.extensions?.world;
+        const hasEmbed = checkEmbeddedWorld(chid);
+        if (worldName && world_names.includes(worldName) && !event.shiftKey) {
+            openWorldInfoEditor(worldName);
+        } else if (hasEmbed && !event.shiftKey) {
+            await importEmbeddedWorldInfo();
+            saveCharacterDebounced();
+        }
+        else {
+            openSetWorldMenu();
         }
     });
 

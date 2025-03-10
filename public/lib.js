@@ -20,6 +20,7 @@ import * as Popper from '@popperjs/core';
 import droll from 'droll';
 import morphdom from 'morphdom';
 import { toggle as slideToggle } from 'slidetoggle';
+import chalk from 'chalk';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -96,6 +97,7 @@ export default {
     droll,
     morphdom,
     slideToggle,
+    chalk,
 };
 
 export {
@@ -118,4 +120,5 @@ export {
     droll,
     morphdom,
     slideToggle,
+    chalk,
 };

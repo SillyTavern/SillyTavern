@@ -13,7 +13,6 @@ import mime from 'mime-types';
 import jimp from 'jimp';
 
 import { AVATAR_WIDTH, AVATAR_HEIGHT } from '../constants.js';
-import { jsonParser, urlencodedParser } from '../express-common.js';
 import { default as validateAvatarUrlMiddleware, getFileNameValidationFunction } from '../middleware/validateFileName.js';
 import { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer, MemoryLimitedMap, getConfigValue } from '../util.js';
 import { TavernCardValidator } from '../validator/TavernCardValidator.js';
@@ -23,12 +22,13 @@ import { invalidateThumbnail } from './thumbnails.js';
 import { importRisuSprites } from './sprites.js';
 const defaultAvatarPath = './public/img/ai4.png';
 
-// KV-store for parsed character data
-const cacheCapacity = Number(getConfigValue('cardsCacheCapacity', 100)); // MB
 // With 100 MB limit it would take roughly 3000 characters to reach this limit
-const characterDataCache = new MemoryLimitedMap(1024 * 1024 * cacheCapacity);
+const memoryCacheCapacity = getConfigValue('performance.memoryCacheCapacity', '100mb');
+const memoryCache = new MemoryLimitedMap(memoryCacheCapacity);
 // Some Android devices require tighter memory management
 const isAndroid = process.platform === 'android';
+// Use shallow character data for the character list
+const useShallowCharacters = !!getConfigValue('performance.lazyLoadCharacters', false, 'boolean');
 
 /**
  * Reads the character card from the specified image file.
@@ -39,12 +39,12 @@ const isAndroid = process.platform === 'android';
 async function readCharacterData(inputFile, inputFormat = 'png') {
     const stat = fs.statSync(inputFile);
     const cacheKey = `${inputFile}-${stat.mtimeMs}`;
-    if (characterDataCache.has(cacheKey)) {
-        return characterDataCache.get(cacheKey);
+    if (memoryCache.has(cacheKey)) {
+        return memoryCache.get(cacheKey);
     }
 
     const result = parse(inputFile, inputFormat);
-    !isAndroid && characterDataCache.set(cacheKey, result);
+    !isAndroid && memoryCache.set(cacheKey, result);
     return result;
 }
 
@@ -60,12 +60,12 @@ async function readCharacterData(inputFile, inputFormat = 'png') {
 async function writeCharacterData(inputFile, data, outputFile, request, crop = undefined) {
     try {
         // Reset the cache
-        for (const key of characterDataCache.keys()) {
+        for (const key of memoryCache.keys()) {
             if (Buffer.isBuffer(inputFile)) {
                 break;
             }
             if (key.startsWith(inputFile)) {
-                characterDataCache.delete(key);
+                memoryCache.delete(key);
                 break;
             }
         }
@@ -197,7 +197,38 @@ const calculateChatSize = (charDir) => {
 
 // Calculate the total string length of the data object
 const calculateDataSize = (data) => {
-    return typeof data === 'object' ? Object.values(data).reduce((acc, val) => acc + new String(val).length, 0) : 0;
+    return typeof data === 'object' ? Object.values(data).reduce((acc, val) => acc + String(val).length, 0) : 0;
+};
+
+/**
+ * Only get fields that are used to display the character list.
+ * @param {object} character Character object
+ * @returns {{shallow: true, [key: string]: any}} Shallow character
+ */
+const toShallow = (character) => {
+    return {
+        shallow: true,
+        name: character.name,
+        avatar: character.avatar,
+        chat: character.chat,
+        fav: character.fav,
+        date_added: character.date_added,
+        create_date: character.create_date,
+        date_last_chat: character.date_last_chat,
+        chat_size: character.chat_size,
+        data_size: character.data_size,
+        tags: character.tags,
+        data: {
+            name: _.get(character, 'data.name', ''),
+            character_version: _.get(character, 'data.character_version', ''),
+            creator: _.get(character, 'data.creator', ''),
+            creator_notes: _.get(character, 'data.creator_notes', ''),
+            tags: _.get(character, 'data.tags', []),
+            extensions: {
+                fav: _.get(character, 'data.extensions.fav', false),
+            },
+        },
+    };
 };
 
 /**
@@ -205,9 +236,11 @@ const calculateDataSize = (data) => {
  *
  * @param  {string} item The name of the character.
  * @param  {import('../users.js').UserDirectoryList} directories User directories
+ * @param  {object} options Options for the character processing
+ * @param  {boolean} options.shallow If true, only return the core character's metadata
  * @return {Promise<object>}     A Promise that resolves when the character processing is done.
  */
-const processCharacter = async (item, directories) => {
+const processCharacter = async (item, directories, { shallow }) => {
     try {
         const imgFile = path.join(directories.characters, item);
         const imgData = await readCharacterData(imgFile);
@@ -226,7 +259,7 @@ const processCharacter = async (item, directories) => {
         character['chat_size'] = chatSize;
         character['date_last_chat'] = dateLastChat;
         character['data_size'] = calculateDataSize(jsonObject?.data);
-        return character;
+        return shallow ? toShallow(character) : character;
     }
     catch (err) {
         console.error(`Could not process character: ${item}`);
@@ -734,7 +767,7 @@ async function importFromPng(uploadPath, { request }, preservedFileName) {
 
 export const router = express.Router();
 
-router.post('/create', urlencodedParser, async function (request, response) {
+router.post('/create', async function (request, response) {
     try {
         if (!request.body) return response.sendStatus(400);
 
@@ -763,7 +796,7 @@ router.post('/create', urlencodedParser, async function (request, response) {
     }
 });
 
-router.post('/rename', jsonParser, validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/rename', validateAvatarUrlMiddleware, async function (request, response) {
     if (!request.body.avatar_url || !request.body.new_name) {
         return response.sendStatus(400);
     }
@@ -810,7 +843,7 @@ router.post('/rename', jsonParser, validateAvatarUrlMiddleware, async function (
     }
 });
 
-router.post('/edit', urlencodedParser, validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/edit', validateAvatarUrlMiddleware, async function (request, response) {
     if (!request.body) {
         console.warn('Error: no response body detected');
         response.status(400).send('Error: no response body detected');
@@ -862,7 +895,7 @@ router.post('/edit', urlencodedParser, validateAvatarUrlMiddleware, async functi
  * @param {Object} response - The HTTP response object.
  * @returns {void}
  */
-router.post('/edit-attribute', jsonParser, validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/edit-attribute', validateAvatarUrlMiddleware, async function (request, response) {
     console.debug(request.body);
     if (!request.body) {
         console.warn('Error: no response body detected');
@@ -908,7 +941,7 @@ router.post('/edit-attribute', jsonParser, validateAvatarUrlMiddleware, async fu
  *
  * @returns {void}
  * */
-router.post('/merge-attributes', jsonParser, getFileNameValidationFunction('avatar'), async function (request, response) {
+router.post('/merge-attributes', getFileNameValidationFunction('avatar'), async function (request, response) {
     try {
         const update = request.body;
         const avatarPath = path.join(request.user.directories.characters, update.avatar);
@@ -939,7 +972,7 @@ router.post('/merge-attributes', jsonParser, getFileNameValidationFunction('avat
     }
 });
 
-router.post('/delete', jsonParser, validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/delete', validateAvatarUrlMiddleware, async function (request, response) {
     if (!request.body || !request.body.avatar_url) {
         return response.sendStatus(400);
     }
@@ -989,11 +1022,11 @@ router.post('/delete', jsonParser, validateAvatarUrlMiddleware, async function (
  * @param  {import("express").Response} response The HTTP response object.
  * @return {void}
  */
-router.post('/all', jsonParser, async function (request, response) {
+router.post('/all', async function (request, response) {
     try {
         const files = fs.readdirSync(request.user.directories.characters);
         const pngFiles = files.filter(file => file.endsWith('.png'));
-        const processingPromises = pngFiles.map(file => processCharacter(file, request.user.directories));
+        const processingPromises = pngFiles.map(file => processCharacter(file, request.user.directories, { shallow: useShallowCharacters }));
         const data = (await Promise.all(processingPromises)).filter(c => c.name);
         return response.send(data);
     } catch (err) {
@@ -1002,7 +1035,7 @@ router.post('/all', jsonParser, async function (request, response) {
     }
 });
 
-router.post('/get', jsonParser, validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/get', validateAvatarUrlMiddleware, async function (request, response) {
     try {
         if (!request.body) return response.sendStatus(400);
         const item = request.body.avatar_url;
@@ -1012,7 +1045,7 @@ router.post('/get', jsonParser, validateAvatarUrlMiddleware, async function (req
             return response.sendStatus(404);
         }
 
-        const data = await processCharacter(item, request.user.directories);
+        const data = await processCharacter(item, request.user.directories, { shallow: false });
 
         return response.send(data);
     } catch (err) {
@@ -1021,12 +1054,12 @@ router.post('/get', jsonParser, validateAvatarUrlMiddleware, async function (req
     }
 });
 
-router.post('/chats', jsonParser, validateAvatarUrlMiddleware, async function (request, response) {
-    if (!request.body) return response.sendStatus(400);
-
-    const characterDirectory = (request.body.avatar_url).replace('.png', '');
-
+router.post('/chats', validateAvatarUrlMiddleware, async function (request, response) {
     try {
+        if (!request.body) return response.sendStatus(400);
+
+        const characterDirectory = (request.body.avatar_url).replace('.png', '');
+
         const chatsDirectory = path.join(request.user.directories.chats, characterDirectory);
 
         if (!fs.existsSync(chatsDirectory)) {
@@ -1130,7 +1163,7 @@ function getPreservedName(request) {
         : undefined;
 }
 
-router.post('/import', urlencodedParser, async function (request, response) {
+router.post('/import', async function (request, response) {
     if (!request.body || !request.file) return response.sendStatus(400);
 
     const uploadPath = path.join(request.file.destination, request.file.filename);
@@ -1170,7 +1203,7 @@ router.post('/import', urlencodedParser, async function (request, response) {
     }
 });
 
-router.post('/duplicate', jsonParser, validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/duplicate', validateAvatarUrlMiddleware, async function (request, response) {
     try {
         if (!request.body.avatar_url) {
             console.warn('avatar URL not found in request body');
@@ -1216,7 +1249,7 @@ router.post('/duplicate', jsonParser, validateAvatarUrlMiddleware, async functio
     }
 });
 
-router.post('/export', jsonParser, validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/export', validateAvatarUrlMiddleware, async function (request, response) {
     try {
         if (!request.body.format || !request.body.avatar_url) {
             return response.sendStatus(400);

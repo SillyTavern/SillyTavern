@@ -132,7 +132,7 @@ export async function getPipeline(task, forceModel = '') {
 
     const cacheDir = path.join(globalThis.DATA_ROOT, '_cache');
     const model = forceModel || getModelForTask(task);
-    const localOnly = !getConfigValue('extensions.models.autoDownload', true);
+    const localOnly = !getConfigValue('extensions.models.autoDownload', true, 'boolean');
     console.log('Initializing transformers.js pipeline for task', task, 'with model', model);
     const instance = await pipeline(task, model, { cache_dir: cacheDir, quantized: tasks[task].quantized ?? true, local_files_only: localOnly });
     tasks[task].pipeline = instance;

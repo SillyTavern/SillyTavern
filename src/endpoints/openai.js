@@ -5,7 +5,6 @@ import fetch from 'node-fetch';
 import FormData from 'form-data';
 import express from 'express';
 
-import { jsonParser, urlencodedParser } from '../express-common.js';
 import { getConfigValue, mergeObjectWithYaml, excludeKeysByYaml, trimV1 } from '../util.js';
 import { setAdditionalHeaders } from '../additional-headers.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
@@ -13,7 +12,7 @@ import { OPENROUTER_HEADERS } from '../constants.js';
 
 export const router = express.Router();
 
-router.post('/caption-image', jsonParser, async (request, response) => {
+router.post('/caption-image', async (request, response) => {
     try {
         let key = '';
         let headers = {};
@@ -62,6 +61,10 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.GROQ);
         }
 
+        if (request.body.api === 'cohere') {
+            key = readSecret(request.user.directories, SECRET_KEYS.COHERE);
+        }
+
         if (!key && !request.body.reverse_proxy && ['custom', 'ooba', 'koboldcpp', 'vllm'].includes(request.body.api) === false) {
             console.warn('No key found for API', request.body.api);
             return response.sendStatus(400);
@@ -93,8 +96,6 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             excludeKeysByYaml(body, request.body.custom_exclude_body);
         }
 
-        console.debug('Multimodal captioning request', body);
-
         let apiUrl = '';
 
         if (request.body.api === 'openrouter') {
@@ -120,10 +121,17 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (request.body.api === 'groq') {
             apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
+            if (body.messages?.[0]?.role === 'system') {
+                body.messages[0].role = 'user';
+            }
         }
 
         if (request.body.api === 'mistral') {
             apiUrl = 'https://api.mistral.ai/v1/chat/completions';
+        }
+
+        if (request.body.api === 'cohere') {
+            apiUrl = 'https://api.cohere.ai/v2/chat';
         }
 
         if (request.body.api === 'ooba') {
@@ -145,6 +153,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
         }
 
         setAdditionalHeaders(request, { headers }, apiUrl);
+        console.debug('Multimodal captioning request', body);
 
         const result = await fetch(apiUrl, {
             method: 'POST',
@@ -165,7 +174,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
         /** @type {any} */
         const data = await result.json();
         console.info('Multimodal captioning response', data);
-        const caption = data?.choices[0]?.message?.content;
+        const caption = data?.choices?.[0]?.message?.content ?? data?.message?.content?.[0]?.text;
 
         if (!caption) {
             return response.status(500).send('No caption found');
@@ -179,7 +188,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/transcribe-audio', urlencodedParser, async (request, response) => {
+router.post('/transcribe-audio', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
 
@@ -227,7 +236,7 @@ router.post('/transcribe-audio', urlencodedParser, async (request, response) => 
     }
 });
 
-router.post('/generate-voice', jsonParser, async (request, response) => {
+router.post('/generate-voice', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
 
@@ -266,7 +275,7 @@ router.post('/generate-voice', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/generate-image', jsonParser, async (request, response) => {
+router.post('/generate-image', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
 
@@ -302,7 +311,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
 
 const custom = express.Router();
 
-custom.post('/generate-voice', jsonParser, async (request, response) => {
+custom.post('/generate-voice', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.CUSTOM_OPENAI_TTS);
         const { input, provider_endpoint, response_format, voice, speed, model } = request.body;

@@ -1294,8 +1294,8 @@
                                             <span data-i18n="TFS">TFS</span>
                                             <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Tail_Free_Sampling_desc" title="Tail-Free Sampling (TFS) searches for a tail of low-probability tokens in the distribution,&#13;by analyzing the rate of change in token probabilities using derivatives. It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative.&#13;The closer to 0, the more discarded tokens. Set to 1.0 to disable."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="tfs_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="tfs_textgenerationwebui" id="tfs_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="tfs_textgenerationwebui" name="volume" min="0" max="1" step="0.001">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="tfs_textgenerationwebui" id="tfs_counter_textgenerationwebui">
                                     </div>
                                     <div data-tg-type="ooba,mancer,aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
@@ -1305,7 +1305,7 @@
                                         <input class="neo-range-slider" type="range" id="epsilon_cutoff_textgenerationwebui" name="volume" min="0" max="9" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="9" step="0.01" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui">
                                     </div>
-                                    <div data-tg-type="aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="aphrodite,koboldcpp" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Top nsigma">Top nsigma</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="A sampling method that filters logits based on their statistical properties. It keeps tokens within n standard deviations of the maximum logit value, providing a simpler alternative to top-p/top-k sampling while maintaining sampling stability across different temperatures."></div>
@@ -1477,8 +1477,8 @@
                                             </div>
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
                                                 <small data-i18n="Exponent">Exponent</small>
-                                                <input class="neo-range-slider" type="range" id="dynatemp_exponent_textgenerationwebui" name="volume" min="0.01" max="10" step="0.01" />
-                                                <input class="neo-range-input" type="number" min="0.01" max="10" step="0.01" data-for="dynatemp_exponent_textgenerationwebui" id="dynatemp_exponent_counter_textgenerationwebui">
+                                                <input class="neo-range-slider" type="range" id="dynatemp_exponent_textgenerationwebui" name="volume" min="0.001" max="10" step="0.001" />
+                                                <input class="neo-range-input" type="number" min="0.001" max="10" step="0.001" data-for="dynatemp_exponent_textgenerationwebui" id="dynatemp_exponent_counter_textgenerationwebui">
                                             </div>
                                         </div>
                                     </div>
@@ -1951,7 +1951,18 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek">
+                                    <div class="range-block" data-source="makersuite,openrouter">
+                                        <label for="openai_enable_web_search" class="checkbox_label flexWrap widthFreeExpand">
+                                            <input id="openai_enable_web_search" type="checkbox" />
+                                            <span data-i18n="Enable web search">Enable web search</span>
+                                        </label>
+                                        <div class="flexBasis100p toggle-description justifyLeft">
+                                            <span>
+                                                Use search capabilities provided by the backend.
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,ai21">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -2000,7 +2011,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="deepseek,openrouter">
+                                    <div class="range-block" data-source="deepseek,openrouter,custom,claude">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
                                             <span>
@@ -2014,10 +2025,11 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom">
-                                        <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Currently supported values are low, medium, and high.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response.">
-                                            <label for="openai_reasoning_effort" data-i18n="Reasoning Effort">
-                                                Reasoning Effort
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude">
+                                        <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Currently supported values are low, medium, and high.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
+                                            <label for="openai_reasoning_effort">
+                                                <span data-i18n="Reasoning Effort">Reasoning Effort</span>
+                                                <i data-source="claude" class="opacity50p fa-solid fa-circle-info" title="Allocates a portion of the response length for thinking (low: 10%, medium: 25%, high: 50%), but minimum 1024 tokens."></i>
                                             </label>
                                             <select id="openai_reasoning_effort">
                                                 <option data-i18n="openai_reasoning_effort_low" value="low">Low</option>
@@ -2866,6 +2878,10 @@
                                         <option value="o3-mini">o3-mini</option>
                                         <option value="o3-mini-2025-01-31">o3-mini-2025-01-31</option>
                                     </optgroup>
+                                    <optgroup label="GPT-4.5">
+                                        <option value="gpt-4.5-preview">gpt-4.5-preview</option>
+                                        <option value="gpt-4.5-preview-2025-02-27">gpt-4.5-preview-2025-02-27</option>
+                                    </optgroup>
                                     <optgroup label="GPT-4 Turbo and GPT-4">
                                         <option value="gpt-4-turbo">gpt-4-turbo</option>
                                         <option value="gpt-4-turbo-2024-04-09">gpt-4-turbo-2024-04-09</option>
@@ -2915,6 +2931,8 @@
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
                                     <optgroup label="Versions">
+                                        <option value="claude-3-7-sonnet-latest">claude-3-7-sonnet-latest</option>
+                                        <option value="claude-3-7-sonnet-20250219">claude-3-7-sonnet-20250219</option>
                                         <option value="claude-3-5-sonnet-latest">claude-3-5-sonnet-latest</option>
                                         <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet-20241022</option>
                                         <option value="claude-3-5-sonnet-20240620">claude-3-5-sonnet-20240620</option>
@@ -3060,7 +3078,15 @@
                             <div>
                                 <h4 data-i18n="AI21 Model">AI21 Model</h4>
                                 <select id="model_ai21_select">
-                                    <optgroup label="Jamba 1.5">
+                                    <optgroup label="Jamba (Latest)">
+                                        <option value="jamba-mini">jamba-mini</option>
+                                        <option value="jamba-large">jamba-large</option>
+                                    </optgroup>
+                                    <optgroup label="Jamba 1.6">
+                                        <option value="jamba-1.6-mini">jamba-1.6-mini</option>
+                                        <option value="jamba-1.6-large">jamba-1.6-large</option>
+                                    </optgroup>
+                                    <optgroup label="Jamba 1.5 (Deprecated)">
                                         <option value="jamba-1.5-mini">jamba-1.5-mini</option>
                                         <option value="jamba-1.5-large">jamba-1.5-large</option>
                                     </optgroup>
@@ -3186,21 +3212,33 @@
                             </div>
                             <h4 data-i18n="Groq Model">Groq Model</h4>
                             <select id="model_groq_select">
-                                <optgroup label="Production Models">
-                                    <option value="gemma2-9b-it">gemma2-9b-it</option>
-                                    <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
-                                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-                                    <option value="llama3-70b-8192">llama3-70b-8192</option>
-                                    <option value="llama3-8b-8192">llama3-8b-8192</option>
-                                    <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                                <optgroup label="Alibaba Cloud">
+                                    <option value="qwen-2.5-32b">qwen-2.5-32b</option>
+                                    <option value="qwen-2.5-coder-32b">qwen-2.5-coder-32b</option>
                                 </optgroup>
-                                <optgroup label="Preview Models">
+                                <optgroup label="DeepSeek / Alibaba Cloud">
+                                    <option value="deepseek-r1-distill-qwen-32b">deepseek-r1-distill-qwen-32b</option>
+                                </optgroup>
+                                <optgroup label="DeepSeek / Meta">
                                     <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
-                                    <option value="llama-3.3-70b-specdec">llama-3.3-70b-specdec</option>
-                                    <option value="llama-3.2-1b-preview">llama-3.2-1b-preview</option>
-                                    <option value="llama-3.2-3b-preview">llama-3.2-3b-preview</option>
-                                    <option value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview</option>
-                                    <option value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview</option>
+                                </optgroup>
+                                <optgroup label="Google">
+                                    <option value="gemma2-9b-it">gemma2-9b-it</option>
+                                </optgroup>
+                                <optgroup label="Meta">
+                                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant </option>
+                                    <option value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview </option>
+                                    <option value="llama-3.2-1b-preview">llama-3.2-1b-preview </option>
+                                    <option value="llama-3.2-3b-preview">llama-3.2-3b-preview </option>
+                                    <option value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview </option>
+                                    <option value="llama-3.3-70b-specdec">llama-3.3-70b-specdec </option>
+                                    <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile </option>
+                                    <option value="llama-guard-3-8b">llama-guard-3-8b </option>
+                                    <option value="llama3-70b-8192">llama3-70b-8192 </option>
+                                    <option value="llama3-8b-8192">llama3-8b-8192 </option>
+                                </optgroup>
+                                <optgroup label="Mistral AI">
+                                    <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
                                 </optgroup>
                             </select>
                         </div>
@@ -3253,6 +3291,10 @@
                                     <option value="sonar">sonar</option>
                                     <option value="sonar-pro">sonar-pro</option>
                                     <option value="sonar-reasoning">sonar-reasoning</option>
+                                    <option value="sonar-reasoning-pro">sonar-reasoning-pro</option>
+                                </optgroup>
+                                <optgroup label="Offline Models">
+                                    <option value="r1-1776">r1-1776</option>
                                 </optgroup>
                                 <optgroup label="Deprecated Models">
                                     <!-- These are scheduled for deprecation after 2/22/2025 -->
@@ -3282,6 +3324,8 @@
                                         <option value="c4ai-aya-23">c4ai-aya-23</option>
                                         <option value="c4ai-aya-expanse-8b">c4ai-aya-expanse-8b</option>
                                         <option value="c4ai-aya-expanse-32b">c4ai-aya-expanse-32b</option>
+                                        <option value="c4ai-aya-vision-8b">c4ai-aya-vision-8b</option>
+                                        <option value="c4ai-aya-vision-32b">c4ai-aya-vision-32b</option>
                                         <option value="command-light">command-light</option>
                                         <option value="command">command</option>
                                         <option value="command-r">command-r</option>
@@ -3318,7 +3362,7 @@
                             </div>
                             <div>
                                 <small>
-                                    <span data-i18n="Doesn't work? Try adding">Doesn't work? Try adding</span> <code>/v1</code> <span data-i18n="at the end of the URL!">at the end of the URL!</span>
+                                    <span data-i18n="Doesn't work? Try adding">Doesn't work? Try adding</span> <code>/v1</code> <span data-i18n="at the end!">at the end!</span>
                                 </small>
                             </div>
                             <h4>
@@ -4001,7 +4045,7 @@
                                             <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" title="Cap the number of entry activation recursions" data-i18n="[title]Cap the number of entry activation recursions">
                                                 <small>
                                                     <span data-i18n="Max Recursion Steps">Max Recursion Steps</span>
-                                                    <div class="fa-solid fa-triangle-exclamation opacity50p" data-i18n="[title]0 = unlimited, 1 = scans once and doesn't recurse, 2 = scans once and recurses once, etc\n(disabled when min activations are used)" title="0 = unlimited, 1 = scans once and doesn't recurse, 2 = scans once and recurses once, etc&#10;(disabled when min activations are used)"></div>
+                                                    <div class="fa-solid fa-triangle-exclamation opacity50p" data-i18n="[title]0 = unlimited, 1 = scans once and doesn't recurse, 2 = scans once and recurses once, etc" title="0 = unlimited, 1 = scans once and doesn't recurse, 2 = scans once and recurses once, etc&#10;(disabled when min activations are used)"></div>
                                                 </small>
                                                 <input class="neo-range-slider" type="range" id="world_info_max_recursion_steps" name="world_info_max_recursion_steps" min="0" max="10" step="1">
                                                 <input class="neo-range-input" type="number" min="0" max="10" step="1" data-for="world_info_max_recursion_steps" id="world_info_max_recursion_steps_counter">
@@ -4130,7 +4174,7 @@
                         </div>
                         <div id="UI-language-block" class="flex-container alignItemsBaseline">
                             <span data-i18n="UI Language">Language:</span>
-                            <select id="ui_language_select" class="flex1 margin0">
+                            <select id="ui_language_select" class="flex1 margin0 text_pole">
                                 <option value="" data-i18n="Default">Default</option>
                                 <option value="en">English</option>
                             </select>
@@ -4188,7 +4232,7 @@
                             <!-- <h4><span data-i18n="UI Colors">Theme Settings</span></h4> -->
                             <div name="AvatarAndChatDisplay" class="flex-container flexFlowColumn">
                                 <div class="flex-container alignItemsBaseline">
-                                    <span data-i18n="Avatar Style">Avatars:</span>
+                                    <span data-i18n="Avatar Style:">Avatars:</span>
                                     <select id="avatar_style" class="widthNatural flex1 margin0">
                                         <option value="0" data-i18n="Circle">Circle</option>
                                         <option value="2" data-i18n="Square">Square</option>
@@ -4398,7 +4442,7 @@
                                     <option data-i18n="Ask" value="1">Ask</option>
                                     <option data-i18n="tag_import_none" value="2">None</option>
                                     <option data-i18n="tag_import_all" value="3">All</option>
-                                    <option data-i18n="Existing" value="4">Existing</option>
+                                    <option data-i18n="tag_import_existing" value="4">Existing</option>
                                 </select>
                             </div>
                             <label class="checkbox_label" for="fuzzy_search_checkbox" title="Use fuzzy matching, and search characters in the list by all data fields, not just by a name substring." data-i18n="[title]Use fuzzy matching, and search characters in the list by all data fields, not just by a name substring">
@@ -4413,7 +4457,7 @@
                                 <input id="prefer_character_jailbreak" type="checkbox" />
                                 <small data-i18n="Prefer Character Card Instructions">Prefer Char. Instructions</small>
                             </label>
-                            <label class="checkbox_label" for="never_resize_avatars" title="Avoid cropping and resizing imported character images. When off, crop/resize to 512x768." data-i18n="[title]Avoid cropping and resizing imported character images. When off, crop/resize to 512x768">
+                            <label class="checkbox_label" for="never_resize_avatars" title="Avoid cropping and resizing imported character images. When off, crop/resize to 512x768.&#10;This will disable the upload cropping popup for avatars." data-i18n="[title]never_resize_avatars_tooltip">
                                 <input id="never_resize_avatars" type="checkbox" />
                                 <small data-i18n="Never resize avatars">Never resize avatars</small>
                             </label>
@@ -4666,7 +4710,7 @@
                                             <small data-i18n="Enabled">Enabled</small>
                                         </label>
                                         <small data-i18n="Minimum generated message length">Minimum generated message length</small>
-                                        <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole" title="If the generated message is shorter than this, trigger an auto-swipe." data-i18n="[title]If the generated message is shorter than this, trigger an auto-swipe">
+                                        <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole" title="If the generated message is shorter than these many characters, trigger an auto-swipe." data-i18n="[title]If the generated message is shorter than these many characters, trigger an auto-swipe">
                                         <small data-i18n="Blacklisted words">Blacklisted words</small>
                                         <div class="auto_swipe">
                                             <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" data-i18n="[placeholder]words you dont want generated separated by comma ','" placeholder="words you don't want generated separated by comma ','" class="text_pole textarea_compact" value="" autocomplete="off" rows="3"></textarea>
@@ -4917,7 +4961,10 @@
                     </div>
                     <hr class="wide100p margin0">
                     <div class="alignitemscenter flex-container justifyCenter wide100p" style="justify-content: space-between;">
-                        <h4 class="margin0"><span data-i18n="Extras API:">Extras API:</span></h4>
+                        <h4 class="margin0">
+                            <span data-i18n="(DEPRECATED)">(DEPRECATED)</span>
+                            <span data-i18n="Extras API:">Extras API:</span>
+                        </h4>
                         <div class="flex-container">
                             <div id="extensions_status" data-i18n="Not connected...">Not connected...</div>
                             <label for="extensions_autoconnect" class="checkbox_label flexNoGap">
@@ -4968,7 +5015,7 @@
                         </div>
                     </div>
                     <div id="persona-management-block" class="flex-container wide100p flexGap10">
-                        <div class="flex1 overflowHidden wide100p">
+                        <div class="persona_management_left_column flex1 overflowHidden wide100p">
                             <div class="flex-container marginBot10 alignitemscenter">
                                 <div id="create_dummy_persona" class="menu_button menu_button_icon" title="Create a dummy persona" data-i18n="[title]Create a dummy persona">
                                     <i class="fa-solid fa-person-circle-question fa-fw"></i>
@@ -4991,27 +5038,34 @@
                                 <input type="hidden" id="avatar_upload_overwrite" name="overwrite_name" value="">
                             </form>
                         </div>
-                        <div class="flex1">
-                            <h4 data-i18n="Name">Name</h4>
-                            <div class="change_name">
-                                <input id="your_name" name="your_name" data-i18n="[placeholder]Enter your name" placeholder="Enter your name" class="text_pole wide100p" value="" autocomplete="off">
-                                <div id="your_name_button" class="menu_button fa-solid fa-check" title="Click to set a new User Name" data-i18n="[title]Click to set a new User Name">
+                        <div class="persona_management_right_column flex1">
+                            <div class="persona_management_current_persona">
+                                <h4 class="standoutHeader" data-i18n="Current Persona">Current Persona</h4>
+
+                                <div id="persona_controls" class="flex-container">
+                                    <h5 id="your_name" class="persona_name">[Persona Name]</h5>
+                                    <div class="persona_controls_buttons_block buttons_block">
+                                        <div id="persona_rename_button" class="menu_button fa-solid fa-pencil" title="Rename Persona" data-i18n="[title]Rename Persona"></div>
+                                        <div id="sync_name_button" class="menu_button fa-solid fa-sync" title="Click to set user name for all messages" data-i18n="[title]Click to set user name for all messages"></div>
+                                        <div id="persona_lore_button" class="menu_button fa-solid fa-globe" title="Persona Lore&#10;Alt+Click to open the lorebook" data-i18n="[title]Persona Lore Alt+Click to open the lorebook"></div>
+
+                                        <div id="persona_set_image_button" class="menu_button fa-solid fa-image" title="Change Persona Image" data-i18n="[title]Change Persona Image"></div>
+                                        <div id="persona_duplicate_button" class="menu_button fa-solid fa-clone" title="Duplicate Persona" data-i18n="[title]Duplicate Persona"></div>
+                                        <div id="persona_delete_button" class="menu_button fa-solid fa-skull red_button" title="Delete Persona" data-i18n="[title]Delete Persona"></div>
+                                    </div>
                                 </div>
-                                <div id="lock_user_name" class="menu_button fa-solid fa-unlock" title="Click to lock your selected persona to the current chat. Click again to remove the lock." data-i18n="[title]Click to lock your selected persona to the current chat. Click again to remove the lock.">
-                                </div>
-                                <div id="sync_name_button" class="menu_button fa-solid fa-sync" title="Click to set user name for all messages" data-i18n="[title]Click to set user name for all messages">
-                                </div>
-                                <div id="persona_lore_button" class="menu_button fa-solid fa-globe" title="Persona Lore&#10;Alt+Click to open the lorebook" data-i18n="[title]Persona Lore Alt+Click to open the lorebook">
-                                </div>
-                            </div>
-                            <div>
+
                                 <h4 data-i18n="Persona Description">Persona Description</h4>
                                 <textarea id="persona_description" name="persona_description" data-i18n="[placeholder]Example: [{{user}} is a 28-year-old Romanian cat girl.]" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" value="" autocomplete="off" rows="8"></textarea>
-                                <div class="extension_token_counter">
-                                    <span data-i18n="Tokens persona description">Tokens</span>: <span id="persona_description_token_count">0</span>
+
+                                <div class="flex-container justifySpaceBetween">
+                                    <h4 data-i18n="Position">Position</h4>
+                                    <div class="extension_token_counter widthFitContent">
+                                        <span data-i18n="Tokens persona description">Tokens</span>: <span id="persona_description_token_count">0</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label for="persona_description_position" data-i18n="Position:">Position:</label>
+
+                                <div class="persona_management_description_position_container">
                                     <select id="persona_description_position">
                                         <option value="9" data-i18n="None (disabled)">None (disabled)</option>
                                         <option value="0" data-i18n="In Story String / Prompt Manager">In Story String / Prompt Manager</option>
@@ -5034,14 +5088,54 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <h4 data-i18n="Connections">Connections</h4>
+                                <div id="persona_connections_buttons" class="flex-container">
+                                    <div id="lock_persona_default" class="menu_button menu_button_icon" title="Click to select this as default persona for the new chats. Click again to remove it." data-i18n="[title]Click to select this as default persona for the new chats. Click again to remove it.">
+                                        <i class="icon fa-solid fa-crown fa-fw"></i>
+                                        <div data-i18n="Default">Default</div>
+                                    </div>
+                                    <div id="lock_persona_to_char" class="menu_button menu_button_icon" title="Click to lock your selected persona to the current character. Click again to remove the lock." data-i18n="[title]Click to lock your selected persona to the current character. Click again to remove the lock.">
+                                        <i class="icon fa-solid fa-unlock fa-fw"></i>
+                                        <div data-i18n="Character">Character</div>
+                                    </div>
+                                    <div id="lock_user_name" class="menu_button menu_button_icon" title="Click to lock your selected persona to the current chat. Click again to remove the lock." data-i18n="[title]Click to lock your selected persona to the current chat. Click again to remove the lock.">
+                                        <i class="icon fa-solid fa-unlock fa-fw"></i>
+                                        <div data-i18n="Chat">Chat</div>
+                                    </div>
+                                </div>
+                                <div id="persona_connections_info_block"></div>
+                                <div id="persona_connections_list" class="text_muted m-b-1 avatars_inline avatars_multiline scroll-reset-container expander">
+                                </div>
                             </div>
-                            <div class="range-block">
-                                <label for="persona_show_notifications" class="checkbox_label">
-                                    <input id="persona_show_notifications" type="checkbox" />
-                                    <span data-i18n="Show notifications on switching personas">
-                                        Show notifications on switching personas
-                                    </span>
-                                </label>
+
+                            <div class="persona_management_global_settings">
+                                <h4 class="standoutHeader" data-i18n="Global Settings">Global Settings</h4>
+
+                                <div class="range-block">
+                                    <label for="persona_show_notifications" class="checkbox_label">
+                                        <input id="persona_show_notifications" type="checkbox" />
+                                        <span data-i18n="Show notifications on switching personas">
+                                            Show notifications on switching personas
+                                        </span>
+                                    </label>
+                                </div>
+                                <div class="range-block">
+                                    <label for="persona_allow_multi_connections" class="checkbox_label" title="When multiple personas are connected to a character, a popup will appear to select which one to use." data-i18n="[title]When multiple personas are connected to a character, a popup will appear to select which one to use">
+                                        <input id="persona_allow_multi_connections" type="checkbox" />
+                                        <span data-i18n="Allow multiple persona connections per character">
+                                            Allow multiple persona connections per character
+                                        </span>
+                                    </label>
+                                </div>
+                                <div class="range-block">
+                                    <label for="persona_auto_lock" class="checkbox_label" title="Whenever a persona is selected, it will be locked to the current chat and automatically selected when the chat is opened." data-i18n="[title]Whenever a persona is selected, it will be locked to the current chat and automatically selected when the chat is opened.">
+                                        <input id="persona_auto_lock" type="checkbox" />
+                                        <span data-i18n="Auto-lock a chosen persona to the chat">
+                                            Auto-lock a chosen persona to the chat
+                                        </span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -5068,7 +5162,7 @@
                         <div class="right_menu_button fa-solid fa-list-ul" id="rm_button_characters" title="Select/Create Characters" data-i18n="[title]Select/Create Characters"></div>
                     </div>
                     <div id="HotSwapWrapper" class="alignitemscenter flex-container margin0auto wide100p">
-                        <div class="hotswap avatars_inline flex-container scroll-reset-container expander" data-i18n="[no_favs]Favorite characters to add them to HotSwaps" no_favs="Favorite characters to add them to HotSwaps"></div>
+                        <div class="hotswap avatars_inline scroll-reset-container expander" data-i18n="[no_favs]Favorite characters to add them to HotSwaps" no_favs="Favorite characters to add them to HotSwaps"></div>
                     </div>
                 </div>
                 <hr>
@@ -5106,13 +5200,13 @@
                                 </div>
                             </div>
                             <div class="flex-container flexFlowColumn expander flexNoGap">
-                                <div id="avatar_div" class="avatar_div alignitemsflexstart justifySpaceBetween flexnowrap">
+                                <div id="avatar_div" class="avatar_div buttons_block alignitemsflexstart justifySpaceBetween flexnowrap">
                                     <label id="avatar_div_div" class="add_avatar avatar" for="add_avatar_button" title="Click to select a new avatar for this character" data-i18n="[title]Click to select a new avatar for this character">
                                         <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
                                         <input hidden type="file" id="add_avatar_button" name="avatar" accept="image/*">
                                     </label>
                                     <div class="flex-container" id="avatar_controls">
-                                        <div class="form_create_bottom_buttons_block">
+                                        <div class="form_create_bottom_buttons_block buttons_block">
                                             <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
                                             <!-- <div id="renameCharButton" class="menu_button fa-solid fa-user-pen" title="Rename Character"></div> -->
                                             <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
@@ -5120,6 +5214,7 @@
                                             <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions" data-i18n="[title]Advanced Definition"></div>
                                             <div id="world_button" class="menu_button fa-solid fa-globe" title="Character Lore&#10;&#10;Click to load&#10;Shift-click to open 'Link to World Info' popup" data-i18n="[title]world_button_title"></div>
                                             <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore&#10;Alt+Click to open the lorebook" data-i18n="[title]Chat Lore Alt+Click to open the lorebook"></div>
+                                            <div id="char_connections_button" class="menu_button fa-solid fa-face-smile" title="Connected Personas" data-i18n="[title]Connected Personas"></div>
                                             <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download" data-i18n="[title]Export and Download"></div>
                                             <!-- <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div> -->
                                             <!-- <div id="set_character_world" class="menu_button fa-solid fa-globe" title="Set a character World Info / Lorebook"></div> -->
@@ -5127,7 +5222,7 @@
                                             <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character" data-i18n="[title]Create Character">
                                                 <input type="submit" id="create_button" name="create_button">
                                             </label>
-                                            <div id="delete_button" class="menu_button fa-solid fa-skull " title="Delete Character" data-i18n="[title]Delete Character"></div>
+                                            <div id="delete_button" class="menu_button fa-solid fa-skull red_button" title="Delete Character" data-i18n="[title]Delete Character"></div>
                                         </div>
                                         <label class="flex1 height100p" for="char-management-dropdown">
                                             <select id="char-management-dropdown" class="text_pole">
@@ -5317,17 +5412,17 @@
                                         </div>
                                     </div>
                                     <div id="GroupFavDelOkBack" class="flex-container flexGap5 spaceEvenly flex1">
-                                        <div id="rm_button_back_from_group" class="heightFitContent margin0 menu_button fa-solid fa-left-long"></div>
-                                        <div id="rm_group_scenario" class="heightFitContent margin0 menu_button fa-solid fa-scroll" title="Set a group chat scenario" data-i18n="[title]Set a group chat scenario"></div>
-                                        <div id="group_favorite_button" class="heightFitContent margin0 menu_button fa-solid fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
+                                        <div id="rm_button_back_from_group" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-left-long"></div>
+                                        <div id="rm_group_scenario" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-scroll" title="Set a group chat scenario" data-i18n="[title]Set a group chat scenario"></div>
+                                        <div id="group_favorite_button" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
                                         <input id="rm_group_fav" type="hidden" />
                                         <div id="group_open_media_overrides" class="heightFitContent margin0 menu_button menu_button_icon open_media_overrides" title="Click to allow/forbid the use of external media for this group." data-i18n="[title]Click to allow/forbid the use of external media for this group.">
                                             <i id="group_media_allowed_icon" class="fa-solid fa-fw fa-link"></i>
                                             <i id="group_media_forbidden_icon" class="fa-solid fa-fw fa-link-slash"></i>
                                         </div>
-                                        <div id="rm_group_submit" class="heightFitContent margin0 menu_button fa-solid fa-check" title="Create" data-i18n="[title]Create"></div>
-                                        <div id="rm_group_restore_avatar" class="heightFitContent margin0 menu_button fa-solid fa-images" title="Restore collage avatar" data-i18n="[title]Restore collage avatar"></div>
-                                        <div id="rm_group_delete" class="heightFitContent margin0 menu_button fa-solid fa-trash-can" title="Delete" data-i18n="[title]Delete"></div>
+                                        <div id="rm_group_submit" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-check" title="Create" data-i18n="[title]Create"></div>
+                                        <div id="rm_group_restore_avatar" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-images" title="Restore collage avatar" data-i18n="[title]Restore collage avatar"></div>
+                                        <div id="rm_group_delete" class="heightFitContent margin0 menu_button fa-solid fa-fw fa-trash-can" title="Delete" data-i18n="[title]Delete"></div>
                                         <div class="flex1">
                                             <label class="checkbox_label whitespacenowrap">
                                                 <input id="rm_group_allow_self_responses" type="checkbox" />
@@ -5464,25 +5559,20 @@
                 <div class="flex-container wide100pLess70px character_select_container">
                     <div class="wide100p character_name_block">
                         <span class="ch_name flex1"></span>
-                        <div class="avatar-buttons">
-                            <button class="menu_button bind_user_name" title="Bind user name to that avatar" data-i18n="[title]Bind user name to that avatar">
-                                <i class="fa-fw fa-solid fa-user-edit fa-sm"></i>
-                            </button>
-                            <button class="menu_button set_persona_image" title="Change persona image" data-i18n="[title]Change persona image">
-                                <i class="fa-fw fa-solid fa-image fa-sm"></i>
-                            </button>
-                            <button class="menu_button set_default_persona" title="Select this as default persona for the new chats." data-i18n="[title]Select this as default persona for the new chats.">
-                                <i class="fa-fw fa-solid fa-crown fa-sm"></i>
-                            </button>
-                            <button class="menu_button duplicate_persona" title="Duplicate persona" data-i18n="[title]Duplicate persona">
-                                <i class="fa-fw fa-solid fa-clone fa-sm"></i>
-                            </button>
-                            <button class="menu_button delete_avatar" title="Delete persona" data-i18n="[title]Delete persona">
-                                <i class="fa-fw fa-solid fa-trash-alt fa-sm"></i>
-                            </button>
-                        </div>
                     </div>
                     <div class="ch_description"></div>
+                    <div class="avatar_container_states buttons_block">
+                        <div class="locked_to_chat_label avatar_state has_hover_label menu_button menu_button_icon disabled" title="Persona is locked to the current chat" data-i18n="[title]Persona is locked to the current chat">
+                            <i class="icon fa-solid fa-lock fa-fw"></i>
+                            <i class="label_icon icon fa-solid fa-comments fa-fw"></i>
+                            <div class="label" data-i18n="Chat">Chat</div>
+                        </div>
+                        <div class="locked_to_character_label avatar_state has_hover_label menu_button menu_button_icon disabled " title="Persona is locked to the current character" data-i18n="[title]Persona is locked to the current character">
+                            <i class="icon fa-solid fa-lock fa-fw"></i>
+                            <i class="label_icon icon fa-solid fa-user fa-fw"></i>
+                            <div class="label" data-i18n="Character">Character</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -6308,7 +6398,7 @@
                                 </div>
                             </div>
                             <div class="mes_reasoning_actions flex-container">
-                                <div class="mes_reasoning_edit_done menu_button edit_button fa-solid fa-check" title="Confirm" data-i18n="[title]Confirmedit"></div>
+                                <div class="mes_reasoning_edit_done menu_button edit_button fa-solid fa-check" title="Confirm" data-i18n="[title]Confirm Edit"></div>
                                 <div class="mes_reasoning_delete menu_button edit_button fa-solid fa-trash-can" title="Remove reasoning" data-i18n="[title]Remove reasoning"></div>
                                 <div class="mes_reasoning_edit_cancel menu_button edit_button fa-solid fa-xmark" title="Cancel edit" data-i18n="[title]Cancel edit"></div>
                                 <div class="mes_reasoning_copy mes_button fa-solid fa-copy" title="Copy reasoning" data-i18n="[title]Copy reasoning"></div>
@@ -6890,8 +6980,8 @@
         </div>
         <div id="form_sheld">
             <div id="dialogue_del_mes">
-                <div id="dialogue_del_mes_ok" class="menu_button">Delete</div>
-                <div id="dialogue_del_mes_cancel" class="menu_button">Cancel</div>
+                <div id="dialogue_del_mes_ok" data-i18n="Delete" class="menu_button">Delete</div>
+                <div id="dialogue_del_mes_cancel" data-i18n="Cancel" class="menu_button">Cancel</div>
             </div>
             <div id="send_form" class="no-connection">
                 <form id="file_form" class="wide100p displayNone">

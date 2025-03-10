@@ -1,7 +1,6 @@
 import { Buffer } from 'node:buffer';
 import express from 'express';
 import wavefile from 'wavefile';
-import { jsonParser } from '../express-common.js';
 import { getPipeline } from '../transformers.js';
 
 export const router = express.Router();
@@ -34,7 +33,7 @@ function getWaveFile(audio) {
     return audioData;
 }
 
-router.post('/recognize', jsonParser, async (req, res) => {
+router.post('/recognize', async (req, res) => {
     try {
         const TASK = 'automatic-speech-recognition';
         const { model, audio, lang } = req.body;
@@ -53,7 +52,7 @@ router.post('/recognize', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/synthesize', jsonParser, async (req, res) => {
+router.post('/synthesize', async (req, res) => {
     try {
         const TASK = 'text-to-speech';
         const { text, model, speaker } = req.body;

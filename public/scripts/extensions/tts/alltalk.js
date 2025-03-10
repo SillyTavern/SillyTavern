@@ -258,6 +258,7 @@ class AllTalkTtsProvider {
         $('#rvc_narrator_voice').val(this.settings.rvc_narrator_voice);
         $('#rvc_character_pitch').val(this.settings.rvc_character_pitch);
         $('#rvc_narrator_pitch').val(this.settings.rvc_narrator_pitch);
+        $('#server_version').val(this.settings.server_version);
 
         console.debug('AllTalkTTS: Settings loaded');
         try {
@@ -655,11 +656,11 @@ class AllTalkTtsProvider {
         if (serverVersionSelect) {
             serverVersionSelect.addEventListener('change', async (event) => {
                 this.settings.server_version = event.target.value;
+                this.onSettingsChange();
                 if (event.target.value === 'v2') {
                     await this.fetchRvcVoiceObjects();
                 }
                 this.updateRvcVoiceDropdowns();
-                this.onSettingsChange();
             });
         }
 

@@ -496,9 +496,13 @@ function getMessageHash(message) {
 /**
  * getActiveMessageLogprobData returns the logprobs data for the active chat
  * message.
- * @returns {MessageLogprobData || null}
+ * @returns {MessageLogprobData|null}
  */
 function getActiveMessageLogprobData() {
+    if (chat.length === 0) {
+        return null;
+    }
+
     const hash = getMessageHash(chat[chat.length - 1]);
     return state.messageLogprobs.get(hash) || null;
 }

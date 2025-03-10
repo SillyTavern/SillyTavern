@@ -137,8 +137,13 @@ async function* parseStreamData(json) {
     else if (Array.isArray(json.candidates)) {
         for (let i = 0; i < json.candidates.length; i++) {
             const isNotPrimary = json.candidates?.[0]?.index > 0;
+            const hasToolCalls = json?.candidates?.[0]?.content?.parts?.some(p => p?.functionCall);
             if (isNotPrimary || json.candidates.length === 0) {
                 return null;
+            }
+            if (hasToolCalls) {
+                yield { data: json, chunk: '' };
+                return;
             }
             if (typeof json.candidates[0].content === 'object' && Array.isArray(json.candidates[i].content.parts)) {
                 for (let j = 0; j < json.candidates[i].content.parts.length; j++) {

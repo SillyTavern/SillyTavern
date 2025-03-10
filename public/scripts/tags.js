@@ -410,7 +410,7 @@ function getInlineListSelector() {
         return `.group_select[grid="${selected_group}"] .tags`;
     }
 
-    if (this_chid && menu_type === 'character_edit') {
+    if (this_chid !== undefined && menu_type === 'character_edit') {
         return `.character_select[chid="${this_chid}"] .tags`;
     }
 
@@ -485,8 +485,8 @@ export function getTagKeyForEntityElement(element) {
     }
     // Start with the given element and traverse up the DOM tree
     while (element.length && element.parent().length) {
-        const grid = element.attr('grid');
-        const chid = element.attr('chid');
+        const grid = element.attr('data-grid');
+        const chid = element.attr('data-chid');
         if (grid || chid) {
             const id = grid || chid;
             return getTagKeyForEntity(id);

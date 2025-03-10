@@ -7,7 +7,7 @@ import { renderTemplate, renderTemplateAsync } from './templates.js';
 import { delay, isSubsetOf, sanitizeSelector, setValueByPath } from './utils.js';
 import { getContext } from './st-context.js';
 import { isAdmin } from './user.js';
-import { t } from './i18n.js';
+import { addLocaleData, getCurrentLocale, t } from './i18n.js';
 import { debounce_timeout } from './constants.js';
 import { accountStorage } from './util/AccountStorage.js';
 
@@ -154,8 +154,18 @@ export const extension_settings = {
         refine_mode: false,
     },
     expressions: {
+        /** @type {number} see `EXPRESSION_API` */
+        api: undefined,
         /** @type {string[]} */
         custom: [],
+        showDefault: false,
+        translate: false,
+        /** @type {string} */
+        fallback_expression: undefined,
+        /** @type {string} */
+        llmPrompt: undefined,
+        allowMultiple: true,
+        rerollIfSame: false,
     },
     connectionManager: {
         selectedProfile: '',
@@ -200,6 +210,12 @@ export const extension_settings = {
      * @type {string[]}
      */
     disabled_attachments: [],
+    gallery: {
+        /** @type {{[characterKey: string]: string}} */
+        folders: {},
+        /** @type {string} */
+        sort: 'dateAsc',
+    },
 };
 
 function showHideExtensionsMenu() {
@@ -374,7 +390,7 @@ async function activateExtensions() {
         if (meetsModuleRequirements && !isDisabled) {
             try {
                 console.debug('Activating extension', name);
-                const promise = Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]);
+                const promise = addExtensionLocale(name, manifest).finally(() => Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]));
                 await promise
                     .then(() => activeExtensions.add(name))
                     .catch(err => console.log('Could not activate extension', name, err));
@@ -567,6 +583,42 @@ function addExtensionScript(name, manifest) {
 }
 
 /**
+ * Adds a localization data for an extension.
+ * @param {string} name Extension name
+ * @param {object} manifest Manifest object
+ */
+function addExtensionLocale(name, manifest) {
+    // No i18n data in the manifest
+    if (!manifest.i18n || typeof manifest.i18n !== 'object') {
+        return Promise.resolve();
+    }
+
+    const currentLocale = getCurrentLocale();
+    const localeFile = manifest.i18n[currentLocale];
+
+    // Manifest doesn't provide a locale file for the current locale
+    if (!localeFile) {
+        return Promise.resolve();
+    }
+
+    return fetch(`/scripts/extensions/${name}/${localeFile}`)
+        .then(async response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data && typeof data === 'object') {
+                addLocaleData(currentLocale, data);
+            }
+        })
+        .catch(err => {
+            console.log('Could not load extension locale data for ' + name, err);
+        });
+}
+
+/**
  * Generates HTML string for displaying an extension in the UI.
  *
  * @param {string} name - The name of the extension.
@@ -603,12 +655,12 @@ function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal,
     }
 
     let toggleElement = isActive || isDisabled ?
-        `<input type="checkbox" title="Click to toggle" data-name="${name}" class="${isActive ? 'toggle_disable' : 'toggle_enable'} ${checkboxClass}" ${isActive ? 'checked' : ''}>` :
+        '<input type="checkbox" title="' + t`Click to toggle` + `" data-name="${name}" class="${isActive ? 'toggle_disable' : 'toggle_enable'} ${checkboxClass}" ${isActive ? 'checked' : ''}>` :
         `<input type="checkbox" title="Cannot enable extension" data-name="${name}" class="extension_missing ${checkboxClass}" disabled>`;
 
-    let deleteButton = isExternal ? `<button class="btn_delete menu_button" data-name="${externalId}" title="Delete"><i class="fa-fw fa-solid fa-trash-can"></i></button>` : '';
+    let deleteButton = isExternal ? `<button class="btn_delete menu_button" data-name="${externalId}" data-i18n="[title]Delete" title="Delete"><i class="fa-fw fa-solid fa-trash-can"></i></button>` : '';
     let updateButton = isExternal ? `<button class="btn_update menu_button displayNone" data-name="${externalId}" title="Update available"><i class="fa-solid fa-download fa-fw"></i></button>` : '';
-    let moveButton = isExternal && isUserAdmin ? `<button class="btn_move menu_button" data-name="${externalId}" title="Move"><i class="fa-solid fa-folder-tree fa-fw"></i></button>` : '';
+    let moveButton = isExternal && isUserAdmin ? `<button class="btn_move menu_button" data-name="${externalId}" data-i18n="[title]Move" title="Move"><i class="fa-solid fa-folder-tree fa-fw"></i></button>` : '';
     let modulesInfo = '';
 
     if (isActive && Array.isArray(manifest.optional)) {
@@ -616,7 +668,7 @@ function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal,
         modules.forEach(x => optional.delete(x));
         if (optional.size > 0) {
             const optionalString = DOMPurify.sanitize([...optional].join(', '));
-            modulesInfo = `<div class="extension_modules">Optional modules: <span class="optional">${optionalString}</span></div>`;
+            modulesInfo = '<div class="extension_modules">' + t`Optional modules:` + ` <span class="optional">${optionalString}</span></div>`;
         }
     } else if (!isDisabled) { // Neither active nor disabled
         const requirements = new Set(manifest.requires);
@@ -1018,7 +1070,7 @@ export async function installExtension(url, global) {
     toastr.success(t`Extension '${response.display_name}' by ${response.author} (version ${response.version}) has been installed successfully!`, t`Extension installation successful`);
     console.debug(`Extension "${response.display_name}" has been installed successfully at ${response.extensionPath}`);
     await loadExtensionSettings({}, false, false);
-    await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+    await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED, response);
 }
 
 /**

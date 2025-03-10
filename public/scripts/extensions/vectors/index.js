@@ -19,6 +19,7 @@ import {
     modules,
     renderExtensionTemplateAsync,
     doExtrasFetch, getApiUrl,
+    openThirdPartyExtensionMenu,
 } from '../../extensions.js';
 import { collapseNewlines, registerDebugFunction } from '../../power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
@@ -34,6 +35,7 @@ import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashComm
 import { slashCommandReturnHelper } from '../../slash-commands/SlashCommandReturnHelper.js';
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
+import { WebLlmVectorProvider } from './webllm.js';
 
 /**
  * @typedef {object} HashedMessage
@@ -60,6 +62,7 @@ const settings = {
     ollama_model: 'mxbai-embed-large',
     ollama_keep: false,
     vllm_model: '',
+    webllm_model: '',
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -103,7 +106,7 @@ const settings = {
 };
 
 const moduleWorker = new ModuleWorkerWrapper(synchronizeChat);
-
+const webllmProvider = new WebLlmVectorProvider();
 const cachedSummaries = new Map();
 
 /**
@@ -373,6 +376,8 @@ async function synchronizeChat(batchSize = 5) {
                     return 'Vectorization Source Model is required, but not set.';
                 case 'extras_module_missing':
                     return 'Extras API must provide an "embeddings" module.';
+                case 'webllm_not_supported':
+                    return 'WebLLM extension is not installed or the model is not set.';
                 default:
                     return 'Check server console for more details';
             }
@@ -561,9 +566,9 @@ async function retrieveFileChunks(queryText, collectionId) {
  */
 async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overlapPercent) {
     try {
-        if (settings.translate_files && typeof window['translate'] === 'function') {
+        if (settings.translate_files && typeof globalThis.translate === 'function') {
             console.log(`Vectors: Translating file ${fileName} to English...`);
-            const translatedText = await window['translate'](fileText, 'en');
+            const translatedText = await globalThis.translate(fileText, 'en');
             fileText = translatedText;
         }
 
@@ -746,6 +751,63 @@ async function getQueryText(chat, initiator) {
 }
 
 /**
+ * Gets common body parameters for vector requests.
+ * @param {object} args Additional arguments
+ * @returns {object} Request body
+ */
+function getVectorsRequestBody(args = {}) {
+    const body = Object.assign({}, args);
+    switch (settings.source) {
+        case 'extras':
+            body.extrasUrl = extension_settings.apiUrl;
+            body.extrasKey = extension_settings.apiKey;
+            break;
+        case 'togetherai':
+            body.model = extension_settings.vectors.togetherai_model;
+            break;
+        case 'openai':
+            body.model = extension_settings.vectors.openai_model;
+            break;
+        case 'cohere':
+            body.model = extension_settings.vectors.cohere_model;
+            break;
+        case 'ollama':
+            body.model = extension_settings.vectors.ollama_model;
+            body.apiUrl = textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
+            body.keep = !!extension_settings.vectors.ollama_keep;
+            break;
+        case 'llamacpp':
+            body.apiUrl = textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP];
+            break;
+        case 'vllm':
+            body.apiUrl = textgenerationwebui_settings.server_urls[textgen_types.VLLM];
+            body.model = extension_settings.vectors.vllm_model;
+            break;
+        case 'webllm':
+            body.model = extension_settings.vectors.webllm_model;
+            break;
+        default:
+            break;
+    }
+    return body;
+}
+
+/**
+ * Gets additional arguments for vector requests.
+ * @param {string[]} items Items to embed
+ * @returns {Promise<object>} Additional arguments
+ */
+async function getAdditionalArgs(items) {
+    const args = {};
+    switch (settings.source) {
+        case 'webllm':
+            args.embeddings = await createWebLlmEmbeddings(items);
+            break;
+    }
+    return args;
+}
+
+/**
  * Gets the saved hashes for a collection
 * @param {string} collectionId
 * @returns {Promise<number[]>} Saved hashes
@@ -753,8 +815,9 @@ async function getQueryText(chat, initiator) {
 async function getSavedHashes(collectionId) {
     const response = await fetch('/api/vector/list', {
         method: 'POST',
-        headers: getVectorHeaders(),
+        headers: getRequestHeaders(),
         body: JSON.stringify({
+            ...getVectorsRequestBody(),
             collectionId: collectionId,
             source: settings.source,
         }),
@@ -768,54 +831,6 @@ async function getSavedHashes(collectionId) {
     return hashes;
 }
 
-function getVectorHeaders() {
-    const headers = getRequestHeaders();
-    switch (settings.source) {
-        case 'extras':
-            Object.assign(headers, {
-                'X-Extras-Url': extension_settings.apiUrl,
-                'X-Extras-Key': extension_settings.apiKey,
-            });
-            break;
-        case 'togetherai':
-            Object.assign(headers, {
-                'X-Togetherai-Model': extension_settings.vectors.togetherai_model,
-            });
-            break;
-        case 'openai':
-            Object.assign(headers, {
-                'X-OpenAI-Model': extension_settings.vectors.openai_model,
-            });
-            break;
-        case 'cohere':
-            Object.assign(headers, {
-                'X-Cohere-Model': extension_settings.vectors.cohere_model,
-            });
-            break;
-        case 'ollama':
-            Object.assign(headers, {
-                'X-Ollama-Model': extension_settings.vectors.ollama_model,
-                'X-Ollama-URL': textgenerationwebui_settings.server_urls[textgen_types.OLLAMA],
-                'X-Ollama-Keep': !!extension_settings.vectors.ollama_keep,
-            });
-            break;
-        case 'llamacpp':
-            Object.assign(headers, {
-                'X-LlamaCpp-URL': textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP],
-            });
-            break;
-        case 'vllm':
-            Object.assign(headers, {
-                'X-Vllm-URL': textgenerationwebui_settings.server_urls[textgen_types.VLLM],
-                'X-Vllm-Model': extension_settings.vectors.vllm_model,
-            });
-            break;
-        default:
-            break;
-    }
-    return headers;
-}
-
 /**
  * Inserts vector items into a collection
  * @param {string} collectionId - The collection to insert into
@@ -825,12 +840,12 @@ function getVectorHeaders() {
 async function insertVectorItems(collectionId, items) {
     throwIfSourceInvalid();
 
-    const headers = getVectorHeaders();
-
+    const args = await getAdditionalArgs(items.map(x => x.text));
     const response = await fetch('/api/vector/insert', {
         method: 'POST',
-        headers: headers,
+        headers: getRequestHeaders(),
         body: JSON.stringify({
+            ...getVectorsRequestBody(args),
             collectionId: collectionId,
             items: items,
             source: settings.source,
@@ -868,6 +883,10 @@ function throwIfSourceInvalid() {
     if (settings.source === 'extras' && !modules.includes('embeddings')) {
         throw new Error('Vectors: Embeddings module missing', { cause: 'extras_module_missing' });
     }
+
+    if (settings.source === 'webllm' && (!isWebLlmSupported() || !settings.webllm_model)) {
+        throw new Error('Vectors: WebLLM is not supported', { cause: 'webllm_not_supported' });
+    }
 }
 
 /**
@@ -879,8 +898,9 @@ function throwIfSourceInvalid() {
 async function deleteVectorItems(collectionId, hashes) {
     const response = await fetch('/api/vector/delete', {
         method: 'POST',
-        headers: getVectorHeaders(),
+        headers: getRequestHeaders(),
         body: JSON.stringify({
+            ...getVectorsRequestBody(),
             collectionId: collectionId,
             hashes: hashes,
             source: settings.source,
@@ -899,12 +919,12 @@ async function deleteVectorItems(collectionId, hashes) {
  * @returns {Promise<{ hashes: number[], metadata: object[]}>} - Hashes of the results
  */
 async function queryCollection(collectionId, searchText, topK) {
-    const headers = getVectorHeaders();
-
+    const args = await getAdditionalArgs([searchText]);
     const response = await fetch('/api/vector/query', {
         method: 'POST',
-        headers: headers,
+        headers: getRequestHeaders(),
         body: JSON.stringify({
+            ...getVectorsRequestBody(args),
             collectionId: collectionId,
             searchText: searchText,
             topK: topK,
@@ -929,12 +949,12 @@ async function queryCollection(collectionId, searchText, topK) {
  * @returns {Promise<Record<string, { hashes: number[], metadata: object[] }>>} - Results mapped to collection IDs
  */
 async function queryMultipleCollections(collectionIds, searchText, topK, threshold) {
-    const headers = getVectorHeaders();
-
+    const args = await getAdditionalArgs([searchText]);
     const response = await fetch('/api/vector/query-multi', {
         method: 'POST',
-        headers: headers,
+        headers: getRequestHeaders(),
         body: JSON.stringify({
+            ...getVectorsRequestBody(args),
             collectionIds: collectionIds,
             searchText: searchText,
             topK: topK,
@@ -965,8 +985,9 @@ async function purgeFileVectorIndex(fileUrl) {
 
         const response = await fetch('/api/vector/purge', {
             method: 'POST',
-            headers: getVectorHeaders(),
+            headers: getRequestHeaders(),
             body: JSON.stringify({
+                ...getVectorsRequestBody(),
                 collectionId: collectionId,
             }),
         });
@@ -994,8 +1015,9 @@ async function purgeVectorIndex(collectionId) {
 
         const response = await fetch('/api/vector/purge', {
             method: 'POST',
-            headers: getVectorHeaders(),
+            headers: getRequestHeaders(),
             body: JSON.stringify({
+                ...getVectorsRequestBody(),
                 collectionId: collectionId,
             }),
         });
@@ -1019,7 +1041,10 @@ async function purgeAllVectorIndexes() {
     try {
         const response = await fetch('/api/vector/purge-all', {
             method: 'POST',
-            headers: getVectorHeaders(),
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                ...getVectorsRequestBody(),
+            }),
         });
 
         if (!response.ok) {
@@ -1045,6 +1070,72 @@ function toggleSettings() {
     $('#llamacpp_vectorsModel').toggle(settings.source === 'llamacpp');
     $('#vllm_vectorsModel').toggle(settings.source === 'vllm');
     $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
+    $('#webllm_vectorsModel').toggle(settings.source === 'webllm');
+    if (settings.source === 'webllm') {
+        loadWebLlmModels();
+    }
+}
+
+/**
+ * Executes a function with WebLLM error handling.
+ * @param {function(): Promise<T>} func Function to execute
+ * @returns {Promise<T>}
+ * @template T
+ */
+async function executeWithWebLlmErrorHandling(func) {
+    try {
+        return await func();
+    } catch (error) {
+        console.log('Vectors: Failed to load WebLLM models', error);
+        if (!(error instanceof Error)) {
+            return;
+        }
+        switch (error.cause) {
+            case 'webllm-not-available':
+                toastr.warning('WebLLM is not available. Please install the extension.', 'WebLLM not installed');
+                break;
+            case 'webllm-not-updated':
+                toastr.warning('The installed extension version does not support embeddings.', 'WebLLM update required');
+                break;
+        }
+    }
+}
+
+/**
+ * Loads and displays WebLLM models in the settings.
+ * @returns {Promise<void>}
+ */
+function loadWebLlmModels() {
+    return executeWithWebLlmErrorHandling(() => {
+        const models = webllmProvider.getModels();
+        $('#vectors_webllm_model').empty();
+        for (const model of models) {
+            $('#vectors_webllm_model').append($('<option>', { value: model.id, text: model.toString() }));
+        }
+        if (!settings.webllm_model || !models.some(x => x.id === settings.webllm_model)) {
+            if (models.length) {
+                settings.webllm_model = models[0].id;
+            }
+        }
+        $('#vectors_webllm_model').val(settings.webllm_model);
+        return Promise.resolve();
+    });
+}
+
+/**
+ * Creates WebLLM embeddings for a list of items.
+ * @param {string[]} items Items to embed
+ * @returns {Promise<Record<string, number[]>>} Calculated embeddings
+ */
+async function createWebLlmEmbeddings(items) {
+    return executeWithWebLlmErrorHandling(async () => {
+        const embeddings = await webllmProvider.embedTexts(items, settings.webllm_model);
+        const result = /** @type {Record<string, number[]>} */ ({});
+        for (let i = 0; i < items.length; i++) {
+            result[items[i]] = embeddings[i];
+        }
+        return result;
+    });
 }
 
 async function onPurgeClick() {
@@ -1573,6 +1664,30 @@ jQuery(async () => {
         $('#dialogue_popup_input').val(presetModel);
     });
 
+    $('#vectors_webllm_install').on('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (Object.hasOwn(SillyTavern, 'llm')) {
+            toastr.info('WebLLM is already installed');
+            return;
+        }
+
+        openThirdPartyExtensionMenu('https://github.com/SillyTavern/Extension-WebLLM');
+    });
+
+    $('#vectors_webllm_model').on('input', () => {
+        settings.webllm_model = String($('#vectors_webllm_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_webllm_load').on('click', async () => {
+        if (!settings.webllm_model) return;
+        await webllmProvider.loadModel(settings.webllm_model);
+        toastr.success('WebLLM model loaded');
+    });
+
     $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
 
     toggleSettings();
@@ -1584,6 +1699,11 @@ jQuery(async () => {
     eventSource.on(event_types.CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.GROUP_CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.FILE_ATTACHMENT_DELETED, purgeFileVectorIndex);
+    eventSource.on(event_types.EXTENSION_SETTINGS_LOADED, async (manifest) => {
+        if (settings.source === 'webllm' && manifest?.display_name === 'WebLLM') {
+            await loadWebLlmModels();
+        }
+    });
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'db-ingest',

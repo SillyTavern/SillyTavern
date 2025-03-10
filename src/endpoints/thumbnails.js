@@ -10,14 +10,16 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 import { getAllUserHandles, getUserDirectories } from '../users.js';
 import { getConfigValue } from '../util.js';
-import { jsonParser } from '../express-common.js';
 
-const thumbnailsEnabled = !!getConfigValue('thumbnails.enabled', true);
-const quality = Math.min(100, Math.max(1, parseInt(getConfigValue('thumbnails.quality', 95))));
+const thumbnailsEnabled = !!getConfigValue('thumbnails.enabled', true, 'boolean');
+const quality = Math.min(100, Math.max(1, parseInt(getConfigValue('thumbnails.quality', 95, 'number'))));
 const pngFormat = String(getConfigValue('thumbnails.format', 'jpg')).toLowerCase().trim() === 'png';
 
 /** @type {Record<string, number[]>} */
-const dimensions = getConfigValue('thumbnails.dimensions', { 'bg': [160, 90], 'avatar': [96, 144] });
+const dimensions = {
+    'bg': getConfigValue('thumbnails.dimensions.bg', [160, 90]),
+    'avatar': getConfigValue('thumbnails.dimensions.avatar', [96, 144]),
+};
 
 /**
  * Gets a path to thumbnail folder based on the type.
@@ -173,7 +175,7 @@ export async function ensureThumbnailCache() {
 export const router = express.Router();
 
 // Important: This route must be mounted as '/thumbnail'. It is used in the client code and saved to chat files.
-router.get('/', jsonParser, async function (request, response) {
+router.get('/', async function (request, response) {
     try{
         if (typeof request.query.file !== 'string' || typeof request.query.type !== 'string') {
             return response.sendStatus(400);

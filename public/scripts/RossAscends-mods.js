@@ -280,17 +280,32 @@ async function RA_autoloadchat() {
         // active character is the name, we should look it up in the character list and get the id
         if (active_character !== null && active_character !== undefined) {
             const active_character_id = characters.findIndex(x => getTagKeyForEntity(x) === active_character);
-            if (active_character_id !== null) {
-                await selectCharacterById(String(active_character_id));
+            if (active_character_id !== -1) {
+                await selectCharacterById(active_character_id);
 
                 // Do a little tomfoolery to spoof the tag selector
                 const selectedCharElement = $(`#rm_print_characters_block .character_select[chid="${active_character_id}"]`);
                 applyTagsOnCharacterSelect.call(selectedCharElement);
+            } else {
+                setActiveCharacter(null);
+                saveSettingsDebounced();
+                console.warn(`Currently active character with ID ${active_character} not found. Resetting to no active character.`);
             }
         }
 
         if (active_group !== null && active_group !== undefined) {
-            await openGroupById(String(active_group));
+            if (active_character) {
+                console.warn('Active character and active group are both set. Only active character will be loaded. Resetting active group.');
+                setActiveGroup(null);
+                saveSettingsDebounced();
+            } else {
+                const result = await openGroupById(String(active_group));
+                if (!result) {
+                    setActiveGroup(null);
+                    saveSettingsDebounced();
+                    console.warn(`Currently active group with ID ${active_group} not found. Resetting to no active group.`);
+                }
+            }
         }
 
         // if the character list hadn't been loaded yet, try again.
@@ -301,7 +316,10 @@ export async function favsToHotswap() {
     const entities = getEntitiesList({ doFilter: false });
     const container = $('#right-nav-panel .hotswap');
 
-    const favs = entities.filter(x => x.item.fav || x.item.fav == 'true');
+    // Hard limit is required because even if all hotswaps don't fit the screen, their images would still be loaded
+    // 25 is roughly calculated as the maximum number of favs that can fit an ultrawide monitor with the default theme
+    const FAVS_LIMIT = 25;
+    const favs = entities.filter(x => x.item.fav || x.item.fav == 'true').slice(0, FAVS_LIMIT);
 
     //helpful instruction message if no characters are favorited
     if (favs.length == 0) {
@@ -879,14 +897,14 @@ export function initRossMods() {
 
     // when a char is selected from the list, save their name as the auto-load character for next page load
     $(document).on('click', '.character_select', function () {
-        const characterId = $(this).attr('chid') || $(this).data('id');
+        const characterId = $(this).attr('data-chid');
         setActiveCharacter(characterId);
         setActiveGroup(null);
         saveSettingsDebounced();
     });
 
     $(document).on('click', '.group_select', function () {
-        const groupId = $(this).attr('chid') || $(this).attr('grid') || $(this).data('id');
+        const groupId = $(this).attr('data-chid') || $(this).attr('data-grid');
         setActiveCharacter(null);
         setActiveGroup(groupId);
         saveSettingsDebounced();
@@ -1125,7 +1143,7 @@ export function initRossMods() {
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
                 !isInputElementInFocus()
             ) {
-                $('.swipe_left:last').click();
+                $('.swipe_left:last').trigger('click', { source: 'keyboard', repeated: event.repeat });
                 return;
             }
         }
@@ -1138,7 +1156,7 @@ export function initRossMods() {
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
                 !isInputElementInFocus()
             ) {
-                $('.swipe_right:last').click();
+                $('.swipe_right:last').trigger('click', { source: 'keyboard', repeated: event.repeat });
                 return;
             }
         }

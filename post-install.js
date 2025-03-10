@@ -7,26 +7,13 @@ import crypto from 'node:crypto';
 import process from 'node:process';
 import yaml from 'yaml';
 import _ from 'lodash';
+import chalk from 'chalk';
 import { createRequire } from 'node:module';
 
 /**
  * Colorizes console output.
  */
-const color = {
-    byNum: (mess, fgNum) => {
-        mess = mess || '';
-        fgNum = fgNum === undefined ? 31 : fgNum;
-        return '\u001b[' + fgNum + 'm' + mess + '\u001b[39m';
-    },
-    black: (mess) => color.byNum(mess, 30),
-    red: (mess) => color.byNum(mess, 31),
-    green: (mess) => color.byNum(mess, 32),
-    yellow: (mess) => color.byNum(mess, 33),
-    blue: (mess) => color.byNum(mess, 34),
-    magenta: (mess) => color.byNum(mess, 35),
-    cyan: (mess) => color.byNum(mess, 36),
-    white: (mess) => color.byNum(mess, 37),
-};
+const color = chalk;
 
 const keyMigrationMap = [
     {
@@ -104,6 +91,25 @@ const keyMigrationMap = [
         newKey: 'extensions.models.textToSpeech',
         migrate: (value) => value,
     },
+    {
+        oldKey: 'minLogLevel',
+        newKey: 'logging.minLogLevel',
+        migrate: (value) => value,
+    },
+    {
+        oldKey: 'cardsCacheCapacity',
+        newKey: 'performance.memoryCacheCapacity',
+        migrate: (value) => `${value}mb`,
+    },
+    // uncomment one release after 1.12.13
+    /*
+    {
+        oldKey: 'cookieSecret',
+        newKey: 'cookieSecret',
+        migrate: () => void 0,
+        remove: true,
+    },
+    */
 ];
 
 /**
@@ -163,8 +169,17 @@ function addMissingConfigValues() {
 
         // Migrate old keys to new keys
         const migratedKeys = [];
-        for (const { oldKey, newKey, migrate } of keyMigrationMap) {
+        for (const { oldKey, newKey, migrate, remove } of keyMigrationMap) {
             if (_.has(config, oldKey)) {
+                if (remove) {
+                    _.unset(config, oldKey);
+                    migratedKeys.push({
+                        oldKey,
+                        newValue: void 0,
+                    });
+                    continue;
+                }
+
                 const oldValue = _.get(config, oldKey);
                 const newValue = migrate(oldValue);
                 _.set(config, newKey, newValue);

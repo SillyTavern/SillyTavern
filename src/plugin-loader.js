@@ -3,12 +3,12 @@ import path from 'node:path';
 import url from 'node:url';
 
 import express from 'express';
-import { default as git } from 'simple-git';
+import { default as git, CheckRepoActions } from 'simple-git';
 import { sync as commandExistsSync } from 'command-exists';
 import { getConfigValue, color } from './util.js';
 
-const enableServerPlugins = !!getConfigValue('enableServerPlugins', false);
-const enableServerPluginsAutoUpdate = !!getConfigValue('enableServerPluginsAutoUpdate', true);
+const enableServerPlugins = !!getConfigValue('enableServerPlugins', false, 'boolean');
+const enableServerPluginsAutoUpdate = !!getConfigValue('enableServerPluginsAutoUpdate', true, 'boolean');
 
 /**
  * Map of loaded plugins.
@@ -38,50 +38,55 @@ const isESModule = (file) => path.extname(file) === '.mjs';
  * be called before the server shuts down.
  */
 export async function loadPlugins(app, pluginsPath) {
-    const exitHooks = [];
-    const emptyFn = () => { };
+    try {
+        const exitHooks = [];
+        const emptyFn = () => { };
 
-    // Server plugins are disabled.
-    if (!enableServerPlugins) {
-        return emptyFn;
-    }
-
-    // Plugins directory does not exist.
-    if (!fs.existsSync(pluginsPath)) {
-        return emptyFn;
-    }
-
-    const files = fs.readdirSync(pluginsPath);
-
-    // No plugins to load.
-    if (files.length === 0) {
-        return emptyFn;
-    }
-
-    await updatePlugins(pluginsPath);
-
-    for (const file of files) {
-        const pluginFilePath = path.join(pluginsPath, file);
-
-        if (fs.statSync(pluginFilePath).isDirectory()) {
-            await loadFromDirectory(app, pluginFilePath, exitHooks);
-            continue;
+        // Server plugins are disabled.
+        if (!enableServerPlugins) {
+            return emptyFn;
         }
 
-        // Not a JavaScript file.
-        if (!isCommonJS(file) && !isESModule(file)) {
-            continue;
+        // Plugins directory does not exist.
+        if (!fs.existsSync(pluginsPath)) {
+            return emptyFn;
         }
 
-        await loadFromFile(app, pluginFilePath, exitHooks);
-    }
+        const files = fs.readdirSync(pluginsPath);
 
-    if (loadedPlugins.size > 0) {
-        console.log(`${loadedPlugins.size} server plugin(s) are currently loaded. Make sure you know exactly what they do, and only install plugins from trusted sources!`);
-    }
+        // No plugins to load.
+        if (files.length === 0) {
+            return emptyFn;
+        }
 
-    // Call all plugin "exit" functions at once and wait for them to finish
-    return () => Promise.all(exitHooks.map(exitFn => exitFn()));
+        await updatePlugins(pluginsPath);
+
+        for (const file of files) {
+            const pluginFilePath = path.join(pluginsPath, file);
+
+            if (fs.statSync(pluginFilePath).isDirectory()) {
+                await loadFromDirectory(app, pluginFilePath, exitHooks);
+                continue;
+            }
+
+            // Not a JavaScript file.
+            if (!isCommonJS(file) && !isESModule(file)) {
+                continue;
+            }
+
+            await loadFromFile(app, pluginFilePath, exitHooks);
+        }
+
+        if (loadedPlugins.size > 0) {
+            console.log(`${loadedPlugins.size} server plugin(s) are currently loaded. Make sure you know exactly what they do, and only install plugins from trusted sources!`);
+        }
+
+        // Call all plugin "exit" functions at once and wait for them to finish
+        return () => Promise.all(exitHooks.map(exitFn => exitFn()));
+    } catch (error) {
+        console.error('Plugin loading failed.', error);
+        return () => { };
+    }
 }
 
 async function loadFromDirectory(app, pluginDirectoryPath, exitHooks) {
@@ -256,7 +261,7 @@ async function updatePlugins(pluginsPath) {
             const pluginPath = path.join(pluginsPath, directory);
             const pluginRepo = git(pluginPath);
 
-            const isRepo = await pluginRepo.checkIsRepo();
+            const isRepo = await pluginRepo.checkIsRepo(CheckRepoActions.IS_REPO_ROOT);
             if (!isRepo) {
                 continue;
             }

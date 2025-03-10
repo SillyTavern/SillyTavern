@@ -406,6 +406,8 @@ jQuery(function () {
         } else {
             $('#adjustedHordeParams').text('Context: --, Response: --');
         }
+
+        saveSettingsDebounced();
     });
 
     $('#horde_auto_adjust_response_length').on('input', function () {
