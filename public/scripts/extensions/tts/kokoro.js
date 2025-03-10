@@ -11,7 +11,6 @@ export class KokoroTtsProvider {
             voiceMap: {},
             defaultVoice: 'af_heart',
             speakingRate: 1.0,
-            volumeGainDb: 0.0,
         };
         this.ready = false;
         this.voices = [
@@ -44,14 +43,13 @@ export class KokoroTtsProvider {
             'bm_daniel',
             'bm_fable',
         ];
-        this.tts = null;
+        this.worker = null;
         this.separator = ' ... ... ... ';
+        this.pendingRequests = new Map();
+        this.nextRequestId = 1;
 
         // Update display values immediately but only reinitialize TTS after a delay
-        this.initTtsDebounced = debounceAsync(() => {
-            this.tts = null;
-            this.checkReady();
-        }, debounce_timeout.relaxed);
+        this.initTtsDebounced = debounceAsync(this.initializeWorker.bind(this), debounce_timeout.relaxed);
     }
 
     async loadSettings(settings) {
@@ -61,51 +59,136 @@ export class KokoroTtsProvider {
         if (settings.voiceMap !== undefined) this.settings.voiceMap = settings.voiceMap;
         if (settings.defaultVoice !== undefined) this.settings.defaultVoice = settings.defaultVoice;
         if (settings.speakingRate !== undefined) this.settings.speakingRate = settings.speakingRate;
-        if (settings.volumeGainDb !== undefined) this.settings.volumeGainDb = settings.volumeGainDb;
 
-        $('#kokoro_model_id').val(this.settings.modelId).on('input',this.onSettingsChange.bind(this));
+        $('#kokoro_model_id').val(this.settings.modelId).on('input', this.onSettingsChange.bind(this));
         $('#kokoro_dtype').val(this.settings.dtype).on('change', this.onSettingsChange.bind(this));
         $('#kokoro_device').val(this.settings.device).on('change', this.onSettingsChange.bind(this));
         $('#kokoro_speaking_rate').val(this.settings.speakingRate).on('input', this.onSettingsChange.bind(this));
-        $('#kokoro_volume_gain').val(this.settings.volumeGainDb).on('input', this.onSettingsChange.bind(this));
     }
 
-    async checkReady() {
-        try {
-            if (!this.tts) {
-                const { KokoroTTS } = await import('./lib/kokoro.web.js');
-                console.log('Initializing Kokoro TTS with settings:', {
-                    modelId: this.settings.modelId,
-                    dtype: this.settings.dtype,
-                    device: this.settings.device,
-                });
-
-                // Use KokoroTTS class
-                const tts = await KokoroTTS.from_pretrained(this.settings.modelId, {
-                    dtype: this.settings.dtype,
-                    device: this.settings.device,
-                });
-
-                // Check if generate method exists
-                if (typeof tts.generate !== 'function') {
-                    throw new Error('TTS instance does not have generate method');
+    initializeWorker() {
+        return new Promise((resolve, reject) => {
+            try {
+                // Terminate the existing worker if it exists
+                if (this.worker) {
+                    this.worker.terminate();
                 }
 
-                this.tts = tts;
-                console.log('TTS initialized:', this.tts);
-                console.log('Available methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(this.tts)));
+                // Create a new worker
+                this.worker = new Worker(new URL('./kokoro-worker.js', import.meta.url), { type: 'module' });
+
+                // Set up message handling
+                this.worker.onmessage = this.handleWorkerMessage.bind(this);
+
+                // Initialize the worker with the current settings
+                this.worker.postMessage({
+                    action: 'initialize',
+                    data: {
+                        modelId: this.settings.modelId,
+                        dtype: this.settings.dtype,
+                        device: this.settings.device,
+                    },
+                });
+
+                // Create a promise that will resolve when initialization completes
+                const initPromise = new Promise((initResolve, initReject) => {
+                    const timeoutId = setTimeout(() => {
+                        initReject(new Error('Worker initialization timed out'));
+                    }, 300000); // 300 second timeout
+
+                    this.pendingRequests.set('initialization', {
+                        resolve: (result) => {
+                            clearTimeout(timeoutId);
+                            initResolve(result);
+                        },
+                        reject: (error) => {
+                            clearTimeout(timeoutId);
+                            initReject(error);
+                        },
+                    });
+                });
+
+                // Resolve the outer promise when initialization completes
+                initPromise.then(success => {
+                    this.ready = success;
+                    this.updateStatusDisplay();
+                    resolve(success);
+                }).catch(error => {
+                    console.error('Worker initialization failed:', error);
+                    this.ready = false;
+                    this.updateStatusDisplay();
+                    reject(error);
+                });
+            } catch (error) {
+                console.error('Failed to create worker:', error);
+                this.ready = false;
+                this.updateStatusDisplay();
+                reject(error);
             }
-            this.ready = true;
-            return true;
-        } catch (error) {
-            console.error('Kokoro TTS initialization failed:', error);
-            this.ready = false;
-            return false;
+        });
+    }
+
+    handleWorkerMessage(event) {
+        const { action, success, ready, error, requestId, blobUrl } = event.data;
+
+        switch (action) {
+            case 'initialized': {
+                const initRequest = this.pendingRequests.get('initialization');
+                if (initRequest) {
+                    if (success) {
+                        initRequest.resolve(true);
+                    } else {
+                        initRequest.reject(new Error(error || 'Initialization failed'));
+                    }
+                    this.pendingRequests.delete('initialization');
+                }
+            } break;
+            case 'generatedTts': {
+                const request = this.pendingRequests.get(requestId);
+                if (request) {
+                    if (success) {
+                        fetch(blobUrl).then(response => response.blob()).then(audioBlob => {
+                            // Clean up the blob URL
+                            URL.revokeObjectURL(blobUrl);
+
+                            request.resolve(new Response(audioBlob, {
+                                headers: {
+                                    'Content-Type': 'audio/wav',
+                                },
+                            }));
+                        }).catch(error => {
+                            request.reject(new Error('Failed to fetch TTS audio blob: ' + error));
+                        });
+                    } else {
+                        request.reject(new Error(error || 'TTS generation failed'));
+                    }
+                    this.pendingRequests.delete(requestId);
+                }
+            } break;
+            case 'readyStatus':
+                this.ready = ready;
+                this.updateStatusDisplay();
+                break;
         }
     }
 
+    updateStatusDisplay() {
+        const statusText = this.ready ? 'Ready' : 'Failed';
+        const statusColor = this.ready ? 'green' : 'red';
+        $('#kokoro_status_text').text(statusText).css('color', statusColor);
+    }
+
+    async checkReady() {
+        if (!this.worker) {
+            return await this.initializeWorker();
+        }
+
+        this.worker.postMessage({ action: 'checkReady' });
+        return this.ready;
+    }
+
     async onRefreshClick() {
-        return await this.checkReady();
+        return await this.initializeWorker();
     }
 
     get settingsHtml() {
@@ -132,10 +215,10 @@ export class KokoroTtsProvider {
                 <label for="kokoro_speaking_rate">Speaking Rate: <span id="kokoro_speaking_rate_output">${this.settings.speakingRate}x</span></label>
                 <input id="kokoro_speaking_rate" type="range" value="${this.settings.speakingRate}" min="0.5" max="2.0" step="0.1" />
 
-                <label for="kokoro_volume_gain">Volume Gain: <span id="kokoro_volume_gain_output">${this.settings.volumeGainDb}dB</span></label>
-                <input id="kokoro_volume_gain" type="range" value="${this.settings.volumeGainDb}" min="-10" max="10" step="0.5" />
-
                 <hr>
+                <div>
+                    Status: <span id="kokoro_status_text">Initializing...</span>
+                </div>
             </div>
         `;
     }
@@ -145,27 +228,25 @@ export class KokoroTtsProvider {
         this.settings.dtype = $('#kokoro_dtype').val().toString();
         this.settings.device = $('#kokoro_device').val().toString();
         this.settings.speakingRate = parseFloat($('#kokoro_speaking_rate').val().toString());
-        this.settings.volumeGainDb = parseFloat($('#kokoro_volume_gain').val().toString());
 
         // Update UI display
         $('#kokoro_speaking_rate_output').text(this.settings.speakingRate + 'x');
-        $('#kokoro_volume_gain_output').text(this.settings.volumeGainDb + 'dB');
 
-        // Reinitialize TTS engine
+        // Reinitialize TTS engine with debounce
         this.initTtsDebounced();
         saveTtsProviderSettings();
-
-        // Update status display
-        const statusText = this.ready ? 'Ready' : 'Failed';
-        const statusColor = this.ready ? 'green' : 'red';
-        $('#kokoro_status_text').text(statusText).css('color', statusColor);
     }
 
     async fetchTtsVoiceObjects() {
         if (!this.ready) {
             await this.checkReady();
         }
-        return this.voices.map(voice => ({ name: voice, voice_id: voice, preview_url: null, lang: voice.startsWith('b') ? 'en-GB' : 'en-US' }));
+        return this.voices.map(voice => ({
+            name: voice,
+            voice_id: voice,
+            preview_url: null,
+            lang: voice.startsWith('b') ? 'en-GB' : 'en-US',
+        }));
     }
 
     async previewTtsVoice(voiceId) {
@@ -200,39 +281,44 @@ export class KokoroTtsProvider {
     }
 
     async generateTts(text, voiceId) {
-        try {
-            if (!this.ready || !this.tts) {
-                console.log('TTS not ready, initializing...');
-                await this.checkReady();
-            }
+        if (!this.ready || !this.worker) {
+            console.log('TTS not ready, initializing...');
+            await this.initializeWorker();
+        }
 
-            if (!this.ready || !this.tts) {
-                throw new Error('Failed to initialize TTS engine');
-            }
+        if (!this.ready || !this.worker) {
+            throw new Error('Failed to initialize TTS engine');
+        }
 
-            const voice = this.getVoice(voiceId);
-            console.log('Using voice:', voice);
-            console.log('Text to speak:', text);
+        if (text.trim().length === 0) {
+            throw new Error('Empty text');
+        }
 
-            if (text.trim().length === 0) {
-                throw new Error('Empty text');
-            }
+        const voice = this.getVoice(voiceId);
+        const requestId = this.nextRequestId++;
 
-            const audio = await this.tts.generate(text, {
-                voice: voice.voice_id,
-                speed: this.settings.speakingRate || 1.0,
-            });
+        return new Promise((resolve, reject) => {
+            // Store the promise callbacks
+            this.pendingRequests.set(requestId, { resolve, reject });
 
-            const blob = audio.toBlob();
-
-            return new Response(blob, {
-                headers: {
-                    'Content-Type': 'audio/wav',
+            // Send the request to the worker
+            this.worker.postMessage({
+                action: 'generateTts',
+                data: {
+                    text,
+                    voice: voice.voice_id,
+                    speakingRate: this.settings.speakingRate || 1.0,
+                    requestId,
                 },
             });
-        } catch (error) {
-            console.error('Kokoro TTS generation failed:', error);
-            throw error;
+        });
+    }
+
+    dispose() {
+        // Clean up the worker when the provider is disposed
+        if (this.worker) {
+            this.worker.terminate();
+            this.worker = null;
         }
     }
 }
