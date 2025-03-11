@@ -192,8 +192,16 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
         const files = fileInput.files;
         if (!files || files.length === 0) return;
 
-        // Initialize image array if we're handling images
-        message.extra.image = [];
+        // Handle message.extra.image
+        if(Array.isArray(message.extra.image)){
+            // message.extra.image already exists as an array so we do nothing
+        } else if (message.extra.image) {
+            // Truthy, but not an array so we wrap it in an array
+            message.extra.image = [message.extra.image];
+        } else {
+            // Does not exist or falsy, we set it to empty array
+            message.extra.image = [];
+        }
 
         // Process each file
         for (const file of files) {
