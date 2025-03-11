@@ -2370,7 +2370,7 @@ export function appendMediaToMessage(mes, messageElement, adjustScroll = true) {
 
             // If image is array, we're showing all images at once, so swipe is disabled
             if (Array.isArray(mes.extra.image)) {
-                counter.text(`All/${imageSwipes.length}`);
+                counter.text('');
                 container.find('.mes_img_swipe_left, .mes_img_swipe_right').hide();
             } else {
                 const currentImage = imageSwipes.indexOf(mes.extra.image) + 1;
