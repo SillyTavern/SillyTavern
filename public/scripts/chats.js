@@ -623,7 +623,7 @@ async function enlargeMessageImage() {
     const mesBlock = $(this).closest('.mes');
     const mesId = mesBlock.attr('mesid');
     const message = chat[mesId];
-    const imgSrc = message?.extra?.image;
+    const imgSrc = message?.extra?.image[0];
     const title = message?.extra?.title;
 
     if (!imgSrc) {
