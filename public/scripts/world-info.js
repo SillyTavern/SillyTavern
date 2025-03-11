@@ -259,6 +259,12 @@ class WorldInfoBuffer {
         if (matchWholeWords) {
             const keyWords = transformedString.split(/\s+/);
 
+            // Handle full-word matching for CJK (Chinese, Japanese, Korean) characters
+            const isCJK = /[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7a3]/.test(transformedString);
+            if (isCJK) {
+                return haystack.includes(transformedString);
+            }
+
             if (keyWords.length > 1) {
                 return haystack.includes(transformedString);
             }
