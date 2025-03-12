@@ -320,10 +320,11 @@ export const force_output_sequence = {
  * @param {string} name1 User name.
  * @param {string} name2 Character name.
  * @param {boolean|number} forceOutputSequence Force to use first/last output sequence (if configured).
+ * @param {object} customInstruct Custom instruct mode settings.
  * @returns {string} Formatted instruct mode chat message.
  */
-export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2, forceOutputSequence, customInstruct = {}) {
-    const instruct = structuredClone({...power_user.instruct, ...customInstruct});
+export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2, forceOutputSequence, customInstruct = null) {
+    const instruct = structuredClone(customInstruct ?? power_user.instruct);
     let includeNames = isNarrator ? false : instruct.names_behavior === names_behavior_types.ALWAYS;
 
     if (!isNarrator && instruct.names_behavior === names_behavior_types.FORCE && ((selected_group && name !== name1) || (forceAvatar && name !== name1))) {
@@ -505,10 +506,11 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
  * @param {string} name2 Character name.
  * @param {boolean} isQuiet Is quiet mode generation.
  * @param {boolean} isQuietToLoud Is quiet to loud generation.
+ * @param {object} customInstruct Custom instruct settings.
  * @returns {string} Formatted instruct mode last prompt line.
  */
-export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2, isQuiet, isQuietToLoud, customInstruct = {}) {
-    const instruct = structuredClone({...power_user.instruct, ...customInstruct});
+export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2, isQuiet, isQuietToLoud, customInstruct = null) {
+    const instruct = structuredClone(customInstruct ?? power_user.instruct);
     const includeNames = name && (instruct.names_behavior === names_behavior_types.ALWAYS || (!!selected_group && instruct.names_behavior === names_behavior_types.FORCE)) && !(isQuiet && !isQuietToLoud);
 
     function getSequence() {
