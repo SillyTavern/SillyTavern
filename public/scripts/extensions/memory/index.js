@@ -700,8 +700,8 @@ async function summarizeChatWithProfile(context, force) {
         const data = await ConnectionManagerRequestService.sendRequest(
             extension_settings.memory.profileId,
             [
-                { role: 'system', content: prompt },
-                { role: 'user', content: rawPrompt },
+                { role: 'system', content: rawPrompt },
+                { role: 'user', content: prompt },
             ],
             2048,
         );

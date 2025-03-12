@@ -2,11 +2,11 @@ import { getPresetManager } from './preset-manager.js';
 import { extractMessageFromData, getGenerateUrl, getRequestHeaders } from '../script.js';
 import { getTextGenServer } from './textgen-settings.js';
 import { extractReasoningFromData } from './reasoning.js';
+import { formatInstructModeChat, formatInstructModePrompt, names_behavior_types } from './instruct-mode.js';
 
 // #region Type Definitions
 /**
  * @typedef {Object} TextCompletionRequestBase
- * @property {string} prompt - The text prompt for completion
  * @property {number} max_tokens - Maximum number of tokens to generate
  * @property {string} [model] - Optional model name
  * @property {string} api_type - Type of API to use
@@ -14,8 +14,6 @@ import { extractReasoningFromData } from './reasoning.js';
  * @property {number} [temperature] - Optional temperature parameter
  * @property {number} [min_p] - Optional min_p parameter
  */
-
-/** @typedef {Record<string, any> & TextCompletionRequestBase} TextCompletionRequest */
 
 /**
  * @typedef {Object} TextCompletionPayloadBase
@@ -62,7 +60,7 @@ export class TextCompletionService {
     static TYPE = 'textgenerationwebui';
 
     /**
-     * @param {TextCompletionRequest} custom
+     * @param {Record<string, any> & TextCompletionRequestBase & {prompt: string}} custom
      * @returns {TextCompletionPayload}
      */
     static createRequestData({ prompt, max_tokens, model, api_type, api_server, temperature, min_p, ...props }) {
@@ -125,26 +123,99 @@ export class TextCompletionService {
     }
 
     /**
-     * @param {string} presetName
-     * @param {TextCompletionRequest} custom
-     * @param {boolean?} extractData Extract message from the response. Default true
+     * Process and send a text completion request with optional preset & instruct
+     * @param {Record<string, any> & TextCompletionRequestBase & {prompt: ChatCompletionMessage[] |string}} custom
+     * @param {Object} options - Configuration options
+     * @param {string} [options.presetName] - Name of the preset to use for generation settings
+     * @param {string} [options.instructName] - Name of instruct preset for message formatting
+     * @param {boolean} extractData - Whether to extract structured data from response
      * @returns {Promise<ExtractedData | any>} Extracted data or the raw response
      * @throws {Error}
      */
-    static async sendRequestWithPreset(presetName, custom, extractData = true) {
-        const presetManager = getPresetManager(this.TYPE);
-        if (!presetManager) {
-            throw new Error('Preset manager not found');
+    static async processRequest(
+        custom,
+        options = {},
+        extractData = true,
+    ) {
+        const { presetName, instructName } = options;
+        let requestData = { ...custom };
+        const prompt = custom.prompt;
+
+        // Apply generation preset if specified
+        if (presetName) {
+            const presetManager = getPresetManager(this.TYPE);
+            if (presetManager) {
+                const preset = presetManager.getCompletionPresetByName(presetName);
+                if (preset) {
+                    // Convert preset to payload and merge with custom parameters
+                    const presetPayload = this.presetToGeneratePayload(preset, {});
+                    requestData = { ...presetPayload, ...requestData };
+                } else {
+                    console.warn(`Preset "${presetName}" not found, continuing with default settings`);
+                }
+            } else {
+                console.warn('Preset manager not found, continuing with default settings');
+            }
         }
 
-        const preset = presetManager.getCompletionPresetByName(presetName);
-        if (!preset) {
-            throw new Error('Preset not found');
+        // Handle instruct formatting if requested
+        if (instructName && prompt) {
+            const instructPresetManager = getPresetManager('instruct');
+            if (!instructPresetManager) {
+                console.warn('Instruct preset manager not found, using basic formatting');
+                if (typeof prompt === 'string') {
+                    // String prompt remains unchanged
+                } else if (Array.isArray(prompt)) {
+                    requestData.prompt = prompt.map(m => m.content).join('\n\n');
+                }
+            } else {
+                let instructPreset = instructPresetManager.getCompletionPresetByName(instructName);
+
+                if (instructPreset) {
+                    // Clone the preset to avoid modifying the original
+                    instructPreset = structuredClone(instructPreset);
+                    instructPreset.macro = false;
+                    instructPreset.names_behavior = names_behavior_types.NONE;
+
+                    // Format messages using instruct formatting
+                    const promptArray = Array.isArray(prompt) ? prompt : [{ role: 'user', content: prompt }];
+                    const formattedPrompt = promptArray.map((m) => formatInstructModeChat(
+                        m.role,
+                        m.content,
+                        m.role === 'user',
+                        false,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        instructPreset,
+                    )).join('');
+
+                    // Add the final prompt formatting
+                    requestData.prompt = formattedPrompt + formatInstructModePrompt(
+                        undefined,
+                        false,
+                        undefined,
+                        undefined,
+                        undefined,
+                        false,
+                        false,
+                        instructPreset,
+                    );
+                } else {
+                    console.warn(`Instruct preset "${instructName}" not found, using basic formatting`);
+                    if (Array.isArray(prompt)) {
+                        requestData.prompt = prompt.map(m => m.content).join('\n\n');
+                    }
+                }
+            }
+        } else if (Array.isArray(prompt)) {
+            // No instruct formatting, just convert message array to string if needed
+            requestData.prompt = prompt.map(m => m.content).join('\n\n');
         }
 
-        const payload = this.presetToGeneratePayload(preset, {});
-
-        const data = this.createRequestData({ ...payload, ...custom });
+        // @ts-ignore
+        const data = this.createRequestData(requestData);
 
         return await this.sendRequest(data, extractData);
     }
@@ -248,26 +319,36 @@ export class ChatCompletionService {
     }
 
     /**
-     * @param {string} presetName
+     * Process and send a chat completion request with optional preset
      * @param {ChatCompletionPayload} custom
-     * @param {boolean} extractData Extract message from the response. Default true
+     * @param {Object} options - Configuration options
+     * @param {string} [options.presetName] - Name of the preset to use for generation settings
+     * @param {boolean} extractData - Whether to extract structured data from response
      * @returns {Promise<ExtractedData | any>} Extracted data or the raw response
      * @throws {Error}
      */
-    static async sendRequestWithPreset(presetName, custom, extractData = true) {
-        const presetManager = getPresetManager(this.TYPE);
-        if (!presetManager) {
-            throw new Error('Preset manager not found');
+    static async processRequest(custom, options, extractData = true) {
+        const { presetName } = options;
+        let requestData = { ...custom };
+
+        // Apply generation preset if specified
+        if (presetName) {
+            const presetManager = getPresetManager(this.TYPE);
+            if (presetManager) {
+                const preset = presetManager.getCompletionPresetByName(presetName);
+                if (preset) {
+                    // Convert preset to payload and merge with custom parameters
+                    const presetPayload = this.presetToGeneratePayload(preset, {});
+                    requestData = { ...presetPayload, ...requestData };
+                } else {
+                    console.warn(`Preset "${presetName}" not found, continuing with default settings`);
+                }
+            } else {
+                console.warn('Preset manager not found, continuing with default settings');
+            }
         }
 
-        const preset = presetManager.getCompletionPresetByName(presetName);
-        if (!preset) {
-            throw new Error('Preset not found');
-        }
-
-        const payload = this.presetToGeneratePayload(preset, custom);
-
-        const data = this.createRequestData({ ...payload, ...custom });
+        const data = this.createRequestData(requestData);
 
         return await this.sendRequest(data, extractData);
     }

@@ -1,9 +1,7 @@
 import { CONNECT_API_MAP, getRequestHeaders } from '../../script.js';
 import { extension_settings, openThirdPartyExtensionMenu } from '../extensions.js';
 import { t } from '../i18n.js';
-import { formatInstructModeChat, formatInstructModePrompt, names_behavior_types } from '../instruct-mode.js';
 import { oai_settings } from '../openai.js';
-import { getPresetManager } from '../preset-manager.js';
 import { SECRET_KEYS, secret_state } from '../secrets.js';
 import { textgen_types, textgenerationwebui_settings } from '../textgen-settings.js';
 import { getTokenCountAsync } from '../tokenizers.js';
@@ -320,61 +318,30 @@ export class ConnectionManagerRequestService {
                     }
 
                     const messages = Array.isArray(prompt) ? prompt : [{ role: 'user', content: prompt }];
-                    const data = context.ChatCompletionService.createRequestData({
+                    return await context.ChatCompletionService.processRequest({
                         messages,
                         max_tokens: maxTokens,
                         model: profile.model,
                         chat_completion_source: selectedApiMap.source,
+                    }, {
+                        presetName: includePreset ? profile.preset : undefined,
                     });
-                    if (profile.preset && includePreset) {
-                        return await context.ChatCompletionService.sendRequestWithPreset(profile.preset, data, extractData);
-                    }
-                    return await context.ChatCompletionService.sendRequest(data, extractData);
                 }
                 case 'textgenerationwebui': {
                     if (!selectedApiMap.type) {
                         throw new Error(`API type ${selectedApiMap.selected} does not support text completions`);
                     }
 
-                    /**
-                     * @type {string}
-                     */
-                    let formattedPrompt;
-                    if (profile.instruct && includeInstruct && Array.isArray(prompt)) {
-                        let instructPreset = getPresetManager('instruct')?.getCompletionPresetByName(profile.instruct);
-                        if (instructPreset) {
-                            instructPreset = structuredClone(instructPreset);
-                            instructPreset.macro = false;
-                            instructPreset.names_behavior = names_behavior_types.NONE;
-                            formattedPrompt = prompt.map((m) => formatInstructModeChat(
-                                m.role,
-                                m.content,
-                                m.role === 'user',
-                                false,
-                                undefined,
-                                undefined,
-                                undefined,
-                                undefined,
-                                instructPreset
-                            )).join('');
-                            formattedPrompt += formatInstructModePrompt(undefined, false, undefined, undefined, undefined, false, false, instructPreset);
-                        } else {
-                            formattedPrompt = prompt.map((m) => m.content).join('\n\n');
-                        }
-                    } else {
-                        formattedPrompt = Array.isArray(prompt) ? prompt.map((m) => m.content).join('\n\n') : prompt;
-                    }
-                    const data = context.TextCompletionService.createRequestData({
-                        prompt: formattedPrompt,
+                    return await context.TextCompletionService.processRequest({
+                        prompt,
                         max_tokens: maxTokens,
                         model: profile.model,
                         api_type: selectedApiMap.type,
                         api_server: profile['api-url'],
+                    }, {
+                        instructName: includeInstruct ? profile.instruct : undefined,
+                        presetName: includePreset ? profile.preset : undefined,
                     });
-                    if (profile.preset && includePreset) {
-                        return await context.TextCompletionService.sendRequestWithPreset(profile.preset, data, extractData);
-                    }
-                    return await context.TextCompletionService.sendRequest(data, extractData);
                 }
                 default: {
                     throw new Error(`Unknown API type ${selectedApiMap.selected}`);
