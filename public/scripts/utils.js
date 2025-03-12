@@ -6,7 +6,7 @@ import {
 } from '../lib.js';
 
 import { getContext } from './extensions.js';
-import { characters, getRequestHeaders, this_chid } from '../script.js';
+import { characters, getRequestHeaders, this_chid, user_avatar } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
 import { collapseNewlines, power_user } from './power-user.js';
 import { debounce_timeout } from './constants.js';
@@ -14,7 +14,7 @@ import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { getTagsList } from './tags.js';
 import { groups, selected_group } from './group-chats.js';
-import { getCurrentLocale } from './i18n.js';
+import { getCurrentLocale, t } from './i18n.js';
 
 /**
  * Pagination status string template.
@@ -194,6 +194,17 @@ export function stringToRange(input, min, max) {
  */
 export function onlyUnique(value, index, array) {
     return array.indexOf(value) === index;
+}
+
+/**
+ * Determines if a value is unique in an array of objects.
+ * @param {any} value Current value.
+ * @param {number} index Current index.
+ * @param {any[]} array The array being processed.
+ * @returns {boolean} True if the value is unique, false otherwise.
+ */
+export function onlyUniqueJson(value, index, array) {
+    return array.map(v => JSON.stringify(v)).indexOf(JSON.stringify(value)) === index;
 }
 
 /**
@@ -1799,8 +1810,9 @@ export function runAfterAnimation(control, callback, timeout = 500) {
  *
  * @param {string} a - The first string to compare.
  * @param {string} b - The second string to compare.
- * @param {(a:string,b:string)=>boolean} comparisonFunction - The function to use for the comparison.
- * @returns {*} - The result of the comparison.
+ * @param {(a:string,b:string)=>T} comparisonFunction - The function to use for the comparison.
+ * @returns {T} - The result of the comparison.
+ * @template T
  */
 export function compareIgnoreCaseAndAccents(a, b, comparisonFunction) {
     if (!a || !b) return comparisonFunction(a, b); // Return the comparison result if either string is empty
@@ -1835,6 +1847,16 @@ export function includesIgnoreCaseAndAccents(text, searchTerm) {
  */
 export function equalsIgnoreCaseAndAccents(a, b) {
     return compareIgnoreCaseAndAccents(a, b, (a, b) => a === b);
+}
+
+/**
+ * Performs a case-insensitive and accent-insensitive sort.
+ * @param {string} a - The first string to compare
+ * @param {string} b - The second string to compare
+ * @returns {number} -1 if a < b, 1 if a > b, 0 if a === b
+ */
+export function sortIgnoreCaseAndAccents(a, b) {
+    return compareIgnoreCaseAndAccents(a, b, (a, b) => a?.localeCompare(b));
 }
 
 /**
@@ -2197,6 +2219,48 @@ export async function showFontAwesomePicker(customList = null) {
 }
 
 /**
+ * Finds a persona by name, with optional filtering and precedence for avatars
+ * @param {object} [options={}] - The options for the search
+ * @param {string?} [options.name=null] - The name to search for
+ * @param {boolean} [options.allowAvatar=true] - Whether to allow searching by avatar
+ * @param {boolean} [options.insensitive=true] - Whether the search should be case insensitive
+ * @param {boolean} [options.preferCurrentPersona=true] - Whether to prefer the current persona(s)
+ * @param {boolean} [options.quiet=false] - Whether to suppress warnings
+ * @returns {PersonaViewModel} The persona object
+ * @typedef {object} PersonaViewModel
+ * @property {string} avatar - The avatar of the persona
+ * @property {string} name - The name of the persona
+ */
+export function findPersona({ name = null, allowAvatar = true, insensitive = true, preferCurrentPersona = true, quiet = false } = {}) {
+    /** @type {PersonaViewModel[]} */
+    const personas = Object.entries(power_user.personas).map(([avatar, name]) => ({ avatar, name }));
+    const matches = (/** @type {PersonaViewModel} */ persona) => !name || (allowAvatar && persona.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(persona.name, name) : persona.name === name);
+
+    // If we have a current persona and prefer it, return that if it matches
+    const currentPersona = personas.find(a => a.avatar === user_avatar);
+    if (preferCurrentPersona && currentPersona && matches(currentPersona)) {
+        return currentPersona;
+    }
+
+    // If allowAvatar is true, search by avatar first
+    if (allowAvatar && name) {
+        const personaByAvatar = personas.find(a => a.avatar === name);
+        if (personaByAvatar && matches(personaByAvatar)) {
+            return personaByAvatar;
+        }
+    }
+
+    // Search for matching personas by name
+    const matchingPersonas = personas.filter(a => matches(a));
+    if (matchingPersonas.length > 1) {
+        if (!quiet) toastr.warning(t`Multiple personas found for given conditions.`);
+        else console.warn(t`Multiple personas found for given conditions. Returning the first match.`);
+    }
+
+    return matchingPersonas[0] || null;
+}
+
+/**
  * Finds a character by name, with optional filtering and precedence for avatars
  * @param {object} [options={}] - The options for the search
  * @param {string?} [options.name=null] - The name to search for
@@ -2228,8 +2292,8 @@ export function findChar({ name = null, allowAvatar = true, insensitive = true, 
     if (preferCurrentChar) {
         const preferredCharSearch = currentChars.filter(matches);
         if (preferredCharSearch.length > 1) {
-            if (!quiet) toastr.warning('Multiple characters found for given conditions.');
-            else console.warn('Multiple characters found for given conditions. Returning the first match.');
+            if (!quiet) toastr.warning(t`Multiple characters found for given conditions.`);
+            else console.warn(t`Multiple characters found for given conditions. Returning the first match.`);
         }
         if (preferredCharSearch.length) {
             return preferredCharSearch[0];

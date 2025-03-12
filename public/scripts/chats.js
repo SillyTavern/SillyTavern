@@ -130,9 +130,10 @@ function getConverter(type) {
  * @param {number} start Starting message ID
  * @param {number} end Ending message ID (inclusive)
  * @param {boolean} unhide If true, unhide the messages instead.
+ * @param {string} nameFitler Optional name filter
  * @returns {Promise<void>}
  */
-export async function hideChatMessageRange(start, end, unhide) {
+export async function hideChatMessageRange(start, end, unhide, nameFitler = null) {
     if (isNaN(start)) return;
     if (!end) end = start;
     const hide = !unhide;
@@ -140,6 +141,7 @@ export async function hideChatMessageRange(start, end, unhide) {
     for (let messageId = start; messageId <= end; messageId++) {
         const message = chat[messageId];
         if (!message) continue;
+        if (nameFitler && message.name !== nameFitler) continue;
 
         message.is_system = hide;
 
