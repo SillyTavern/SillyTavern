@@ -20,6 +20,7 @@ import bodyParser from 'body-parser';
 import open from 'open';
 
 // local library imports
+import { serverEvents, EVENT_NAMES } from './src/server-events.js';
 import { CommandLineParser } from './src/command-line.js';
 import { loadPlugins } from './src/plugin-loader.js';
 import {
@@ -112,6 +113,9 @@ app.use(helmet({
 app.use(compression());
 app.use(responseTime());
 
+app.use(bodyParser.json({ limit: '200mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '200mb' }));
+
 // CORS Settings //
 const CORS = cors({
     origin: 'null',
@@ -134,9 +138,6 @@ if (cliArgs.listen) {
 }
 
 if (cliArgs.enableCorsProxy) {
-    app.use(bodyParser.json({
-        limit: '200mb',
-    }));
     app.use('/proxy/:url(*)', corsProxyMiddleware);
 } else {
     app.use('/proxy/:url(*)', async (_, res) => {
@@ -348,6 +349,7 @@ async function postSetupTasks(result) {
     console.log('\n' + getSeparator(plainGoToLog.length) + '\n');
 
     setupLogLevel();
+    serverEvents.emit(EVENT_NAMES.SERVER_STARTED, { url: autorunUrl });
 }
 
 /**

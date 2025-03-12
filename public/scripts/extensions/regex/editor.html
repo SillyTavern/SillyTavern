@@ -2,7 +2,7 @@
     <div class="regex_editor">
         <h3 class="flex-container justifyCenter alignItemsBaseline">
             <strong data-i18n="Regex Editor">Regex Editor</strong>
-            <a href="https://regexr.com/" class="notes-link" target="_blank">
+            <a href="https://docs.sillytavern.app/extensions/regex/" class="notes-link" target="_blank" rel="noopener noreferrer">
                 <span class="note-link-span">?</span>
             </a>
             <div id="regex_test_mode_toggle" class="menu_button menu_button_icon">
@@ -15,6 +15,14 @@
             Regex is a tool to find/replace strings using regular expressions. If you want to learn more, click on the ? next to the title.
         </small>
         <hr />
+
+        <div id="regex_info_block_wrapper">
+            <div id="regex_info_block" class="info-block"></div>
+            <!-- TODO replace 3rd-party link with our own docs when it's done -->
+            <a id="regex_info_block_flags_hint" href="http://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions#advanced_searching_with_flags" target="_blank" rel="noopener noreferrer">
+                <i class="fa-solid fa-circle-info" title="Click here to learn more about regex flags."></i>
+            </a>
+        </div>
 
         <div id="regex_test_mode" class="flex1 flex-container displayNone">
             <div class="flex1">

@@ -593,7 +593,7 @@
         "new_chat_prompt": "[Start a new Chat]",
         "new_group_chat_prompt": "[Start a new group chat. Group members: {{group}}]",
         "new_example_chat_prompt": "[Example Chat]",
-        "continue_nudge_prompt": "[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message: {{lastChatMessage}}]",
+        "continue_nudge_prompt": "[Continue your last message without repeating its original content.]",
         "bias_preset_selected": "Default (none)",
         "bias_presets": {
             "Default (none)": [],
@@ -626,7 +626,6 @@
         "ai21_model": "jamba-1.5-large",
         "windowai_model": "",
         "openrouter_model": "OR_Website",
-        "jailbreak_system": true,
         "reverse_proxy": "",
         "chat_completion_source": "openai",
         "max_context_unlocked": false,

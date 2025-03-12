@@ -2,14 +2,13 @@ import fs from 'node:fs';
 import express from 'express';
 import fetch from 'node-fetch';
 
-import { jsonParser, urlencodedParser } from '../../express-common.js';
 import { forwardFetchResponse, delay } from '../../util.js';
 import { getOverrideHeaders, setAdditionalHeaders, setAdditionalHeadersByType } from '../../additional-headers.js';
 import { TEXTGEN_TYPES } from '../../constants.js';
 
 export const router = express.Router();
 
-router.post('/generate', jsonParser, async function (request, response_generate) {
+router.post('/generate', async function (request, response_generate) {
     if (!request.body) return response_generate.sendStatus(400);
 
     if (request.body.api_server.indexOf('localhost') != -1) {
@@ -141,7 +140,7 @@ router.post('/generate', jsonParser, async function (request, response_generate)
     return response_generate.send({ error: true });
 });
 
-router.post('/status', jsonParser, async function (request, response) {
+router.post('/status', async function (request, response) {
     if (!request.body) return response.sendStatus(400);
     let api_server = request.body.api_server;
     if (api_server.indexOf('localhost') != -1) {
@@ -188,7 +187,7 @@ router.post('/status', jsonParser, async function (request, response) {
     response.send(result);
 });
 
-router.post('/transcribe-audio', urlencodedParser, async function (request, response) {
+router.post('/transcribe-audio', async function (request, response) {
     try {
         const server = request.body.server;
 

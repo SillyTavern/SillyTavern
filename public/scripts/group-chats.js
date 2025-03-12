@@ -72,6 +72,7 @@ import {
     animation_duration,
     depth_prompt_role_default,
     shouldAutoContinue,
+    unshallowCharacter,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -113,6 +114,7 @@ export const group_activation_strategy = {
     NATURAL: 0,
     LIST: 1,
     MANUAL: 2,
+    POOLED: 3,
 };
 
 export const group_generation_mode = {
@@ -216,6 +218,7 @@ export async function getGroupChat(groupId, reload = false) {
 
     // Run validation before any loading
     validateGroup(group);
+    await unshallowGroupMembers(groupId);
 
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
@@ -824,6 +827,8 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
     }
 
     try {
+        await unshallowGroupMembers(selected_group);
+
         throwIfAborted();
         hideSwipeButtons();
         is_group_generating = true;
@@ -875,6 +880,9 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         }
         else if (activationStrategy === group_activation_strategy.LIST) {
             activatedMembers = activateListOrder(enabledMembers);
+        }
+        else if (activationStrategy === group_activation_strategy.POOLED) {
+            activatedMembers = activatePooledOrder(enabledMembers, lastMessage);
         }
         else if (activationStrategy === group_activation_strategy.MANUAL && !isUserInput) {
             activatedMembers = shuffle(enabledMembers).slice(0, 1).map(x => characters.findIndex(y => y.avatar === x)).filter(x => x !== -1);
@@ -1016,6 +1024,48 @@ function activateListOrder(members) {
     return memberIds;
 }
 
+/**
+ * Activate group members based on the last message.
+ * @param {string[]} members List of member avatars
+ * @param {Object} lastMessage Last message
+ * @returns {number[]} List of character ids
+ */
+function activatePooledOrder(members, lastMessage) {
+    /** @type {string} */
+    let activatedMember = null;
+    /** @type {string[]} */
+    const spokenSinceUser = [];
+
+    for (const message of chat.slice().reverse()) {
+        if (message.is_user) {
+            break;
+        }
+
+        if (message.is_system || message.extra?.type === system_message_types.NARRATOR) {
+            continue;
+        }
+
+        if (message.original_avatar) {
+            spokenSinceUser.push(message.original_avatar);
+        }
+    }
+
+    const haveNotSpoken = members.filter(x => !spokenSinceUser.includes(x));
+
+    if (haveNotSpoken.length) {
+        activatedMember = haveNotSpoken[Math.floor(Math.random() * haveNotSpoken.length)];
+    }
+
+    if (activatedMember === null) {
+        const lastMessageAvatar = members.length > 1 && lastMessage && !lastMessage.is_user && lastMessage.original_avatar;
+        const randomPool = lastMessageAvatar ? members.filter(x => x !== lastMessage.original_avatar) : members;
+        activatedMember = randomPool[Math.floor(Math.random() * randomPool.length)];
+    }
+
+    const memberId = characters.findIndex(y => y.avatar === activatedMember);
+    return memberId !== -1 ? [memberId] : [];
+}
+
 function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, isUserInput) {
     let activatedMembers = [];
 
@@ -1137,6 +1187,29 @@ export async function editGroup(id, immediately, reload = true) {
     saveGroupDebounced(group, reload);
 }
 
+/**
+ * Unshallows all definitions of group members.
+ * @param {string} groupId Id of the group
+ * @returns {Promise<void>} Promise that resolves when all group members are unshallowed
+ */
+export async function unshallowGroupMembers(groupId) {
+    const group = groups.find(x => x.id == groupId);
+    if (!group) {
+        return;
+    }
+    const members = group.members;
+    if (!Array.isArray(members)) {
+        return;
+    }
+    for (const member of members) {
+        const index = characters.findIndex(x => x.avatar === member);
+        if (index === -1) {
+            continue;
+        }
+        await unshallowCharacter(String(index));
+    }
+}
+
 let groupAutoModeAbortController = null;
 
 async function groupChatAutoModeWorker() {
@@ -1158,9 +1231,9 @@ async function groupChatAutoModeWorker() {
     await generateGroupWrapper(true, 'auto', { signal: groupAutoModeAbortController.signal });
 }
 
-async function modifyGroupMember(chat_id, groupMember, isDelete) {
+async function modifyGroupMember(groupId, groupMember, isDelete) {
     const id = groupMember.data('id');
-    const thisGroup = groups.find((x) => x.id == chat_id);
+    const thisGroup = groups.find((x) => x.id == groupId);
     const membersArray = thisGroup?.members ?? newGroupMembers;
 
     if (isDelete) {
@@ -1173,6 +1246,7 @@ async function modifyGroupMember(chat_id, groupMember, isDelete) {
     }
 
     if (openGroupId) {
+        await unshallowGroupMembers(openGroupId);
         await editGroup(openGroupId, false, false);
         updateGroupAvatar(thisGroup);
     }
@@ -1638,7 +1712,7 @@ async function onGroupActionClick(event) {
     }
 
     if (action === 'view') {
-        openCharacterDefinition(member);
+        await openCharacterDefinition(member);
     }
 
     if (action === 'speak') {
@@ -1690,7 +1764,7 @@ export async function openGroupById(groupId) {
     return false;
 }
 
-function openCharacterDefinition(characterSelect) {
+async function openCharacterDefinition(characterSelect) {
     if (is_group_generating) {
         toastr.warning(t`Can't peek a character while group reply is being generated`);
         console.warn('Can\'t peek a character def while group reply is being generated');
@@ -1703,6 +1777,7 @@ function openCharacterDefinition(characterSelect) {
         return;
     }
 
+    await unshallowCharacter(chid);
     setCharacterId(chid);
     select_selected_character(chid);
     // Gentle nudge to recalculate tokens

@@ -4,14 +4,13 @@ import express from 'express';
 import { speak, languages } from 'google-translate-api-x';
 
 import { readSecret, SECRET_KEYS } from './secrets.js';
-import { jsonParser } from '../express-common.js';
 import { GEMINI_SAFETY } from '../constants.js';
 
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 
 export const router = express.Router();
 
-router.post('/caption-image', jsonParser, async (request, response) => {
+router.post('/caption-image', async (request, response) => {
     try {
         const mimeType = request.body.image.split(';')[0].split(':')[1];
         const base64Data = request.body.image.split(',')[1];
@@ -75,7 +74,7 @@ router.post('/list-voices', (_, response) => {
     return response.json(languages);
 });
 
-router.post('/generate-voice', jsonParser, async (request, response) => {
+router.post('/generate-voice', async (request, response) => {
     try {
         const text = request.body.text;
         const voice = request.body.voice ?? 'en';

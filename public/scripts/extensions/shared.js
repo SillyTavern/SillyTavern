@@ -144,8 +144,12 @@ function throwIfInvalidModel(useReverseProxy) {
         throw new Error('Google AI Studio API key is not set.');
     }
 
-    if (extension_settings.caption.multi_modal_api === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] && !useReverseProxy) {
+    if (extension_settings.caption.multimodal_api === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] && !useReverseProxy) {
         throw new Error('Mistral AI API key is not set.');
+    }
+
+    if (extension_settings.caption.multimodal_api === 'cohere' && !secret_state[SECRET_KEYS.COHERE]) {
+        throw new Error('Cohere API key is not set.');
     }
 
     if (extension_settings.caption.multimodal_api === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA]) {

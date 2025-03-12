@@ -1251,7 +1251,7 @@ function onCharacterCreateClick() {
 }
 
 function onGroupCreateClick() {
-    // Nothing to do here at the moment. Tags in group interface get automatically redrawn.
+    $('#groupTagList').empty();
 }
 
 export function applyTagsOnCharacterSelect(chid = null) {
@@ -1259,11 +1259,11 @@ export function applyTagsOnCharacterSelect(chid = null) {
     if (menu_type === 'create') {
         const currentTagIds = $('#tagList').find('.tag').map((_, el) => $(el).attr('id')).get();
         const currentTags = tags.filter(x => currentTagIds.includes(x.id));
-        printTagList($('#tagList'), { forEntityOrKey: null, tags: currentTags, tagOptions: { removable: true } });
+        printTagList($('#tagList'), { forEntityOrKey: undefined, tags: currentTags, tagOptions: { removable: true } });
         return;
     }
 
-    chid = chid ?? Number(this_chid);
+    chid = chid ?? (this_chid !== undefined ? Number(this_chid) : undefined);
     printTagList($('#tagList'), { forEntityOrKey: chid, tagOptions: { removable: true } });
 }
 
@@ -1272,11 +1272,11 @@ export function applyTagsOnGroupSelect(groupId = null) {
     if (menu_type === 'group_create') {
         const currentTagIds = $('#groupTagList').find('.tag').map((_, el) => $(el).attr('id')).get();
         const currentTags = tags.filter(x => currentTagIds.includes(x.id));
-        printTagList($('#groupTagList'), { forEntityOrKey: null, tags: currentTags, tagOptions: { removable: true } });
+        printTagList($('#groupTagList'), { forEntityOrKey: undefined, tags: currentTags, tagOptions: { removable: true } });
         return;
     }
 
-    groupId = groupId ?? Number(selected_group);
+    groupId = groupId ?? (selected_group ? Number(selected_group) : undefined);
     printTagList($('#groupTagList'), { forEntityOrKey: groupId, tagOptions: { removable: true } });
 }
 

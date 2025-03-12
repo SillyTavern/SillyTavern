@@ -1305,7 +1305,7 @@
                                         <input class="neo-range-slider" type="range" id="epsilon_cutoff_textgenerationwebui" name="volume" min="0" max="9" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="9" step="0.01" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui">
                                     </div>
-                                    <div data-tg-type="aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="aphrodite,koboldcpp" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Top nsigma">Top nsigma</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="A sampling method that filters logits based on their statistical properties. It keeps tokens within n standard deviations of the maximum logit value, providing a simpler alternative to top-p/top-k sampling while maintaining sampling stability across different temperatures."></div>
@@ -1951,7 +1951,18 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek">
+                                    <div class="range-block" data-source="makersuite,openrouter">
+                                        <label for="openai_enable_web_search" class="checkbox_label flexWrap widthFreeExpand">
+                                            <input id="openai_enable_web_search" type="checkbox" />
+                                            <span data-i18n="Enable web search">Enable web search</span>
+                                        </label>
+                                        <div class="flexBasis100p toggle-description justifyLeft">
+                                            <span>
+                                                Use search capabilities provided by the backend.
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,ai21">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -3067,7 +3078,15 @@
                             <div>
                                 <h4 data-i18n="AI21 Model">AI21 Model</h4>
                                 <select id="model_ai21_select">
-                                    <optgroup label="Jamba 1.5">
+                                    <optgroup label="Jamba (Latest)">
+                                        <option value="jamba-mini">jamba-mini</option>
+                                        <option value="jamba-large">jamba-large</option>
+                                    </optgroup>
+                                    <optgroup label="Jamba 1.6">
+                                        <option value="jamba-1.6-mini">jamba-1.6-mini</option>
+                                        <option value="jamba-1.6-large">jamba-1.6-large</option>
+                                    </optgroup>
+                                    <optgroup label="Jamba 1.5 (Deprecated)">
                                         <option value="jamba-1.5-mini">jamba-1.5-mini</option>
                                         <option value="jamba-1.5-large">jamba-1.5-large</option>
                                     </optgroup>
@@ -3305,6 +3324,8 @@
                                         <option value="c4ai-aya-23">c4ai-aya-23</option>
                                         <option value="c4ai-aya-expanse-8b">c4ai-aya-expanse-8b</option>
                                         <option value="c4ai-aya-expanse-32b">c4ai-aya-expanse-32b</option>
+                                        <option value="c4ai-aya-vision-8b">c4ai-aya-vision-8b</option>
+                                        <option value="c4ai-aya-vision-32b">c4ai-aya-vision-32b</option>
                                         <option value="command-light">command-light</option>
                                         <option value="command">command</option>
                                         <option value="command-r">command-r</option>
@@ -3341,7 +3362,7 @@
                             </div>
                             <div>
                                 <small>
-                                    <span data-i18n="Doesn't work? Try adding">Doesn't work? Try adding</span> <code>/v1</code> <span data-i18n="at the end of the URL!">at the end of the URL!</span>
+                                    <span data-i18n="Doesn't work? Try adding">Doesn't work? Try adding</span> <code>/v1</code> <span data-i18n="at the end!">at the end!</span>
                                 </small>
                             </div>
                             <h4>
@@ -4211,7 +4232,7 @@
                             <!-- <h4><span data-i18n="UI Colors">Theme Settings</span></h4> -->
                             <div name="AvatarAndChatDisplay" class="flex-container flexFlowColumn">
                                 <div class="flex-container alignItemsBaseline">
-                                    <span data-i18n="Avatar Style">Avatars:</span>
+                                    <span data-i18n="Avatar Style:">Avatars:</span>
                                     <select id="avatar_style" class="widthNatural flex1 margin0">
                                         <option value="0" data-i18n="Circle">Circle</option>
                                         <option value="2" data-i18n="Square">Square</option>
@@ -4421,7 +4442,7 @@
                                     <option data-i18n="Ask" value="1">Ask</option>
                                     <option data-i18n="tag_import_none" value="2">None</option>
                                     <option data-i18n="tag_import_all" value="3">All</option>
-                                    <option data-i18n="Existing" value="4">Existing</option>
+                                    <option data-i18n="tag_import_existing" value="4">Existing</option>
                                 </select>
                             </div>
                             <label class="checkbox_label" for="fuzzy_search_checkbox" title="Use fuzzy matching, and search characters in the list by all data fields, not just by a name substring." data-i18n="[title]Use fuzzy matching, and search characters in the list by all data fields, not just by a name substring">
@@ -5361,6 +5382,7 @@
                                                 <option value="2" data-i18n="Manual">Manual</option>
                                                 <option value="0" data-i18n="Natural order">Natural order</option>
                                                 <option value="1" data-i18n="List order">List order</option>
+                                                <option value="3" data-i18n="Pooled order">Pooled order</option>
                                             </select>
                                         </div>
                                         <div class="flex1 flexGap5">
@@ -6377,7 +6399,7 @@
                                 </div>
                             </div>
                             <div class="mes_reasoning_actions flex-container">
-                                <div class="mes_reasoning_edit_done menu_button edit_button fa-solid fa-check" title="Confirm" data-i18n="[title]Confirmedit"></div>
+                                <div class="mes_reasoning_edit_done menu_button edit_button fa-solid fa-check" title="Confirm" data-i18n="[title]Confirm Edit"></div>
                                 <div class="mes_reasoning_delete menu_button edit_button fa-solid fa-trash-can" title="Remove reasoning" data-i18n="[title]Remove reasoning"></div>
                                 <div class="mes_reasoning_edit_cancel menu_button edit_button fa-solid fa-xmark" title="Cancel edit" data-i18n="[title]Cancel edit"></div>
                                 <div class="mes_reasoning_copy mes_button fa-solid fa-copy" title="Copy reasoning" data-i18n="[title]Copy reasoning"></div>

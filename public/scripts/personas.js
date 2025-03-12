@@ -1464,6 +1464,10 @@ async function loadPersonaForCurrentChat({ doRender = false } = {}) {
             toastr.success(message, t`Persona Auto Selected`, { escapeHtml: false });
         }
     }
+    // Even if it's the same persona, we still might need to auto-lock to chat if that's enabled
+    else if (chatPersona && power_user.persona_auto_lock && !chat_metadata['persona']) {
+        lockPersona('chat');
+    }
 
     updatePersonaUIStates();
 

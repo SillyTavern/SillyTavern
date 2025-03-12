@@ -393,6 +393,7 @@ GNU Affero General Public License for more details.**
 * Icon theme by Font Awesome <https://fontawesome.com> (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
 * Default content by @OtisAlejandro (Seraphina character and lorebook) and @kallmeflocc (10K Discord Users Celebratory Background)
 * Docker guide by [@mrguymiah](https://github.com/mrguymiah) and [@Bronya-Rand](https://github.com/Bronya-Rand)
+* kokoro-js library by [@hexgrad](https://github.com/hexgrad) (Apache-2.0 License)
 
 ## Top Contributors
 

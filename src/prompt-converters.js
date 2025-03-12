@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { getConfigValue } from './util.js';
+import { getConfigValue, tryParse } from './util.js';
 
 const PROMPT_PLACEHOLDER = getConfigValue('promptPlaceholder', 'Let\'s get started.');
 
@@ -411,11 +411,12 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
     }
 
     const system_instruction = { parts: { text: sys_prompt.trim() } };
+    const toolNameMap = {};
 
     const contents = [];
     messages.forEach((message, index) => {
         // fix the roles
-        if (message.role === 'system') {
+        if (message.role === 'system' || message.role === 'tool') {
             message.role = 'user';
         } else if (message.role === 'assistant') {
             message.role = 'model';
@@ -423,7 +424,21 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
 
         // Convert the content to an array of parts
         if (!Array.isArray(message.content)) {
-            message.content = [{ type: 'text', text: String(message.content ?? '') }];
+            const content = (() => {
+                const hasToolCalls = Array.isArray(message.tool_calls) && message.tool_calls.length > 0;
+                const hasToolCallId = typeof message.tool_call_id === 'string' && message.tool_call_id.length > 0;
+
+                if (hasToolCalls) {
+                    return { type: 'tool_calls', tool_calls: message.tool_calls };
+                }
+
+                if (hasToolCallId) {
+                    return { type: 'tool_call_id', tool_call_id: message.tool_call_id, content: String(message.content ?? '') };
+                }
+
+                return { type: 'text', text: String(message.content ?? '') };
+            })();
+            message.content = [content];
         }
 
         // similar story as claude
@@ -455,6 +470,25 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
         message.content.forEach((part) => {
             if (part.type === 'text') {
                 parts.push({ text: part.text });
+            } else if (part.type === 'tool_call_id') {
+                const name = toolNameMap[part.tool_call_id] ?? 'unknown';
+                parts.push({
+                    functionResponse: {
+                        name: name,
+                        response: { name: name, content: part.content },
+                    },
+                });
+            } else if (part.type === 'tool_calls') {
+                part.tool_calls.forEach((toolCall) => {
+                    parts.push({
+                        functionCall: {
+                            name: toolCall.function.name,
+                            args: tryParse(toolCall.function.arguments) ?? toolCall.function.arguments,
+                        },
+                    });
+
+                    toolNameMap[toolCall.id] = toolCall.function.name;
+                });
             } else if (part.type === 'image_url' && isMultimodal) {
                 const mimeType = part.image_url.url.split(';')[0].split(':')[1];
                 const base64Data = part.image_url.url.split(',')[1];
@@ -473,7 +507,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
                 if (part.text) {
                     contents[contents.length - 1].parts[0].text += '\n\n' + part.text;
                 }
-                if (part.inlineData) {
+                if (part.inlineData || part.functionCall || part.functionResponse) {
                     contents[contents.length - 1].parts.push(part);
                 }
             });

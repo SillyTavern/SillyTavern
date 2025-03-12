@@ -3,6 +3,7 @@ import { extension_settings } from '../extensions.js';
 import { getGroupMembers, groups } from '../group-chats.js';
 import { power_user } from '../power-user.js';
 import { searchCharByName, getTagsList, tags, tag_map } from '../tags.js';
+import { onlyUniqueJson, sortIgnoreCaseAndAccents } from '../utils.js';
 import { world_names } from '../world-info.js';
 import { SlashCommandClosure } from './SlashCommandClosure.js';
 import { SlashCommandEnumValue, enumTypes } from './SlashCommandEnumValue.js';
@@ -251,13 +252,28 @@ export const commonEnumProviders = {
      * @param {boolean} [options.allowVars=false] - Whether to add enum option for variable names
      * @returns {(executor:SlashCommandExecutor, scope:SlashCommandScope) => SlashCommandEnumValue[]}
      */
-    messages: ({ allowIdAfter = false, allowVars = false } = {}) => (_, scope) => {
+    messages: ({ allowIdAfter = false, allowVars = false } = {}) => (executor, scope) => {
+        const nameFilter = executor.namedArgumentList.find(it => it.name == 'name')?.value || '';
         return [
-            ...chat.map((message, index) => new SlashCommandEnumValue(String(index), `${message.name}: ${message.mes}`, enumTypes.number, message.is_user ? enumIcons.user : message.is_system ? enumIcons.system : enumIcons.assistant)),
+            ...chat.map((message, index) => new SlashCommandEnumValue(String(index), `${message.name}: ${message.mes}`, enumTypes.number, message.is_user ? enumIcons.user : message.is_system ? enumIcons.system : enumIcons.assistant)).filter(value => !nameFilter || value.description.startsWith(`${nameFilter}:`)),
             ...allowIdAfter ? [new SlashCommandEnumValue(String(chat.length), '>> After Last Message >>', enumTypes.enum, '➕')] : [],
-            ...allowVars ? commonEnumProviders.variables('all')(_, scope) : [],
+            ...allowVars ? commonEnumProviders.variables('all')(executor, scope) : [],
         ];
     },
+
+    /**
+     * All names used in the current chat.
+     *
+     * @returns {SlashCommandEnumValue[]}
+     */
+    messageNames: () => chat
+        .map(message => ({
+            name: message.name,
+            icon: message.is_user ? enumIcons.user : enumIcons.assistant,
+        }))
+        .filter(onlyUniqueJson)
+        .sort((a, b) => sortIgnoreCaseAndAccents(a.name, b.name))
+        .map(name => new SlashCommandEnumValue(name.name, null, null, name.icon)),
 
     /**
      * All existing worlds / lorebooks

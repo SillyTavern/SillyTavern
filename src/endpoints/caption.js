@@ -1,12 +1,11 @@
 import express from 'express';
-import { jsonParser } from '../express-common.js';
 import { getPipeline, getRawImage } from '../transformers.js';
 
 export const router = express.Router();
 
 const TASK = 'image-to-text';
 
-router.post('/', jsonParser, async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const { image } = req.body;
 

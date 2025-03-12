@@ -100,7 +100,7 @@ const default_wi_format = '{0}';
 const default_new_chat_prompt = '[Start a new Chat]';
 const default_new_group_chat_prompt = '[Start a new group chat. Group members: {{group}}]';
 const default_new_example_chat_prompt = '[Example Chat]';
-const default_continue_nudge_prompt = '[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message: {{lastChatMessage}}]';
+const default_continue_nudge_prompt = '[Continue your last message without repeating its original content.]';
 const default_bias = 'Default (none)';
 const default_personality_format = '{{personality}}';
 const default_scenario_format = '{{scenario}}';
@@ -224,6 +224,88 @@ const sensitiveFields = [
     'custom_include_headers',
 ];
 
+/**
+ * preset_name -> [selector, setting_name, is_checkbox]
+ * @type {Record<string, [string, string, boolean]>}
+ */
+export const settingsToUpdate = {
+    chat_completion_source: ['#chat_completion_source', 'chat_completion_source', false],
+    temperature: ['#temp_openai', 'temp_openai', false],
+    frequency_penalty: ['#freq_pen_openai', 'freq_pen_openai', false],
+    presence_penalty: ['#pres_pen_openai', 'pres_pen_openai', false],
+    top_p: ['#top_p_openai', 'top_p_openai', false],
+    top_k: ['#top_k_openai', 'top_k_openai', false],
+    top_a: ['#top_a_openai', 'top_a_openai', false],
+    min_p: ['#min_p_openai', 'min_p_openai', false],
+    repetition_penalty: ['#repetition_penalty_openai', 'repetition_penalty_openai', false],
+    max_context_unlocked: ['#oai_max_context_unlocked', 'max_context_unlocked', true],
+    openai_model: ['#model_openai_select', 'openai_model', false],
+    claude_model: ['#model_claude_select', 'claude_model', false],
+    windowai_model: ['#model_windowai_select', 'windowai_model', false],
+    openrouter_model: ['#model_openrouter_select', 'openrouter_model', false],
+    openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true],
+    openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false],
+    openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false],
+    openrouter_providers: ['#openrouter_providers_chat', 'openrouter_providers', false],
+    openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true],
+    openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false],
+    ai21_model: ['#model_ai21_select', 'ai21_model', false],
+    mistralai_model: ['#model_mistralai_select', 'mistralai_model', false],
+    cohere_model: ['#model_cohere_select', 'cohere_model', false],
+    perplexity_model: ['#model_perplexity_select', 'perplexity_model', false],
+    groq_model: ['#model_groq_select', 'groq_model', false],
+    nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false],
+    deepseek_model: ['#model_deepseek_select', 'deepseek_model', false],
+    zerooneai_model: ['#model_01ai_select', 'zerooneai_model', false],
+    blockentropy_model: ['#model_blockentropy_select', 'blockentropy_model', false],
+    custom_model: ['#custom_model_id', 'custom_model', false],
+    custom_url: ['#custom_api_url_text', 'custom_url', false],
+    custom_include_body: ['#custom_include_body', 'custom_include_body', false],
+    custom_exclude_body: ['#custom_exclude_body', 'custom_exclude_body', false],
+    custom_include_headers: ['#custom_include_headers', 'custom_include_headers', false],
+    custom_prompt_post_processing: ['#custom_prompt_post_processing', 'custom_prompt_post_processing', false],
+    google_model: ['#model_google_select', 'google_model', false],
+    openai_max_context: ['#openai_max_context', 'openai_max_context', false],
+    openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
+    wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true],
+    names_behavior: ['#names_behavior', 'names_behavior', false],
+    send_if_empty: ['#send_if_empty_textarea', 'send_if_empty', false],
+    impersonation_prompt: ['#impersonation_prompt_textarea', 'impersonation_prompt', false],
+    new_chat_prompt: ['#newchat_prompt_textarea', 'new_chat_prompt', false],
+    new_group_chat_prompt: ['#newgroupchat_prompt_textarea', 'new_group_chat_prompt', false],
+    new_example_chat_prompt: ['#newexamplechat_prompt_textarea', 'new_example_chat_prompt', false],
+    continue_nudge_prompt: ['#continue_nudge_prompt_textarea', 'continue_nudge_prompt', false],
+    bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
+    reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
+    wi_format: ['#wi_format_textarea', 'wi_format', false],
+    scenario_format: ['#scenario_format_textarea', 'scenario_format', false],
+    personality_format: ['#personality_format_textarea', 'personality_format', false],
+    group_nudge_prompt: ['#group_nudge_prompt_textarea', 'group_nudge_prompt', false],
+    stream_openai: ['#stream_toggle', 'stream_openai', true],
+    prompts: ['', 'prompts', false],
+    prompt_order: ['', 'prompt_order', false],
+    api_url_scale: ['#api_url_scale', 'api_url_scale', false],
+    show_external_models: ['#openai_show_external_models', 'show_external_models', true],
+    proxy_password: ['#openai_proxy_password', 'proxy_password', false],
+    assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
+    assistant_impersonation: ['#claude_assistant_impersonation', 'assistant_impersonation', false],
+    claude_use_sysprompt: ['#claude_use_sysprompt', 'claude_use_sysprompt', true],
+    use_makersuite_sysprompt: ['#use_makersuite_sysprompt', 'use_makersuite_sysprompt', true],
+    use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
+    squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
+    image_inlining: ['#openai_image_inlining', 'image_inlining', true],
+    inline_image_quality: ['#openai_inline_image_quality', 'inline_image_quality', false],
+    continue_prefill: ['#continue_prefill', 'continue_prefill', true],
+    continue_postfix: ['#continue_postfix', 'continue_postfix', false],
+    function_calling: ['#openai_function_calling', 'function_calling', true],
+    show_thoughts: ['#openai_show_thoughts', 'show_thoughts', true],
+    reasoning_effort: ['#openai_reasoning_effort', 'reasoning_effort', false],
+    enable_web_search: ['#openai_enable_web_search', 'enable_web_search', true],
+    seed: ['#seed_openai', 'seed', false],
+    n: ['#n_openai', 'n', false],
+    bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true],
+};
+
 const default_settings = {
     preset_settings_openai: 'Default',
     temp_openai: 1.0,
@@ -255,7 +337,7 @@ const default_settings = {
     openai_model: 'gpt-4-turbo',
     claude_model: 'claude-3-5-sonnet-20240620',
     google_model: 'gemini-1.5-pro',
-    ai21_model: 'jamba-1.5-large',
+    ai21_model: 'jamba-1.6-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
@@ -277,7 +359,6 @@ const default_settings = {
     openrouter_providers: [],
     openrouter_allow_fallbacks: true,
     openrouter_middleout: openrouter_middleout_types.ON,
-    jailbreak_system: false,
     reverse_proxy: '',
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
@@ -300,6 +381,7 @@ const default_settings = {
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
     show_thoughts: true,
     reasoning_effort: 'medium',
+    enable_web_search: false,
     seed: -1,
     n: 1,
 };
@@ -335,7 +417,7 @@ const oai_settings = {
     openai_model: 'gpt-4-turbo',
     claude_model: 'claude-3-5-sonnet-20240620',
     google_model: 'gemini-1.5-pro',
-    ai21_model: 'jamba-1.5-large',
+    ai21_model: 'jamba-1.6-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
     perplexity_model: 'sonar-pro',
@@ -357,7 +439,6 @@ const oai_settings = {
     openrouter_providers: [],
     openrouter_allow_fallbacks: true,
     openrouter_middleout: openrouter_middleout_types.ON,
-    jailbreak_system: false,
     reverse_proxy: '',
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
@@ -380,6 +461,7 @@ const oai_settings = {
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
     show_thoughts: true,
     reasoning_effort: 'medium',
+    enable_web_search: false,
     seed: -1,
     n: 1,
 };
@@ -710,7 +792,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     }
 
     // Reserve budget for continue nudge
-    let continueMessage = null;
+    let continueMessageCollection = null;
     if (type === 'continue' && cyclePrompt && !oai_settings.continue_prefill) {
         const promptObject = {
             identifier: 'continueNudge',
@@ -718,10 +800,19 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             content: substituteParamsExtended(oai_settings.continue_nudge_prompt, { lastChatMessage: String(cyclePrompt).trim() }),
             system_prompt: true,
         };
-        const continuePrompt = new Prompt(promptObject);
-        const preparedPrompt = promptManager.preparePrompt(continuePrompt);
-        continueMessage = await Message.fromPromptAsync(preparedPrompt);
-        chatCompletion.reserveBudget(continueMessage);
+        continueMessageCollection = new MessageCollection('continueNudge');
+        const continueMessageIndex = messages.findLastIndex(x => !x.injected);
+        if (continueMessageIndex >= 0) {
+            const continueMessage = messages.splice(continueMessageIndex, 1)[0];
+            const prompt = new Prompt(continueMessage);
+            const chatMessage = await Message.fromPromptAsync(promptManager.preparePrompt(prompt));
+            continueMessageCollection.add(chatMessage);
+        }
+        const continueNudgePrompt = new Prompt(promptObject);
+        const preparedNudgePrompt = promptManager.preparePrompt(continueNudgePrompt);
+        const continueNudgeMessage = await Message.fromPromptAsync(preparedNudgePrompt);
+        continueMessageCollection.add(continueNudgeMessage);
+        chatCompletion.reserveBudget(continueMessageCollection);
     }
 
     const lastChatPrompt = messages[messages.length - 1];
@@ -805,9 +896,9 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     }
 
     // Insert and free continue nudge
-    if (type === 'continue' && continueMessage) {
-        chatCompletion.freeBudget(continueMessage);
-        chatCompletion.insertAtEnd(continueMessage, 'chatHistory');
+    if (type === 'continue' && continueMessageCollection) {
+        chatCompletion.freeBudget(continueMessageCollection);
+        chatCompletion.add(continueMessageCollection, -1);
     }
 }
 
@@ -1921,6 +2012,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         'group_names': getGroupNames(),
         'include_reasoning': Boolean(oai_settings.show_thoughts),
         'reasoning_effort': String(oai_settings.reasoning_effort),
+        'enable_web_search': Boolean(oai_settings.enable_web_search),
     };
 
     if (!canMultiSwipe && ToolManager.canPerformToolCalls(type)) {
@@ -1944,10 +2036,14 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['logprobs'] = 5;
     }
 
-    // Remove logit bias, logprobs and stop strings if it's not supported by the model
-    if (isOAI && oai_settings.openai_model.includes('vision') || isOpenRouter && oai_settings.openrouter_model.includes('vision') || isOAI && oai_settings.openai_model.includes('gpt-4.5-preview')) {
+    // Remove logit bias/logprobs/stop-strings if not supported by the model
+    const isVision = (m) => ['gpt', 'vision'].every(x => m.includes(x));
+    if (isOAI && isVision(oai_settings.openai_model) || isOpenRouter && isVision(oai_settings.openrouter_model)) {
         delete generate_data.logit_bias;
         delete generate_data.stop;
+        delete generate_data.logprobs;
+    }
+    if (isOAI && oai_settings.openai_model.includes('gpt-4.5-preview') || isOpenRouter && oai_settings.openrouter_model.includes('gpt-4.5-preview')) {
         delete generate_data.logprobs;
     }
 
@@ -1989,6 +2085,7 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     if (isMistral) {
         generate_data['safe_prompt'] = false; // already defaults to false, but just incase they change that in the future.
+        generate_data['stop'] = getCustomStoppingStrings(); // Mistral shouldn't have limits on stop strings.
     }
 
     if (isCustom) {
@@ -2882,7 +2979,7 @@ export class ChatCompletion {
     /**
      * Checks if the token budget can afford the tokens of the specified message.
      *
-     * @param {Message} message - The message to check for affordability.
+     * @param {Message|MessageCollection} message - The message to check for affordability.
      * @returns {boolean} True if the budget can afford the message, false otherwise.
      */
     canAfford(message) {
@@ -2970,7 +3067,7 @@ export class ChatCompletion {
      * Validates if the given argument is an instance of MessageCollection.
      * Throws an error if the validation fails.
      *
-     * @param {MessageCollection} collection - The collection to validate.
+     * @param {MessageCollection|Message} collection - The collection to validate.
      */
     validateMessageCollection(collection) {
         if (!(collection instanceof MessageCollection)) {
@@ -2996,7 +3093,7 @@ export class ChatCompletion {
      * Checks if the token budget can afford the tokens of the given message.
      * Throws an error if the budget can't afford the message.
      *
-     * @param {Message} message - The message to check.
+     * @param {Message|MessageCollection} message - The message to check.
      * @param {string} identifier - The identifier of the message.
      */
     checkTokenBudget(message, identifier) {
@@ -3143,6 +3240,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.bypass_status_check = settings.bypass_status_check ?? default_settings.bypass_status_check;
     oai_settings.show_thoughts = settings.show_thoughts ?? default_settings.show_thoughts;
     oai_settings.reasoning_effort = settings.reasoning_effort ?? default_settings.reasoning_effort;
+    oai_settings.enable_web_search = settings.enable_web_search ?? default_settings.enable_web_search;
     oai_settings.seed = settings.seed ?? default_settings.seed;
     oai_settings.n = settings.n ?? default_settings.n;
 
@@ -3166,7 +3264,7 @@ function loadOpenAISettings(data, settings) {
     }
 
     if (oai_settings.ai21_model.startsWith('j2-')) {
-        oai_settings.ai21_model = 'jamba-1.5-large';
+        oai_settings.ai21_model = 'jamba-1.6-large';
     }
 
     if (settings.wrap_in_quotes !== undefined) oai_settings.wrap_in_quotes = !!settings.wrap_in_quotes;
@@ -3219,7 +3317,6 @@ function loadOpenAISettings(data, settings) {
     $('#openai_max_tokens').val(oai_settings.openai_max_tokens);
 
     $('#wrap_in_quotes').prop('checked', oai_settings.wrap_in_quotes);
-    $('#jailbreak_system').prop('checked', oai_settings.jailbreak_system);
     $('#openai_show_external_models').prop('checked', oai_settings.show_external_models);
     $('#openai_external_category').toggle(oai_settings.show_external_models);
     $('#claude_use_sysprompt').prop('checked', oai_settings.claude_use_sysprompt);
@@ -3271,6 +3368,7 @@ function loadOpenAISettings(data, settings) {
     $('#seed_openai').val(oai_settings.seed);
     $('#n_openai').val(oai_settings.n);
     $('#openai_show_thoughts').prop('checked', oai_settings.show_thoughts);
+    $('#openai_enable_web_search').prop('checked', oai_settings.enable_web_search);
 
     $('#openai_reasoning_effort').val(oai_settings.reasoning_effort);
     $(`#openai_reasoning_effort option[value="${oai_settings.reasoning_effort}"]`).prop('selected', true);
@@ -3503,7 +3601,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         names_behavior: settings.names_behavior,
         send_if_empty: settings.send_if_empty,
         jailbreak_prompt: settings.jailbreak_prompt,
-        jailbreak_system: settings.jailbreak_system,
         impersonation_prompt: settings.impersonation_prompt,
         new_chat_prompt: settings.new_chat_prompt,
         new_group_chat_prompt: settings.new_group_chat_prompt,
@@ -3536,6 +3633,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         function_calling: settings.function_calling,
         show_thoughts: settings.show_thoughts,
         reasoning_effort: settings.reasoning_effort,
+        enable_web_search: settings.enable_web_search,
         seed: settings.seed,
         n: settings.n,
     };
@@ -3923,82 +4021,6 @@ async function onLogitBiasPresetDeleteClick() {
 
 // Load OpenAI preset settings
 function onSettingsPresetChange() {
-    const settingsToUpdate = {
-        chat_completion_source: ['#chat_completion_source', 'chat_completion_source', false],
-        temperature: ['#temp_openai', 'temp_openai', false],
-        frequency_penalty: ['#freq_pen_openai', 'freq_pen_openai', false],
-        presence_penalty: ['#pres_pen_openai', 'pres_pen_openai', false],
-        top_p: ['#top_p_openai', 'top_p_openai', false],
-        top_k: ['#top_k_openai', 'top_k_openai', false],
-        top_a: ['#top_a_openai', 'top_a_openai', false],
-        min_p: ['#min_p_openai', 'min_p_openai', false],
-        repetition_penalty: ['#repetition_penalty_openai', 'repetition_penalty_openai', false],
-        max_context_unlocked: ['#oai_max_context_unlocked', 'max_context_unlocked', true],
-        openai_model: ['#model_openai_select', 'openai_model', false],
-        claude_model: ['#model_claude_select', 'claude_model', false],
-        windowai_model: ['#model_windowai_select', 'windowai_model', false],
-        openrouter_model: ['#model_openrouter_select', 'openrouter_model', false],
-        openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true],
-        openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false],
-        openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false],
-        openrouter_providers: ['#openrouter_providers_chat', 'openrouter_providers', false],
-        openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true],
-        openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false],
-        ai21_model: ['#model_ai21_select', 'ai21_model', false],
-        mistralai_model: ['#model_mistralai_select', 'mistralai_model', false],
-        cohere_model: ['#model_cohere_select', 'cohere_model', false],
-        perplexity_model: ['#model_perplexity_select', 'perplexity_model', false],
-        groq_model: ['#model_groq_select', 'groq_model', false],
-        nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false],
-        deepseek_model: ['#model_deepseek_select', 'deepseek_model', false],
-        zerooneai_model: ['#model_01ai_select', 'zerooneai_model', false],
-        blockentropy_model: ['#model_blockentropy_select', 'blockentropy_model', false],
-        custom_model: ['#custom_model_id', 'custom_model', false],
-        custom_url: ['#custom_api_url_text', 'custom_url', false],
-        custom_include_body: ['#custom_include_body', 'custom_include_body', false],
-        custom_exclude_body: ['#custom_exclude_body', 'custom_exclude_body', false],
-        custom_include_headers: ['#custom_include_headers', 'custom_include_headers', false],
-        custom_prompt_post_processing: ['#custom_prompt_post_processing', 'custom_prompt_post_processing', false],
-        google_model: ['#model_google_select', 'google_model', false],
-        openai_max_context: ['#openai_max_context', 'openai_max_context', false],
-        openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
-        wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true],
-        names_behavior: ['#names_behavior', 'names_behavior', false],
-        send_if_empty: ['#send_if_empty_textarea', 'send_if_empty', false],
-        impersonation_prompt: ['#impersonation_prompt_textarea', 'impersonation_prompt', false],
-        new_chat_prompt: ['#newchat_prompt_textarea', 'new_chat_prompt', false],
-        new_group_chat_prompt: ['#newgroupchat_prompt_textarea', 'new_group_chat_prompt', false],
-        new_example_chat_prompt: ['#newexamplechat_prompt_textarea', 'new_example_chat_prompt', false],
-        continue_nudge_prompt: ['#continue_nudge_prompt_textarea', 'continue_nudge_prompt', false],
-        bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
-        reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
-        wi_format: ['#wi_format_textarea', 'wi_format', false],
-        scenario_format: ['#scenario_format_textarea', 'scenario_format', false],
-        personality_format: ['#personality_format_textarea', 'personality_format', false],
-        group_nudge_prompt: ['#group_nudge_prompt_textarea', 'group_nudge_prompt', false],
-        stream_openai: ['#stream_toggle', 'stream_openai', true],
-        prompts: ['', 'prompts', false],
-        prompt_order: ['', 'prompt_order', false],
-        api_url_scale: ['#api_url_scale', 'api_url_scale', false],
-        show_external_models: ['#openai_show_external_models', 'show_external_models', true],
-        proxy_password: ['#openai_proxy_password', 'proxy_password', false],
-        assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
-        assistant_impersonation: ['#claude_assistant_impersonation', 'assistant_impersonation', false],
-        claude_use_sysprompt: ['#claude_use_sysprompt', 'claude_use_sysprompt', true],
-        use_makersuite_sysprompt: ['#use_makersuite_sysprompt', 'use_makersuite_sysprompt', true],
-        use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
-        squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
-        image_inlining: ['#openai_image_inlining', 'image_inlining', true],
-        inline_image_quality: ['#openai_inline_image_quality', 'inline_image_quality', false],
-        continue_prefill: ['#continue_prefill', 'continue_prefill', true],
-        continue_postfix: ['#continue_postfix', 'continue_postfix', false],
-        function_calling: ['#openai_function_calling', 'function_calling', true],
-        show_thoughts: ['#openai_show_thoughts', 'show_thoughts', true],
-        reasoning_effort: ['#openai_reasoning_effort', 'reasoning_effort', false],
-        seed: ['#seed_openai', 'seed', false],
-        n: ['#n_openai', 'n', false],
-    };
-
     const presetNameBefore = oai_settings.preset_settings_openai;
 
     const presetName = $('#settings_preset_openai').find(':selected').text();
@@ -4199,7 +4221,7 @@ async function onModelChange() {
 
     if ($(this).is('#model_ai21_select')) {
         if (value === '' || value.startsWith('j2-')) {
-            value = 'jamba-1.5-large';
+            value = 'jamba-1.6-large';
             $('#model_ai21_select').val(value);
         }
 
@@ -4429,6 +4451,9 @@ async function onModelChange() {
         else if (['c4ai-aya-23-8b', 'c4ai-aya-expanse-8b'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_8k);
         }
+        else if (['c4ai-aya-vision-8b', 'c4ai-aya-vision-32b'].includes(oai_settings.cohere_model)) {
+            $('#openai_max_context').attr('max', max_16k);
+        }
         else {
             $('#openai_max_context').attr('max', max_4k);
         }
@@ -4473,7 +4498,7 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (oai_settings.ai21_model.includes('jamba-1.5') || oai_settings.ai21_model.includes('jamba-instruct')) {
+        } else if (oai_settings.ai21_model.startsWith('jamba-')) {
             $('#openai_max_context').attr('max', max_256k);
         }
 
@@ -5009,6 +5034,8 @@ export function isImageInliningSupported() {
         'pixtral-12b-2409',
         'pixtral-large-latest',
         'pixtral-large-2411',
+        'c4ai-aya-vision-8b',
+        'c4ai-aya-vision-32b',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -5026,6 +5053,8 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.zerooneai_model.includes(model));
         case chat_completion_sources.MISTRALAI:
             return visionSupportedModels.some(model => oai_settings.mistralai_model.includes(model));
+        case chat_completion_sources.COHERE:
+            return visionSupportedModels.some(model => oai_settings.cohere_model.includes(model));
         default:
             return false;
     }
@@ -5561,6 +5590,11 @@ export function initOpenAI() {
 
     $('#openai_reasoning_effort').on('input', function () {
         oai_settings.reasoning_effort = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#openai_enable_web_search').on('input', function () {
+        oai_settings.enable_web_search = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

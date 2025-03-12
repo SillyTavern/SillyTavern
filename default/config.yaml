@@ -1,8 +1,6 @@
 # -- DATA CONFIGURATION --
 # Root directory for user data storage
 dataRoot: ./data
-# The maximum amount of memory that parsed character cards can use in MB
-cardsCacheCapacity: 100
 # -- SERVER CONFIGURATION --
 # Listen for incoming connections
 listen: false
@@ -134,6 +132,14 @@ thumbnails:
   quality: 95
   # Maximum thumbnail dimensions per type [width, height]
   dimensions: { 'bg': [160, 90], 'avatar': [96, 144] }
+
+# PERFORMANCE-RELATED CONFIGURATION
+performance:
+  # Enables lazy loading of character cards. Improves performances with large card libraries.
+  # May have compatibility issues with some extensions.
+  lazyLoadCharacters: false
+  # The maximum amount of memory that parsed character cards can use. Set to 0 to disable memory caching.
+  memoryCacheCapacity: '100mb'
 
 # Allow secret keys exposure via API
 allowKeysExposure: false

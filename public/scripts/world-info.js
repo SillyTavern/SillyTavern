@@ -4264,8 +4264,10 @@ export async function checkWorldInfo(chat, maxContext, isDryRun) {
         if (scanState) {
             const text = successfulNewEntriesForRecursion
                 .map(x => x.content).join('\n');
-            buffer.addRecurse(text);
-            allActivatedText = (text + '\n' + allActivatedText);
+            if (text) {
+                buffer.addRecurse(text);
+                allActivatedText = (text + '\n' + allActivatedText);
+            }
         } else {
             logNextState('[WI] Scan done. No new entries to prompt. Stopping.');
         }

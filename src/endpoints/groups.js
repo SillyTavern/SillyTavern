@@ -5,12 +5,11 @@ import express from 'express';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
-import { jsonParser } from '../express-common.js';
 import { humanizedISO8601DateTime } from '../util.js';
 
 export const router = express.Router();
 
-router.post('/all', jsonParser, (request, response) => {
+router.post('/all', (request, response) => {
     const groups = [];
 
     if (!fs.existsSync(request.user.directories.groups)) {
@@ -54,7 +53,7 @@ router.post('/all', jsonParser, (request, response) => {
     return response.send(groups);
 });
 
-router.post('/create', jsonParser, (request, response) => {
+router.post('/create', (request, response) => {
     if (!request.body) {
         return response.sendStatus(400);
     }
@@ -88,7 +87,7 @@ router.post('/create', jsonParser, (request, response) => {
     return response.send(groupMetadata);
 });
 
-router.post('/edit', jsonParser, (request, response) => {
+router.post('/edit', (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }
@@ -100,7 +99,7 @@ router.post('/edit', jsonParser, (request, response) => {
     return response.send({ ok: true });
 });
 
-router.post('/delete', jsonParser, async (request, response) => {
+router.post('/delete', async (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }

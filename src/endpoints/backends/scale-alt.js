@@ -1,12 +1,11 @@
 import express from 'express';
 import fetch from 'node-fetch';
 
-import { jsonParser } from '../../express-common.js';
 import { readSecret, SECRET_KEYS } from '../secrets.js';
 
 export const router = express.Router();
 
-router.post('/generate', jsonParser, async function (request, response) {
+router.post('/generate', async function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     try {

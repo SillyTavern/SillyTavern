@@ -210,6 +210,12 @@ export const extension_settings = {
      * @type {string[]}
      */
     disabled_attachments: [],
+    gallery: {
+        /** @type {{[characterKey: string]: string}} */
+        folders: {},
+        /** @type {string} */
+        sort: 'dateAsc',
+    },
 };
 
 function showHideExtensionsMenu() {
@@ -1064,7 +1070,7 @@ export async function installExtension(url, global) {
     toastr.success(t`Extension '${response.display_name}' by ${response.author} (version ${response.version}) has been installed successfully!`, t`Extension installation successful`);
     console.debug(`Extension "${response.display_name}" has been installed successfully at ${response.extensionPath}`);
     await loadExtensionSettings({}, false, false);
-    await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+    await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED, response);
 }
 
 /**

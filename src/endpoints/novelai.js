@@ -6,7 +6,6 @@ import express from 'express';
 
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { readAllChunks, extractFileFromZipBuffer, forwardFetchResponse } from '../util.js';
-import { jsonParser } from '../express-common.js';
 
 const API_NOVELAI = 'https://api.novelai.net';
 const TEXT_NOVELAI = 'https://text.novelai.net';
@@ -115,7 +114,7 @@ function getRepPenaltyWhitelist(model) {
 
 export const router = express.Router();
 
-router.post('/status', jsonParser, async function (req, res) {
+router.post('/status', async function (req, res) {
     if (!req.body) return res.sendStatus(400);
     const api_key_novel = readSecret(req.user.directories, SECRET_KEYS.NOVEL);
 
@@ -150,7 +149,7 @@ router.post('/status', jsonParser, async function (req, res) {
     }
 });
 
-router.post('/generate', jsonParser, async function (req, res) {
+router.post('/generate', async function (req, res) {
     if (!req.body) return res.sendStatus(400);
 
     const api_key_novel = readSecret(req.user.directories, SECRET_KEYS.NOVEL);
@@ -284,7 +283,7 @@ router.post('/generate', jsonParser, async function (req, res) {
     }
 });
 
-router.post('/generate-image', jsonParser, async (request, response) => {
+router.post('/generate-image', async (request, response) => {
     if (!request.body) {
         return response.sendStatus(400);
     }
@@ -418,7 +417,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/generate-voice', jsonParser, async (request, response) => {
+router.post('/generate-voice', async (request, response) => {
     const token = readSecret(request.user.directories, SECRET_KEYS.NOVEL);
 
     if (!token) {

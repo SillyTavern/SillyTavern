@@ -19,6 +19,7 @@
                     <select id="caption_multimodal_api" class="flex1 text_pole">
                         <option value="zerooneai">01.AI (Yi)</option>
                         <option value="anthropic">Anthropic</option>
+                        <option value="cohere">Cohere</option>
                         <option value="custom" data-i18n="Custom (OpenAI-compatible)">Custom (OpenAI-compatible)</option>
                         <option value="google">Google AI Studio</option>
                         <option value="groq">Groq</option>
@@ -35,6 +36,8 @@
                 <div class="flex1 flex-container flexFlowColumn flexNoGap">
                     <label for="caption_multimodal_model" data-i18n="Model">Model</label>
                     <select id="caption_multimodal_model" class="flex1 text_pole">
+                        <option data-type="cohere" value="c4ai-aya-vision-8b">c4ai-aya-vision-8b</option>
+                        <option data-type="cohere" value="c4ai-aya-vision-32b">c4ai-aya-vision-32b</option>
                         <option data-type="mistral" value="pixtral-12b-latest">pixtral-12b-latest</option>
                         <option data-type="mistral" value="pixtral-12b-2409">pixtral-12b-2409</option>
                         <option data-type="mistral" value="pixtral-large-latest">pixtral-large-latest</option>

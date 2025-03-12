@@ -1,0 +1,16 @@
+{
+  "name": "sillytavern-electron",
+  "version": "1.0.0",
+  "description": "Electron server for SillyTavern",
+  "license": "AGPL-3.0",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^35.0.0"
+  }
+}

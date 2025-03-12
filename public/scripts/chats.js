@@ -130,9 +130,10 @@ function getConverter(type) {
  * @param {number} start Starting message ID
  * @param {number} end Ending message ID (inclusive)
  * @param {boolean} unhide If true, unhide the messages instead.
+ * @param {string} nameFitler Optional name filter
  * @returns {Promise<void>}
  */
-export async function hideChatMessageRange(start, end, unhide) {
+export async function hideChatMessageRange(start, end, unhide, nameFitler = null) {
     if (isNaN(start)) return;
     if (!end) end = start;
     const hide = !unhide;
@@ -140,6 +141,7 @@ export async function hideChatMessageRange(start, end, unhide) {
     for (let messageId = start; messageId <= end; messageId++) {
         const message = chat[messageId];
         if (!message) continue;
+        if (nameFitler && message.name !== nameFitler) continue;
 
         message.is_system = hide;
 
@@ -1506,7 +1508,7 @@ jQuery(function () {
         embedMessageFile(messageId, messageBlock);
     });
 
-    $(document).on('click', '.editor_maximize', function () {
+    $(document).on('click', '.editor_maximize', async function () {
         const broId = $(this).attr('data-for');
         const bro = $(`#${broId}`);
         const contentEditable = bro.is('[contenteditable]');
@@ -1525,6 +1527,7 @@ jQuery(function () {
         textarea.value = String(contentEditable ? bro[0].innerText : bro.val());
         textarea.classList.add('height100p', 'wide100p', 'maximized_textarea');
         bro.hasClass('monospace') && textarea.classList.add('monospace');
+        bro.hasClass('mdHotkeys') && textarea.classList.add('mdHotkeys');
         textarea.addEventListener('input', function () {
             if (contentEditable) {
                 bro[0].innerText = textarea.value;
@@ -1565,7 +1568,7 @@ jQuery(function () {
             });
         }
 
-        callGenericPopup(wrapper, POPUP_TYPE.TEXT, '', { wide: true, large: true });
+        await callGenericPopup(wrapper, POPUP_TYPE.TEXT, '', { wide: true, large: true });
     });
 
     $(document).on('click', 'body.documentstyle .mes .mes_text', function () {

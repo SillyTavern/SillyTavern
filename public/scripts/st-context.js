@@ -47,6 +47,7 @@ import {
     updateMessageBlock,
     printMessages,
     clearChat,
+    unshallowCharacter,
 } from '../script.js';
 import {
     extension_settings,
@@ -55,7 +56,7 @@ import {
     renderExtensionTemplateAsync,
     writeExtensionField,
 } from './extensions.js';
-import { groups, openGroupChat, selected_group } from './group-chats.js';
+import { groups, openGroupChat, selected_group, unshallowGroupMembers } from './group-chats.js';
 import { addLocaleData, getCurrentLocale, t, translate } from './i18n.js';
 import { hideLoader, showLoader } from './loader.js';
 import { MacrosParser } from './macros.js';
@@ -77,6 +78,8 @@ import { accountStorage } from './util/AccountStorage.js';
 import { timestampToMoment, uuidv4 } from './utils.js';
 import { getGlobalVariable, getLocalVariable, setGlobalVariable, setLocalVariable } from './variables.js';
 import { convertCharacterBook, loadWorldInfo, saveWorldInfo, updateWorldInfoList } from './world-info.js';
+import { ChatCompletionService, TextCompletionService } from './custom-request.js';
+import { updateReasoningUI } from './reasoning.js';
 
 export function getContext() {
     return {
@@ -207,6 +210,11 @@ export function getContext() {
         getChatCompletionModel,
         printMessages,
         clearChat,
+        ChatCompletionService,
+        TextCompletionService,
+        updateReasoningUI,
+        unshallowCharacter,
+        unshallowGroupMembers,
     };
 }
 
