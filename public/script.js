@@ -3961,8 +3961,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     const promptReasoning = new PromptReasoning();
     for (let i = coreChat.length - 1; i >= 0; i--) {
-        const depth = coreChat.length - i - 1;
-        const isPrefix = isContinue && i === coreChat.length - (isContinue ? 2 : 1);
+        const depth = coreChat.length - i - (isContinue ? 2 : 1);
+        const isPrefix = isContinue && i === coreChat.length - 1;
         coreChat[i] = {
             ...coreChat[i],
             mes: promptReasoning.addToMessage(

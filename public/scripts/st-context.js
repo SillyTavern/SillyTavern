@@ -80,7 +80,7 @@ import { getGlobalVariable, getLocalVariable, setGlobalVariable, setLocalVariabl
 import { convertCharacterBook, loadWorldInfo, saveWorldInfo, updateWorldInfoList } from './world-info.js';
 import { ChatCompletionService, TextCompletionService } from './custom-request.js';
 import { ConnectionManagerRequestService } from './extensions/shared.js';
-import { updateReasoningUI } from './reasoning.js';
+import { updateReasoningUI, parseReasoningFromString } from './reasoning.js';
 
 export function getContext() {
     return {
@@ -215,6 +215,7 @@ export function getContext() {
         TextCompletionService,
         ConnectionManagerRequestService,
         updateReasoningUI,
+        parseReasoningFromString,
         unshallowCharacter,
         unshallowGroupMembers,
     };
