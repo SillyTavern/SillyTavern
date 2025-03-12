@@ -1,7 +1,9 @@
 import { CONNECT_API_MAP, getRequestHeaders } from '../../script.js';
 import { extension_settings, openThirdPartyExtensionMenu } from '../extensions.js';
 import { t } from '../i18n.js';
+import { formatInstructModeChat, formatInstructModePrompt, names_behavior_types } from '../instruct-mode.js';
 import { oai_settings } from '../openai.js';
+import { getPresetManager } from '../preset-manager.js';
 import { SECRET_KEYS, secret_state } from '../secrets.js';
 import { textgen_types, textgenerationwebui_settings } from '../textgen-settings.js';
 import { getTokenCountAsync } from '../tokenizers.js';
@@ -282,6 +284,7 @@ export class ConnectionManagerRequestService {
     static defaultSendRequestParams = {
         extractData: true,
         includePreset: true,
+        includeInstruct: true,
     };
 
     static getAllowedTypes() {
@@ -295,11 +298,11 @@ export class ConnectionManagerRequestService {
      * @param {string} profileId
      * @param {string | import('../custom-request.js').ChatCompletionMessage[]} prompt
      * @param {number} maxTokens
-     * @param {{extractData?: boolean, includePreset?: boolean}} custom - default values are true
+     * @param {{extractData?: boolean, includePreset?: boolean, includeInstruct?: boolean}} custom - default values are true
      * @returns {Promise<import('../custom-request.js').ExtractedData | any>} Extracted data or the raw response
      */
     static async sendRequest(profileId, prompt, maxTokens, custom = this.defaultSendRequestParams) {
-        const { extractData, includePreset } = { ...this.defaultSendRequestParams, ...custom };
+        const { extractData, includePreset, includeInstruct } = { ...this.defaultSendRequestParams, ...custom };
 
         const context = SillyTavern.getContext();
         if (context.extensionSettings.disabledExtensions.includes('connection-manager')) {
@@ -333,8 +336,36 @@ export class ConnectionManagerRequestService {
                         throw new Error(`API type ${selectedApiMap.selected} does not support text completions`);
                     }
 
+                    /**
+                     * @type {string}
+                     */
+                    let formattedPrompt;
+                    if (profile.instruct && includeInstruct && Array.isArray(prompt)) {
+                        let instructPreset = getPresetManager('instruct')?.getCompletionPresetByName(profile.instruct);
+                        if (instructPreset) {
+                            instructPreset = structuredClone(instructPreset);
+                            instructPreset.macro = false;
+                            instructPreset.names_behavior = names_behavior_types.NONE;
+                            formattedPrompt = prompt.map((m) => formatInstructModeChat(
+                                m.role,
+                                m.content,
+                                m.role === 'user',
+                                false,
+                                undefined,
+                                undefined,
+                                undefined,
+                                undefined,
+                                instructPreset
+                            )).join('');
+                            formattedPrompt += formatInstructModePrompt(undefined, false, undefined, undefined, undefined, false, false, instructPreset);
+                        } else {
+                            formattedPrompt = prompt.map((m) => m.content).join('\n\n');
+                        }
+                    } else {
+                        formattedPrompt = Array.isArray(prompt) ? prompt.map((m) => m.content).join('\n\n') : prompt;
+                    }
                     const data = context.TextCompletionService.createRequestData({
-                        prompt: Array.isArray(prompt) ? prompt.map((m) => m.content).join('\n\n') : prompt,
+                        prompt: formattedPrompt,
                         max_tokens: maxTokens,
                         model: profile.model,
                         api_type: selectedApiMap.type,
