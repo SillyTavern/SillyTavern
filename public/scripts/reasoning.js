@@ -57,19 +57,24 @@ function toggleReasoningAutoExpand() {
  * @param {object} data Response data
  * @returns {string} Extracted reasoning
  */
-export function extractReasoningFromData(data) {
-    switch (main_api) {
+export function extractReasoningFromData(data, {
+    mainApi = null,
+    ignoreShowThoughts = false,
+    textGenType = null,
+    chatCompletionSource = null
+} = {}) {
+    switch (mainApi ?? main_api) {
         case 'textgenerationwebui':
-            switch (textgenerationwebui_settings.type) {
+            switch (textGenType ?? textgenerationwebui_settings.type) {
                 case textgen_types.OPENROUTER:
                     return data?.choices?.[0]?.reasoning ?? '';
             }
             break;
 
         case 'openai':
-            if (!oai_settings.show_thoughts) break;
+            if (!ignoreShowThoughts && !oai_settings.show_thoughts) break;
 
-            switch (oai_settings.chat_completion_source) {
+            switch (chatCompletionSource ?? oai_settings.chat_completion_source) {
                 case chat_completion_sources.DEEPSEEK:
                     return data?.choices?.[0]?.message?.reasoning_content ?? '';
                 case chat_completion_sources.OPENROUTER:
@@ -1075,7 +1080,7 @@ export function removeReasoningFromString(str) {
  * @param {boolean} [options.strict=true] Whether the reasoning block **has** to be at the beginning of the provided string (excluding whitespaces), or can be anywhere in it
  * @returns {ParsedReasoning|null} Parsed reasoning block and message content
  */
-function parseReasoningFromString(str, { strict = true } = {}) {
+export function parseReasoningFromString(str, { strict = true } = {}) {
     // Both prefix and suffix must be defined
     if (!power_user.reasoning.prefix || !power_user.reasoning.suffix) {
         return null;

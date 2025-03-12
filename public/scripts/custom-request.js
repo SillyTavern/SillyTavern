@@ -1,8 +1,7 @@
 import { getPresetManager } from './preset-manager.js';
 import { extractMessageFromData, getGenerateUrl, getRequestHeaders } from '../script.js';
-import { APHRODITE_DEFAULT_ORDER, getTextGenServer, textgen_types } from './textgen-settings.js';
-import { chat_completion_sources } from './openai.js';
-import { arraysEqual, onlyUnique } from './utils.js';
+import { getTextGenServer } from './textgen-settings.js';
+import { extractReasoningFromData } from './reasoning.js';
 
 // #region Type Definitions
 /**
@@ -13,6 +12,7 @@ import { arraysEqual, onlyUnique } from './utils.js';
  * @property {string} api_type - Type of API to use
  * @property {string} [api_server] - Optional API server URL
  * @property {number} [temperature] - Optional temperature parameter
+ * @property {number} [min_p] - Optional min_p parameter
  */
 
 /** @typedef {Record<string, any> & TextCompletionRequestBase} TextCompletionRequest */
@@ -46,6 +46,13 @@ import { arraysEqual, onlyUnique } from './utils.js';
  */
 
 /** @typedef {Record<string, any> & ChatCompletionPayloadBase} ChatCompletionPayload */
+
+/**
+ * @typedef {Object} ExtractedData
+ * @property {string} content - Extracted content.
+ * @property {string} reasoning - Extracted reasoning.
+ */
+
 // #endregion
 
 /**
@@ -58,7 +65,7 @@ export class TextCompletionService {
      * @param {TextCompletionRequest} custom
      * @returns {TextCompletionPayload}
      */
-    static createRequestData({ prompt, max_tokens, model, api_type, api_server, temperature, ...props }) {
+    static createRequestData({ prompt, max_tokens, model, api_type, api_server, temperature, min_p, ...props }) {
         const payload = {
             ...props,
             prompt,
@@ -68,6 +75,7 @@ export class TextCompletionService {
             api_type,
             api_server: api_server ?? getTextGenServer(api_type),
             temperature,
+            min_p,
             stream: false,
         };
 
@@ -85,7 +93,7 @@ export class TextCompletionService {
      * Sends a text completion request to the specified server
      * @param {TextCompletionPayload} data Request data
      * @param {boolean?} extractData Extract message from the response. Default true
-     * @returns {Promise<string | any>} Extracted data or the raw response
+     * @returns {Promise<ExtractedData | any>} Extracted data or the raw response
      * @throws {Error}
      */
     static async sendRequest(data, extractData = true) {
@@ -102,14 +110,25 @@ export class TextCompletionService {
             throw json;
         }
 
-        return extractData ? extractMessageFromData(json, this.TYPE) : json;
+        if (!extractData) {
+            return json;
+        }
+
+        return {
+            content: extractMessageFromData(json, this.TYPE),
+            reasoning: extractReasoningFromData(json, {
+                mainApi: this.TYPE,
+                textGenType: data.api_type,
+                ignoreShowThoughts: true,
+            }),
+        };
     }
 
     /**
      * @param {string} presetName
      * @param {TextCompletionRequest} custom
      * @param {boolean?} extractData Extract message from the response. Default true
-     * @returns {Promise<string | any>} Extracted data or the raw response
+     * @returns {Promise<ExtractedData | any>} Extracted data or the raw response
      * @throws {Error}
      */
     static async sendRequestWithPreset(presetName, custom, extractData = true) {
@@ -148,6 +167,7 @@ export class TextCompletionService {
         // Initialize base payload with common parameters
         let payload = {
             'temperature': settings.temp ? Number(settings.temp) : undefined,
+            'min_p': settings.min_p ? Number(settings.min_p) : undefined,
         };
 
         // Remove undefined values to avoid API errors
@@ -196,7 +216,7 @@ export class ChatCompletionService {
      * Sends a chat completion request
      * @param {ChatCompletionPayload} data Request data
      * @param {boolean?} extractData Extract message from the response. Default true
-     * @returns {Promise<string | any>} Extracted data or the raw response
+     * @returns {Promise<ExtractedData | any>} Extracted data or the raw response
      * @throws {Error}
      */
     static async sendRequest(data, extractData = true) {
@@ -213,14 +233,25 @@ export class ChatCompletionService {
             throw json;
         }
 
-        return extractData ? extractMessageFromData(json, this.TYPE) : json;
+        if (!extractData) {
+            return json;
+        }
+
+        return {
+            content: extractMessageFromData(json, this.TYPE),
+            reasoning: extractReasoningFromData(json, {
+                mainApi: this.TYPE,
+                textGenType: data.chat_completion_source,
+                ignoreShowThoughts: true,
+            }),
+        };
     }
 
     /**
      * @param {string} presetName
      * @param {ChatCompletionPayload} custom
      * @param {boolean} extractData Extract message from the response. Default true
-     * @returns {Promise<string | any>} Extracted data or the raw response
+     * @returns {Promise<ExtractedData | any>} Extracted data or the raw response
      * @throws {Error}
      */
     static async sendRequestWithPreset(presetName, custom, extractData = true) {

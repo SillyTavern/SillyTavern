@@ -544,7 +544,10 @@ async function summarizeCallback(args, text) {
                     toastr.warning('No connection profile selected');
                     return '';
                 }
-                return await ConnectionManagerRequestService.sendRequest(
+                /**
+                 * @type {import('../../custom-request.js').ExtractedData}
+                 */
+                const data = await ConnectionManagerRequestService.sendRequest(
                     extension_settings.memory.profileId,
                     [
                         { role: 'system', content: prompt },
@@ -552,6 +555,7 @@ async function summarizeCallback(args, text) {
                     ],
                     2048,
                 );
+                return data.content;
             }
             default:
                 toastr.warning('Invalid summarization source specified');
@@ -690,7 +694,10 @@ async function summarizeChatWithProfile(context, force) {
             return null;
         }
 
-        summary = await ConnectionManagerRequestService.sendRequest(
+        /**
+         * @type {import('../../custom-request.js').ExtractedData}
+         */
+        const data = await ConnectionManagerRequestService.sendRequest(
             extension_settings.memory.profileId,
             [
                 { role: 'system', content: prompt },
@@ -698,6 +705,7 @@ async function summarizeChatWithProfile(context, force) {
             ],
             2048,
         );
+        summary = data.content;
         index = lastUsedIndex;
     } catch (error) {
         toastr.error(String(error), 'Failed to summarize text');

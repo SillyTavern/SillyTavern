@@ -296,7 +296,7 @@ export class ConnectionManagerRequestService {
      * @param {string | import('../custom-request.js').ChatCompletionMessage[]} prompt
      * @param {number} maxTokens
      * @param {{extractData?: boolean, includePreset?: boolean}} custom - default values are true
-     * @returns {Promise<string | any>} Extracted data or the raw response
+     * @returns {Promise<import('../custom-request.js').ExtractedData | any>} Extracted data or the raw response
      */
     static async sendRequest(profileId, prompt, maxTokens, custom = this.defaultSendRequestParams) {
         const { extractData, includePreset } = { ...this.defaultSendRequestParams, ...custom };
