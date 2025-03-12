@@ -1785,6 +1785,7 @@ export async function getCharacters() {
         body: JSON.stringify({}),
     });
     if (response.ok === true) {
+        const previousAvatar = this_chid !== undefined ? characters[this_chid]?.avatar : null;
         characters.splice(0, characters.length);
         const getData = await response.json();
         for (let i = 0; i < getData.length; i++) {
@@ -1798,8 +1799,16 @@ export async function getCharacters() {
 
             characters[i]['chat'] = String(characters[i]['chat']);
         }
-        if (this_chid !== undefined) {
-            $('#avatar_url_pole').val(characters[this_chid].avatar);
+
+        if (previousAvatar) {
+            const newCharacterId = characters.findIndex(x => x.avatar === previousAvatar);
+            if (newCharacterId >= 0) {
+                setCharacterId(newCharacterId);
+                $('#avatar_url_pole').val(previousAvatar);
+            } else {
+                await Popup.show.text(t`ERROR: The active character is no longer available.`, t`The page will be refreshed to prevent data loss. Press "OK" to continue.`);
+                return location.reload();
+            }
         }
 
         await getGroups();
