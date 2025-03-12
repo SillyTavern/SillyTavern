@@ -325,7 +325,7 @@ export class ConnectionManagerRequestService {
                         chat_completion_source: selectedApiMap.source,
                     }, {
                         presetName: includePreset ? profile.preset : undefined,
-                    });
+                    }, extractData);
                 }
                 case 'textgenerationwebui': {
                     if (!selectedApiMap.type) {
@@ -341,7 +341,7 @@ export class ConnectionManagerRequestService {
                     }, {
                         instructName: includeInstruct ? profile.instruct : undefined,
                         presetName: includePreset ? profile.preset : undefined,
-                    });
+                    }, extractData);
                 }
                 default: {
                     throw new Error(`Unknown API type ${selectedApiMap.selected}`);

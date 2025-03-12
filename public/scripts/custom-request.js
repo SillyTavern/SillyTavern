@@ -126,8 +126,8 @@ export class TextCompletionService {
      * Process and send a text completion request with optional preset & instruct
      * @param {Record<string, any> & TextCompletionRequestBase & {prompt: ChatCompletionMessage[] |string}} custom
      * @param {Object} options - Configuration options
-     * @param {string} [options.presetName] - Name of the preset to use for generation settings
-     * @param {string} [options.instructName] - Name of instruct preset for message formatting
+     * @param {string?} [options.presetName] - Name of the preset to use for generation settings
+     * @param {string?} [options.instructName] - Name of instruct preset for message formatting
      * @param {boolean} extractData - Whether to extract structured data from response
      * @returns {Promise<ExtractedData | any>} Extracted data or the raw response
      * @throws {Error}
@@ -322,7 +322,7 @@ export class ChatCompletionService {
      * Process and send a chat completion request with optional preset
      * @param {ChatCompletionPayload} custom
      * @param {Object} options - Configuration options
-     * @param {string} [options.presetName] - Name of the preset to use for generation settings
+     * @param {string?} [options.presetName] - Name of the preset to use for generation settings
      * @param {boolean} extractData - Whether to extract structured data from response
      * @returns {Promise<ExtractedData | any>} Extracted data or the raw response
      * @throws {Error}
