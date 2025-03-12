@@ -1804,6 +1804,7 @@ export async function getCharacters() {
             const newCharacterId = characters.findIndex(x => x.avatar === previousAvatar);
             if (newCharacterId >= 0) {
                 setCharacterId(newCharacterId);
+                await unshallowCharacter(String(newCharacterId));
                 $('#avatar_url_pole').val(previousAvatar);
             } else {
                 await Popup.show.text(t`ERROR: The active character is no longer available.`, t`The page will be refreshed to prevent data loss. Press "OK" to continue.`);
