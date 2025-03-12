@@ -667,11 +667,21 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'hide',
         callback: hideMessageCallback,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'only hide messages from a certain character or persona',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.messageNames,
+                isRequired: false,
+                acceptsMultiple: false,
+            }),
+        ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'message index (starts with 0) or range',
+                description: 'message index (starts with 0) or range, defaults to the last message index if not provided',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
-                isRequired: true,
+                isRequired: false,
                 enumProvider: commonEnumProviders.messages(),
             }),
         ],
@@ -680,11 +690,21 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'unhide',
         callback: unhideMessageCallback,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'only unhide messages from a certain character or persona',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.messageNames,
+                isRequired: false,
+                acceptsMultiple: false,
+            }),
+        ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'message index (starts with 0) or range',
+                description: 'message index (starts with 0) or range, defaults to the last message index if not provided',
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
-                isRequired: true,
+                isRequired: false,
                 enumProvider: commonEnumProviders.messages(),
             }),
         ],
@@ -3034,37 +3054,29 @@ async function askCharacter(args, text) {
     return await slashCommandReturnHelper.doReturn(args.return ?? 'pipe', message, { objectToStringFunc: x => x.mes });
 }
 
-async function hideMessageCallback(_, arg) {
-    if (!arg) {
-        console.warn('WARN: No argument provided for /hide command');
-        return '';
-    }
-
-    const range = stringToRange(arg, 0, chat.length - 1);
+async function hideMessageCallback(args, value) {
+    const range = value ? stringToRange(value, 0, chat.length - 1) : { start: chat.length - 1, end: chat.length - 1 };
 
     if (!range) {
-        console.warn(`WARN: Invalid range provided for /hide command: ${arg}`);
+        console.warn(`WARN: Invalid range provided for /hide command: ${value}`);
         return '';
     }
 
-    await hideChatMessageRange(range.start, range.end, false);
+    const nameFilter = String(args.name ?? '').trim();
+    await hideChatMessageRange(range.start, range.end, false, nameFilter);
     return '';
 }
 
-async function unhideMessageCallback(_, arg) {
-    if (!arg) {
-        console.warn('WARN: No argument provided for /unhide command');
-        return '';
-    }
-
-    const range = stringToRange(arg, 0, chat.length - 1);
+async function unhideMessageCallback(args, value) {
+    const range = value ? stringToRange(value, 0, chat.length - 1) : { start: chat.length - 1, end: chat.length - 1 };
 
     if (!range) {
-        console.warn(`WARN: Invalid range provided for /unhide command: ${arg}`);
+        console.warn(`WARN: Invalid range provided for /unhide command: ${value}`);
         return '';
     }
 
-    await hideChatMessageRange(range.start, range.end, true);
+    const nameFilter = String(args.name ?? '').trim();
+    await hideChatMessageRange(range.start, range.end, true, nameFilter);
     return '';
 }
 
