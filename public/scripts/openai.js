@@ -4323,6 +4323,8 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_32k);
         } else if (value.includes('gemini-1.0-ultra') || value === 'gemini-ultra') {
             $('#openai_max_context').attr('max', max_32k);
+        } else if (['gemma-3-27b-it'].includes(value)) {
+            $('#openai_max_context').attr('max', max_128k);
         } else {
             $('#openai_max_context').attr('max', max_4k);
         }
