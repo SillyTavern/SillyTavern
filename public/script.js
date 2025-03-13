@@ -3375,6 +3375,11 @@ class StreamingProcessor {
             chat[messageId].swipe_info.push(...swipeInfoArray);
         }
 
+        if (this.image) {
+            await processImageAttachment(chat[messageId], { imageUrl: this.image, parsedImage: null });
+            appendMediaToMessage(chat[messageId], $(this.messageDom));
+        }
+
         if (this.type !== 'impersonate') {
             await eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId, this.type);
             await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, this.messageId, this.type);
