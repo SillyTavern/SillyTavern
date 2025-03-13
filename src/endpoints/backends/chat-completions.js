@@ -338,6 +338,7 @@ async function sendMakerSuiteRequest(request, response) {
     const model = String(request.body.model);
     const stream = Boolean(request.body.stream);
     const enableWebSearch = Boolean(request.body.enable_web_search);
+    const requestImages = Boolean(request.body.request_images);
     const isThinking = model.includes('thinking');
 
     const generationConfig = {
@@ -356,12 +357,12 @@ async function sendMakerSuiteRequest(request, response) {
             delete generationConfig.stopSequences;
         }
 
-        const useMultiModal = (model.includes('gemini-2.0-flash-exp'));
+        const useMultiModal = requestImages && (model.includes('gemini-2.0-flash-exp'));
         if (useMultiModal) {
             generationConfig.responseModalities = ['text', 'image'];
         }
 
-        const useSystemPrompt = (
+        const useSystemPrompt = !useMultiModal && (
             model.includes('gemini-2.0-pro') ||
             model.includes('gemini-2.0-flash') ||
             model.includes('gemini-2.0-flash-thinking-exp') ||
@@ -384,14 +385,14 @@ async function sendMakerSuiteRequest(request, response) {
         }
         // Most of the other models allow for setting the threshold of filters, except for HARM_CATEGORY_CIVIC_INTEGRITY, to OFF.
 
-        if (enableWebSearch) {
+        if (enableWebSearch && !useMultiModal) {
             const searchTool = model.includes('1.5') || model.includes('1.0')
                 ? ({ google_search_retrieval: {} })
                 : ({ google_search: {} });
             tools.push(searchTool);
         }
 
-        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0 && !useMultiModal) {
             const functionDeclarations = [];
             for (const tool of request.body.tools) {
                 if (tool.type === 'function') {
