@@ -4454,6 +4454,9 @@ async function onModelChange() {
         else if (['c4ai-aya-vision-8b', 'c4ai-aya-vision-32b'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_16k);
         }
+        else if (oai_settings.cohere_model.includes('command-a')) {
+            $('#openai_max_context').attr('max', max_256k);
+        }
         else {
             $('#openai_max_context').attr('max', max_4k);
         }
