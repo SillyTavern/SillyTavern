@@ -171,6 +171,7 @@ import {
     isElementInViewport,
     copyText,
     escapeHtml,
+    saveBase64AsFile,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -3203,6 +3204,8 @@ class StreamingProcessor {
         this.reasoningHandler = new ReasoningHandler(timeStarted);
         /** @type {PromptReasoning} */
         this.promptReasoning = promptReasoning;
+        /** @type {string} */
+        this.image = '';
     }
 
     /**
@@ -3250,7 +3253,7 @@ class StreamingProcessor {
             this.sendTextarea.value = '';
             this.sendTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         } else {
-            await saveReply(this.type, text, true, '', [], '');
+            await saveReply(this.type, text, true, '', [], '', '');
             messageId = chat.length - 1;
             await this.#checkDomElements(messageId, continueOnReasoning);
             this.markUIGenStarted();
@@ -3468,6 +3471,7 @@ class StreamingProcessor {
                 }
                 // Get the updated reasoning string into the handler
                 this.reasoningHandler.updateReasoning(this.messageId, state?.reasoning);
+                this.image = state?.image ?? '';
                 await eventSource.emit(event_types.STREAM_TOKEN_RECEIVED, text);
                 await sw.tick(async () => await this.onProgressStreaming(this.messageId, this.continueMessage + text));
             }
@@ -4866,6 +4870,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let getMessage = extractMessageFromData(data);
         let title = extractTitleFromData(data);
         let reasoning = extractReasoningFromData(data);
+        let image = extractImageFromData(data);
         kobold_horde_model = title;
 
         const swipes = extractMultiSwipes(data, type);
@@ -4898,10 +4903,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         else {
             // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
             if (originalType !== 'continue') {
-                ({ type, getMessage } = await saveReply(type, getMessage, false, title, swipes, reasoning));
+                ({ type, getMessage } = await saveReply(type, getMessage, false, title, swipes, reasoning, image));
             }
             else {
-                ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes, reasoning));
+                ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes, reasoning, image));
             }
 
             // This relies on `saveReply` having been called to add the message to the chat, so it must be last.
@@ -5725,6 +5730,22 @@ function extractTitleFromData(data) {
     return undefined;
 }
 
+function extractImageFromData(data) {
+    if (main_api === 'openai') {
+        switch (oai_settings.chat_completion_source) {
+            case chat_completion_sources.MAKERSUITE: {
+                const inlineData = data?.responseContent?.parts?.find(x => x.inlineData)?.inlineData;
+                if (inlineData) {
+                    return `data:${inlineData.mimeType};base64,${inlineData.data}`;
+                }
+            } break;
+
+        }
+    }
+
+    return undefined;
+}
+
 /**
  * parseAndSaveLogprobs receives the full data response for a non-streaming
  * generation, parses logprobs for all tokens in the message, and saves them
@@ -5974,7 +5995,40 @@ export function cleanUpMessage(getMessage, isImpersonate, isContinue, displayInc
     return getMessage;
 }
 
-export async function saveReply(type, getMessage, fromStreaming, title, swipes, reasoning) {
+/**
+ * Adds an image to the message.
+ * @returns {Promise<void>}
+ */
+async function processImageAttachment(message, { parsedImage, imageUrl }) {
+    if (parsedImage?.image) {
+        return saveImageToMessage(parsedImage, message);
+    }
+
+    if (!imageUrl) {
+        return;
+    }
+
+    if (isDataURL(imageUrl)) {
+        const [mime, base64] = /^data:(.*?);base64,(.*)$/.exec(imageUrl).slice(1);
+        const url = await saveBase64AsFile(base64, message.name, Date.now().toString(), mime.split('/')[1]);
+        saveImageToMessage({ image: url, inline: true }, message);
+    } else {
+        saveImageToMessage({ image: imageUrl, inline: true }, message);
+    }
+}
+
+/**
+ * Saves a resulting message to the chat.
+ * @param {string} type Type of generation
+ * @param {string} getMessage Generated message
+ * @param {boolean} fromStreaming If the message is from streaming
+ * @param {string} title Message tooltip
+ * @param {string[]} swipes Extra swipes
+ * @param {string} reasoning Message reasoning
+ * @param {string} imageUrl Link to an image
+ * @returns {Promise<{type: string, getMessage: string}>} Promise when the message is saved
+ */
+export async function saveReply(type, getMessage, fromStreaming, title, swipes, reasoning, imageUrl) {
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
@@ -5995,8 +6049,8 @@ export async function saveReply(type, getMessage, fromStreaming, title, swipes, 
 
     let oldMessage = '';
     const generationFinished = new Date();
-    const img = extractImageFromMessage(getMessage);
-    getMessage = img.getMessage;
+    const parsedImage = extractImageFromMessage(getMessage);
+    getMessage = parsedImage.getMessage;
     if (type === 'swipe') {
         oldMessage = chat[chat.length - 1]['mes'];
         chat[chat.length - 1]['swipes'].length++;
@@ -6010,6 +6064,7 @@ export async function saveReply(type, getMessage, fromStreaming, title, swipes, 
             chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
             chat[chat.length - 1]['extra']['reasoning'] = reasoning;
             chat[chat.length - 1]['extra']['reasoning_duration'] = null;
+            await processImageAttachment(chat[chat.length - 1], { parsedImage, imageUrl });
             if (power_user.message_token_count_enabled) {
                 const tokenCountText = (reasoning || '') + chat[chat.length - 1]['mes'];
                 chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(tokenCountText, 0);
@@ -6033,6 +6088,7 @@ export async function saveReply(type, getMessage, fromStreaming, title, swipes, 
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
         chat[chat.length - 1]['extra']['reasoning'] = reasoning;
         chat[chat.length - 1]['extra']['reasoning_duration'] = null;
+        await processImageAttachment(chat[chat.length - 1], { parsedImage, imageUrl });
         if (power_user.message_token_count_enabled) {
             const tokenCountText = (reasoning || '') + chat[chat.length - 1]['mes'];
             chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(tokenCountText, 0);
@@ -6052,6 +6108,7 @@ export async function saveReply(type, getMessage, fromStreaming, title, swipes, 
         chat[chat.length - 1]['extra']['api'] = getGeneratingApi();
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
         chat[chat.length - 1]['extra']['reasoning'] += reasoning;
+        await processImageAttachment(chat[chat.length - 1], { parsedImage, imageUrl });
         // We don't know if the reasoning duration extended, so we don't update it here on purpose.
         if (power_user.message_token_count_enabled) {
             const tokenCountText = (reasoning || '') + chat[chat.length - 1]['mes'];
@@ -6097,7 +6154,7 @@ export async function saveReply(type, getMessage, fromStreaming, title, swipes, 
             chat[chat.length - 1]['extra']['gen_id'] = group_generation_id;
         }
 
-        saveImageToMessage(img, chat[chat.length - 1]);
+        await processImageAttachment(chat[chat.length - 1], { parsedImage, imageUrl: imageUrl });
         const chat_id = (chat.length - 1);
 
         !fromStreaming && await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);
@@ -6203,6 +6260,11 @@ export function syncMesToSwipe(messageId = null) {
     return true;
 }
 
+/**
+ * Saves the image to the message object.
+ * @param {{ image?: string, title?: string, inline?: boolean }} img Image object
+ * @param {object} mes Chat message object
+ */
 function saveImageToMessage(img, mes) {
     if (mes && img.image) {
         if (!mes.extra || typeof mes.extra !== 'object') {
@@ -6210,6 +6272,7 @@ function saveImageToMessage(img, mes) {
         }
         mes.extra.image = img.image;
         mes.extra.title = img.title;
+        mes.extra.inline_image = img.inline;
     }
 }
 
@@ -6252,7 +6315,7 @@ function extractImageFromMessage(getMessage) {
     const image = results ? results[1] : '';
     const title = results ? results[2] : '';
     getMessage = getMessage.replace(regex, '');
-    return { getMessage, image, title };
+    return { getMessage, image, title, inline: true };
 }
 
 /**

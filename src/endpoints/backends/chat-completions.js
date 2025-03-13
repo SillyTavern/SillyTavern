@@ -356,7 +356,12 @@ async function sendMakerSuiteRequest(request, response) {
             delete generationConfig.stopSequences;
         }
 
-        const should_use_system_prompt = (
+        const useMultiModal = (model.includes('gemini-2.0-flash-exp'));
+        if (useMultiModal) {
+            generationConfig.responseModalities = ['text', 'image'];
+        }
+
+        const useSystemPrompt = (
             model.includes('gemini-2.0-pro') ||
             model.includes('gemini-2.0-flash') ||
             model.includes('gemini-2.0-flash-thinking-exp') ||
@@ -366,7 +371,7 @@ async function sendMakerSuiteRequest(request, response) {
         ) && request.body.use_makersuite_sysprompt;
 
         const tools = [];
-        const prompt = convertGooglePrompt(request.body.messages, model, should_use_system_prompt, getPromptNames(request));
+        const prompt = convertGooglePrompt(request.body.messages, model, useSystemPrompt, getPromptNames(request));
         let safetySettings = GEMINI_SAFETY;
 
         // These old models do not support setting the threshold to OFF at all.
@@ -405,7 +410,7 @@ async function sendMakerSuiteRequest(request, response) {
             generationConfig: generationConfig,
         };
 
-        if (should_use_system_prompt) {
+        if (useSystemPrompt) {
             body.systemInstruction = prompt.system_instruction;
         }
 
@@ -469,10 +474,11 @@ async function sendMakerSuiteRequest(request, response) {
 
             const responseContent = candidates[0].content ?? candidates[0].output;
             const functionCall = (candidates?.[0]?.content?.parts ?? []).some(part => part.functionCall);
+            const inlineData = (candidates?.[0]?.content?.parts ?? []).some(part => part.inlineData);
             console.warn('Google AI Studio response:', responseContent);
 
             const responseText = typeof responseContent === 'string' ? responseContent : responseContent?.parts?.filter(part => !part.thought)?.map(part => part.text)?.join('\n\n');
-            if (!responseText && !functionCall) {
+            if (!responseText && !functionCall && !inlineData) {
                 let message = 'Google AI Studio Candidate text empty';
                 console.warn(message, generateResponseJson);
                 return response.send({ error: { message } });
