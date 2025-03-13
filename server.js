@@ -303,6 +303,7 @@ const avoidLocalhost = cliArguments.avoidLocalhost ?? getConfigValue('avoidLocal
 
 const proxyEnabled = cliArguments.requestProxyEnabled ?? getConfigValue('requestProxy.enabled', DEFAULT_PROXY_ENABLED);
 const proxyUrl = cliArguments.requestProxyUrl ?? getConfigValue('requestProxy.url', DEFAULT_PROXY_URL);
+const proxySslRootCertPath = getConfigValue('requestProxy.sslRootCertPath', "")
 const proxyBypass = cliArguments.requestProxyBypass ?? getConfigValue('requestProxy.bypass', DEFAULT_PROXY_BYPASS);
 
 if (dnsPreferIPv6) {
@@ -788,7 +789,7 @@ const preSetupTasks = async function () {
     });
 
     // Add request proxy.
-    initRequestProxy({ enabled: proxyEnabled, url: proxyUrl, bypass: proxyBypass });
+    initRequestProxy({ enabled: proxyEnabled, url: proxyUrl, bypass: proxyBypass, sslRootCertPath: proxySslRootCertPath });
 
     // Wait for frontend libs to compile
     await webpackMiddleware.runWebpackCompiler();

@@ -3,6 +3,8 @@ import http from 'node:http';
 import https from 'node:https';
 import { ProxyAgent } from 'proxy-agent';
 import { isValidUrl, color } from './util.js';
+import fs from 'node:fs'
+import path from 'node:path'
 
 const LOG_HEADER = '[Request Proxy]';
 
@@ -13,8 +15,9 @@ const LOG_HEADER = '[Request Proxy]';
  * @property {boolean} enabled Whether proxy is enabled.
  * @property {string} url Proxy URL.
  * @property {string[]} bypass List of URLs to bypass proxy.
+ * @property {string} sslRootCertPath ssl root certificate path, file extension name is pem
  */
-export default function initRequestProxy({ enabled, url, bypass }) {
+export default function initRequestProxy({ enabled, url, bypass, sslRootCertPath }) {
     try {
         // No proxy is enabled, so return
         if (!enabled) {
@@ -34,6 +37,20 @@ export default function initRequestProxy({ enabled, url, bypass }) {
         // ProxyAgent uses proxy-from-env under the hood
         // Reference: https://github.com/Rob--W/proxy-from-env
         process.env.all_proxy = url;
+        process.env.http_proxy = url;
+        process.env.https_proxy = url;
+        if (sslRootCertPath) {
+            // Load Charles root certificate
+            const selfSignedCertPath = path.resolve(sslRootCertPath);
+
+            if (fs.existsSync(selfSignedCertPath)) {
+                process.env.NODE_EXTRA_CA_CERTS = selfSignedCertPath;
+                process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+                console.info(color.green(LOG_HEADER), 'self-signed root certificate loaded');
+            } else {
+                console.error(color.red(LOG_HEADER), 'self-signed root certificate not found at:', selfSignedCertPath);
+            }
+        }
 
         if (Array.isArray(bypass) && bypass.length > 0) {
             process.env.no_proxy = bypass.join(',');
