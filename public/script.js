@@ -6012,11 +6012,17 @@ export function cleanUpMessage(getMessage, isImpersonate, isContinue, displayInc
 
 /**
  * Adds an image to the message.
+ * @param {object} message Message object
+ * @param {object} sources Image sources
+ * @param {ParsedImage} [sources.parsedImage] Parsed image
+ * @param {string} [sources.imageUrl] Image URL
+ *
  * @returns {Promise<void>}
  */
 async function processImageAttachment(message, { parsedImage, imageUrl }) {
     if (parsedImage?.image) {
-        return saveImageToMessage(parsedImage, message);
+        saveImageToMessage(parsedImage, message);
+        return;
     }
 
     if (!imageUrl) {
@@ -6277,8 +6283,9 @@ export function syncMesToSwipe(messageId = null) {
 
 /**
  * Saves the image to the message object.
- * @param {{ image?: string, title?: string, inline?: boolean }} img Image object
+ * @param {ParsedImage} img Image object
  * @param {object} mes Chat message object
+ * @typedef {{ image?: string, title?: string, inline?: boolean }} ParsedImage
  */
 function saveImageToMessage(img, mes) {
     if (mes && img.image) {
