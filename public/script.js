@@ -6058,7 +6058,7 @@ async function processImageAttachment(message, { parsedImage, imageUrl }) {
  */
 export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrl = '' }) {
     // Backward compatibility
-    if (arguments.length > 1 && typeof arguments[0] === 'string') {
+    if (arguments.length > 1 && typeof arguments[0] !== 'object') {
         console.trace('saveReply called with positional arguments. Please use an object instead.');
         [type, getMessage, fromStreaming, title, swipes, reasoning, imageUrl] = arguments;
     }
