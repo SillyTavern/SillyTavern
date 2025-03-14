@@ -1370,8 +1370,11 @@ export function resultCheckStatus() {
  * If the character ID doesn't exist, if the chat is being saved, or if a group is being generated, this function does nothing.
  * If the character is different from the currently selected one, it will clear the chat and reset any selected character or group.
  * @param {number} id The ID of the character to switch to.
+ * @param {object} [options] Options for the switch.
+ * @param {boolean} [options.switchMenu=true] Whether to switch the right menu to the character edit menu if the character is already selected.
+ * @returns {Promise<void>} A promise that resolves when the character is switched.
  */
-export async function selectCharacterById(id) {
+export async function selectCharacterById(id, { switchMenu = true } = {}) {
     if (characters[id] === undefined) {
         return;
     }
@@ -1400,9 +1403,9 @@ export async function selectCharacterById(id) {
         }
     } else {
         //if clicked on character that was already selected
-        selected_button = 'character_edit';
+        switchMenu && (selected_button = 'character_edit');
         await unshallowCharacter(this_chid);
-        select_selected_character(this_chid);
+        select_selected_character(this_chid, { switchMenu });
     }
 }
 
@@ -1806,7 +1809,7 @@ export async function getCharacters() {
             const newCharacterId = characters.findIndex(x => x.avatar === previousAvatar);
             if (newCharacterId >= 0) {
                 setCharacterId(newCharacterId);
-                await selectCharacterById(newCharacterId);
+                await selectCharacterById(newCharacterId, { switchMenu: false });
             } else {
                 await Popup.show.text(t`ERROR: The active character is no longer available.`, t`The page will be refreshed to prevent data loss. Press "OK" to continue.`);
                 return location.reload();
@@ -7892,11 +7895,17 @@ export function select_rm_info(type, charId, previousCharId = null) {
     }
 }
 
-export function select_selected_character(chid) {
+/**
+ * Selects the right menu for displaying the character editor.
+ * @param {number|string} chid Character array index
+ * @param {object} [param1] Options for the switch
+ * @param {boolean} [param1.switchMenu=true] Whether to switch the menu
+ */
+export function select_selected_character(chid, { switchMenu = true } = {}) {
     //character select
     //console.log('select_selected_character() -- starting with input of -- ' + chid + ' (name:' + characters[chid].name + ')');
-    select_rm_create();
-    setMenuType('character_edit');
+    select_rm_create({ switchMenu });
+    switchMenu && setMenuType('character_edit');
     $('#delete_button').css('display', 'flex');
     $('#export_button').css('display', 'flex');
 
@@ -7969,8 +7978,13 @@ export function select_selected_character(chid) {
     saveSettingsDebounced();
 }
 
-function select_rm_create() {
-    setMenuType('create');
+/**
+ * Selects the right menu for creating a new character.
+ * @param {object} [options] Options for the switch
+ * @param {boolean} [options.switchMenu=true] Whether to switch the menu
+ */
+function select_rm_create({ switchMenu = true } = {}) {
+    switchMenu && setMenuType('create');
 
     //console.log('select_rm_Create() -- selected button: '+selected_button);
     if (selected_button == 'create') {
@@ -7980,7 +7994,7 @@ function select_rm_create() {
         }
     }
 
-    selectRightMenuWithAnimation('rm_ch_create_block');
+    switchMenu && selectRightMenuWithAnimation('rm_ch_create_block');
 
     $('#set_chat_scenario').hide();
     $('#delete_button_div').css('display', 'none');
