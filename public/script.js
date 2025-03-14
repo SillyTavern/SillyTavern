@@ -5735,20 +5735,30 @@ function extractTitleFromData(data) {
     return undefined;
 }
 
-function extractImageFromData(data) {
-    if (main_api === 'openai') {
-        switch (oai_settings.chat_completion_source) {
-            case chat_completion_sources.MAKERSUITE: {
-                const inlineData = data?.responseContent?.parts?.find(x => x.inlineData)?.inlineData;
-                if (inlineData) {
-                    return `data:${inlineData.mimeType};base64,${inlineData.data}`;
-                }
-            } break;
+/**
+ * Extracts the image from the response data.
+ * @param {object} data Response data
+ * @param {object} [options] Extraction options
+ * @param {string} [options.mainApi] Main API to use
+ * @param {string} [options.chatCompletionSource] Chat completion source
+ * @returns {string} Extracted image
+ */
+function extractImageFromData(data, { mainApi = null, chatCompletionSource = null } = {}) {
+    switch (mainApi ?? main_api) {
+        case 'openai': {
+            switch (chatCompletionSource ?? oai_settings.chat_completion_source) {
+                case chat_completion_sources.MAKERSUITE: {
+                    const inlineData = data?.responseContent?.parts?.find(x => x.inlineData)?.inlineData;
+                    if (inlineData) {
+                        return `data:${inlineData.mimeType};base64,${inlineData.data}`;
+                    }
+                } break;
 
+            }
         }
-    }
 
-    return undefined;
+            return undefined;
+    }
 }
 
 /**
