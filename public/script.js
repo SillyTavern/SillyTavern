@@ -5755,10 +5755,10 @@ function extractImageFromData(data, { mainApi = null, chatCompletionSource = nul
                 } break;
 
             }
-        }
-
-            return undefined;
+        } break;
     }
+
+    return undefined;
 }
 
 /**
