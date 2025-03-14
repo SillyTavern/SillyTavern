@@ -7801,7 +7801,6 @@ export function select_selected_character(chid) {
     setMenuType('character_edit');
     $('#delete_button').css('display', 'flex');
     $('#export_button').css('display', 'flex');
-    var display_name = characters[chid].name;
 
     //create text poles
     $('#rm_button_back').css('display', 'none');
@@ -7816,7 +7815,7 @@ export function select_selected_character(chid) {
 
     // Don't update the navbar name if we're peeking the group member defs
     if (!selected_group) {
-        $('#rm_button_selected_ch').children('h2').text(display_name);
+        $('#rm_button_selected_ch').children('h2').text(characters[chid].name);
     }
 
     $('#add_avatar_button').val('');
@@ -7847,21 +7846,19 @@ export function select_selected_character(chid) {
     $('#chat_import_avatar_url').val(characters[chid].avatar);
     $('#chat_import_character_name').val(characters[chid].name);
     $('#character_json_data').val(characters[chid].json_data);
-    let this_avatar = default_avatar;
-    if (characters[chid].avatar != 'none') {
-        this_avatar = getThumbnailUrl('avatar', characters[chid].avatar);
-    }
 
     updateFavButtonState(characters[chid].fav || characters[chid].fav == 'true');
 
-    $('#avatar_load_preview').attr('src', this_avatar);
-    $('#name_div').removeClass('displayBlock');
-    $('#name_div').addClass('displayNone');
-    $('#renameCharButton').css('display', '');
+    const avatarUrl = characters[chid].avatar != 'none' ? getThumbnailUrl('avatar', characters[chid].avatar) : default_avatar;
+    $('#avatar_load_preview').attr('src', avatarUrl);
     $('.open_alternate_greetings').data('chid', chid);
     $('#set_character_world').data('chid', chid);
     setWorldInfoButtonClass(chid);
     checkEmbeddedWorld(chid);
+
+    $('#name_div').removeClass('displayBlock');
+    $('#name_div').addClass('displayNone');
+    $('#renameCharButton').css('display', '');
 
     $('#form_create').attr('actiontype', 'editcharacter');
     $('.form_create_bottom_buttons_block .chat_lorebook_button').show();
