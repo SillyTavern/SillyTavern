@@ -3253,7 +3253,7 @@ class StreamingProcessor {
             this.sendTextarea.value = '';
             this.sendTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         } else {
-            await saveReply({ type: this.type, getMessage: text, fromStreaming: true, title: '', swipes: [], reasoning: '', imageUrl: '' });
+            await saveReply({ type: this.type, getMessage: text, fromStreaming: true });
             messageId = chat.length - 1;
             await this.#checkDomElements(messageId, continueOnReasoning);
             this.markUIGenStarted();
@@ -4908,10 +4908,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         else {
             // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
             if (originalType !== 'continue') {
-                ({ type, getMessage } = await saveReply({ type, getMessage, fromStreaming: false, title, swipes, reasoning, imageUrl }));
+                ({ type, getMessage } = await saveReply({ type, getMessage, title, swipes, reasoning, imageUrl }));
             }
             else {
-                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, fromStreaming: false, title, swipes, reasoning, imageUrl }));
+                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrl }));
             }
 
             // This relies on `saveReply` having been called to add the message to the chat, so it must be last.
@@ -6046,17 +6046,17 @@ async function processImageAttachment(message, { parsedImage, imageUrl }) {
  * @typedef {object} SaveReplyParams
  * @property {string} type Type of generation
  * @property {string} getMessage Generated message
- * @property {boolean} fromStreaming If the message is from streaming
- * @property {string} title Message tooltip
- * @property {string[]} swipes Extra swipes
- * @property {string} reasoning Message reasoning
- * @property {string} imageUrl Link to an image
+ * @property {boolean} [fromStreaming] If the message is from streaming
+ * @property {string} [title] Message tooltip
+ * @property {string[]} [swipes] Extra swipes
+ * @property {string} [reasoning] Message reasoning
+ * @property {string} [imageUrl] Link to an image
  *
  * @typedef {object} SaveReplyResult
  * @property {string} type Type of generation
  * @property {string} getMessage Generated message
  */
-export async function saveReply({ type, getMessage, fromStreaming, title, swipes, reasoning, imageUrl }) {
+export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrl = '' }) {
     // Backward compatibility
     if (arguments.length > 1 && typeof arguments[0] === 'string') {
         console.trace('saveReply called with positional arguments. Please use an object instead.');
