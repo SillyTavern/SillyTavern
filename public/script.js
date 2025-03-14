@@ -3253,7 +3253,7 @@ class StreamingProcessor {
             this.sendTextarea.value = '';
             this.sendTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         } else {
-            await saveReply(this.type, text, true, '', [], '', '');
+            await saveReply({ type: this.type, getMessage: text, fromStreaming: true, title: '', swipes: [], reasoning: '', imageUrl: '' });
             messageId = chat.length - 1;
             await this.#checkDomElements(messageId, continueOnReasoning);
             this.markUIGenStarted();
@@ -4875,7 +4875,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let getMessage = extractMessageFromData(data);
         let title = extractTitleFromData(data);
         let reasoning = extractReasoningFromData(data);
-        let image = extractImageFromData(data);
+        let imageUrl = extractImageFromData(data);
         kobold_horde_model = title;
 
         const swipes = extractMultiSwipes(data, type);
@@ -4908,10 +4908,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         else {
             // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
             if (originalType !== 'continue') {
-                ({ type, getMessage } = await saveReply(type, getMessage, false, title, swipes, reasoning, image));
+                ({ type, getMessage } = await saveReply({ type, getMessage, fromStreaming: false, title, swipes, reasoning, imageUrl }));
             }
             else {
-                ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes, reasoning, image));
+                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, fromStreaming: false, title, swipes, reasoning, imageUrl }));
             }
 
             // This relies on `saveReply` having been called to add the message to the chat, so it must be last.
@@ -6040,16 +6040,29 @@ async function processImageAttachment(message, { parsedImage, imageUrl }) {
 
 /**
  * Saves a resulting message to the chat.
- * @param {string} type Type of generation
- * @param {string} getMessage Generated message
- * @param {boolean} fromStreaming If the message is from streaming
- * @param {string} title Message tooltip
- * @param {string[]} swipes Extra swipes
- * @param {string} reasoning Message reasoning
- * @param {string} imageUrl Link to an image
+ * @param {SaveReplyParams} params
  * @returns {Promise<{type: string, getMessage: string}>} Promise when the message is saved
+ *
+ * @typedef {object} SaveReplyParams
+ * @property {string} type Type of generation
+ * @property {string} getMessage Generated message
+ * @property {boolean} fromStreaming If the message is from streaming
+ * @property {string} title Message tooltip
+ * @property {string[]} swipes Extra swipes
+ * @property {string} reasoning Message reasoning
+ * @property {string} imageUrl Link to an image
+ *
+ * @typedef {object} SaveReplyResult
+ * @property {string} type Type of generation
+ * @property {string} getMessage Generated message
  */
-export async function saveReply(type, getMessage, fromStreaming, title, swipes, reasoning, imageUrl) {
+export async function saveReply({ type, getMessage, fromStreaming, title, swipes, reasoning, imageUrl }) {
+    // Backward compatibility
+    if (arguments.length > 1 && typeof arguments[0] === 'string') {
+        console.trace('saveReply called with positional arguments. Please use an object instead.');
+        [type, getMessage, fromStreaming, title, swipes, reasoning, imageUrl] = arguments;
+    }
+
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
