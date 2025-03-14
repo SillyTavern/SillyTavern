@@ -6029,13 +6029,13 @@ async function processImageAttachment(message, { parsedImage, imageUrl }) {
         return;
     }
 
-    if (isDataURL(imageUrl)) {
+    let url = imageUrl;
+    if (isDataURL(url)) {
+        const fileName = `inline_image_${Date.now().toString()}`;
         const [mime, base64] = /^data:(.*?);base64,(.*)$/.exec(imageUrl).slice(1);
-        const url = await saveBase64AsFile(base64, message.name, Date.now().toString(), mime.split('/')[1]);
-        saveImageToMessage({ image: url, inline: true }, message);
-    } else {
-        saveImageToMessage({ image: imageUrl, inline: true }, message);
+        url = await saveBase64AsFile(base64, message.name, fileName, mime.split('/')[1]);
     }
+    saveImageToMessage({ image: url, inline: true }, message);
 }
 
 /**
