@@ -57,6 +57,7 @@ import {
     getSortableDelay,
     getStringHash,
     isDataURL,
+    isValidUrl,
     parseJsonFile,
     resetScrollHeight,
     stringFormat,
@@ -3490,6 +3491,12 @@ async function getStatusOpen() {
         return resultCheckStatus();
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.CUSTOM && !isValidUrl(oai_settings.custom_url)) {
+        console.debug('Invalid endpoint URL of Custom OpenAI API:', oai_settings.custom_url);
+        setOnlineStatus('no_connection');
+        return resultCheckStatus();
+    }
+
     let data = {
         reverse_proxy: oai_settings.reverse_proxy,
         proxy_password: oai_settings.proxy_password,
@@ -4449,6 +4456,9 @@ async function onModelChange() {
         }
         else if (oai_settings.cohere_model.includes('command-r') || ['c4ai-aya-23', 'c4ai-aya-expanse-32b', 'command-nightly'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_128k);
+        }
+        else if (['command-a-03-2025'].includes(oai_settings.cohere_model)) {
+            $('#openai_max_context').attr('max', max_256k);
         }
         else if (['c4ai-aya-23-8b', 'c4ai-aya-expanse-8b'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_8k);

@@ -246,9 +246,9 @@ export async function getGroupChat(groupId, reload = false) {
                 }
 
                 chat.push(mes);
-                await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
+                await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1), 'first_message');
                 addOneMessage(mes);
-                await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
+                await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1), 'first_message');
             }
         }
         await saveGroupChat(groupId, false);

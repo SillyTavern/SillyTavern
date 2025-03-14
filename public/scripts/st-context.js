@@ -48,6 +48,7 @@ import {
     printMessages,
     clearChat,
     unshallowCharacter,
+    deleteLastMessage,
 } from '../script.js';
 import {
     extension_settings,
@@ -106,6 +107,7 @@ export function getContext() {
         eventSource,
         eventTypes: event_types,
         addOneMessage,
+        deleteLastMessage,
         generate: Generate,
         sendStreamingRequest,
         sendGenerationRequest,
@@ -147,6 +149,7 @@ export function getContext() {
         unregisterFunctionTool: ToolManager.unregisterFunctionTool.bind(ToolManager),
         isToolCallingSupported: ToolManager.isToolCallingSupported.bind(ToolManager),
         canPerformToolCalls: ToolManager.canPerformToolCalls.bind(ToolManager),
+        ToolManager,
         registerDebugFunction,
         /** @deprecated Use renderExtensionTemplateAsync instead. */
         renderExtensionTemplate,

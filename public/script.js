@@ -3373,8 +3373,8 @@ class StreamingProcessor {
         }
 
         if (this.type !== 'impersonate') {
-            await eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId);
-            await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, this.messageId);
+            await eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId, this.type);
+            await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, this.messageId, this.type);
         } else {
             await eventSource.emit(event_types.IMPERSONATE_READY, text);
         }
@@ -3403,8 +3403,8 @@ class StreamingProcessor {
 
         const noEmitTypes = ['swipe', 'impersonate', 'continue'];
         if (!noEmitTypes.includes(this.type)) {
-            eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId);
-            eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, this.messageId);
+            eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId, this.type);
+            eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, this.messageId, this.type);
         }
     }
 
@@ -6015,9 +6015,9 @@ export async function saveReply(type, getMessage, fromStreaming, title, swipes, 
                 chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(tokenCountText, 0);
             }
             const chat_id = (chat.length - 1);
-            await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
+            await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);
             addOneMessage(chat[chat_id], { type: 'swipe' });
-            await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
+            await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, type);
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
         }
@@ -6038,9 +6038,9 @@ export async function saveReply(type, getMessage, fromStreaming, title, swipes, 
             chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(tokenCountText, 0);
         }
         const chat_id = (chat.length - 1);
-        await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
+        await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);
         addOneMessage(chat[chat_id], { type: 'swipe' });
-        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
+        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, type);
     } else if (type === 'appendFinal') {
         oldMessage = chat[chat.length - 1]['mes'];
         console.debug('Trying to appendFinal.');
@@ -6058,9 +6058,9 @@ export async function saveReply(type, getMessage, fromStreaming, title, swipes, 
             chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(tokenCountText, 0);
         }
         const chat_id = (chat.length - 1);
-        await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
+        await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);
         addOneMessage(chat[chat_id], { type: 'swipe' });
-        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
+        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, type);
 
     } else {
         console.debug('entering chat update routine for non-swipe post');
@@ -6100,9 +6100,9 @@ export async function saveReply(type, getMessage, fromStreaming, title, swipes, 
         saveImageToMessage(img, chat[chat.length - 1]);
         const chat_id = (chat.length - 1);
 
-        !fromStreaming && await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
+        !fromStreaming && await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);
         addOneMessage(chat[chat_id]);
-        !fromStreaming && await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
+        !fromStreaming && await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, type);
     }
 
     const item = chat[chat.length - 1];
@@ -6850,8 +6850,8 @@ async function getChatResult() {
 
     if (chat.length === 1) {
         const chat_id = (chat.length - 1);
-        await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
-        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
+        await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, 'first_message');
+        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, 'first_message');
     }
 }
 
@@ -8729,10 +8729,10 @@ async function createOrEditCharacter(e) {
             if (shouldRegenerateMessage) {
                 chat.splice(0, chat.length, message);
                 const messageId = (chat.length - 1);
-                await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId);
+                await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId, 'first_message');
                 await clearChat();
                 await printMessages();
-                await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId);
+                await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId, 'first_message');
                 await saveChatConditional();
             }
         } catch (error) {
