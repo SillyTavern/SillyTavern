@@ -6041,7 +6041,7 @@ async function processImageAttachment(message, { parsedImage, imageUrl }) {
 /**
  * Saves a resulting message to the chat.
  * @param {SaveReplyParams} params
- * @returns {Promise<{type: string, getMessage: string}>} Promise when the message is saved
+ * @returns {Promise<SaveReplyResult>} Promise when the message is saved
  *
  * @typedef {object} SaveReplyParams
  * @property {string} type Type of generation
