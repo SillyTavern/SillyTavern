@@ -1075,7 +1075,7 @@ export function removeReasoningFromString(str) {
  * @param {boolean} [options.strict=true] Whether the reasoning block **has** to be at the beginning of the provided string (excluding whitespaces), or can be anywhere in it
  * @returns {ParsedReasoning|null} Parsed reasoning block and message content
  */
-function parseReasoningFromString(str, { strict = true } = {}) {
+export function parseReasoningFromString(str, { strict = true } = {}) {
     // Both prefix and suffix must be defined
     if (!power_user.reasoning.prefix || !power_user.reasoning.suffix) {
         return null;

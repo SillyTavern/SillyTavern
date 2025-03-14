@@ -1,18 +1,21 @@
 import libs from './lib';
 import getContext from './scripts/st-context';
 
-// Global namespace modules
-declare var ai;
-declare var pdfjsLib;
-declare var ePub;
-
-declare var SillyTavern: {
-    getContext(): typeof getContext;
-    llm: any;
-    libs: typeof libs;
-};
-
 declare global {
+    // Global namespace modules
+    interface Window {
+        ai: any;
+    }
+
+    declare var pdfjsLib;
+    declare var ePub;
+
+    declare var SillyTavern: {
+        getContext(): typeof getContext;
+        llm: any;
+        libs: typeof libs;
+    };
+
     // Jquery plugins
     interface JQuery {
         nanogallery2(options?: any): JQuery;

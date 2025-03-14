@@ -1998,6 +1998,23 @@
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="makersuite">
+                                        <label for="openai_request_images" class="checkbox_label widthFreeExpand">
+                                            <input id="openai_request_images" type="checkbox" />
+                                            <span>
+                                                <span data-i18n="Request inline images">Request inline images</span>
+                                                <i class="opacity50p fa-solid fa-circle-info" title="Gemini 2.0 Flash Experimental"></i>
+                                            </span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft marginBot5">
+                                            <span data-i18n="Allows the model to return image attachments.">
+                                                Allows the model to return image attachments.
+                                            </span>
+                                            <em data-source="makersuite" data-i18n="Request inline images_desc_2">
+                                                Incompatible with the following features: function calling, web search, system prompt.
+                                            </em>
+                                        </div>
+                                    </div>
+                                    <div class="range-block" data-source="makersuite">
                                         <label for="use_makersuite_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="use_makersuite_sysprompt" type="checkbox" />
                                             <span>
@@ -3117,6 +3134,9 @@
                                         <option value="gemini-ultra">Gemini Ultra (1.0)</option>
                                         <option value="gemini-1.0-ultra-latest">Gemini 1.0 Ultra</option>
                                     </optgroup>
+                                    <optgroup label="Gemma">
+                                        <option value="gemma-3-27b-it">Gemma 3 27B</option>
+                                    </optgroup>
                                     <optgroup label="Subversions">
                                         <option value="gemini-2.0-pro-exp">Gemini 2.0 Pro Experimental</option>
                                         <option value="gemini-2.0-pro-exp-02-05">Gemini 2.0 Pro Experimental 2025-02-05</option>
@@ -3333,6 +3353,7 @@
                                         <option value="command-r-08-2024">command-r-08-2024</option>
                                         <option value="command-r-plus-08-2024">command-r-plus-08-2024</option>
                                         <option value="command-r7b-12-2024">command-r7b-12-2024</option>
+                                        <option value="command-a-03-2025">command-a-03-2025</option>
                                     </optgroup>
                                     <optgroup label="Nightly">
                                         <option value="command-light-nightly">command-light-nightly</option>

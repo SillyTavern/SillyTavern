@@ -47,6 +47,10 @@ const hash_derivations = {
         // gemma-2-2b-it
         'Gemma 2'
     ,
+    '7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4':
+        // gemma-3
+        'Gemma 2'
+    ,
 
     // Cohere
     '3b54f5c219ae1caa5c0bb2cdc7c001863ca6807cf888e4240e8739fa7eb9e02e':

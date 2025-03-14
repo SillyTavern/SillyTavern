@@ -1,0 +1,192 @@
+name: 🔀 Pull Request Manager
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled, closed]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  label-by-size:
+    name: 🏷️ Label PR by Size
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Label PR Size
+        # Pull Request Size Labeler
+        # https://github.com/marketplace/actions/pull-request-size-labeler
+        uses: codelytv/pr-size-labeler@v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          xs_label: '🟩 ⬤○○○○'
+          xs_max_size: '20'
+          s_label: '🟩 ⬤⬤○○○'
+          s_max_size: '100'
+          m_label: '🟨 ⬤⬤⬤○○'
+          m_max_size: '500'
+          l_label: '🟧 ⬤⬤⬤⬤○'
+          l_max_size: '1000'
+          xl_label: '🟥 ⬤⬤⬤⬤⬤'
+          fail_if_xl: 'false'
+          github_api_url: 'https://api.github.com'
+          files_to_ignore: |
+            "package-lock.json"
+            "public/lib/*"
+
+  label-by-branches:
+    name: 🏷️ Label PR by Branches
+    runs-on: ubuntu-latest
+    # Only label once when PR is created or branches are changed, to allow manual label removal
+    if: github.event.action == 'opened' || (github.event.action == 'synchronize' && (github.event.changes.base || github.event.changes.head))
+
+    steps:
+      - name: Checkout Repository
+        # Checkout
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v4
+
+      - name: Apply Labels Based on Branch Name and Target Branch
+        # Pull Request Labeler
+        # https://github.com/marketplace/actions/labeler
+        uses: actions/labeler@v5
+        with:
+          configuration-path: .github/pr-auto-labels-by-branch.yml
+          repo-token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+
+  label-by-files:
+    name: 🏷️ Label PR by Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        # Checkout
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v4
+
+      - name: Apply Labels Based on Changed Files
+        # Pull Request Labeler
+        # https://github.com/marketplace/actions/labeler
+        uses: actions/labeler@v5
+        with:
+          configuration-path: .github/pr-auto-labels-by-files.yml
+          repo-token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+
+  remove-stale-label:
+    name: 🗑️ Remove Stale Label on Comment
+    runs-on: ubuntu-latest
+    # Only runs when this is not done by the github actions bot
+    if: github.actor != 'github-actions[bot]'
+
+    steps:
+      - name: Remove Stale Label
+        # 🤖 Issues Helper
+        # https://github.com/marketplace/actions/issues-helper
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'remove-labels'
+          token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          labels: '⚰️ Stale'
+
+  check-merge-blocking-labels:
+    name: 🚫 Check Merge Blocking Labels
+    needs: [label-by-branches, label-by-files]
+    runs-on: ubuntu-latest
+    # Run, even if the previous jobs were skipped/failed
+    if: always()
+
+    steps:
+      - name: Check Merge Blocking
+        # GitHub Script
+        # https://github.com/marketplace/actions/github-scriptLabels
+        id: label-check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prLabels = context.payload.pull_request.labels.map(label => label.name);
+            const blockingLabels = [
+              "⛔ Don't Merge",
+              "🔨 Needs Work",
+              "🔬 Needs Testing",
+              "⛔ Waiting For External/Upstream",
+              "❗ Against Release Branch",
+              "💥💣 Breaking Changes"
+            ];
+            const hasBlockingLabel = prLabels.some(label => blockingLabels.includes(label));
+
+            if (hasBlockingLabel) {
+              console.log("Blocking label detected. Setting warning status.");
+              await github.rest.checks.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: "PR Label Warning",
+                head_sha: context.payload.pull_request.head.sha,
+                status: "completed",
+                conclusion: "neutral",
+                output: {
+                  title: "Potential Merge Issue",
+                  summary: "This PR has a merge-blocking label. Proceed with caution."
+                }
+              });
+            } else {
+              console.log("No merge-blocking labels found.");
+            }
+
+  write-auto-comments:
+    name: 💬 Post PR Comments Based on Labels
+    needs: [label-by-size, label-by-branches, label-by-files]
+    runs-on: ubuntu-latest
+    # Run, even if the previous jobs were skipped/failed
+    if: always()
+
+    steps:
+      - name: Checkout Repository
+        # Checkout
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v4
+
+      - name: Post PR Comments Based on Labels
+        # Label Commenter for PRs
+        # https://github.com/marketplace/actions/label-commenter
+        uses: peaceiris/actions-label-commenter@v1
+        with:
+          config_file: .github/pr-auto-comments.yml
+          github_token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+
+  # This runs on merged PRs to staging, reading the PR body and directly linked issues. Check `issues-updates-on-merge.yml`:`update-linked-issues` for commit-based updates.
+  update-linked-issues:
+    name: 🔗 Mark Linked Issues Done on Staging Merge
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'staging'
+
+    steps:
+      - name: Extract Linked Issues From PR Description
+        id: extract_issues
+        run: |
+            ISSUES=$(jq -r '.pull_request.body' "$GITHUB_EVENT_PATH" | grep -oiE '(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #([0-9]+)' | awk '{print $2}' | tr -d '#' | jq -R -s -c 'split("\n")[:-1]')
+            echo "issues=$ISSUES" >> $GITHUB_ENV
+
+      - name: Fetch Directly Linked Issues
+        id: fetch_linked_issues
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+          API_URL="https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/issues"
+          ISSUES=$(curl -s -H "Authorization: token ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}" "$API_URL" | jq -r '.[].number' | jq -R -s -c 'split("\n")[:-1]')
+          echo "linked_issues=$ISSUES" >> $GITHUB_ENV
+
+      - name: Merge Issue Lists
+        id: merge_issues
+        run: |
+          ISSUES=$(jq -c -n --argjson a "$issues" --argjson b "$linked_issues" '$a + $b | unique')
+          echo "final_issues=$ISSUES" >> $GITHUB_ENV
+
+      - name: Label Linked Issues
+        id: label_linked_issues
+        env:
+          GH_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          for ISSUE in $(echo $final_issues | jq -r '.[]'); do
+            gh issue edit $ISSUE -R ${{ github.repository }} --add-label "✅ Done (staging)"
+            echo "Added label '✅ Done (staging)' to issue #$ISSUE"
+          done

@@ -3542,6 +3542,10 @@ export async function deleteWorldInfo(worldInfoName) {
         return false;
     }
 
+    if (worldInfoCache.has(worldInfoName)) {
+        worldInfoCache.delete(worldInfoName);
+    }
+
     const existingWorldIndex = selected_world_info.findIndex((e) => e === worldInfoName);
     if (existingWorldIndex !== -1) {
         selected_world_info.splice(existingWorldIndex, 1);

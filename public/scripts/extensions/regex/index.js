@@ -4,22 +4,16 @@ import { selected_group } from '../../group-chats.js';
 import { callGenericPopup, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
-import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
-import { download, getFileText, getSortableDelay, regexFromString, setInfoBlock, uuidv4 } from '../../utils.js';
+import { download, equalsIgnoreCaseAndAccents, getFileText, getSortableDelay, isFalseBoolean, isTrueBoolean, regexFromString, setInfoBlock, uuidv4 } from '../../utils.js';
 import { regex_placement, runRegexScript, substitute_find_regex } from './engine.js';
 import { t } from '../../i18n.js';
 import { accountStorage } from '../../util/AccountStorage.js';
 
 /**
- * @typedef {object} RegexScript
- * @property {string} scriptName - The name of the script
- * @property {boolean} disabled - Whether the script is disabled
- * @property {string} replaceString - The replace string
- * @property {string[]} trimStrings - The trim strings
- * @property {string?} findRegex - The find regex
- * @property {number?} substituteRegex - The substitute regex
+ * @typedef {import('../../char-data.js').RegexScriptData} RegexScript
  */
 
 /**
@@ -418,6 +412,53 @@ function runRegexCallback(args, value) {
 }
 
 /**
+ * /regex-toggle slash command callback
+ * @param {{state: string, quiet: string}} args Named arguments
+ * @param {string} scriptName The name of the script to toggle
+ * @returns {Promise<string>} The name of the script
+ */
+async function toggleRegexCallback(args, scriptName) {
+    if (typeof scriptName !== 'string') throw new Error('Script name must be a string.');
+
+    const quiet = isTrueBoolean(args?.quiet);
+    const action = isTrueBoolean(args?.state) ? 'enable' :
+        isFalseBoolean(args?.state) ? 'disable' :
+            'toggle';
+
+    const scripts = getRegexScripts();
+    const script = scripts.find(s => equalsIgnoreCaseAndAccents(s.scriptName, scriptName));
+
+    if (!script) {
+        toastr.warning(t`Regex script '${scriptName}' not found.`);
+        return '';
+    }
+
+    switch (action) {
+        case 'enable':
+            script.disabled = false;
+            break;
+        case 'disable':
+            script.disabled = true;
+            break;
+        default:
+            script.disabled = !script.disabled;
+            break;
+    }
+
+    const isScoped = characters[this_chid]?.data?.extensions?.regex_scripts?.some(s => s.id === script.id);
+    const index = isScoped ? characters[this_chid]?.data?.extensions?.regex_scripts?.indexOf(script) : scripts.indexOf(script);
+
+    await saveRegexScript(script, index, isScoped);
+    if (script.disabled) {
+        !quiet && toastr.success(t`Regex script '${scriptName}' has been disabled.`);
+    } else {
+        !quiet && toastr.success(t`Regex script '${scriptName}' has been enabled.`);
+    }
+
+    return script.scriptName || '';
+}
+
+/**
  * Performs the import of the regex file.
  * @param {File} file Input file
  * @param {boolean} isScoped Is the script scoped to a character?
@@ -638,6 +679,51 @@ jQuery(async () => {
             ),
         ],
         helpString: 'Runs a Regex extension script by name on the provided string. The script must be enabled.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'regex-toggle',
+        callback: toggleRegexCallback,
+        returns: 'The name of the script that was toggled',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'state',
+                description: 'Explicitly set the state of the script (\'on\' to enable, \'off\' to disable). If not provided, the state will be toggled to the opposite of the current state.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'toggle',
+                enumList: commonEnumProviders.boolean('onOffToggle')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: 'Suppress the toast message script toggled',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'script name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.regexScripts,
+            }),
+        ],
+        helpString: `
+            <div>
+                Toggles the state of a specified regex script.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/regex-toggle MyScript</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/regex-toggle state=off Character-specific Script</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
     }));
 
     eventSource.on(event_types.CHAT_CHANGED, checkEmbeddedRegexScripts);
