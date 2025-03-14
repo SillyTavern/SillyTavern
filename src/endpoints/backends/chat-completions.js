@@ -339,6 +339,7 @@ async function sendMakerSuiteRequest(request, response) {
     const stream = Boolean(request.body.stream);
     const enableWebSearch = Boolean(request.body.enable_web_search);
     const isThinking = model.includes('thinking');
+    const isGemma = model.includes('gemma');
 
     const generationConfig = {
         stopSequences: request.body.stop,
@@ -386,7 +387,7 @@ async function sendMakerSuiteRequest(request, response) {
             tools.push(searchTool);
         }
 
-        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0 && !isGemma) {
             const functionDeclarations = [];
             for (const tool of request.body.tools) {
                 if (tool.type === 'function') {
