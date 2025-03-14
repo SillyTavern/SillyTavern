@@ -357,7 +357,6 @@ async function sendMakerSuiteRequest(request, response) {
         }
 
         const should_use_system_prompt = (
-            model.includes('gemma') ||
             model.includes('gemini-2.0-pro') ||
             model.includes('gemini-2.0-flash') ||
             model.includes('gemini-2.0-flash-thinking-exp') ||
