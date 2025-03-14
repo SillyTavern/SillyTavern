@@ -386,7 +386,7 @@ async function sendMakerSuiteRequest(request, response) {
         }
         // Most of the other models allow for setting the threshold of filters, except for HARM_CATEGORY_CIVIC_INTEGRITY, to OFF.
 
-        if (enableWebSearch && !useMultiModal) {
+        if (enableWebSearch && !useMultiModal && !isGemma) {
             const searchTool = model.includes('1.5') || model.includes('1.0')
                 ? ({ google_search_retrieval: {} })
                 : ({ google_search: {} });
