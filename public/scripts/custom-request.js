@@ -168,7 +168,7 @@ export class TextCompletionService {
                 instructPreset.macro = false;
                 instructPreset.names_behavior = names_behavior_types.NONE;
 
-                 // Format messages using instruct formatting
+                // Format messages using instruct formatting
                 const formattedMessages = [];
                 for (const message of prompt) {
                     let messageContent = message.content;
