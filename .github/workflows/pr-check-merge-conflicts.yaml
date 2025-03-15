@@ -20,7 +20,7 @@ jobs:
       - name: Check Merge Conflicts
         # Label Conflicting Pull Requests
         # https://github.com/marketplace/actions/label-conflicting-pull-requests
-        uses: eps1lon/actions-label-merge-conflict@v3
+        uses: eps1lon/actions-label-merge-conflict@v3.0.3
         with:
           dirtyLabel: '🚫 Merge Conflicts'
           repoToken: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}

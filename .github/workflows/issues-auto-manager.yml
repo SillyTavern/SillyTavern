@@ -20,7 +20,7 @@ jobs:
       - name: Checkout Repository
         # Checkout
         # https://github.com/marketplace/actions/checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Auto-Label Issues (Based on Issue Content)
         # only auto label based on issue content once, on open (to prevent re-labeling removed labels)
@@ -28,7 +28,7 @@ jobs:
 
         # Issue Labeler
         # https://github.com/marketplace/actions/regex-issue-labeler
-        uses: github/issue-labeler@v3
+        uses: github/issue-labeler@v3.4
         with:
           configuration-path: .github/issues-auto-labels.yml
           enable-versioned-regex: 0
@@ -43,7 +43,7 @@ jobs:
         if: contains(fromJSON('["👩‍💻 Good First Issue", "🙏 Help Wanted", "🪲 Confirmed", "⚠️ High Priority", "❕ Medium Priority", "💤 Low Priority"]'), github.event.label.name)
         # 🤖 Issues Helper
         # https://github.com/marketplace/actions/issues-helper
-        uses: actions-cool/issues-helper@v3
+        uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'add-labels'
           token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
@@ -53,7 +53,7 @@ jobs:
         if: contains(fromJSON('["✅ Done", "✅ Done (staging)", "⚰️ Stale", "❌ wontfix"]'), github.event.label.name)
         # 🤖 Issues Helper
         # https://github.com/marketplace/actions/issues-helper
-        uses: actions-cool/issues-helper@v3
+        uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'remove-labels'
           token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
@@ -63,7 +63,7 @@ jobs:
         if: contains(fromJSON('["❌ wontfix","👍 Approved","👩‍💻 Good First Issue"]'), github.event.label.name)
         # 🤖 Issues Helper
         # https://github.com/marketplace/actions/issues-helper
-        uses: actions-cool/issues-helper@v3
+        uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'remove-labels'
           token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
@@ -73,7 +73,7 @@ jobs:
         if: github.event.label.name == '🪲 Confirmed'
         # 🤖 Issues Helper
         # https://github.com/marketplace/actions/issues-helper
-        uses: actions-cool/issues-helper@v3
+        uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'remove-labels'
           token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
@@ -89,7 +89,7 @@ jobs:
       - name: Remove Stale Label
         # 🤖 Issues Helper
         # https://github.com/marketplace/actions/issues-helper
-        uses: actions-cool/issues-helper@v3
+        uses: actions-cool/issues-helper@v3.6.0
         with:
           actions: 'remove-labels'
           token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
@@ -105,12 +105,12 @@ jobs:
       - name: Checkout Repository
         # Checkout
         # https://github.com/marketplace/actions/checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Post Issue Comments Based on Labels
         # Label Commenter
         # https://github.com/marketplace/actions/label-commenter
-        uses: peaceiris/actions-label-commenter@v1
+        uses: peaceiris/actions-label-commenter@v1.10.0
         with:
           config_file: .github/issues-auto-comments.yml
           github_token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}

@@ -20,7 +20,7 @@ jobs:
       - name: Checkout Repository
         # Checkout
         # https://github.com/marketplace/actions/checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Extract Linked Issues from Commit Message
         id: extract_issues
