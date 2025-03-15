@@ -294,7 +294,7 @@ export class ConnectionManagerRequestService {
 
     /**
      * @param {string} profileId
-     * @param {string | import('../custom-request.js').ChatCompletionMessage[]} prompt
+     * @param {string | (import('../custom-request.js').ChatCompletionMessage & {ignoreInstruct?: boolean})[]} prompt
      * @param {number} maxTokens
      * @param {{extractData?: boolean, includePreset?: boolean, includeInstruct?: boolean}} custom - default values are true
      * @returns {Promise<import('../custom-request.js').ExtractedData | any>} Extracted data or the raw response
