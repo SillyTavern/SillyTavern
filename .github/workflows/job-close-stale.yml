@@ -6,6 +6,11 @@ on:
   schedule:
     - cron: '0 0 * * *' # Runs every day at midnight UTC
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   mark-inactivity:
     name: ⏳ Mark Issues/PRs without Activity

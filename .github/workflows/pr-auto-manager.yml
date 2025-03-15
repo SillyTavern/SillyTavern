@@ -6,6 +6,10 @@ on:
   pull_request_review_comment:
     types: [created]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   label-by-size:
     name: 🏷️ Label PR by Size
@@ -75,7 +79,7 @@ jobs:
     name: 🗑️ Remove Stale Label on Comment
     runs-on: ubuntu-latest
     # Only runs when this is not done by the github actions bot
-    if: github.actor != 'github-actions[bot]'
+    if: github.event_name == 'pull_request_review_comment' && github.actor != 'github-actions[bot]'
 
     steps:
       - name: Remove Stale Label
@@ -94,6 +98,12 @@ jobs:
     runs-on: ubuntu-latest
     # Run, even if the previous jobs were skipped/failed
     if: always()
+
+    # Override permissions, as this needs to write a check
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: read
 
     steps:
       - name: Check Merge Blocking

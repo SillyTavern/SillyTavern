@@ -7,6 +7,10 @@ on:
   pull_request_target:
     types: [synchronize]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   check-merge-conflicts:
     name: ⚔️ Check Merge Conflicts

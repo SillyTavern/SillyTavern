@@ -6,6 +6,10 @@ on:
       - staging
       - release
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   # This runs commits to staging/release, reading the commit messages. Check `pr-auto-manager.yml`:`update-linked-issues` for PR-linked updates.
   update-linked-issues:
