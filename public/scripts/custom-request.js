@@ -124,7 +124,7 @@ export class TextCompletionService {
 
     /**
      * Process and send a text completion request with optional preset & instruct
-     * @param {Record<string, any> & TextCompletionRequestBase & {prompt: ChatCompletionMessage[] |string}} custom
+     * @param {Record<string, any> & TextCompletionRequestBase & {prompt: (ChatCompletionMessage & {ignoreInstruct?: boolean})[] |string}} custom
      * @param {Object} options - Configuration options
      * @param {string?} [options.presetName] - Name of the preset to use for generation settings
      * @param {string?} [options.instructName] - Name of instruct preset for message formatting
@@ -159,59 +159,57 @@ export class TextCompletionService {
         }
 
         // Handle instruct formatting if requested
-        if (instructName && prompt) {
+        if (Array.isArray(prompt) && instructName) {
             const instructPresetManager = getPresetManager('instruct');
-            if (!instructPresetManager) {
-                console.warn('Instruct preset manager not found, using basic formatting');
-                if (typeof prompt === 'string') {
-                    // String prompt remains unchanged
-                } else if (Array.isArray(prompt)) {
-                    requestData.prompt = prompt.map(m => m.content).join('\n\n');
-                }
-            } else {
-                let instructPreset = instructPresetManager.getCompletionPresetByName(instructName);
+            let instructPreset = instructPresetManager?.getCompletionPresetByName(instructName);
+            if (instructPreset) {
+                // Clone the preset to avoid modifying the original
+                instructPreset = structuredClone(instructPreset);
+                instructPreset.macro = false;
+                instructPreset.names_behavior = names_behavior_types.NONE;
 
-                if (instructPreset) {
-                    // Clone the preset to avoid modifying the original
-                    instructPreset = structuredClone(instructPreset);
-                    instructPreset.macro = false;
-                    instructPreset.names_behavior = names_behavior_types.NONE;
+                 // Format messages using instruct formatting
+                const formattedMessages = [];
+                for (const message of prompt) {
+                    let messageContent = message.content;
+                    if (!message.ignoreInstruct) {
+                        messageContent = formatInstructModeChat(
+                            message.role,
+                            message.content,
+                            message.role === 'user',
+                            false,
+                            undefined,
+                            undefined,
+                            undefined,
+                            undefined,
+                            instructPreset,
+                        );
 
-                    // Format messages using instruct formatting
-                    const promptArray = Array.isArray(prompt) ? prompt : [{ role: 'user', content: prompt }];
-                    const formattedPrompt = promptArray.map((m) => formatInstructModeChat(
-                        m.role,
-                        m.content,
-                        m.role === 'user',
-                        false,
-                        undefined,
-                        undefined,
-                        undefined,
-                        undefined,
-                        instructPreset,
-                    )).join('');
-
-                    // Add the final prompt formatting
-                    requestData.prompt = formattedPrompt + formatInstructModePrompt(
-                        undefined,
-                        false,
-                        undefined,
-                        undefined,
-                        undefined,
-                        false,
-                        false,
-                        instructPreset,
-                    );
-                } else {
-                    console.warn(`Instruct preset "${instructName}" not found, using basic formatting`);
-                    if (Array.isArray(prompt)) {
-                        requestData.prompt = prompt.map(m => m.content).join('\n\n');
+                        // Add prompt formatting for the last message
+                        if (message === prompt[prompt.length - 1]) {
+                            messageContent += formatInstructModePrompt(
+                                undefined,
+                                false,
+                                undefined,
+                                undefined,
+                                undefined,
+                                false,
+                                false,
+                                instructPreset,
+                            );
+                        }
                     }
+                    formattedMessages.push(messageContent);
                 }
+                requestData.prompt = formattedMessages.join('');
+            } else {
+                console.warn(`Instruct preset "${instructName}" not found, using basic formatting`);
+                requestData.prompt = prompt.map(x => x.content).join('\n\n');
             }
-        } else if (Array.isArray(prompt)) {
-            // No instruct formatting, just convert message array to string if needed
-            requestData.prompt = prompt.map(m => m.content).join('\n\n');
+        } else if (typeof prompt === 'string') {
+            requestData.prompt = prompt;
+        } else {
+            requestData.prompt = prompt.map(x => x.content).join('\n\n');
         }
 
         // @ts-ignore
