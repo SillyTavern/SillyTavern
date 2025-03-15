@@ -202,6 +202,10 @@ export class TextCompletionService {
                     formattedMessages.push(messageContent);
                 }
                 requestData.prompt = formattedMessages.join('');
+                if (instructPreset.output_suffix) {
+                    requestData.stop = [instructPreset.output_suffix];
+                    requestData.stopping_strings = [instructPreset.output_suffix];
+                }
             } else {
                 console.warn(`Instruct preset "${instructName}" not found, using basic formatting`);
                 requestData.prompt = prompt.map(x => x.content).join('\n\n');
