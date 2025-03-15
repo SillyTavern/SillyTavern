@@ -26,7 +26,7 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { MacrosParser } from '../../macros.js';
-import { ConnectionManagerRequestService, countWebLlmTokens, generateWebLlmChatPrompt, getWebLlmContextSize, isWebLlmSupported } from '../shared.js';
+import { countWebLlmTokens, generateWebLlmChatPrompt, getWebLlmContextSize, isWebLlmSupported } from '../shared.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 export { MODULE_NAME };
 
@@ -91,7 +91,6 @@ const summary_sources = {
     'extras': 'extras',
     'main': 'main',
     'webllm': 'webllm',
-    'profile': 'profile',
 };
 
 const prompt_builders = {
@@ -107,7 +106,6 @@ const defaultSettings = {
     memoryFrozen: false,
     SkipWIAN: false,
     source: summary_sources.extras,
-    profileId: '',
     prompt: defaultPrompt,
     template: defaultTemplate,
     position: extension_prompt_types.IN_PROMPT,
@@ -146,10 +144,6 @@ function loadSettings() {
         if (extension_settings.memory[key] === undefined) {
             extension_settings.memory[key] = defaultSettings[key];
         }
-    }
-
-    if (!extension_settings.disabledExtensions.includes('connection-manager')) {
-        ConnectionManagerRequestService.handleDropdown('#memory_connection_profile', extension_settings.memory.profileId, onMemoryConnectionProfileChange);
     }
 
     $('#summary_source').val(extension_settings.memory.source).trigger('change');
@@ -258,14 +252,6 @@ function switchSourceControls(value) {
         const source = element.dataset.summarySource.split(',').map(s => s.trim());
         $(element).toggle(source.includes(value));
     });
-}
-
-/**
- * @param {import('../connection-manager/index.js').ConnectionProfile?} [profile]
- */
-function onMemoryConnectionProfileChange(profile) {
-    extension_settings.memory.profileId = profile ? profile.id : '';
-    saveSettingsDebounced();
 }
 
 function onMemoryFrozenInput() {
@@ -426,11 +412,6 @@ async function onChatEvent() {
         return;
     }
 
-    // Profile not selected
-    if (extension_settings.memory.source === summary_sources.profile && !extension_settings.memory.profileId) {
-        return;
-    }
-
     // Streaming in-progress
     if (streamingProcessor && !streamingProcessor.isFinished) {
         return;
@@ -487,19 +468,9 @@ async function forceSummarizeChat(quiet) {
     const skipWIAN = extension_settings.memory.SkipWIAN;
 
     const toast = quiet ? jQuery() : toastr.info('Summarizing chat...', 'Please wait', { timeOut: 0, extendedTimeOut: 0 });
-    let value = '';
-
-    switch (extension_settings.memory.source) {
-        case summary_sources.main:
-            value = await summarizeChatMain(context, true, skipWIAN);
-            break;
-        case summary_sources.webllm:
-            value = await summarizeChatWebLLM(context, true);
-            break;
-        case summary_sources.profile:
-            value = await summarizeChatWithProfile(context, true);
-            break;
-    }
+    const value = extension_settings.memory.source === summary_sources.main
+        ? await summarizeChatMain(context, true, skipWIAN)
+        : await summarizeChatWebLLM(context, true);
 
     toastr.clear(toast);
 
@@ -539,24 +510,6 @@ async function summarizeCallback(args, text) {
                 const params = extension_settings.memory.overrideResponseLength > 0 ? { max_tokens: extension_settings.memory.overrideResponseLength } : {};
                 return await generateWebLlmChatPrompt(messages, params);
             }
-            case summary_sources.profile: {
-                if (!extension_settings.memory.profileId) {
-                    toastr.warning('No connection profile selected');
-                    return '';
-                }
-                /**
-                 * @type {import('../../custom-request.js').ExtractedData}
-                 */
-                const data = await ConnectionManagerRequestService.sendRequest(
-                    extension_settings.memory.profileId,
-                    [
-                        { role: 'system', content: prompt },
-                        { role: 'user', content: text },
-                    ],
-                    2048,
-                );
-                return data.content;
-            }
             default:
                 toastr.warning('Invalid summarization source specified');
                 return '';
@@ -579,9 +532,6 @@ async function summarizeChat(context) {
             break;
         case summary_sources.webllm:
             await summarizeChatWebLLM(context, false);
-            break;
-        case summary_sources.profile:
-            await summarizeChatWithProfile(context, false);
             break;
         default:
             break;
@@ -656,80 +606,6 @@ async function getSummaryPromptForNow(context, force) {
     }
 
     return prompt;
-}
-
-async function summarizeChatWithProfile(context, force) {
-    if (!extension_settings.memory.profileId) {
-        console.warn('No connection profile selected for summarization');
-        return null;
-    }
-
-    const prompt = await getSummaryPromptForNow(context, force);
-
-    if (!prompt) {
-        return null;
-    }
-
-    let summary = '';
-    let index = null;
-
-    if (extension_settings.memory.prompt_builder === prompt_builders.DEFAULT) {
-        console.debug('Connection profile does\'t support this prompt builder. Using raw prompt.');
-    }
-
-    const lock = [prompt_builders.RAW_BLOCKING, prompt_builders.DEFAULT].includes(extension_settings.memory.prompt_builder);
-    try {
-        inApiCall = true;
-        if (lock) {
-            deactivateSendButtons();
-        }
-
-        const { rawPrompt, lastUsedIndex } = await getRawSummaryPrompt(context, prompt);
-
-        if (lastUsedIndex === null || lastUsedIndex === -1) {
-            if (force) {
-                toastr.info('To try again, remove the latest summary.', 'No messages found to summarize');
-            }
-
-            return null;
-        }
-
-        /**
-         * @type {import('../../custom-request.js').ExtractedData}
-         */
-        const data = await ConnectionManagerRequestService.sendRequest(
-            extension_settings.memory.profileId,
-            [
-                { role: 'system', content: rawPrompt },
-                { role: 'user', content: prompt },
-            ],
-            2048,
-        );
-        summary = data.content;
-        index = lastUsedIndex;
-    } catch (error) {
-        toastr.error(String(error), 'Failed to summarize text');
-        console.log(error);
-    } finally {
-        inApiCall = false;
-        if (lock) {
-            activateSendButtons();
-        }
-    }
-
-    if (!summary) {
-        console.warn('Empty summary received from connection profile');
-        return null;
-    }
-
-    // something changed during summarization request
-    if (isContextChanged(context)) {
-        console.log('Context changed, summary discarded');
-        return null;
-    }
-
-    setMemoryContext(summary, true, index);
-    return summary;
 }
 
 async function summarizeChatWebLLM(context, force) {
@@ -1167,15 +1043,10 @@ jQuery(async function () {
             doPopout(e);
             e.stopPropagation();
         });
-
-        $('#memory_settings').find('.redirect_sys_settings').on('click', function () {
-            $('#sys-settings-button .drawer-toggle').trigger('click');
-        });
     }
 
     await addExtensionControls();
     loadSettings();
-
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.makeLast(event_types.CHARACTER_MESSAGE_RENDERED, onChatEvent);
     for (const event of [event_types.MESSAGE_DELETED, event_types.MESSAGE_UPDATED, event_types.MESSAGE_SWIPED]) {
