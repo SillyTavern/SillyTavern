@@ -138,10 +138,11 @@ async function* parseStreamData(json) {
         for (let i = 0; i < json.candidates.length; i++) {
             const isNotPrimary = json.candidates?.[0]?.index > 0;
             const hasToolCalls = json?.candidates?.[0]?.content?.parts?.some(p => p?.functionCall);
+            const hasInlineData = json?.candidates?.[0]?.content?.parts?.some(p => p?.inlineData);
             if (isNotPrimary || json.candidates.length === 0) {
                 return null;
             }
-            if (hasToolCalls) {
+            if (hasToolCalls || hasInlineData) {
                 yield { data: json, chunk: '' };
                 return;
             }

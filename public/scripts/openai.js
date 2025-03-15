@@ -57,6 +57,7 @@ import {
     getSortableDelay,
     getStringHash,
     isDataURL,
+    isValidUrl,
     parseJsonFile,
     resetScrollHeight,
     stringFormat,
@@ -304,6 +305,7 @@ export const settingsToUpdate = {
     seed: ['#seed_openai', 'seed', false],
     n: ['#n_openai', 'n', false],
     bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true],
+    request_images: ['#openai_request_images', 'request_images', true],
 };
 
 const default_settings = {
@@ -382,6 +384,7 @@ const default_settings = {
     show_thoughts: true,
     reasoning_effort: 'medium',
     enable_web_search: false,
+    request_images: false,
     seed: -1,
     n: 1,
 };
@@ -462,6 +465,7 @@ const oai_settings = {
     show_thoughts: true,
     reasoning_effort: 'medium',
     enable_web_search: false,
+    request_images: false,
     seed: -1,
     n: 1,
 };
@@ -2013,6 +2017,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         'include_reasoning': Boolean(oai_settings.show_thoughts),
         'reasoning_effort': String(oai_settings.reasoning_effort),
         'enable_web_search': Boolean(oai_settings.enable_web_search),
+        'request_images': Boolean(oai_settings.request_images),
     };
 
     if (!canMultiSwipe && ToolManager.canPerformToolCalls(type)) {
@@ -2199,7 +2204,7 @@ async function sendOpenAIRequest(type, messages, signal) {
             let text = '';
             const swipes = [];
             const toolCalls = [];
-            const state = { reasoning: '' };
+            const state = { reasoning: '', image: '' };
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
@@ -2257,6 +2262,10 @@ function getStreamingReply(data, state) {
         }
         return data?.delta?.text || '';
     } else if (oai_settings.chat_completion_source === chat_completion_sources.MAKERSUITE) {
+        const inlineData = data?.candidates?.[0]?.content?.parts?.find(x => x.inlineData)?.inlineData;
+        if (inlineData) {
+            state.image = `data:${inlineData.mimeType};base64,${inlineData.data}`;
+        }
         if (oai_settings.show_thoughts) {
             state.reasoning += (data?.candidates?.[0]?.content?.parts?.filter(x => x.thought)?.map(x => x.text)?.[0] || '');
         }
@@ -3241,6 +3250,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.show_thoughts = settings.show_thoughts ?? default_settings.show_thoughts;
     oai_settings.reasoning_effort = settings.reasoning_effort ?? default_settings.reasoning_effort;
     oai_settings.enable_web_search = settings.enable_web_search ?? default_settings.enable_web_search;
+    oai_settings.request_images = settings.request_images ?? default_settings.request_images;
     oai_settings.seed = settings.seed ?? default_settings.seed;
     oai_settings.n = settings.n ?? default_settings.n;
 
@@ -3369,6 +3379,7 @@ function loadOpenAISettings(data, settings) {
     $('#n_openai').val(oai_settings.n);
     $('#openai_show_thoughts').prop('checked', oai_settings.show_thoughts);
     $('#openai_enable_web_search').prop('checked', oai_settings.enable_web_search);
+    $('#openai_request_images').prop('checked', oai_settings.request_images);
 
     $('#openai_reasoning_effort').val(oai_settings.reasoning_effort);
     $(`#openai_reasoning_effort option[value="${oai_settings.reasoning_effort}"]`).prop('selected', true);
@@ -3487,6 +3498,12 @@ async function getStatusOpen() {
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = t`Key saved; press \"Test Message\" to verify.`;
         setOnlineStatus(status);
+        return resultCheckStatus();
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.CUSTOM && !isValidUrl(oai_settings.custom_url)) {
+        console.debug('Invalid endpoint URL of Custom OpenAI API:', oai_settings.custom_url);
+        setOnlineStatus(t`Invalid endpoint URL. Requests may fail.`);
         return resultCheckStatus();
     }
 
@@ -3634,6 +3651,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         show_thoughts: settings.show_thoughts,
         reasoning_effort: settings.reasoning_effort,
         enable_web_search: settings.enable_web_search,
+        request_images: settings.request_images,
         seed: settings.seed,
         n: settings.n,
     };
@@ -4323,10 +4341,12 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_32k);
         } else if (value.includes('gemini-1.0-ultra') || value === 'gemini-ultra') {
             $('#openai_max_context').attr('max', max_32k);
+        } else if (value.includes('gemma-3')) {
+            $('#openai_max_context').attr('max', max_128k);
         } else {
             $('#openai_max_context').attr('max', max_4k);
         }
-        let makersuite_max_temp = (value.includes('vision') || value.includes('ultra')) ? 1.0 : 2.0;
+        let makersuite_max_temp = (value.includes('vision') || value.includes('ultra') || value.includes('gemma')) ? 1.0 : 2.0;
         oai_settings.temp_openai = Math.min(makersuite_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', makersuite_max_temp).val(oai_settings.temp_openai).trigger('input');
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
@@ -4447,6 +4467,9 @@ async function onModelChange() {
         }
         else if (oai_settings.cohere_model.includes('command-r') || ['c4ai-aya-23', 'c4ai-aya-expanse-32b', 'command-nightly'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_128k);
+        }
+        else if (['command-a-03-2025'].includes(oai_settings.cohere_model)) {
+            $('#openai_max_context').attr('max', max_256k);
         }
         else if (['c4ai-aya-23-8b', 'c4ai-aya-expanse-8b'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_8k);
@@ -4746,11 +4769,6 @@ async function onConnectButtonClick(e) {
 
         if (api_key_custom.length) {
             await writeSecret(SECRET_KEYS.CUSTOM, api_key_custom);
-        }
-
-        if (!oai_settings.custom_url) {
-            console.log('No API URL saved for Custom');
-            return;
         }
     }
 
@@ -5595,6 +5613,11 @@ export function initOpenAI() {
 
     $('#openai_enable_web_search').on('input', function () {
         oai_settings.enable_web_search = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#openai_request_images').on('input', function () {
+        oai_settings.request_images = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

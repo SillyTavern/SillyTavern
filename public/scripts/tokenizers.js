@@ -32,6 +32,7 @@ export const tokenizers = {
     COMMAND_R: 16,
     NEMO: 17,
     DEEPSEEK: 18,
+    COMMAND_A: 19,
     BEST_MATCH: 99,
 };
 
@@ -45,6 +46,7 @@ export const ENCODE_TOKENIZERS = [
     tokenizers.JAMBA,
     tokenizers.QWEN2,
     tokenizers.COMMAND_R,
+    tokenizers.COMMAND_A,
     tokenizers.NEMO,
     tokenizers.DEEPSEEK,
     // uncomment when NovelAI releases Kayra and Clio weights, lol
@@ -128,6 +130,11 @@ const TOKENIZER_URLS = {
         encode: '/api/tokenizers/command-r/encode',
         decode: '/api/tokenizers/command-r/decode',
         count: '/api/tokenizers/command-r/encode',
+    },
+    [tokenizers.COMMAND_A]: {
+        encode: '/api/tokenizers/command-a/encode',
+        decode: '/api/tokenizers/command-a/decode',
+        count: '/api/tokenizers/command-a/encode',
     },
     [tokenizers.NEMO]: {
         encode: '/api/tokenizers/nemo/encode',
@@ -339,6 +346,9 @@ export function getTokenizerBestMatch(forApi) {
             }
             if (model.includes('command-r')) {
                 return tokenizers.COMMAND_R;
+            }
+            if (model.includes('command-a')) {
+                return tokenizers.COMMAND_A;
             }
             if (model.includes('qwen2')) {
                 return tokenizers.QWEN2;
@@ -572,6 +582,7 @@ export function getTokenizerModel() {
     const jambaTokenizer = 'jamba';
     const qwen2Tokenizer = 'qwen2';
     const commandRTokenizer = 'command-r';
+    const commandATokenizer = 'command-a';
     const nemoTokenizer = 'nemo';
     const deepseekTokenizer = 'deepseek';
 
@@ -626,6 +637,9 @@ export function getTokenizerModel() {
             return qwen2Tokenizer;
         }
         else if (model?.architecture?.tokenizer === 'Cohere') {
+            if (model?.id && model?.id.includes('command-a')) {
+                return commandATokenizer;
+            }
             return commandRTokenizer;
         }
         else if (oai_settings.openrouter_model.includes('gpt-4o')) {
@@ -652,6 +666,9 @@ export function getTokenizerModel() {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
+        if (oai_settings.cohere_model.includes('command-a')) {
+            return commandATokenizer;
+        }
         return commandRTokenizer;
     }
 

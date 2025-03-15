@@ -1,5 +1,5 @@
 import { debounce_timeout } from '../../constants.js';
-import { debounceAsync } from '../../utils.js';
+import { debounceAsync, splitRecursive } from '../../utils.js';
 import { getPreviewString, saveTtsProviderSettings } from './index.js';
 
 export class KokoroTtsProvider {
@@ -50,6 +50,17 @@ export class KokoroTtsProvider {
 
         // Update display values immediately but only reinitialize TTS after a delay
         this.initTtsDebounced = debounceAsync(this.initializeWorker.bind(this), debounce_timeout.relaxed);
+    }
+
+    /**
+     * Perform any text processing before passing to TTS engine.
+     * @param {string} text Input text
+     * @returns {string} Processed text
+     */
+    processText(text) {
+        // TILDE!
+        text = text.replace(/~/g, '.');
+        return text;
     }
 
     async loadSettings(settings) {
@@ -258,13 +269,17 @@ export class KokoroTtsProvider {
 
         const voice = this.getVoice(voiceId);
         const previewText = getPreviewString(voice.lang);
-        const response = await this.generateTts(previewText, voiceId);
-        const audio = await response.blob();
-        const url = URL.createObjectURL(audio);
-        const audioElement = new Audio();
-        audioElement.src = url;
-        audioElement.play();
-        audioElement.onended = () => URL.revokeObjectURL(url);
+        for await (const response of this.generateTts(previewText, voiceId)) {
+            const audio = await response.blob();
+            const url = URL.createObjectURL(audio);
+            await new Promise(resolve => {
+                const audioElement = new Audio();
+                audioElement.src = url;
+                audioElement.play();
+                audioElement.onended = () => resolve();
+            });
+            URL.revokeObjectURL(url);
+        }
     }
 
     getVoiceDisplayName(voiceId) {
@@ -282,7 +297,13 @@ export class KokoroTtsProvider {
         };
     }
 
-    async generateTts(text, voiceId) {
+    /**
+     * Generate TTS audio for the given text using the specified voice.
+     * @param {string} text Text to generate
+     * @param {string} voiceId Voice ID
+     * @returns {AsyncGenerator<Response>} Audio response generator
+     */
+    async* generateTts(text, voiceId) {
         if (!this.ready || !this.worker) {
             console.log('TTS not ready, initializing...');
             await this.initializeWorker();
@@ -299,21 +320,26 @@ export class KokoroTtsProvider {
         const voice = this.getVoice(voiceId);
         const requestId = this.nextRequestId++;
 
-        return new Promise((resolve, reject) => {
-            // Store the promise callbacks
-            this.pendingRequests.set(requestId, { resolve, reject });
+        const chunkSize = 400;
+        const chunks = splitRecursive(text, chunkSize, ['\n\n', '\n', '.', '?', '!', ',', ' ', '']);
 
-            // Send the request to the worker
-            this.worker.postMessage({
-                action: 'generateTts',
-                data: {
-                    text,
-                    voice: voice.voice_id,
-                    speakingRate: this.settings.speakingRate || 1.0,
-                    requestId,
-                },
+        for (const chunk of chunks) {
+            yield await new Promise((resolve, reject) => {
+                // Store the promise callbacks
+                this.pendingRequests.set(requestId, { resolve, reject });
+
+                // Send the request to the worker
+                this.worker.postMessage({
+                    action: 'generateTts',
+                    data: {
+                        text: chunk,
+                        voice: voice.voice_id,
+                        speakingRate: this.settings.speakingRate || 1.0,
+                        requestId,
+                    },
+                });
             });
-        });
+        }
     }
 
     dispose() {

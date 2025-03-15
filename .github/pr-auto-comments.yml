@@ -1,0 +1,51 @@
+labels:
+  - name: ✖️ Invalid
+    labeled:
+      pr:
+        action: close
+        body: >
+          Hey @{{ pull_request.user.login }}, thanks for your contribution!
+          Unfortunately, this PR has been marked as invalid.
+
+          Please check that you've followed the PR template, included all relevant details, and are targeting the correct branch (`staging` for regular contributions, `release` only for hotfixes).
+
+          If you need help, feel free to ask!
+
+  - name: ⛔ Don't Merge
+    labeled:
+      pr:
+        body: >
+          🚨 This PR has been temporarily blocked from merging.
+
+  - name: 💥💣 Breaking Changes
+    labeled:
+      pr:
+        body: >
+          ⚠️ Heads up! This PR introduces breaking changes.
+
+          Make sure these changes are well-documented and that users will be properly informed when this is released.
+
+  - name: ⛔ Waiting For External/Upstream
+    labeled:
+      pr:
+        body: >
+            ⛔ This PR is awaiting external or upstream changes or approval.
+            It can only be merged once those changes have been implemented and approved.
+
+            Please inform us of any progress on the upstream changes or approval.
+
+  - name: 🔬 Needs Testing
+    labeled:
+      pr:
+        body: >
+          🔬 This PR needs testing!
+          Any contributor can test and leave reviews, so feel free to help us out!
+
+  - name: 🟥 ⬤⬤⬤⬤⬤
+    labeled:
+      pr:
+        body: >
+            ⚠️ This PR is over 1000 lines, which is larger than recommended.
+
+            Please make sure that it only addresses a single issue - PRs this large are hard to test and may be rejected.
+
