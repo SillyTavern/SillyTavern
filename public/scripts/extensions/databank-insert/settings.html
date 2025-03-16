@@ -1,0 +1,79 @@
+<div id="databank_insertion_container" class="extension_container">
+    <div class="databank_insertion_settings">
+        <div class="inline-drawer">
+            <div class="inline-drawer-toggle inline-drawer-header">
+                <b data-i18n="Databank Insertion">Databank Insertion</b>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            </div>
+            <div class="inline-drawer-content">
+                <h4 data-i18n="General Settings">
+                    General Settings
+                </h4>
+
+                <label class="checkbox_label" for="databank_insert_enable" title="Enable feature.">
+                    <input id="databank_insert_enable" type="checkbox" class="checkbox">
+                    <span data-i18n="Enable">Enable</span>
+                </label>
+                <label class="checkbox_label" for="include_wi" title="Query results can activate World Info entries.">
+                    <input id="include_wi" type="checkbox" class="checkbox">
+                    <span data-i18n="Include in World Info Scanning">Include in World Info Scanning</span>
+                </label>
+
+                <div id="full_settings" class="marginTopBot5">
+                    <div class="flex-container">
+                        <label for="injection_template">
+                            <span data-i18n="Injection Template">Injection Template</span>
+                        </label>
+                    </div>
+                    <div class="flex-container">
+                        <textarea id="injection_template"
+                            class="margin0 text_pole textarea_compact"
+                            rows="3"
+                            placeholder="Use &lcub;&lcub;text&rcub;&rcub; macro to specify the position of retrieved text.">
+                        </textarea>
+                    </div>
+                    <div class="flex-container">
+                        <label for="file_name_regex">
+                            <span data-i18n="File Name Regex">File Name Regex</span>
+                        </label>
+                    </div>
+                    <div class="flex-container">
+                        <textarea id="file_name_regex"
+                            class="margin0 text_pole textarea_compact"
+                            rows="1"
+                            placeholder=".*">
+                        </textarea>
+                    </div>
+                    <div class="flex-container">
+                        <label for="injection_position" data-i18n="Injection Position">Injection Position</label>
+                        <div class="radio_group">
+                            <label>
+                                <input type="radio" name="injection_position" value="2" />
+                                <span data-i18n="Before Main Prompt / Story String">Before Main Prompt / Story String</span>
+                            </label>
+                            <!--Keep these as 0 and 1 to interface with the setExtensionPrompt function-->
+                            <label>
+                                <input type="radio" name="injection_position" value="0" />
+                                <span data-i18n="After Main Prompt / Story String">After Main Prompt / Story String</span>
+                            </label>
+                            <label for="injection_depth"
+                                title="How many messages before the current end of the chat."
+                                data-i18n="[title]How many messages before the current end of the chat."
+                            >
+                                <input type="radio" name="injection_position" value="1" />
+                                <span data-i18n="In-chat @ Depth">In-chat @ Depth</span>
+                                <input id="injection_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
+                                <span>as</span>
+                                <select id="injection_role"  class="text_pole widthNatural">
+                                    <option value="0" data-i18n="System">System</option>
+                                    <option value="1" data-i18n="User">User</option>
+                                    <option value="2" data-i18n="Assistant">Assistant</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
