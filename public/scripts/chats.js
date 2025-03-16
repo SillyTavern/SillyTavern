@@ -623,16 +623,19 @@ async function enlargeMessageImage() {
     const mesBlock = $(this).closest('.mes');
     const mesId = mesBlock.attr('mesid');
     const message = chat[mesId];
-    const imgSrc = message?.extra?.image[0];
+    const imgArr = message?.extra?.image;
     const title = message?.extra?.title;
 
-    if (!imgSrc) {
+    if (!imgArr || imgArr.length === 0) {
         return;
     }
 
+    // Index of image that is currently displayed
+    let currentIndex = 0;
+
     const img = document.createElement('img');
     img.classList.add('img_enlarged');
-    img.src = imgSrc;
+    img.src = imgArr[currentIndex];
     const imgHolder = document.createElement('div');
     imgHolder.classList.add('img_enlarged_holder');
     imgHolder.append(img);
@@ -645,6 +648,48 @@ async function enlargeMessageImage() {
     const titleEmpty = !title || title.trim().length === 0;
     imgContainer.find('pre').toggle(!titleEmpty);
     addCopyToCodeBlocks(imgContainer);
+
+    // Add left and right arrow buttons
+    const leftArrow = $('<div class="img_nav_left">&#10094;</div>');
+    const rightArrow = $('<div class="img_nav_right">&#10095;</div>');
+    imgContainer.append(leftArrow, rightArrow);
+
+    // CSS for the arrow buttons
+    const style = `
+    <style>
+        .img_nav_left, .img_nav_right {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            background-color: rgba(0,0,0,0.4);
+            padding: 10px;
+            cursor: pointer;
+            user-select: none;
+            z-index: 10;
+        }
+        .img_nav_left { left: 10px; }
+        .img_nav_right { right: 10px; }
+    </style>`;
+    imgContainer.append(style);
+
+    // Scroll left
+    leftArrow.click((event) => {
+        event.stopPropagation();
+        if (currentIndex > 0) {
+            currentIndex -= 1;
+            img.src = imgArr[currentIndex];
+        }
+    });
+
+    // Scroll right
+    rightArrow.click((event) => {
+        event.stopPropagation();
+        if (currentIndex < imgArr.length - 1) {
+            currentIndex += 1;
+            img.src = imgArr[currentIndex];
+        }
+    });
 
     const popup = new Popup(imgContainer, POPUP_TYPE.DISPLAY, '', { large: true, transparent: true });
 
