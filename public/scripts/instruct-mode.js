@@ -506,7 +506,7 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
  * @param {string} name2 Character name.
  * @param {boolean} isQuiet Is quiet mode generation.
  * @param {boolean} isQuietToLoud Is quiet to loud generation.
- * @param {object} customInstruct Custom instruct settings.
+ * @param {InstructSettings} customInstruct Custom instruct settings.
  * @returns {string} Formatted instruct mode last prompt line.
  */
 export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2, isQuiet, isQuietToLoud, customInstruct = null) {
