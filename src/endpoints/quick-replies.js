@@ -5,11 +5,9 @@ import express from 'express';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
-import { jsonParser } from '../express-common.js';
-
 export const router = express.Router();
 
-router.post('/save', jsonParser, (request, response) => {
+router.post('/save', (request, response) => {
     if (!request.body || !request.body.name) {
         return response.sendStatus(400);
     }
@@ -20,7 +18,7 @@ router.post('/save', jsonParser, (request, response) => {
     return response.sendStatus(200);
 });
 
-router.post('/delete', jsonParser, (request, response) => {
+router.post('/delete', (request, response) => {
     if (!request.body || !request.body.name) {
         return response.sendStatus(400);
     }

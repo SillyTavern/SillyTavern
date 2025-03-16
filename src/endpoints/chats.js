@@ -8,7 +8,6 @@ import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import _ from 'lodash';
 
-import { jsonParser, urlencodedParser } from '../express-common.js';
 import validateAvatarUrlMiddleware from '../middleware/validateFileName.js';
 import {
     getConfigValue,
@@ -295,7 +294,7 @@ function importRisuChat(userName, characterName, jsonData) {
 
 export const router = express.Router();
 
-router.post('/save', jsonParser, validateAvatarUrlMiddleware, function (request, response) {
+router.post('/save', validateAvatarUrlMiddleware, function (request, response) {
     try {
         const directoryName = String(request.body.avatar_url).replace('.png', '');
         const chatData = request.body.chat;
@@ -311,7 +310,7 @@ router.post('/save', jsonParser, validateAvatarUrlMiddleware, function (request,
     }
 });
 
-router.post('/get', jsonParser, validateAvatarUrlMiddleware, function (request, response) {
+router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
     try {
         const dirName = String(request.body.avatar_url).replace('.png', '');
         const directoryPath = path.join(request.user.directories.chats, dirName);
@@ -347,8 +346,7 @@ router.post('/get', jsonParser, validateAvatarUrlMiddleware, function (request, 
     }
 });
 
-
-router.post('/rename', jsonParser, validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/rename', validateAvatarUrlMiddleware, async function (request, response) {
     if (!request.body || !request.body.original_file || !request.body.renamed_file) {
         return response.sendStatus(400);
     }
@@ -373,7 +371,7 @@ router.post('/rename', jsonParser, validateAvatarUrlMiddleware, async function (
     return response.send({ ok: true, sanitizedFileName });
 });
 
-router.post('/delete', jsonParser, validateAvatarUrlMiddleware, function (request, response) {
+router.post('/delete', validateAvatarUrlMiddleware, function (request, response) {
     const dirName = String(request.body.avatar_url).replace('.png', '');
     const fileName = String(request.body.chatfile);
     const filePath = path.join(request.user.directories.chats, dirName, sanitize(fileName));
@@ -389,7 +387,7 @@ router.post('/delete', jsonParser, validateAvatarUrlMiddleware, function (reques
     return response.send('ok');
 });
 
-router.post('/export', jsonParser, validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/export', validateAvatarUrlMiddleware, async function (request, response) {
     if (!request.body.file || (!request.body.avatar_url && request.body.is_group === false)) {
         return response.sendStatus(400);
     }
@@ -458,7 +456,7 @@ router.post('/export', jsonParser, validateAvatarUrlMiddleware, async function (
     }
 });
 
-router.post('/group/import', urlencodedParser, function (request, response) {
+router.post('/group/import', function (request, response) {
     try {
         const filedata = request.file;
 
@@ -478,7 +476,7 @@ router.post('/group/import', urlencodedParser, function (request, response) {
     }
 });
 
-router.post('/import', urlencodedParser, validateAvatarUrlMiddleware, function (request, response) {
+router.post('/import', validateAvatarUrlMiddleware, function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     const format = request.body.file_type;
@@ -571,7 +569,7 @@ router.post('/import', urlencodedParser, validateAvatarUrlMiddleware, function (
     }
 });
 
-router.post('/group/get', jsonParser, (request, response) => {
+router.post('/group/get', (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }
@@ -591,7 +589,7 @@ router.post('/group/get', jsonParser, (request, response) => {
     }
 });
 
-router.post('/group/delete', jsonParser, (request, response) => {
+router.post('/group/delete', (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }
@@ -607,7 +605,7 @@ router.post('/group/delete', jsonParser, (request, response) => {
     return response.send({ error: true });
 });
 
-router.post('/group/save', jsonParser, (request, response) => {
+router.post('/group/save', (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }
@@ -626,7 +624,7 @@ router.post('/group/save', jsonParser, (request, response) => {
     return response.send({ ok: true });
 });
 
-router.post('/search', jsonParser, validateAvatarUrlMiddleware, function (request, response) {
+router.post('/search', validateAvatarUrlMiddleware, function (request, response) {
     try {
         const { query, avatar_url, group_id } = request.body;
         let chatFiles = [];

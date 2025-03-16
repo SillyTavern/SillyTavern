@@ -86,7 +86,7 @@ const OOBA_DEFAULT_ORDER = [
     'encoder_repetition_penalty',
     'no_repeat_ngram',
 ];
-const APHRODITE_DEFAULT_ORDER = [
+export const APHRODITE_DEFAULT_ORDER = [
     'dry',
     'penalties',
     'no_repeat_ngram',

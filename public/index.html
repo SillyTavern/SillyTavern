@@ -1962,7 +1962,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,ai21">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -1995,6 +1995,23 @@
                                                     <option data-i18n="openai_inline_image_quality_high" value="high">High</option>
                                                 </select>
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div class="range-block" data-source="makersuite">
+                                        <label for="openai_request_images" class="checkbox_label widthFreeExpand">
+                                            <input id="openai_request_images" type="checkbox" />
+                                            <span>
+                                                <span data-i18n="Request inline images">Request inline images</span>
+                                                <i class="opacity50p fa-solid fa-circle-info" title="Gemini 2.0 Flash Experimental"></i>
+                                            </span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft marginBot5">
+                                            <span data-i18n="Allows the model to return image attachments.">
+                                                Allows the model to return image attachments.
+                                            </span>
+                                            <em data-source="makersuite" data-i18n="Request inline images_desc_2">
+                                                Incompatible with the following features: function calling, web search, system prompt.
+                                            </em>
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="makersuite">
@@ -3117,6 +3134,9 @@
                                         <option value="gemini-ultra">Gemini Ultra (1.0)</option>
                                         <option value="gemini-1.0-ultra-latest">Gemini 1.0 Ultra</option>
                                     </optgroup>
+                                    <optgroup label="Gemma">
+                                        <option value="gemma-3-27b-it">Gemma 3 27B</option>
+                                    </optgroup>
                                     <optgroup label="Subversions">
                                         <option value="gemini-2.0-pro-exp">Gemini 2.0 Pro Experimental</option>
                                         <option value="gemini-2.0-pro-exp-02-05">Gemini 2.0 Pro Experimental 2025-02-05</option>
@@ -3127,6 +3147,7 @@
                                         <option value="gemini-2.0-flash-thinking-exp-01-21">Gemini 2.0 Flash Thinking Experimental 2025-01-21</option>
                                         <option value="gemini-2.0-flash-thinking-exp-1219">Gemini 2.0 Flash Thinking Experimental 2024-12-19</option>
                                         <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Experimental</option>
+                                        <option value="gemini-2.0-flash-exp-image-generation">Gemini 2.0 Flash (Image Generation) Experimental</option>
                                         <option value="gemini-exp-1114">Gemini Experimental 2024-11-14</option>
                                         <option value="gemini-exp-1121">Gemini Experimental 2024-11-21</option>
                                         <option value="gemini-exp-1206">Gemini Experimental 2024-12-06</option>
@@ -3333,6 +3354,7 @@
                                         <option value="command-r-08-2024">command-r-08-2024</option>
                                         <option value="command-r-plus-08-2024">command-r-plus-08-2024</option>
                                         <option value="command-r7b-12-2024">command-r7b-12-2024</option>
+                                        <option value="command-a-03-2025">command-a-03-2025</option>
                                     </optgroup>
                                     <optgroup label="Nightly">
                                         <option value="command-light-nightly">command-light-nightly</option>
@@ -3834,6 +3856,7 @@
                                     <option value="14">Jamba</option>
                                     <option value="15">Qwen2</option>
                                     <option value="16">Command-R</option>
+                                    <option value="19">Command-A</option>
                                     <option value="4">NerdStash (NovelAI Clio)</option>
                                     <option value="5">NerdStash v2 (NovelAI Kayra)</option>
                                     <option value="7">Mistral V1</option>
@@ -5382,6 +5405,7 @@
                                                 <option value="2" data-i18n="Manual">Manual</option>
                                                 <option value="0" data-i18n="Natural order">Natural order</option>
                                                 <option value="1" data-i18n="List order">List order</option>
+                                                <option value="3" data-i18n="Pooled order">Pooled order</option>
                                             </select>
                                         </div>
                                         <div class="flex1 flexGap5">

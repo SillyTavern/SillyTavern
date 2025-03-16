@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import storage from 'node-persist';
 import express from 'express';
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
-import { jsonParser, getIpFromRequest, getRealIpFromHeader } from '../express-common.js';
+import { getIpFromRequest, getRealIpFromHeader } from '../express-common.js';
 import { color, Cache, getConfigValue } from '../util.js';
 import { KEY_PREFIX, getUserAvatar, toKey, getPasswordHash, getPasswordSalt } from '../users.js';
 
@@ -56,7 +56,7 @@ router.post('/list', async (_request, response) => {
     }
 });
 
-router.post('/login', jsonParser, async (request, response) => {
+router.post('/login', async (request, response) => {
     try {
         if (!request.body.handle) {
             console.warn('Login failed: Missing required fields');
@@ -104,7 +104,7 @@ router.post('/login', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/recover-step1', jsonParser, async (request, response) => {
+router.post('/recover-step1', async (request, response) => {
     try {
         if (!request.body.handle) {
             console.warn('Recover step 1 failed: Missing required fields');
@@ -144,7 +144,7 @@ router.post('/recover-step1', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/recover-step2', jsonParser, async (request, response) => {
+router.post('/recover-step2', async (request, response) => {
     try {
         if (!request.body.handle || !request.body.code) {
             console.warn('Recover step 2 failed: Missing required fields');

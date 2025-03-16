@@ -585,6 +585,7 @@ export class ToolManager {
             chat_completion_sources.COHERE,
             chat_completion_sources.DEEPSEEK,
             chat_completion_sources.MAKERSUITE,
+            chat_completion_sources.AI21,
         ];
         return supportedSources.includes(oai_settings.chat_completion_source);
     }

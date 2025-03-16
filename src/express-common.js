@@ -1,9 +1,10 @@
-import express from 'express';
 import ipaddr from 'ipaddr.js';
 
-// Instantiate parser middleware here with application-level size limits
-export const jsonParser = express.json({ limit: '200mb' });
-export const urlencodedParser = express.urlencoded({ extended: true, limit: '200mb' });
+const noopMiddleware = (_req, _res, next) => next();
+/** @deprecated Do not use. A global middleware is provided at the application level. */
+export const jsonParser = noopMiddleware;
+/** @deprecated Do not use. A global middleware is provided at the application level. */
+export const urlencodedParser = noopMiddleware;
 
 /**
  * Gets the IP address of the client from the request object.

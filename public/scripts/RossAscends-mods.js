@@ -1018,6 +1018,14 @@ export function initRossMods() {
         return false;
     }
 
+    function isModifiedKeyboardEvent(event) {
+        return (event instanceof KeyboardEvent &&
+            event.shiftKey ||
+            event.ctrlKey ||
+            event.altKey ||
+            event.metaKey);
+    }
+
     $(document).on('keydown', async function (event) {
         await processHotkeys(event.originalEvent);
     });
@@ -1141,9 +1149,10 @@ export function initRossMods() {
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
-                !isInputElementInFocus()
+                !isInputElementInFocus() &&
+                !isModifiedKeyboardEvent(event)
             ) {
-                $('.swipe_left:last').click();
+                $('.swipe_left:last').trigger('click', { source: 'keyboard', repeated: event.repeat });
                 return;
             }
         }
@@ -1154,9 +1163,10 @@ export function initRossMods() {
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
-                !isInputElementInFocus()
+                !isInputElementInFocus() &&
+                !isModifiedKeyboardEvent(event)
             ) {
-                $('.swipe_right:last').click();
+                $('.swipe_right:last').trigger('click', { source: 'keyboard', repeated: event.repeat });
                 return;
             }
         }

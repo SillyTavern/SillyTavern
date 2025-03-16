@@ -1,10 +1,9 @@
 import express from 'express';
-import { jsonParser } from '../express-common.js';
 
 export const router = express.Router();
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 
-router.post('/models/providers', jsonParser, async (req, res) => {
+router.post('/models/providers', async (req, res) => {
     try {
         const { model } = req.body;
         const response = await fetch(`${API_OPENROUTER}/models/${model}/endpoints`, {
@@ -29,7 +28,7 @@ router.post('/models/providers', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/models/multimodal', jsonParser, async (_req, res) => {
+router.post('/models/multimodal', async (_req, res) => {
     try {
         // The endpoint is available without authentication
         const response = await fetch(`${API_OPENROUTER}/models`, {

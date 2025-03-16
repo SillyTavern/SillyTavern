@@ -4,19 +4,18 @@ import path from 'node:path';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 
-import { jsonParser, urlencodedParser } from '../express-common.js';
 import { invalidateThumbnail } from './thumbnails.js';
 import { getImages } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
 
-router.post('/all', jsonParser, function (request, response) {
+router.post('/all', function (request, response) {
     var images = getImages(request.user.directories.backgrounds);
     response.send(JSON.stringify(images));
 });
 
-router.post('/delete', jsonParser, getFileNameValidationFunction('bg'), function (request, response) {
+router.post('/delete', getFileNameValidationFunction('bg'), function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     if (request.body.bg !== sanitize(request.body.bg)) {
@@ -36,7 +35,7 @@ router.post('/delete', jsonParser, getFileNameValidationFunction('bg'), function
     return response.send('ok');
 });
 
-router.post('/rename', jsonParser, function (request, response) {
+router.post('/rename', function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     const oldFileName = path.join(request.user.directories.backgrounds, sanitize(request.body.old_bg));
@@ -58,7 +57,7 @@ router.post('/rename', jsonParser, function (request, response) {
     return response.send('ok');
 });
 
-router.post('/upload', urlencodedParser, function (request, response) {
+router.post('/upload', function (request, response) {
     if (!request.body || !request.file) return response.sendStatus(400);
 
     const img_path = path.join(request.file.destination, request.file.filename);

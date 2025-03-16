@@ -3,7 +3,6 @@ import fetch from 'node-fetch';
 import express from 'express';
 import _ from 'lodash';
 
-import { jsonParser } from '../../express-common.js';
 import {
     TEXTGEN_TYPES,
     TOGETHERAI_KEYS,
@@ -93,7 +92,7 @@ async function abortKoboldCppRequest(url) {
 }
 
 //************** Ooba/OpenAI text completions API
-router.post('/status', jsonParser, async function (request, response) {
+router.post('/status', async function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     try {
@@ -227,7 +226,7 @@ router.post('/status', jsonParser, async function (request, response) {
     }
 });
 
-router.post('/props', jsonParser, async function (request, response) {
+router.post('/props', async function (request, response) {
     if (!request.body.api_server) return response.sendStatus(400);
 
     try {
@@ -261,7 +260,7 @@ router.post('/props', jsonParser, async function (request, response) {
     }
 });
 
-router.post('/generate', jsonParser, async function (request, response) {
+router.post('/generate', async function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     try {
@@ -432,7 +431,7 @@ router.post('/generate', jsonParser, async function (request, response) {
 
 const ollama = express.Router();
 
-ollama.post('/download', jsonParser, async function (request, response) {
+ollama.post('/download', async function (request, response) {
     try {
         if (!request.body.name || !request.body.api_server) return response.sendStatus(400);
 
@@ -462,7 +461,7 @@ ollama.post('/download', jsonParser, async function (request, response) {
     }
 });
 
-ollama.post('/caption-image', jsonParser, async function (request, response) {
+ollama.post('/caption-image', async function (request, response) {
     try {
         if (!request.body.server_url || !request.body.model) {
             return response.sendStatus(400);
@@ -507,7 +506,7 @@ ollama.post('/caption-image', jsonParser, async function (request, response) {
 
 const llamacpp = express.Router();
 
-llamacpp.post('/caption-image', jsonParser, async function (request, response) {
+llamacpp.post('/caption-image', async function (request, response) {
     try {
         if (!request.body.server_url) {
             return response.sendStatus(400);
@@ -552,7 +551,7 @@ llamacpp.post('/caption-image', jsonParser, async function (request, response) {
     }
 });
 
-llamacpp.post('/props', jsonParser, async function (request, response) {
+llamacpp.post('/props', async function (request, response) {
     try {
         if (!request.body.server_url) {
             return response.sendStatus(400);
@@ -581,7 +580,7 @@ llamacpp.post('/props', jsonParser, async function (request, response) {
     }
 });
 
-llamacpp.post('/slots', jsonParser, async function (request, response) {
+llamacpp.post('/slots', async function (request, response) {
     try {
         if (!request.body.server_url) {
             return response.sendStatus(400);
@@ -633,7 +632,7 @@ llamacpp.post('/slots', jsonParser, async function (request, response) {
 
 const tabby = express.Router();
 
-tabby.post('/download', jsonParser, async function (request, response) {
+tabby.post('/download', async function (request, response) {
     try {
         const baseUrl = String(request.body.api_server).replace(/\/$/, '');
 

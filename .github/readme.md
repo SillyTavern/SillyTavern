@@ -23,7 +23,7 @@ We have a [Documentation website](https://docs.sillytavern.app/) to answer most 
 
 SillyTavern (or ST for short) is a locally installed user interface that allows you to interact with text generation LLMs, image generation engines, and TTS voice models.
 
-Beginning in February 2023 as a fork of TavernAI 1.2.8, SillyTavern now has over 100 contributors and 2 years of independent development under its belt, and continues to serve as a leading software for savvy AI hobbyists.
+Beginning in February 2023 as a fork of TavernAI 1.2.8, SillyTavern now has over 200 contributors and 2 years of independent development under its belt, and continues to serve as a leading software for savvy AI hobbyists.
 
 ## Our Vision
 
@@ -113,7 +113,9 @@ SillyTavern has extensibility support.
 
 Tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/).
 
-# ⌛ Installation
+## ⌛ Installation
+
+### 🪟 Windows
 
 > \[!WARNING]
 >
@@ -121,9 +123,7 @@ Tutorials on how to use them can be found in the [Docs](https://docs.sillytavern
 > * DO NOT RUN START.BAT WITH ADMIN PERMISSIONS
 > * INSTALLATION ON WINDOWS 7 IS IMPOSSIBLE AS IT CAN NOT RUN NODEJS 18.16
 
-## 🪟 Windows
-
-### Installing via Git
+#### Installing via Git (recommended)
 
 1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
 2. Install [Git for Windows](https://gitforwindows.org/)
@@ -138,7 +138,7 @@ Tutorials on how to use them can be found in the [Docs](https://docs.sillytavern
 7. Once everything is cloned, double-click `Start.bat` to make NodeJS install its requirements.
 8. The server will then start, and SillyTavern will pop up in your browser.
 
-### Installing via GitHub Desktop
+#### Installing via GitHub Desktop
 
 (This allows git usage **only** in GitHub Desktop, if you want to use `git` on the command line too, you also need to install [Git for Windows](https://gitforwindows.org/))
 
@@ -152,7 +152,7 @@ Tutorials on how to use them can be found in the [Docs](https://docs.sillytavern
   9. After the installation process, if everything is working, the command console window should look like this and a SillyTavern tab should be open in your browser:
   10. Connect to any of the [supported APIs](https://docs.sillytavern.app/usage/api-connections/) and start chatting!
 
-## 🐧 Linux & 🍎 MacOS
+### 🐧 Linux & 🍎 MacOS
 
 For MacOS / Linux all of these will be done in a Terminal.
 
@@ -167,6 +167,57 @@ For MacOS / Linux all of these will be done in a Terminal.
 
 * `./start.sh`
 * `bash start.sh`
+
+## 🐋 Installing via Docker
+
+These instructions assume you have installed Docker, are able to access your command line for the installation of containers, and familiar with their general operation.
+
+### Using the GitHub Container Registry
+
+#### Docker Compose (easiest)
+
+Grab the `docker-compose.yml` file from the [GitHub Repository](https://github.com/SillyTavern/SillyTavern/blob/release/docker/docker-compose.yml) and run the following command in the directory where the file is located. This will pull the latest release image from the GitHub Container Registry and start the container, automatically creating the necessary volumes.
+
+```shell
+docker-compose up
+```
+
+Customize the `docker-compose.yml` file to your needs. The default port is 8000. If you want to adjust the server configuration using environment variables, read the documentation [here](https://docs.sillytavern.app/administration/config-yaml/#environment-variables).
+
+#### Docker CLI (advanced)
+
+You will need two mandatory directory mappings and a port mapping to allow SillyTavern to function. In the command, replace your selections in the following places:
+
+#### Container Variables
+
+##### Volume Mappings
+
+* [config] - The directory where SillyTavern configuration files will be stored on your host machine
+* [data] - The directory where SillyTavern user data (including characters) will be stored on your host machine
+* [plugins] - (optional) The directory where SillyTavern server plugins will be stored on your host machine
+* [extensions] - (optional) The directory where global UI extensions will be stored on your host machine
+
+##### Port Mappings
+
+* [PublicPort] - The port to expose the traffic on. This is mandatory, as you will be accessing the instance from outside of its virtual machine container. DO NOT expose this to the internet without implementing a separate service for security.
+
+##### Additional Settings
+
+* [DockerNet] - The docker network that the container should be created with a connection to. If you don't know what it is, see the [official Docker documentation](https://docs.docker.com/reference/cli/docker/network/).
+* [version] - On the right-hand side of this GitHub page, you'll see "Packages". Select the "sillytavern" package and you'll see the image versions. The image tag "latest" will keep you up-to-date with the current release. You can also utilize "staging" and "release" tags that point to the nightly images of the respective branches, but this may not be appropriate, if you are utilizing extensions that could be broken, and may need time to update.
+
+#### Install command
+
+1. Open your Command Line
+2. Run the following command
+
+`docker run --name='sillytavern' --net='[DockerNet]' -p '8000:8000/tcp' -v '[plugins]':'/home/node/app/plugins':'rw' -v '[config]':'/home/node/app/config':'rw' -v '[data]':'/home/node/app/data':'rw' -v '[extensions]':'/home/node/app/public/scripts/extensions/third-party':'rw' 'ghcr.io/sillytavern/sillytavern:[version]'`
+
+> Note that 8000 is a default listening port. Don't forget to use an appropriate port if you change it in the config.
+
+### Building the image yourself
+
+We have a comprehensive guide on using SillyTavern in Docker [here](http://docs.sillytavern.app/installation/docker/) which covers installations on Windows, macOS and Linux! Give it a read if you wish to build the image yourself.
 
 ## ⚡ Installing via SillyTavern Launcher
 
@@ -238,45 +289,6 @@ chmod +x install.sh && ./install.sh
 ```shell
 chmod +x launcher.sh && ./launcher.sh
 ```
-
-## 🐋 Installing via Docker
-
-These instructions assume you have installed Docker, are able to access your command line for the installation of containers, and familiar with their general operation.
-
-### Building the image yourself
-
-We have a comprehensive guide on using SillyTavern in Docker [here](http://docs.sillytavern.app/installation/docker/) which covers installations on Windows, macOS and Linux! Give it a read if you wish to build the image yourself.
-
-### Using the GitHub Container Registry (easiest)
-
-You will need two mandatory directory mappings and a port mapping to allow SillyTavern to function. In the command, replace your selections in the following places:
-
-#### Container Variables
-
-##### Volume Mappings
-
-* [config] - The directory where SillyTavern configuration files will be stored on your host machine
-* [data] - The directory where SillyTavern user data (including characters) will be stored on your host machine
-* [plugins] - (optional) The directory where SillyTavern server plugins will be stored on your host machine
-* [extensions] - (optional) The directory where global UI extensions will be stored on your host machine
-
-##### Port Mappings
-
-* [PublicPort] - The port to expose the traffic on. This is mandatory, as you will be accessing the instance from outside of its virtual machine container. DO NOT expose this to the internet without implementing a separate service for security.
-
-##### Additional Settings
-
-* [DockerNet] - The docker network that the container should be created with a connection to. If you don't know what it is, see the [official Docker documentation](https://docs.docker.com/reference/cli/docker/network/).
-* [version] - On the right-hand side of this GitHub page, you'll see "Packages". Select the "sillytavern" package and you'll see the image versions. The image tag "latest" will keep you up-to-date with the current release. You can also utilize "staging" and "release" tags that point to the nightly images of the respective branches, but this may not be appropriate, if you are utilizing extensions that could be broken, and may need time to update.
-
-#### Install command
-
-1. Open your Command Line
-2. Run the following command
-
-`docker run --name='sillytavern' --net='[DockerNet]' -p '8000:8000/tcp' -v '[plugins]':'/home/node/app/plugins':'rw' -v '[config]':'/home/node/app/config':'rw' -v '[data]':'/home/node/app/data':'rw' -v '[extensions]':'/home/node/app/public/scripts/extensions/third-party':'rw' 'ghcr.io/sillytavern/sillytavern:[version]'`
-
-> Note that 8000 is a default listening port. Don't forget to use an appropriate port if you change it in the config.
 
 ## 📱 Installing via Termux on Android OS
 
@@ -393,6 +405,7 @@ GNU Affero General Public License for more details.**
 * Icon theme by Font Awesome <https://fontawesome.com> (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
 * Default content by @OtisAlejandro (Seraphina character and lorebook) and @kallmeflocc (10K Discord Users Celebratory Background)
 * Docker guide by [@mrguymiah](https://github.com/mrguymiah) and [@Bronya-Rand](https://github.com/Bronya-Rand)
+* kokoro-js library by [@hexgrad](https://github.com/hexgrad) (Apache-2.0 License)
 
 ## Top Contributors
 

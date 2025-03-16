@@ -114,6 +114,7 @@ export const group_activation_strategy = {
     NATURAL: 0,
     LIST: 1,
     MANUAL: 2,
+    POOLED: 3,
 };
 
 export const group_generation_mode = {
@@ -245,9 +246,9 @@ export async function getGroupChat(groupId, reload = false) {
                 }
 
                 chat.push(mes);
-                await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
+                await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1), 'first_message');
                 addOneMessage(mes);
-                await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
+                await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1), 'first_message');
             }
         }
         await saveGroupChat(groupId, false);
@@ -880,6 +881,9 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         else if (activationStrategy === group_activation_strategy.LIST) {
             activatedMembers = activateListOrder(enabledMembers);
         }
+        else if (activationStrategy === group_activation_strategy.POOLED) {
+            activatedMembers = activatePooledOrder(enabledMembers, lastMessage);
+        }
         else if (activationStrategy === group_activation_strategy.MANUAL && !isUserInput) {
             activatedMembers = shuffle(enabledMembers).slice(0, 1).map(x => characters.findIndex(y => y.avatar === x)).filter(x => x !== -1);
         }
@@ -1018,6 +1022,48 @@ function activateListOrder(members) {
         .map((x) => characters.findIndex((y) => y.avatar === x))
         .filter((x) => x !== -1);
     return memberIds;
+}
+
+/**
+ * Activate group members based on the last message.
+ * @param {string[]} members List of member avatars
+ * @param {Object} lastMessage Last message
+ * @returns {number[]} List of character ids
+ */
+function activatePooledOrder(members, lastMessage) {
+    /** @type {string} */
+    let activatedMember = null;
+    /** @type {string[]} */
+    const spokenSinceUser = [];
+
+    for (const message of chat.slice().reverse()) {
+        if (message.is_user) {
+            break;
+        }
+
+        if (message.is_system || message.extra?.type === system_message_types.NARRATOR) {
+            continue;
+        }
+
+        if (message.original_avatar) {
+            spokenSinceUser.push(message.original_avatar);
+        }
+    }
+
+    const haveNotSpoken = members.filter(x => !spokenSinceUser.includes(x));
+
+    if (haveNotSpoken.length) {
+        activatedMember = haveNotSpoken[Math.floor(Math.random() * haveNotSpoken.length)];
+    }
+
+    if (activatedMember === null) {
+        const lastMessageAvatar = members.length > 1 && lastMessage && !lastMessage.is_user && lastMessage.original_avatar;
+        const randomPool = lastMessageAvatar ? members.filter(x => x !== lastMessage.original_avatar) : members;
+        activatedMember = randomPool[Math.floor(Math.random() * randomPool.length)];
+    }
+
+    const memberId = characters.findIndex(y => y.avatar === activatedMember);
+    return memberId !== -1 ? [memberId] : [];
 }
 
 function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, isUserInput) {

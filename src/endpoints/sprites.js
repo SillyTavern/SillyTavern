@@ -7,7 +7,6 @@ import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 import { getImageBuffers } from '../util.js';
-import { jsonParser, urlencodedParser } from '../express-common.js';
 
 /**
  * Gets the path to the sprites folder for the provided character name
@@ -109,7 +108,7 @@ export function importRisuSprites(directories, data) {
 
 export const router = express.Router();
 
-router.get('/get', jsonParser, function (request, response) {
+router.get('/get', function (request, response) {
     const name = String(request.query.name);
     const isSubfolder = name.includes('/');
     const spritesPath = getSpritesPath(request.user.directories, name, isSubfolder);
@@ -144,7 +143,7 @@ router.get('/get', jsonParser, function (request, response) {
     return response.send(sprites);
 });
 
-router.post('/delete', jsonParser, async (request, response) => {
+router.post('/delete', async (request, response) => {
     const label = request.body.label;
     const name = request.body.name;
     const spriteName = request.body.spriteName || label;
@@ -177,7 +176,7 @@ router.post('/delete', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/upload-zip', urlencodedParser, async (request, response) => {
+router.post('/upload-zip', async (request, response) => {
     const file = request.file;
     const name = request.body.name;
 
@@ -224,7 +223,7 @@ router.post('/upload-zip', urlencodedParser, async (request, response) => {
     }
 });
 
-router.post('/upload', urlencodedParser, async (request, response) => {
+router.post('/upload', async (request, response) => {
     const file = request.file;
     const label = request.body.label;
     const name = request.body.name;

@@ -48,6 +48,7 @@ import {
     printMessages,
     clearChat,
     unshallowCharacter,
+    deleteLastMessage,
 } from '../script.js';
 import {
     extension_settings,
@@ -79,7 +80,8 @@ import { timestampToMoment, uuidv4 } from './utils.js';
 import { getGlobalVariable, getLocalVariable, setGlobalVariable, setLocalVariable } from './variables.js';
 import { convertCharacterBook, loadWorldInfo, saveWorldInfo, updateWorldInfoList } from './world-info.js';
 import { ChatCompletionService, TextCompletionService } from './custom-request.js';
-import { updateReasoningUI } from './reasoning.js';
+import { ConnectionManagerRequestService } from './extensions/shared.js';
+import { updateReasoningUI, parseReasoningFromString } from './reasoning.js';
 
 export function getContext() {
     return {
@@ -106,6 +108,7 @@ export function getContext() {
         eventSource,
         eventTypes: event_types,
         addOneMessage,
+        deleteLastMessage,
         generate: Generate,
         sendStreamingRequest,
         sendGenerationRequest,
@@ -147,6 +150,7 @@ export function getContext() {
         unregisterFunctionTool: ToolManager.unregisterFunctionTool.bind(ToolManager),
         isToolCallingSupported: ToolManager.isToolCallingSupported.bind(ToolManager),
         canPerformToolCalls: ToolManager.canPerformToolCalls.bind(ToolManager),
+        ToolManager,
         registerDebugFunction,
         /** @deprecated Use renderExtensionTemplateAsync instead. */
         renderExtensionTemplate,
@@ -212,7 +216,9 @@ export function getContext() {
         clearChat,
         ChatCompletionService,
         TextCompletionService,
+        ConnectionManagerRequestService,
         updateReasoningUI,
+        parseReasoningFromString,
         unshallowCharacter,
         unshallowGroupMembers,
     };

@@ -5,8 +5,6 @@ import express from 'express';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
-import { jsonParser, urlencodedParser } from '../express-common.js';
-
 /**
  * Reads a World Info file and returns its contents
  * @param {import('../users.js').UserDirectoryList} directories User directories
@@ -36,7 +34,7 @@ export function readWorldInfoFile(directories, worldInfoName, allowDummy) {
 
 export const router = express.Router();
 
-router.post('/get', jsonParser, (request, response) => {
+router.post('/get', (request, response) => {
     if (!request.body?.name) {
         return response.sendStatus(400);
     }
@@ -46,7 +44,7 @@ router.post('/get', jsonParser, (request, response) => {
     return response.send(file);
 });
 
-router.post('/delete', jsonParser, (request, response) => {
+router.post('/delete', (request, response) => {
     if (!request.body?.name) {
         return response.sendStatus(400);
     }
@@ -64,7 +62,7 @@ router.post('/delete', jsonParser, (request, response) => {
     return response.sendStatus(200);
 });
 
-router.post('/import', urlencodedParser, (request, response) => {
+router.post('/import', (request, response) => {
     if (!request.file) return response.sendStatus(400);
 
     const filename = `${path.parse(sanitize(request.file.originalname)).name}.json`;
@@ -99,7 +97,7 @@ router.post('/import', urlencodedParser, (request, response) => {
     return response.send({ name: worldName });
 });
 
-router.post('/edit', jsonParser, (request, response) => {
+router.post('/edit', (request, response) => {
     if (!request.body) {
         return response.sendStatus(400);
     }

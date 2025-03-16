@@ -3,8 +3,7 @@ import { promises as fsPromises } from 'node:fs';
 import storage from 'node-persist';
 import express from 'express';
 import lodash from 'lodash';
-import { jsonParser } from '../express-common.js';
-import { checkForNewContent } from './content-manager.js';
+import { checkForNewContent, CONTENT_TYPES } from './content-manager.js';
 import {
     KEY_PREFIX,
     toKey,
@@ -20,7 +19,7 @@ import { DEFAULT_USER } from '../constants.js';
 
 export const router = express.Router();
 
-router.post('/get', requireAdminMiddleware, jsonParser, async (_request, response) => {
+router.post('/get', requireAdminMiddleware, async (_request, response) => {
     try {
         /** @type {import('../users.js').User[]} */
         const users = await storage.values(x => x.key.startsWith(KEY_PREFIX));
@@ -50,7 +49,7 @@ router.post('/get', requireAdminMiddleware, jsonParser, async (_request, respons
     }
 });
 
-router.post('/disable', requireAdminMiddleware, jsonParser, async (request, response) => {
+router.post('/disable', requireAdminMiddleware, async (request, response) => {
     try {
         if (!request.body.handle) {
             console.warn('Disable user failed: Missing required fields');
@@ -79,7 +78,7 @@ router.post('/disable', requireAdminMiddleware, jsonParser, async (request, resp
     }
 });
 
-router.post('/enable', requireAdminMiddleware, jsonParser, async (request, response) => {
+router.post('/enable', requireAdminMiddleware, async (request, response) => {
     try {
         if (!request.body.handle) {
             console.warn('Enable user failed: Missing required fields');
@@ -103,7 +102,7 @@ router.post('/enable', requireAdminMiddleware, jsonParser, async (request, respo
     }
 });
 
-router.post('/promote', requireAdminMiddleware, jsonParser, async (request, response) => {
+router.post('/promote', requireAdminMiddleware, async (request, response) => {
     try {
         if (!request.body.handle) {
             console.warn('Promote user failed: Missing required fields');
@@ -127,7 +126,7 @@ router.post('/promote', requireAdminMiddleware, jsonParser, async (request, resp
     }
 });
 
-router.post('/demote', requireAdminMiddleware, jsonParser, async (request, response) => {
+router.post('/demote', requireAdminMiddleware, async (request, response) => {
     try {
         if (!request.body.handle) {
             console.warn('Demote user failed: Missing required fields');
@@ -156,7 +155,7 @@ router.post('/demote', requireAdminMiddleware, jsonParser, async (request, respo
     }
 });
 
-router.post('/create', requireAdminMiddleware, jsonParser, async (request, response) => {
+router.post('/create', requireAdminMiddleware, async (request, response) => {
     try {
         if (!request.body.handle || !request.body.name) {
             console.warn('Create user failed: Missing required fields');
@@ -195,7 +194,7 @@ router.post('/create', requireAdminMiddleware, jsonParser, async (request, respo
         console.info('Creating data directories for', newUser.handle);
         await ensurePublicDirectoriesExist();
         const directories = getUserDirectories(newUser.handle);
-        await checkForNewContent([directories]);
+        await checkForNewContent([directories], [CONTENT_TYPES.SETTINGS]);
         return response.json({ handle: newUser.handle });
     } catch (error) {
         console.error('User create failed:', error);
@@ -203,7 +202,7 @@ router.post('/create', requireAdminMiddleware, jsonParser, async (request, respo
     }
 });
 
-router.post('/delete', requireAdminMiddleware, jsonParser, async (request, response) => {
+router.post('/delete', requireAdminMiddleware, async (request, response) => {
     try {
         if (!request.body.handle) {
             console.warn('Delete user failed: Missing required fields');
@@ -235,7 +234,7 @@ router.post('/delete', requireAdminMiddleware, jsonParser, async (request, respo
     }
 });
 
-router.post('/slugify', requireAdminMiddleware, jsonParser, async (request, response) => {
+router.post('/slugify', requireAdminMiddleware, async (request, response) => {
     try {
         if (!request.body.text) {
             console.warn('Slugify failed: Missing required fields');

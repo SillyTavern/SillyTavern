@@ -27,6 +27,7 @@ import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashComm
 import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { GoogleTranslateTtsProvider } from './google-translate.js';
+import { KokoroTtsProvider } from './kokoro.js';
 
 const UPDATE_INTERVAL = 1000;
 const wrapper = new ModuleWorkerWrapper(moduleWorker);
@@ -94,6 +95,7 @@ const ttsProviders = {
     'Google Translate': GoogleTranslateTtsProvider,
     GSVI: GSVITtsProvider,
     'GPT-SoVITS-V2 (Unofficial)': GptSovitsV2Provider,
+    Kokoro: KokoroTtsProvider,
     Novel: NovelTtsProvider,
     OpenAI: OpenAITtsProvider,
     'OpenAI Compatible': OpenAICompatibleTtsProvider,
@@ -716,6 +718,9 @@ async function loadTtsProvider(provider) {
 }
 
 function onTtsProviderChange() {
+    if (typeof ttsProvider?.dispose === 'function') {
+        ttsProvider.dispose();
+    }
     const ttsProviderSelection = $('#tts_provider').val();
     extension_settings.tts.currentProvider = ttsProviderSelection;
     $('#playback_rate_block').toggle(extension_settings.tts.currentProvider !== 'System');

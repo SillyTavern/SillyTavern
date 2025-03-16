@@ -5,7 +5,6 @@ import { Buffer } from 'node:buffer';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 
-import { jsonParser } from '../express-common.js';
 import { clientRelativePath, removeFileExtension, getImages } from '../util.js';
 
 /**
@@ -36,7 +35,7 @@ export const router = express.Router();
  * @param {string} [request.body.ch_name] - Optional character name to determine the sub-directory.
  * @returns {Object} response - The response object containing the path where the image was saved.
  */
-router.post('/upload', jsonParser, async (request, response) => {
+router.post('/upload', async (request, response) => {
     // Check for image data
     if (!request.body || !request.body.image) {
         return response.status(400).send({ error: 'No image data provided' });
@@ -76,7 +75,7 @@ router.post('/upload', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/list/:folder?', jsonParser, (request, response) => {
+router.post('/list/:folder?', (request, response) => {
     try {
         if (request.params.folder) {
             if (request.body.folder) {
