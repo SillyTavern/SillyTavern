@@ -1,7 +1,11 @@
 import libs from './lib';
 import getContext from './scripts/st-context';
+import { power_user } from './scripts/power-user';
 
 declare global {
+    // Custom types
+    declare type InstructSettings = typeof power_user.instruct;
+
     // Global namespace modules
     interface Window {
         ai: any;

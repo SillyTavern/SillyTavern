@@ -320,7 +320,7 @@ export const force_output_sequence = {
  * @param {string} name1 User name.
  * @param {string} name2 Character name.
  * @param {boolean|number} forceOutputSequence Force to use first/last output sequence (if configured).
- * @param {object} customInstruct Custom instruct mode settings.
+ * @param {InstructSettings} customInstruct Custom instruct mode settings.
  * @returns {string} Formatted instruct mode chat message.
  */
 export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2, forceOutputSequence, customInstruct = null) {
