@@ -472,7 +472,7 @@ export function getGroupCharacterCards(groupId, characterId) {
         // Also run the macro replacement on the actual content
         value = customBaseChatReplace(value, fieldName, characterName);
 
-        return `${prefix ? prefix : ''}${value}${suffix ? suffix : ''}`;
+        return `${prefix}${value}${suffix}`;
     }
 
     const scenarioOverride = chat_metadata['scenario'];
