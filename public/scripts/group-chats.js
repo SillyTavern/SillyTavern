@@ -435,16 +435,18 @@ export function getGroupCharacterCards(groupId, characterId) {
      * @param {string} value Value to replace
      * @param {string} fieldName Name of the field
      * @param {string} characterName Name of the character
+     * @param {boolean} trim Whether to trim the value
      * @returns {string} Replaced text
      * */
-    function customBaseChatReplace(value, fieldName, characterName) {
+    function customBaseChatReplace(value, fieldName, characterName, trim) {
         if (!value) {
             return '';
         }
 
         // We should do the custom field name replacement first, and then run it through the normal macro engine with provided names
         value = value.replace(/<FIELDNAME>/gi, fieldName);
-        return baseChatReplace(value.trim(), name1, characterName);
+        value = trim ? value.trim() : value;
+        return baseChatReplace(value, name1, characterName);
     }
 
     /**
@@ -467,10 +469,10 @@ export function getGroupCharacterCards(groupId, characterId) {
         }
 
         // Prepare and replace prefixes
-        const prefix = customBaseChatReplace(group.generation_mode_join_prefix, fieldName, characterName);
-        const suffix = customBaseChatReplace(group.generation_mode_join_suffix, fieldName, characterName);
+        const prefix = customBaseChatReplace(group.generation_mode_join_prefix, fieldName, characterName, false);
+        const suffix = customBaseChatReplace(group.generation_mode_join_suffix, fieldName, characterName, false);
         // Also run the macro replacement on the actual content
-        value = customBaseChatReplace(value, fieldName, characterName);
+        value = customBaseChatReplace(value, fieldName, characterName, true);
 
         return `${prefix}${value}${suffix}`;
     }
