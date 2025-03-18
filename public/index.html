@@ -176,13 +176,13 @@
                                         </strong>
 
                                         <div class="flex-container gap3px">
-                                            <div id="import_oai_preset" class="margin0 menu_button menu_button_icon" title="Import preset" data-i18n="[title]Import preset">
+                                            <div data-preset-manager-import="openai" class="margin0 menu_button_icon menu_button" title="Import preset" data-i18n="[title]Import preset">
                                                 <i class="fa-fw fa-solid fa-file-import"></i>
                                             </div>
-                                            <div id="export_oai_preset" class="margin0 menu_button menu_button_icon" title="Export preset" data-i18n="[title]Export preset">
+                                            <div data-preset-manager-export="openai"  class="margin0 menu_button_icon menu_button" title="Export preset" data-i18n="[title]Export preset">
                                                 <i class="fa-fw fa-solid fa-file-export"></i>
                                             </div>
-                                            <div id="delete_oai_preset" class="margin0 menu_button menu_button_icon" title="Delete the preset" data-i18n="[title]Delete the preset">
+                                            <div data-preset-manager-delete="openai" class="margin0 menu_button_icon menu_button" title="Delete the preset" data-i18n="[title]Delete the preset">
                                                 <i class="fa-fw fa-solid fa-trash-can"></i>
                                             </div>
                                         </div>
@@ -193,11 +193,14 @@
                                             <option value="gui" data-i18n="Default">Default</option>
                                         </select>
                                         <div class="flex-container marginLeft5 gap3px">
-                                            <input id="openai_preset_import_file" type="file" accept=".json,.settings" hidden />
-                                            <div id="update_oai_preset" class="menu_button menu_button_icon" title="Update current preset" data-i18n="[title]Update current preset">
+                                            <input type="file" hidden data-preset-manager-file="openai" accept=".json, .settings">
+                                            <div data-preset-manager-update="openai" class="menu_button menu_button_icon" title="Update current preset" data-i18n="[title]Update current preset">
                                                 <i class="fa-fw fa-solid fa-save"></i>
                                             </div>
-                                            <div id="new_oai_preset" class="menu_button menu_button_icon" title="Save preset as" data-i18n="[title]Save preset as">
+                                            <div data-preset-manager-rename="openai" class="menu_button menu_button_icon" title="Rename current preset" data-i18n="[title]Rename current preset">
+                                                <i class="fa-fw fa-solid fa-pencil"></i>
+                                            </div>
+                                            <div data-preset-manager-new="openai" class="menu_button menu_button_icon" title="Save preset as" data-i18n="[title]Save preset as">
                                                 <i class="fa-fw fa-solid fa-file-circle-plus"></i>
                                             </div>
                                         </div>
@@ -3790,7 +3793,7 @@
                                 <div class="flex-container margin0 justifyCenter gap3px">
                                     <input type="file" hidden data-preset-manager-file="sysprompt" accept=".json, .settings">
                                     <i data-preset-manager-update="sysprompt" class="menu_button fa-solid fa-save" title="Update current prompt" data-i18n="[title]Update current prompt"></i>
-                                    <i data-preset-manager-rename="sysprompt" class="menu_button fa-pencil fa-solid" title="Rename current prompt" data-i18n="[title]Rename current prompt"></i>
+                                    <i ="sysprompt" class="menu_button fa-pencil fa-solid" title="Rename current prompt" data-i18n="[title]Rename current prompt"></i>
                                     <i data-preset-manager-new="sysprompt" class="menu_button fa-solid fa-file-circle-plus" title="Save prompt as" data-i18n="[title]Save prompt as"></i>
                                     <i data-preset-manager-import="sysprompt" class="displayNone menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
                                     <i data-preset-manager-export="sysprompt" class="displayNone menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
