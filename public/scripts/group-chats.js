@@ -469,11 +469,10 @@ export function getGroupCharacterCards(groupId, characterId) {
         // Prepare and replace prefixes
         const prefix = customBaseChatReplace(group.generation_mode_join_prefix, fieldName, characterName);
         const suffix = customBaseChatReplace(group.generation_mode_join_suffix, fieldName, characterName);
-        const separator = power_user.instruct.wrap ? '\n' : '';
         // Also run the macro replacement on the actual content
         value = customBaseChatReplace(value, fieldName, characterName);
 
-        return `${prefix ? prefix + separator : ''}${value}${suffix ? separator + suffix : ''}`;
+        return `${prefix ? prefix : ''}${value}${suffix ? suffix : ''}`;
     }
 
     const scenarioOverride = chat_metadata['scenario'];
