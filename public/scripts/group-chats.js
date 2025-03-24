@@ -885,7 +885,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             activatedMembers = activatePooledOrder(enabledMembers, lastMessage, isUserInput);
         }
         else if (activationStrategy === group_activation_strategy.MANUAL && !isUserInput) {
-            activatedMembers = shuffle(enabledMembers).slice(0, 1).map(x => characters.findIndex(y => y.avatar === x)).filter(x => x !== -1);
+            activatedMembers = activateManual(enabledMembers, lastMessage, group.allow_self_responses);
         }
 
         if (activatedMembers.length === 0) {
@@ -1067,6 +1067,18 @@ function activatePooledOrder(members, lastMessage, isUserInput) {
 
     const memberId = characters.findIndex(y => y.avatar === activatedMember);
     return memberId !== -1 ? [memberId] : [];
+}
+
+function activateManual(members, lastMessage, allowSelfResponses) {
+    // prevents the same character from speaking twice
+    let bannedUser = lastMessage && !lastMessage.is_user && lastMessage.name;
+
+    // ...unless allowed to do so
+    if (allowSelfResponses) {
+        bannedUser = undefined;
+    }
+
+    return shuffle(members).map(x => characters.findIndex(y => y.avatar === x && y.name !== bannedUser)).filter(x => x !== -1).slice(0,1);
 }
 
 function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, isUserInput) {
