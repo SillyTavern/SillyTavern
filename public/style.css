@@ -731,6 +731,39 @@ hr {
     background-repeat: no-repeat;
 }
 
+
+/* --- START: Video Background Styles --- */
+
+/* Base styles for the video element itself */
+#bg_video_element {
+    /* Position is handled by its container (#bg_video_container) */
+    /* Ensure it fills its container */
+    width: 100%;
+    height: 100%;
+    /* Crucial for fitting classes below */
+    object-position: center; /* Default position */
+}
+
+/* Apply object-fit based on the class set by JS */
+#bg_video_element.cover {
+    object-fit: cover; /* Scales while preserving aspect ratio, crops if needed */
+}
+
+#bg_video_element.contain {
+    object-fit: contain; /* Scales while preserving aspect ratio, letterboxes if needed */
+}
+
+#bg_video_element.stretch {
+    object-fit: fill; /* Stretches to fill, ignoring aspect ratio */
+}
+
+#bg_video_element.center {
+    object-fit: none; /* Displays at original size, centered */
+    /* Note: might need adjustments if original size is larger than screen */
+}
+
+/* --- END: Video Background Styles --- */
+
 body.reduced-motion #bg1,
 body.reduced-motion #bg_custom {
     transition: none;
