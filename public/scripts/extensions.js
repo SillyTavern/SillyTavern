@@ -305,12 +305,12 @@ function onEnableExtensionClick() {
     enableExtension(name, false);
 }
 
-function onDisableExtensionUpdateChecks() {
+function onDisableExtensionUpdateChecksClick() {
     const name = $(this).data('name');
     disableExtensionUpdateChecks(name, false);
 }
 
-function onEnableExtensionUpdateChecks() {
+function onEnableExtensionUpdateChecksClick() {
     const name = $(this).data('name');
     enableExtensionUpdateChecks(name, false);
 }
@@ -731,10 +731,11 @@ function generateExtensionHtml(name, manifest, isActive, isDisabled, isCheckingU
     let extensionHtml = `
         <div class="extension_block" data-name="${externalId}">
             <div class="extension_toggle">
+                <i class="fa-fw fa-solid fa-power-off" title="Enable extension."></i>
                 ${toggleElement}
             </div>
             <div class="extension_toggle">
-                <span>Auto update:</span>
+                <i class="fa-fw fa-solid fa-sync" title="Update automatically."></i>
                 ${toggleCheckUpdatesElement}
             </div>
             <div class="extension_icon">

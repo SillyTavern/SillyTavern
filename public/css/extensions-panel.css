@@ -30,6 +30,10 @@ label[for="extensions_autoconnect"] {
     display: inline;
 }
 
+div.extension_toggle {
+    display: flex;
+}
+
 .extensions_block {
     clear: both;
     padding: 0.05px;
