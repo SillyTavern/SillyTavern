@@ -143,6 +143,7 @@ export const extension_settings = {
     autoConnect: false,
     notifyUpdates: false,
     disabledExtensions: [],
+    disabledUpdateChecksExtensions: [],
     expressionOverrides: [],
     memory: {},
     note: {
@@ -304,6 +305,16 @@ function onEnableExtensionClick() {
     enableExtension(name, false);
 }
 
+function onDisableExtensionUpdateChecks() {
+    const name = $(this).data('name');
+    disableExtensionUpdateChecks(name, false);
+}
+
+function onEnableExtensionUpdateChecks() {
+    const name = $(this).data('name');
+    enableExtensionUpdateChecks(name, false);
+}
+
 /**
  * Enables an extension by name.
  * @param {string} name Extension name
@@ -327,6 +338,62 @@ export async function enableExtension(name, reload = true) {
  */
 export async function disableExtension(name, reload = true) {
     extension_settings.disabledExtensions.push(name);
+    stateChanged = true;
+    await saveSettings();
+    if (reload) {
+        location.reload();
+    } else {
+        requiresReload = true;
+    }
+}
+
+export async function enableExtensionAutoUpdate(name, reload = true) {
+    extension_settings.disabledAutoUpdateExtensions =
+        extension_settings.disabledAutoUpdateExtensions.filter(x => x !== name);
+    stateChanged = true;
+    await saveSettings();
+    if (reload) {
+        location.reload();
+    } else {
+        requiresReload = true;
+    }
+}
+
+export async function disableExtensionAutoUpdate(name, reload = true) {
+    extension_settings.disabledAutoUpdateExtensions.push(name);
+    stateChanged = true;
+    await saveSettings();
+    if (reload) {
+        location.reload();
+    } else {
+        requiresReload = true;
+    }
+}
+
+/**
+ * Enables an extension's automatic update checks by name.
+ * @param {string} name Extension name
+ * @param {boolean} [reload=true] If true, reload the page after enabling the extension
+ */
+export async function enableExtensionUpdateChecks(name, reload = true) {
+    extension_settings.disabledUpdateChecksExtensions =
+        extension_settings.disabledUpdateChecksExtensions.filter(x => x !== name);
+    stateChanged = true;
+    await saveSettings();
+    if (reload) {
+        location.reload();
+    } else {
+        requiresReload = true;
+    }
+}
+
+/**
+ * Disables an extension's automatic update checks by name.
+ * @param {string} name Extension name
+ * @param {boolean} [reload=true] If true, reload the page after disabling the extension
+ */
+export async function disableExtensionUpdateChecks(name, reload = true) {
+    extension_settings.disabledUpdateChecksExtensions.push(name);
     stateChanged = true;
     await saveSettings();
     if (reload) {
@@ -629,7 +696,7 @@ function addExtensionLocale(name, manifest) {
  * @param {string} checkboxClass - The class for the checkbox HTML element.
  * @return {string} - The HTML string that represents the extension.
  */
-function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal, checkboxClass) {
+function generateExtensionHtml(name, manifest, isActive, isDisabled, isCheckingUpdates, isExternal, checkboxClass) {
     function getExtensionIcon() {
         const type = getExtensionType(name);
         switch (type) {
@@ -658,6 +725,9 @@ function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal,
         '<input type="checkbox" title="' + t`Click to toggle` + `" data-name="${name}" class="${isActive ? 'toggle_disable' : 'toggle_enable'} ${checkboxClass}" ${isActive ? 'checked' : ''}>` :
         `<input type="checkbox" title="Cannot enable extension" data-name="${name}" class="extension_missing ${checkboxClass}" disabled>`;
 
+    let toggleCheckUpdatesElement = 
+        '<input type="checkbox" title="' + t`Click to toggle automatic updates` + `" data-name="${name}" class="${isCheckingUpdates ? 'toggle_disable_autoupdate' : 'toggle_enable_autoupdate'} ${checkboxClass}" ${isCheckingUpdates ? 'checked' : ''}>`
+
     let deleteButton = isExternal ? `<button class="btn_delete menu_button" data-name="${externalId}" data-i18n="[title]Delete" title="Delete"><i class="fa-fw fa-solid fa-trash-can"></i></button>` : '';
     let updateButton = isExternal ? `<button class="btn_update menu_button displayNone" data-name="${externalId}" title="Update available"><i class="fa-solid fa-download fa-fw"></i></button>` : '';
     let moveButton = isExternal && isUserAdmin ? `<button class="btn_move menu_button" data-name="${externalId}" data-i18n="[title]Move" title="Move"><i class="fa-solid fa-folder-tree fa-fw"></i></button>` : '';
@@ -685,6 +755,10 @@ function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal,
         <div class="extension_block" data-name="${externalId}">
             <div class="extension_toggle">
                 ${toggleElement}
+            </div>
+            <div class="extension_toggle">
+                <span>Auto update:</span>
+                ${toggleCheckUpdatesElement}
             </div>
             <div class="extension_icon">
                 ${extensionIcon}
@@ -720,15 +794,15 @@ function getExtensionData(extension) {
     const manifest = extension[1];
     const isActive = activeExtensions.has(name);
     const isDisabled = extension_settings.disabledExtensions.includes(name);
+    const isCheckingUpdates = !extension_settings.disabledUpdateChecksExtensions.includes(name);
     const isExternal = name.startsWith('third-party');
 
     const checkboxClass = isDisabled ? 'checkbox_disabled' : '';
 
-    const extensionHtml = generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal, checkboxClass);
+    const extensionHtml = generateExtensionHtml(name, manifest, isActive, isDisabled, isCheckingUpdates, isExternal, checkboxClass);
 
     return { isExternal, extensionHtml };
 }
-
 
 /**
  * Gets the module information to be displayed.
@@ -1219,6 +1293,14 @@ async function checkForExtensionUpdates(force) {
 
     for (const [id, manifest] of Object.entries(manifests)) {
         const isGlobal = getExtensionType(id) === 'global';
+        const isCheckingUpdates =
+            !extension_settings.disabledUpdateChecksExtensions.includes(manifest.id);
+
+        if (!isCheckingUpdates) {
+            console.debug(`Skipping extension with disabled update checks: ${manifest.display_name} (${id}) for non-admin user`);
+            continue;
+        }
+
         if (isGlobal && !isCurrentUserAdmin) {
             console.debug(`Skipping global extension: ${manifest.display_name} (${id}) for non-admin user`);
             continue;
@@ -1404,6 +1486,8 @@ export async function initExtensions() {
     $('#extensions_notify_updates').on('input', notifyUpdatesInputHandler);
     $(document).on('click', '.extensions_info .extension_block .toggle_disable', onDisableExtensionClick);
     $(document).on('click', '.extensions_info .extension_block .toggle_enable', onEnableExtensionClick);
+    $(document).on('click', '.extensions_info .extension_block .toggle_disable_autoupdate', onDisableExtensionUpdateChecksClick);
+    $(document).on('click', '.extensions_info .extension_block .toggle_enable_autoupdate', onEnableExtensionUpdateChecksClick);
     $(document).on('click', '.extensions_info .extension_block .btn_update', onUpdateClick);
     $(document).on('click', '.extensions_info .extension_block .btn_delete', onDeleteClick);
     $(document).on('click', '.extensions_info .extension_block .btn_move', onMoveClick);
