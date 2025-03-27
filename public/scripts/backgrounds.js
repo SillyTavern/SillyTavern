@@ -497,7 +497,6 @@ function generateUrlParameter(bg, isCustom) {
     return isCustom ? `url("${encodeURI(bg)}")` : `url("${getBackgroundPath(bg)}")`;
 }
 
-// Cleaned-up getBackgroundFromTemplate function
 /**
  * Instantiates a background template for images and videos.
  * @param {string} mediaFile Path to background (image or video)
@@ -518,11 +517,13 @@ function getBackgroundFromTemplate(mediaFile, isCustom) {
     if (videoExtensions.includes(fileExtension)) {
         // --- Video Logic ---
         template.data('type', 'video'); // Mark as video type
+        template.addClass('video-background-item'); // Add specific class for video items
+
         // Generate the URL the video element will use when selected
         const videoUrl = isCustom ? encodeURI(mediaFile) : `/user-files/backgrounds/${encodeURIComponent(mediaFile)}`;
         template.data('video-url', videoUrl); // Store URL for selection logic
 
-        // Style the preview item for video (no background image, placeholder color, icon overlay)
+        // Style the preview item for video (no background image, placeholder color, optional icon overlay)
         template.css('background-image', 'none');
         template.css('background-color', '#282c34'); // Dark placeholder color
         template.find('.video-icon-overlay').remove(); // Clear previous icon if any
@@ -541,14 +542,13 @@ function getBackgroundFromTemplate(mediaFile, isCustom) {
         const thumbPath = isCustom ? mediaFile : getThumbnailUrl('bg', mediaFile);
 
         // Set the CSS background-image for the preview element using the THUMBNAIL path
-        // Add basic error handling for image loading if needed (e.g., onerror on an actual img tag)
         template.css('background-image', `url('${thumbPath}')`);
     }
 
     // --- Common logic for both types ---
     template.attr('title', title); // Full filename in tooltip
     template.attr('bgfile', mediaFile); // Store the original filename/path for backend actions
-    template.attr('custom', String(isCustom)); // Mark if custom (though always false here)
+    template.attr('custom', String(isCustom));
     template.find('.BGSampleTitle').text(friendlyTitle); // Set the display text
 
     return template;

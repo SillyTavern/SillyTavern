@@ -3297,6 +3297,33 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: none;
 }
 
+/* Overrides for BGSampleTitle for Readability/Mobile */
+.generated-background-item.video-background-item .BGSampleTitle { /* Added .generated-background-item */
+  /* Add display: flex !important; here */
+  display: flex !important; /* Force display flex */
+
+  color: #ffffff;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+  padding: 2px 4px;
+  background-color: rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  max-height: none;
+  height: auto;
+  position: relative;
+  z-index: 2;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+/* Hide title text specifically on non-video background previews */
+.bg_example:not(.video-background-item) .BGSampleTitle {
+    display: none;
+}
+
 .bg_button {
     padding: 4px;
     position: absolute;
@@ -3354,6 +3381,33 @@ input[type=search]:focus::-webkit-search-cancel-button {
     height: 100%;
 }
 
+/* Styling for the video upload button container */
+.video-upload-label {
+  cursor: pointer;
+  display: flex;
+  justify-content: center; /* Center content horizontally */
+  align-items: center; /* Center content vertically */
+  width: 100%;
+  height: 100%;
+  text-align: center; /* Center text if it wraps */
+}
+
+/* Styling for the inner div holding icon and text */
+.video-upload-content {
+  color: var(--SmartThemeBodyColor);
+  text-shadow: 0 0 2px var(--SmartThemeBgColor);
+  pointer-events: none; /* Keep this */
+  display: flex;
+  flex-direction: column; /* Stack icon and text vertically */
+  align-items: center; /* Center items horizontally */
+  justify-content: center; /* Center vertically if needed */
+  gap: 4px; /* Add small space between icon and text */
+}
+
+/* Ensure the span behaves correctly */
+.video-upload-content span {
+   display: inline-block; /* Allows text-align to work well */
+}
 
 #form_create {
     display: flex;
@@ -6112,3 +6166,27 @@ body:not(.movingUI) .drawer-content.maximized {
     border-color: var(--error-color, #e87f7f);
     background-color: rgba(241, 163, 163, 0.2);
 }
+
+/* --- START: Media Queries for Mobile Layout --- */
+
+/* Applies when screen width is 480px or less (Adjust breakpoint if needed) */
+@media (max-width: 480px) {
+   /* Ensure BGSampleTitle text wraps correctly on small screens */
+   .BGSampleTitle {
+      white-space: normal; /* Redundant if set above, but safe */
+      overflow: visible;   /* Redundant if set above, but safe */
+      text-overflow: clip; /* Redundant if set above, but safe */
+      /* font-size: 0.75em; */ /* Optional: Uncomment and adjust if text is too large */
+   }
+}
+
+/* Applies when screen width is MORE than 480px (Adjust breakpoint if needed) */
+@media (min-width: 481px) { /* Use 481px or similar to avoid overlap */
+    /* Style video upload content side-by-side on wider screens */
+    .video-upload-content {
+        flex-direction: row; /* Change to horizontal layout */
+        gap: 8px; /* Increase gap for horizontal layout */
+    }
+}
+
+/* --- END: Media Queries --- */
