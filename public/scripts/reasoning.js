@@ -46,6 +46,7 @@ const UI = {
     $showHidden: $('#reasoning_show_hidden'),
     $addToPrompts: $('#reasoning_add_to_prompts'),
     $maxAdditions: $('#reasoning_max_additions'),
+    $parseMode: $('#reasoning_parse_mode'),
 };
 
 /**
@@ -409,8 +410,31 @@ export class ReasoningHandler {
         }
 
         if (this.state === ReasoningState.None || this.#isHiddenReasoningModel) {
-            // If streamed message starts with the opening, cut it out and put all inside reasoning
-            if (parseTarget.startsWith(power_user.reasoning.prefix) && parseTarget.length > power_user.reasoning.prefix.length) {
+            // Check if wait_for_suffix is enabled - then only start parsing if we have both prefix and suffix
+            if (power_user.reasoning.wait_for_suffix) {
+                if (parseTarget.startsWith(power_user.reasoning.prefix) && 
+                    parseTarget.includes(power_user.reasoning.suffix) && 
+                    parseTarget.length > power_user.reasoning.prefix.length) {
+                    
+                    // Extract reasoning directly since we have both prefix and suffix
+                    const reasoning = parseTarget.slice(
+                        power_user.reasoning.prefix.length, 
+                        parseTarget.indexOf(power_user.reasoning.suffix)
+                    );
+                    this.reasoning = reasoning;
+                    
+                    // Extract message content after suffix
+                    this.#parsingReasoningMesStartIndex = parseTarget.indexOf(power_user.reasoning.suffix) + power_user.reasoning.suffix.length;
+                    message.mes = trimSpaces(parseTarget.slice(this.#parsingReasoningMesStartIndex));
+                    
+                    // Set state and timing info directly to Done since we already have complete reasoning
+                    this.state = ReasoningState.Thinking;
+                    this.startTime = this.startTime ?? this.initialTime;
+                    this.endTime = new Date();
+                }
+            } 
+            // Otherwise: If streamed message starts with the opening, cut it out and put all inside reasoning
+            else if (parseTarget.startsWith(power_user.reasoning.prefix) && parseTarget.length > power_user.reasoning.prefix.length) {
                 this.#isParsingReasoning = true;
 
                 // Manually set starting state here, as we might already have received the ending suffix
@@ -734,6 +758,12 @@ function loadReasoningSettings() {
     UI.$autoParse.prop('checked', power_user.reasoning.auto_parse);
     UI.$autoParse.on('change', function () {
         power_user.reasoning.auto_parse = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    UI.$parseMode.prop('checked', power_user.reasoning.wait_for_suffix);
+    UI.$parseMode.on('change', function () {
+        power_user.reasoning.wait_for_suffix = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
