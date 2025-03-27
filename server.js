@@ -156,12 +156,11 @@ app.use(cookieSession({
 
 app.use(setUserDataMiddleware);
 
-// --- Add the import at the top ---
 import {
-// ... other imports from ./src/users.js
+// Leaving this to excute users.js
 } from './src/users.js';
 
-// CSRF Protection //
+// CSRF Protection
 if (!cliArgs.disableCsrf) {
     const csrfSyncProtection = csrfSync({
         getTokenFromState: (req) => {
@@ -241,46 +240,32 @@ app.use('/api/users', usersPublicRouter);
 // Everything below this line requires authentication
 app.use(requireLoginMiddleware);
 
-// Example - Keep only essential logs:
 app.use('/user-files', (req, res, next) => {
-    console.log(`--- Handling /user-files request: ${req.originalUrl} ---`); // Keep maybe one entry log
-
-    // Ensure user context and profile handle are available
     if (!req.user || !req.user.profile || !req.user.profile.handle) {
-        console.error('[Static Middleware] User context, profile, or handle missing. req.user:', req.user); // Keep Error log
+        console.error('[Static Middleware] User context, profile, or handle missing. req.user:', req.user);
         return res.status(500).send('Internal Server Error: User profile data incomplete.');
     }
 
     const userId = req.user.profile.handle;
     const userFilesRoot = path.join(globalThis.DATA_ROOT, userId);
 
-    // --- Remove or comment out detailed path logs ---
-    // console.log('[Static Middleware] User Identifier (from req.user.profile.handle):', userId);
-    // console.log('[Static Middleware] DATA_ROOT:', globalThis.DATA_ROOT);
-    // console.log('[Static Middleware] Determined userFilesRoot:', userFilesRoot);
-    // console.log('[Static Middleware] req.path (relative part):', req.path);
-
     if (!userFilesRoot || typeof userFilesRoot !== 'string') {
-        console.error('[Static Middleware] userFilesRoot is missing or invalid!'); // Keep Error log
+        console.error('[Static Middleware] userFilesRoot is missing or invalid!');
         return res.status(500).send('Internal Server Error: User path configuration issue.');
     }
 
     const requestedFilePath = path.join(userFilesRoot, req.path);
-    // console.log('[Static Middleware] Calculated requestedFilePath:', requestedFilePath); // Remove/comment
-
+	
     // Security Check
     if (!requestedFilePath.startsWith(userFilesRoot)) {
-        console.warn(`[Static Middleware] Potential directory traversal attempt blocked: User ${userId}, Path ${req.path}`); // Keep Warn log
+        console.warn(`[Static Middleware] Potential directory traversal attempt blocked: User ${userId}, Path ${req.path}`);
         return res.status(403).send('Forbidden');
     }
 
     const staticHandler = express.static(userFilesRoot, { fallthrough: true });
     req.url = req.path;
-    // console.log(`[Static Middleware] Passing to express.static: root=${userFilesRoot}, req.url=${req.url}`); // Remove/comment
 
     return staticHandler(req, res, (err) => {
-        // Optional: Log when express.static fails specifically
-        // console.log(`[Static Middleware] express.static called next() for ${req.originalUrl}. File likely not found by handler.`);
         next(err);
     });
 

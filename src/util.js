@@ -424,43 +424,33 @@ export function removeOldBackups(directory, prefix, limit = null) {
     }
 }
 
-/**
-import fs from 'node:fs'; // Ensure fs is imported
-import path from 'node:path'; // Ensure path is imported
-import mime from 'mime-types'; // Ensure mime-types is imported (or 'mime' if that's the package name used)
-
-/**
+/*
  * Get a list of image and video files in a directory.
  * @param {string} directoryPath Path to the directory containing the media
  * @param {'name' | 'date'} sortBy Sort files by name or date
  * @returns {string[]} List of image and video file names
  */
 export function getMediaFiles(directoryPath, sortBy = 'name') { // Renamed function
-    // console.log('[getMediaFiles] Reading directory:', directoryPath); // <-- ADDED LOG
-
-    // Check if directory exists
     if (!fs.existsSync(directoryPath)) {
         console.warn('[getMediaFiles] Directory not found:', directoryPath);
         return [];
     }
 
     function getSortFunction() {
-        try { // Added try/catch around statSync for safety
+        try {
             switch (sortBy) {
                 case 'name':
-                    // Use localeCompare for potentially better sorting than Intl.Collator default
                     return (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
                 case 'date':
                     return (a, b) => {
                         const pathA = path.join(directoryPath, a);
                         const pathB = path.join(directoryPath, b);
-                        // Check existence before stat to prevent crashes
                         const statA = fs.existsSync(pathA) ? fs.statSync(pathA) : null;
                         const statB = fs.existsSync(pathB) ? fs.statSync(pathB) : null;
                         if (!statA && !statB) return 0;
-                        if (!statA) return 1; // Put files that don't exist (shouldn't happen) last
+                        if (!statA) return 1;
                         if (!statB) return -1;
-                        return statB.mtimeMs - statA.mtimeMs; // Sort descending (newest first)
+                        return statB.mtimeMs - statA.mtimeMs; // Sort descending
                     };
                 default:
                     console.warn('[getMediaFiles] Unknown sort type:', sortBy);
@@ -468,51 +458,35 @@ export function getMediaFiles(directoryPath, sortBy = 'name') { // Renamed funct
             }
         } catch (sortError) {
             console.error('[getMediaFiles] Error creating sort function:', sortError);
-            return (_a, _b) => 0; // Fallback to no sorting on error
+            return (_a, _b) => 0;
         }
     }
 
-    try { // Added try/catch around the main directory reading logic
+    try {
         const files = fs.readdirSync(directoryPath);
-        // console.log('[getMediaFiles] Found files (before filter):', files.length); // <-- ADDED LOG
-
         const filteredFiles = files.filter(file => {
-            const filePath = path.join(directoryPath, file); // Get full path for stat check
+            const filePath = path.join(directoryPath, file);
             try {
-                // Ensure it's actually a file, not a directory
                 if (!fs.statSync(filePath).isFile()) {
-                    // console.log(`[getMediaFiles] Skipping directory: ${file}`); // Log skipped directories
                     return false;
                 }
             } catch (statError) {
                 console.error(`[getMediaFiles] Error getting stats for file ${file}:`, statError);
-                return false; // Skip if we can't get stats
+                return false;
             }
-
-
-            const type = mime.lookup(file); // Lookup MIME type by filename extension
-            // console.log(`[getMediaFiles] File: ${file}, MIME type: ${type}`); // <-- ADDED LOG
-            // Check if MIME type starts with 'image/' OR 'video/'
+            const type = mime.lookup(file);
             return type && (type.startsWith('image/') || type.startsWith('video/'));
         });
-
-        //console.log('[getMediaFiles] Found files (after filter):', filteredFiles.length); // <-- ADDED LOG
-
-        // Get the sorting function
         const sortFunction = getSortFunction();
-
-        // Sort the filtered list
         const sortedFiles = filteredFiles.sort(sortFunction);
-        // console.log('[getMediaFiles] Returning sorted files:', sortedFiles); // <-- ADDED LOG
-
         return sortedFiles;
-
     } catch (readError) {
         console.error(`[getMediaFiles] Error reading or processing directory ${directoryPath}:`, readError);
         return []; // Return empty array on error
     }
 }
-/**
+
+/*
  * Pipe a fetch() response to an Express.js Response, including status code.
  * @param {import('node-fetch').Response} from The Fetch API response to pipe from.
  * @param {import('express').Response} to The Express response to pipe to.

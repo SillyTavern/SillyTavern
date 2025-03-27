@@ -48,11 +48,7 @@
 
 <body class="no-blur">
     <div id="preloader"></div>
-<!-- ****** NEW VIDEO CONTAINER ****** -->
-<div id="bg_video_container" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: -4; overflow: hidden;">
-    <!-- Video element goes here later -->
-</div>
-<!-- ****** END VIDEO CONTAINER ****** -->
+    <div id="bg_video_container"></div>
     <div id="bg_custom"></div>
     <div id="bg1"></div>
     <div id="character_context_menu" class="hidden">
@@ -64,7 +60,6 @@
             <li><button id="character_context_menu_delete" data-i18n="Delete">Delete</button></li>
         </ul>
     </div>
-    <!-- top bar central settings buttons -->
     <div id="top-bar">
     </div>
     <div id="top-settings-holder">
@@ -4938,54 +4933,25 @@
                         System Backgrounds
                     </h3>
                     <div id="bg_menu_content" class="bg_list">
-					<!-- Image Upload Form - CORRECTED -->
-					<form id="form_bg_download"
-						  class="bg_example"  /* Apply the main class to the form */
-						  action="javascript:void(null);"
-						  method="post"
-						  enctype="multipart/form-data"
-						  title="Upload Image Background">
-						<label class="input-file" style="cursor: pointer; display: block; width: 100%; height: 100%;"> 
-							<input type="file"
-								   id="add_bg_button"
-								   name="avatar" /* Keep original name for backend compatibility */
-								   accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp, image/webp, image/apng" /* Added webp/apng back */
-								   style="display: none;"
-							>
-							<!-- Visible content: Only needs background image. Size comes from form via label. -->
-							<div class="add_bg_but"
-								 style="background-image: url('/img/addbg3.png');
-										width: 100%; height: 100%; /* Ensure div fills the label */
-										background-size: cover; /* Keep background fitting */
-										background-position: center;
-										background-repeat: no-repeat;"
-                            >
-								<!-- Intentionally empty - just shows background -->
-							</div>
-						</label>
-					</form>
-					<!-- End Image Upload Form -->
-										<!-- begin video upload form -->
-					<form id="form_bg_video_upload" class="bg_example" action="javascript:void(null);" method="post" enctype="multipart/form-data" title="Upload Video Background">
-						<!-- Label triggers the hidden input. Style it to fill the form and center content -->
-						<label class="input-file" style="cursor: pointer; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">
-							<!-- Hidden file input -->
-							<input type="file"
-								   id="add_bg_video_button"
-								   name="backgroundVideo"
-								   accept="video/*"
-								   style="display: none;" /* Visually hide the default input UI */
-							>
-							<!-- Visible content inside the label (icon + text) -->
-							<div style="color: var(--SmartThemeBodyColor); text-shadow: 0 0 2px var(--SmartThemeBgColor); pointer-events: none;"> 
-								 <i class="fa-solid fa-video fa-2x"></i>
-								 <span style="margin-left: 8px;">Upload Video</span>
-							</div>
-						</label>
-					</form>
-					<!-- End video upload form -->
+                        <form id="form_bg_download"
+                              class="bg_example"
+                              action="javascript:void(null);"
+                              method="post"
+                              enctype="multipart/form-data"
+                              title="Upload Image or Video Background">
+                            <label class="input-file">
+                                <input type="file"
+                                       id="add_bg_button"
+                                       name="avatar"
+                                       accept="image/*, video/*"
+                                       style="display: none;"
+                                >
+                                <div class="add_bg_but">
+                                </div>
+                            </label>
+                        </form>
                     </div>
-
+                    </div>
                     <h3 data-i18n="Chat Backgrounds" class="wide100p textAlignCenter">
                         Chat Backgrounds
                     </h3>

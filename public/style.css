@@ -686,6 +686,22 @@ hr {
     opacity: 0.2;
 }
 
+#form_bg_download > label.input-file {
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#form_bg_download .add_bg_but {
+    background-image: url('/img/addbg3.png');
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
 #bg1,
 #bg_custom {
     background-repeat: no-repeat;
@@ -697,19 +713,16 @@ hr {
     transition: background-image 0.5s ease-in-out;
 }
 
-/* Background fitting options */
 #background_fitting {
     max-width: 6em;
 }
 
-/* Fill/Cover - scales to fill width while maintaining aspect ratio */
 #bg1.cover,
 #bg_custom.cover {
     background-size: cover;
     background-position: center;
 }
 
-/* Fit/Contain - shows entire image maintaining aspect ratio */
 #bg1.contain,
 #bg_custom.contain {
     background-size: contain;
@@ -717,13 +730,11 @@ hr {
     background-repeat: no-repeat;
 }
 
-/* Stretch - stretches to fill entire space */
 #bg1.stretch,
 #bg_custom.stretch {
     background-size: 100% 100%;
 }
 
-/* Center - centers without scaling */
 #bg1.center,
 #bg_custom.center {
     background-size: auto;
@@ -731,38 +742,37 @@ hr {
     background-repeat: no-repeat;
 }
 
-
-/* --- START: Video Background Styles --- */
-
-/* Base styles for the video element itself */
-#bg_video_element {
-    /* Position is handled by its container (#bg_video_container) */
-    /* Ensure it fills its container */
+#bg_video_container {
+    position: absolute;
     width: 100%;
     height: 100%;
-    /* Crucial for fitting classes below */
-    object-position: center; /* Default position */
+    top: 0;
+    left: 0;
+    z-index: -4;
+    overflow: hidden;
 }
 
-/* Apply object-fit based on the class set by JS */
+#bg_video_element {
+    width: 100%;
+    height: 100%;
+    object-position: center;
+}
+
 #bg_video_element.cover {
-    object-fit: cover; /* Scales while preserving aspect ratio, crops if needed */
+    object-fit: cover;
 }
 
 #bg_video_element.contain {
-    object-fit: contain; /* Scales while preserving aspect ratio, letterboxes if needed */
+    object-fit: contain;
 }
 
 #bg_video_element.stretch {
-    object-fit: fill; /* Stretches to fill, ignoring aspect ratio */
+    object-fit: fill;
 }
 
 #bg_video_element.center {
-    object-fit: none; /* Displays at original size, centered */
-    /* Note: might need adjustments if original size is larger than screen */
+    object-fit: none;
 }
-
-/* --- END: Video Background Styles --- */
 
 body.reduced-motion #bg1,
 body.reduced-motion #bg_custom {
