@@ -702,6 +702,46 @@ hr {
     background-repeat: no-repeat;
 }
 
+/* Styles for the unified upload button's label */
+#form_bg_download > label.input-file {
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    background-color: rgba(0,0,0,0.1); */
+}
+
+#form_bg_download .unified-upload-content {
+  color: var(--SmartThemeBodyColor);
+  text-shadow: 0 0 2px var(--SmartThemeBgColor);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px;
+}
+
+#form_bg_download .unified-upload-content span {
+   display: inline-block;
+   font-size: 0.9em;
+}
+
+/* Responsive layout like the old video button had */
+@media (min-width: 481px) {
+    #form_bg_download .unified-upload-content {
+        flex-direction: row;
+        gap: 8px;
+    }
+    #form_bg_download .unified-upload-content span {
+       font-size: 1em;
+    }
+}
+
 #bg1,
 #bg_custom {
     background-repeat: no-repeat;
