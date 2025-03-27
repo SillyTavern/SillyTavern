@@ -347,29 +347,6 @@ export async function disableExtension(name, reload = true) {
     }
 }
 
-export async function enableExtensionAutoUpdate(name, reload = true) {
-    extension_settings.disabledAutoUpdateExtensions =
-        extension_settings.disabledAutoUpdateExtensions.filter(x => x !== name);
-    stateChanged = true;
-    await saveSettings();
-    if (reload) {
-        location.reload();
-    } else {
-        requiresReload = true;
-    }
-}
-
-export async function disableExtensionAutoUpdate(name, reload = true) {
-    extension_settings.disabledAutoUpdateExtensions.push(name);
-    stateChanged = true;
-    await saveSettings();
-    if (reload) {
-        location.reload();
-    } else {
-        requiresReload = true;
-    }
-}
-
 /**
  * Enables an extension's automatic update checks by name.
  * @param {string} name Extension name
