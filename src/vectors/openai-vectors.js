@@ -31,14 +31,14 @@ export async function getOpenAIBatchVector(texts, source, directories, model = '
     const config = SOURCES[source];
 
     if (!config) {
-        console.log('Unknown source', source);
+        console.error('Unknown source', source);
         throw new Error('Unknown source');
     }
 
     const key = readSecret(directories, config.secretKey);
 
     if (!key) {
-        console.log('No API key found');
+        console.warn('No API key found');
         throw new Error('No API key found');
     }
 
@@ -57,7 +57,7 @@ export async function getOpenAIBatchVector(texts, source, directories, model = '
 
     if (!response.ok) {
         const text = await response.text();
-        console.log('API request failed', response.statusText, text);
+        console.warn('API request failed', response.statusText, text);
         throw new Error('API request failed');
     }
 
@@ -65,7 +65,7 @@ export async function getOpenAIBatchVector(texts, source, directories, model = '
     const data = await response.json();
 
     if (!Array.isArray(data?.data)) {
-        console.log('API response was not an array');
+        console.warn('API response was not an array');
         throw new Error('API response was not an array');
     }
 

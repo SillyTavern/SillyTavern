@@ -12,3 +12,4 @@ access.log
 /data
 /cache
 .DS_Store
+/public/scripts/extensions/third-party

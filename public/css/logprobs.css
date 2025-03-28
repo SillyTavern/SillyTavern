@@ -72,6 +72,14 @@
     opacity: 0.5;
 }
 
+.logprobs_output_prefix:hover {
+    background-color: rgba(255, 0, 50, 0.4);
+}
+
+.logprobs_output_prefix:hover ~ .logprobs_output_prefix {
+    background-color: rgba(255, 0, 50, 0.4);
+}
+
 .logprobs_candidate_list {
     grid-row-start: 3;
     grid-row-end: 4;

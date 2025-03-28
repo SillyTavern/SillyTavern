@@ -188,7 +188,7 @@ export async function generateKoboldWithStreaming(generate_data, signal) {
             if (data?.token) {
                 text += data.token;
             }
-            yield { text, swipes: [], toolCalls: [] };
+            yield { text, swipes: [], toolCalls: [], state: {} };
         }
     };
 }

@@ -1,18 +1,16 @@
 import { warn } from '../index.js';
-// eslint-disable-next-line no-unused-vars
 import { QuickReply } from './QuickReply.js';
-// eslint-disable-next-line no-unused-vars
 import { QuickReplySettings } from './QuickReplySettings.js';
 
 export class AutoExecuteHandler {
-    /**@type {QuickReplySettings}*/ settings;
+    /** @type {QuickReplySettings} */ settings;
 
-    /**@type {Boolean[]}*/ preventAutoExecuteStack = [];
-
-
+    /** @type {Boolean[]}*/ preventAutoExecuteStack = [];
 
 
-    constructor(/**@type {QuickReplySettings}*/settings) {
+
+
+    constructor(/** @type {QuickReplySettings} */settings) {
         this.settings = settings;
     }
 
@@ -24,7 +22,7 @@ export class AutoExecuteHandler {
 
 
 
-    async performAutoExecute(/**@type {QuickReply[]}*/qrList) {
+    async performAutoExecute(/** @type {QuickReply[]} */qrList) {
         for (const qr of qrList) {
             this.preventAutoExecuteStack.push(qr.preventAutoExecute);
             try {

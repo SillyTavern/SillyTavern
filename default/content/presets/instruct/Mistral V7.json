@@ -1,0 +1,22 @@
+{
+    "input_sequence": "[INST] ",
+    "output_sequence": " ",
+    "last_output_sequence": "",
+    "system_sequence": "[SYSTEM_PROMPT] ",
+    "stop_sequence": "</s>",
+    "wrap": false,
+    "macro": true,
+    "names_behavior": "always",
+    "activation_regex": "",
+    "system_sequence_prefix": "",
+    "system_sequence_suffix": "",
+    "first_output_sequence": "",
+    "skip_examples": false,
+    "output_suffix": "</s>",
+    "input_suffix": "[/INST]",
+    "system_suffix": "[/SYSTEM_PROMPT]",
+    "user_alignment_message": "",
+    "system_same_as_user": false,
+    "last_system_sequence": "",
+    "name": "Mistral V7"
+}

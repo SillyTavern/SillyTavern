@@ -20,14 +20,14 @@
         <small>
             <span data-i18n="Drag handle to reorder. Click name to rename. Click color to change display.">Drag handle to reorder. Click name to rename. Click color to change display.</span><br>
             {{#if bogus_folders}}<span data-i18n="Click on the folder icon to use this tag as a folder.">Click on the folder icon to use this tag as a folder.</span><br>{{/if}}
-            <label class="checkbox flex-container alignitemscenter flexNoGap m-t-1" for="auto_sort_tags">
+            <label class="checkbox_label flex-container alignItemsCenter m-t-1" for="auto_sort_tags">
                 <input type="checkbox" id="auto_sort_tags" name="auto_sort_tags" {{#if auto_sort_tags}} checked{{/if}} />
                 <span data-i18n="Use alphabetical sorting">
                     Use alphabetical sorting
                 </span>
-                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]tags_sorting_desc"
-                        title="If enabled, tags will automatically be sorted alphabetically on creation or rename.\nIf disabled, new tags will be appended at the end.\n\nIf a tag is manually reordered by dragging, automatic sorting will be disabled.">
-                    </div>
+                <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]tags_sorting_desc"
+                    title="If enabled, tags will automatically be sorted alphabetically on creation or rename.&#10;If disabled, new tags will be appended at the end.&#10;&#10;If a tag is manually reordered by dragging, automatic sorting will be disabled.">
+                </div>
             </label>
         </small>
     </div>

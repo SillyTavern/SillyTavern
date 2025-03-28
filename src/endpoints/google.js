@@ -4,14 +4,13 @@ import express from 'express';
 import { speak, languages } from 'google-translate-api-x';
 
 import { readSecret, SECRET_KEYS } from './secrets.js';
-import { jsonParser } from '../express-common.js';
 import { GEMINI_SAFETY } from '../constants.js';
 
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 
 export const router = express.Router();
 
-router.post('/caption-image', jsonParser, async (request, response) => {
+router.post('/caption-image', async (request, response) => {
     try {
         const mimeType = request.body.image.split(';')[0].split(':')[1];
         const base64Data = request.body.image.split(',')[1];
@@ -34,7 +33,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             generationConfig: { maxOutputTokens: 1000 },
         };
 
-        console.log('Multimodal captioning request', model, body);
+        console.debug('Multimodal captioning request', model, body);
 
         const result = await fetch(url, {
             body: JSON.stringify(body),
@@ -46,13 +45,13 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (!result.ok) {
             const error = await result.json();
-            console.log(`Google AI Studio API returned error: ${result.status} ${result.statusText}`, error);
+            console.error(`Google AI Studio API returned error: ${result.status} ${result.statusText}`, error);
             return response.status(result.status).send({ error: true });
         }
 
         /** @type {any} */
         const data = await result.json();
-        console.log('Multimodal captioning response', data);
+        console.info('Multimodal captioning response', data);
 
         const candidates = data?.candidates;
         if (!candidates) {
@@ -75,7 +74,7 @@ router.post('/list-voices', (_, response) => {
     return response.json(languages);
 });
 
-router.post('/generate-voice', jsonParser, async (request, response) => {
+router.post('/generate-voice', async (request, response) => {
     try {
         const text = request.body.text;
         const voice = request.body.voice ?? 'en';

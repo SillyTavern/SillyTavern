@@ -6,7 +6,6 @@ import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 import { getDefaultPresetFile, getDefaultPresets } from './content-manager.js';
-import { jsonParser } from '../express-common.js';
 
 /**
  * Gets the folder and extension for the preset settings based on the API source ID.
@@ -31,6 +30,8 @@ function getPresetSettingsByAPI(apiId, directories) {
             return { folder: directories.context, extension: '.json' };
         case 'sysprompt':
             return { folder: directories.sysprompt, extension: '.json' };
+        case 'reasoning':
+            return { folder: directories.reasoning, extension: '.json' };
         default:
             return { folder: null, extension: null };
     }
@@ -38,7 +39,7 @@ function getPresetSettingsByAPI(apiId, directories) {
 
 export const router = express.Router();
 
-router.post('/save', jsonParser, function (request, response) {
+router.post('/save', function (request, response) {
     const name = sanitize(request.body.name);
     if (!request.body.preset || !name) {
         return response.sendStatus(400);
@@ -56,7 +57,7 @@ router.post('/save', jsonParser, function (request, response) {
     return response.send({ name });
 });
 
-router.post('/delete', jsonParser, function (request, response) {
+router.post('/delete', function (request, response) {
     const name = sanitize(request.body.name);
     if (!name) {
         return response.sendStatus(400);
@@ -79,7 +80,7 @@ router.post('/delete', jsonParser, function (request, response) {
     }
 });
 
-router.post('/restore', jsonParser, function (request, response) {
+router.post('/restore', function (request, response) {
     try {
         const settings = getPresetSettingsByAPI(request.body.apiId, request.user.directories);
         const name = sanitize(request.body.name);
@@ -96,13 +97,13 @@ router.post('/restore', jsonParser, function (request, response) {
 
         return response.send(result);
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return response.sendStatus(500);
     }
 });
 
 // TODO: Merge with /api/presets/save
-router.post('/save-openai', jsonParser, function (request, response) {
+router.post('/save-openai', function (request, response) {
     if (!request.body || typeof request.query.name !== 'string') return response.sendStatus(400);
     const name = sanitize(request.query.name);
     if (!name) return response.sendStatus(400);
@@ -114,7 +115,7 @@ router.post('/save-openai', jsonParser, function (request, response) {
 });
 
 // TODO: Merge with /api/presets/delete
-router.post('/delete-openai', jsonParser, function (request, response) {
+router.post('/delete-openai', function (request, response) {
     if (!request.body || !request.body.name) {
         return response.sendStatus(400);
     }

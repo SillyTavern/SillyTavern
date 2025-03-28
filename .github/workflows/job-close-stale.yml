@@ -1,0 +1,100 @@
+name: 🕒 Close Stale Issues/PRs Workflow
+
+on:
+  # Run the workflow every day
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *' # Runs every day at midnight UTC
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  mark-inactivity:
+    name: ⏳ Mark Issues/PRs without Activity
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Mark Issues/PRs without Activity
+        # Close Stale Issues and PRs
+        # https://github.com/marketplace/actions/close-stale-issues
+        uses: actions/stale@v9.1.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          days-before-stale: 183
+          days-before-close: 7
+          operations-per-run: 30
+          remove-stale-when-updated: true
+          enable-statistics: true
+          stale-issue-message: >
+            ⏳ This issue has been inactive for 6 months. If it's still relevant, drop a comment below to keep it open.
+            Otherwise, it will be auto-closed in 7 days.
+          stale-pr-message: >
+            ⏳ This PR has been inactive for 6 months. If it's still relevant, update it or remove the stale label.
+            Otherwise, it will be auto-closed in 7 days.
+          close-issue-message: >
+            🔒 This issue was auto-closed due to inactivity for over 6 months.
+          close-pr-message: >
+            🔒 This PR was auto-closed due to inactivity for over 6 months.
+          stale-issue-label: '⚰️ Stale'
+          close-issue-label: '🕸️ Inactive'
+          stale-pr-label: '⚰️ Stale'
+          close-pr-label: '🕸️ Inactive'
+          exempt-issue-labels: '📌 Keep Open'
+          exempt-pr-labels: '📌 Keep Open'
+
+  await-user-response:
+    name: ⚠️ Mark Issues/PRs Awaiting User Response
+    runs-on: ubuntu-latest
+    needs: mark-inactivity
+
+    steps:
+      - name: Mark Issues/PRs Awaiting User Response
+        # Close Stale Issues and PRs
+        # https://github.com/marketplace/actions/close-stale-issues
+        uses: actions/stale@v9.1.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          days-before-stale: 7
+          days-before-close: 7
+          operations-per-run: 30
+          remove-stale-when-updated: true
+          stale-issue-message: >
+            ⚠️ Hey! We need some more info to move forward with this issue.
+            Please provide the requested details in the next few days to keep this ticket open.
+          close-issue-message: >
+            🔒 This issue was auto-closed due to no response from user.
+          only-labels: '🚏 Awaiting User Response'
+          labels-to-remove-when-unstale: '🚏 Awaiting User Response'
+          stale-issue-label: '🛑 No Response'
+          close-issue-label: '🕸️ Inactive'
+          exempt-issue-labels: '🚧 Alternative Exists'
+
+  alternative-exists:
+    name: 🔄 Mark Issues with Alternative Exists
+    runs-on: ubuntu-latest
+    needs: await-user-response
+
+    steps:
+      - name: Mark Issues with Alternative Exists
+        # Close Stale Issues and PRs
+        # https://github.com/marketplace/actions/close-stale-issues
+        uses: actions/stale@v9.1.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          days-before-stale: 7
+          days-before-close: 7
+          operations-per-run: 30
+          remove-stale-when-updated: true
+          stale-issue-message: >
+            🔄 An alternative solution has been provided for this issue.
+            Did this solve your problem? If so, we'll go ahead and close it.
+            If you still need help, drop a comment within the next 7 days to keep this open.
+          close-issue-message: >
+            ✅ Closing this issue due to no confirmation on the alternative solution.
+          only-labels: '🚧 Alternative Exists'
+          stale-issue-label: '🚏 Awaiting User Response'
+          close-issue-label: '🕸️ Inactive'
+          exempt-issue-labels: '📌 Keep Open'

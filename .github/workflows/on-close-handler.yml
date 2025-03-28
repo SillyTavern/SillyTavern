@@ -1,0 +1,28 @@
+name: 🚪 Issues/PRs On Close Handler
+
+on:
+  issues:
+    types: [closed]
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  remove-labels:
+    name: 🗑️ Remove Pending Labels on Close
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Remove Pending Labels on Close
+        # 🤖 Issues Helper
+        # https://github.com/marketplace/actions/issues-helper
+        uses: actions-cool/issues-helper@v3.6.0
+        with:
+          actions: remove-labels
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number || github.event.pull_request.number }}
+          labels: '🚏 Awaiting User Response,🧑‍💻 In Progress,📌 Keep Open,🚫 Merge Conflicts,🔬 Needs Testing,🔨 Needs Work,⚰️ Stale,⛔ Waiting For External/Upstream'

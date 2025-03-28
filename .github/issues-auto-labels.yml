@@ -1,7 +1,3 @@
-# Add/remove 'critical' label if issue contains the words 'urgent' or 'critical'
-#critical:
-#    - '(critical|urgent)'
-
 🪟 Windows:
     - '(🪟 Windows)'
 
@@ -16,3 +12,9 @@
 
 🐧 Linux:
     - '(🐧 Linux)'
+
+🦊 Firefox:
+    - '\b(firefox|mozilla)\b'
+
+📱 Mobile:
+    - '\b(iphone|ios|android|📱 Termux)\b'

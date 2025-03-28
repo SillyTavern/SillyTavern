@@ -1,0 +1,22 @@
+{
+    "input_sequence": "<｜User｜>",
+    "output_sequence": "<｜Assistant｜>",
+    "first_output_sequence": "",
+    "last_output_sequence": "",
+    "system_sequence_prefix": "",
+    "system_sequence_suffix": "",
+    "stop_sequence": "",
+    "wrap": false,
+    "macro": true,
+    "names_behavior": "force",
+    "activation_regex": "",
+    "skip_examples": false,
+    "output_suffix": "<｜end▁of▁sentence｜>",
+    "input_suffix": "",
+    "system_sequence": "",
+    "system_suffix": "",
+    "user_alignment_message": "",
+    "last_system_sequence": "",
+    "system_same_as_user": true,
+    "name": "DeepSeek-V2.5"
+}

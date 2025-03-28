@@ -1,0 +1,18 @@
+.scrollable-buttons-container {
+    max-height: 50vh;  /* Use viewport height instead of fixed pixels */
+    -webkit-overflow-scrolling: touch; /* Momentum scrolling on iOS */
+    margin-top: 1rem; /* m-t-1 is equivalent to margin-top: 1rem; */
+    flex-shrink: 1;
+    min-height: 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.scrollable-buttons-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scrollable-buttons-container::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}

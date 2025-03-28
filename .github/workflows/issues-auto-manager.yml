@@ -1,0 +1,116 @@
+name: 🛠️ Issues Manager
+
+on:
+  issues:
+    types: [opened, edited, labeled, unlabeled]
+  # Re also listen to comments, to remove stale labels right away
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  label-on-content:
+    name: 🏷️ Label Issues by Content
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        # Checkout
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Auto-Label Issues (Based on Issue Content)
+        # only auto label based on issue content once, on open (to prevent re-labeling removed labels)
+        if: github.event.action == 'opened'
+
+        # Issue Labeler
+        # https://github.com/marketplace/actions/regex-issue-labeler
+        uses: github/issue-labeler@v3.4
+        with:
+          configuration-path: .github/issues-auto-labels.yml
+          enable-versioned-regex: 0
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+  label-on-labels:
+    name: 🏷️ Label Issues by Labels
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ✅ Add "👍 Approved" for relevant labels
+        if: contains(fromJSON('["👩‍💻 Good First Issue", "🙏 Help Wanted", "🪲 Confirmed", "⚠️ High Priority", "❕ Medium Priority", "💤 Low Priority"]'), github.event.label.name)
+        # 🤖 Issues Helper
+        # https://github.com/marketplace/actions/issues-helper
+        uses: actions-cool/issues-helper@v3.6.0
+        with:
+          actions: 'add-labels'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          labels: '👍 Approved'
+
+      - name: ❌ Remove progress labels when issue is marked done or stale
+        if: contains(fromJSON('["✅ Done", "✅ Done (staging)", "⚰️ Stale", "❌ wontfix"]'), github.event.label.name)
+        # 🤖 Issues Helper
+        # https://github.com/marketplace/actions/issues-helper
+        uses: actions-cool/issues-helper@v3.6.0
+        with:
+          actions: 'remove-labels'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          labels: '🧑‍💻 In Progress,🤔 Unsure,🤔 Under Consideration'
+
+      - name: ❌ Remove temporary labels when confirmed labels are added
+        if: contains(fromJSON('["❌ wontfix","👍 Approved","👩‍💻 Good First Issue"]'), github.event.label.name)
+        # 🤖 Issues Helper
+        # https://github.com/marketplace/actions/issues-helper
+        uses: actions-cool/issues-helper@v3.6.0
+        with:
+          actions: 'remove-labels'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          labels: '🤔 Unsure,🤔 Under Consideration'
+
+      - name: ❌ Remove no bug labels when "🪲 Confirmed" is added
+        if: github.event.label.name == '🪲 Confirmed'
+        # 🤖 Issues Helper
+        # https://github.com/marketplace/actions/issues-helper
+        uses: actions-cool/issues-helper@v3.6.0
+        with:
+          actions: 'remove-labels'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          labels: '✖️ Not Reproducible,✖️ Not A Bug'
+
+  remove-stale-label:
+    name: 🗑️ Remove Stale Label on Comment
+    runs-on: ubuntu-latest
+    # Only run this on new comments, to automatically remove the stale label
+    if: github.event_name == 'issue_comment' && github.actor != 'github-actions[bot]'
+
+    steps:
+      - name: Remove Stale Label
+        # 🤖 Issues Helper
+        # https://github.com/marketplace/actions/issues-helper
+        uses: actions-cool/issues-helper@v3.6.0
+        with:
+          actions: 'remove-labels'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          labels: '⚰️ Stale,🕸️ Inactive,🚏 Awaiting User Response,🛑 No Response'
+
+  write-auto-comments:
+    name: 💬 Post Issue Comments Based on Labels
+    needs: [label-on-content, label-on-labels]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        # Checkout
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Post Issue Comments Based on Labels
+        # Label Commenter
+        # https://github.com/marketplace/actions/label-commenter
+        uses: peaceiris/actions-label-commenter@v1.10.0
+        with:
+          config_file: .github/issues-auto-comments.yml
+          github_token: ${{ secrets.GITHUB_TOKEN }}

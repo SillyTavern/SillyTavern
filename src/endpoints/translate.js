@@ -1,17 +1,17 @@
-import https from 'node:https';
 import { createRequire } from 'node:module';
 
 import fetch from 'node-fetch';
 import express from 'express';
-import bingTranslateApi from 'bing-translate-api';
+import { translate as bingTranslate } from 'bing-translate-api';
 import iconv from 'iconv-lite';
+import urlJoin from 'url-join';
 
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { getConfigValue, uuidv4 } from '../util.js';
-import { jsonParser } from '../express-common.js';
 
 const DEEPLX_URL_DEFAULT = 'http://127.0.0.1:1188/translate';
 const ONERING_URL_DEFAULT = 'http://127.0.0.1:4990/translate';
+const LINGVA_DEFAULT = 'https://lingva.ml/api/v1';
 
 export const router = express.Router();
 
@@ -34,38 +34,42 @@ function decodeBuffer(buffer) {
     try {
         return iconv.decode(Buffer.from(buffer), 'utf-8');
     } catch (error) {
-        console.log('Failed to decode buffer:', error);
+        console.error('Failed to decode buffer:', error);
         return Buffer.from(buffer).toString('utf-8');
     }
 }
 
-router.post('/libre', jsonParser, async (request, response) => {
-    const key = readSecret(request.user.directories, SECRET_KEYS.LIBRE);
-    const url = readSecret(request.user.directories, SECRET_KEYS.LIBRE_URL);
-
-    if (!url) {
-        console.log('LibreTranslate URL is not configured.');
-        return response.sendStatus(400);
-    }
-
-    if (request.body.lang === 'zh-CN') {
-        request.body.lang = 'zh';
-    }
-
-    if (request.body.lang === 'zh-TW') {
-        request.body.lang = 'zt';
-    }
-
-    const text = request.body.text;
-    const lang = request.body.lang;
-
-    if (!text || !lang) {
-        return response.sendStatus(400);
-    }
-
-    console.log('Input text: ' + text);
-
+router.post('/libre', async (request, response) => {
     try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.LIBRE);
+        const url = readSecret(request.user.directories, SECRET_KEYS.LIBRE_URL);
+
+        if (!url) {
+            console.warn('LibreTranslate URL is not configured.');
+            return response.sendStatus(400);
+        }
+
+        if (request.body.lang === 'zh-CN') {
+            request.body.lang = 'zh';
+        }
+
+        if (request.body.lang === 'zh-TW') {
+            request.body.lang = 'zt';
+        }
+
+        if (request.body.lang === 'pt-BR' || request.body.lang === 'pt-PT') {
+            request.body.lang = 'pt';
+        }
+
+        const text = request.body.text;
+        const lang = request.body.lang;
+
+        if (!text || !lang) {
+            return response.sendStatus(400);
+        }
+
+        console.debug('Input text: ' + text);
+
         const result = await fetch(url, {
             method: 'POST',
             body: JSON.stringify({
@@ -80,22 +84,22 @@ router.post('/libre', jsonParser, async (request, response) => {
 
         if (!result.ok) {
             const error = await result.text();
-            console.log('LibreTranslate error: ', result.statusText, error);
-            return response.sendStatus(result.status);
+            console.warn('LibreTranslate error: ', result.statusText, error);
+            return response.sendStatus(500);
         }
 
         /** @type {any} */
         const json = await result.json();
-        console.log('Translated text: ' + json.translatedText);
+        console.debug('Translated text: ' + json.translatedText);
 
         return response.send(json.translatedText);
     } catch (error) {
-        console.log('Translation error: ' + error.message);
+        console.error('Translation error: ' + error.message);
         return response.sendStatus(500);
     }
 });
 
-router.post('/google', jsonParser, async (request, response) => {
+router.post('/google', async (request, response) => {
     try {
         const text = request.body.text;
         const lang = request.body.lang;
@@ -104,14 +108,14 @@ router.post('/google', jsonParser, async (request, response) => {
             return response.sendStatus(400);
         }
 
-        console.log('Input text: ' + text);
+        console.debug('Input text: ' + text);
 
         const { generateRequestUrl, normaliseResponse } = getGoogleTranslateClient();
         const requestUrl = generateRequestUrl(text, { to: lang });
         const result = await fetch(requestUrl);
 
         if (!result.ok) {
-            console.log('Google Translate error: ', result.statusText);
+            console.warn('Google Translate error: ', result.statusText);
             return response.sendStatus(500);
         }
 
@@ -120,16 +124,24 @@ router.post('/google', jsonParser, async (request, response) => {
         const translatedText = translateResponse.text;
 
         response.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        console.log('Translated text: ' + translatedText);
+        console.debug('Translated text: ' + translatedText);
         return response.send(translatedText);
     } catch (error) {
-        console.log('Translation error', error);
+        console.error('Translation error', error);
         return response.sendStatus(500);
     }
 });
 
-router.post('/yandex', jsonParser, async (request, response) => {
+router.post('/yandex', async (request, response) => {
     try {
+        if (request.body.lang === 'pt-PT') {
+            request.body.lang = 'pt';
+        }
+
+        if (request.body.lang === 'zh-CN' || request.body.lang === 'zh-TW') {
+            request.body.lang = 'zh';
+        }
+
         const chunks = request.body.chunks;
         const lang = request.body.lang;
 
@@ -148,7 +160,7 @@ router.post('/yandex', jsonParser, async (request, response) => {
         params.append('lang', lang);
         const ucid = uuidv4().replaceAll('-', '');
 
-        console.log('Input text: ' + inputText);
+        console.debug('Input text: ' + inputText);
 
         const result = await fetch(`https://translate.yandex.net/api/v1/tr.json/translate?ucid=${ucid}&srv=android&format=text`, {
             method: 'POST',
@@ -160,29 +172,37 @@ router.post('/yandex', jsonParser, async (request, response) => {
 
         if (!result.ok) {
             const error = await result.text();
-            console.log('Yandex error: ', result.statusText, error);
+            console.warn('Yandex error: ', result.statusText, error);
             return response.sendStatus(500);
         }
 
         /** @type {any} */
         const json = await result.json();
         const translated = json.text.join();
-        console.log('Translated text: ' + translated);
+        console.debug('Translated text: ' + translated);
 
         return response.send(translated);
     } catch (error) {
-        console.log('Translation error: ' + error.message);
+        console.error('Translation error: ' + error.message);
         return response.sendStatus(500);
     }
 });
 
-router.post('/lingva', jsonParser, async (request, response) => {
+router.post('/lingva', async (request, response) => {
     try {
-        const baseUrl = readSecret(request.user.directories, SECRET_KEYS.LINGVA_URL);
+        const secretUrl = readSecret(request.user.directories, SECRET_KEYS.LINGVA_URL);
+        const baseUrl = secretUrl || LINGVA_DEFAULT;
 
-        if (!baseUrl) {
-            console.log('Lingva URL is not configured.');
-            return response.sendStatus(400);
+        if (!secretUrl && baseUrl === LINGVA_DEFAULT) {
+            console.warn('Lingva URL is using default value.', LINGVA_DEFAULT);
+        }
+
+        if (request.body.lang === 'zh-CN' || request.body.lang === 'zh-TW') {
+            request.body.lang = 'zh';
+        }
+
+        if (request.body.lang === 'pt-BR' || request.body.lang === 'pt-PT') {
+            request.body.lang = 'pt';
         }
 
         const text = request.body.text;
@@ -192,69 +212,62 @@ router.post('/lingva', jsonParser, async (request, response) => {
             return response.sendStatus(400);
         }
 
-        console.log('Input text: ' + text);
-        const url = `${baseUrl}/auto/${lang}/${encodeURIComponent(text)}`;
+        console.debug('Input text: ' + text);
 
-        https.get(url, (resp) => {
-            let data = '';
+        const url = urlJoin(baseUrl, 'auto', lang, encodeURIComponent(text));
+        const result = await fetch(url);
 
-            resp.on('data', (chunk) => {
-                data += chunk;
-            });
+        if (!result.ok) {
+            const error = await result.text();
+            console.warn('Lingva error: ', result.statusText, error);
+        }
 
-            resp.on('end', () => {
-                try {
-                    const result = JSON.parse(data);
-                    console.log('Translated text: ' + result.translation);
-                    return response.send(result.translation);
-                } catch (error) {
-                    console.log('Translation error', error);
-                    return response.sendStatus(500);
-                }
-            });
-        }).on('error', (err) => {
-            console.log('Translation error: ' + err.message);
-            return response.sendStatus(500);
-        });
+        /** @type {any} */
+        const data = await result.json();
+        console.debug('Translated text: ' + data.translation);
+        return response.send(data.translation);
     } catch (error) {
-        console.log('Translation error', error);
+        console.error('Translation error', error);
         return response.sendStatus(500);
     }
 });
 
-router.post('/deepl', jsonParser, async (request, response) => {
-    const key = readSecret(request.user.directories, SECRET_KEYS.DEEPL);
-
-    if (!key) {
-        console.log('DeepL key is not configured.');
-        return response.sendStatus(400);
-    }
-
-    if (request.body.lang === 'zh-CN' || request.body.lang === 'zh-TW') {
-        request.body.lang = 'ZH';
-    }
-
-    const text = request.body.text;
-    const lang = request.body.lang;
-    const formality = getConfigValue('deepl.formality', 'default');
-
-    if (!text || !lang) {
-        return response.sendStatus(400);
-    }
-
-    console.log('Input text: ' + text);
-
-    const params = new URLSearchParams();
-    params.append('text', text);
-    params.append('target_lang', lang);
-
-    if (['de', 'fr', 'it', 'es', 'nl', 'ja', 'ru'].includes(lang)) {
-        // We don't specify a Portuguese variant, so ignore formality for it.
-        params.append('formality', formality);
-    }
-
+router.post('/deepl', async (request, response) => {
     try {
-        const result = await fetch('https://api-free.deepl.com/v2/translate', {
+        const key = readSecret(request.user.directories, SECRET_KEYS.DEEPL);
+
+        if (!key) {
+            console.warn('DeepL key is not configured.');
+            return response.sendStatus(400);
+        }
+
+        if (request.body.lang === 'zh-CN' || request.body.lang === 'zh-TW') {
+            request.body.lang = 'ZH';
+        }
+
+        const text = request.body.text;
+        const lang = request.body.lang;
+        const formality = getConfigValue('deepl.formality', 'default');
+
+        if (!text || !lang) {
+            return response.sendStatus(400);
+        }
+
+        console.debug('Input text: ' + text);
+
+        const params = new URLSearchParams();
+        params.append('text', text);
+        params.append('target_lang', lang);
+
+        if (['de', 'fr', 'it', 'es', 'nl', 'ja', 'ru', 'pt-BR', 'pt-PT'].includes(lang)) {
+            params.append('formality', formality);
+        }
+
+        const endpoint = request.body.endpoint === 'pro'
+            ? 'https://api.deepl.com/v2/translate'
+            : 'https://api-free.deepl.com/v2/translate';
+
+        const result = await fetch(endpoint, {
             method: 'POST',
             body: params,
             headers: {
@@ -266,50 +279,54 @@ router.post('/deepl', jsonParser, async (request, response) => {
 
         if (!result.ok) {
             const error = await result.text();
-            console.log('DeepL error: ', result.statusText, error);
-            return response.sendStatus(result.status);
+            console.warn('DeepL error: ', result.statusText, error);
+            return response.sendStatus(500);
         }
 
         /** @type {any} */
         const json = await result.json();
-        console.log('Translated text: ' + json.translations[0].text);
+        console.debug('Translated text: ' + json.translations[0].text);
 
         return response.send(json.translations[0].text);
     } catch (error) {
-        console.log('Translation error: ' + error.message);
+        console.error('Translation error: ' + error.message);
         return response.sendStatus(500);
     }
 });
 
-router.post('/onering', jsonParser, async (request, response) => {
-    const secretUrl = readSecret(request.user.directories, SECRET_KEYS.ONERING_URL);
-    const url = secretUrl || ONERING_URL_DEFAULT;
-
-    if (!url) {
-        console.log('OneRing URL is not configured.');
-        return response.sendStatus(400);
-    }
-
-    if (!secretUrl && url === ONERING_URL_DEFAULT) {
-        console.log('OneRing URL is using default value.', ONERING_URL_DEFAULT);
-    }
-
-    const text = request.body.text;
-    const from_lang = request.body.from_lang;
-    const to_lang = request.body.to_lang;
-
-    if (!text || !from_lang || !to_lang) {
-        return response.sendStatus(400);
-    }
-
-    const params = new URLSearchParams();
-    params.append('text', text);
-    params.append('from_lang', from_lang);
-    params.append('to_lang', to_lang);
-
-    console.log('Input text: ' + text);
-
+router.post('/onering', async (request, response) => {
     try {
+        const secretUrl = readSecret(request.user.directories, SECRET_KEYS.ONERING_URL);
+        const url = secretUrl || ONERING_URL_DEFAULT;
+
+        if (!url) {
+            console.warn('OneRing URL is not configured.');
+            return response.sendStatus(400);
+        }
+
+        if (!secretUrl && url === ONERING_URL_DEFAULT) {
+            console.info('OneRing URL is using default value.', ONERING_URL_DEFAULT);
+        }
+
+        if (request.body.lang === 'pt-BR' || request.body.lang === 'pt-PT') {
+            request.body.lang = 'pt';
+        }
+
+        const text = request.body.text;
+        const from_lang = request.body.from_lang;
+        const to_lang = request.body.to_lang;
+
+        if (!text || !from_lang || !to_lang) {
+            return response.sendStatus(400);
+        }
+
+        const params = new URLSearchParams();
+        params.append('text', text);
+        params.append('from_lang', from_lang);
+        params.append('to_lang', to_lang);
+
+        console.debug('Input text: ' + text);
+
         const fetchUrl = new URL(url);
         fetchUrl.search = params.toString();
 
@@ -319,47 +336,47 @@ router.post('/onering', jsonParser, async (request, response) => {
 
         if (!result.ok) {
             const error = await result.text();
-            console.log('OneRing error: ', result.statusText, error);
-            return response.sendStatus(result.status);
+            console.warn('OneRing error: ', result.statusText, error);
+            return response.sendStatus(500);
         }
 
         /** @type {any} */
         const data = await result.json();
-        console.log('Translated text: ' + data.result);
+        console.debug('Translated text: ' + data.result);
 
         return response.send(data.result);
     } catch (error) {
-        console.log('Translation error: ' + error.message);
+        console.error('Translation error: ' + error.message);
         return response.sendStatus(500);
     }
 });
 
-router.post('/deeplx', jsonParser, async (request, response) => {
-    const secretUrl = readSecret(request.user.directories, SECRET_KEYS.DEEPLX_URL);
-    const url = secretUrl || DEEPLX_URL_DEFAULT;
-
-    if (!url) {
-        console.log('DeepLX URL is not configured.');
-        return response.sendStatus(400);
-    }
-
-    if (!secretUrl && url === DEEPLX_URL_DEFAULT) {
-        console.log('DeepLX URL is using default value.', DEEPLX_URL_DEFAULT);
-    }
-
-    const text = request.body.text;
-    let lang = request.body.lang;
-    if (request.body.lang === 'zh-CN' || request.body.lang === 'zh-TW') {
-        lang = 'ZH';
-    }
-
-    if (!text || !lang) {
-        return response.sendStatus(400);
-    }
-
-    console.log('Input text: ' + text);
-
+router.post('/deeplx', async (request, response) => {
     try {
+        const secretUrl = readSecret(request.user.directories, SECRET_KEYS.DEEPLX_URL);
+        const url = secretUrl || DEEPLX_URL_DEFAULT;
+
+        if (!url) {
+            console.warn('DeepLX URL is not configured.');
+            return response.sendStatus(400);
+        }
+
+        if (!secretUrl && url === DEEPLX_URL_DEFAULT) {
+            console.info('DeepLX URL is using default value.', DEEPLX_URL_DEFAULT);
+        }
+
+        const text = request.body.text;
+        let lang = request.body.lang;
+        if (request.body.lang === 'zh-CN' || request.body.lang === 'zh-TW') {
+            lang = 'ZH';
+        }
+
+        if (!text || !lang) {
+            return response.sendStatus(400);
+        }
+
+        console.debug('Input text: ' + text);
+
         const result = await fetch(url, {
             method: 'POST',
             body: JSON.stringify({
@@ -375,40 +392,50 @@ router.post('/deeplx', jsonParser, async (request, response) => {
 
         if (!result.ok) {
             const error = await result.text();
-            console.log('DeepLX error: ', result.statusText, error);
-            return response.sendStatus(result.status);
+            console.warn('DeepLX error: ', result.statusText, error);
+            return response.sendStatus(500);
         }
 
         /** @type {any} */
         const json = await result.json();
-        console.log('Translated text: ' + json.data);
+        console.debug('Translated text: ' + json.data);
 
         return response.send(json.data);
     } catch (error) {
-        console.log('DeepLX translation error: ' + error.message);
+        console.error('DeepLX translation error: ' + error.message);
         return response.sendStatus(500);
     }
 });
 
-router.post('/bing', jsonParser, async (request, response) => {
-    const text = request.body.text;
-    let lang = request.body.lang;
+router.post('/bing', async (request, response) => {
+    try {
+        const text = request.body.text;
+        let lang = request.body.lang;
 
-    if (request.body.lang === 'zh-CN') {
-        lang = 'zh-Hans';
-    }
+        if (request.body.lang === 'zh-CN') {
+            lang = 'zh-Hans';
+        }
 
-    if (!text || !lang) {
-        return response.sendStatus(400);
-    }
+        if (request.body.lang === 'zh-TW') {
+            lang = 'zh-Hant';
+        }
 
-    console.log('Input text: ' + text);
+        if (request.body.lang === 'pt-BR') {
+            lang = 'pt';
+        }
 
-    bingTranslateApi.translate(text, null, lang).then(result => {
-        console.log('Translated text: ' + result.translation);
-        return response.send(result.translation);
-    }).catch(err => {
-        console.log('Translation error: ' + err.message);
+        if (!text || !lang) {
+            return response.sendStatus(400);
+        }
+
+        console.debug('Input text: ' + text);
+
+        const result = await bingTranslate(text, null, lang);
+        const translatedText = result?.translation;
+        console.debug('Translated text: ' + translatedText);
+        return response.send(translatedText);
+    } catch (error) {
+        console.error('Translation error', error);
         return response.sendStatus(500);
-    });
+    }
 });

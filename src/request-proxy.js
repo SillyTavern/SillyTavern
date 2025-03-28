@@ -43,9 +43,9 @@ export default function initRequestProxy({ enabled, url, bypass }) {
         http.globalAgent = proxyAgent;
         https.globalAgent = proxyAgent;
 
-        console.log();
-        console.log(color.green(LOG_HEADER), 'Proxy URL is used:', color.blue(url));
-        console.log();
+        console.info();
+        console.info(color.green(LOG_HEADER), 'Proxy URL is used:', color.blue(url));
+        console.info();
     } catch (error) {
         console.error(color.red(LOG_HEADER), 'Failed to initialize request proxy:', error);
     }

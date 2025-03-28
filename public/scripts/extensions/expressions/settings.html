@@ -6,29 +6,35 @@
         </div>
 
         <div class="inline-drawer-content">
-            <label class="checkbox_label" for="expression_translate" title="Use the selected API from Chat Translation extension settings.">
+            <label class="checkbox_label" for="expression_translate" title="Use the selected API from Chat Translation extension settings." data-i18n="[title]Use the selected API from Chat Translation extension settings.">
                 <input id="expression_translate" type="checkbox">
                 <span data-i18n="Translate text to English before classification">Translate text to English before classification</span>
             </label>
-            <label class="checkbox_label" for="expressions_show_default">
-                <input id="expressions_show_default" type="checkbox">
-                <span data-i18n="Show default images (emojis) if sprite missing">Show default images (emojis) if sprite missing</span>
+            <label class="checkbox_label" for="expressions_allow_multiple" title="A single expression can have multiple sprites. Whenever the expression is chosen, a random sprite for this expression will be selected." data-i18n="[title]A single expression can have multiple sprites. Whenever the expression is chosen, a random sprite for this expression will be selected.">
+                <input id="expressions_allow_multiple" type="checkbox">
+                <span data-i18n="Allow multiple sprites per expression">Allow multiple sprites per expression</span>
             </label>
-            <label id="image_type_block" class="checkbox_label" for="image_type_toggle">
-                <input id="image_type_toggle" type="checkbox">
-                <span data-i18n="Image Type - talkinghead (extras)">Image Type - talkinghead (extras)</span>
+            <label class="checkbox_label" for="expressions_reroll_if_same" title="If the same expression is used again, re-roll the sprite. This only applies to expressions that have multiple available sprites assigned." data-i18n="[title]If the same expression is used again, re-roll the sprite. This only applies to expressions that have multiple available sprites assigned.">
+                <input id="expressions_reroll_if_same" type="checkbox">
+                <span data-i18n="Re-roll if same expression is used again">Re-roll if same sprite is used again</span>
             </label>
             <div class="expression_api_block m-b-1 m-t-1">
                 <label for="expression_api" data-i18n="Classifier API">Classifier API</label>
                 <small data-i18n="Select the API for classifying expressions.">Select the API for classifying expressions.</small>
                 <select id="expression_api" class="flex1 margin0">
+                    <option value="99" data-i18n="[ None ]">[ None ]</option>
                     <option value="0" data-i18n="Local">Local</option>
-                    <option value="1" data-i18n="Extras">Extras</option>
-                    <option value="2" data-i18n="LLM">LLM</option>
+                    <option value="1" data-i18n="Extras">Extras (deprecated)</option>
+                    <option value="2" data-i18n="Main API">Main API</option>
+                    <option value="3" data-i18n="WebLLM Extension">WebLLM Extension</option>
                 </select>
             </div>
             <div class="expression_llm_prompt_block m-b-1 m-t-1">
-                <label for="expression_llm_prompt" class="title_restorable">
+                <label class="checkbox_label" for="expressions_filter_available" title="When using LLM or WebLLM classifier, only show and use expressions that have sprites assigned to them." data-i18n="[title]When using LLM or WebLLM classifier, only show and use expressions that have sprites assigned to them.">
+                    <input id="expressions_filter_available" type="checkbox">
+                    <span data-i18n="Filter expressions for available sprites">Filter expressions for available sprites</span>
+                </label>
+                <label for="expression_llm_prompt" class="title_restorable m-t-1">
                     <span data-i18n="LLM Prompt">LLM Prompt</span>
                     <div id="expression_llm_prompt_restore" title="Restore default value" class="right_menu_button">
                         <i class="fa-solid fa-clock-rotate-left fa-sm"></i>
@@ -40,7 +46,7 @@
             <div class="expression_fallback_block m-b-1 m-t-1">
                 <label for="expression_fallback" data-i18n="Default / Fallback Expression">Default / Fallback Expression</label>
                 <small data-i18n="Set the default and fallback expression being used when no matching expression is found.">Set the default and fallback expression being used when no matching expression is found.</small>
-                <select id="expression_fallback" class="flex1 margin0" data-i18n="Fallback Expression" placeholder="Fallback Expression"></select>
+                <select id="expression_fallback" class="flex1 margin0"></select>
             </div>
             <div class="expression_custom_block m-b-1 m-t-1">
                 <label for="expression_custom" data-i18n="Custom Expressions">Custom Expressions</label>
@@ -74,8 +80,20 @@
                         <span data-i18n="Remove all image overrides">Remove all image overrides</span>
                     </div>
                 </div>
-                <p class="hint"><b data-i18n="Hint:">Hint:</b> <i><span data-i18n="Create new folder in the _space">Create new folder in the </span><b>/characters/</b> <span data-i18n="folder of your user data directory and name it as the name of the character.">folder of your user data directory and name it as the name of the character.</span>
-                <span data-i18n="Put images with expressions there. File names should follow the pattern:">Put images with expressions there. File names should follow the pattern: </span><tt data-i18n="expression_label_pattern">[expression_label].[image_format]</tt></i></p>
+                <p class="hint">
+                    <b data-i18n="Hint:">Hint:</b>
+                    <i>
+                        <span data-i18n="Create new folder in the _space">Create new folder in the </span><b>/characters/</b> <span data-i18n="folder of your user data directory and name it as the name of the character.">folder of your user data directory and name it as the name of the character.</span>
+                        <span data-i18n="Put images with expressions there. File names should follow the pattern:">Put images with expressions there. File names should follow the pattern: </span><tt data-i18n="expression_label_pattern">[expression_label].[image_format]</tt>
+                    </i>
+                </p>
+                <p>
+                    <i>
+                        <span>In case of multiple files per expression, file names can contain a suffix, either separated by a dot or a
+                            dash.
+                            Examples: </span><tt>joy.png</tt>, <tt>joy-1.png</tt>, <tt>joy.expressive.png</tt>
+                    </i>
+                </p>
                 <h3 id="image_list_header">
                     <strong data-i18n="Sprite set:">Sprite set:</strong>&nbsp;<span id="image_list_header_name"></span>
                 </h3>

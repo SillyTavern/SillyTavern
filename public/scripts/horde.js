@@ -10,6 +10,7 @@ import { SECRET_KEYS, writeSecret } from './secrets.js';
 import { delay } from './utils.js';
 import { isMobile } from './RossAscends-mods.js';
 import { autoSelectInstructPreset } from './instruct-mode.js';
+import { t } from './i18n.js';
 
 export {
     horde_settings,
@@ -169,7 +170,7 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
         }
     }
     console.log(maxContextLength, maxLength);
-    $('#adjustedHordeParams').text(`Context: ${maxContextLength}, Response: ${maxLength}`);
+    $('#adjustedHordeParams').text(t`Context` + `: ${maxContextLength}, ` + t`Response` + `: ${maxLength}`);
     return { maxContextLength, maxLength };
 }
 
@@ -177,10 +178,18 @@ function setContextSizePreview() {
     if (horde_settings.models.length) {
         adjustHordeGenerationParams(max_context, amount_gen);
     } else {
-        $('#adjustedHordeParams').text('Context: --, Response: --');
+        $('#adjustedHordeParams').text(t`Context` + ': --, ' + t`Response` + ': --');
     }
 }
 
+/** Generates text using the Horde API.
+ * @param {string} prompt
+ * @param params
+ * @param signal
+ * @param reportProgress
+ * @returns {Promise<{text: *, workerName: string}>}
+ * @throws {Error}
+ */
 async function generateHorde(prompt, params, signal, reportProgress) {
     validateHordeModel();
     delete params.prompt;
@@ -396,8 +405,10 @@ jQuery(function () {
         if (horde_settings.models.length) {
             adjustHordeGenerationParams(max_context, amount_gen);
         } else {
-            $('#adjustedHordeParams').text('Context: --, Response: --');
+            $('#adjustedHordeParams').text(t`Context` + ': --, ' + t`Response` + ': --');
         }
+
+        saveSettingsDebounced();
     });
 
     $('#horde_auto_adjust_response_length').on('input', function () {

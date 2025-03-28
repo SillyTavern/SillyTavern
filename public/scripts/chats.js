@@ -11,6 +11,7 @@ import {
     getCurrentChatId,
     getRequestHeaders,
     hideSwipeButtons,
+    name1,
     name2,
     reloadCurrentChat,
     saveChatDebounced,
@@ -21,6 +22,7 @@ import {
     chat_metadata,
     neutralCharacterName,
     updateChatMetadata,
+    system_message_types,
 } from '../script.js';
 import { selected_group } from './group-chats.js';
 import { power_user } from './power-user.js';
@@ -34,6 +36,7 @@ import {
     humanFileSize,
     saveBase64AsFile,
     extractTextFromOffice,
+    download,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
@@ -41,6 +44,8 @@ import { ScraperManager } from './scrapers.js';
 import { DragAndDropHandler } from './dragdrop.js';
 import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
+import { humanizedDateTime } from './RossAscends-mods.js';
+import { accountStorage } from './util/AccountStorage.js';
 
 /**
  * @typedef {Object} FileAttachment
@@ -125,9 +130,10 @@ function getConverter(type) {
  * @param {number} start Starting message ID
  * @param {number} end Ending message ID (inclusive)
  * @param {boolean} unhide If true, unhide the messages instead.
+ * @param {string} nameFitler Optional name filter
  * @returns {Promise<void>}
  */
-export async function hideChatMessageRange(start, end, unhide) {
+export async function hideChatMessageRange(start, end, unhide, nameFitler = null) {
     if (isNaN(start)) return;
     if (!end) end = start;
     const hide = !unhide;
@@ -135,6 +141,7 @@ export async function hideChatMessageRange(start, end, unhide) {
     for (let messageId = start; messageId <= end; messageId++) {
         const message = chat[messageId];
         if (!message) continue;
+        if (nameFitler && message.name !== nameFitler) continue;
 
         message.is_system = hide;
 
@@ -585,10 +592,12 @@ async function enlargeMessageImage() {
     const imgHolder = document.createElement('div');
     imgHolder.classList.add('img_enlarged_holder');
     imgHolder.append(img);
-    const imgContainer = $('<div><pre><code></code></pre></div>');
+    const imgContainer = $('<div><pre><code class="img_enlarged_title"></code></pre></div>');
     imgContainer.prepend(imgHolder);
     imgContainer.addClass('img_enlarged_container');
-    imgContainer.find('code').addClass('txt').text(title);
+
+    const codeTitle = imgContainer.find('.img_enlarged_title');
+    codeTitle.addClass('txt').text(title);
     const titleEmpty = !title || title.trim().length === 0;
     imgContainer.find('pre').toggle(!titleEmpty);
     addCopyToCodeBlocks(imgContainer);
@@ -598,30 +607,73 @@ async function enlargeMessageImage() {
     popup.dlg.style.width = 'unset';
     popup.dlg.style.height = 'unset';
 
-    img.addEventListener('click', () => {
+    img.addEventListener('click', event => {
         const shouldZoom = !img.classList.contains('zoomed');
         img.classList.toggle('zoomed', shouldZoom);
+        event.stopPropagation();
+    });
+    codeTitle[0]?.addEventListener('click', event => {
+        event.stopPropagation();
+    });
+
+    popup.dlg.addEventListener('click', event => {
+        popup.completeCancelled();
     });
 
     await popup.show();
 }
 
 async function deleteMessageImage() {
-    const value = await callGenericPopup('<h3>Delete image from message?<br>This action can\'t be undone.</h3>', POPUP_TYPE.CONFIRM);
+    const value = await callGenericPopup('<h3>Delete image from message?<br>This action can\'t be undone.</h3>', POPUP_TYPE.TEXT, '', {
+        okButton: t`Delete one`,
+        customButtons: [
+            {
+                text: t`Delete all`,
+                appendAtEnd: true,
+                result: POPUP_RESULT.CUSTOM1,
+            },
+            {
+                text: t`Cancel`,
+                appendAtEnd: true,
+                result: POPUP_RESULT.CANCELLED,
+            },
+        ],
+    });
 
-    if (value !== POPUP_RESULT.AFFIRMATIVE) {
+    if (!value) {
         return;
     }
 
     const mesBlock = $(this).closest('.mes');
     const mesId = mesBlock.attr('mesid');
     const message = chat[mesId];
-    delete message.extra.image;
-    delete message.extra.inline_image;
-    delete message.extra.title;
-    delete message.extra.append_title;
-    mesBlock.find('.mes_img_container').removeClass('img_extra');
-    mesBlock.find('.mes_img').attr('src', '');
+
+    let isLastImage = true;
+
+    if (Array.isArray(message.extra.image_swipes)) {
+        const indexOf = message.extra.image_swipes.indexOf(message.extra.image);
+        if (indexOf > -1) {
+            message.extra.image_swipes.splice(indexOf, 1);
+            isLastImage = message.extra.image_swipes.length === 0;
+            if (!isLastImage) {
+                const newIndex = Math.min(indexOf, message.extra.image_swipes.length - 1);
+                message.extra.image = message.extra.image_swipes[newIndex];
+            }
+        }
+    }
+
+    if (isLastImage || value === POPUP_RESULT.CUSTOM1) {
+        delete message.extra.image;
+        delete message.extra.inline_image;
+        delete message.extra.title;
+        delete message.extra.append_title;
+        delete message.extra.image_swipes;
+        mesBlock.find('.mes_img_container').removeClass('img_extra');
+        mesBlock.find('.mes_img').attr('src', '');
+    } else {
+        appendMediaToMessage(message, mesBlock);
+    }
+
     await saveChatConditional();
 }
 
@@ -1029,8 +1081,8 @@ async function openAttachmentManager() {
         renderAttachments();
     });
 
-    let sortField = localStorage.getItem('DataBank_sortField') || 'created';
-    let sortOrder = localStorage.getItem('DataBank_sortOrder') || 'desc';
+    let sortField = accountStorage.getItem('DataBank_sortField') || 'created';
+    let sortOrder = accountStorage.getItem('DataBank_sortOrder') || 'desc';
     let filterString = '';
 
     const template = $(await renderExtensionTemplateAsync('attachments', 'manager', {}));
@@ -1046,8 +1098,8 @@ async function openAttachmentManager() {
 
         sortField = this.selectedOptions[0].dataset.sortField;
         sortOrder = this.selectedOptions[0].dataset.sortOrder;
-        localStorage.setItem('DataBank_sortField', sortField);
-        localStorage.setItem('DataBank_sortOrder', sortOrder);
+        accountStorage.setItem('DataBank_sortField', sortField);
+        accountStorage.setItem('DataBank_sortOrder', sortOrder);
         renderAttachments();
     });
     function handleBulkAction(action) {
@@ -1427,6 +1479,19 @@ jQuery(function () {
         await viewMessageFile(messageId);
     });
 
+    $(document).on('click', '.assistant_note_export', async function () {
+        const chatToSave = [
+            {
+                user_name: name1,
+                character_name: name2,
+                chat_metadata: chat_metadata,
+            },
+            ...chat.filter(x => x?.extra?.type !== system_message_types.ASSISTANT_NOTE),
+        ];
+
+        download(chatToSave.map((m) => JSON.stringify(m)).join('\n'), `Assistant - ${humanizedDateTime()}.jsonl`, 'application/json');
+    });
+
     // Do not change. #attachFile is added by extension.
     $(document).on('click', '#attachFile', function () {
         $('#file_form_input').trigger('click');
@@ -1443,7 +1508,7 @@ jQuery(function () {
         embedMessageFile(messageId, messageBlock);
     });
 
-    $(document).on('click', '.editor_maximize', function () {
+    $(document).on('click', '.editor_maximize', async function () {
         const broId = $(this).attr('data-for');
         const bro = $(`#${broId}`);
         const contentEditable = bro.is('[contenteditable]');
@@ -1462,6 +1527,7 @@ jQuery(function () {
         textarea.value = String(contentEditable ? bro[0].innerText : bro.val());
         textarea.classList.add('height100p', 'wide100p', 'maximized_textarea');
         bro.hasClass('monospace') && textarea.classList.add('monospace');
+        bro.hasClass('mdHotkeys') && textarea.classList.add('mdHotkeys');
         textarea.addEventListener('input', function () {
             if (contentEditable) {
                 bro[0].innerText = textarea.value;
@@ -1502,7 +1568,7 @@ jQuery(function () {
             });
         }
 
-        callGenericPopup(wrapper, POPUP_TYPE.TEXT, '', { wide: true, large: true });
+        await callGenericPopup(wrapper, POPUP_TYPE.TEXT, '', { wide: true, large: true });
     });
 
     $(document).on('click', 'body.documentstyle .mes .mes_text', function () {

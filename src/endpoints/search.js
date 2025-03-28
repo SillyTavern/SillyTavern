@@ -3,7 +3,8 @@ import express from 'express';
 
 import { decode } from 'html-entities';
 import { readSecret, SECRET_KEYS } from './secrets.js';
-import { jsonParser } from '../express-common.js';
+import { trimV1 } from '../util.js';
+import { setAdditionalHeaders } from '../additional-headers.js';
 
 export const router = express.Router();
 
@@ -89,30 +90,31 @@ async function extractTranscript(videoPageBody, lang) {
     return transcriptText;
 }
 
-router.post('/serpapi', jsonParser, async (request, response) => {
+router.post('/serpapi', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.SERPAPI);
 
         if (!key) {
-            console.log('No SerpApi key found');
+            console.error('No SerpApi key found');
             return response.sendStatus(400);
         }
 
         const { query } = request.body;
         const result = await fetch(`https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${key}`);
 
-        console.log('SerpApi query', query);
+        console.debug('SerpApi query', query);
 
         if (!result.ok) {
             const text = await result.text();
-            console.log('SerpApi request failed', result.statusText, text);
+            console.error('SerpApi request failed', result.statusText, text);
             return response.status(500).send(text);
         }
 
         const data = await result.json();
+        console.debug('SerpApi response', data);
         return response.json(data);
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return response.sendStatus(500);
     }
 });
@@ -121,14 +123,14 @@ router.post('/serpapi', jsonParser, async (request, response) => {
  * Get the transcript of a YouTube video
  * @copyright https://github.com/Kakulukian/youtube-transcript (MIT License)
  */
-router.post('/transcript', jsonParser, async (request, response) => {
+router.post('/transcript', async (request, response) => {
     try {
         const id = request.body.id;
         const lang = request.body.lang;
         const json = request.body.json;
 
         if (!id) {
-            console.log('Id is required for /transcript');
+            console.error('Id is required for /transcript');
             return response.sendStatus(400);
         }
 
@@ -153,27 +155,27 @@ router.post('/transcript', jsonParser, async (request, response) => {
             throw error;
         }
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return response.sendStatus(500);
     }
 });
 
-router.post('/searxng', jsonParser, async (request, response) => {
+router.post('/searxng', async (request, response) => {
     try {
-        const { baseUrl, query, preferences } = request.body;
+        const { baseUrl, query, preferences, categories } = request.body;
 
         if (!baseUrl || !query) {
-            console.log('Missing required parameters for /searxng');
+            console.error('Missing required parameters for /searxng');
             return response.sendStatus(400);
         }
 
-        console.log('SearXNG query', baseUrl, query);
+        console.debug('SearXNG query', baseUrl, query);
 
         const mainPageUrl = new URL(baseUrl);
         const mainPageRequest = await fetch(mainPageUrl, { headers: visitHeaders });
 
         if (!mainPageRequest.ok) {
-            console.log('SearXNG request failed', mainPageRequest.statusText);
+            console.error('SearXNG request failed', mainPageRequest.statusText);
             return response.sendStatus(500);
         }
 
@@ -191,34 +193,37 @@ router.post('/searxng', jsonParser, async (request, response) => {
         if (preferences) {
             searchParams.append('preferences', preferences);
         }
+        if (categories) {
+            searchParams.append('categories', categories);
+        }
         searchUrl.search = searchParams.toString();
 
         const searchResult = await fetch(searchUrl, { headers: visitHeaders });
 
         if (!searchResult.ok) {
             const text = await searchResult.text();
-            console.log('SearXNG request failed', searchResult.statusText, text);
+            console.error('SearXNG request failed', searchResult.statusText, text);
             return response.sendStatus(500);
         }
 
         const data = await searchResult.text();
         return response.send(data);
     } catch (error) {
-        console.log('SearXNG request failed', error);
+        console.error('SearXNG request failed', error);
         return response.sendStatus(500);
     }
 });
 
-router.post('/tavily', jsonParser, async (request, response) => {
+router.post('/tavily', async (request, response) => {
     try {
         const apiKey = readSecret(request.user.directories, SECRET_KEYS.TAVILY);
 
         if (!apiKey) {
-            console.log('No Tavily key found');
+            console.error('No Tavily key found');
             return response.sendStatus(400);
         }
 
-        const { query } = request.body;
+        const { query, include_images } = request.body;
 
         const body = {
             query: query,
@@ -227,7 +232,7 @@ router.post('/tavily', jsonParser, async (request, response) => {
             topic: 'general',
             include_answer: true,
             include_raw_content: false,
-            include_images: false,
+            include_images: !!include_images,
             include_image_descriptions: false,
             include_domains: [],
             max_results: 10,
@@ -241,28 +246,108 @@ router.post('/tavily', jsonParser, async (request, response) => {
             body: JSON.stringify(body),
         });
 
-        console.log('Tavily query', query);
+        console.debug('Tavily query', query);
 
         if (!result.ok) {
             const text = await result.text();
-            console.log('Tavily request failed', result.statusText, text);
+            console.error('Tavily request failed', result.statusText, text);
             return response.status(500).send(text);
         }
 
         const data = await result.json();
+        console.debug('Tavily response', data);
         return response.json(data);
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return response.sendStatus(500);
     }
 });
 
-router.post('/visit', jsonParser, async (request, response) => {
+router.post('/koboldcpp', async (request, response) => {
     try {
-        const url = request.body.url;
+        const { query, url } = request.body;
 
         if (!url) {
-            console.log('No url provided for /visit');
+            console.error('No URL provided for KoboldCpp search');
+            return response.sendStatus(400);
+        }
+
+        console.debug('KoboldCpp search query', query);
+
+        const baseUrl = trimV1(url);
+        const args = {
+            method: 'POST',
+            headers: {},
+            body: JSON.stringify({ q: query }),
+        };
+
+        setAdditionalHeaders(request, args, baseUrl);
+        const result = await fetch(`${baseUrl}/api/extra/websearch`, args);
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.error('KoboldCpp request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const data = await result.json();
+        console.debug('KoboldCpp search response', data);
+        return response.json(data);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/serper', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.SERPER);
+
+        if (!key) {
+            console.error('No Serper key found');
+            return response.sendStatus(400);
+        }
+
+        const { query, images } = request.body;
+
+        const url = images
+            ? 'https://google.serper.dev/images'
+            : 'https://google.serper.dev/search';
+
+        const result = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-API-KEY': key,
+                'Content-Type': 'application/json',
+            },
+            redirect: 'follow',
+            body: JSON.stringify({ q: query }),
+        });
+
+        console.debug('Serper query', query);
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Serper request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const data = await result.json();
+        console.debug('Serper response', data);
+        return response.json(data);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/visit', async (request, response) => {
+    try {
+        const url = request.body.url;
+        const html = Boolean(request.body.html ?? true);
+
+        if (!url) {
+            console.error('No url provided for /visit');
             return response.sendStatus(400);
         }
 
@@ -289,29 +374,36 @@ router.post('/visit', jsonParser, async (request, response) => {
                 throw new Error('Invalid hostname');
             }
         } catch (error) {
-            console.log('Invalid url provided for /visit', url);
+            console.error('Invalid url provided for /visit', url);
             return response.sendStatus(400);
         }
 
-        console.log('Visiting web URL', url);
+        console.info('Visiting web URL', url);
 
         const result = await fetch(url, { headers: visitHeaders });
 
         if (!result.ok) {
-            console.log(`Visit failed ${result.status} ${result.statusText}`);
+            console.error(`Visit failed ${result.status} ${result.statusText}`);
             return response.sendStatus(500);
         }
 
         const contentType = String(result.headers.get('content-type'));
-        if (!contentType.includes('text/html')) {
-            console.log(`Visit failed, content-type is ${contentType}, expected text/html`);
-            return response.sendStatus(500);
+
+        if (html) {
+            if (!contentType.includes('text/html')) {
+                console.error(`Visit failed, content-type is ${contentType}, expected text/html`);
+                return response.sendStatus(500);
+            }
+
+            const text = await result.text();
+            return response.send(text);
         }
 
-        const text = await result.text();
-        return response.send(text);
+        response.setHeader('Content-Type', contentType);
+        const buffer = await result.arrayBuffer();
+        return response.send(Buffer.from(buffer));
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return response.sendStatus(500);
     }
 });

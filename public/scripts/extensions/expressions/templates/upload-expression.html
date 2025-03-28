@@ -1,0 +1,12 @@
+<div class="m-b-1" data-i18n="upload_expression_request">Please enter a name for the sprite (without extension).</div>
+<div class="m-b-1" data-i18n="upload_expression_naming_1">
+    Sprite names must follow the naming schema for the selected expression: {{expression}}
+</div>
+<div data-i18n="upload_expression_naming_2">
+    For multiple expressions, the name must follow the expression name and a valid suffix. Allowed separators are '-' or dot '.'.
+</div>
+<span class="m-b-1" data-i18n="Examples:">Examples:</span> <tt>{{expression}}.png</tt>, <tt>{{expression}}-1.png</tt>, <tt>{{expression}}.expressive.png</tt>
+{{#if clickedFileName}}
+<div class="m-t-1" data-i18n="upload_expression_replace">Click 'Replace' to replace the existing expression:</div>
+<tt>{{clickedFileName}}</tt>
+{{/if}}

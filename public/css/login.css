@@ -42,3 +42,9 @@ body.login .userSelect .userHandle {
 body.login .userSelect:hover {
     background-color: var(--black30a);
 }
+
+body.login #handleEntryBlock,
+body.login #passwordEntryBlock,
+body.login #passwordRecoveryBlock {
+    margin: 2px;
+}

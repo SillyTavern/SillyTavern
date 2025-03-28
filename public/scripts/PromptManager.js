@@ -4,13 +4,14 @@ import { DOMPurify, Popper } from '../lib.js';
 
 import { event_types, eventSource, is_send_press, main_api, substituteParams } from '../script.js';
 import { is_group_generating } from './group-chats.js';
-import { Message, TokenHandler } from './openai.js';
+import { Message, MessageCollection, TokenHandler } from './openai.js';
 import { power_user } from './power-user.js';
 import { debounce, waitUntilCondition, escapeHtml } from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { renderTemplateAsync } from './templates.js';
 import { Popup } from './popup.js';
 import { t } from './i18n.js';
+import { isMobile } from './RossAscends-mods.js';
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -1208,7 +1209,7 @@ class PromptManager {
         const forbidOverridesBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block');
 
         nameField.value = prompt.name ?? '';
-        roleField.value = prompt.role ?? 'system';
+        roleField.value = prompt.role || 'system';
         promptField.value = prompt.content ?? '';
         promptField.disabled = prompt.marker ?? false;
         injectionPositionField.value = prompt.injection_position ?? INJECTION_POSITION.RELATIVE;
@@ -1518,7 +1519,7 @@ class PromptManager {
             let detachSpanHtml = '';
             if (this.isPromptDeletionAllowed(prompt)) {
                 detachSpanHtml = `
-                    <span title="Remove" class="prompt-manager-detach-action caution fa-solid fa-chain-broken"></span>
+                    <span title="Remove" class="prompt-manager-detach-action caution fa-solid fa-chain-broken fa-xs"></span>
                 `;
             } else {
                 detachSpanHtml = '<span class="fa-solid"></span>';
@@ -1527,7 +1528,7 @@ class PromptManager {
             let editSpanHtml = '';
             if (this.isPromptEditAllowed(prompt)) {
                 editSpanHtml = `
-                    <span title="edit" class="prompt-manager-edit-action fa-solid fa-pencil"></span>
+                    <span title="edit" class="prompt-manager-edit-action fa-solid fa-pencil fa-xs"></span>
                 `;
             } else {
                 editSpanHtml = '<span class="fa-solid"></span>';
@@ -1550,16 +1551,28 @@ class PromptManager {
             const isInjectionPrompt = prompt.injection_position === INJECTION_POSITION.ABSOLUTE;
             const isOverriddenPrompt = Array.isArray(this.overriddenPrompts) && this.overriddenPrompts.includes(prompt.identifier);
             const importantClass = isImportantPrompt ? `${prefix}prompt_manager_important` : '';
+            const iconLookup = prompt.role === 'system' && (prompt.marker || prompt.system_prompt) ? '' : prompt.role;
+
+            //add role icons to the right of prompt name
+            const promptRoles = {
+                assistant: { roleIcon: 'fa-robot', roleTitle: 'Prompt will be sent as Assistant' },
+                user: { roleIcon: 'fa-user', roleTitle: 'Prompt will be sent as User' },
+            };
+            const roleIcon = promptRoles[iconLookup]?.roleIcon || '';
+            const roleTitle = promptRoles[iconLookup]?.roleTitle || '';
+
             listItemHtml += `
-                <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass} ${importantClass}" data-pm-identifier="${prompt.identifier}">
+                <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass} ${importantClass}" data-pm-identifier="${escapeHtml(prompt.identifier)}">
+                    <span class="drag-handle">☰</span>
                     <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${encodedName}">
                         ${isMarkerPrompt ? '<span class="fa-fw fa-solid fa-thumb-tack" title="Marker"></span>' : ''}
                         ${isSystemPrompt ? '<span class="fa-fw fa-solid fa-square-poll-horizontal" title="Global Prompt"></span>' : ''}
                         ${isImportantPrompt ? '<span class="fa-fw fa-solid fa-star" title="Important Prompt"></span>' : ''}
-                        ${isUserPrompt ? '<span class="fa-fw fa-solid fa-user" title="User Prompt"></span>' : ''}
+                        ${isUserPrompt ? '<span class="fa-fw fa-solid fa-asterisk" title="Preset Prompt"></span>' : ''}
                         ${isInjectionPrompt ? '<span class="fa-fw fa-solid fa-syringe" title="In-Chat Injection"></span>' : ''}
                         ${this.isPromptInspectionAllowed(prompt) ? `<a title="${encodedName}" class="prompt-manager-inspect-action">${encodedName}</a>` : `<span title="${encodedName}">${encodedName}</span>`}
-                        ${isInjectionPrompt ? `<small class="prompt-manager-injection-depth">@ ${prompt.injection_depth}</small>` : ''}
+                        ${roleIcon ? `<span data-role="${escapeHtml(prompt.role)}" class="fa-xs fa-solid ${roleIcon}" title="${roleTitle}"></span>` : ''}
+                        ${isInjectionPrompt ? `<small class="prompt-manager-injection-depth">@ ${escapeHtml(prompt.injection_depth)}</small>` : ''}
                         ${isOverriddenPrompt ? '<small class="fa-solid fa-address-card prompt-manager-overridden" title="Pulled from a character card"></small>' : ''}
                     </span>
                     <span>
@@ -1730,6 +1743,7 @@ class PromptManager {
     makeDraggable() {
         $(`#${this.configuration.prefix}prompt_manager_list`).sortable({
             delay: this.configuration.sortableDelay,
+            handle: isMobile() ? '.drag-handle' : null,
             items: `.${this.configuration.prefix}prompt_manager_prompt_draggable`,
             update: (event, ui) => {
                 const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);

@@ -172,6 +172,19 @@ function getHuggingFaceHeaders(directories) {
     }) : {};
 }
 
+/**
+ * Gets the headers for the Generic text completion API.
+ * @param {import('./users.js').UserDirectoryList} directories
+ * @returns {object} Headers for the request
+ */
+function getGenericHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.GENERIC);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
 export function getOverrideHeaders(urlHost) {
     const requestOverrides = getConfigValue('requestOverrides', []);
     const overrideHeaders = requestOverrides?.find((e) => e.hosts?.includes(urlHost))?.headers;
@@ -214,6 +227,7 @@ export function setAdditionalHeadersByType(requestHeaders, type, server, directo
         [TEXTGEN_TYPES.LLAMACPP]: getLlamaCppHeaders,
         [TEXTGEN_TYPES.FEATHERLESS]: getFeatherlessHeaders,
         [TEXTGEN_TYPES.HUGGINGFACE]: getHuggingFaceHeaders,
+        [TEXTGEN_TYPES.GENERIC]: getGenericHeaders,
     };
 
     const getHeaders = headerGetters[type];

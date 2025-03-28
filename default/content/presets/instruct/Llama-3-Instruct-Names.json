@@ -1,6 +1,6 @@
 {
-    "input_sequence": "<|start_header_id|>[{{name}}]<|end_header_id|>\n\n",
-    "output_sequence": "<|start_header_id|>[{{name}}]<|end_header_id|>\n\n",
+    "input_sequence": "<|start_header_id|>{{name}}<|end_header_id|>\n\n",
+    "output_sequence": "<|start_header_id|>{{name}}<|end_header_id|>\n\n",
     "last_output_sequence": "",
     "system_sequence": "<|start_header_id|>system<|end_header_id|>\n\n",
     "stop_sequence": "<|eot_id|>",

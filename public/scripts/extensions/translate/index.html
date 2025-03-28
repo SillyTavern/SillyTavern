@@ -14,16 +14,20 @@
             </select>
             <label data-i18n="ext_translate_mode_provider" for="translation_provider">Provider</label>
             <div class="flex-container gap5px flexnowrap marginBot5">
-                <select id="translation_provider" name="provider" class="margin0">
-                    <option value="libre">Libre</option>
+                <select id="translation_provider" name="provider" class="margin0 text_pole flex2">
+                    <option value="libre">LibreTranslate</option>
                     <option value="google">Google</option>
                     <option value="lingva">Lingva</option>
-                    <option value="deepl">DeepL</option>
+                    <option value="deepl">DeepL API</option>
                     <option value="deeplx">DeepLX</option>
                     <option value="bing">Bing</option>
                     <option value="oneringtranslator">OneRingTranslator</option>
                     <option value="yandex">Yandex</option>
                 <select>
+                <select id="deepl_api_endpoint" class="margin0 text_pole flex1" title="DeepL API Endpoint">
+                    <option value="free">Free</option>
+                    <option value="pro">Pro</option>
+                </select>
                 <div id="translate_key_button" class="menu_button fa-solid fa-key margin0"></div>
                 <div id="translate_url_button" class="menu_button fa-solid fa-link margin0"></div>
             </div>

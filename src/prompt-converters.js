@@ -1,7 +1,31 @@
 import crypto from 'node:crypto';
-import { getConfigValue } from './util.js';
+import { getConfigValue, tryParse } from './util.js';
 
 const PROMPT_PLACEHOLDER = getConfigValue('promptPlaceholder', 'Let\'s get started.');
+
+/**
+ * @typedef {object} PromptNames
+ * @property {string} charName Character name
+ * @property {string} userName User name
+ * @property {string[]} groupNames Group member names
+ * @property {function(string): boolean} startsWithGroupName Check if a message starts with a group name
+ */
+
+/**
+ * Extracts the character name, user name, and group member names from the request.
+ * @param {import('express').Request} request Express request object
+ * @returns {PromptNames} Prompt names
+ */
+export function getPromptNames(request) {
+    return {
+        charName: String(request.body.char_name || ''),
+        userName: String(request.body.user_name || ''),
+        groupNames: Array.isArray(request.body.group_names) ? request.body.group_names.map(String) : [],
+        startsWithGroupName: function (message) {
+            return this.groupNames.some(name => message.startsWith(`${name}: `));
+        },
+    };
+}
 
 /**
  * Convert a prompt from the ChatML objects to the format used by Claude.
@@ -91,11 +115,10 @@ export function convertClaudePrompt(messages, addAssistantPostfix, addAssistantP
  * @param {string}   prefillString User determined prefill string
  * @param {boolean}  useSysPrompt See if we want to use a system prompt
  * @param {boolean}  useTools See if we want to use tools
- * @param {string}   humanMsgFix Add Human message between system prompt and assistant.
- * @param {string}   charName Character name
- * @param {string}   userName User name
+ * @param {PromptNames} names Prompt names
+ * @returns {{messages: object[], systemPrompt: object[]}} Prompt for Anthropic
  */
-export function convertClaudeMessages(messages, prefillString, useSysPrompt, useTools, humanMsgFix, charName = '', userName = '') {
+export function convertClaudeMessages(messages, prefillString, useSysPrompt, useTools, names) {
     let systemPrompt = [];
     if (useSysPrompt) {
         // Collect all the system messages up until the first instance of a non-system message, and then remove them from the messages array.
@@ -105,14 +128,14 @@ export function convertClaudeMessages(messages, prefillString, useSysPrompt, use
                 break;
             }
             // Append example names if not already done by the frontend (e.g. for group chats).
-            if (userName && messages[i].name === 'example_user') {
-                if (!messages[i].content.startsWith(`${userName}: `)) {
-                    messages[i].content = `${userName}: ${messages[i].content}`;
+            if (names.userName && messages[i].name === 'example_user') {
+                if (!messages[i].content.startsWith(`${names.userName}: `)) {
+                    messages[i].content = `${names.userName}: ${messages[i].content}`;
                 }
             }
-            if (charName && messages[i].name === 'example_assistant') {
-                if (!messages[i].content.startsWith(`${charName}: `)) {
-                    messages[i].content = `${charName}: ${messages[i].content}`;
+            if (names.charName && messages[i].name === 'example_assistant') {
+                if (!messages[i].content.startsWith(`${names.charName}: `) && !names.startsWithGroupName(messages[i].content)) {
+                    messages[i].content = `${names.charName}: ${messages[i].content}`;
                 }
             }
             systemPrompt.push({ type: 'text', text: messages[i].content });
@@ -122,10 +145,10 @@ export function convertClaudeMessages(messages, prefillString, useSysPrompt, use
 
         // Check if the first message in the array is of type user, if not, interject with humanMsgFix or a blank message.
         // Also prevents erroring out if the messages array is empty.
-        if (messages.length === 0 || (messages.length > 0 && messages[0].role !== 'user')) {
+        if (messages.length === 0) {
             messages.unshift({
                 role: 'user',
-                content: humanMsgFix || PROMPT_PLACEHOLDER,
+                content: PROMPT_PLACEHOLDER,
             });
         }
     }
@@ -152,11 +175,15 @@ export function convertClaudeMessages(messages, prefillString, useSysPrompt, use
         }
 
         if (message.role === 'system') {
-            if (userName && message.name === 'example_user') {
-                message.content = `${userName}: ${message.content}`;
+            if (names.userName && message.name === 'example_user') {
+                if (!message.content.startsWith(`${names.userName}: `)) {
+                    message.content = `${names.userName}: ${message.content}`;
+                }
             }
-            if (charName && message.name === 'example_assistant') {
-                message.content = `${charName}: ${message.content}`;
+            if (names.charName && message.name === 'example_assistant') {
+                if (!message.content.startsWith(`${names.charName}: `) && !names.startsWithGroupName(message.content)) {
+                    message.content = `${names.charName}: ${message.content}`;
+                }
             }
             message.role = 'user';
 
@@ -275,11 +302,10 @@ export function convertClaudeMessages(messages, prefillString, useSysPrompt, use
 /**
  * Convert a prompt from the ChatML objects to the format used by Cohere.
  * @param {object[]} messages Array of messages
- * @param {string}   charName Character name
- * @param {string}   userName User name
+ * @param {PromptNames} names Prompt names
  * @returns {{chatHistory: object[]}} Prompt for Cohere
  */
-export function convertCohereMessages(messages, charName = '', userName = '') {
+export function convertCohereMessages(messages, names) {
     if (messages.length === 0) {
         messages.unshift({
             role: 'user',
@@ -300,13 +326,13 @@ export function convertCohereMessages(messages, charName = '', userName = '') {
         // No names support (who would've thought)
         if (msg.name) {
             if (msg.role == 'system' && msg.name == 'example_assistant') {
-                if (charName && !msg.content.startsWith(`${charName}: `)) {
-                    msg.content = `${charName}: ${msg.content}`;
+                if (names.charName && !msg.content.startsWith(`${names.charName}: `) && !names.startsWithGroupName(msg.content)) {
+                    msg.content = `${names.charName}: ${msg.content}`;
                 }
             }
             if (msg.role == 'system' && msg.name == 'example_user') {
-                if (userName && !msg.content.startsWith(`${userName}: `)) {
-                    msg.content = `${userName}: ${msg.content}`;
+                if (names.userName && !msg.content.startsWith(`${names.userName}: `)) {
+                    msg.content = `${names.userName}: ${msg.content}`;
                 }
             }
             if (msg.role !== 'system' && !msg.content.startsWith(`${msg.name}: `)) {
@@ -329,15 +355,23 @@ export function convertCohereMessages(messages, charName = '', userName = '') {
  * @param {object[]} messages Array of messages
  * @param {string} model Model name
  * @param {boolean} useSysPrompt Use system prompt
- * @param {string} charName Character name
- * @param {string} userName User name
+ * @param {PromptNames} names Prompt names
  * @returns {{contents: *[], system_instruction: {parts: {text: string}}}} Prompt for Google MakerSuite models
  */
-export function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '', userName = '') {
-    // This is a 1x1 transparent PNG
-    const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-
+export function convertGooglePrompt(messages, model, useSysPrompt, names) {
     const visionSupportedModels = [
+        'gemini-2.5-pro-exp-03-25',
+        'gemini-2.0-pro-exp',
+        'gemini-2.0-pro-exp-02-05',
+        'gemini-2.0-flash-lite-preview',
+        'gemini-2.0-flash-lite-preview-02-05',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-001',
+        'gemini-2.0-flash-thinking-exp',
+        'gemini-2.0-flash-thinking-exp-01-21',
+        'gemini-2.0-flash-thinking-exp-1219',
+        'gemini-2.0-flash-exp',
+        'gemini-2.0-flash-exp-image-generation',
         'gemini-1.5-flash',
         'gemini-1.5-flash-latest',
         'gemini-1.5-flash-001',
@@ -346,36 +380,31 @@ export function convertGooglePrompt(messages, model, useSysPrompt = false, charN
         'gemini-1.5-flash-8b',
         'gemini-1.5-flash-8b-exp-0827',
         'gemini-1.5-flash-8b-exp-0924',
+        'gemini-exp-1114',
+        'gemini-exp-1121',
+        'gemini-exp-1206',
         'gemini-1.5-pro',
         'gemini-1.5-pro-latest',
         'gemini-1.5-pro-001',
         'gemini-1.5-pro-002',
         'gemini-1.5-pro-exp-0801',
         'gemini-1.5-pro-exp-0827',
-        'gemini-1.0-pro-vision-latest',
-        'gemini-pro-vision',
-    ];
-
-    const dummyRequiredModels = [
-        'gemini-1.0-pro-vision-latest',
-        'gemini-pro-vision',
     ];
 
     const isMultimodal = visionSupportedModels.includes(model);
-    let hasImage = false;
 
     let sys_prompt = '';
     if (useSysPrompt) {
         while (messages.length > 1 && messages[0].role === 'system') {
             // Append example names if not already done by the frontend (e.g. for group chats).
-            if (userName && messages[0].name === 'example_user') {
-                if (!messages[0].content.startsWith(`${userName}: `)) {
-                    messages[0].content = `${userName}: ${messages[0].content}`;
+            if (names.userName && messages[0].name === 'example_user') {
+                if (!messages[0].content.startsWith(`${names.userName}: `)) {
+                    messages[0].content = `${names.userName}: ${messages[0].content}`;
                 }
             }
-            if (charName && messages[0].name === 'example_assistant') {
-                if (!messages[0].content.startsWith(`${charName}: `)) {
-                    messages[0].content = `${charName}: ${messages[0].content}`;
+            if (names.charName && messages[0].name === 'example_assistant') {
+                if (!messages[0].content.startsWith(`${names.charName}: `) && !names.startsWithGroupName(messages[0].content)) {
+                    messages[0].content = `${names.charName}: ${messages[0].content}`;
                 }
             }
             sys_prompt += `${messages[0].content}\n\n`;
@@ -384,63 +413,106 @@ export function convertGooglePrompt(messages, model, useSysPrompt = false, charN
     }
 
     const system_instruction = { parts: { text: sys_prompt.trim() } };
+    const toolNameMap = {};
 
     const contents = [];
     messages.forEach((message, index) => {
         // fix the roles
-        if (message.role === 'system') {
+        if (message.role === 'system' || message.role === 'tool') {
             message.role = 'user';
         } else if (message.role === 'assistant') {
             message.role = 'model';
         }
 
+        // Convert the content to an array of parts
+        if (!Array.isArray(message.content)) {
+            const content = (() => {
+                const hasToolCalls = Array.isArray(message.tool_calls) && message.tool_calls.length > 0;
+                const hasToolCallId = typeof message.tool_call_id === 'string' && message.tool_call_id.length > 0;
+
+                if (hasToolCalls) {
+                    return { type: 'tool_calls', tool_calls: message.tool_calls };
+                }
+
+                if (hasToolCallId) {
+                    return { type: 'tool_call_id', tool_call_id: message.tool_call_id, content: String(message.content ?? '') };
+                }
+
+                return { type: 'text', text: String(message.content ?? '') };
+            })();
+            message.content = [content];
+        }
+
         // similar story as claude
         if (message.name) {
-            if (userName && message.name === 'example_user') {
-                message.name = userName;
-            }
-            if (charName && message.name === 'example_assistant') {
-                message.name = charName;
-            }
-
-            if (Array.isArray(message.content)) {
-                if (!message.content[0].text.startsWith(`${message.name}: `)) {
-                    message.content[0].text = `${message.name}: ${message.content[0].text}`;
+            message.content.forEach((part) => {
+                if (part.type !== 'text') {
+                    return;
                 }
-            } else {
-                if (!message.content.startsWith(`${message.name}: `)) {
-                    message.content = `${message.name}: ${message.content}`;
+                if (message.name === 'example_user') {
+                    if (names.userName && !part.text.startsWith(`${names.userName}: `)) {
+                        part.text = `${names.userName}: ${part.text}`;
+                    }
+                } else if (message.name === 'example_assistant') {
+                    if (names.charName && !part.text.startsWith(`${names.charName}: `) && !names.startsWithGroupName(part.text)) {
+                        part.text = `${names.charName}: ${part.text}`;
+                    }
+                } else {
+                    if (!part.text.startsWith(`${message.name}: `)) {
+                        part.text = `${message.name}: ${part.text}`;
+                    }
                 }
-            }
+            });
 
             delete message.name;
         }
 
         //create the prompt parts
         const parts = [];
-        if (typeof message.content === 'string') {
-            parts.push({ text: message.content });
-        } else if (Array.isArray(message.content)) {
-            message.content.forEach((part) => {
-                if (part.type === 'text') {
-                    parts.push({ text: part.text });
-                } else if (part.type === 'image_url' && isMultimodal) {
-                    const mimeType = part.image_url.url.split(';')[0].split(':')[1];
-                    const base64Data = part.image_url.url.split(',')[1];
+        message.content.forEach((part) => {
+            if (part.type === 'text') {
+                parts.push({ text: part.text });
+            } else if (part.type === 'tool_call_id') {
+                const name = toolNameMap[part.tool_call_id] ?? 'unknown';
+                parts.push({
+                    functionResponse: {
+                        name: name,
+                        response: { name: name, content: part.content },
+                    },
+                });
+            } else if (part.type === 'tool_calls') {
+                part.tool_calls.forEach((toolCall) => {
                     parts.push({
-                        inlineData: {
-                            mimeType: mimeType,
-                            data: base64Data,
+                        functionCall: {
+                            name: toolCall.function.name,
+                            args: tryParse(toolCall.function.arguments) ?? toolCall.function.arguments,
                         },
                     });
-                    hasImage = true;
-                }
-            });
-        }
+
+                    toolNameMap[toolCall.id] = toolCall.function.name;
+                });
+            } else if (part.type === 'image_url' && isMultimodal) {
+                const mimeType = part.image_url.url.split(';')[0].split(':')[1];
+                const base64Data = part.image_url.url.split(',')[1];
+                parts.push({
+                    inlineData: {
+                        mimeType: mimeType,
+                        data: base64Data,
+                    },
+                });
+            }
+        });
 
         // merge consecutive messages with the same role
         if (index > 0 && message.role === contents[contents.length - 1].role) {
-            contents[contents.length - 1].parts[0].text += '\n\n' + parts[0].text;
+            parts.forEach((part) => {
+                if (part.text) {
+                    contents[contents.length - 1].parts[0].text += '\n\n' + part.text;
+                }
+                if (part.inlineData || part.functionCall || part.functionResponse) {
+                    contents[contents.length - 1].parts.push(part);
+                }
+            });
         } else {
             contents.push({
                 role: message.role,
@@ -449,26 +521,16 @@ export function convertGooglePrompt(messages, model, useSysPrompt = false, charN
         }
     });
 
-    // pro 1.5 doesn't require a dummy image to be attached, other vision models do
-    if (isMultimodal && dummyRequiredModels.includes(model) && !hasImage) {
-        contents[0].parts.push({
-            inlineData: {
-                mimeType: 'image/png',
-                data: PNG_PIXEL,
-            },
-        });
-    }
-
     return { contents: contents, system_instruction: system_instruction };
 }
 
 /**
  * Convert AI21 prompt. Classic: system message squash, user/assistant message merge.
  * @param {object[]} messages Array of messages
- * @param {string} charName Character name
- * @param {string} userName User name
+ * @param {PromptNames} names Prompt names
+ * @returns {object[]} Prompt for AI21
  */
-export function convertAI21Messages(messages, charName = '', userName = '') {
+export function convertAI21Messages(messages, names) {
     if (!Array.isArray(messages)) {
         return [];
     }
@@ -481,14 +543,14 @@ export function convertAI21Messages(messages, charName = '', userName = '') {
             break;
         }
         // Append example names if not already done by the frontend (e.g. for group chats).
-        if (userName && messages[i].name === 'example_user') {
-            if (!messages[i].content.startsWith(`${userName}: `)) {
-                messages[i].content = `${userName}: ${messages[i].content}`;
+        if (names.userName && messages[i].name === 'example_user') {
+            if (!messages[i].content.startsWith(`${names.userName}: `)) {
+                messages[i].content = `${names.userName}: ${messages[i].content}`;
             }
         }
-        if (charName && messages[i].name === 'example_assistant') {
-            if (!messages[i].content.startsWith(`${charName}: `)) {
-                messages[i].content = `${charName}: ${messages[i].content}`;
+        if (names.charName && messages[i].name === 'example_assistant') {
+            if (!messages[i].content.startsWith(`${names.charName}: `) && !names.startsWithGroupName(messages[i].content)) {
+                messages[i].content = `${names.charName}: ${messages[i].content}`;
             }
         }
         systemPrompt += `${messages[i].content}\n\n`;
@@ -537,16 +599,16 @@ export function convertAI21Messages(messages, charName = '', userName = '') {
 /**
  * Convert a prompt from the ChatML objects to the format used by MistralAI.
  * @param {object[]} messages Array of messages
- * @param {string} charName Character name
- * @param {string} userName User name
+ * @param {PromptNames} names Prompt names
+ * @returns {object[]} Prompt for MistralAI
  */
-export function convertMistralMessages(messages, charName = '', userName = '') {
+export function convertMistralMessages(messages, names) {
     if (!Array.isArray(messages)) {
         return [];
     }
 
     // Make the last assistant message a prefill
-    const prefixEnabled = getConfigValue('mistral.enablePrefix', false);
+    const prefixEnabled = getConfigValue('mistral.enablePrefix', false, 'boolean');
     const lastMsg = messages[messages.length - 1];
     if (prefixEnabled && messages.length > 0 && lastMsg?.role === 'assistant') {
         lastMsg.prefix = true;
@@ -565,15 +627,15 @@ export function convertMistralMessages(messages, charName = '', userName = '') {
             msg.tool_call_id = sanitizeToolId(msg.tool_call_id);
         }
         if (msg.role === 'system' && msg.name === 'example_assistant') {
-            if (charName && !msg.content.startsWith(`${charName}: `)) {
-                msg.content = `${charName}: ${msg.content}`;
+            if (names.charName && !msg.content.startsWith(`${names.charName}: `) && !names.startsWithGroupName(msg.content)) {
+                msg.content = `${names.charName}: ${msg.content}`;
             }
             delete msg.name;
         }
 
         if (msg.role === 'system' && msg.name === 'example_user') {
-            if (userName && !msg.content.startsWith(`${userName}: `)) {
-                msg.content = `${userName}: ${msg.content}`;
+            if (names.userName && !msg.content.startsWith(`${names.userName}: `)) {
+                msg.content = `${names.userName}: ${msg.content}`;
             }
             delete msg.name;
         }
@@ -619,27 +681,46 @@ export function convertMistralMessages(messages, charName = '', userName = '') {
 /**
  * Merge messages with the same consecutive role, removing names if they exist.
  * @param {any[]} messages Messages to merge
- * @param {string} charName Character name
- * @param {string} userName User name
+ * @param {PromptNames} names Prompt names
  * @param {boolean} strict Enable strict mode: only allow one system message at the start, force user first message
+ * @param {boolean} placeholders Add user placeholders to the messages in strict mode
  * @returns {any[]} Merged messages
  */
-export function mergeMessages(messages, charName, userName, strict) {
+export function mergeMessages(messages, names, strict, placeholders) {
     let mergedMessages = [];
+
+    /** @type {Map<string,object>} */
+    const contentTokens = new Map();
 
     // Remove names from the messages
     messages.forEach((message) => {
         if (!message.content) {
             message.content = '';
         }
+        // Flatten contents and replace image URLs with random tokens
+        if (Array.isArray(message.content)) {
+            const text = message.content.map((content) => {
+                if (content.type === 'text') {
+                    return content.text;
+                }
+                // Could be extended with other non-text types
+                if (content.type === 'image_url') {
+                    const token = crypto.randomBytes(32).toString('base64');
+                    contentTokens.set(token, content);
+                    return token;
+                }
+                return '';
+            }).join('\n\n');
+            message.content = text;
+        }
         if (message.role === 'system' && message.name === 'example_assistant') {
-            if (charName && !message.content.startsWith(`${charName}: `)) {
-                message.content = `${charName}: ${message.content}`;
+            if (names.charName && !message.content.startsWith(`${names.charName}: `) && !names.startsWithGroupName(message.content)) {
+                message.content = `${names.charName}: ${message.content}`;
             }
         }
         if (message.role === 'system' && message.name === 'example_user') {
-            if (userName && !message.content.startsWith(`${userName}: `)) {
-                message.content = `${userName}: ${message.content}`;
+            if (names.userName && !message.content.startsWith(`${names.userName}: `)) {
+                message.content = `${names.userName}: ${message.content}`;
             }
         }
         if (message.name && message.role !== 'system') {
@@ -664,11 +745,37 @@ export function mergeMessages(messages, charName, userName, strict) {
         }
     });
 
-    // Prevent erroring out if the messages array is empty.
-    if (messages.length === 0) {
-        messages.unshift({
+    // Prevent erroring out if the mergedMessages array is empty.
+    if (mergedMessages.length === 0) {
+        mergedMessages.unshift({
             role: 'user',
             content: PROMPT_PLACEHOLDER,
+        });
+    }
+
+    // Check for content tokens and replace them with the actual content objects
+    if (contentTokens.size > 0) {
+        mergedMessages.forEach((message) => {
+            const hasValidToken = Array.from(contentTokens.keys()).some(token => message.content.includes(token));
+
+            if (hasValidToken) {
+                const splitContent = message.content.split('\n\n');
+                const mergedContent = [];
+
+                splitContent.forEach((content) => {
+                    if (contentTokens.has(content)) {
+                        mergedContent.push(contentTokens.get(content));
+                    } else {
+                        if (mergedContent.length > 0 && mergedContent[mergedContent.length - 1].type === 'text') {
+                            mergedContent[mergedContent.length - 1].text += `\n\n${content}`;
+                        } else {
+                            mergedContent.push({ type: 'text', text: content });
+                        }
+                    }
+                });
+
+                message.content = mergedContent;
+            }
         });
     }
 
@@ -679,7 +786,7 @@ export function mergeMessages(messages, charName, userName, strict) {
                 mergedMessages[i].role = 'user';
             }
         }
-        if (mergedMessages.length) {
+        if (mergedMessages.length && placeholders) {
             if (mergedMessages[0].role === 'system' && (mergedMessages.length === 1 || mergedMessages[1].role !== 'user')) {
                 mergedMessages.splice(1, 0, { role: 'user', content: PROMPT_PLACEHOLDER });
             }
@@ -687,7 +794,7 @@ export function mergeMessages(messages, charName, userName, strict) {
                 mergedMessages.unshift({ role: 'user', content: PROMPT_PLACEHOLDER });
             }
         }
-        return mergeMessages(mergedMessages, charName, userName, false);
+        return mergeMessages(mergedMessages, names, false, placeholders);
     }
 
     return mergedMessages;
@@ -716,4 +823,109 @@ export function convertTextCompletionPrompt(messages) {
         }
     });
     return messageStrings.join('\n') + '\nassistant:';
+}
+
+export function cachingAtDepthForClaude(messages, cachingAtDepth) {
+    let passedThePrefill = false;
+    let depth = 0;
+    let previousRoleName = '';
+
+    for (let i = messages.length - 1; i >= 0; i--) {
+        if (!passedThePrefill && messages[i].role === 'assistant') {
+            continue;
+        }
+
+        passedThePrefill = true;
+
+        if (messages[i].role !== previousRoleName) {
+            if (depth === cachingAtDepth || depth === cachingAtDepth + 2) {
+                const content = messages[i].content;
+                content[content.length - 1].cache_control = { type: 'ephemeral' };
+            }
+
+            if (depth === cachingAtDepth + 2) {
+                break;
+            }
+
+            depth += 1;
+            previousRoleName = messages[i].role;
+        }
+    }
+}
+
+/**
+ * Append cache_control headers to an OpenRouter request at depth. Directly modifies the
+ * messages array.
+ * @param {object[]} messages Array of messages
+ * @param {number} cachingAtDepth Depth at which caching is supposed to occur
+ */
+export function cachingAtDepthForOpenRouterClaude(messages, cachingAtDepth) {
+    //caching the prefill is a terrible idea in general
+    let passedThePrefill = false;
+    //depth here is the number of message role switches
+    let depth = 0;
+    let previousRoleName = '';
+    for (let i = messages.length - 1; i >= 0; i--) {
+        if (!passedThePrefill && messages[i].role === 'assistant') {
+            continue;
+        }
+
+        passedThePrefill = true;
+
+        if (messages[i].role !== previousRoleName) {
+            if (depth === cachingAtDepth || depth === cachingAtDepth + 2) {
+                const content = messages[i].content;
+                if (typeof content === 'string') {
+                    messages[i].content = [{
+                        type: 'text',
+                        text: content,
+                        cache_control: { type: 'ephemeral' },
+                    }];
+                } else {
+                    const contentPartCount = content.length;
+                    content[contentPartCount - 1].cache_control = {
+                        type: 'ephemeral',
+                    };
+                }
+            }
+
+            if (depth === cachingAtDepth + 2) {
+                break;
+            }
+
+            depth += 1;
+            previousRoleName = messages[i].role;
+        }
+    }
+}
+
+/**
+ * Calculate the budget tokens for a given reasoning effort.
+ * @param {number} maxTokens Maximum tokens
+ * @param {string} reasoningEffort Reasoning effort
+ * @param {boolean} stream If streaming is enabled
+ * @returns {number} Budget tokens
+ */
+export function calculateBudgetTokens(maxTokens, reasoningEffort, stream) {
+    let budgetTokens = 0;
+
+    switch (reasoningEffort) {
+        case 'low':
+            budgetTokens = Math.floor(maxTokens * 0.1);
+            break;
+        case 'medium':
+            budgetTokens = Math.floor(maxTokens * 0.25);
+            break;
+        case 'high':
+            budgetTokens = Math.floor(maxTokens * 0.5);
+            break;
+    }
+
+    budgetTokens = Math.max(budgetTokens, 1024);
+
+    if (!stream) {
+        budgetTokens = Math.min(budgetTokens, 21333);
+    }
+
+    return budgetTokens;
 }

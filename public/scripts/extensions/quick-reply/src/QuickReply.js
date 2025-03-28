@@ -10,6 +10,7 @@ import { SlashCommandExecutor } from '../../../slash-commands/SlashCommandExecut
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommandParserError } from '../../../slash-commands/SlashCommandParserError.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
+import { accountStorage } from '../../../util/AccountStorage.js';
 import { debounce, delay, getSortableDelay, showFontAwesomePicker } from '../../../utils.js';
 import { log, quickReplyApi, warn } from '../index.js';
 import { QuickReplyContextLink } from './QuickReplyContextLink.js';
@@ -48,7 +49,7 @@ export class QuickReply {
     /**@type {string}*/ automationId = '';
 
     /**@type {function}*/ onExecute;
-    /**@type {(qr:QuickReply)=>AsyncGenerator<SlashCommandClosureResult|{closure:SlashCommandClosure, executor:SlashCommandExecutor|SlashCommandClosureResult}, SlashCommandClosureResult, boolean>}*/ onDebug;
+    /** @type {(qr:QuickReply)=>AsyncGenerator<SlashCommandClosureResult|{closure:SlashCommandClosure, executor:SlashCommandExecutor|SlashCommandClosureResult}, SlashCommandClosureResult, boolean>} */ onDebug;
     /**@type {function}*/ onDelete;
     /**@type {function}*/ onUpdate;
     /**@type {function}*/ onInsertBefore;
@@ -544,9 +545,9 @@ export class QuickReply {
             this.editorSyntax = messageSyntaxInner;
             /**@type {HTMLInputElement}*/
             const wrap = dom.querySelector('#qr--modal-wrap');
-            wrap.checked = JSON.parse(localStorage.getItem('qr--wrap') ?? 'false');
+            wrap.checked = JSON.parse(accountStorage.getItem('qr--wrap') ?? 'false');
             wrap.addEventListener('click', () => {
-                localStorage.setItem('qr--wrap', JSON.stringify(wrap.checked));
+                accountStorage.setItem('qr--wrap', JSON.stringify(wrap.checked));
                 updateWrap();
             });
             const updateWrap = () => {
@@ -594,27 +595,27 @@ export class QuickReply {
             };
             /**@type {HTMLInputElement}*/
             const tabSize = dom.querySelector('#qr--modal-tabSize');
-            tabSize.value = JSON.parse(localStorage.getItem('qr--tabSize') ?? '4');
+            tabSize.value = JSON.parse(accountStorage.getItem('qr--tabSize') ?? '4');
             const updateTabSize = () => {
                 message.style.tabSize = tabSize.value;
                 messageSyntaxInner.style.tabSize = tabSize.value;
                 updateScrollDebounced();
             };
             tabSize.addEventListener('change', () => {
-                localStorage.setItem('qr--tabSize', JSON.stringify(Number(tabSize.value)));
+                accountStorage.setItem('qr--tabSize', JSON.stringify(Number(tabSize.value)));
                 updateTabSize();
             });
             /**@type {HTMLInputElement}*/
             const executeShortcut = dom.querySelector('#qr--modal-executeShortcut');
-            executeShortcut.checked = JSON.parse(localStorage.getItem('qr--executeShortcut') ?? 'true');
+            executeShortcut.checked = JSON.parse(accountStorage.getItem('qr--executeShortcut') ?? 'true');
             executeShortcut.addEventListener('click', () => {
-                localStorage.setItem('qr--executeShortcut', JSON.stringify(executeShortcut.checked));
+                accountStorage.setItem('qr--executeShortcut', JSON.stringify(executeShortcut.checked));
             });
             /**@type {HTMLInputElement}*/
             const syntax = dom.querySelector('#qr--modal-syntax');
-            syntax.checked = JSON.parse(localStorage.getItem('qr--syntax') ?? 'true');
+            syntax.checked = JSON.parse(accountStorage.getItem('qr--syntax') ?? 'true');
             syntax.addEventListener('click', () => {
-                localStorage.setItem('qr--syntax', JSON.stringify(syntax.checked));
+                accountStorage.setItem('qr--syntax', JSON.stringify(syntax.checked));
                 updateSyntaxEnabled();
             });
             if (navigator.keyboard) {
@@ -634,7 +635,6 @@ export class QuickReply {
             }, { passive:true });
             const getLineStart = ()=>{
                 const start = message.selectionStart;
-                const end = message.selectionEnd;
                 let lineStart;
                 if (start == 0 || message.value[start - 1] == '\n') {
                     // cursor is already at beginning of line
@@ -700,7 +700,6 @@ export class QuickReply {
                 } else if (evt.key == 'Enter' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey && !(ac.isReplaceable && ac.isActive)) {
                     // new line, keep indent
                     const start = message.selectionStart;
-                    const end = message.selectionEnd;
                     let lineStart = getLineStart();
                     const indent = /^([^\S\n]*)/.exec(message.value.slice(lineStart))[1] ?? '';
                     if (indent.length) {

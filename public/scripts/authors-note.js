@@ -17,6 +17,7 @@ import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 export { MODULE_NAME as NOTE_MODULE_NAME };
 import { t } from './i18n.js';
+import { MacrosParser } from './macros.js';
 
 const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower than memory
 
@@ -37,53 +38,85 @@ const chara_note_position = {
 };
 
 function setNoteTextCommand(_, text) {
-    $('#extension_floating_prompt').val(text).trigger('input');
-    toastr.success(t`Author's Note text updated`);
-    return '';
+    if (text) {
+        $('#extension_floating_prompt').val(text).trigger('input');
+        toastr.success(t`Author's Note text updated`);
+    }
+    return chat_metadata[metadata_keys.prompt];
 }
 
 function setNoteDepthCommand(_, text) {
-    const value = Number(text);
+    if (text) {
+        const value = Number(text);
 
-    if (Number.isNaN(value)) {
-        toastr.error(t`Not a valid number`);
-        return;
+        if (Number.isNaN(value)) {
+            toastr.error(t`Not a valid number`);
+            return;
+        }
+
+        $('#extension_floating_depth').val(Math.abs(value)).trigger('input');
+        toastr.success(t`Author's Note depth updated`);
     }
-
-    $('#extension_floating_depth').val(Math.abs(value)).trigger('input');
-    toastr.success(t`Author's Note depth updated`);
-    return '';
+    return chat_metadata[metadata_keys.depth];
 }
 
 function setNoteIntervalCommand(_, text) {
-    const value = Number(text);
+    if (text) {
+        const value = Number(text);
 
-    if (Number.isNaN(value)) {
-        toastr.error(t`Not a valid number`);
-        return;
+        if (Number.isNaN(value)) {
+            toastr.error(t`Not a valid number`);
+            return;
+        }
+
+        $('#extension_floating_interval').val(Math.abs(value)).trigger('input');
+        toastr.success(t`Author's Note frequency updated`);
     }
-
-    $('#extension_floating_interval').val(Math.abs(value)).trigger('input');
-    toastr.success(t`Author's Note frequency updated`);
-    return '';
+    return chat_metadata[metadata_keys.interval];
 }
 
 function setNotePositionCommand(_, text) {
     const validPositions = {
+        'after': 0,
         'scenario': 0,
         'chat': 1,
+        'before_scenario': 2,
+        'before': 2,
     };
 
-    const position = validPositions[text?.trim()];
+    if (text) {
+        const position = validPositions[text?.trim()?.toLowerCase()];
 
-    if (Number.isNaN(position)) {
-        toastr.error(t`Not a valid position`);
-        return;
+        if (typeof position === 'undefined') {
+            toastr.error(t`Not a valid position`);
+            return;
+        }
+
+        $(`input[name="extension_floating_position"][value="${position}"]`).prop('checked', true).trigger('input');
+        toastr.info(t`Author's Note position updated`);
     }
+    return Object.keys(validPositions).find(key => validPositions[key] == chat_metadata[metadata_keys.position]);
+}
 
-    $(`input[name="extension_floating_position"][value="${position}"]`).prop('checked', true).trigger('input');
-    toastr.info(t`Author's Note position updated`);
-    return '';
+function setNoteRoleCommand(_, text) {
+    const validRoles = {
+        'system': 0,
+        'user': 1,
+        'assistant': 2,
+    };
+
+    if (text) {
+        const role = validRoles[text?.trim()?.toLowerCase()];
+
+        if (typeof role === 'undefined') {
+            toastr.error(t`Not a valid role`);
+            return;
+        }
+
+        $('#extension_floating_role').val(Math.abs(role)).trigger('input');
+        toastr.info(t`Author's Note role updated`);
+    }
+    return Object.keys(validRoles).find(key => validRoles[key] == chat_metadata[metadata_keys.role]);
 }
 
 function updateSettings() {
@@ -267,7 +300,7 @@ function loadSettings() {
     $('#extension_floating_role').val(chat_metadata[metadata_keys.role]);
     $(`input[name="extension_floating_position"][value="${chat_metadata[metadata_keys.position]}"]`).prop('checked', true);
 
-    if (extension_settings.note.chara && getContext().characterId) {
+    if (extension_settings.note.chara && getContext().characterId !== undefined) {
         const charaNote = extension_settings.note.chara.find((e) => e.name === getCharaFilename());
 
         $('#extension_floating_chara').val(charaNote ? charaNote.prompt : '');
@@ -357,49 +390,49 @@ export function setFloatingPrompt() {
 }
 
 function onANMenuItemClick() {
-    if (selected_group || this_chid) {
-        //show AN if it's hidden
-        if ($('#floatingPrompt').css('display') !== 'flex') {
-            $('#floatingPrompt').addClass('resizing');
-            $('#floatingPrompt').css('display', 'flex');
-            $('#floatingPrompt').css('opacity', 0.0);
-            $('#floatingPrompt').transition({
-                opacity: 1.0,
-                duration: animation_duration,
-            }, async function () {
-                await delay(50);
-                $('#floatingPrompt').removeClass('resizing');
-            });
-
-            //auto-open the main AN inline drawer
-            if ($('#ANBlockToggle')
-                .siblings('.inline-drawer-content')
-                .css('display') !== 'block') {
-                $('#floatingPrompt').addClass('resizing');
-                $('#ANBlockToggle').click();
-            }
-        } else {
-            //hide AN if it's already displayed
-            $('#floatingPrompt').addClass('resizing');
-            $('#floatingPrompt').transition({
-                opacity: 0.0,
-                duration: animation_duration,
-            },
-            async function () {
-                await delay(50);
-                $('#floatingPrompt').removeClass('resizing');
-            });
-            setTimeout(function () {
-                $('#floatingPrompt').hide();
-            }, animation_duration);
-
-        }
-        //duplicate options menu close handler from script.js
-        //because this listener takes priority
-        $('#options').stop().fadeOut(animation_duration);
-    } else {
+    if (!selected_group && this_chid === undefined) {
         toastr.warning(t`Select a character before trying to use Author's Note`, '', { timeOut: 2000 });
+        return;
     }
+
+    //show AN if it's hidden
+    if ($('#floatingPrompt').css('display') !== 'flex') {
+        $('#floatingPrompt').addClass('resizing');
+        $('#floatingPrompt').css('display', 'flex');
+        $('#floatingPrompt').css('opacity', 0.0);
+        $('#floatingPrompt').transition({
+            opacity: 1.0,
+            duration: animation_duration,
+        }, async function () {
+            await delay(50);
+            $('#floatingPrompt').removeClass('resizing');
+        });
+
+        //auto-open the main AN inline drawer
+        if ($('#ANBlockToggle')
+            .siblings('.inline-drawer-content')
+            .css('display') !== 'block') {
+            $('#floatingPrompt').addClass('resizing');
+            $('#ANBlockToggle').click();
+        }
+    } else {
+        //hide AN if it's already displayed
+        $('#floatingPrompt').addClass('resizing');
+        $('#floatingPrompt').transition({
+            opacity: 0.0,
+            duration: animation_duration,
+        }, async function () {
+            await delay(50);
+            $('#floatingPrompt').removeClass('resizing');
+        });
+        setTimeout(function () {
+            $('#floatingPrompt').hide();
+        }, animation_duration);
+    }
+
+    //duplicate options menu close handler from script.js
+    //because this listener takes priority
+    $('#options').stop().fadeOut(animation_duration);
 }
 
 async function onChatChanged() {
@@ -408,13 +441,13 @@ async function onChatChanged() {
     const context = getContext();
 
     // Disable the chara note if in a group
-    $('#extension_floating_chara').prop('disabled', context.groupId ? true : false);
+    $('#extension_floating_chara').prop('disabled', !!context.groupId);
 
     const tokenCounter1 = chat_metadata[metadata_keys.prompt] ? await getTokenCountAsync(chat_metadata[metadata_keys.prompt]) : 0;
     $('#extension_floating_prompt_token_counter').text(tokenCounter1);
 
     let tokenCounter2;
-    if (extension_settings.note.chara && context.characterId) {
+    if (extension_settings.note.chara && context.characterId !== undefined) {
         const charaNote = extension_settings.note.chara.find((e) => e.name === getCharaFilename());
 
         if (charaNote) {
@@ -462,59 +495,90 @@ export function initAuthorsNote() {
     });
     $('#option_toggle_AN').on('click', onANMenuItemClick);
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'note',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'note',
         callback: setNoteTextCommand,
+        returns: 'current author\'s note',
         unnamedArgumentList: [
             new SlashCommandArgument(
-                'text', [ARGUMENT_TYPE.STRING], true,
+                'text', [ARGUMENT_TYPE.STRING], false,
             ),
         ],
         helpString: `
             <div>
-                Sets an author's note for the currently selected chat.
+                Sets an author's note for the currently selected chat if specified and returns the current note.
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'depth',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'note-depth',
+        aliases: ['depth'],
         callback: setNoteDepthCommand,
+        returns: 'current author\'s note depth',
         unnamedArgumentList: [
             new SlashCommandArgument(
-                'number', [ARGUMENT_TYPE.NUMBER], true,
+                'number', [ARGUMENT_TYPE.NUMBER], false,
             ),
         ],
         helpString: `
             <div>
-                Sets an author's note depth for in-chat positioning.
+                Sets an author's note depth for in-chat positioning if specified and returns the current depth.
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'freq',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'note-frequency',
+        aliases: ['freq', 'note-freq'],
         callback: setNoteIntervalCommand,
+        returns: 'current author\'s note insertion frequency',
         namedArgumentList: [],
         unnamedArgumentList: [
             new SlashCommandArgument(
-                'number', [ARGUMENT_TYPE.NUMBER], true,
+                'number', [ARGUMENT_TYPE.NUMBER], false,
             ),
         ],
         helpString: `
             <div>
-                Sets an author's note insertion frequency.
+                Sets an author's note insertion frequency if specified and returns the current frequency.
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'pos',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'note-position',
         callback: setNotePositionCommand,
+        aliases: ['pos', 'note-pos'],
+        returns: 'current author\'s note insertion position',
         namedArgumentList: [],
         unnamedArgumentList: [
             new SlashCommandArgument(
-                'position', [ARGUMENT_TYPE.STRING], true, false, null, ['chat', 'scenario'],
+                'position', [ARGUMENT_TYPE.STRING], false, false, null, ['before', 'after', 'chat'],
             ),
         ],
         helpString: `
             <div>
-                Sets an author's note position.
+                Sets an author's note position if specified and returns the current position.
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'note-role',
+        callback: setNoteRoleCommand,
+        returns: 'current author\'s note chat insertion role',
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'role', [ARGUMENT_TYPE.STRING], false, false, null, ['system', 'user', 'assistant'],
+            ),
+        ],
+        helpString: `
+            <div>
+                Sets an author's note chat insertion role if specified and returns the current role.
             </div>
         `,
     }));
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
+
+    MacrosParser.registerMacro('authorsNote', () => chat_metadata[metadata_keys.prompt] ?? '', t`The contents of the Author's Note`);
+    MacrosParser.registerMacro('charAuthorsNote', () => this_chid !== undefined ? (extension_settings.note.chara.find((e) => e.name === getCharaFilename())?.prompt ?? '') : '', t`The contents of the Character Author's Note`);
+    MacrosParser.registerMacro('defaultAuthorsNote', () => extension_settings.note.default ?? '', t`The contents of the Default Author's Note`);
 }

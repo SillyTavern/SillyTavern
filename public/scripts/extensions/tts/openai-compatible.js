@@ -25,7 +25,7 @@ class OpenAICompatibleTtsProvider {
         <label for="openai_compatible_tts_endpoint">Provider Endpoint:</label>
         <div class="flex-container alignItemsCenter">
             <div class="flex1">
-                <input id="openai_compatible_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
+                <input id="openai_compatible_tts_endpoint" type="text" class="text_pole" maxlength="500" value="${this.defaultSettings.provider_endpoint}"/>
             </div>
             <div id="openai_compatible_tts_key" class="menu_button menu_button_icon">
                 <i class="fa-solid fa-key"></i>
@@ -33,9 +33,9 @@ class OpenAICompatibleTtsProvider {
             </div>
         </div>
         <label for="openai_compatible_model">Model:</label>
-        <input id="openai_compatible_model" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.model}"/>
+        <input id="openai_compatible_model" type="text" class="text_pole" maxlength="500" value="${this.defaultSettings.model}"/>
         <label for="openai_compatible_tts_voices">Available Voices (comma separated):</label>
-        <input id="openai_compatible_tts_voices" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.available_voices.join()}"/>
+        <input id="openai_compatible_tts_voices" type="text" class="text_pole" value="${this.defaultSettings.available_voices.join()}"/>
         <label for="openai_compatible_tts_speed">Speed: <span id="openai_compatible_tts_speed_output"></span></label>
         <input type="range" id="openai_compatible_tts_speed" value="1" min="0.25" max="4" step="0.05">`;
         return html;

@@ -1,6 +1,6 @@
 {
-    "input_sequence": "<|im_start|>[{{name}}]",
-    "output_sequence": "<|im_start|>[{{name}}]",
+    "input_sequence": "<|im_start|>{{name}}",
+    "output_sequence": "<|im_start|>{{name}}",
     "last_output_sequence": "",
     "system_sequence": "<|im_start|>system",
     "stop_sequence": "<|im_end|>",

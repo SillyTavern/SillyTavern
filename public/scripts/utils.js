@@ -6,15 +6,15 @@ import {
 } from '../lib.js';
 
 import { getContext } from './extensions.js';
-import { characters, getRequestHeaders, this_chid } from '../script.js';
+import { characters, getRequestHeaders, this_chid, user_avatar } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
-import { collapseNewlines } from './power-user.js';
+import { collapseNewlines, power_user } from './power-user.js';
 import { debounce_timeout } from './constants.js';
 import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { getTagsList } from './tags.js';
 import { groups, selected_group } from './group-chats.js';
-import { getCurrentLocale } from './i18n.js';
+import { getCurrentLocale, t } from './i18n.js';
 
 /**
  * Pagination status string template.
@@ -65,6 +65,16 @@ export function deepMerge(target, source) {
 
 export function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/**
+ * Make string safe for use as a CSS selector.
+ * @param {string} str String to sanitize
+ * @param {string} replacement Replacement for invalid characters
+ * @returns {string} Sanitized string
+ */
+export function sanitizeSelector(str, replacement = '_') {
+    return String(str).replace(/[^a-z0-9_-]/ig, replacement);
 }
 
 export function isValidUrl(value) {
@@ -184,6 +194,17 @@ export function stringToRange(input, min, max) {
  */
 export function onlyUnique(value, index, array) {
     return array.indexOf(value) === index;
+}
+
+/**
+ * Determines if a value is unique in an array of objects.
+ * @param {any} value Current value.
+ * @param {number} index Current index.
+ * @param {any[]} array The array being processed.
+ * @returns {boolean} True if the value is unique, false otherwise.
+ */
+export function onlyUniqueJson(value, index, array) {
+    return array.map(v => JSON.stringify(v)).indexOf(JSON.stringify(value)) === index;
 }
 
 /**
@@ -382,6 +403,26 @@ export function getStringHash(str, seed = 0) {
 }
 
 /**
+ * Copy text to clipboard. Use navigator.clipboard.writeText if available, otherwise use document.execCommand.
+ * @param {string} text - The text to copy to the clipboard.
+ * @returns {Promise<void>} A promise that resolves when the text has been copied to the clipboard.
+ */
+export function copyText(text) {
+    if (navigator.clipboard) {
+        return navigator.clipboard.writeText(text);
+    }
+
+    const parent = document.querySelector('dialog[open]:last-of-type') ?? document.body;
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    parent.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    document.execCommand('copy');
+    parent.removeChild(textArea);
+}
+
+/**
  * Map of debounced functions to their timers.
  * Weak map is used to avoid memory leaks.
  * @type {WeakMap<function, any>}
@@ -404,6 +445,33 @@ export function debounce(func, timeout = debounce_timeout.standard) {
     };
 
     return fn;
+}
+
+/**
+ * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed since the last time the debounced function was invoked.
+ * @param {Function} func The function to debounce.
+ * @param {Number} [timeout=300] The timeout in milliseconds.
+ * @returns {Function} The debounced function.
+ */
+export function debounceAsync(func, timeout = debounce_timeout.standard) {
+    let timer;
+    /**@type {Promise}*/
+    let debouncePromise;
+    /**@type {Function}*/
+    let debounceResolver;
+    return (...args) => {
+        clearTimeout(timer);
+        if (!debouncePromise) {
+            debouncePromise = new Promise(resolve => {
+                debounceResolver = resolve;
+            });
+        }
+        timer = setTimeout(() => {
+            debounceResolver(func.apply(this, args));
+            debouncePromise = null;
+        }, timeout);
+        return debouncePromise;
+    };
 }
 
 /**
@@ -647,6 +715,19 @@ export function sortByCssOrder(a, b) {
 }
 
 /**
+ * Trims leading and trailing whitespace from the input string based on a configuration setting.
+ * @param {string} input - The string to be trimmed
+ * @returns {string} The trimmed string if trimming is enabled; otherwise, returns the original string
+ */
+
+export function trimSpaces(input) {
+    if (!input || typeof input !== 'string') {
+        return input;
+    }
+    return power_user.trim_spaces ? input.trim() : input;
+}
+
+/**
  * Trims a string to the end of a nearest sentence.
  * @param {string} input The string to trim.
  * @returns {string} The trimmed string.
@@ -665,9 +746,10 @@ export function trimToEndSentence(input) {
     const characters = Array.from(input);
     for (let i = characters.length - 1; i >= 0; i--) {
         const char = characters[i];
+        const emoji = isEmoji(char);
 
-        if (punctuation.has(char) || isEmoji(char)) {
-            if (i > 0 && /[\s\n]/.test(characters[i - 1])) {
+        if (punctuation.has(char) || emoji) {
+            if (!emoji && i > 0 && /[\s\n]/.test(characters[i - 1])) {
                 last = i - 1;
             } else {
                 last = i;
@@ -963,13 +1045,18 @@ export function getImageSizeFromDataURL(dataUrl) {
     });
 }
 
-export function getCharaFilename(chid) {
+/**
+ * Gets the filename of the character avatar without extension
+ * @param {number?} [chid=null] - Character ID. If not provided, uses the current character ID
+ * @param {object} [options={}] - Options arguments
+ * @param {string?} [options.manualAvatarKey=null] - Manually take the following avatar key, instead of using the chid to determine the name
+ * @returns {string?} The filename of the character avatar without extension, or null if the character ID is invalid
+ */
+export function getCharaFilename(chid = null, { manualAvatarKey = null } = {}) {
     const context = getContext();
-    const fileName = context.characters[chid ?? context.characterId]?.avatar;
+    const fileName = manualAvatarKey ?? context.characters[chid ?? context.characterId]?.avatar;
 
-    if (fileName) {
-        return fileName.replace(/\.[^/.]+$/, '');
-    }
+    return fileName?.replace(/\.[^/.]+$/, '') ?? null;
 }
 
 /**
@@ -1704,17 +1791,17 @@ export function hasAnimation(control) {
 
 /**
  * Run an action once an animation on a control ends. If the control has no animation, the action will be executed immediately.
- *
+ * The action will be executed after the animation ends or after the timeout, whichever comes first.
  * @param {HTMLElement} control - The control element to listen for animation end event
  * @param {(control:*?) => void} callback - The callback function to be executed when the animation ends
+ * @param {number} [timeout=500] - The timeout in milliseconds to wait for the animation to end before executing the callback
  */
-export function runAfterAnimation(control, callback) {
+export function runAfterAnimation(control, callback, timeout = 500) {
     if (hasAnimation(control)) {
-        const onAnimationEnd = () => {
-            control.removeEventListener('animationend', onAnimationEnd);
-            callback(control);
-        };
-        control.addEventListener('animationend', onAnimationEnd);
+        Promise.race([
+            new Promise((r) => setTimeout(r, timeout)), // Fallback timeout
+            new Promise((r) => control.addEventListener('animationend', r, { once: true })),
+        ]).finally(() => callback(control));
     } else {
         callback(control);
     }
@@ -1725,8 +1812,9 @@ export function runAfterAnimation(control, callback) {
  *
  * @param {string} a - The first string to compare.
  * @param {string} b - The second string to compare.
- * @param {(a:string,b:string)=>boolean} comparisonFunction - The function to use for the comparison.
- * @returns {*} - The result of the comparison.
+ * @param {(a:string,b:string)=>T} comparisonFunction - The function to use for the comparison.
+ * @returns {T} - The result of the comparison.
+ * @template T
  */
 export function compareIgnoreCaseAndAccents(a, b, comparisonFunction) {
     if (!a || !b) return comparisonFunction(a, b); // Return the comparison result if either string is empty
@@ -1761,6 +1849,16 @@ export function includesIgnoreCaseAndAccents(text, searchTerm) {
  */
 export function equalsIgnoreCaseAndAccents(a, b) {
     return compareIgnoreCaseAndAccents(a, b, (a, b) => a === b);
+}
+
+/**
+ * Performs a case-insensitive and accent-insensitive sort.
+ * @param {string} a - The first string to compare
+ * @param {string} b - The second string to compare
+ * @returns {number} -1 if a < b, 1 if a > b, 0 if a === b
+ */
+export function sortIgnoreCaseAndAccents(a, b) {
+    return compareIgnoreCaseAndAccents(a, b, (a, b) => a?.localeCompare(b));
 }
 
 /**
@@ -2030,6 +2128,23 @@ export function toggleDrawer(drawer, expand = true) {
     }
 }
 
+/**
+ * Sets or removes a dataset property on an HTMLElement
+ *
+ * Utility function to make it easier to reset dataset properties on null, without them being "null" as value.
+ *
+ * @param {HTMLElement} element - The element to modify
+ * @param {string} name - The name of the dataset property
+ * @param {string|null} value - The value to set - If null, the dataset property will be removed
+ */
+export function setDatasetProperty(element, name, value) {
+    if (value === null) {
+        delete element.dataset[name];
+    } else {
+        element.dataset[name] = value;
+    }
+}
+
 export async function fetchFaFile(name) {
     const style = document.createElement('style');
     style.innerHTML = await (await fetch(`/css/${name}`)).text();
@@ -2106,6 +2221,48 @@ export async function showFontAwesomePicker(customList = null) {
 }
 
 /**
+ * Finds a persona by name, with optional filtering and precedence for avatars
+ * @param {object} [options={}] - The options for the search
+ * @param {string?} [options.name=null] - The name to search for
+ * @param {boolean} [options.allowAvatar=true] - Whether to allow searching by avatar
+ * @param {boolean} [options.insensitive=true] - Whether the search should be case insensitive
+ * @param {boolean} [options.preferCurrentPersona=true] - Whether to prefer the current persona(s)
+ * @param {boolean} [options.quiet=false] - Whether to suppress warnings
+ * @returns {PersonaViewModel} The persona object
+ * @typedef {object} PersonaViewModel
+ * @property {string} avatar - The avatar of the persona
+ * @property {string} name - The name of the persona
+ */
+export function findPersona({ name = null, allowAvatar = true, insensitive = true, preferCurrentPersona = true, quiet = false } = {}) {
+    /** @type {PersonaViewModel[]} */
+    const personas = Object.entries(power_user.personas).map(([avatar, name]) => ({ avatar, name }));
+    const matches = (/** @type {PersonaViewModel} */ persona) => !name || (allowAvatar && persona.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(persona.name, name) : persona.name === name);
+
+    // If we have a current persona and prefer it, return that if it matches
+    const currentPersona = personas.find(a => a.avatar === user_avatar);
+    if (preferCurrentPersona && currentPersona && matches(currentPersona)) {
+        return currentPersona;
+    }
+
+    // If allowAvatar is true, search by avatar first
+    if (allowAvatar && name) {
+        const personaByAvatar = personas.find(a => a.avatar === name);
+        if (personaByAvatar && matches(personaByAvatar)) {
+            return personaByAvatar;
+        }
+    }
+
+    // Search for matching personas by name
+    const matchingPersonas = personas.filter(a => matches(a));
+    if (matchingPersonas.length > 1) {
+        if (!quiet) toastr.warning(t`Multiple personas found for given conditions.`);
+        else console.warn(t`Multiple personas found for given conditions. Returning the first match.`);
+    }
+
+    return matchingPersonas[0] || null;
+}
+
+/**
  * Finds a character by name, with optional filtering and precedence for avatars
  * @param {object} [options={}] - The options for the search
  * @param {string?} [options.name=null] - The name to search for
@@ -2114,7 +2271,7 @@ export async function showFontAwesomePicker(customList = null) {
  * @param {string[]?} [options.filteredByTags=null] - Tags to filter characters by
  * @param {boolean} [options.preferCurrentChar=true] - Whether to prefer the current character(s)
  * @param {boolean} [options.quiet=false] - Whether to suppress warnings
- * @returns {any?} - The found character or null if not found
+ * @returns {import('./char-data.js').v1CharData?} - The found character or null if not found
  */
 export function findChar({ name = null, allowAvatar = true, insensitive = true, filteredByTags = null, preferCurrentChar = true, quiet = false } = {}) {
     const matches = (char) => !name || (allowAvatar && char.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name);
@@ -2137,8 +2294,8 @@ export function findChar({ name = null, allowAvatar = true, insensitive = true, 
     if (preferCurrentChar) {
         const preferredCharSearch = currentChars.filter(matches);
         if (preferredCharSearch.length > 1) {
-            if (!quiet) toastr.warning('Multiple characters found for given conditions.');
-            else console.warn('Multiple characters found for given conditions. Returning the first match.');
+            if (!quiet) toastr.warning(t`Multiple characters found for given conditions.`);
+            else console.warn(t`Multiple characters found for given conditions. Returning the first match.`);
         }
         if (preferredCharSearch.length) {
             return preferredCharSearch[0];
@@ -2174,4 +2331,57 @@ export function getCharIndex(char) {
     const index = characters.findIndex(c => c.avatar === char.avatar);
     if (index === -1) throw new Error(`Character not found: ${char.avatar}`);
     return index;
+}
+
+/**
+ * Compares two arrays for equality
+ * @param {any[]} a - The first array
+ * @param {any[]} b - The second array
+ * @returns {boolean} True if the arrays are equal, false otherwise
+ */
+export function arraysEqual(a, b) {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    if (a.length !== b.length) return false;
+
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+    }
+    return true;
+}
+
+/**
+ * Updates the content and style of an information block
+ * @param {string | HTMLElement} target - The CSS selector or the HTML element of the information block
+ * @param {string | HTMLElement?} content - The message to display inside the information block (supports HTML) or an HTML element
+ * @param {'hint' | 'info' | 'warning' | 'error'} [type='info'] - The type of message, which determines the styling of the information block
+ */
+export function setInfoBlock(target, content, type = 'info') {
+    if (!content) {
+        clearInfoBlock(target);
+        return;
+    }
+
+    const infoBlock = typeof target === 'string' ? document.querySelector(target) : target;
+    if (infoBlock) {
+        infoBlock.className = `info-block ${type}`;
+        if (typeof content === 'string') {
+            infoBlock.innerHTML = content;
+        } else {
+            infoBlock.innerHTML = '';
+            infoBlock.appendChild(content);
+        }
+    }
+}
+
+/**
+ * Clears the content and style of an information block.
+ * @param {string | HTMLElement} target - The CSS selector or the HTML element of the information block
+ */
+export function clearInfoBlock(target) {
+    const infoBlock = typeof target === 'string' ? document.querySelector(target) : target;
+    if (infoBlock && infoBlock.classList.contains('info-block')) {
+        infoBlock.className = '';
+        infoBlock.innerHTML = '';
+    }
 }

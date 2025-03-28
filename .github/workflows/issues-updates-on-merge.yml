@@ -1,0 +1,45 @@
+name: 🔄 Update Issues on Push
+
+on:
+  push:
+    branches:
+      - staging
+      - release
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  # This runs commits to staging/release, reading the commit messages. Check `pr-auto-manager.yml`:`update-linked-issues` for PR-linked updates.
+  update-linked-issues:
+    name: 🔗 Mark Linked Issues Done on Push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        # Checkout
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Extract Linked Issues from Commit Message
+        id: extract_issues
+        run: |
+          ISSUES=$(git log ${{ github.event.before }}..${{ github.event.after }} --pretty=%B | grep -oiE '(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #([0-9]+)' | awk '{print $2}' | tr -d '#' | jq -R -s -c 'split("\n")[:-1]')
+          echo "issues=$ISSUES" >> $GITHUB_ENV
+
+      - name: Label Linked Issues
+        id: label_linked_issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+            for ISSUE in $(echo $issues | jq -r '.[]'); do
+            if [ "${{ github.ref }}" == "refs/heads/staging" ]; then
+              LABEL="✅ Done (staging)"
+              gh issue edit $ISSUE -R ${{ github.repository }} --add-label "$LABEL" --remove-label "🧑‍💻 In Progress"
+            elif [ "${{ github.ref }}" == "refs/heads/release" ]; then
+              LABEL="✅ Done"
+              gh issue edit $ISSUE -R ${{ github.repository }} --add-label "$LABEL" --remove-label "🧑‍💻 In Progress"
+            fi
+            echo "Added label '$LABEL' (and removed '🧑‍💻 In Progress' if present) in issue #$ISSUE"
+            done

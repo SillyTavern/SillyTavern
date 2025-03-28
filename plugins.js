@@ -8,7 +8,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { default as git } from 'simple-git';
+import { default as git, CheckRepoActions } from 'simple-git';
 import { color } from './src/util.js';
 
 const __dirname = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
@@ -48,6 +48,13 @@ async function updatePlugins() {
             console.log(`Updating plugin ${color.green(directory)}...`);
             const pluginPath = path.join(pluginsPath, directory);
             const pluginRepo = git(pluginPath);
+
+            const isRepo = await pluginRepo.checkIsRepo(CheckRepoActions.IS_REPO_ROOT);
+            if (!isRepo) {
+                console.log(`Directory ${color.yellow(directory)} is not a Git repository`);
+                continue;
+            }
+
             await pluginRepo.fetch();
             const commitHash = await pluginRepo.revparse(['HEAD']);
             const trackingBranch = await pluginRepo.revparse(['--abbrev-ref', '@{u}']);

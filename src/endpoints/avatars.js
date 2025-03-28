@@ -6,18 +6,18 @@ import sanitize from 'sanitize-filename';
 import { Jimp, JimpMime } from '../jimp.js';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
-import { jsonParser, urlencodedParser } from '../express-common.js';
 import { AVATAR_WIDTH, AVATAR_HEIGHT } from '../constants.js';
 import { getImages, tryParse } from '../util.js';
+import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
 
-router.post('/get', jsonParser, function (request, response) {
+router.post('/get', function (request, response) {
     var images = getImages(request.user.directories.avatars);
     response.send(JSON.stringify(images));
 });
 
-router.post('/delete', jsonParser, function (request, response) {
+router.post('/delete', getFileNameValidationFunction('avatar'), function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     if (request.body.avatar !== sanitize(request.body.avatar)) {
@@ -35,7 +35,7 @@ router.post('/delete', jsonParser, function (request, response) {
     return response.sendStatus(404);
 });
 
-router.post('/upload', urlencodedParser, async (request, response) => {
+router.post('/upload', async (request, response) => {
     if (!request.file) return response.sendStatus(400);
 
     try {

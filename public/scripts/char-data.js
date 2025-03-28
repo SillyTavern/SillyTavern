@@ -75,6 +75,7 @@
  * @property {string} [source_url] - The source URL associated with the character.
  * @property {{full_path: string}} [chub] - The Chub-specific data associated with the character.
  * @property {{source: string[]}} [risuai] - The RisuAI-specific data associated with the character.
+ * @property {{positive: string, negative: string}} [sd_character_prompt] - SD-specific data associated with the character.
  */
 
 /**
@@ -89,7 +90,7 @@
 * @property {boolean} markdownOnly - Whether the script only applies to Markdown
 * @property {boolean} promptOnly - Whether the script only applies to prompts
 * @property {boolean} runOnEdit - Whether the script runs on edit
-* @property {boolean} substituteRegex - Whether the regex should be substituted
+* @property {number} substituteRegex - Whether the regex should be substituted
 * @property {number} minDepth - The minimum depth
 * @property {number} maxDepth - The maximum depth
 */
@@ -112,5 +113,6 @@
  * @property {string} chat - name of the current chat file chat
  * @property {string} avatar - file name of the avatar image (acts as a unique identifier)
  * @property {string} json_data - the full raw JSON data of the character
+ * @property {boolean?} shallow - if the data is shallow (lazy-loaded)
  */
 export default 0;// now this file is a module

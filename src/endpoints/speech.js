@@ -1,7 +1,6 @@
 import { Buffer } from 'node:buffer';
 import express from 'express';
 import wavefile from 'wavefile';
-import { jsonParser } from '../express-common.js';
 import { getPipeline } from '../transformers.js';
 
 export const router = express.Router();
@@ -34,7 +33,7 @@ function getWaveFile(audio) {
     return audioData;
 }
 
-router.post('/recognize', jsonParser, async (req, res) => {
+router.post('/recognize', async (req, res) => {
     try {
         const TASK = 'automatic-speech-recognition';
         const { model, audio, lang } = req.body;
@@ -43,8 +42,8 @@ router.post('/recognize', jsonParser, async (req, res) => {
         const start = performance.now();
         const result = await pipe(wav, { language: lang || null, task: 'transcribe' });
         const end = performance.now();
-        console.log(`Execution duration: ${(end - start) / 1000} seconds`);
-        console.log('Transcribed audio:', result.text);
+        console.info(`Execution duration: ${(end - start) / 1000} seconds`);
+        console.info('Transcribed audio:', result.text);
 
         return res.json({ text: result.text });
     } catch (error) {
@@ -53,7 +52,7 @@ router.post('/recognize', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/synthesize', jsonParser, async (req, res) => {
+router.post('/synthesize', async (req, res) => {
     try {
         const TASK = 'text-to-speech';
         const { text, model, speaker } = req.body;
@@ -64,7 +63,7 @@ router.post('/synthesize', jsonParser, async (req, res) => {
         const start = performance.now();
         const result = await pipe(text, { speaker_embeddings: speaker_embeddings });
         const end = performance.now();
-        console.log(`Execution duration: ${(end - start) / 1000} seconds`);
+        console.debug(`Execution duration: ${(end - start) / 1000} seconds`);
 
         const wav = new wavefile.WaveFile();
         wav.fromScratch(1, result.sampling_rate, '32f', result.audio);

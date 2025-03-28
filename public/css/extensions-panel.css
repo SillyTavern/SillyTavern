@@ -65,7 +65,7 @@ label[for="extensions_autoconnect"] {
 }
 
 .extensions_info .extension_enabled {
-    color: green;
+    font-weight: bold;
 }
 
 .extensions_info .extension_disabled {
@@ -76,13 +76,44 @@ label[for="extensions_autoconnect"] {
     color: gray;
 }
 
-input.extension_missing[type="checkbox"] {
-    opacity: 0.5;
+.extensions_info .extension_modules {
+    font-size: 0.8em;
+    font-weight: normal;
 }
 
-#extensions_list .disabled {
-    text-decoration: line-through;
-    color: lightgray;
+.extensions_info .extension_block {
+    display: flex;
+    flex-wrap: nowrap;
+    padding: 5px;
+    margin-bottom: 5px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 5px;
+}
+
+.extensions_info .extension_name {
+    font-size: 1.05em;
+}
+
+.extensions_info .extension_version {
+    opacity: 0.8;
+    font-size: 0.8em;
+    font-weight: normal;
+    margin-left: 2px;
+}
+
+.extensions_info .extension_block a {
+    color: var(--SmartThemeBodyColor);
+}
+
+.extensions_info .extension_name.update_available {
+    color: limegreen;
+}
+
+input.extension_missing[type="checkbox"] {
+    opacity: 0.5;
 }
 
 .update-button {
@@ -104,4 +135,14 @@ input.extension_missing[type="checkbox"] {
 
 #extensionsMenu>div.extension_container:empty {
     display: none;
+}
+
+.extensions_info .extension_text_block {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.extensions_info .extension_actions {
+    flex-wrap: nowrap;
 }

@@ -21,6 +21,7 @@ import { groups, selected_group } from './group-chats.js';
 import { instruct_presets } from './instruct-mode.js';
 import { kai_settings } from './kai-settings.js';
 import { convertNovelPreset } from './nai-settings.js';
+import { openai_settings, openai_setting_names } from './openai.js';
 import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -37,6 +38,7 @@ import {
 } from './textgen-settings.js';
 import { download, parseJsonFile, waitUntilCondition } from './utils.js';
 import { t } from './i18n.js';
+import { reasoning_templates } from './reasoning.js';
 
 const presetManagers = {};
 
@@ -167,6 +169,20 @@ class PresetManager {
             },
             isValid: (data) => PresetManager.isPossiblyTextCompletionData(data),
         },
+        'reasoning': {
+            name: 'Reasoning Formatting',
+            getData: () => {
+                const manager = getPresetManager('reasoning');
+                const name = manager.getSelectedPresetName();
+                return manager.getPresetSettings(name);
+            },
+            setData: (data) => {
+                const manager = getPresetManager('reasoning');
+                const name = data.name;
+                return manager.savePreset(name, data);
+            },
+            isValid: (data) => PresetManager.isPossiblyReasoningData(data),
+        },
     };
 
     static isPossiblyInstructData(data) {
@@ -187,6 +203,11 @@ class PresetManager {
     static isPossiblyTextCompletionData(data) {
         const textCompletionProps = ['temp', 'top_k', 'top_p', 'rep_pen'];
         return data && textCompletionProps.every(prop => Object.keys(data).includes(prop));
+    }
+
+    static isPossiblyReasoningData(data) {
+        const reasoningProps = ['name', 'prefix', 'suffix', 'separator'];
+        return data && reasoningProps.every(prop => Object.keys(data).includes(prop));
     }
 
     /**
@@ -224,6 +245,12 @@ class PresetManager {
         if (this.isPossiblyTextCompletionData(data)) {
             toastr.info(t`Importing as settings preset...`, t`Text Completion settings detected`);
             return await getPresetManager('textgenerationwebui').savePreset(fileName, data);
+        }
+
+        // 5. Reasoning Template
+        if (this.isPossiblyReasoningData(data)) {
+            toastr.info(t`Importing as reasoning template...`, t`Reasoning template detected`);
+            return await getPresetManager('reasoning').savePreset(data.name, data);
         }
 
         const validSections = [];
@@ -438,11 +465,16 @@ class PresetManager {
 
     }
 
-    getPresetList() {
+    getPresetList(api) {
         let presets = [];
         let preset_names = {};
 
-        switch (this.apiId) {
+        // If no API specified, use the current API
+        if (api === undefined) {
+            api = this.apiId;
+        }
+
+        switch (api) {
             case 'koboldhorde':
             case 'kobold':
                 presets = koboldai_settings;
@@ -456,6 +488,10 @@ class PresetManager {
                 presets = textgenerationwebui_presets;
                 preset_names = textgenerationwebui_preset_names;
                 break;
+            case 'openai':
+                presets = openai_settings;
+                preset_names = openai_setting_names;
+                break;
             case 'context':
                 presets = context_presets;
                 preset_names = context_presets.map(x => x.name);
@@ -468,8 +504,12 @@ class PresetManager {
                 presets = system_prompts;
                 preset_names = system_prompts.map(x => x.name);
                 break;
+            case 'reasoning':
+                presets = reasoning_templates;
+                preset_names = reasoning_templates.map(x => x.name);
+                break;
             default:
-                console.warn(`Unknown API ID ${this.apiId}`);
+                console.warn(`Unknown API ID ${api}`);
         }
 
         return { presets, preset_names };
@@ -480,7 +520,7 @@ class PresetManager {
     }
 
     isAdvancedFormatting() {
-        return this.apiId == 'context' || this.apiId == 'instruct' || this.apiId == 'sysprompt';
+        return  ['context', 'instruct', 'sysprompt', 'reasoning'].includes(this.apiId);
     }
 
     updateList(name, preset) {
@@ -543,6 +583,11 @@ class PresetManager {
                     sysprompt_preset['name'] = name || power_user.sysprompt.preset;
                     return sysprompt_preset;
                 }
+                case 'reasoning': {
+                    const reasoning_preset = structuredClone(power_user.reasoning);
+                    reasoning_preset['name'] = name || power_user.reasoning.preset;
+                    return reasoning_preset;
+                }
                 default:
                     console.warn(`Unknown API ID ${apiId}`);
                     return {};
@@ -584,6 +629,18 @@ class PresetManager {
             'openrouter_providers',
             'openrouter_allow_fallbacks',
             'tabby_model',
+            'derived',
+            'generic_model',
+            'include_reasoning',
+            'global_banned_tokens',
+            'send_banned_tokens',
+
+            // Reasoning exclusions
+            'auto_parse',
+            'add_to_prompts',
+            'auto_expand',
+            'show_hidden',
+            'max_additions',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 
@@ -599,6 +656,30 @@ class PresetManager {
         }
 
         return settings;
+    }
+
+    getCompletionPresetByName(name) {
+        // Retrieve a completion preset by name. Return undefined if not found.
+        let { presets, preset_names } = this.getPresetList();
+        let preset;
+
+        // Some APIs use an array of names, others use an object of {name: index}
+        if (Array.isArray(preset_names)) {  // array of names
+            if (preset_names.includes(name)) {
+                preset = presets[preset_names.indexOf(name)];
+            }
+        } else {  // object of {names: index}
+            if (preset_names[name] !== undefined) {
+                preset = presets[preset_names[name]];
+            }
+        }
+
+        if (preset === undefined) {
+            console.error(`Preset ${name} not found`);
+        }
+
+        // if the preset isn't found, returns undefined
+        return preset;
     }
 
     // pass no arguments to delete current preset

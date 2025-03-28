@@ -8,13 +8,14 @@
         "checkJs": true,
         "allowUmdGlobalAccess": true,
         "allowSyntheticDefaultImports": true,
-        "resolveJsonModule": true
+        "resolveJsonModule": true,
+        "strictBindCallApply": true
     },
     "exclude": [
         "**/node_modules/**",
         "**/dist/**",
         "**/.git/**",
-        "public/lib/**",
+        "public/**",
         "backups/**",
         "data/**",
         "cache/**",

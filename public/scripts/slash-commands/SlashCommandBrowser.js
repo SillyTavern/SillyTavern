@@ -1,5 +1,4 @@
 import { escapeRegex } from '../utils.js';
-import { SlashCommand } from './SlashCommand.js';
 import { SlashCommandParser } from './SlashCommandParser.js';
 
 export class SlashCommandBrowser {
@@ -30,7 +29,7 @@ export class SlashCommandBrowser {
                                 this.details?.remove();
                                 this.details = null;
                                 let query = inp.value.trim();
-                                if (query.slice(-1) == '"' && !/(?:^|\s+)"/.test(query)) {
+                                if (query.slice(-1) === '"' && !/(?:^|\s+)"/.test(query)) {
                                     query = `"${query}`;
                                 }
                                 let fuzzyList = [];
@@ -59,7 +58,7 @@ export class SlashCommandBrowser {
                                         cmd.helpString,
                                     ];
                                     const find = ()=>targets.find(t=>(fuzzyList.find(f=>f.test(t)) ?? quotedList.find(q=>t.includes(q))) !== undefined) !== undefined;
-                                    if (fuzzyList.length + quotedList.length == 0 || find()) {
+                                    if (fuzzyList.length + quotedList.length === 0 || find()) {
                                         this.itemMap[cmd.name].classList.remove('isFiltered');
                                     } else {
                                         this.itemMap[cmd.name].classList.add('isFiltered');
@@ -78,7 +77,7 @@ export class SlashCommandBrowser {
                         list.classList.add('autoComplete');
                         this.cmdList = Object
                             .keys(SlashCommandParser.commands)
-                            .filter(key => SlashCommandParser.commands[key].name == key) // exclude aliases
+                            .filter(key => SlashCommandParser.commands[key].name === key) // exclude aliases
                             .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
                             .map(key => SlashCommandParser.commands[key])
                         ;
@@ -97,7 +96,7 @@ export class SlashCommandBrowser {
                                         }
                                     }
                                 }
-                                if (this.details != details) {
+                                if (this.details !== details) {
                                     Array.from(list.querySelectorAll('.selected')).forEach(it=>it.classList.remove('selected'));
                                     item.classList.add('selected');
                                     this.details?.remove();
@@ -124,7 +123,7 @@ export class SlashCommandBrowser {
         parent.append(this.dom);
 
         this.mo = new MutationObserver(muts=>{
-            if (muts.find(mut=>Array.from(mut.removedNodes).find(it=>it == this.dom || it.contains(this.dom)))) {
+            if (muts.find(mut=>Array.from(mut.removedNodes).find(it=>it === this.dom || it.contains(this.dom)))) {
                 this.mo.disconnect();
                 window.removeEventListener('keydown', boundHandler);
             }
@@ -136,7 +135,7 @@ export class SlashCommandBrowser {
     }
 
     handleKeyDown(evt) {
-        if (!evt.shiftKey && !evt.altKey && evt.ctrlKey && evt.key.toLowerCase() == 'f') {
+        if (!evt.shiftKey && !evt.altKey && evt.ctrlKey && evt.key.toLowerCase() === 'f') {
             if (!this.dom.closest('body')) return;
             if (this.dom.closest('.mes') && !this.dom.closest('.last_mes')) return;
             evt.preventDefault();

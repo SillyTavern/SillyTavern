@@ -4,8 +4,17 @@
     <div id="copyPromptToClipboard" class="fa-solid fa-copy menu_button" title="Copy Prompt" data-i18n="[title]Copy Prompt"></div>
     <div id="diffPrevPrompt" class="fa-solid fa-code-compare menu_button" title="Show Prompt Differences" data-i18n="[title]Show Prompt Differences"></div>
 </h3>
-API/Model Used: {{mainApiFriendlyName}} {{#if apiUsed}}({{apiUsed}}){{/if}} {{#if modelUsed}}&ndash; {{modelUsed}}{{/if}}<br>
-Tokenizer: {{selectedTokenizer}}<br>
+<div>
+    <div>
+        API/Model: {{mainApiFriendlyName}} {{#if apiUsed}}({{apiUsed}}){{/if}} {{#if modelUsed}}&ndash; {{modelUsed}}{{/if}}
+    </div>
+    <div>
+        <small>Preset: {{presetName}}</small>
+        <span>|</span>
+        <small>Tokenizer: {{selectedTokenizer}}</small>
+    </div>
+</div>
+
 <span class="tokenItemizingSubclass">
     Only the white numbers really matter. All numbers are estimates.
     Grey color items may not have been included in the context due to certain prompt format settings.

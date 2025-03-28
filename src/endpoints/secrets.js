@@ -4,7 +4,6 @@ import path from 'node:path';
 import express from 'express';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { getConfigValue } from '../util.js';
-import { jsonParser } from '../express-common.js';
 
 export const SECRETS_FILE = 'secrets.json';
 export const SECRET_KEYS = {
@@ -45,10 +44,14 @@ export const SECRET_KEYS = {
     ZEROONEAI: 'api_key_01ai',
     HUGGINGFACE: 'api_key_huggingface',
     STABILITY: 'api_key_stability',
-    BLOCKENTROPY: 'api_key_blockentropy',
     CUSTOM_OPENAI_TTS: 'api_key_custom_openai_tts',
     TAVILY: 'api_key_tavily',
     NANOGPT: 'api_key_nanogpt',
+    BFL: 'api_key_bfl',
+    FALAI: 'api_key_falai',
+    GENERIC: 'api_key_generic',
+    DEEPSEEK: 'api_key_deepseek',
+    SERPER: 'api_key_serper',
 };
 
 // These are the keys that are safe to expose, even if allowKeysExposure is false
@@ -148,7 +151,7 @@ export function getAllSecrets(directories) {
     const filePath = path.join(directories.root, SECRETS_FILE);
 
     if (!fs.existsSync(filePath)) {
-        console.log('Secrets file does not exist');
+        console.error('Secrets file does not exist');
         return undefined;
     }
 
@@ -159,7 +162,7 @@ export function getAllSecrets(directories) {
 
 export const router = express.Router();
 
-router.post('/write', jsonParser, (request, response) => {
+router.post('/write', (request, response) => {
     const key = request.body.key;
     const value = request.body.value;
 
@@ -167,7 +170,7 @@ router.post('/write', jsonParser, (request, response) => {
     return response.send('ok');
 });
 
-router.post('/read', jsonParser, (request, response) => {
+router.post('/read', (request, response) => {
     try {
         const state = readSecretState(request.user.directories);
         return response.send(state);
@@ -177,8 +180,8 @@ router.post('/read', jsonParser, (request, response) => {
     }
 });
 
-router.post('/view', jsonParser, async (request, response) => {
-    const allowKeysExposure = getConfigValue('allowKeysExposure', false);
+router.post('/view', async (request, response) => {
+    const allowKeysExposure = getConfigValue('allowKeysExposure', false, 'boolean');
 
     if (!allowKeysExposure) {
         console.error('secrets.json could not be viewed unless the value of allowKeysExposure in config.yaml is set to true');
@@ -199,8 +202,8 @@ router.post('/view', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/find', jsonParser, (request, response) => {
-    const allowKeysExposure = getConfigValue('allowKeysExposure', false);
+router.post('/find', (request, response) => {
+    const allowKeysExposure = getConfigValue('allowKeysExposure', false, 'boolean');
     const key = request.body.key;
 
     if (!allowKeysExposure && !EXPORTABLE_KEYS.includes(key)) {
@@ -212,7 +215,7 @@ router.post('/find', jsonParser, (request, response) => {
         const secret = readSecret(request.user.directories, key);
 
         if (!secret) {
-            response.sendStatus(404);
+            return response.sendStatus(404);
         }
 
         return response.send({ value: secret });

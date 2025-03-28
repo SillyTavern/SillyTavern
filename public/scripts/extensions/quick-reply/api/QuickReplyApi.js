@@ -1,21 +1,18 @@
-// eslint-disable-next-line no-unused-vars
 import { QuickReply } from '../src/QuickReply.js';
 import { QuickReplyContextLink } from '../src/QuickReplyContextLink.js';
 import { QuickReplySet } from '../src/QuickReplySet.js';
-// eslint-disable-next-line no-unused-vars
 import { QuickReplySettings } from '../src/QuickReplySettings.js';
-// eslint-disable-next-line no-unused-vars
 import { SettingsUi } from '../src/ui/SettingsUi.js';
 import { onlyUnique } from '../../../utils.js';
 
 export class QuickReplyApi {
-    /**@type {QuickReplySettings}*/ settings;
-    /**@type {SettingsUi}*/ settingsUi;
+    /** @type {QuickReplySettings} */ settings;
+    /** @type {SettingsUi} */ settingsUi;
 
 
 
 
-    constructor(/**@type {QuickReplySettings}*/settings, /**@type {SettingsUi}*/settingsUi) {
+    constructor(/** @type {QuickReplySettings} */settings, /** @type {SettingsUi} */settingsUi) {
         this.settings = settings;
         this.settingsUi = settingsUi;
     }

@@ -1,16 +1,15 @@
-import { callPopup } from '../../../../../script.js';
+import { Popup } from '../../../../popup.js';
 import { getSortableDelay } from '../../../../utils.js';
 import { log, warn } from '../../index.js';
 import { QuickReply } from '../QuickReply.js';
 import { QuickReplySet } from '../QuickReplySet.js';
-// eslint-disable-next-line no-unused-vars
 import { QuickReplySettings } from '../QuickReplySettings.js';
 
 export class SettingsUi {
-    /**@type {QuickReplySettings}*/ settings;
+    /** @type {QuickReplySettings} */ settings;
 
-    /**@type {HTMLElement}*/ template;
-    /**@type {HTMLElement}*/ dom;
+    /** @type {HTMLElement} */ template;
+    /** @type {HTMLElement} */ dom;
 
     /**@type {HTMLInputElement}*/ isEnabled;
     /**@type {HTMLInputElement}*/ isCombined;
@@ -111,6 +110,7 @@ export class SettingsUi {
 
     prepareQrEditor() {
         // qr editor
+        this.dom.querySelector('#qr--set-rename').addEventListener('click', async () => this.renameQrSet());
         this.dom.querySelector('#qr--set-new').addEventListener('click', async()=>this.addQrSet());
         /**@type {HTMLInputElement}*/
         const importFile = this.dom.querySelector('#qr--set-importFile');
@@ -119,7 +119,8 @@ export class SettingsUi {
             importFile.value = null;
         });
         this.dom.querySelector('#qr--set-import').addEventListener('click', ()=>importFile.click());
-        this.dom.querySelector('#qr--set-export').addEventListener('click', async()=>this.exportQrSet());
+        this.dom.querySelector('#qr--set-export').addEventListener('click', async () => this.exportQrSet());
+        this.dom.querySelector('#qr--set-duplicate').addEventListener('click', async () => this.duplicateQrSet());
         this.dom.querySelector('#qr--set-delete').addEventListener('click', async()=>this.deleteQrSet());
         this.dom.querySelector('#qr--set-add').addEventListener('click', async()=>{
             this.currentQrSet.addQuickReply();
@@ -279,7 +280,7 @@ export class SettingsUi {
     }
 
     async deleteQrSet() {
-        const confirmed = await callPopup(`Are you sure you want to delete the Quick Reply Set "${this.currentQrSet.name}"?<br>This cannot be undone.`, 'confirm');
+        const confirmed = await Popup.show.confirm('Delete Quick Reply Set', `Are you sure you want to delete the Quick Reply Set "${this.currentQrSet.name}"?<br>This cannot be undone.`);
         if (confirmed) {
             await this.doDeleteQrSet(this.currentQrSet);
             this.rerender();
@@ -303,12 +304,52 @@ export class SettingsUi {
         this.settings.save();
     }
 
+    async renameQrSet() {
+        const newName = await Popup.show.input('Rename Quick Reply Set', 'Enter a new name:', this.currentQrSet.name);
+        if (newName && newName.length > 0) {
+            const existingSet = QuickReplySet.get(newName);
+            if (existingSet) {
+                toastr.error(`A Quick Reply Set named "${newName}" already exists.`);
+                return;
+            }
+            const oldName = this.currentQrSet.name;
+            this.currentQrSet.name = newName;
+            await this.currentQrSet.save();
+
+            // Update it in both set lists
+            this.settings.config.setList.forEach(set => {
+                if (set.set.name === oldName) {
+                    set.set.name = newName;
+                }
+            });
+            this.settings.chatConfig?.setList.forEach(set => {
+                if (set.set.name === oldName) {
+                    set.set.name = newName;
+                }
+            });
+            this.settings.save();
+
+            // Update the option in the current selected QR dropdown. All others will be refreshed via the prepare calls below.
+            /** @type {HTMLOptionElement} */
+            const option = this.currentSet.querySelector(`#qr--set option[value="${oldName}"]`);
+            option.value = newName;
+            option.textContent = newName;
+
+            this.currentSet.value = newName;
+            this.onQrSetChange();
+            this.prepareGlobalSetList();
+            this.prepareChatSetList();
+
+            console.info(`Quick Reply Set renamed from ""${oldName}" to "${newName}".`);
+        }
+    }
+
     async addQrSet() {
-        const name = await callPopup('Quick Reply Set Name:', 'input');
+        const name = await Popup.show.input('Create a new Quick Reply Set', 'Enter a name for the new Quick Reply Set:');
         if (name && name.length > 0) {
             const oldQrs = QuickReplySet.get(name);
             if (oldQrs) {
-                const replace = await callPopup(`A Quick Reply Set named "${name}" already exists.<br>Do you want to overwrite the existing Quick Reply Set?<br>The existing set will be deleted. This cannot be undone.`, 'confirm');
+                const replace = Popup.show.confirm('Replace existing World Info', `A Quick Reply Set named "${name}" already exists.<br>Do you want to overwrite the existing Quick Reply Set?<br>The existing set will be deleted. This cannot be undone.`);
                 if (replace) {
                     const idx = QuickReplySet.list.indexOf(oldQrs);
                     await this.doDeleteQrSet(oldQrs);
@@ -369,7 +410,7 @@ export class SettingsUi {
                 qrs.init();
                 const oldQrs = QuickReplySet.get(props.name);
                 if (oldQrs) {
-                    const replace = await callPopup(`A Quick Reply Set named "${qrs.name}" already exists.<br>Do you want to overwrite the existing Quick Reply Set?<br>The existing set will be deleted. This cannot be undone.`, 'confirm');
+                    const replace = Popup.show.confirm('Replace existing World Info', `A Quick Reply Set named "${name}" already exists.<br>Do you want to overwrite the existing Quick Reply Set?<br>The existing set will be deleted. This cannot be undone.`);
                     if (replace) {
                         const idx = QuickReplySet.list.indexOf(oldQrs);
                         await this.doDeleteQrSet(oldQrs);
@@ -419,6 +460,40 @@ export class SettingsUi {
             a.click();
         }
         URL.revokeObjectURL(url);
+    }
+
+    async duplicateQrSet() {
+        const newName = await Popup.show.input('Duplicate Quick Reply Set', 'Enter a name for the new Quick Reply Set:', `${this.currentQrSet.name} (Copy)`);
+        if (newName && newName.length > 0) {
+            const existingSet = QuickReplySet.get(newName);
+            if (existingSet) {
+                toastr.error(`A Quick Reply Set named "${newName}" already exists.`);
+                return;
+            }
+            const newQrSet = QuickReplySet.from(JSON.parse(JSON.stringify(this.currentQrSet)));
+            newQrSet.name = newName;
+            newQrSet.qrList = this.currentQrSet.qrList.map(qr => QuickReply.from(JSON.parse(JSON.stringify(qr))));
+            newQrSet.addQuickReply();
+            const idx = QuickReplySet.list.findIndex(it => it.name.toLowerCase().localeCompare(newName.toLowerCase()) == 1);
+            if (idx > -1) {
+                QuickReplySet.list.splice(idx, 0, newQrSet);
+            } else {
+                QuickReplySet.list.push(newQrSet);
+            }
+            const opt = document.createElement('option'); {
+                opt.value = newQrSet.name;
+                opt.textContent = newQrSet.name;
+                if (idx > -1) {
+                    this.currentSet.children[idx].insertAdjacentElement('beforebegin', opt);
+                } else {
+                    this.currentSet.append(opt);
+                }
+            }
+            this.currentSet.value = newName;
+            this.onQrSetChange();
+            this.prepareGlobalSetList();
+            this.prepareChatSetList();
+        }
     }
 
     selectQrSet(qrs) {

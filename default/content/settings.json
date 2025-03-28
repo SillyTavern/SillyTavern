@@ -593,24 +593,28 @@
         "new_chat_prompt": "[Start a new Chat]",
         "new_group_chat_prompt": "[Start a new group chat. Group members: {{group}}]",
         "new_example_chat_prompt": "[Example Chat]",
-        "continue_nudge_prompt": "[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message: {{lastChatMessage}}]",
+        "continue_nudge_prompt": "[Continue your last message without repeating its original content.]",
         "bias_preset_selected": "Default (none)",
         "bias_presets": {
             "Default (none)": [],
             "Anti-bond": [
                 {
+                    "id": "22154f79-dd98-41bc-8e34-87015d6a0eaf",
                     "text": " bond",
                     "value": -50
                 },
                 {
+                    "id": "8ad2d5c4-d8ef-49e4-bc5e-13e7f4690e0f",
                     "text": " future",
                     "value": -50
                 },
                 {
+                    "id": "52a4b280-0956-4940-ac52-4111f83e4046",
                     "text": " bonding",
                     "value": -50
                 },
                 {
+                    "id": "e63037c7-c9d1-4724-ab2d-7756008b433b",
                     "text": " connection",
                     "value": -25
                 }
@@ -622,7 +626,6 @@
         "ai21_model": "jamba-1.5-large",
         "windowai_model": "",
         "openrouter_model": "OR_Website",
-        "jailbreak_system": true,
         "reverse_proxy": "",
         "chat_completion_source": "openai",
         "max_context_unlocked": false,

@@ -32,9 +32,6 @@ export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
 
-let lastCharacterId = null;
-let lastGroupId = null;
-let lastChatId = null;
 let lastMessageHash = null;
 let lastMessageId = null;
 let inApiCall = false;
@@ -251,7 +248,7 @@ function onSummarySourceChange(event) {
 }
 
 function switchSourceControls(value) {
-    $('#memory_settings [data-summary-source]').each((_, element) => {
+    $('#summaryExtensionDrawerContents [data-summary-source], #memory_settings [data-summary-source]').each((_, element) => {
         const source = element.dataset.summarySource.split(',').map(s => s.trim());
         $(element).toggle(source.includes(value));
     });
@@ -349,15 +346,6 @@ function onMaxMessagesPerRequestInput() {
     saveSettingsDebounced();
 }
 
-function saveLastValues() {
-    const context = getContext();
-    lastGroupId = context.groupId;
-    lastCharacterId = context.characterId;
-    lastChatId = context.chatId;
-    lastMessageId = context.chat?.length ?? null;
-    lastMessageHash = getStringHash((context.chat.length && context.chat[context.chat.length - 1]['mes']) ?? '');
-}
-
 function getLatestMemoryFromChat(chat) {
     if (!Array.isArray(chat) || !chat.length) {
         return '';
@@ -390,6 +378,29 @@ function getIndexOfLatestChatSummary(chat) {
     return -1;
 }
 
+/**
+ * Check if something is changed during the summarization process.
+ * @param {{ groupId: any; chatId: any; characterId: any; }} context
+ * @returns {boolean} True if the context has changed and the summary should be discarded
+ */
+function isContextChanged(context) {
+    const newContext = getContext();
+    if (newContext.groupId !== context.groupId
+        || newContext.chatId !== context.chatId
+        || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
+        console.log('Context changed, summary discarded');
+        return true;
+    }
+
+    return false;
+}
+
+function onChatChanged() {
+    const context = getContext();
+    const latestMemory = getLatestMemoryFromChat(context.chat);
+    setMemoryContext(latestMemory, false);
+}
+
 async function onChatEvent() {
     // Module not enabled
     if (extension_settings.memory.source === summary_sources.extras && !modules.includes('summarize')) {
@@ -401,24 +412,8 @@ async function onChatEvent() {
         return;
     }
 
-    const context = getContext();
-    const chat = context.chat;
-
-    // no characters or group selected
-    if (!context.groupId && context.characterId === undefined) {
-        return;
-    }
-
     // Streaming in-progress
     if (streamingProcessor && !streamingProcessor.isFinished) {
-        return;
-    }
-
-    // Chat/character/group changed
-    if ((context.groupId && lastGroupId !== context.groupId) || (context.characterId !== lastCharacterId) || (context.chatId !== lastChatId)) {
-        const latestMemory = getLatestMemoryFromChat(chat);
-        setMemoryContext(latestMemory, false);
-        saveLastValues();
         return;
     }
 
@@ -426,6 +421,9 @@ async function onChatEvent() {
     if (inApiCall || extension_settings.memory.memoryFrozen) {
         return;
     }
+
+    const context = getContext();
+    const chat = context.chat;
 
     // No new messages - do nothing
     if (chat.length === 0 || (lastMessageId === chat.length && getStringHash(chat[chat.length - 1].mes) === lastMessageHash)) {
@@ -449,7 +447,10 @@ async function onChatEvent() {
 
     summarizeChat(context)
         .catch(console.error)
-        .finally(saveLastValues);
+        .finally(() => {
+            lastMessageId = context.chat?.length ?? null;
+            lastMessageHash = getStringHash((context.chat.length && context.chat[context.chat.length - 1]['mes']) ?? '');
+        });
 }
 
 /**
@@ -464,13 +465,7 @@ async function forceSummarizeChat(quiet) {
     }
 
     const context = getContext();
-
     const skipWIAN = extension_settings.memory.SkipWIAN;
-    console.log(`Skipping WIAN? ${skipWIAN}`);
-    if (!context.chatId) {
-        toastr.warning('No chat selected');
-        return '';
-    }
 
     const toast = quiet ? jQuery() : toastr.info('Summarizing chat...', 'Please wait', { timeOut: 0, extendedTimeOut: 0 });
     const value = extension_settings.memory.source === summary_sources.main
@@ -648,7 +643,6 @@ async function summarizeChatWebLLM(context, force) {
     try {
         inApiCall = true;
         const summary = await generateWebLlmChatPrompt(messages, params);
-        const newContext = getContext();
 
         if (!summary) {
             console.warn('Empty summary received');
@@ -656,10 +650,7 @@ async function summarizeChatWebLLM(context, force) {
         }
 
         // something changed during summarization request
-        if (newContext.groupId !== context.groupId ||
-            newContext.chatId !== context.chatId ||
-            (!newContext.groupId && (newContext.characterId !== context.characterId))) {
-            console.log('Context changed, summary discarded');
+        if (isContextChanged(context)) {
             return;
         }
 
@@ -723,13 +714,7 @@ async function summarizeChatMain(context, force, skipWIAN) {
         return;
     }
 
-    const newContext = getContext();
-
-    // something changed during summarization request
-    if (newContext.groupId !== context.groupId
-        || newContext.chatId !== context.chatId
-        || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
-        console.log('Context changed, summary discarded');
+    if (isContextChanged(context)) {
         return;
     }
 
@@ -855,18 +840,13 @@ async function summarizeChatExtras(context) {
     try {
         inApiCall = true;
         const summary = await callExtrasSummarizeAPI(resultingString);
-        const newContext = getContext();
 
         if (!summary) {
             console.warn('Empty summary received');
             return;
         }
 
-        // something changed during summarization request
-        if (newContext.groupId !== context.groupId
-            || newContext.chatId !== context.chatId
-            || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
-            console.log('Context changed, summary discarded');
+        if (isContextChanged(context)) {
             return;
         }
 
@@ -993,7 +973,7 @@ function doPopout(e) {
             .removeClass('zoomed_avatar')
             .addClass('draggable')
             .empty();
-        const prevSummaryBoxContents = $('#memory_contents').val(); //copy summary box before emptying
+        const prevSummaryBoxContents = $('#memory_contents').val().toString(); //copy summary box before emptying
         originalElement.empty();
         originalElement.html('<div class="flex-container alignitemscenter justifyCenter wide100p"><small>Currently popped out</small></div>');
         newElement.append(controlBarHtml).append(originalHTMLClone);
@@ -1013,7 +993,7 @@ function doPopout(e) {
             const summaryPopoutHTML = $('#summaryExtensionDrawerContents');
             $('#summaryExtensionPopout').fadeOut(animation_duration, () => {
                 originalElement.empty();
-                originalElement.html(summaryPopoutHTML);
+                originalElement.append(summaryPopoutHTML);
                 $('#summaryExtensionPopout').remove();
             });
             loadSettings();
@@ -1027,31 +1007,30 @@ function doPopout(e) {
 function setupListeners() {
     //setup shared listeners for popout and regular ext menu
     $('#memory_restore').off('click').on('click', onMemoryRestoreClick);
-    $('#memory_contents').off('click').on('input', onMemoryContentInput);
-    $('#memory_frozen').off('click').on('input', onMemoryFrozenInput);
-    $('#memory_skipWIAN').off('click').on('input', onMemorySkipWIANInput);
-    $('#summary_source').off('click').on('change', onSummarySourceChange);
-    $('#memory_prompt_words').off('click').on('input', onMemoryPromptWordsInput);
-    $('#memory_prompt_interval').off('click').on('input', onMemoryPromptIntervalInput);
-    $('#memory_prompt').off('click').on('input', onMemoryPromptInput);
+    $('#memory_contents').off('input').on('input', onMemoryContentInput);
+    $('#memory_frozen').off('input').on('input', onMemoryFrozenInput);
+    $('#memory_skipWIAN').off('input').on('input', onMemorySkipWIANInput);
+    $('#summary_source').off('change').on('change', onSummarySourceChange);
+    $('#memory_prompt_words').off('input').on('input', onMemoryPromptWordsInput);
+    $('#memory_prompt_interval').off('input').on('input', onMemoryPromptIntervalInput);
+    $('#memory_prompt').off('input').on('input', onMemoryPromptInput);
     $('#memory_force_summarize').off('click').on('click', () => forceSummarizeChat(false));
-    $('#memory_template').off('click').on('input', onMemoryTemplateInput);
-    $('#memory_depth').off('click').on('input', onMemoryDepthInput);
-    $('#memory_role').off('click').on('input', onMemoryRoleInput);
-    $('input[name="memory_position"]').off('click').on('change', onMemoryPositionChange);
-    $('#memory_prompt_words_force').off('click').on('input', onMemoryPromptWordsForceInput);
-    $('#memory_prompt_builder_default').off('click').on('input', onMemoryPromptBuilderInput);
-    $('#memory_prompt_builder_raw_blocking').off('click').on('input', onMemoryPromptBuilderInput);
-    $('#memory_prompt_builder_raw_non_blocking').off('click').on('input', onMemoryPromptBuilderInput);
+    $('#memory_template').off('input').on('input', onMemoryTemplateInput);
+    $('#memory_depth').off('input').on('input', onMemoryDepthInput);
+    $('#memory_role').off('input').on('input', onMemoryRoleInput);
+    $('input[name="memory_position"]').off('change').on('change', onMemoryPositionChange);
+    $('#memory_prompt_words_force').off('input').on('input', onMemoryPromptWordsForceInput);
+    $('#memory_prompt_builder_default').off('input').on('input', onMemoryPromptBuilderInput);
+    $('#memory_prompt_builder_raw_blocking').off('input').on('input', onMemoryPromptBuilderInput);
+    $('#memory_prompt_builder_raw_non_blocking').off('input').on('input', onMemoryPromptBuilderInput);
     $('#memory_prompt_restore').off('click').on('click', onMemoryPromptRestoreClick);
     $('#memory_prompt_interval_auto').off('click').on('click', onPromptIntervalAutoClick);
     $('#memory_prompt_words_auto').off('click').on('click', onPromptForceWordsAutoClick);
-    $('#memory_override_response_length').off('click').on('input', onOverrideResponseLengthInput);
-    $('#memory_max_messages_per_request').off('click').on('input', onMaxMessagesPerRequestInput);
+    $('#memory_override_response_length').off('input').on('input', onOverrideResponseLengthInput);
+    $('#memory_max_messages_per_request').off('input').on('input', onMaxMessagesPerRequestInput);
     $('#memory_include_wi_scan').off('input').on('input', onMemoryIncludeWIScanInput);
     $('#summarySettingsBlockToggle').off('click').on('click', function () {
-        console.log('saw settings button click');
-        $('#summarySettingsBlock').slideToggle(200, 'swing'); //toggleClass("hidden");
+        $('#summarySettingsBlock').slideToggle(200, 'swing');
     });
 }
 
@@ -1068,11 +1047,11 @@ jQuery(async function () {
 
     await addExtensionControls();
     loadSettings();
+    eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.makeLast(event_types.CHARACTER_MESSAGE_RENDERED, onChatEvent);
-    eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);
-    eventSource.on(event_types.MESSAGE_EDITED, onChatEvent);
-    eventSource.on(event_types.MESSAGE_SWIPED, onChatEvent);
-    eventSource.on(event_types.CHAT_CHANGED, onChatEvent);
+    for (const event of [event_types.MESSAGE_DELETED, event_types.MESSAGE_UPDATED, event_types.MESSAGE_SWIPED]) {
+        eventSource.on(event, onChatEvent);
+    }
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'summarize',
         callback: summarizeCallback,

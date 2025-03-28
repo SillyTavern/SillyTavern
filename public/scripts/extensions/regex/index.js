@@ -4,21 +4,16 @@ import { selected_group } from '../../group-chats.js';
 import { callGenericPopup, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
-import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
-import { download, getFileText, getSortableDelay, uuidv4 } from '../../utils.js';
-import { regex_placement, runRegexScript } from './engine.js';
+import { download, equalsIgnoreCaseAndAccents, getFileText, getSortableDelay, isFalseBoolean, isTrueBoolean, regexFromString, setInfoBlock, uuidv4 } from '../../utils.js';
+import { regex_placement, runRegexScript, substitute_find_regex } from './engine.js';
 import { t } from '../../i18n.js';
+import { accountStorage } from '../../util/AccountStorage.js';
 
 /**
- * @typedef {object} RegexScript
- * @property {string} scriptName - The name of the script
- * @property {boolean} disabled - Whether the script is disabled
- * @property {string} replaceString - The replace string
- * @property {string[]} trimStrings - The trim strings
- * @property {string?} findRegex - The find regex
- * @property {string?} substituteRegex - The substitute regex
+ * @typedef {import('../../char-data.js').RegexScriptData} RegexScript
  */
 
 /**
@@ -227,7 +222,7 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
             editorHtml.find('input[name="only_format_display"]').prop('checked', existingScript.markdownOnly ?? false);
             editorHtml.find('input[name="only_format_prompt"]').prop('checked', existingScript.promptOnly ?? false);
             editorHtml.find('input[name="run_on_edit"]').prop('checked', existingScript.runOnEdit ?? false);
-            editorHtml.find('input[name="substitute_regex"]').prop('checked', existingScript.substituteRegex ?? false);
+            editorHtml.find('select[name="substitute_regex"]').val(existingScript.substituteRegex ?? substitute_find_regex.NONE);
             editorHtml.find('input[name="min_depth"]').val(existingScript.minDepth ?? '');
             editorHtml.find('input[name="max_depth"]').val(existingScript.maxDepth ?? '');
 
@@ -257,6 +252,8 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
     });
 
     function updateTestResult() {
+        updateInfoBlock(editorHtml);
+
         if (!editorHtml.find('#regex_test_mode').is(':visible')) {
             return;
         }
@@ -267,7 +264,7 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
             findRegex: editorHtml.find('.find_regex').val(),
             replaceString: editorHtml.find('.regex_replace_string').val(),
             trimStrings: String(editorHtml.find('.regex_trim_strings').val()).split('\n').filter((e) => e.length !== 0) || [],
-            substituteRegex: editorHtml.find('input[name="substitute_regex"]').prop('checked'),
+            substituteRegex: Number(editorHtml.find('select[name="substitute_regex"]').val()),
         };
         const rawTestString = String(editorHtml.find('#regex_test_input').val());
         const result = runRegexScript(testScript, rawTestString);
@@ -275,6 +272,7 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
     }
 
     editorHtml.find('input, textarea, select').on('input', updateTestResult);
+    updateInfoBlock(editorHtml);
 
     const popupResult = await callPopup(editorHtml, 'confirm', undefined, { okButton: t`Save` });
     if (popupResult) {
@@ -295,12 +293,46 @@ async function onRegexEditorOpenClick(existingId, isScoped) {
             markdownOnly: editorHtml.find('input[name="only_format_display"]').prop('checked'),
             promptOnly: editorHtml.find('input[name="only_format_prompt"]').prop('checked'),
             runOnEdit: editorHtml.find('input[name="run_on_edit"]').prop('checked'),
-            substituteRegex: editorHtml.find('input[name="substitute_regex"]').prop('checked'),
+            substituteRegex: Number(editorHtml.find('select[name="substitute_regex"]').val()),
             minDepth: parseInt(String(editorHtml.find('input[name="min_depth"]').val())),
             maxDepth: parseInt(String(editorHtml.find('input[name="max_depth"]').val())),
         };
 
         saveRegexScript(newRegexScript, existingScriptIndex, isScoped);
+    }
+}
+
+/**
+ * Updates the info block in the regex editor with hints regarding the find regex.
+ * @param {JQuery<HTMLElement>} editorHtml The editor HTML
+ */
+function updateInfoBlock(editorHtml) {
+    const infoBlock = editorHtml.find('.info-block').get(0);
+    const infoBlockFlagsHint = editorHtml.find('#regex_info_block_flags_hint');
+    const findRegex = String(editorHtml.find('.find_regex').val());
+
+    infoBlockFlagsHint.hide();
+
+    // Clear the info block if the find regex is empty
+    if (!findRegex) {
+        setInfoBlock(infoBlock, t`Find Regex is empty`, 'info');
+        return;
+    }
+
+    try {
+        const regex = regexFromString(findRegex);
+        if (!regex) {
+            throw new Error(t`Invalid Find Regex`);
+        }
+
+        const flagInfo = [];
+        flagInfo.push(regex.flags.includes('g') ? t`Applies to all matches` : t`Applies to the first match`);
+        flagInfo.push(regex.flags.includes('i') ? t`Case insensitive` : t`Case sensitive`);
+
+        setInfoBlock(infoBlock, flagInfo.join('. '), 'hint');
+        infoBlockFlagsHint.show();
+    } catch (error) {
+        setInfoBlock(infoBlock, error.message, 'error');
     }
 }
 
@@ -366,7 +398,7 @@ function runRegexCallback(args, value) {
     for (const script of scripts) {
         if (script.scriptName.toLowerCase() === scriptName.toLowerCase()) {
             if (script.disabled) {
-                toastr.warning(`Regex script "${scriptName}" is disabled.`);
+                toastr.warning(t`Regex script "${scriptName}" is disabled.`);
                 return value;
             }
 
@@ -377,6 +409,53 @@ function runRegexCallback(args, value) {
 
     toastr.warning(`Regex script "${scriptName}" not found.`);
     return value;
+}
+
+/**
+ * /regex-toggle slash command callback
+ * @param {{state: string, quiet: string}} args Named arguments
+ * @param {string} scriptName The name of the script to toggle
+ * @returns {Promise<string>} The name of the script
+ */
+async function toggleRegexCallback(args, scriptName) {
+    if (typeof scriptName !== 'string') throw new Error('Script name must be a string.');
+
+    const quiet = isTrueBoolean(args?.quiet);
+    const action = isTrueBoolean(args?.state) ? 'enable' :
+        isFalseBoolean(args?.state) ? 'disable' :
+            'toggle';
+
+    const scripts = getRegexScripts();
+    const script = scripts.find(s => equalsIgnoreCaseAndAccents(s.scriptName, scriptName));
+
+    if (!script) {
+        toastr.warning(t`Regex script '${scriptName}' not found.`);
+        return '';
+    }
+
+    switch (action) {
+        case 'enable':
+            script.disabled = false;
+            break;
+        case 'disable':
+            script.disabled = true;
+            break;
+        default:
+            script.disabled = !script.disabled;
+            break;
+    }
+
+    const isScoped = characters[this_chid]?.data?.extensions?.regex_scripts?.some(s => s.id === script.id);
+    const index = isScoped ? characters[this_chid]?.data?.extensions?.regex_scripts?.indexOf(script) : scripts.indexOf(script);
+
+    await saveRegexScript(script, index, isScoped);
+    if (script.disabled) {
+        !quiet && toastr.success(t`Regex script '${scriptName}' has been disabled.`);
+    } else {
+        !quiet && toastr.success(t`Regex script '${scriptName}' has been enabled.`);
+    }
+
+    return script.scriptName || '';
 }
 
 /**
@@ -417,7 +496,7 @@ async function onRegexImportFileChange(file, isScoped) {
     }
 }
 
-function purgeEmbeddedRegexScripts( { character }){
+function purgeEmbeddedRegexScripts({ character }) {
     const avatar = character?.avatar;
 
     if (avatar && extension_settings.character_allowed_regex?.includes(avatar)) {
@@ -440,8 +519,8 @@ async function checkEmbeddedRegexScripts() {
             if (avatar && !extension_settings.character_allowed_regex.includes(avatar)) {
                 const checkKey = `AlertRegex_${characters[chid].avatar}`;
 
-                if (!localStorage.getItem(checkKey)) {
-                    localStorage.setItem(checkKey, 'true');
+                if (!accountStorage.getItem(checkKey)) {
+                    accountStorage.setItem(checkKey, 'true');
                     const template = await renderExtensionTemplateAsync('regex', 'embeddedScripts', {});
                     const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: 'Yes' });
 
@@ -600,6 +679,51 @@ jQuery(async () => {
             ),
         ],
         helpString: 'Runs a Regex extension script by name on the provided string. The script must be enabled.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'regex-toggle',
+        callback: toggleRegexCallback,
+        returns: 'The name of the script that was toggled',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'state',
+                description: 'Explicitly set the state of the script (\'on\' to enable, \'off\' to disable). If not provided, the state will be toggled to the opposite of the current state.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'toggle',
+                enumList: commonEnumProviders.boolean('onOffToggle')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
+                description: 'Suppress the toast message script toggled',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'script name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.regexScripts,
+            }),
+        ],
+        helpString: `
+            <div>
+                Toggles the state of a specified regex script.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/regex-toggle MyScript</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/regex-toggle state=off Character-specific Script</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
     }));
 
     eventSource.on(event_types.CHAT_CHANGED, checkEmbeddedRegexScripts);

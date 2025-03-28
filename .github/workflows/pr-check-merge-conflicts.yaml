@@ -1,0 +1,28 @@
+name: ⚔️ Check Merge Conflicts
+
+on:
+  # So that PRs touching the same files as the push are updated
+  push:
+  # So that the `dirtyLabel` is removed if conflicts are resolved
+  pull_request_target:
+    types: [synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-merge-conflicts:
+    name: ⚔️ Check Merge Conflicts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Merge Conflicts
+        # Label Conflicting Pull Requests
+        # https://github.com/marketplace/actions/label-conflicting-pull-requests
+        uses: eps1lon/actions-label-merge-conflict@v3.0.3
+        with:
+          dirtyLabel: '🚫 Merge Conflicts'
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          commentOnDirty: >
+            ⚠️ This PR has conflicts that need to be resolved before it can be merged.

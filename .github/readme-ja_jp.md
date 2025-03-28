@@ -5,7 +5,7 @@
 
 <div align="center">
 
-[English](readme.md) | [German](readme-de_de.md) | [中文](readme-zh_cn.md) | 日本語 | [Русский](readme-ru_ru.md)
+[English](readme.md) | [German](readme-de_de.md) | [中文](readme-zh_cn.md) | [繁體中文](readme-zh_tw.md) | 日本語 | [Русский](readme-ru_ru.md) | [한국어](readme-ko_kr.md)
 
 [![GitHub Stars](https://img.shields.io/github/stars/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/SillyTavern/SillyTavern.svg)](https://github.com/SillyTavern/SillyTavern/network)

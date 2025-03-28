@@ -136,6 +136,10 @@
         "type": "workflow"
     },
     {
+        "filename": "Char_Avatar_Comfy_Workflow.json",
+        "type": "workflow"
+    },
+    {
         "filename": "presets/kobold/Ace of Spades.json",
         "type": "kobold_preset"
     },
@@ -624,6 +628,14 @@
         "type": "instruct"
     },
     {
+        "filename": "presets/instruct/Tulu.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/Tulu.json",
+        "type": "context"
+    },
+    {
         "filename": "presets/instruct/Vicuna 1.0.json",
         "type": "instruct"
     },
@@ -657,10 +669,6 @@
     },
     {
         "filename": "presets/moving-ui/Default.json",
-        "type": "moving_ui"
-    },
-    {
-        "filename": "presets/moving-ui/Black Magic Time.json",
         "type": "moving_ui"
     },
     {
@@ -762,5 +770,29 @@
     {
         "filename": "presets/context/Mistral V3-Tekken.json",
         "type": "context"
+    },
+    {
+        "filename": "presets/instruct/Mistral V7.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/Mistral V7.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/instruct/DeepSeek-V2.5.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/DeepSeek-V2.5.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/reasoning/DeepSeek.json",
+        "type": "reasoning"
+    },
+    {
+        "filename": "presets/reasoning/Blank.json",
+        "type": "reasoning"
     }
 ]

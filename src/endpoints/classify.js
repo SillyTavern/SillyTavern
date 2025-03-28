@@ -1,7 +1,6 @@
 import express from 'express';
 
 import { getPipeline } from '../transformers.js';
-import { jsonParser } from '../express-common.js';
 
 const TASK = 'text-classification';
 
@@ -12,7 +11,7 @@ export const router = express.Router();
  */
 const cacheObject = new Map();
 
-router.post('/labels', jsonParser, async (req, res) => {
+router.post('/labels', async (req, res) => {
     try {
         const pipe = await getPipeline(TASK);
         const result = Object.keys(pipe.model.config.label2id);
@@ -23,7 +22,7 @@ router.post('/labels', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/', jsonParser, async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const { text } = req.body;
 
@@ -44,9 +43,9 @@ router.post('/', jsonParser, async (req, res) => {
             }
         }
 
-        console.log('Classify input:', text);
+        console.debug('Classify input:', text);
         const result = await getResult(text);
-        console.log('Classify output:', result);
+        console.debug('Classify output:', result);
 
         return res.json({ classification: result });
     } catch (error) {

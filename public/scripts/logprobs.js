@@ -1,6 +1,5 @@
 import {
     animation_duration,
-    callPopup,
     chat,
     cleanUpMessage,
     event_types,
@@ -13,13 +12,20 @@ import {
 import { debounce, delay, getStringHash } from './utils.js';
 import { decodeTextTokens, getTokenizerBestMatch } from './tokenizers.js';
 import { power_user } from './power-user.js';
+import { callGenericPopup, POPUP_TYPE } from './popup.js';
+import { t } from './i18n.js';
 
 const TINTS = 4;
 const MAX_MESSAGE_LOGPROBS = 100;
+const REROLL_BUTTON = $('#logprobsReroll');
 
 /**
  * Tuple of a candidate token and its logarithm of probability of being chosen
  * @typedef {[string, number]} Candidate - (token, logprob)
+ */
+
+/**
+ * @typedef {(Node|JQuery<Text>|JQuery<HTMLElement>)[]} NodeArray - Array of DOM nodes
  */
 
 /**
@@ -43,17 +49,26 @@ const MAX_MESSAGE_LOGPROBS = 100;
  * @property {Candidate[]} topLogprobs - Array of top candidate tokens
  */
 
-let state = {
-    /** @type {TokenLogprobs | null} */
+/**
+ * State object for Token Probabilities
+ * @typedef {Object} LogprobsState
+ * @property {?TokenLogprobs} selectedTokenLogprobs Log probabilities for
+ * currently-selected token.
+ * @property {Map<number, MessageLogprobData>} messageLogprobs Log probabilities for
+ * each message, keyed by message hash.
+ */
+
+/**
+ * @type {LogprobsState} state
+ */
+const state = {
     selectedTokenLogprobs: null,
-    /** @type {Map<number, MessageLogprobData>} */
     messageLogprobs: new Map(),
 };
 
 /**
- * renderAlternativeTokensView renders the Token Probabilities UI and all
- * subviews with the active message's logprobs data. If the message has no token
- * logprobs, a zero-state is rendered.
+ * Renders the Token Probabilities UI and all subviews with the active message's
+ * logprobs data. If the message has no token logprobs, a message is displayed.
  */
 function renderAlternativeTokensView() {
     const view = $('#logprobs_generation_output');
@@ -68,13 +83,14 @@ function renderAlternativeTokensView() {
     const usingSmoothStreaming = isStreamingEnabled() && power_user.smooth_streaming;
     if (!messageLogprobs?.length || usingSmoothStreaming) {
         const emptyState = $('<div></div>');
-        const noTokensMsg = usingSmoothStreaming
-            ? 'Token probabilities are not available when using Smooth Streaming.'
-            : 'No token probabilities available for the current message.';
-        const msg = power_user.request_token_probabilities
-            ? noTokensMsg
-            : '<span>Enable <b>Request token probabilities</b> in the User Settings menu to use this feature.</span>';
-        emptyState.html(msg);
+        const noTokensMsg = !power_user.request_token_probabilities
+            ? '<span>Enable <b>Request token probabilities</b> in the User Settings menu to use this feature.</span>'
+            : usingSmoothStreaming
+                ? t`Token probabilities are not available when using Smooth Streaming.`
+                : is_send_press
+                    ? t`Generation in progress...`
+                    : t`No token probabilities available for the current message.`;
+        emptyState.html(noTokensMsg);
         emptyState.addClass('logprobs_empty_state');
         view.append(emptyState);
         return;
@@ -82,16 +98,34 @@ function renderAlternativeTokensView() {
 
     const prefix = continueFrom || '';
     const tokenSpans = [];
+    REROLL_BUTTON.toggle(!!prefix);
 
     if (prefix) {
-        const prefixSpan = $('<span></span>');
-        prefixSpan.text(prefix);
-        prefixSpan.html(prefixSpan.html().replace(/\n/g, '<br>'));
-        prefixSpan.addClass('logprobs_output_prefix');
-        prefixSpan.attr('title', 'Select to reroll the last \'Continue\' generation.\nHold the CTRL key when clicking to reroll from before that word.');
-        prefixSpan.click(onPrefixClicked);
-        addKeyboardProps(prefixSpan);
-        tokenSpans.push(...withVirtualWhitespace(prefix, prefixSpan));
+        REROLL_BUTTON.off('click').on('click', () => onPrefixClicked(prefix.length));
+
+        let cumulativeOffset = 0;
+        const words = prefix.split(/\s+/);
+        const delimiters = prefix.match(/\s+/g) || []; // Capture the actual delimiters
+
+        words.forEach((word, i) => {
+            const span = $('<span></span>');
+            span.text(`${word} `);
+
+            span.addClass('logprobs_output_prefix');
+            span.attr('title', t`Reroll from this point`);
+
+            let offset = cumulativeOffset;
+            span.on('click', () => onPrefixClicked(offset));
+            addKeyboardProps(span);
+
+            tokenSpans.push(span);
+            tokenSpans.push(delimiters[i]?.includes('\n')
+                ? document.createElement('br')
+                : document.createTextNode(delimiters[i] || ' '),
+            );
+
+            cumulativeOffset += word.length + (delimiters[i]?.length || 0);
+        });
     }
 
     messageLogprobs.forEach((tokenData, i) => {
@@ -101,7 +135,7 @@ function renderAlternativeTokensView() {
         span.text(text);
         span.addClass('logprobs_output_token');
         span.addClass('logprobs_tint_' + (i % TINTS));
-        span.click(() => onSelectedTokenChanged(tokenData, span));
+        span.on('click', () => onSelectedTokenChanged(tokenData, span));
         addKeyboardProps(span);
         tokenSpans.push(...withVirtualWhitespace(token, span));
     });
@@ -129,6 +163,10 @@ function addKeyboardProps(element) {
 /**
  * renderTopLogprobs renders the top logprobs subview with the currently
  * selected token highlighted. If no token is selected, the subview is hidden.
+ *
+ * Callers:
+ * - renderAlternativeTokensView, to render the entire view
+ * - onSelectedTokenChanged, to update the view when a token is selected
  */
 function renderTopLogprobs() {
     $('#logprobs_top_logprobs_hint').hide();
@@ -150,8 +188,7 @@ function renderTopLogprobs() {
                 const probability = Math.exp(log);
                 sum += probability;
                 return [text, probability, log];
-            }
-            else {
+            } else {
                 return [text, log, null];
             }
         });
@@ -167,15 +204,15 @@ function renderTopLogprobs() {
             container.addClass('selected');
         }
 
-        const tokenText = $('<span></span>').text(`${toVisibleWhitespace(token)}`);
-        const percentText = $('<span></span>').text(`${(probability * 100).toFixed(2)}%`);
+        const tokenText = $('<span></span>').text(`${toVisibleWhitespace(token.toString())}`);
+        const percentText = $('<span></span>').text(`${(+probability * 100).toFixed(2)}%`);
         container.append(tokenText, percentText);
         if (log) {
             container.attr('title', `logarithm: ${log}`);
         }
         addKeyboardProps(container);
         if (token !== '<others>') {
-            container.click(() => onAlternativeClicked(state.selectedTokenLogprobs, token));
+            container.on('click', () => onAlternativeClicked(state.selectedTokenLogprobs, token.toString()));
         } else {
             container.prop('disabled', true);
         }
@@ -192,11 +229,10 @@ function renderTopLogprobs() {
 }
 
 /**
- * onSelectedTokenChanged is called when the user clicks on a token in the
- * token output view. It updates the selected token state and re-renders the
- * top logprobs view, or deselects the token if it was already selected.
+ * User clicks on a token in the token output view. It updates the selected token state
+ * and re-renders the top logprobs view, or deselects the token if it was already selected.
  * @param {TokenLogprobs} logprobs - logprob data for the selected token
- * @param {Element} span - target span node that was clicked
+ * @param {Node|JQuery} span - target span node that was clicked
  */
 function onSelectedTokenChanged(logprobs, span) {
     $('.logprobs_output_token.selected').removeClass('selected');
@@ -223,7 +259,10 @@ function onAlternativeClicked(tokenLogprobs, alternative) {
     }
 
     if (getGeneratingApi() === 'openai') {
-        return callPopup('<h3>Feature unavailable</h3><p>Due to API limitations, rerolling a token is not supported with OpenAI. Try switching to a different API.</p>', 'text');
+        const title = t`Feature unavailable`;
+        const message = t`Due to API limitations, rerolling a token is not supported with OpenAI. Try switching to a different API.`;
+        const content = `<h3>${title}</h3><p>${message}</p>`;
+        return callGenericPopup(content, POPUP_TYPE.TEXT);
     }
 
     const { messageLogprobs, continueFrom } = getActiveMessageLogprobData();
@@ -234,79 +273,29 @@ function onAlternativeClicked(tokenLogprobs, alternative) {
 
     const prefix = continueFrom || '';
     const prompt = prefix + tokens.join('');
-    const messageId = chat.length - 1;
-    createSwipe(messageId, prompt);
-
-    $('.swipe_right:last').click(); // :see_no_evil:
-
-    Generate('continue').then(_ => void _);
+    addGeneration(prompt);
 }
 
 /**
- * getTextBeforeClickedWord retrieves the portion of text within a span
- * that appears before the word clicked by the user. Using the x and y
- * coordinates from a PointerEvent, this function identifies the exact
- * word clicked and returns the text preceding it within the span.
+ * User clicks on the reroll button in the token output view, or on a word in the
+ * prefix. Retrieve the prefix for the current message and truncate it at the
+ * offset for the selected word. Then request a `continue` completion from the
+ * model with the new prompt.
  *
- * If the clicked position does not resolve to a valid word or text node, 
- * the entire span text is returned as a fallback.
+ * If no offset is provided, the entire prefix will be rerolled.
  *
- * @param {PointerEvent} event - The click event containing the x and y coordinates.
- * @param {string} spanText - The full text content of the span element.
- * @returns {string} The text before the clicked word, or the entire span text as fallback.
+ * @param {number} offset - index of the token in the prefix to reroll from
+ * @returns {void}
+ * @param offset
  */
-function getTextBeforeClickedWord(event, spanText) {
-    const x = event.clientX;
-    const y = event.clientY;
-    const range = document.caretRangeFromPoint(x, y);
-
-    if (range && range.startContainer.nodeType === Node.TEXT_NODE) {
-        const textNode = range.startContainer;
-        const offset = range.startOffset;
-
-        // Get the full text content of the text node
-        const text = textNode.nodeValue;
-
-        // Find the boundaries of the clicked word
-        const start = text.lastIndexOf(" ", offset - 1) + 1;
-
-        // Return the text before the clicked word
-        return text.slice(0, start);
-    }
-
-    // If we can't determine the exact word, return the full span text as a fallback
-    return spanText;
-}
-
-
-/**
- * onPrefixClicked is called when the user clicks on the carried-over prefix
- * in the token output view. It allows them to reroll the last 'continue'
- * completion with none of the output generated from it, in case they don't
- * like the results.
- *
- * If the user holds the Ctrl key while clicking, only the portion of text
- * before the clicked word is retained as the prefix for rerolling
- */
-function onPrefixClicked() {
+function onPrefixClicked(offset = undefined) {
     if (!checkGenerateReady()) {
         return;
     }
 
-    const { continueFrom } = getActiveMessageLogprobData();
-    const messageId = chat.length - 1;
-
-    // Check if Ctrl key is pressed during the click
-    let prefix = continueFrom || '';
-    if (event.ctrlKey) {
-        // Ctrl is pressed - use the text before the clicked word
-        prefix = getTextBeforeClickedWord(event, continueFrom);
-    }
-
-    // Use the determined `prefix`
-    createSwipe(messageId, prefix);
-    $('.swipe_right:last').click();
-    Generate('continue').then(_ => void _);
+    const { continueFrom } = getActiveMessageLogprobData() || {};
+    const prefix = continueFrom ? continueFrom.substring(0, offset) : '';
+    addGeneration(prefix);
 }
 
 function checkGenerateReady() {
@@ -317,6 +306,22 @@ function checkGenerateReady() {
     return true;
 }
 
+/**
+ * Generates a new swipe as a continuation of the given prompt, when user selects
+ * an alternative token or rerolls from a prefix.
+ *
+ * @param prompt
+ */
+function addGeneration(prompt) {
+    const messageId = chat.length - 1;
+    if (prompt && prompt.length > 0) {
+        createSwipe(messageId, prompt);
+        $('.swipe_right:last').trigger('click');
+        void Generate('continue');
+    } else {
+        $('.swipe_right:last').trigger('click');
+    }
+}
 
 /**
  * onToggleLogprobsPanel is called when the user performs an action that toggles
@@ -356,15 +361,19 @@ function onToggleLogprobsPanel() {
 }
 
 /**
- * createSwipe appends a new swipe to the target chat message with the given
- * text.
+ * Appends a new swipe to the target chat message with the given text.
  * @param {number} messageId - target chat message ID
  * @param {string} prompt - initial prompt text which will be continued
  */
 function createSwipe(messageId, prompt) {
     // need to call `cleanUpMessage` on our new prompt, because we were working
     // with raw model output and our new prompt is missing trimming/macro replacements
-    const cleanedPrompt = cleanUpMessage(prompt, false, false);
+    const cleanedPrompt = cleanUpMessage({
+        getMessage: prompt,
+        isImpersonate: false,
+        isContinue: false,
+        displayIncompleteSentences: true,
+    });
 
     const msg = chat[messageId];
     const newSwipeInfo = {
@@ -399,10 +408,11 @@ function toVisibleWhitespace(input) {
  * after the span node if its token begins or ends with whitespace in order to
  * allow text to wrap despite whitespace characters being replaced with a dot.
  * @param {string} text - token text being evaluated for whitespace
- * @param {Element} span - target span node to be wrapped
- * @returns {Element[]} array of nodes to be appended to the DOM
+ * @param {Node|JQuery} span - target span node to be wrapped
+ * @returns {NodeArray} - array of nodes to be appended to the parent element
  */
 function withVirtualWhitespace(text, span) {
+    /** @type {NodeArray} */
     const result = [span];
     if (text.match(/^\s/)) {
         result.unshift(document.createTextNode('\u200b'));
@@ -430,12 +440,16 @@ function withVirtualWhitespace(text, span) {
 }
 
 /**
- * saveLogprobsForActiveMessage receives an array of TokenLogprobs objects
- * representing the top logprobs for each token in a message and associates it
- * with the active message.
+ * Receives the top logprobs for each token in a message and associates it with the active message.
  *
- * **Ensure the active message has been updated and rendered before calling
- * this function or the logprobs data will be saved to the wrong message.**
+ * Ensure the active message has been updated and rendered before calling this function
+ * or the logprobs data will be saved to the wrong message.
+ *
+ * Callers:
+ * - Generate:onSuccess via saveLogprobsForActiveMessage, for non-streaming text completion
+ * - StreamingProcessor:onFinishStreaming, for streaming text completion
+ * - sendOpenAIRequest, for non-streaming chat completion
+ *
  * @param {TokenLogprobs[]} logprobs - array of logprobs data for each token
  * @param {string | null} continueFrom  - for 'continue' generations, the prompt
  */
@@ -445,7 +459,10 @@ export function saveLogprobsForActiveMessage(logprobs, continueFrom) {
         return;
     }
 
-    convertTokenIdLogprobsToText(logprobs);
+    // NovelAI only returns token IDs in logprobs data; convert to text tokens in-place
+    if (getGeneratingApi() === 'novel') {
+        convertTokenIdLogprobsToText(logprobs);
+    }
 
     const msgId = chat.length - 1;
     /** @type {MessageLogprobData} */
@@ -484,34 +501,40 @@ function getMessageHash(message) {
 /**
  * getActiveMessageLogprobData returns the logprobs data for the active chat
  * message.
- * @returns {MessageLogprobData || null}
+ * @returns {MessageLogprobData|null}
  */
 function getActiveMessageLogprobData() {
+    if (chat.length === 0) {
+        return null;
+    }
+
     const hash = getMessageHash(chat[chat.length - 1]);
     return state.messageLogprobs.get(hash) || null;
 }
 
+
 /**
- * convertLogprobTokenIdsToText mutates the given logprobs data's topLogprobs
- * field keyed by token text instead of token ID. This is only necessary for
- * APIs which only return token IDs in their logprobs data; for others this
- * function is a no-op.
+ * convertLogprobTokenIdsToText replaces token IDs in logprobs data with text tokens,
+ * for APIs that return token IDs instead of text tokens, to wit: NovelAI.
+ *
  * @param {TokenLogprobs[]} input - logprobs data with numeric token IDs
  */
 function convertTokenIdLogprobsToText(input) {
     const api = getGeneratingApi();
     if (api !== 'novel') {
-        return input;
+        // should have been checked by the caller
+        throw new Error('convertTokenIdLogprobsToText should only be called for NovelAI');
     }
 
     const tokenizerId = getTokenizerBestMatch(api);
 
-    // Flatten unique token IDs across all logprobs
+    /** @type {any[]} Flatten unique token IDs across all logprobs */
     const tokenIds = Array.from(new Set(input.flatMap(logprobs =>
         logprobs.topLogprobs.map(([token]) => token).concat(logprobs.token),
     )));
 
     // Submit token IDs to tokenizer to get token text, then build ID->text map
+    // noinspection JSCheckFunctionSignatures - mutates input in-place
     const { chunks } = decodeTextTokens(tokenizerId, tokenIds);
     const tokenIdText = new Map(tokenIds.map((id, i) => [id, chunks[i]]));
 
@@ -525,9 +548,10 @@ function convertTokenIdLogprobsToText(input) {
 }
 
 export function initLogprobs() {
+    REROLL_BUTTON.hide();
     const debouncedRender = debounce(renderAlternativeTokensView);
-    $('#logprobsViewerClose').click(onToggleLogprobsPanel);
-    $('#option_toggle_logprobs').click(onToggleLogprobsPanel);
+    $('#logprobsViewerClose').on('click', onToggleLogprobsPanel);
+    $('#option_toggle_logprobs').on('click', onToggleLogprobsPanel);
     eventSource.on(event_types.CHAT_CHANGED, debouncedRender);
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, debouncedRender);
     eventSource.on(event_types.IMPERSONATE_READY, debouncedRender);

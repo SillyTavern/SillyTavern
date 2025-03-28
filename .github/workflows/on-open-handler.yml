@@ -1,0 +1,29 @@
+name: 📨 Issues/PRs Open Handler
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  label-maintainer:
+    name: 🏷️ Label if Author is a Repo Maintainer
+    runs-on: ubuntu-latest
+    if: contains(fromJson('["Cohee1207", "RossAscends", "Wolfsblvt"]'), github.actor)
+
+    steps:
+      - name: Label if Author is a Repo Maintainer
+        # 🤖 Issues Helper
+        # https://github.com/marketplace/actions/issues-helper
+        uses: actions-cool/issues-helper@v3.6.0
+        with:
+          actions: 'add-labels'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number || github.event.pull_request.number }}
+          labels: '👷 Maintainer'

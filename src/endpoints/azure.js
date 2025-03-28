@@ -2,23 +2,22 @@ import fetch from 'node-fetch';
 import { Router } from 'express';
 
 import { readSecret, SECRET_KEYS } from './secrets.js';
-import { jsonParser } from '../express-common.js';
 
 export const router = Router();
 
-router.post('/list', jsonParser, async (req, res) => {
+router.post('/list', async (req, res) => {
     try {
         const key = readSecret(req.user.directories, SECRET_KEYS.AZURE_TTS);
 
         if (!key) {
-            console.error('Azure TTS API Key not set');
+            console.warn('Azure TTS API Key not set');
             return res.sendStatus(403);
         }
 
         const region = req.body.region;
 
         if (!region) {
-            console.error('Azure TTS region not set');
+            console.warn('Azure TTS region not set');
             return res.sendStatus(400);
         }
 
@@ -32,7 +31,7 @@ router.post('/list', jsonParser, async (req, res) => {
         });
 
         if (!response.ok) {
-            console.error('Azure Request failed', response.status, response.statusText);
+            console.warn('Azure Request failed', response.status, response.statusText);
             return res.sendStatus(500);
         }
 
@@ -44,18 +43,18 @@ router.post('/list', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/generate', jsonParser, async (req, res) => {
+router.post('/generate', async (req, res) => {
     try {
         const key = readSecret(req.user.directories, SECRET_KEYS.AZURE_TTS);
 
         if (!key) {
-            console.error('Azure TTS API Key not set');
+            console.warn('Azure TTS API Key not set');
             return res.sendStatus(403);
         }
 
         const { text, voice, region } = req.body;
         if (!text || !voice || !region) {
-            console.error('Missing required parameters');
+            console.warn('Missing required parameters');
             return res.sendStatus(400);
         }
 
@@ -75,11 +74,11 @@ router.post('/generate', jsonParser, async (req, res) => {
         });
 
         if (!response.ok) {
-            console.error('Azure Request failed', response.status, response.statusText);
+            console.warn('Azure Request failed', response.status, response.statusText);
             return res.sendStatus(500);
         }
 
-        const audio = await response.buffer();
+        const audio = Buffer.from(await response.arrayBuffer());
         res.set('Content-Type', 'audio/ogg');
         return res.send(audio);
     } catch (error) {
