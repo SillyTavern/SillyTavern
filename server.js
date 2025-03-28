@@ -20,6 +20,7 @@ import bodyParser from 'body-parser';
 import open from 'open';
 
 // local library imports
+import './src/fetch-patch.js';
 import { serverEvents, EVENT_NAMES } from './src/server-events.js';
 import { CommandLineParser } from './src/command-line.js';
 import { loadPlugins } from './src/plugin-loader.js';
