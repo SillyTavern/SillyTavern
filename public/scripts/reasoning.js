@@ -428,7 +428,7 @@ export class ReasoningHandler {
                     message.mes = trimSpaces(parseTarget.slice(this.#parsingReasoningMesStartIndex));
                     
                     // Set state and timing info directly to Done since we already have complete reasoning
-                    this.state = ReasoningState.Thinking;
+                    this.state = ReasoningState.Done;
                     this.startTime = this.startTime ?? this.initialTime;
                     this.endTime = new Date();
                 }
