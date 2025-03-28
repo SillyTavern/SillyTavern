@@ -13,6 +13,7 @@ import { csrfSync } from 'csrf-sync';
 import express from 'express';
 import compression from 'compression';
 import cookieSession from 'cookie-session';
+import multer from 'multer';
 import responseTime from 'response-time';
 import helmet from 'helmet';
 import bodyParser from 'body-parser';
@@ -56,6 +57,7 @@ import {
     setupLogLevel,
     setWindowTitle,
 } from './src/util.js';
+import { UPLOADS_DIRECTORY } from './src/constants.js';
 import { ensureThumbnailCache } from './src/endpoints/thumbnails.js';
 
 // Routers
@@ -64,7 +66,6 @@ import { init as statsInit, onExit as statsOnExit } from './src/endpoints/stats.
 import { checkForNewContent } from './src/endpoints/content-manager.js';
 import { init as settingsInit } from './src/endpoints/settings.js';
 import { redirectDeprecatedEndpoints, ServerStartup, setupPrivateEndpoints } from './src/server-startup.js';
-import { diskCache } from './src/endpoints/characters.js';
 
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
@@ -148,7 +149,7 @@ if (cliArgs.enableCorsProxy) {
 
 app.use(cookieSession({
     name: getCookieSessionName(),
-    sameSite: 'lax',
+    sameSite: 'strict',
     httpOnly: true,
     maxAge: getSessionCookieAge(),
     secret: getCookieSecret(globalThis.DATA_ROOT),
@@ -156,11 +157,7 @@ app.use(cookieSession({
 
 app.use(setUserDataMiddleware);
 
-import {
-// Leaving this to excute users.js
-} from './src/users.js';
-
-// CSRF Protection
+// CSRF Protection //
 if (!cliArgs.disableCsrf) {
     const csrfSyncProtection = csrfSync({
         getTokenFromState: (req) => {
@@ -215,17 +212,6 @@ app.get('/', getCacheBusterMiddleware(), (request, response) => {
     return response.sendFile('index.html', { root: path.join(process.cwd(), 'public') });
 });
 
-// Callback endpoint for OAuth PKCE flows (e.g. OpenRouter)
-app.get('/callback/:source?', (request, response) => {
-    const source = request.params.source;
-    const query = request.url.split('?')[1];
-    const searchParams = new URLSearchParams();
-    source && searchParams.set('source', source);
-    query && searchParams.set('query', query);
-    const path = `/?${searchParams.toString()}`;
-    return response.redirect(307, path);
-});
-
 // Host login page
 app.get('/login', loginPageMiddleware);
 
@@ -239,41 +225,6 @@ app.use('/api/users', usersPublicRouter);
 
 // Everything below this line requires authentication
 app.use(requireLoginMiddleware);
-
-app.use('/user-files', (req, res, next) => {
-    if (!req.user || !req.user.profile || !req.user.profile.handle) {
-        console.error('[Static Middleware] User context, profile, or handle missing. req.user:', req.user);
-        return res.status(500).send('Internal Server Error: User profile data incomplete.');
-    }
-
-    const userId = req.user.profile.handle;
-    const userFilesRoot = path.join(globalThis.DATA_ROOT, userId);
-
-    if (!userFilesRoot || typeof userFilesRoot !== 'string') {
-        console.error('[Static Middleware] userFilesRoot is missing or invalid!');
-        return res.status(500).send('Internal Server Error: User path configuration issue.');
-    }
-
-    const requestedFilePath = path.join(userFilesRoot, req.path);
-	
-    // Security Check
-    if (!requestedFilePath.startsWith(userFilesRoot)) {
-        console.warn(`[Static Middleware] Potential directory traversal attempt blocked: User ${userId}, Path ${req.path}`);
-        return res.status(403).send('Forbidden');
-    }
-
-    const staticHandler = express.static(userFilesRoot, { fallthrough: true });
-    req.url = req.path;
-
-    return staticHandler(req, res, (err) => {
-        next(err);
-    });
-
-}, (err, req, res, next) => {
-    console.error(`[Static Middleware Error Handler] Error for ${req.originalUrl}:`, err); // Keep Error log
-    next(err);
-});
-
 app.get('/api/ping', (request, response) => {
     if (request.query.extend && request.session) {
         request.session.touch = Date.now();
@@ -283,6 +234,8 @@ app.get('/api/ping', (request, response) => {
 });
 
 // File uploads
+const uploadsPath = path.join(cliArgs.dataRoot, UPLOADS_DIRECTORY);
+app.use(multer({ dest: uploadsPath, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
 app.use(multerMonkeyPatch);
 
 app.get('/version', async function (_, response) {
@@ -315,7 +268,6 @@ async function preSetupTasks() {
     const directories = await getUserDirectoriesList();
     await checkForNewContent(directories);
     await ensureThumbnailCache();
-    await diskCache.verify(directories);
     cleanUploads();
     migrateAccessLog();
 
@@ -334,7 +286,6 @@ async function preSetupTasks() {
         if (typeof cleanupPlugins === 'function') {
             await cleanupPlugins();
         }
-        diskCache.dispose();
         setWindowTitle(consoleTitle);
         process.exit();
     };
@@ -364,12 +315,8 @@ async function postSetupTasks(result) {
     const autorunUrl = cliArgs.getAutorunUrl(autorunHostname);
 
     if (cliArgs.autorun) {
-        try {
-            console.log('Launching in a browser...');
-            await open(autorunUrl.toString());
-        } catch (error) {
-            console.error('Failed to launch the browser. Open the URL manually.');
-        }
+        console.log('Launching in a browser...');
+        await open(autorunUrl.toString());
     }
 
     setWindowTitle('SillyTavern WebServer');
