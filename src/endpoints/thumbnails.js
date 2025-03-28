@@ -122,6 +122,7 @@ async function generateThumbnail(directories, type, file) {
         let buffer;
 
         try {
+            const size = dimensions[type];
             const image = await Jimp.read(pathToOriginalFile);
             const width = !isNaN(size?.[0]) && size?.[0] > 0 ? size[0] : image.bitmap.width;
             const height = !isNaN(size?.[1]) && size?.[1] > 0 ? size[1] : image.bitmap.height;
