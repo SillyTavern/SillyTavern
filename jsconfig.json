@@ -1,8 +1,8 @@
 {
     "compilerOptions": {
-        "module": "NodeNext",
-        "target": "ESNext",
-        "moduleResolution": "nodenext",
+        "module": "ESNext",
+        "target": "ES2023",
+        "moduleResolution": "Bundler",
         "strictNullChecks": true,
         "strictFunctionTypes": true,
         "checkJs": true,
