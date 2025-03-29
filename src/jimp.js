@@ -9,13 +9,13 @@ import jpeg from '@jimp/wasm-jpeg';
 import avif from '@jimp/wasm-avif';
 
 // Other image formats
-import bmp from '@jimp/js-bmp';
+import bmp, { msBmp } from '@jimp/js-bmp';
 import gif from '@jimp/js-gif';
 import tiff from '@jimp/js-tiff';
 
 // A custom jimp that uses WASM for optimized formats and JS for the rest
 const Jimp = createJimp({
-    formats: [webp, png, jpeg, avif, bmp, gif, tiff],
+    formats: [webp, png, jpeg, avif, bmp, msBmp, gif, tiff],
     plugins: defaultPlugins,
 });
 
