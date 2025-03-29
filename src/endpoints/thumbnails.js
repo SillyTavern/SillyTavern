@@ -129,7 +129,7 @@ async function generateThumbnail(directories, type, file) {
             image.cover({ w: width, h: height });
             buffer = pngFormat
                 ? await image.getBuffer(JimpMime.png)
-                : await image.getBuffer(JimpMime.jpeg, { quality: quality, jpegColorSpace: 'rgb' });
+                : await image.getBuffer(JimpMime.jpeg, { quality: quality, jpegColorSpace: 'ycbcr' });
         }
         catch (inner) {
             console.warn(`Thumbnailer can not process the image: ${pathToOriginalFile}. Using original size`, inner);
