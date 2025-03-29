@@ -5,16 +5,40 @@ import mime from 'mime-types';
 
 const originalFetch = globalThis.fetch;
 
+const ALLOWED_EXTENSIONS = [
+    '.wasm',
+];
+
+/**
+ * Checks if a child path is under a parent path.
+ * @param {string} parentPath Parent path
+ * @param {string} childPath Child path
+ * @returns {boolean} Returns true if the child path is under the parent path, false otherwise
+ */
+function isPathUnderParent(parentPath, childPath) {
+    const normalizedParent = path.normalize(parentPath);
+    const normalizedChild = path.normalize(childPath);
+
+    const relativePath = path.relative(normalizedParent, normalizedChild);
+
+    return !relativePath.startsWith('..') && !path.isAbsolute(relativePath);
+}
+
 // Patched fetch function that handles file URLs
 const fetchPatch = async (/** @type {string | URL | Request} */ request, /** @type {RequestInit | undefined} */ options) => {
     if ((request instanceof URL && request.protocol === 'file:') || (typeof request === 'string' && request.startsWith('file://'))) {
-        const filePath = fileURLToPath(request);
-        const isUnderCwd = filePath.startsWith(path.resolve(process.cwd()));
+        const filePath = path.resolve(fileURLToPath(request));
+        const cwd = path.resolve(process.cwd()) + path.sep;
+        const isUnderCwd = isPathUnderParent(cwd, filePath);
         if (!isUnderCwd) {
-            throw new Error(`File path ${filePath} is outside of the current working directory.`);
+            throw new Error('Requested file path is outside of the current working directory.');
         }
-        const fileName = path.parse(filePath).base;
-        const buffer = fs.readFileSync(filePath);
+        const parsedPath = path.parse(filePath);
+        if (!ALLOWED_EXTENSIONS.includes(parsedPath.ext)) {
+            throw new Error('Unsupported file extension.');
+        }
+        const fileName = parsedPath.base;
+        const buffer = await fs.promises.readFile(filePath);
         const blob = new Blob([buffer]);
         const response = new Response(blob, {
             status: 200,
