@@ -975,7 +975,7 @@ export class SlashCommandParser {
         cmd.startUnnamedArgs = this.index - (/\s(\s*)$/s.exec(this.behind)?.[1]?.length ?? 0);
         cmd.endUnnamedArgs = this.index;
         if (this.testUnnamedArgument()) {
-            cmd.unnamedArgumentList = this.parseUnnamedArgument(cmd.command?.unnamedArgumentList?.length && cmd?.command?.splitUnnamedArgument, cmd?.command?.splitUnnamedArgumentCount);
+            cmd.unnamedArgumentList = this.parseUnnamedArgument(cmd.command?.unnamedArgumentList?.length && cmd?.command?.splitUnnamedArgument, cmd?.command?.splitUnnamedArgumentCount, cmd?.command?.rawQuotes);
             cmd.endUnnamedArgs = this.index;
             if (cmd.name == 'let') {
                 const keyArg = cmd.namedArgumentList.find(it=>it.name == 'key');
@@ -1035,7 +1035,7 @@ export class SlashCommandParser {
     testUnnamedArgumentEnd() {
         return this.testCommandEnd();
     }
-    parseUnnamedArgument(split, splitCount = null) {
+    parseUnnamedArgument(split, splitCount = null, rawQuotes = false) {
         const wasSplit = split;
         /**@type {SlashCommandClosure|String}*/
         let value = this.jumpedEscapeSequence ? this.take() : ''; // take the first, already tested, char if it is an escaped one
@@ -1045,7 +1045,7 @@ export class SlashCommandParser {
         /**@type {SlashCommandUnnamedArgumentAssignment}*/
         let assignment = new SlashCommandUnnamedArgumentAssignment();
         assignment.start = this.index;
-        if (!split && this.testQuotedValue()) {
+        if (!split && !rawQuotes && this.testQuotedValue()) {
             // if the next bit is a quoted value, take the whole value and gather contents as a list
             assignment.value = this.parseQuotedValue();
             assignment.end = this.index;

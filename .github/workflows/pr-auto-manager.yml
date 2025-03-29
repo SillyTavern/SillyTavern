@@ -29,6 +29,8 @@ jobs:
         # Checkout
         # https://github.com/marketplace/actions/checkout
         uses: actions/checkout@v4.2.2
+        with:
+            ref: ${{ github.head_ref }}
 
       - name: Setup Node.js
         # Setup Node.js environment

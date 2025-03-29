@@ -227,6 +227,7 @@ export function initDefaultSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sendas',
+        rawQuotes: true,
         callback: sendMessageAs,
         returns: 'Optionally the text of the sent message, if specified in the "return" argument',
         namedArgumentList: [
@@ -293,6 +294,7 @@ export function initDefaultSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sys',
+        rawQuotes: true,
         callback: sendNarratorMessage,
         aliases: ['nar'],
         returns: 'Optionally the text of the sent message, if specified in the "return" argument',
@@ -357,6 +359,7 @@ export function initDefaultSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'comment',
+        rawQuotes: true,
         callback: sendCommentMessage,
         returns: 'Optionally the text of the sent message, if specified in the "return" argument',
         namedArgumentList: [
@@ -574,6 +577,7 @@ export function initDefaultSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'send',
+        rawQuotes: true,
         callback: sendUserMessageCallback,
         returns: 'Optionally the text of the sent message, if specified in the "return" argument',
         namedArgumentList: [
@@ -936,6 +940,7 @@ export function initDefaultSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'echo',
+        rawQuotes: true,
         callback: echoCallback,
         returns: 'the text',
         namedArgumentList: [

@@ -2086,6 +2086,15 @@ body[data-stscript-style] .hljs.language-stscript {
             }
         }
 
+        >.head>.rawQuotes {
+            padding: 0 0.5em;
+            cursor: help;
+
+            &:hover {
+                text-decoration: 1px dotted underline;
+            }
+        }
+
         >.head>.source {
             padding: 0 0.5em;
             cursor: help;
