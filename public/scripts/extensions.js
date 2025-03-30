@@ -783,35 +783,41 @@ async function showExtensionsDetails() {
             .append(htmlExternal)
             .append(getModuleInformation());
 
-        /** @type {import('./popup.js').CustomPopupButton} */
-        const updateAllButton = {
-            text: t`Update all`,
-            action: async () => {
+        {
+            const updateAction = async (force) => {
                 requiresReload = true;
-                await autoUpdateExtensions(true);
+                await autoUpdateExtensions(force);
                 await popup.complete(POPUP_RESULT.AFFIRMATIVE);
-            },
-        };
+            };
 
-        /** @type {import('./popup.js').CustomPopupButton} */
-        const updateEnabledOnlyButton = {
-            text: t`Update enabled only`,
-            action: async () => {
-                requiresReload = true;
-                await autoUpdateExtensions(false);
-                await popup.complete(POPUP_RESULT.AFFIRMATIVE);
-            },
-        };
+            const toolbar = document.createElement('div');
+            toolbar.classList.add('extensions_toolbar');
 
-        /** @type {import('./popup.js').CustomPopupButton} */
-        const sortOrderButton = {
-            text: sortByName ? t`Sort: Display Name` : t`Sort: Loading Order`,
-            action: async () => {
+            const updateAllButton = document.createElement('button');
+            updateAllButton.classList.add('menu_button', 'menu_button_icon');
+            updateAllButton.textContent = t`Update all`;
+            updateAllButton.addEventListener('click', () => updateAction(true));
+
+            const updateEnabledOnlyButton = document.createElement('button');
+            updateEnabledOnlyButton.classList.add('menu_button', 'menu_button_icon');
+            updateEnabledOnlyButton.textContent = t`Update enabled`;
+            updateEnabledOnlyButton.addEventListener('click', () => updateAction(false));
+
+            const flexExpander = document.createElement('div');
+            flexExpander.classList.add('expander');
+
+            const sortOrderButton = document.createElement('button');
+            sortOrderButton.classList.add('menu_button', 'menu_button_icon');
+            sortOrderButton.textContent = sortByName ? t`Sort: Display Name` : t`Sort: Loading Order`;
+            sortOrderButton.addEventListener('click', async () => {
                 abortController.abort();
                 accountStorage.setItem(sortOrderKey, sortByName ? 'false' : 'true');
                 await showExtensionsDetails();
-            },
-        };
+            });
+
+            toolbar.append(updateAllButton, updateEnabledOnlyButton, flexExpander, sortOrderButton);
+            html.prepend(toolbar);
+        }
 
         let waitingForSave = false;
 
@@ -819,7 +825,7 @@ async function showExtensionsDetails() {
             okButton: t`Close`,
             wide: true,
             large: true,
-            customButtons: [sortOrderButton, updateEnabledOnlyButton, updateAllButton],
+            customButtons: [],
             allowVerticalScrolling: true,
             onClosing: async () => {
                 if (waitingForSave) {
