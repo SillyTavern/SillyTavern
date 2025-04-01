@@ -63,6 +63,7 @@ const settings = {
     ollama_keep: false,
     vllm_model: '',
     webllm_model: '',
+    google_model: 'text-embedding-004',
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -565,6 +566,8 @@ async function retrieveFileChunks(queryText, collectionId) {
  * @returns {Promise<boolean>} True if successful, false if not
  */
 async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overlapPercent) {
+    let toast = jQuery();
+
     try {
         if (settings.translate_files && typeof globalThis.translate === 'function') {
             console.log(`Vectors: Translating file ${fileName} to English...`);
@@ -574,7 +577,7 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overla
 
         const batchSize = getBatchSize();
         const toastBody = $('<span>').text('This may take a while. Please wait...');
-        const toast = toastr.info(toastBody, `Ingesting file ${escapeHtml(fileName)}`, { closeButton: false, escapeHtml: false, timeOut: 0, extendedTimeOut: 0 });
+        toast = toastr.info(toastBody, `Ingesting file ${escapeHtml(fileName)}`, { closeButton: false, escapeHtml: false, timeOut: 0, extendedTimeOut: 0 });
         const overlapSize = Math.round(chunkSize * overlapPercent / 100);
         const delimiters = getChunkDelimiters();
         // Overlap should not be included in chunk size. It will be later compensated by overlapChunks
@@ -596,6 +599,7 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overla
         console.log(`Vectors: Inserted ${chunks.length} vector items for file ${fileName} into ${collectionId}`);
         return true;
     } catch (error) {
+        toastr.clear(toast);
         toastr.error(String(error), 'Failed to vectorize file', { preventDuplicates: true });
         console.error('Vectors: Failed to vectorize file', error);
         return false;
@@ -786,6 +790,9 @@ function getVectorsRequestBody(args = {}) {
         case 'webllm':
             body.model = extension_settings.vectors.webllm_model;
             break;
+        case 'palm':
+            body.model = extension_settings.vectors.google_model;
+            break;
         default:
             break;
     }
@@ -803,6 +810,12 @@ async function getAdditionalArgs(items) {
         case 'webllm':
             args.embeddings = await createWebLlmEmbeddings(items);
             break;
+        case 'koboldcpp': {
+            const { embeddings, model } = await createKoboldCppEmbeddings(items);
+            args.embeddings = embeddings;
+            args.model = model;
+            break;
+        }
     }
     return args;
 }
@@ -872,6 +885,7 @@ function throwIfSourceInvalid() {
 
     if (settings.source === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA] ||
         settings.source === 'vllm' && !textgenerationwebui_settings.server_urls[textgen_types.VLLM] ||
+        settings.source === 'koboldcpp' && !textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP] ||
         settings.source === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) {
         throw new Error('Vectors: API URL missing', { cause: 'api_url_missing' });
     }
@@ -1071,6 +1085,8 @@ function toggleSettings() {
     $('#vllm_vectorsModel').toggle(settings.source === 'vllm');
     $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
     $('#webllm_vectorsModel').toggle(settings.source === 'webllm');
+    $('#koboldcpp_vectorsModel').toggle(settings.source === 'koboldcpp');
+    $('#google_vectorsModel').toggle(settings.source === 'palm');
     if (settings.source === 'webllm') {
         loadWebLlmModels();
     }
@@ -1136,6 +1152,45 @@ async function createWebLlmEmbeddings(items) {
         }
         return result;
     });
+}
+
+/**
+ * Creates KoboldCpp embeddings for a list of items.
+ * @param {string[]} items Items to embed
+ * @returns {Promise<{embeddings: Record<string, number[]>, model: string}>} Calculated embeddings
+ */
+async function createKoboldCppEmbeddings(items) {
+    const response = await fetch('/api/backends/kobold/embed', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            items: items,
+            server: textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP],
+        }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to get KoboldCpp embeddings');
+    }
+
+    const data = await response.json();
+    if (!Array.isArray(data.embeddings) || !data.model || data.embeddings.length !== items.length) {
+        throw new Error('Invalid response from KoboldCpp embeddings');
+    }
+
+    const embeddings = /** @type {Record<string, number[]>} */ ({});
+    for (let i = 0; i < data.embeddings.length; i++) {
+        if (!Array.isArray(data.embeddings[i]) || data.embeddings[i].length === 0) {
+            throw new Error('KoboldCpp returned an empty embedding. Reduce the chunk size and/or size threshold and try again.');
+        }
+
+        embeddings[items[i]] = data.embeddings[i];
+    }
+
+    return {
+        embeddings: embeddings,
+        model: data.model,
+    };
 }
 
 async function onPurgeClick() {
@@ -1686,6 +1741,12 @@ jQuery(async () => {
         if (!settings.webllm_model) return;
         await webllmProvider.loadModel(settings.webllm_model);
         toastr.success('WebLLM model loaded');
+    });
+
+    $('#vectors_google_model').val(settings.google_model).on('input', () => {
+        settings.google_model = String($('#vectors_google_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
     });
 
     $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
