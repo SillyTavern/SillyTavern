@@ -686,6 +686,62 @@ hr {
     opacity: 0.2;
 }
 
+#form_bg_download > label.input-file {
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#form_bg_download .add_bg_but {
+    background-image: url('/img/addbg3.png');
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Styles for the unified upload button's label */
+#form_bg_download > label.input-file {
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    background-color: rgba(0,0,0,0.1); */
+}
+
+#form_bg_download .unified-upload-content {
+  color: var(--SmartThemeBodyColor);
+  text-shadow: 0 0 2px var(--SmartThemeBgColor);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px;
+}
+
+#form_bg_download .unified-upload-content span {
+   display: inline-block;
+   font-size: 0.9em;
+}
+
+/* Responsive layout like the old video button had */
+@media (min-width: 481px) {
+    #form_bg_download .unified-upload-content {
+        flex-direction: row;
+        gap: 8px;
+    }
+    #form_bg_download .unified-upload-content span {
+       font-size: 1em;
+    }
+}
+
 #bg1,
 #bg_custom {
     background-repeat: no-repeat;
@@ -697,19 +753,16 @@ hr {
     transition: background-image 0.5s ease-in-out;
 }
 
-/* Background fitting options */
 #background_fitting {
     max-width: 6em;
 }
 
-/* Fill/Cover - scales to fill width while maintaining aspect ratio */
 #bg1.cover,
 #bg_custom.cover {
     background-size: cover;
     background-position: center;
 }
 
-/* Fit/Contain - shows entire image maintaining aspect ratio */
 #bg1.contain,
 #bg_custom.contain {
     background-size: contain;
@@ -717,18 +770,48 @@ hr {
     background-repeat: no-repeat;
 }
 
-/* Stretch - stretches to fill entire space */
 #bg1.stretch,
 #bg_custom.stretch {
     background-size: 100% 100%;
 }
 
-/* Center - centers without scaling */
 #bg1.center,
 #bg_custom.center {
     background-size: auto;
     background-position: center;
     background-repeat: no-repeat;
+}
+
+#bg_video_container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: -4;
+    overflow: hidden;
+}
+
+#bg_video_element {
+    width: 100%;
+    height: 100%;
+    object-position: center;
+}
+
+#bg_video_element.cover {
+    object-fit: cover;
+}
+
+#bg_video_element.contain {
+    object-fit: contain;
+}
+
+#bg_video_element.stretch {
+    object-fit: fill;
+}
+
+#bg_video_element.center {
+    object-fit: none;
 }
 
 body.reduced-motion #bg1,
@@ -3252,6 +3335,11 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: none;
 }
 
+.bg-preview-video {
+    background-image: none !important;
+    background-color: #282c34;
+}
+
 .BGSampleTitle {
     display: flex;
     width: 100%;
@@ -3270,6 +3358,33 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .bg_example[custom="true"] .BGSampleTitle {
+    display: none;
+}
+
+/* Overrides for BGSampleTitle for Readability/Mobile */
+.generated-background-item.video-background-item .BGSampleTitle { /* Added .generated-background-item */
+  /* Add display: flex !important; here */
+  display: flex !important; /* Force display flex */
+
+  color: #ffffff;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+  padding: 2px 4px;
+  background-color: rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  max-height: none;
+  height: auto;
+  position: relative;
+  z-index: 2;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+/* Hide title text specifically on non-video background previews */
+.bg_example:not(.video-background-item) .BGSampleTitle {
     display: none;
 }
 
@@ -3329,7 +3444,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
     align-items: center;
     height: 100%;
 }
-
 
 #form_create {
     display: flex;
@@ -6080,7 +6194,6 @@ body:not(.movingUI) .drawer-content.maximized {
 .info-block.warning {
     border-color: var(--warning-color, #e8a97f);
     background-color: rgba(241, 198, 163, 0.2);
-    /* Reset the font weight from that main warning class */
     font-weight: unset;
 }
 

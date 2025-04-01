@@ -424,34 +424,69 @@ export function removeOldBackups(directory, prefix, limit = null) {
     }
 }
 
-/**
- * Get a list of images in a directory.
- * @param {string} directoryPath Path to the directory containing the images
- * @param {'name' | 'date'} sortBy Sort images by name or date
- * @returns {string[]} List of image file names
+/*
+ * Get a list of image and video files in a directory.
+ * @param {string} directoryPath Path to the directory containing the media
+ * @param {'name' | 'date'} sortBy Sort files by name or date
+ * @returns {string[]} List of image and video file names
  */
-export function getImages(directoryPath, sortBy = 'name') {
+export function getMediaFiles(directoryPath, sortBy = 'name') { // Renamed function
+    if (!fs.existsSync(directoryPath)) {
+        console.warn('[getMediaFiles] Directory not found:', directoryPath);
+        return [];
+    }
+
     function getSortFunction() {
-        switch (sortBy) {
-            case 'name':
-                return Intl.Collator().compare;
-            case 'date':
-                return (a, b) => fs.statSync(path.join(directoryPath, a)).mtimeMs - fs.statSync(path.join(directoryPath, b)).mtimeMs;
-            default:
-                return (_a, _b) => 0;
+        try {
+            switch (sortBy) {
+                case 'name':
+                    return (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+                case 'date':
+                    return (a, b) => {
+                        const pathA = path.join(directoryPath, a);
+                        const pathB = path.join(directoryPath, b);
+                        const statA = fs.existsSync(pathA) ? fs.statSync(pathA) : null;
+                        const statB = fs.existsSync(pathB) ? fs.statSync(pathB) : null;
+                        if (!statA && !statB) return 0;
+                        if (!statA) return 1;
+                        if (!statB) return -1;
+                        return statB.mtimeMs - statA.mtimeMs; // Sort descending
+                    };
+                default:
+                    console.warn('[getMediaFiles] Unknown sort type:', sortBy);
+                    return (_a, _b) => 0;
+            }
+        } catch (sortError) {
+            console.error('[getMediaFiles] Error creating sort function:', sortError);
+            return (_a, _b) => 0;
         }
     }
 
-    return fs
-        .readdirSync(directoryPath)
-        .filter(file => {
+    try {
+        const files = fs.readdirSync(directoryPath);
+        const filteredFiles = files.filter(file => {
+            const filePath = path.join(directoryPath, file);
+            try {
+                if (!fs.statSync(filePath).isFile()) {
+                    return false;
+                }
+            } catch (statError) {
+                console.error(`[getMediaFiles] Error getting stats for file ${file}:`, statError);
+                return false;
+            }
             const type = mime.lookup(file);
-            return type && type.startsWith('image/');
-        })
-        .sort(getSortFunction());
+            return type && (type.startsWith('image/') || type.startsWith('video/'));
+        });
+        const sortFunction = getSortFunction();
+        const sortedFiles = filteredFiles.sort(sortFunction);
+        return sortedFiles;
+    } catch (readError) {
+        console.error(`[getMediaFiles] Error reading or processing directory ${directoryPath}:`, readError);
+        return []; // Return empty array on error
+    }
 }
 
-/**
+/*
  * Pipe a fetch() response to an Express.js Response, including status code.
  * @param {import('node-fetch').Response} from The Fetch API response to pipe from.
  * @param {import('express').Response} to The Express response to pipe to.
