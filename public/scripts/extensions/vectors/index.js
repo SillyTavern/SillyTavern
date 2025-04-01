@@ -803,6 +803,12 @@ async function getAdditionalArgs(items) {
         case 'webllm':
             args.embeddings = await createWebLlmEmbeddings(items);
             break;
+        case 'koboldcpp': {
+            const { embeddings, model } = await createKoboldCppEmbeddings(items);
+            args.embeddings = embeddings;
+            args.model = model;
+            break;
+        }
     }
     return args;
 }
@@ -872,6 +878,7 @@ function throwIfSourceInvalid() {
 
     if (settings.source === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA] ||
         settings.source === 'vllm' && !textgenerationwebui_settings.server_urls[textgen_types.VLLM] ||
+        settings.source === 'koboldcpp' && !textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP] ||
         settings.source === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) {
         throw new Error('Vectors: API URL missing', { cause: 'api_url_missing' });
     }
@@ -1071,6 +1078,7 @@ function toggleSettings() {
     $('#vllm_vectorsModel').toggle(settings.source === 'vllm');
     $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
     $('#webllm_vectorsModel').toggle(settings.source === 'webllm');
+    $('#koboldcpp_vectorsModel').toggle(settings.source === 'koboldcpp');
     if (settings.source === 'webllm') {
         loadWebLlmModels();
     }
@@ -1136,6 +1144,41 @@ async function createWebLlmEmbeddings(items) {
         }
         return result;
     });
+}
+
+/**
+ * Creates KoboldCpp embeddings for a list of items.
+ * @param {string[]} items Items to embed
+ * @returns {Promise<{embeddings: Record<string, number[]>, model: string}>} Calculated embeddings
+ */
+async function createKoboldCppEmbeddings(items) {
+    const response = await fetch('/api/backends/kobold/embed', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            items: items,
+            server: textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP],
+        }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to get KoboldCpp embeddings');
+    }
+
+    const data = await response.json();
+    if (!Array.isArray(data.embeddings) || !data.model || data.embeddings.length !== items.length) {
+        throw new Error('Invalid response from KoboldCpp embeddings');
+    }
+
+    const embeddings = /** @type {Record<string, number[]>} */ ({});
+    for (let i = 0; i < data.embeddings.length; i++) {
+        embeddings[items[i]] = data.embeddings[i];
+    }
+
+    return {
+        embeddings: embeddings,
+        model: data.model,
+    };
 }
 
 async function onPurgeClick() {

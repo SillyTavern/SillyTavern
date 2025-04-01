@@ -13,6 +13,7 @@
                     <option value="cohere">Cohere</option>
                     <option value="extras">Extras (deprecated)</option>
                     <option value="palm">Google AI Studio</option>
+                    <option value="koboldcpp">KoboldCpp</option>
                     <option value="llamacpp">llama.cpp</option>
                     <option value="transformers" data-i18n="Local (Transformers)">Local (Transformers)</option>
                     <option value="mistral">MistralAI</option>
@@ -54,6 +55,14 @@
                 <i data-i18n="Hint: Set the URL in the API connection settings.">
                     Hint: Set the URL in the API connection settings.
                 </i>
+            </div>
+            <div class="flex-container flexFlowColumn" id="koboldcpp_vectorsModel">
+                <span>
+                    Set the KoboldCpp URL in the Text Completion API connection settings.
+                </span>
+                <span>
+                    Must use version 1.87 or higher and have an embedding model loaded.
+                </span>
             </div>
             <div class="flex-container flexFlowColumn" id="llamacpp_vectorsModel">
                 <span data-i18n="The server MUST be started with the --embedding flag to use this feature!">
