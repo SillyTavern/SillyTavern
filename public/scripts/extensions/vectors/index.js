@@ -1172,6 +1172,11 @@ async function createKoboldCppEmbeddings(items) {
 
     const embeddings = /** @type {Record<string, number[]>} */ ({});
     for (let i = 0; i < data.embeddings.length; i++) {
+        if (!Array.isArray(data.embeddings[i]) || data.embeddings[i].length === 0) {
+            toastr.warning('Reduce the chunk size and/or size threshold for files and try again.', 'KoboldCpp returned an empty embedding');
+            throw new Error('Invalid embedding data from KoboldCpp');
+        }
+
         embeddings[items[i]] = data.embeddings[i];
     }
 
