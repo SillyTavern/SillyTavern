@@ -565,6 +565,8 @@ async function retrieveFileChunks(queryText, collectionId) {
  * @returns {Promise<boolean>} True if successful, false if not
  */
 async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overlapPercent) {
+    let toast = jQuery();
+
     try {
         if (settings.translate_files && typeof globalThis.translate === 'function') {
             console.log(`Vectors: Translating file ${fileName} to English...`);
@@ -574,7 +576,7 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overla
 
         const batchSize = getBatchSize();
         const toastBody = $('<span>').text('This may take a while. Please wait...');
-        const toast = toastr.info(toastBody, `Ingesting file ${escapeHtml(fileName)}`, { closeButton: false, escapeHtml: false, timeOut: 0, extendedTimeOut: 0 });
+        toast = toastr.info(toastBody, `Ingesting file ${escapeHtml(fileName)}`, { closeButton: false, escapeHtml: false, timeOut: 0, extendedTimeOut: 0 });
         const overlapSize = Math.round(chunkSize * overlapPercent / 100);
         const delimiters = getChunkDelimiters();
         // Overlap should not be included in chunk size. It will be later compensated by overlapChunks
@@ -596,6 +598,7 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overla
         console.log(`Vectors: Inserted ${chunks.length} vector items for file ${fileName} into ${collectionId}`);
         return true;
     } catch (error) {
+        toastr.clear(toast);
         toastr.error(String(error), 'Failed to vectorize file', { preventDuplicates: true });
         console.error('Vectors: Failed to vectorize file', error);
         return false;
@@ -1173,8 +1176,7 @@ async function createKoboldCppEmbeddings(items) {
     const embeddings = /** @type {Record<string, number[]>} */ ({});
     for (let i = 0; i < data.embeddings.length; i++) {
         if (!Array.isArray(data.embeddings[i]) || data.embeddings[i].length === 0) {
-            toastr.warning('Reduce the chunk size and/or size threshold for files and try again.', 'KoboldCpp returned an empty embedding');
-            throw new Error('Invalid embedding data from KoboldCpp');
+            throw new Error('KoboldCpp returned an empty embedding. Reduce the chunk size and/or size threshold and try again.');
         }
 
         embeddings[items[i]] = data.embeddings[i];
