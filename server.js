@@ -280,7 +280,7 @@ async function preSetupTasks() {
 
     const directories = await getUserDirectoriesList();
     await checkForNewContent(directories);
-    await ensureThumbnailCache();
+    await ensureThumbnailCache(directories);
     await diskCache.verify(directories);
     cleanUploads();
     migrateAccessLog();

@@ -147,17 +147,16 @@ async function generateThumbnail(directories, type, file) {
 
 /**
  * Ensures that the thumbnail cache for backgrounds is valid.
+ * @param {import('../users.js').UserDirectoryList[]} directoriesList User directories
  * @returns {Promise<void>} Promise that resolves when the cache is validated
  */
-export async function ensureThumbnailCache() {
-    const userHandles = await getAllUserHandles();
-    for (const handle of userHandles) {
-        const directories = getUserDirectories(handle);
+export async function ensureThumbnailCache(directoriesList) {
+    for (const directories of directoriesList) {
         const cacheFiles = fs.readdirSync(directories.thumbnailsBg);
 
         // files exist, all ok
         if (cacheFiles.length) {
-            return;
+            continue;
         }
 
         console.info('Generating thumbnails cache. Please wait...');

@@ -384,7 +384,7 @@ export class ConnectionManagerRequestService {
      * @returns {boolean}
      */
     static isProfileSupported(profile) {
-        if (!profile) {
+        if (!profile || !profile.api) {
             return false;
         }
 
