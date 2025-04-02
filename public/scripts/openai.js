@@ -15,12 +15,12 @@ import {
     extension_prompt_types,
     Generate,
     getExtensionPrompt,
+    getExtensionPromptMaxDepth,
     getNextMessageId,
     getRequestHeaders,
     getStoppingStrings,
     is_send_press,
     main_api,
-    MAX_INJECTION_DEPTH,
     name1,
     name2,
     replaceItemizedPromptText,
@@ -738,7 +738,8 @@ async function populationInjectionPrompts(prompts, messages) {
         'assistant': extension_prompt_roles.ASSISTANT,
     };
 
-    for (let i = 0; i <= MAX_INJECTION_DEPTH; i++) {
+    const maxDepth = getExtensionPromptMaxDepth();
+    for (let i = 0; i <= maxDepth; i++) {
         // Get prompts for current depth
         const depthPrompts = prompts.filter(prompt => prompt.injection_depth === i && prompt.content);
 

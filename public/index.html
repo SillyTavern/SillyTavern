@@ -5111,7 +5111,7 @@
                                     <div id="persona_depth_position_settings" class="flex-container">
                                         <div class="flex1">
                                             <label for="persona_depth_value" data-i18n="Depth:">Depth:</label>
-                                            <input id="persona_depth_value" class="text_pole" type="number" min="0" max="999" step="1">
+                                            <input id="persona_depth_value" class="text_pole" type="number" min="0" max="9999" step="1">
                                         </div>
                                         <div class="flex1">
                                             <label for="persona_depth_role" data-i18n="Role:">Role:</label>
@@ -5764,7 +5764,7 @@
                             @ Depth
                         </span>
                     </h4>
-                    <input id="depth_prompt_depth" name="depth_prompt_depth" class="text_pole textarea_compact m-t-0" type="number" min="0" max="999" value="4" form="form_create" />
+                    <input id="depth_prompt_depth" name="depth_prompt_depth" class="text_pole textarea_compact m-t-0" type="number" min="0" max="9999" value="4" form="form_create" />
                     <h4>
                         <span data-i18n="Role">
                             Role
@@ -5985,11 +5985,11 @@
                                         </div>
                                         <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap">
                                             <label for="depth" class="WIEntryHeaderTitleMobile" data-i18n="Depth:">Depth:</label>
-                                            <input title="Depth" class="text_pole wideMax100px margin0" type="number" name="depth" data-i18n="[title]Depth" placeholder="" min="0" max="999" />
+                                            <input title="Depth" class="text_pole wideMax100px margin0" type="number" name="depth" data-i18n="[title]Depth" placeholder="" min="0" max="9999" />
                                         </div>
                                         <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap">
                                             <label for="order" class="WIEntryHeaderTitleMobile" data-i18n="Order:">Order:</label>
-                                            <input title="Order" data-i18n="[title]Order" class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" min="0" max="999" />
+                                            <input title="Order" data-i18n="[title]Order" class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" min="0" max="9999" />
                                         </div>
                                         <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
                                             <label for="order" class="WIEntryHeaderTitleMobile" data-i18n="Trigger %:">Trigger %:</label>
@@ -6351,7 +6351,7 @@
                                     <span data-i18n="prompt_manager_depth">Depth</span>
                                 </label>
                                 <div class="text_muted" data-i18n="Injection depth. 0 = after the last message, 1 = before the last message, etc.">Injection depth. 0 = after the last message, 1 = before the last message, etc.</div>
-                                <input id="completion_prompt_manager_popup_entry_form_injection_depth" class="text_pole" type="number" name="injection_depth" min="0" max="999" value="4" />
+                                <input id="completion_prompt_manager_popup_entry_form_injection_depth" class="text_pole" type="number" name="injection_depth" min="0" max="9999" value="4" />
                             </div>
                         </div>
                         <div class="completion_prompt_manager_popup_entry_form_control">
@@ -6711,7 +6711,7 @@
                             <label class="checkbox_label alignItemsCenter" for="extension_floating_position_depth">
                                 <input type="radio" id="extension_floating_position_depth" name="extension_floating_position" value="1" />
                                 <span data-i18n="In-chat @ Depth">In-chat @ Depth</span>
-                                <input id="extension_floating_depth" class="text_pole textarea_compact widthNatural" type="number" min="0" max="999" />
+                                <input id="extension_floating_depth" class="text_pole textarea_compact widthNatural" type="number" min="0" max="9999" />
                                 <span data-i18n="as">as</span>
                                 <select id="extension_floating_role" class="text_pole widthNatural">
                                     <option data-i18n="System" value="0">System</option>
@@ -6726,7 +6726,7 @@
                                 <span data-i18n="Insertion Frequency">Insertion Frequency</span>
                                 <small data-i18n="(0 = Disable, 1 = Always)">(0 = Disable, 1 = Always)</small>
                             </label>
-                            <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="999" />
+                            <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="9999" />
                         </div>
                         <br>
                         <span><span data-i18n="User inputs until next insertion:">User inputs until next insertion:</span> <span id="extension_floating_counter">(disabled)</span></span>
@@ -6796,7 +6796,7 @@
                             <label class="checkbox_label alignItemsCenter" for="extension_default_position_depth">
                                 <input type="radio" id="extension_default_position_depth" name="extension_default_position" value="1" />
                                 <span data-i18n="In-chat @ Depth">In-chat @ Depth</span>
-                                <input id="extension_default_depth" class="text_pole textarea_compact widthNatural" type="number" min="0" max="999" />
+                                <input id="extension_default_depth" class="text_pole textarea_compact widthNatural" type="number" min="0" max="9999" />
                                 <span data-i18n="as">as</span>
                                 <select id="extension_default_role" class="text_pole widthNatural">
                                     <option data-i18n="System" value="0">System</option>
@@ -6810,7 +6810,7 @@
                                 <span data-i18n="Insertion Frequency">Insertion Frequency</span>
                                 <small data-i18n="(0 = Disable, 1 = Always)">(0 = Disable, 1 = Always)</small>
                             </label>
-                            <input id="extension_default_interval" class="text_pole widthUnset" type="number" min="0" max="999" />
+                            <input id="extension_default_interval" class="text_pole widthUnset" type="number" min="0" max="9999" />
                         </div>
                     </div>
                 </div>

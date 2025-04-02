@@ -650,7 +650,7 @@ export const extension_prompt_roles = {
     ASSISTANT: 2,
 };
 
-export const MAX_INJECTION_DEPTH = 1000;
+export const MAX_INJECTION_DEPTH = 10000;
 
 const SAFETY_CHAT = [
     {
@@ -3046,6 +3046,17 @@ export async function getExtensionPromptByName(moduleName) {
 }
 
 /**
+ * Gets the maximum depth of extension prompts.
+ * @returns {number} Maximum depth of extension prompts
+ */
+export function getExtensionPromptMaxDepth() {
+    const prompts = Object.values(extension_prompts);
+    const maxDepth = Math.max(...prompts.map(x => x.depth ?? 0));
+    // Clamp to 1 <= depth <= MAX_INJECTION_DEPTH
+    return Math.max(Math.min(maxDepth, MAX_INJECTION_DEPTH), 1);
+}
+
+/**
  * Returns the extension prompt for the given position, depth, and role.
  * If multiple prompts are found, they are joined with a separator.
  * @param {number} [position] Position of the prompt
@@ -5098,7 +5109,8 @@ async function doChatInject(messages, isContinue) {
     let totalInsertedMessages = 0;
     messages.reverse();
 
-    for (let i = 0; i <= MAX_INJECTION_DEPTH; i++) {
+    const maxDepth = getExtensionPromptMaxDepth();
+    for (let i = 0; i <= maxDepth; i++) {
         // Order of priority (most important go lower)
         const roles = [extension_prompt_roles.SYSTEM, extension_prompt_roles.USER, extension_prompt_roles.ASSISTANT];
         const names = {
