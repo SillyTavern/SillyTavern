@@ -730,6 +730,111 @@ hr {
     background-position: center;
     background-repeat: no-repeat;
 }
+/* public/style.css - Add/Modify these rules */
+
+/* --- Video Background Container & Element --- */
+
+#bg_video_container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -4; /* Below #bg1 (-3) */
+  overflow: hidden; /* Prevent scrollbars if video slightly overflows */
+}
+
+#bg_video_element {
+  display: block; /* Ensure it behaves like a block element */
+  width: 100%;
+  height: 100%;
+  /* object-position: center; /* Default position, can be overridden by fitting */
+}
+
+/* --- Video Fitting Styles --- */
+/* Matches the object-fit property to the class names */
+#bg_video_element.cover {
+  object-fit: cover;
+  object-position: center;
+}
+
+#bg_video_element.contain {
+  object-fit: contain;
+  object-position: center;
+}
+
+#bg_video_element.stretch {
+  object-fit: fill; /* Stretches to fill the container */
+}
+
+#bg_video_element.center {
+  object-fit: none; /* No scaling, centered */
+  object-position: center;
+}
+
+/* Style the label containing the input and visual content */
+#form_bg_download > label.input-file {
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    border-radius: inherit; /* Inherit radius from .bg_example */
+}
+
+/* Style the inner content (icon and text) */
+#form_bg_download .unified-upload-content {
+  color: var(--SmartThemeBodyColor);
+  text-shadow: 0 0 2px var(--SmartThemeBgColor);
+  pointer-events: none; /* Prevent clicks on the icon/text interfering with label */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px;
+}
+
+#form_bg_download .unified-upload-content span {
+   display: inline-block;
+   font-size: 0.9em;
+   line-height: 1.2;
+}
+
+@media (min-width: 481px) {
+    #form_bg_download .unified-upload-content {
+        flex-direction: row;
+        gap: 8px;
+    }
+    #form_bg_download .unified-upload-content span {
+       font-size: 1em;
+    }
+}
+
+/* Applied by JS to video background items in the #bg_menu_content list */
+.bg_example.video-preview {
+    background-image: none !important; 
+    background-color: #282c34;
+    position: relative; /* Needed for absolute positioning of overlay */
+}
+
+/* Style for the video icon overlay added by JS */
+.video-preview .video-icon-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1.5em;
+    pointer-events: none;
+	z-index: 1;
+}
+
+.video-preview .video-icon-overlay i {
+    display: block; /* Ensures proper rendering */
+}
 
 body.reduced-motion #bg1,
 body.reduced-motion #bg_custom {
@@ -3314,13 +3419,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .bg_example_unlock {
     left: 50%;
     transform: translateX(-50%);
-}
-
-.add_bg_but {
-    cursor: pointer;
-    opacity: 0.1;
-    height: 100%;
-    width: 100%;
 }
 
 .input-file {

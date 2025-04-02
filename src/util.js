@@ -425,30 +425,74 @@ export function removeOldBackups(directory, prefix, limit = null) {
 }
 
 /**
- * Get a list of images in a directory.
- * @param {string} directoryPath Path to the directory containing the images
- * @param {'name' | 'date'} sortBy Sort images by name or date
- * @returns {string[]} List of image file names
+ * Get a list of image and video files in a directory.
+ * @param {string} directoryPath Path to the directory containing the media
+ * @param {'name' | 'date'} sortBy Sort files by name or date
+ * @returns {string[]} List of image and video file names
  */
-export function getImages(directoryPath, sortBy = 'name') {
-    function getSortFunction() {
-        switch (sortBy) {
-            case 'name':
-                return Intl.Collator().compare;
-            case 'date':
-                return (a, b) => fs.statSync(path.join(directoryPath, a)).mtimeMs - fs.statSync(path.join(directoryPath, b)).mtimeMs;
-            default:
-                return (_a, _b) => 0;
-        }
+export function getMediaFiles(directoryPath, sortBy = 'name') {
+    if (!fs.existsSync(directoryPath)) {
+        console.warn('[getMediaFiles] Directory not found:', directoryPath);
+        return [];
     }
 
-    return fs
-        .readdirSync(directoryPath)
-        .filter(file => {
+    function getSortFunction() {
+        try {
+            switch (sortBy) {
+                case 'name':
+                    // Sort naturally by name
+                    return (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+                case 'date':
+                    // Sort by modification time, newest first
+                    return (a, b) => {
+                        const pathA = path.join(directoryPath, a);
+                        const pathB = path.join(directoryPath, b);
+                        // Handle cases where a file might disappear between readdir and stat
+                        try {
+                            const statA = fs.statSync(pathA);
+                            const statB = fs.statSync(pathB);
+                            return statB.mtimeMs - statA.mtimeMs;
+                        } catch (statError) {
+                            // If one file errors, treat it as older/newer consistently
+                            if (!fs.existsSync(pathA) && fs.existsSync(pathB)) return 1; // a is older
+                            if (fs.existsSync(pathA) && !fs.existsSync(pathB)) return -1; // b is older
+                            return 0; // Both errored or don't exist
+                        }
+                    };
+                default:
+                    return (_a, _b) => 0;
+            }
+        } catch (sortError) {
+            console.error('[getMediaFiles] Error creating sort function:', sortError);
+            return (_a, _b) => 0;
+        }
+    }
+    try {
+        const files = fs.readdirSync(directoryPath);
+        const filteredFiles = files.filter(file => {
+            const filePath = path.join(directoryPath, file);
+            try {
+                // Ensure it's a file, not a directory
+                if (!fs.statSync(filePath).isFile()) {
+                    return false;
+                }
+            } catch (statError) {
+                // Ignore files that can't be stat'd (e.g., permission issues, gone missing)
+                return false;
+            }
+            // Check MIME type for image or video
             const type = mime.lookup(file);
-            return type && type.startsWith('image/');
-        })
-        .sort(getSortFunction());
+            return type && (type.startsWith('image/') || type.startsWith('video/')); // Correct filter
+        });
+
+        const sortFunction = getSortFunction();
+        const sortedFiles = filteredFiles.sort(sortFunction);
+        return sortedFiles;
+
+    } catch (readError) {
+        console.error(`[getMediaFiles] Error reading or processing directory ${directoryPath}:`, readError);
+        return [];
+    }
 }
 
 /**

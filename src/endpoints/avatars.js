@@ -7,13 +7,13 @@ import { Jimp, JimpMime } from '../jimp.js';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 import { AVATAR_WIDTH, AVATAR_HEIGHT } from '../constants.js';
-import { getImages, tryParse } from '../util.js';
+import { getMediaFiles, tryParse } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
 
 router.post('/get', function (request, response) {
-    var images = getImages(request.user.directories.avatars);
+    var images = getMediaFiles(request.user.directories.avatars);
     response.send(JSON.stringify(images));
 });
 

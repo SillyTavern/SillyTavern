@@ -11,22 +11,135 @@ const BG_METADATA_KEY = 'custom_background';
 const LIST_METADATA_KEY = 'chat_backgrounds';
 
 export let background_settings = {
+    type: 'image',
     name: '__transparent.png',
     url: generateUrlParameter('__transparent.png', false),
+    videoName: null,
+    videoUrl: null,
     fitting: 'classic',
 };
 
 export function loadBackgroundSettings(settings) {
-    let backgroundSettings = settings.background;
-    if (!backgroundSettings || !backgroundSettings.name || !backgroundSettings.url) {
-        backgroundSettings = background_settings;
+    let loadedSettings = settings.background;
+
+    let currentBgSettings = { ...background_settings }; // Copy defaults
+
+    if (loadedSettings) {
+        // Merge saved settings over defaults
+        Object.assign(currentBgSettings, loadedSettings);
     }
-    if (!backgroundSettings.fitting) {
-        backgroundSettings.fitting = 'classic';
+
+    // Ensure essential fields have fallbacks if missing after merge
+    if (!currentBgSettings.type) {
+        currentBgSettings.type = 'image'; // Default to image if type is missing
     }
-    setBackground(backgroundSettings.name, backgroundSettings.url);
-    setFittingClass(backgroundSettings.fitting);
-    $('#background_fitting').val(backgroundSettings.fitting);
+    if (!currentBgSettings.fitting) {
+        currentBgSettings.fitting = 'classic';
+    }
+    if (currentBgSettings.type === 'image' && (!currentBgSettings.name || !currentBgSettings.url)) {
+        currentBgSettings.name = '__transparent.png';
+        currentBgSettings.url = generateUrlParameter('__transparent.png', false);
+    }
+    if (currentBgSettings.type === 'video' && (!currentBgSettings.videoName || !currentBgSettings.videoUrl)) {
+        // If video type is saved but details are missing, revert to default image
+        console.warn('Video background settings incomplete, reverting to default image.');
+        currentBgSettings.type = 'image';
+        currentBgSettings.name = '__transparent.png';
+        currentBgSettings.url = generateUrlParameter('__transparent.png', false);
+        currentBgSettings.videoName = null;
+        currentBgSettings.videoUrl = null;
+    }
+
+    Object.assign(background_settings, currentBgSettings);
+
+    // Apply the determined background type
+    if (background_settings.type === 'video') {
+        applyVideoBackground(background_settings.videoName, background_settings.videoUrl);
+        console.log('Loaded video background:', background_settings.videoName);
+    } else {
+        setBackground(background_settings.name, background_settings.url);
+        console.log('Loaded image background:', background_settings.name);
+    }
+
+    // Apply fitting and update dropdown
+    setFittingClass(background_settings.fitting);
+    $('#background_fitting').val(background_settings.fitting);
+}
+
+// Sets an image background
+async function setBackground(bg, url) {
+    // Clear any existing video
+    $('#bg_video_container').empty();
+
+    // Set the image on the primary background layer
+    $('#bg1').css('background-image', url);
+
+    // Update global state for image type
+    background_settings.type = 'image';
+    background_settings.name = bg;
+    background_settings.url = url;
+    background_settings.videoName = null; // Ensure video properties are null
+    background_settings.videoUrl = null;
+
+    // Save the updated settings
+    saveSettingsDebounced();
+}
+
+/**
+ * Creates and displays a video background.
+ * @param {string} videoFileName The name of the video file.
+ * @param {string} videoUrl The accessible URL for the video file.
+ */
+async function applyVideoBackground(videoFileName, videoUrl) {
+    const $videoContainer = $('#bg_video_container');
+    $videoContainer.empty(); // Clear previous video/content
+
+    const videoElement = document.createElement('video');
+    videoElement.id = 'bg_video_element'; // Assign ID for styling/selection
+    videoElement.autoplay = true;
+    videoElement.loop = true;
+    videoElement.muted = true; // Muted is essential for reliable autoplay
+    videoElement.playsInline = true; // Important for mobile browsers
+    videoElement.src = videoUrl;
+
+    videoElement.onerror = () => {
+        console.error(`Error loading video background: ${videoUrl}`);
+        toastr.error(`Failed to load video: ${videoFileName}`);
+        $videoContainer.empty(); // Remove broken element
+        // Optionally revert to a default background here
+    };
+
+    $videoContainer.append(videoElement);
+
+    // Apply fitting class *after* element is in DOM
+    setFittingClass(background_settings.fitting);
+
+    // Attempt to play, catching potential errors (e.g., browser restrictions)
+    try {
+        const playPromise = videoElement.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                // Autoplay might be blocked by the browser
+                console.warn(`Video autoplay prevented for ${videoFileName}:`, error);
+                // Maybe show an unmute button or notification here
+            });
+        }
+    } catch (error) {
+        console.error(`Error attempting to play video ${videoFileName}:`, error);
+    }
+
+    // Clear the image background layer
+    $('#bg1').css('background-image', 'none');
+
+    // Update global state for video type
+    background_settings.type = 'video';
+    background_settings.videoName = videoFileName;
+    background_settings.videoUrl = videoUrl;
+    background_settings.name = null; // Ensure image properties are null
+    background_settings.url = null;
+
+    // Save the updated settings
+    saveSettingsDebounced();
 }
 
 /**
@@ -81,20 +194,15 @@ function getBackgroundPath(fileUrl) {
 }
 
 function highlightLockedBackground() {
-    $('.bg_example').removeClass('locked');
+    $('.bg_example.generated-background-item').removeClass('locked'); // Target only generated items
+    const lockedBgData = chat_metadata[BG_METADATA_KEY];
 
-    const lockedBackground = chat_metadata[BG_METADATA_KEY];
-
-    if (!lockedBackground) {
-        return;
+    if (!lockedBgData || !lockedBgData.name) {
+        return; // No lock data or name missing
     }
 
-    $('.bg_example').each(function () {
-        const url = $(this).data('url');
-        if (url === lockedBackground) {
-            $(this).addClass('locked');
-        }
-    });
+    // Find the item by the stored name using the bgfile attribute
+    $(`.bg_example.generated-background-item[bgfile="${CSS.escape(lockedBgData.name)}"]`).addClass('locked');
 }
 
 /**
@@ -133,12 +241,13 @@ function onUnlockBackgroundClick(e) {
     return '';
 }
 
+// Check if custom background metadata exists
 function hasCustomBackground() {
-    return chat_metadata[BG_METADATA_KEY];
+    return !!chat_metadata[BG_METADATA_KEY];
 }
 
-function saveBackgroundMetadata(file) {
-    chat_metadata[BG_METADATA_KEY] = file;
+function saveBackgroundMetadata(type, name, url) {
+    chat_metadata[BG_METADATA_KEY] = { type, name, url };
     saveMetadataDebounced();
 }
 
@@ -147,55 +256,93 @@ function removeBackgroundMetadata() {
     saveMetadataDebounced();
 }
 
+// Apply the locked background (image or video)
 function setCustomBackground() {
-    const file = chat_metadata[BG_METADATA_KEY];
+    const lockedBgData = chat_metadata[BG_METADATA_KEY];
 
-    // bg already set
-    if (document.getElementById('bg_custom').style.backgroundImage == file) {
-        return;
+    unsetCustomBackground(); // Clear previous custom state first
+
+    if (!lockedBgData) return;
+
+    if (lockedBgData.type === 'video' && lockedBgData.url) {
+        console.log('Applying locked video background:', lockedBgData.name);
+        // Apply locked video - essentially duplicates applyVideoBackground but without saving global state
+        const $videoContainer = $('#bg_video_container');
+        $videoContainer.empty();
+        const videoElement = document.createElement('video');
+        videoElement.id = 'bg_video_element'; // Consistent ID needed for fitting
+        videoElement.autoplay = true; videoElement.loop = true; videoElement.muted = true; videoElement.playsInline = true;
+        videoElement.src = lockedBgData.url;
+        videoElement.onerror = () => { console.error('Error loading locked video'); $videoContainer.empty(); };
+        $videoContainer.append(videoElement);
+        // Apply fitting based on current global setting
+        setFittingClass(background_settings.fitting);
+        try {
+            videoElement.play().catch(() => {
+                // Autoplay errors are expected and ignored for locked backgrounds
+            });
+        } catch (e) {
+            // Synchronous play errors are rare and also ignored here
+        }
+        $('#bg_custom').css('background-image', 'none'); // Ensure custom image layer is clear
     }
-
-    $('#bg_custom').css('background-image', file);
+    else if (lockedBgData.type === 'image' && lockedBgData.url) {
+        console.log('Applying locked image background:', lockedBgData.name);
+        $('#bg_custom').css('background-image', lockedBgData.url); // Apply image to overlay
+    }
 }
 
+// Clear the custom background state
 function unsetCustomBackground() {
     $('#bg_custom').css('background-image', 'none');
+    $('#bg_video_container').empty();
 }
 
+// Handles clicks on background items in the list
 function onSelectBackgroundClick() {
-    const isCustom = $(this).attr('custom') === 'true';
-    const relativeBgImage = getUrlParameter(this);
+    const $this = $(this);
+    const isCustom = $this.attr('custom') === 'true';
+    const type = $this.data('type');
+    const resourceName = $this.attr('bgfile'); // The filename
 
-    // if clicked on upload button
-    if (!relativeBgImage) {
-        return;
+    if (!type || !resourceName) {
+        console.warn('Background item clicked without type or bgfile attribute.');
+        return; // Ignore clicks on non-data items like the upload button
     }
 
-    // Automatically lock the background if it's custom or other background is locked
+    let resourceUrl; // This will be the image `url(...)` string or the video path
+
+    // Determine action based on type
+    if (type === 'video') {
+        resourceUrl = $this.data('video-url');
+        if (!resourceUrl) {
+            console.error('Video item clicked but data-video-url is missing.');
+            return;
+        }
+        console.log('Selected video:', resourceName, resourceUrl);
+        applyVideoBackground(resourceName, resourceUrl);
+    } else { // Assume image
+        resourceUrl = $this.data('url');
+        if (!resourceUrl) {
+            console.error('Image item clicked but data-url is missing.');
+            return;
+        }
+        console.log('Selected image:', resourceName, resourceUrl);
+        const backgroundUrlToFetch = getBackgroundPath(resourceName);
+        fetch(backgroundUrlToFetch).then(() => {
+            setBackground(resourceName, resourceUrl);
+        }).catch((err) => { console.error('Background fetch/set failed:', err); });
+    }
+
     if (hasCustomBackground() || isCustom) {
-        saveBackgroundMetadata(relativeBgImage);
-        setCustomBackground();
+        saveBackgroundMetadata(type, resourceName, resourceUrl);
+        highlightLockedBackground();
+    } else {
+        // If no lock is active and item isn't custom, ensure highlighting is correct
         highlightLockedBackground();
     }
-    highlightLockedBackground();
-
-    const customBg = window.getComputedStyle(document.getElementById('bg_custom')).backgroundImage;
-
-    // Custom background is set. Do not override the layer below
-    if (customBg !== 'none') {
-        return;
-    }
-
-    const bgFile = $(this).attr('bgfile');
-    const backgroundUrl = getBackgroundPath(bgFile);
-
-    // Fetching to browser memory to reduce flicker
-    fetch(backgroundUrl).then(() => {
-        setBackground(bgFile, relativeBgImage);
-    }).catch(() => {
-        console.log('Background could not be set: ' + backgroundUrl);
-    });
 }
+
 
 async function onCopyToSystemBackgroundClick(e) {
     e.stopPropagation();
@@ -368,22 +515,48 @@ async function autoBackgroundCommand() {
 }
 
 export async function getBackgrounds() {
-    const response = await fetch('/api/backgrounds/all', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({
-            '': '',
-        }),
-    });
-    if (response.ok) {
-        const getData = await response.json();
-        //background = getData;
-        //console.log(getData.length);
-        $('#bg_menu_content').children('div').remove();
-        for (const bg of getData) {
-            const template = getBackgroundFromTemplate(bg, false);
-            $('#bg_menu_content').append(template);
+    try {
+        const response = await fetch('/api/backgrounds/all', {
+            method: 'POST', // Keep POST if required by server setup, though GET is more appropriate
+            headers: getRequestHeaders(),
+            // body: JSON.stringify({ '': '' }), // Body is likely unnecessary
+        });
+
+        if (!response.ok) {
+            console.error(`Error fetching background list: ${response.status} ${response.statusText}`);
+            toastr.error('Failed to load background list.');
+            return;
         }
+
+        const mediaList = await response.json();
+
+        if (!Array.isArray(mediaList)) {
+            console.error('Received invalid data for background list:', mediaList);
+            toastr.error('Failed to process background list.');
+            return;
+        }
+
+        const $container = $('#bg_menu_content');
+        // Clear only generated items, keep the upload form
+        $container.children('.generated-background-item').remove();
+
+        for (const mediaFile of mediaList) {
+            try {
+                // Generate template for image or video
+                const template = getBackgroundFromTemplate(mediaFile, false);
+                if (template && template.length > 0) {
+                    $container.append(template);
+                }
+            } catch (templateError) {
+                console.error(`Error creating template for ${mediaFile}:`, templateError);
+            }
+        }
+        // Re-apply highlighting for locked background after list refresh
+        highlightLockedBackground();
+
+    } catch (error) {
+        console.error('Error in getBackgrounds:', error);
+        toastr.error('An error occurred while fetching backgrounds.');
     }
 }
 
@@ -401,31 +574,53 @@ function generateUrlParameter(bg, isCustom) {
 }
 
 /**
- * Instantiates a background template
- * @param {string} bg Path to background
- * @param {boolean} isCustom Whether the background is custom
- * @returns {JQuery<HTMLElement>} Background template
+ * Instantiates a background template for images and videos.
+ * @param {string} mediaFile Path to background (image or video filename)
+ * @param {boolean} isCustom Whether the background is custom (not typically used here)
+ * @returns {JQuery<HTMLElement>} Background template jQuery object
  */
-function getBackgroundFromTemplate(bg, isCustom) {
+function getBackgroundFromTemplate(mediaFile, isCustom) {
+    // Clone the base template defined in HTML
     const template = $('#background_template .bg_example').clone();
-    const thumbPath = isCustom ? bg : getThumbnailUrl('bg', bg);
-    const url = generateUrlParameter(bg, isCustom);
-    const title = isCustom ? bg.split('/').pop() : bg;
-    const friendlyTitle = title.slice(0, title.lastIndexOf('.'));
-    template.attr('title', title);
-    template.attr('bgfile', bg);
-    template.attr('custom', String(isCustom));
-    template.data('url', url);
-    template.css('background-image', `url('${thumbPath}')`);
-    template.find('.BGSampleTitle').text(friendlyTitle);
-    return template;
-}
+    template.removeClass('template_element'); // Ensure template class is removed
+    template.addClass('generated-background-item'); // Add class for easy clearing
 
-async function setBackground(bg, url) {
-    $('#bg1').css('background-image', url);
-    background_settings.name = bg;
-    background_settings.url = url;
-    saveSettingsDebounced();
+    // Extract filename details
+    const title = mediaFile;
+    const friendlyTitle = title.slice(0, title.lastIndexOf('.')) || title;
+    const fileExtension = title.split('.').pop().toLowerCase();
+    const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'wmv']; // Add more as needed
+
+    // Set common attributes
+    template.attr('title', title);
+    template.attr('bgfile', mediaFile); // Store the raw filename
+    template.attr('custom', String(isCustom)); // Although usually false here
+    template.find('.BGSampleTitle').text(friendlyTitle);
+
+    // Configure based on type
+    if (videoExtensions.includes(fileExtension)) {
+        template.data('type', 'video');
+        template.addClass('video-preview'); // Class for CSS styling
+
+        // Construct the URL using the confirmed /backgrounds/ path
+        const videoUrl = `/backgrounds/${encodeURIComponent(mediaFile)}`;
+        template.data('video-url', videoUrl); // Store URL for click handler
+
+        // Add a visual indicator (Font Awesome icon)
+		template.append('<div class="video-icon-overlay"><i class="fa-solid fa-video"></i></div>');
+
+    } else { // Assume image otherwise
+        template.data('type', 'image');
+
+        // Construct image URL and thumbnail URL
+        const imageUrlCss = `url("${getBackgroundPath(mediaFile)}")`; // Use helper for path if needed
+        const thumbPath = getThumbnailUrl('bg', mediaFile); // Use thumbnail service
+
+        template.data('url', imageUrlCss); // Store URL for click handler
+        template.css('background-image', `url('${thumbPath}')`); // Set preview thumbnail
+    }
+
+    return template;
 }
 
 async function delBackground(bg) {
@@ -438,43 +633,89 @@ async function delBackground(bg) {
     });
 }
 
+// Handles the file input change event for the unified upload button
 function onBackgroundUploadSelected() {
-    const form = $('#form_bg_download').get(0);
-
+    const form = document.getElementById('form_bg_download'); // Use vanilla JS for simplicity
     if (!(form instanceof HTMLFormElement)) {
-        console.error('form_bg_download is not a form');
+        console.error('#form_bg_download not found or not a form');
+        return;
+    }
+
+    const fileInput = form.querySelector('#add_bg_button');
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        // No file selected
         return;
     }
 
     const formData = new FormData(form);
-    uploadBackground(formData);
-    form.reset();
+    uploadBackground(formData); // Call the fetch-based upload function
+    form.reset(); // Reset form after initiating upload
 }
 
 /**
- * Uploads a background to the server
- * @param {FormData} formData
+ * Uploads a background (image or video) using the unified endpoint.
+ * @param {FormData} formData The form data containing the file.
  */
-function uploadBackground(formData) {
-    jQuery.ajax({
-        type: 'POST',
-        url: '/api/backgrounds/upload',
-        data: formData,
-        beforeSend: function () {
-        },
-        cache: false,
-        contentType: false,
-        processData: false,
-        success: async function (bg) {
-            setBackground(bg, generateUrlParameter(bg, false));
+async function uploadBackground(formData) {
+    let toastInstance = null;
+    try {
+        // Show indeterminate progress toast
+        toastInstance = toastr.info('Uploading background...', null, { timeOut: 0, extendedTimeOut: 0, tapToDismiss: false });
+
+        // Get necessary headers (like CSRF) but specifically remove Content-Type
+        const headersToSend = getRequestHeaders();
+        // Remove the Content-Type header so the browser can set the correct
+        // multipart/form-data header with the boundary automatically.
+        delete headersToSend['Content-Type'];
+        delete headersToSend['content-type'];
+
+        const response = await fetch('/api/backgrounds/upload', {
+            method: 'POST',
+            headers: headersToSend, // Use the modified headers object
+            body: formData,
+        });
+
+        // Clear progress toast once response is received
+        if (toastInstance) toastr.clear(toastInstance);
+
+        if (!response.ok) {
+            let errorMsg = `Upload failed: ${response.statusText}`;
+            try {
+                // Try to parse a JSON error message from the backend
+                const errorData = await response.json();
+                errorMsg = `Upload failed: ${errorData?.error || response.statusText}`;
+            } catch (e) { /* Ignore if response is not JSON */ }
+            throw new Error(errorMsg);
+        }
+
+        const result = await response.json();
+
+        if (result && result.success) {
+            toastr.success(`Background "${result.fileName}" uploaded successfully.`);
+            // Apply the newly uploaded background
+            if (result.type === 'image') {
+                // Generate the CSS url format needed by setBackground
+                const imageUrl = generateUrlParameter(result.fileName, false);
+                await setBackground(result.fileName, imageUrl);
+            } else if (result.type === 'video' && result.videoUrl) {
+                await applyVideoBackground(result.fileName, result.videoUrl);
+            } else {
+                console.warn('Upload succeeded but type is unknown or videoUrl missing:', result);
+                toastr.warning('Upload succeeded but file type is unrecognized.');
+            }
+            // Refresh the background list and highlight the new item
             await getBackgrounds();
-            highlightNewBackground(bg);
-        },
-        error: function (jqXHR, exception) {
-            console.log(exception);
-            console.log(jqXHR);
-        },
-    });
+            highlightNewBackground(result.fileName);
+        } else {
+            // Handle cases where response is ok, but backend JSON indicates failure
+            throw new Error(result?.error || 'Upload failed: Invalid server response.');
+        }
+
+    } catch (error) {
+        if (toastInstance) toastr.clear(toastInstance); // Ensure toast is cleared on error too
+        console.error('Background upload error:', error);
+        toastr.error(error.message || 'Failed to upload background.');
+    }
 }
 
 /**
@@ -488,15 +729,36 @@ function highlightNewBackground(bg) {
 }
 
 /**
- * Sets the fitting class for the background element
- * @param {string} fitting Fitting type
+ * Sets the fitting class for background elements (image, custom overlay, video).
+ * @param {string} fitting Fitting type (e.g., 'cover', 'contain', 'classic')
  */
 function setFittingClass(fitting) {
-    const backgrounds = $('#bg1, #bg_custom');
-    for (const option of ['cover', 'contain', 'stretch', 'center']) {
-        backgrounds.toggleClass(option, option === fitting);
+    const imageBackgrounds = $('#bg1, #bg_custom');
+    const videoElement = $('#bg_video_element'); // Select the video element if it exists
+    const validFittings = ['classic', 'cover', 'contain', 'stretch', 'center'];
+    const fittingClasses = ['cover', 'contain', 'stretch', 'center']; // CSS classes used
+
+    // Determine the actual class to apply ('classic' maps to 'cover')
+    const currentFitting = validFittings.includes(fitting) ? fitting : 'classic';
+    const classToAdd = (currentFitting === 'classic') ? 'cover' : currentFitting;
+
+    // Apply to image layers
+    imageBackgrounds.removeClass(fittingClasses.join(' '));
+    if (fittingClasses.includes(classToAdd)) {
+        imageBackgrounds.addClass(classToAdd);
     }
-    background_settings.fitting = fitting;
+
+    // Apply to video layer if it exists
+    if (videoElement.length) {
+        videoElement.removeClass(fittingClasses.join(' '));
+        if (fittingClasses.includes(classToAdd)) {
+            videoElement.addClass(classToAdd);
+        }
+    }
+
+    // Update the global settings state
+    background_settings.fitting = currentFitting;
+    // Note: Saving happens in setBackground/applyVideoBackground or when dropdown changes directly
 }
 
 function onBackgroundFilterInput() {
@@ -514,15 +776,15 @@ function onBackgroundFilterInput() {
 export function initBackgrounds() {
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.on(event_types.FORCE_SET_BACKGROUND, forceSetBackground);
-    $(document).on('click', '.bg_example', onSelectBackgroundClick);
+    $(document).on('click', '.bg_example.generated-background-item', onSelectBackgroundClick);
     $(document).on('click', '.bg_example_lock', onLockBackgroundClick);
     $(document).on('click', '.bg_example_unlock', onUnlockBackgroundClick);
     $(document).on('click', '.bg_example_edit', onRenameBackgroundClick);
     $(document).on('click', '.bg_example_cross', onDeleteBackgroundClick);
     $(document).on('click', '.bg_example_copy', onCopyToSystemBackgroundClick);
     $('#auto_background').on('click', autoBackgroundCommand);
-    $('#add_bg_button').on('change', onBackgroundUploadSelected);
     $('#bg-filter').on('input', onBackgroundFilterInput);
+    $('#add_bg_button').on('change', onBackgroundUploadSelected);
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'lockbg',
         callback: () => onLockBackgroundClick(new CustomEvent('click')),
         aliases: ['bglock'],
@@ -538,10 +800,9 @@ export function initBackgrounds() {
         aliases: ['bgauto'],
         helpString: 'Automatically changes the background based on the chat context using the AI request prompt',
     }));
-
     $('#background_fitting').on('input', function () {
-        background_settings.fitting = String($(this).val());
-        setFittingClass(background_settings.fitting);
+        const newFitting = String($(this).val());
+        setFittingClass(newFitting);
         saveSettingsDebounced();
     });
 }
