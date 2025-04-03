@@ -42,6 +42,7 @@ export const SECRET_KEYS = {
     DEEPSEEK: 'api_key_deepseek',
     SERPER: 'api_key_serper',
     FALAI: 'api_key_falai',
+    VENICEAI: 'api_key_veniceai',
 };
 
 const INPUT_MAP = {
