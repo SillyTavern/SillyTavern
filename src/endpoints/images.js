@@ -5,7 +5,7 @@ import { Buffer } from 'node:buffer';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 
-import { clientRelativePath, removeFileExtension, getMediaFiles } from '../util.js';
+import { clientRelativePath, removeFileExtension, getImages } from '../util.js';
 
 /**
  * Ensure the directory for the provided file path exists.
@@ -98,7 +98,7 @@ router.post('/list/:folder?', (request, response) => {
             fs.mkdirSync(directoryPath, { recursive: true });
         }
 
-        const images = getMediaFiles(directoryPath, sort);
+        const images = getImages(directoryPath, sort);
         if (order === 'desc') {
             images.reverse();
         }

@@ -424,6 +424,28 @@ export function removeOldBackups(directory, prefix, limit = null) {
     }
 }
 
+ // Kept for compatability
+export function getImages(directoryPath, sortBy = 'name') {
+    function getSortFunction() {
+        switch (sortBy) {
+            case 'name':
+                return Intl.Collator().compare;
+            case 'date':
+                return (a, b) => fs.statSync(path.join(directoryPath, a)).mtimeMs - fs.statSync(path.join(directoryPath, b)).mtimeMs;
+            default:
+                return (_a, _b) => 0;
+        }
+    }
+
+    return fs
+        .readdirSync(directoryPath)
+        .filter(file => {
+            const type = mime.lookup(file);
+            return type && type.startsWith('image/');
+        })
+        .sort(getSortFunction());
+}
+
 /**
  * Get a list of image and video files in a directory.
  * @param {string} directoryPath Path to the directory containing the media

@@ -697,19 +697,16 @@ hr {
     transition: background-image 0.5s ease-in-out;
 }
 
-/* Background fitting options */
 #background_fitting {
     max-width: 6em;
 }
 
-/* Fill/Cover - scales to fill width while maintaining aspect ratio */
 #bg1.cover,
 #bg_custom.cover {
     background-size: cover;
     background-position: center;
 }
 
-/* Fit/Contain - shows entire image maintaining aspect ratio */
 #bg1.contain,
 #bg_custom.contain {
     background-size: contain;
@@ -717,22 +714,17 @@ hr {
     background-repeat: no-repeat;
 }
 
-/* Stretch - stretches to fill entire space */
 #bg1.stretch,
 #bg_custom.stretch {
     background-size: 100% 100%;
 }
 
-/* Center - centers without scaling */
 #bg1.center,
 #bg_custom.center {
     background-size: auto;
     background-position: center;
     background-repeat: no-repeat;
 }
-/* public/style.css - Add/Modify these rules */
-
-/* --- Video Background Container & Element --- */
 
 #bg_video_container {
   position: absolute;
@@ -740,19 +732,16 @@ hr {
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: -4; /* Below #bg1 (-3) */
-  overflow: hidden; /* Prevent scrollbars if video slightly overflows */
+  z-index: -4;
+  overflow: hidden;
 }
 
 #bg_video_element {
-  display: block; /* Ensure it behaves like a block element */
+  display: block;
   width: 100%;
   height: 100%;
-  /* object-position: center; /* Default position, can be overridden by fitting */
 }
 
-/* --- Video Fitting Styles --- */
-/* Matches the object-fit property to the class names */
 #bg_video_element.cover {
   object-fit: cover;
   object-position: center;
@@ -764,15 +753,14 @@ hr {
 }
 
 #bg_video_element.stretch {
-  object-fit: fill; /* Stretches to fill the container */
+  object-fit: fill;
 }
 
 #bg_video_element.center {
-  object-fit: none; /* No scaling, centered */
+  object-fit: none;
   object-position: center;
 }
 
-/* Style the label containing the input and visual content */
 #form_bg_download > label.input-file {
     cursor: pointer;
     display: flex;
@@ -781,14 +769,13 @@ hr {
     width: 100%;
     height: 100%;
     text-align: center;
-    border-radius: inherit; /* Inherit radius from .bg_example */
+    border-radius: inherit;
 }
 
-/* Style the inner content (icon and text) */
 #form_bg_download .unified-upload-content {
   color: var(--SmartThemeBodyColor);
   text-shadow: 0 0 2px var(--SmartThemeBgColor);
-  pointer-events: none; /* Prevent clicks on the icon/text interfering with label */
+  pointer-events: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -803,7 +790,7 @@ hr {
    line-height: 1.2;
 }
 
-@media (min-width: 481px) {
+@media (min-width: 1001px) {
     #form_bg_download .unified-upload-content {
         flex-direction: row;
         gap: 8px;
@@ -813,14 +800,12 @@ hr {
     }
 }
 
-/* Applied by JS to video background items in the #bg_menu_content list */
 .bg_example.video-preview {
     background-image: none !important; 
-    background-color: #282c34;
+    background-color: rgba(0, 0, 0, 0.5);
     position: relative; /* Needed for absolute positioning of overlay */
 }
 
-/* Style for the video icon overlay added by JS */
 .video-preview .video-icon-overlay {
     position: absolute;
     top: 50%;
@@ -833,7 +818,7 @@ hr {
 }
 
 .video-preview .video-icon-overlay i {
-    display: block; /* Ensures proper rendering */
+    display: block;
 }
 
 body.reduced-motion #bg1,
