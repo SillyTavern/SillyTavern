@@ -2100,7 +2100,11 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
                 } else if (chat[messageId]?.extra?.type === 'narrator') {
                     return regex_placement.SLASH_COMMAND;
                 } else {
-                    return regex_placement.AI_OUTPUT;
+                    if (Number(messageId) === 0) {
+                        return regex_placement.GREETING;
+                    } else {
+                        return regex_placement.AI_OUTPUT;
+                    }
                 }
             } catch {
                 return regex_placement.AI_OUTPUT;
@@ -4053,7 +4057,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     coreChat = await Promise.all(coreChat.map(async (chatItem, index) => {
         let message = chatItem.mes;
-        let regexType = chatItem.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
+        let regexType = chatItem.is_user ? regex_placement.USER_INPUT : (index === 0 ? regex_placement.GREETING : regex_placement.AI_OUTPUT);
         let options = { isPrompt: true, depth: (coreChat.length - index - (isContinue ? 2 : 1)) };
 
         let regexedMessage = getRegexedString(message, regexType, options);
@@ -7250,12 +7254,12 @@ function getFirstMessage() {
         is_user: false,
         is_system: false,
         send_date: getMessageTimeStamp(),
-        mes: getRegexedString(firstMes, regex_placement.AI_OUTPUT),
+        mes: getRegexedString(firstMes, regex_placement.GREETING),
         extra: {},
     };
 
     if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
-        const swipes = [message.mes, ...(alternateGreetings.map(greeting => getRegexedString(greeting, regex_placement.AI_OUTPUT)))];
+        const swipes = [message.mes, ...(alternateGreetings.map(greeting => getRegexedString(greeting, regex_placement.GREETING)))];
 
         if (!message.mes) {
             swipes.shift();
@@ -7734,7 +7738,11 @@ function updateMessage(div) {
     } else if (mes.extra?.type === 'narrator') {
         regexPlacement = regex_placement.SLASH_COMMAND;
     } else {
-        regexPlacement = regex_placement.AI_OUTPUT;
+        if (Number(mesElement.attr('mesid')) === 0) {
+            regexPlacement = regex_placement.GREETING;
+        } else {
+            regexPlacement = regex_placement.AI_OUTPUT;
+        }
     }
 
     // Ignore character override if sent as system
