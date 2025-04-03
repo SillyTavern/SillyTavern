@@ -361,13 +361,13 @@ function migrateSettings() {
 
         // Old system and sendas placement migration
         // 4 - sendAs
-        if (script.placement.includes(4)) {
-            script.placement = script.placement.length === 1 ?
-                [regex_placement.SLASH_COMMAND] :
-                script.placement = script.placement.filter((e) => e !== 4);
-
-            performSave = true;
-        }
+        // if (script.placement.includes(4)) {
+        //     script.placement = script.placement.length === 1 ?
+        //         [regex_placement.SLASH_COMMAND] :
+        //         script.placement = script.placement.filter((e) => e !== 4);
+        //
+        //     performSave = true;
+        // }
     });
 
     if (!extension_settings.character_allowed_regex) {
