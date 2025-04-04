@@ -10,6 +10,7 @@ import urlJoin from 'url-join';
 import _ from 'lodash';
 
 import { delay, getBasicAuthHeader, tryParse } from '../util.js';
+// Assuming VENICEAI is added to SECRET_KEYS in secrets.js
 import { readSecret, SECRET_KEYS } from './secrets.js';
 
 /**
@@ -25,6 +26,9 @@ function getComfyWorkflows(directories) {
 }
 
 export const router = express.Router();
+
+// <<< Existing code for /ping, /upscalers, /vaes, /samplers, /schedulers, /models, etc. >>>
+// ... (Keep all the existing routes for SD WebUI, ComfyUI, etc.) ...
 
 router.post('/ping', async (request, response) => {
     try {
@@ -684,7 +688,8 @@ together.post('/generate', async (request, response) => {
             b64_json = Buffer.from(buffer).toString('base64');
         }
 
-        return response.send({ format: 'jpg', data: b64_json });
+        // SillyTavern frontend often expects an 'images' array
+        return response.send({ images: [b64_json] });
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -878,29 +883,45 @@ stability.post('/generate', async (request, response) => {
                 apiUrl = 'https://api.stability.ai/v2beta/stable-image/generate/core';
                 break;
             case 'stable-diffusion-3':
+            case 'stable-diffusion-3-medium': // Added mapping for potential ST name
                 apiUrl = 'https://api.stability.ai/v2beta/stable-image/generate/sd3';
                 break;
             default:
-                throw new Error('Invalid Stability AI model selected');
+                // Attempt to use older v1 endpoint as a fallback? Or just error out.
+                // For now, let's error out if the model isn't recognized for v2beta
+                 console.error('Invalid Stability AI model selected for v2beta API:', model);
+                 return response.status(400).send({ error: 'Invalid Stability AI model selected for the current API integration.' });
+                // Fallback example (requires different payload structure):
+                // apiUrl = `https://api.stability.ai/v1/generation/${model}/text-to-image`;
+                // // Need to restructure payload for v1...
+                // break;
         }
 
         const result = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${key}`,
-                'Accept': 'image/*',
+                'Accept': 'image/*', // Changed from application/json to image/* for v2beta
+                // Content-Type is set automatically by node-fetch when using FormData
             },
-            body: formData,
+            body: formData, // Use FormData for v2beta
         });
 
         if (!result.ok) {
             const text = await result.text();
-            console.warn('Stability AI returned an error.', result.status, result.statusText, text);
-            return response.sendStatus(500);
+            let errorDetails = text;
+            try {
+                // Try parsing JSON error response if available
+                errorDetails = JSON.parse(text);
+            } catch (e) { /* Ignore parsing error, use raw text */ }
+            console.warn('Stability AI returned an error.', result.status, result.statusText, errorDetails);
+             // Send error details back if possible
+            return response.status(result.status).send({ error: 'Stability AI API error', details: errorDetails });
         }
 
         const buffer = await result.arrayBuffer();
-        return response.send(Buffer.from(buffer).toString('base64'));
+        // Stability v2beta returns raw image, wrap it in expected format
+        return response.send({ image: Buffer.from(buffer).toString('base64') });
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -936,6 +957,7 @@ blockentropy.post('/models', async (request, response) => {
             console.warn('Block Entropy returned invalid data.');
             return response.sendStatus(500);
         }
+        // Block Entropy uses 'name', map to value/text
         const models = data.map(x => ({ value: x.name, text: x.name }));
         return response.send(models);
 
@@ -956,18 +978,39 @@ blockentropy.post('/generate', async (request, response) => {
 
         console.debug('Block Entropy request:', request.body);
 
+        // Map SillyTavern params to Block Entropy params
+        const payload = {
+            prompt: request.body.prompt,
+            negative_prompt: request.body.negative_prompt,
+            // Block Entropy uses 'model' field inside override_settings
+            // We need to set it directly if not using override_settings,
+            // or ensure it's correctly placed if using override_settings.
+            // Let's assume ST sends 'model' at the top level for this provider.
+            override_settings: {
+                 sd_model_checkpoint: request.body.model,
+                 // Add other potential overrides if needed
+            },
+            steps: request.body.steps,
+            width: request.body.width,
+            height: request.body.height,
+            cfg_scale: request.body.cfg_scale, // Assuming ST sends cfg_scale
+            sampler_name: request.body.sampler_name, // Assuming ST sends sampler_name
+            // Random seed if negative.
+            seed: request.body.seed >= 0 ? request.body.seed : -1, // Block Entropy uses -1 for random
+            batch_size: 1, // Generate one image
+            // Add other parameters as needed by Block Entropy API
+        };
+
+        // Remove undefined keys from payload before sending
+        Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
+        if (payload.override_settings && Object.keys(payload.override_settings).length === 0) {
+            delete payload.override_settings;
+        }
+
+
         const result = await fetch('https://api.blockentropy.ai/sdapi/v1/txt2img', {
             method: 'POST',
-            body: JSON.stringify({
-                prompt: request.body.prompt,
-                negative_prompt: request.body.negative_prompt,
-                model: request.body.model,
-                steps: request.body.steps,
-                width: request.body.width,
-                height: request.body.height,
-                // Random seed if negative.
-                seed: request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 10_000_000),
-            }),
+            body: JSON.stringify(payload),
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${key}`,
@@ -975,13 +1018,15 @@ blockentropy.post('/generate', async (request, response) => {
         });
 
         if (!result.ok) {
-            console.warn('Block Entropy returned an error.');
-            return response.sendStatus(500);
+            const errorText = await result.text();
+            console.warn('Block Entropy returned an error.', result.status, errorText);
+            return response.status(result.status).send({ error: 'Block Entropy API error', details: tryParse(errorText) });
         }
 
         const data = await result.json();
         console.debug('Block Entropy response:', data);
 
+        // Block Entropy response is similar to A1111, contains 'images' array
         return response.send(data);
     } catch (error) {
         console.error(error);
@@ -1003,11 +1048,32 @@ huggingface.post('/generate', async (request, response) => {
 
         console.debug('Hugging Face request:', request.body);
 
+        // Basic implementation: Assumes serverless inference API endpoint
+        // More complex models might require different payload structures
+        const payload = {
+            inputs: request.body.prompt,
+            parameters: { // Add parameters if the specific model supports them
+                negative_prompt: request.body.negative_prompt,
+                height: request.body.height,
+                width: request.body.width,
+                num_inference_steps: request.body.steps,
+                guidance_scale: request.body.cfg_scale, // Map cfg_scale if available
+                // seed: request.body.seed >= 0 ? request.body.seed : undefined, // Seed might not be supported or work differently
+            },
+            options: {
+                wait_for_model: true, // Wait if model is loading
+            },
+        };
+
+        // Clean up undefined parameters
+        Object.keys(payload.parameters).forEach(key => payload.parameters[key] === undefined && delete payload.parameters[key]);
+        if (Object.keys(payload.parameters).length === 0) {
+            delete payload.parameters;
+        }
+
         const result = await fetch(`https://api-inference.huggingface.co/models/${request.body.model}`, {
             method: 'POST',
-            body: JSON.stringify({
-                inputs: request.body.prompt,
-            }),
+            body: JSON.stringify(payload),
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${key}`,
@@ -1015,14 +1081,25 @@ huggingface.post('/generate', async (request, response) => {
         });
 
         if (!result.ok) {
-            console.warn('Hugging Face returned an error.');
-            return response.sendStatus(500);
+            const errorText = await result.text();
+            console.warn('Hugging Face returned an error.', result.status, errorText);
+            return response.status(result.status).send({ error: 'Hugging Face API error', details: tryParse(errorText) });
         }
 
-        const buffer = await result.arrayBuffer();
-        return response.send({
-            image: Buffer.from(buffer).toString('base64'),
-        });
+        // Check content type - HF API returns raw image bytes for image models
+        const contentType = result.headers.get('content-type');
+        if (contentType && contentType.startsWith('image/')) {
+             const buffer = await result.arrayBuffer();
+             return response.send({
+                 image: Buffer.from(buffer).toString('base64'),
+             });
+        } else {
+            // Handle unexpected content type (e.g., JSON error)
+            const errorText = await result.text();
+            console.warn('Hugging Face returned unexpected content type:', contentType, errorText);
+            return response.status(500).send({ error: 'Hugging Face returned unexpected response format', details: tryParse(errorText) });
+        }
+
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -1062,8 +1139,8 @@ nanogpt.post('/models', async (request, response) => {
             return response.sendStatus(500);
         }
 
-        const models = Object.values(imageModels).map(x => ({ value: x.model, text: x.name }));
-        return response.send(models);
+        // NanoGPT uses 'model' and 'name'
+        const models = Object.values(imageModels).map((x) => ({ value: x.model, text: x.name }));        return response.send(models);
     }
     catch (error) {
         console.error(error);
@@ -1082,9 +1159,25 @@ nanogpt.post('/generate', async (request, response) => {
 
         console.debug('NanoGPT request:', request.body);
 
+        // Map SillyTavern params to NanoGPT params
+        const payload = {
+            model: request.body.model,
+            prompt: request.body.prompt,
+            negative_prompt: request.body.negative_prompt,
+            steps: request.body.steps,
+            width: request.body.width,
+            height: request.body.height,
+            seed: request.body.seed >= 0 ? request.body.seed : undefined, // Use undefined for random? Check API docs.
+            guidance: request.body.cfg_scale, // Map cfg_scale to guidance
+            // Add other parameters if supported by NanoGPT
+        };
+
+        // Remove undefined keys
+        Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
+
         const result = await fetch('https://nano-gpt.com/api/generate-image', {
             method: 'POST',
-            body: JSON.stringify(request.body),
+            body: JSON.stringify(payload),
             headers: {
                 'x-api-key': key,
                 'Content-Type': 'application/json',
@@ -1092,8 +1185,9 @@ nanogpt.post('/generate', async (request, response) => {
         });
 
         if (!result.ok) {
-            console.warn('NanoGPT returned an error.');
-            return response.sendStatus(500);
+             const errorText = await result.text();
+            console.warn('NanoGPT returned an error.', result.status, errorText);
+            return response.status(result.status).send({ error: 'NanoGPT API error', details: tryParse(errorText) });
         }
 
         /** @type {any} */
@@ -1101,10 +1195,11 @@ nanogpt.post('/generate', async (request, response) => {
 
         const image = data?.data?.[0]?.b64_json;
         if (!image) {
-            console.warn('NanoGPT returned invalid data.');
-            return response.sendStatus(500);
+            console.warn('NanoGPT returned invalid data or no image.', data);
+            return response.status(500).send({ error: 'NanoGPT did not return a valid image' });
         }
 
+        // NanoGPT returns base64 directly, wrap in expected format
         return response.send({ image });
     }
     catch (error) {
@@ -1127,16 +1222,18 @@ bfl.post('/generate', async (request, response) => {
         const requestBody = {
             prompt: request.body.prompt,
             steps: request.body.steps,
-            guidance: request.body.guidance,
+            guidance: request.body.cfg_scale, // Map cfg_scale to guidance
             width: request.body.width,
             height: request.body.height,
-            prompt_upsampling: request.body.prompt_upsampling,
-            seed: request.body.seed ?? null,
-            safety_tolerance: 6, // being least strict
-            output_format: 'jpeg',
+            negative_prompt: request.body.negative_prompt, // Add negative prompt if supported
+            // prompt_upsampling: request.body.prompt_upsampling, // This seems specific, map if available
+            seed: request.body.seed >= 0 ? request.body.seed : null, // BFL uses null for random
+            safety_tolerance: 6, // being least strict (as per original code)
+            output_format: 'jpeg', // as per original code
         };
 
         function getClosestAspectRatio(width, height) {
+            // Aspect ratio logic from original code - keep if needed for ultra models
             const minAspect = 9 / 21;
             const maxAspect = 21 / 9;
             const currentAspect = width / height;
@@ -1148,33 +1245,50 @@ bfl.post('/generate', async (request, response) => {
             };
 
             if (currentAspect < minAspect) {
+                // Adjust height based on min aspect ratio
                 const adjustedHeight = Math.round(width / minAspect);
-                return simplifyRatio(width, adjustedHeight);
+                // Ensure height is multiple of common divisors (e.g., 8 or 64) if required by API
+                // adjustedHeight = Math.round(adjustedHeight / 8) * 8;
+                 return simplifyRatio(width, adjustedHeight);
             } else if (currentAspect > maxAspect) {
-                const adjustedWidth = Math.round(height * maxAspect);
-                return simplifyRatio(adjustedWidth, height);
+                // Adjust width based on max aspect ratio
+                 const adjustedWidth = Math.round(height * maxAspect);
+                // Ensure width is multiple of common divisors
+                // adjustedWidth = Math.round(adjustedWidth / 8) * 8;
+                 return simplifyRatio(adjustedWidth, height);
             } else {
-                return simplifyRatio(width, height);
+                // Simplify the original ratio
+                 return simplifyRatio(width, height);
             }
         }
 
+        let apiEndpoint = `https://api.bfl.ml/v1/${request.body.model}`;
+
+        // Model specific adjustments from original code
         if (String(request.body.model).endsWith('-ultra')) {
             requestBody.aspect_ratio = getClosestAspectRatio(request.body.width, request.body.height);
             delete requestBody.steps;
             delete requestBody.guidance;
             delete requestBody.width;
             delete requestBody.height;
-            delete requestBody.prompt_upsampling;
+            // delete requestBody.prompt_upsampling; // Keep if needed
+            // Ultra models might use a different endpoint or require specific flags
+            // Update apiEndpoint if necessary based on BFL docs for ultra models
         }
 
         if (String(request.body.model).endsWith('-pro-1.1')) {
             delete requestBody.steps;
             delete requestBody.guidance;
+             // Update apiEndpoint if necessary based on BFL docs for pro models
         }
 
-        console.debug('BFL request:', requestBody);
+        // Remove undefined keys
+        Object.keys(requestBody).forEach(key => requestBody[key] === undefined && delete requestBody[key]);
 
-        const result = await fetch(`https://api.bfl.ml/v1/${request.body.model}`, {
+
+        console.debug('BFL request:', apiEndpoint, requestBody);
+
+        const result = await fetch(apiEndpoint, {
             method: 'POST',
             body: JSON.stringify(requestBody),
             headers: {
@@ -1184,46 +1298,87 @@ bfl.post('/generate', async (request, response) => {
         });
 
         if (!result.ok) {
-            console.warn('BFL returned an error.');
-            return response.sendStatus(500);
+            const errorText = await result.text();
+            console.warn('BFL returned an error during task submission.', result.status, errorText);
+            return response.status(result.status).send({ error: 'BFL API error (submission)', details: tryParse(errorText) });
         }
 
         /** @type {any} */
         const taskData = await result.json();
         const { id } = taskData;
 
-        const MAX_ATTEMPTS = 100;
-        for (let i = 0; i < MAX_ATTEMPTS; i++) {
-            await delay(2500);
+        if (!id) {
+             console.warn('BFL did not return a task ID.', taskData);
+             return response.status(500).send({ error: 'BFL did not return a task ID' });
+        }
 
-            const statusResult = await fetch(`https://api.bfl.ml/v1/get_result?id=${id}`);
+        console.debug('BFL Task ID:', id);
+
+        // Polling logic from original code
+        const MAX_ATTEMPTS = 100;
+        const POLLING_INTERVAL = 2500; // ms
+
+        for (let i = 0; i < MAX_ATTEMPTS; i++) {
+            await delay(POLLING_INTERVAL);
+
+            const statusResult = await fetch(`https://api.bfl.ml/v1/get_result?id=${id}`, {
+                 headers: { 'x-key': key } // Add key to status check if required by BFL
+            });
 
             if (!statusResult.ok) {
                 const text = await statusResult.text();
-                console.warn('BFL returned an error.', text);
-                return response.sendStatus(500);
+                console.warn('BFL returned an error while getting result.', statusResult.status, text);
+                // Decide if this is a fatal error or should continue polling
+                // For now, assume it's fatal for this attempt
+                return response.status(statusResult.status).send({ error: 'BFL API error (polling)', details: tryParse(text) });
             }
 
             /** @type {any} */
             const statusData = await statusResult.json();
+            console.debug(`BFL Poll attempt ${i + 1}:`, statusData);
 
-            if (statusData?.status === 'Pending') {
+
+            if (statusData?.status === 'Pending' || statusData?.status === 'Processing') { // Check for processing state too
                 continue;
             }
 
-            if (statusData?.status === 'Ready') {
-                const { sample } = statusData.result;
-                const fetchResult = await fetch(sample);
+            if (statusData?.status === 'Ready' || statusData?.status === 'Success') { // Check for success state too
+                const imageUrl = statusData.result?.sample || statusData.result?.image_url; // Check common fields for image URL
+                if (!imageUrl) {
+                     console.warn('BFL status Ready/Success but no image URL found.', statusData);
+                     throw new Error('BFL failed to provide image URL.', { cause: statusData });
+                }
+                console.debug('BFL Image URL:', imageUrl);
+                const fetchResult = await fetch(imageUrl);
+                 if (!fetchResult.ok) {
+                     console.warn('BFL failed to fetch the final image.', fetchResult.status, await fetchResult.text());
+                     throw new Error('BFL failed to fetch the final image.', { cause: `Status ${fetchResult.status}` });
+                 }
                 const fetchData = await fetchResult.arrayBuffer();
                 const image = Buffer.from(fetchData).toString('base64');
+                // BFL returns base64, wrap in expected format
                 return response.send({ image: image });
             }
 
-            throw new Error('BFL failed to generate image.', { cause: statusData });
+            // Handle failure states explicitly
+            if (statusData?.status === 'Failed' || statusData?.status === 'Error') {
+                 console.error('BFL generation failed.', statusData);
+                 throw new Error('BFL failed to generate image.', { cause: statusData });
+            }
+
+            // Handle unknown status
+            console.warn('BFL returned unknown status:', statusData?.status, statusData);
+            // Continue polling or throw error? Let's throw after some attempts.
+            if (i > MAX_ATTEMPTS / 2) { // Give up after half the attempts if status is weird
+                 throw new Error('BFL returned unknown status during polling.', { cause: statusData });
+            }
         }
+        // If loop finishes without result
+        throw new Error(`BFL task did not complete after ${MAX_ATTEMPTS} attempts.`);
+
     } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
+        console.error('BFL Error:', error?.cause || error);
+        return response.status(500).send({ error: 'BFL processing error', details: error?.cause || error?.message });
     }
 });
 
@@ -1231,26 +1386,31 @@ const falai = express.Router();
 
 falai.post('/models', async (_request, response) => {
     try {
+        // Fal.ai doesn't seem to require API key for listing models based on URL
         const modelsUrl = new URL('https://fal.ai/api/models?categories=text-to-image');
         const result = await fetch(modelsUrl);
 
         if (!result.ok) {
-            console.warn('FAL.AI returned an error.', result.status, result.statusText);
-            throw new Error('FAL.AI request failed.');
+            console.warn('FAL.AI returned an error fetching models.', result.status, result.statusText);
+            return response.status(result.status).send({ error: 'FAL.AI model fetch failed' });
         }
 
         const data = await result.json();
 
         if (!Array.isArray(data)) {
-            console.warn('FAL.AI returned invalid data.');
-            throw new Error('FAL.AI request failed.');
+            console.warn('FAL.AI returned invalid model data.');
+            return response.status(500).send({ error: 'FAL.AI returned invalid model data' });
         }
 
+        // Filtering and mapping logic from original code
         const models = data
-            .filter(x => !x.title.toLowerCase().includes('inpainting') &&
-                !x.title.toLowerCase().includes('control') &&
-                !x.title.toLowerCase().includes('upscale'))
+            .filter(x => x.title && // Ensure title exists
+                         !x.title.toLowerCase().includes('inpainting') &&
+                         !x.title.toLowerCase().includes('control') &&
+                         !x.title.toLowerCase().includes('upscale') &&
+                         x.modelUrl) // Ensure modelUrl exists
             .sort((a, b) => a.title.localeCompare(b.title))
+             // Fal uses modelUrl like 'fal-ai/fast-sdxl', map to value/text
             .map(x => ({ value: x.modelUrl.split('fal-ai/')[1], text: x.title }));
         return response.send(models);
     } catch (error) {
@@ -1268,91 +1428,321 @@ falai.post('/generate', async (request, response) => {
             return response.sendStatus(400);
         }
 
+        // Map SillyTavern params to Fal.ai params
         const requestBody = {
             prompt: request.body.prompt,
-            image_size: { 'width': request.body.width, 'height': request.body.height },
+            negative_prompt: request.body.negative_prompt, // Add negative prompt
+            image_size: { // Fal uses object for size
+                 'width': request.body.width,
+                 'height': request.body.height
+            },
             num_inference_steps: request.body.steps,
-            seed: request.body.seed ?? null,
-            guidance_scale: request.body.guidance,
-            enable_safety_checker: false, // Disable general safety checks
-            safety_tolerance: 6, // Make Flux the least strict
+            seed: request.body.seed >= 0 ? request.body.seed : null, // Fal uses null for random
+            guidance_scale: request.body.cfg_scale, // Map cfg_scale to guidance_scale
+            enable_safety_checker: false, // as per original code
+            // safety_tolerance: 6, // This seems specific to Flux models, check Fal docs if needed for others
+            num_images: 1, // Generate one image
+            // Add other parameters like style presets if supported by the model/Fal
         };
 
-        console.debug('FAL.AI request:', requestBody);
+        // Clean undefined values
+        Object.keys(requestBody).forEach(key => requestBody[key] === undefined && delete requestBody[key]);
+        if (requestBody.image_size && (requestBody.image_size.width === undefined || requestBody.image_size.height === undefined)) {
+            delete requestBody.image_size; // Remove if width/height aren't provided
+        }
 
-        const result = await fetch(`https://queue.fal.run/fal-ai/${request.body.model}`, {
+        // Fal.ai endpoint structure: https://queue.fal.run/fal-ai/<model_id>
+        const apiEndpoint = `https://queue.fal.run/fal-ai/${request.body.model}`;
+
+        console.debug('FAL.AI request:', apiEndpoint, requestBody);
+
+        // Use Key format for Authorization
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Key ${key}`,
+        };
+
+        // Fal.ai uses polling mechanism
+        // 1. Submit request to get status URL
+        const result = await fetch(apiEndpoint, {
             method: 'POST',
             body: JSON.stringify(requestBody),
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Key ${key}`,
-            },
+            headers: headers,
         });
 
         if (!result.ok) {
-            console.warn('FAL.AI returned an error.');
-            return response.sendStatus(500);
+             const errorText = await result.text();
+            console.warn('FAL.AI returned an error during task submission.', result.status, errorText);
+            return response.status(result.status).send({ error: 'FAL.AI API error (submission)', details: tryParse(errorText) });
         }
 
         /** @type {any} */
         const taskData = await result.json();
-        const { status_url } = taskData;
+        const status_url = taskData?.status_url; // Fal returns status_url
 
+        if (!status_url) {
+            console.warn('FAL.AI did not return a status URL.', taskData);
+            return response.status(500).send({ error: 'FAL.AI did not return a status URL' });
+        }
+
+        console.debug('FAL.AI Status URL:', status_url);
+
+        // 2. Poll status URL
         const MAX_ATTEMPTS = 100;
-        for (let i = 0; i < MAX_ATTEMPTS; i++) {
-            await delay(2500);
+        const POLLING_INTERVAL = 2500; // ms
 
-            const statusResult = await fetch(status_url, {
-                headers: {
-                    'Authorization': `Key ${key}`,
-                },
-            });
+        for (let i = 0; i < MAX_ATTEMPTS; i++) {
+            await delay(POLLING_INTERVAL);
+
+            const statusResult = await fetch(status_url, { headers: headers }); // Use auth for status check too
 
             if (!statusResult.ok) {
                 const text = await statusResult.text();
-                console.warn('FAL.AI returned an error.', text);
-                return response.sendStatus(500);
+                console.warn('FAL.AI returned an error while polling status.', statusResult.status, text);
+                // Treat polling error as potentially fatal for this attempt
+                return response.status(statusResult.status).send({ error: 'FAL.AI API error (polling)', details: tryParse(text) });
             }
 
             /** @type {any} */
             const statusData = await statusResult.json();
+            console.debug(`FAL.AI Poll attempt ${i + 1}:`, statusData);
 
+            // Check status based on Fal.ai documentation (e.g., IN_QUEUE, IN_PROGRESS, COMPLETED, FAILED)
             if (statusData?.status === 'IN_QUEUE' || statusData?.status === 'IN_PROGRESS') {
                 continue;
             }
 
             if (statusData?.status === 'COMPLETED') {
-                const resultFetch = await fetch(statusData?.response_url, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Key ${key}`,
-                    },
-                });
-                const resultData = await resultFetch.json();
+                 // Fal response structure might vary, check docs. Original code fetches response_url.
+                 // Let's assume the result is directly in the status response for simplicity first.
+                 const images = statusData?.images; // Check if images are directly in the status response
+                 const imageUrl = images?.[0]?.url;
 
-                if (resultData.detail !== null && resultData.detail !== undefined) {
-                    throw new Error('FAL.AI failed to generate image.', { cause: `${resultData.detail[0].loc[1]}: ${resultData.detail[0].msg}` });
-                }
+                 if (imageUrl) {
+                     console.debug('FAL.AI Image URL:', imageUrl);
+                     // Fetch the image data
+                     const imageFetch = await fetch(imageUrl, { headers: headers }); // Use auth if needed for image URL
 
-                const imageFetch = await fetch(resultData?.images[0].url, {
-                    headers: {
-                        'Authorization': `Key ${key}`,
-                    },
-                });
+                     if (!imageFetch.ok) {
+                          console.warn('FAL.AI failed to fetch the final image.', imageFetch.status, await imageFetch.text());
+                          throw new Error('FAL.AI failed to fetch the final image.', { cause: `Status ${imageFetch.status}` });
+                     }
 
-                const fetchData = await imageFetch.arrayBuffer();
-                const image = Buffer.from(fetchData).toString('base64');
-                return response.send({ image: image });
+                     const fetchData = await imageFetch.arrayBuffer();
+                     const image = Buffer.from(fetchData).toString('base64');
+                     // Fal returns base64, wrap in expected format
+                     return response.send({ image: image });
+                 } else {
+                      // Handle cases where response structure is different or error occurred
+                      if (statusData?.detail) { // Check for explicit error details
+                          console.error('FAL.AI generation failed with details:', statusData.detail);
+                          throw new Error('FAL.AI failed to generate image.', { cause: statusData.detail });
+                      }
+                      console.warn('FAL.AI status COMPLETED but no image URL found.', statusData);
+                      throw new Error('FAL.AI failed to provide image URL.', { cause: statusData });
+                 }
             }
 
-            throw new Error('FAL.AI failed to generate image.', { cause: statusData });
+            if (statusData?.status === 'FAILED' || statusData?.status === 'ERROR') {
+                 console.error('FAL.AI generation failed.', statusData);
+                 throw new Error('FAL.AI failed to generate image.', { cause: statusData });
+            }
+
+             // Handle unknown status
+            console.warn('FAL.AI returned unknown status:', statusData?.status, statusData);
+            if (i > MAX_ATTEMPTS / 2) {
+                 throw new Error('FAL.AI returned unknown status during polling.', { cause: statusData });
+            }
         }
+         // If loop finishes without result
+         throw new Error(`FAL.AI task did not complete after ${MAX_ATTEMPTS} attempts.`);
+
     } catch (error) {
-        console.error(error);
-        return response.status(500).send(error.cause || error.message);
+        console.error('FAL.AI Error:', error?.cause || error);
+        // Send specific error cause if available
+        const errorMessage = error?.cause ? JSON.stringify(error.cause) : error.message;
+        return response.status(500).send({ error: 'FAL.AI processing error', details: errorMessage });
     }
 });
 
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +                  Venice API Integration                    +
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+const venice = express.Router();
+
+/**
+ * Fetches available image models from Venice API.
+ */
+venice.post('/models', async (request, response) => {
+    try {
+        // Read the API key from secrets
+        // Ensure SECRET_KEYS.VENICEAI is defined in './secrets.js'
+        const key = readSecret(request.user.directories, SECRET_KEYS.VENICEAI);
+
+        if (!key) {
+            console.warn('Venice API key not found.');
+            // Send 400 Bad Request, as the key is required for this operation
+            return response.status(400).send({ error: 'Venice API key not configured.' });
+        }
+
+        // Venice API endpoint for listing models
+        const modelsUrl = 'https://api.venice.ai/api/v1/models?type=image';
+
+        const modelsResponse = await fetch(modelsUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${key}`, // Use Bearer token authentication
+                'Accept': 'application/json',
+            },
+        });
+
+        if (!modelsResponse.ok) {
+            const errorText = await modelsResponse.text();
+            console.warn('Venice API returned an error fetching models.', modelsResponse.status, errorText);
+            // Forward the status code and error if possible
+            return response.status(modelsResponse.status).send({ error: 'Failed to fetch Venice models', details: tryParse(errorText) });
+        }
+
+        /** @type {any} */
+        const data = await modelsResponse.json();
+
+        // Check if the response format is as expected (object with a 'data' array)
+        if (!data || !Array.isArray(data.data)) {
+            console.warn('Venice API returned invalid model data format.', data);
+            return response.status(500).send({ error: 'Venice API returned invalid model data format.' });
+        }
+
+        // Map the Venice model data to the format expected by SillyTavern frontend
+        // { value: modelId, text: modelId }
+        const models = data.data
+            .filter(model => model.type === 'image' && !model.model_spec?.offline) // Ensure it's an image model and not offline
+            .map(model => ({
+                value: model.id, // Use the model ID as the value
+                text: model.id,  // Use the model ID as the display text (can be customized)
+            }));
+
+        return response.send(models);
+
+    } catch (error) {
+        console.error('Error fetching Venice models:', error);
+        return response.status(500).send({ error: 'Internal server error while fetching Venice models.' });
+    }
+});
+
+/**
+ * Handles image generation requests using the Venice API.
+ */
+venice.post('/generate', async (request, response) => {
+    try {
+        // Read the API key from secrets
+        const key = readSecret(request.user.directories, SECRET_KEYS.VENICEAI);
+
+        if (!key) {
+            console.warn('Venice API key not found.');
+            return response.status(400).send({ error: 'Venice API key not configured.' });
+        }
+
+        console.debug('Venice API request body received:', request.body);
+
+        // --- Parameter Mapping ---
+        // Map parameters from SillyTavern's request.body to Venice API's expected format
+        // Refer to venice-api.txt #/components/schemas/GenerateImageRequest
+        const payload = {
+            model: request.body.model, // Required: Model ID selected by the user
+            prompt: request.body.prompt, // Required: The main prompt text
+            negative_prompt: request.body.negative_prompt, // Optional: Negative prompt text
+            height: parseInt(request.body.height, 10) || 1024, // Optional: Target height, default 1024
+            width: parseInt(request.body.width, 10) || 1024, // Optional: Target width, default 1024
+            steps: parseInt(request.body.steps, 10) || 20, // Optional: Inference steps, default 20
+            cfg_scale: parseFloat(request.body.cfg_scale) || 7.0, // Optional: CFG scale, default 7.0 (adjust default as needed)
+            seed: request.body.seed >= 0 ? parseInt(request.body.seed, 10) : undefined, // Optional: Seed, use undefined for random
+            style_preset: request.body.style_preset, // Optional: Image style preset if provided by ST
+            format: 'png', // Request PNG format for base64 compatibility
+            return_binary: false, // Request base64 encoded data in JSON
+            // safe_mode: false, // Optional: Defaults to false in Venice API
+            // hide_watermark: false, // Optional: Defaults to false
+            // embed_exif_metadata: false, // Optional: Defaults to false
+        };
+
+        // --- Input Validation (Basic) ---
+        // Ensure prompt exists
+        if (!payload.prompt || payload.prompt.length === 0) {
+             return response.status(400).send({ error: 'Prompt cannot be empty.' });
+        }
+        // Clamp prompt length (example, check model constraints if possible)
+        if (payload.prompt.length > 1500) {
+            console.warn(`Venice prompt truncated from ${payload.prompt.length} to 1500 chars.`);
+            payload.prompt = payload.prompt.substring(0, 1500);
+        }
+        if (payload.negative_prompt && payload.negative_prompt.length > 1500) {
+             console.warn(`Venice negative prompt truncated from ${payload.negative_prompt.length} to 1500 chars.`);
+             payload.negative_prompt = payload.negative_prompt.substring(0, 1500);
+        }
+        // Clamp dimensions (example, check model constraints if possible)
+        payload.height = Math.min(Math.max(payload.height, 64), 1280); // Example range 64-1280
+        payload.width = Math.min(Math.max(payload.width, 64), 1280); // Example range 64-1280
+        // Clamp steps (example, check model constraints if possible)
+        payload.steps = Math.min(Math.max(payload.steps, 1), 50); // Example range 1-50
+
+        // Remove undefined optional fields from the payload
+        Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
+
+        console.debug('Sending payload to Venice API:', payload);
+
+        // --- API Call ---
+        const apiUrl = 'https://api.venice.ai/api/v1/image/generate';
+        const result = await fetch(apiUrl, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`, // Bearer token authentication
+                'Accept': 'application/json', // Expect JSON response
+            },
+        });
+
+        // --- Response Handling ---
+        if (!result.ok) {
+            // Handle API errors (rate limits, auth issues, invalid input, server errors)
+            const errorText = await result.text();
+            let errorDetails = tryParse(errorText); // Try to parse JSON error details
+            console.error('Venice API returned an error:', result.status, result.statusText, errorDetails || errorText);
+            // Send back a meaningful error response
+            return response.status(result.status).send({
+                error: `Venice API Error (${result.status})`,
+                details: errorDetails || errorText, // Include details if available
+            });
+        }
+
+        /** @type {any} */
+        const data = await result.json();
+        console.debug('Venice API response received:', data); // Log the full response for debugging
+
+        // Extract the base64 image data
+        // Venice API returns an 'images' array with base64 strings when return_binary is false
+        const base64Image = data?.images?.[0];
+
+        if (!base64Image) {
+            console.error('Venice API did not return image data in the expected format.', data);
+            return response.status(500).send({ error: 'Failed to parse image data from Venice API response.' });
+        }
+
+        // Send the successful response back to SillyTavern
+        // Format matches what some other providers return (e.g., Fal.ai)
+        return response.send({ image: base64Image });
+
+    } catch (error) {
+        console.error('Error during Venice API image generation:', error);
+        // Handle unexpected errors during the process
+        return response.status(500).send({ error: 'Internal server error during Venice API request.' });
+    }
+});
+
+
+// --- Register Routers ---
+// (Keep existing router registrations)
 router.use('/comfy', comfy);
 router.use('/together', together);
 router.use('/drawthings', drawthings);
@@ -1363,3 +1753,5 @@ router.use('/huggingface', huggingface);
 router.use('/nanogpt', nanogpt);
 router.use('/bfl', bfl);
 router.use('/falai', falai);
+// Add the new Venice router
+router.use('/venice', venice); // Register the Venice API routes

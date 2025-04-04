@@ -53,6 +53,7 @@
                 <option value="auto">Stable Diffusion Web UI (AUTOMATIC1111)</option>
                 <option value="horde">Stable Horde</option>
                 <option value="togetherai">TogetherAI</option>
+                <option value="veniceai">Venice AI</option>
             </select>
             <div data-sd-source="auto">
                 <label for="sd_auto_url">SD Web UI URL</label>
@@ -67,7 +68,6 @@
                 </div>
                 <label for="sd_auto_auth" data-i18n="Authentication (optional)">Authentication (optional)</label>
                 <input id="sd_auto_auth" type="text" class="text_pole"  data-i18n="[placeholder]Example: username:password" placeholder="Example: username:password" value="" />
-                <!-- (Original Text)<b>Important:</b> run SD Web UI with the <tt>--api</tt> flag! The server must be accessible from the SillyTavern host machine. -->
                 <i><b data-i18n="Important:">Important:</b></i><i data-i18n="sd_auto_auth_warning_1"> run SD Web UI with the </i><i><tt>--api</tt></i><i data-i18n="sd_auto_auth_warning_2"> flag! The server must be accessible from the SillyTavern host machine.</i>
             </div>
             <div data-sd-source="drawthings">
@@ -83,7 +83,6 @@
                 </div>
                 <label for="sd_drawthings_auth" data-i18n="Authentication (optional)">Authentication (optional)</label>
                 <input id="sd_drawthings_auth" type="text" class="text_pole"  data-i18n="[placeholder]Example: username:password" placeholder="Example: username:password" value="" />
-                <!-- (Original Text)<b>Important:</b> run DrawThings app with HTTP API switch enabled in the UI! The server must be accessible from the SillyTavern host machine. -->
                 <i><b data-i18n="Important:">Important:</b></i><i data-i18n="sd_drawthings_auth_txt"> run DrawThings app with HTTP API switch enabled in the UI! The server must be accessible from the SillyTavern host machine.</i>
             </div>
             <div data-sd-source="huggingface">
@@ -271,6 +270,24 @@
                 </div>
             </div>
 
+            <div data-sd-source="veniceai">
+                <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
+                    <a href="https://venice.ai/settings/api-keys" target="_blank" rel="noopener noreferrer"> <strong data-i18n="API Key">API Key</strong>
+                        <i class="fa-solid fa-share-from-square"></i>
+                    </a>
+                    <span class="expander"></span>
+                    <div id="sd_veniceai_key" class="menu_button menu_button_icon">
+                        <i class="fa-fw fa-solid fa-key"></i>
+                        <span data-i18n="Click to set">Click to set</span>
+                    </div>
+                </div>
+                 <div class="marginBot5">
+                    <i data-i18n="You can generate an API key in your Venice AI account settings.">
+                        You can generate an API key in your Venice AI account settings.
+                    </i>
+                </div>
+                </div>
+
             <div class="flex-container">
                 <div class="flex1">
                     <label for="sd_model" data-i18n="Model">Model</label>
@@ -298,7 +315,7 @@
             <div class="flex-container">
                 <div class="flex1">
                     <label for="sd_resolution" data-i18n="Resolution">Resolution</label>
-                    <select id="sd_resolution"><!-- Populated in JS --></select>
+                    <select id="sd_resolution"></select>
                 </div>
 
                 <div class="flex1" data-sd-source="auto,vlad,drawthings">
@@ -403,8 +420,7 @@
                     <small data-i18n="Use ADetailer (Face)">Use ADetailer (Face)</small>
                 </label>
                 <div class="flex1">
-                    <!-- I will be useful later! -->
-                </div>
+                    </div>
             </div>
 
             <div class="flex-container marginTopBot5" data-sd-source="novel">

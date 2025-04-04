@@ -82,6 +82,7 @@ const sources = {
     nanogpt: 'nanogpt',
     bfl: 'bfl',
     falai: 'falai',
+    veniceai: 'veniceai',
 };
 
 const initiators = {
@@ -327,6 +328,12 @@ const defaultSettings = {
 
     // BFL API settings
     bfl_upsampling: false,
+
+    // Venice AI settings (example placeholder)
+    veniceai_model: '', // You might set a default model ID later
+
+    // Add other specific Venice defaults here if needed
+
 };
 
 const writePromptFieldsDebounced = debounce(writePromptFields, debounce_timeout.relaxed);
@@ -506,6 +513,15 @@ async function loadSettings() {
     $('#sd_huggingface_model_id').val(extension_settings.sd.huggingface_model_id);
     $('#sd_function_tool').prop('checked', extension_settings.sd.function_tool);
     $('#sd_bfl_upsampling').prop('checked', extension_settings.sd.bfl_upsampling);
+
+// Update API Key button states (add Venice AI)
+    $('#sd_stability_key').toggleClass('success', !!secret_state[SECRET_KEYS.STABILITY]); // [cite: 315]
+    $('#sd_bfl_key').toggleClass('success', !!secret_state[SECRET_KEYS.BFL]); // [cite: 317]
+    $('#sd_falai_key').toggleClass('success', !!secret_state[SECRET_KEYS.FALAI]); // [cite: 318]
+    $('#sd_veniceai_key').toggleClass('success', !!secret_state[SECRET_KEYS.VENICEAI]); // <-- Add this line
+
+
+
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -1174,6 +1190,11 @@ async function onFalaiKeyClick() {
     return onApiKeyClick('FALAI API Key:', SECRET_KEYS.FALAI);
 }
 
+// Add this new function for Venice AI
+async function onVeniceKeyClick() {
+    return onApiKeyClick('Venice AI API Key:', SECRET_KEYS.VENICEAI);
+}
+
 function onBflUpsamplingInput() {
     extension_settings.sd.bfl_upsampling = !!$('#sd_bfl_upsampling').prop('checked');
     saveSettingsDebounced();
@@ -1523,6 +1544,9 @@ async function loadSamplers() {
         case sources.bfl:
             samplers = ['N/A'];
             break;
+        case sources.veniceai: // <-- Add this case
+            samplers = ['N/A']; // Venice API likely doesn't expose samplers
+            break;            
     }
 
     for (const sampler of samplers) {
@@ -1715,6 +1739,9 @@ async function loadModels() {
             break;
         case sources.falai:
             models = await loadFalaiModels();
+            break;
+        case sources.veniceai: // <-- Add this case
+            models = await loadVeniceAIModels(); // <-- Call new function below
             break;
     }
 
@@ -2059,6 +2086,38 @@ async function loadComfyModels() {
     }
 }
 
+// Add this new function to load Venice AI models
+async function loadVeniceAIModels() {
+    // Update the API key button appearance first
+    $('#sd_veniceai_key').toggleClass('success', !!secret_state[SECRET_KEYS.VENICEAI]);
+
+    if (!secret_state[SECRET_KEYS.VENICEAI]) {
+        console.debug('Venice AI API key is not set.');
+        return [];
+    }
+
+    try {
+        // Call the backend endpoint created in sd.js
+        const result = await fetch('/api/sd/venice/models', {
+            method: 'POST', // Match the method used in sd.js
+            headers: getRequestHeaders(),
+            // No body needed if backend doesn't require it for models
+        });
+
+        if (result.ok) {
+            return await result.json(); // Expects [{ value: 'model-id', text: 'display-name' }]
+        } else {
+            console.error(`Failed to load Venice AI models: ${result.status}`);
+            // Optionally display an error to the user
+            // toastr.error(`Failed to load Venice AI models: ${await result.text()}`);
+            return [];
+        }
+    } catch (error) {
+        console.error('Error fetching Venice AI models:', error);
+        return [];
+    }
+}
+
 async function loadSchedulers() {
     $('#sd_scheduler').empty();
     let schedulers = [];
@@ -2111,6 +2170,9 @@ async function loadSchedulers() {
             break;
         case sources.falai:
             schedulers = ['N/A'];
+            break;
+        case sources.veniceai: // <-- Add this case
+            schedulers = ['N/A']; // Venice API likely doesn't expose schedulers
             break;
     }
 
@@ -2200,6 +2262,9 @@ async function loadVaes() {
         case sources.bfl:
             vaes = ['N/A'];
             break;
+        case sources.veniceai: // <-- Add this case
+            vaes = ['N/A']; // Venice API likely doesn't expose VAEs
+            break;            
     }
 
     for (const vae of vaes) {
@@ -2772,6 +2837,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             case sources.falai:
                 result = await generateFalaiImage(prefixedPrompt, negativePrompt, signal);
                 break;
+            case sources.veniceai: // <-- Add this case
+                result = await generateVeniceAIImage(prefixedPrompt, negativePrompt, signal); // <-- Call new function below
+                break;
         }
 
         if (!result.data) {
@@ -2795,6 +2863,46 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
         ? await callback(prompt, base64Image, generationType, additionalNegativePrefix, initiator, prefixedPrompt)
         : await sendMessage(prompt, base64Image, generationType, additionalNegativePrefix, initiator, prefixedPrompt);
     return base64Image;
+}
+
+// Add this new function to handle Venice AI generation
+async function generateVeniceAIImage(prompt, negativePrompt, signal) {
+    try {
+        const response = await fetch('/api/sd/venice/generate', {
+            method: 'POST', // Match method in sd.js
+            headers: getRequestHeaders(),
+            signal: signal,
+            body: JSON.stringify({
+                // Pass necessary parameters from extension_settings.sd
+                model: extension_settings.sd.model,
+                prompt: prompt,
+                negative_prompt: negativePrompt,
+                height: extension_settings.sd.height,
+                width: extension_settings.sd.width,
+                steps: extension_settings.sd.steps,
+                cfg_scale: extension_settings.sd.scale, // Map 'scale' to 'cfg_scale'
+                seed: extension_settings.sd.seed, // Pass seed directly
+                // Add other relevant settings like style_preset if needed
+                // style_preset: extension_settings.sd.veniceai_style_preset,
+            }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Venice API Error: ${response.status}`, errorText);
+            // Throw error to be caught by sendGenerationRequest
+            throw new Error(`Venice API Error (${response.status}): ${errorText}`);
+        }
+
+        const data = await response.json();
+        // Assuming backend returns { image: base64String }
+        return { format: 'png', data: data.image }; // Adjust format if needed
+
+    } catch (error) {
+        console.error('Error in generateVeniceAIImage:', error);
+        // Re-throw the error to be handled by the caller
+        throw error;
+    }
 }
 
 /**
@@ -3856,6 +3964,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.BFL];
         case sources.falai:
             return secret_state[SECRET_KEYS.FALAI];
+        case sources.veniceai:
+            return !!secret_state[SECRET_KEYS.VENICEAI];
     }
 }
 
@@ -4518,6 +4628,8 @@ jQuery(async () => {
     $('#sd_bfl_key').on('click', onBflKeyClick);
     $('#sd_bfl_upsampling').on('input', onBflUpsamplingInput);
     $('#sd_falai_key').on('click', onFalaiKeyClick);
+        // Add listener for the Venice AI key button
+    $('#sd_veniceai_key').on('click', onVeniceKeyClick); // <-- Add this line
 
     if (!CSS.supports('field-sizing', 'content')) {
         $('.sd_settings .inline-drawer-toggle').on('click', function () {
