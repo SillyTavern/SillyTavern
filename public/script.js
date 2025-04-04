@@ -2133,7 +2133,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         }
 
         mes = mes.replace(
-            /```[\s\S]*?```|~~~[\s\S]*?~~~|``[\s\S]*?``|`[\s\S]*?`|(".*?")|(\u201C.*?\u201D)|(\u00AB.*?\u00BB)|(\u300C.*?\u300D)|(\u300E.*?\u300F)|(\uFF02.*?\uFF02)/gm,
+            /<style>[\s\S]*?<\/style>|```[\s\S]*?```|~~~[\s\S]*?~~~|``[\s\S]*?``|`[\s\S]*?`|(".*?")|(\u201C.*?\u201D)|(\u00AB.*?\u00BB)|(\u300C.*?\u300D)|(\u300E.*?\u300F)|(\uFF02.*?\uFF02)/gim,
             function (match, p1, p2, p3, p4, p5, p6) {
                 if (p1) {
                     // English double quotes
@@ -12221,4 +12221,11 @@ jQuery(async function () {
     });
 
     initCustomSelectedSamplers();
+
+    window.addEventListener('beforeunload', (e) => {
+        if (isChatSaving) {
+            e.preventDefault();
+            e.returnValue = true;
+        }
+    });
 });

@@ -1054,3 +1054,20 @@ export function setWindowTitle(title) {
         process.stdout.write(`\x1b]2;${title}\x1b\x5c`);
     }
 }
+
+/**
+ * Parses a JSON string and applies a mutation function to the parsed object.
+ * @param {string} jsonString JSON string to parse
+ * @param {function(any): void} mutation Mutation function to apply to the parsed JSON object
+ * @returns {string} Mutated JSON string
+ */
+export function mutateJsonString(jsonString, mutation) {
+    try {
+        const json = JSON.parse(jsonString);
+        mutation(json);
+        return JSON.stringify(json);
+    } catch (error) {
+        console.error('Error parsing or mutating JSON:', error);
+        return jsonString;
+    }
+}

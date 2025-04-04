@@ -459,7 +459,7 @@ export async function appendFileContent(message, messageText) {
  * @copyright https://github.com/kwaroran/risuAI
  */
 export function encodeStyleTags(text) {
-    const styleRegex = /<style>(.+?)<\/style>/gms;
+    const styleRegex = /<style>(.+?)<\/style>/gims;
     return text.replaceAll(styleRegex, (_, match) => {
         return `<custom-style>${escape(match)}</custom-style>`;
     });

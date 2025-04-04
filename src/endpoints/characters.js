@@ -15,9 +15,9 @@ import storage from 'node-persist';
 
 import { AVATAR_WIDTH, AVATAR_HEIGHT } from '../constants.js';
 import { default as validateAvatarUrlMiddleware, getFileNameValidationFunction } from '../middleware/validateFileName.js';
-import { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer, MemoryLimitedMap, getConfigValue } from '../util.js';
+import { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer, MemoryLimitedMap, getConfigValue, mutateJsonString } from '../util.js';
 import { TavernCardValidator } from '../validator/TavernCardValidator.js';
-import { parse, write } from '../character-card-parser.js';
+import { parse, read, write } from '../character-card-parser.js';
 import { readWorldInfoFile } from './worldinfo.js';
 import { invalidateThumbnail } from './thumbnails.js';
 import { importRisuSprites } from './sprites.js';
@@ -490,10 +490,13 @@ function convertToV2(char, directories) {
     return result;
 }
 
-
-function unsetFavFlag(char) {
+/**
+ * Removes fields that are not meant to be shared.
+ */
+function unsetPrivateFields(char) {
     _.set(char, 'fav', false);
     _.set(char, 'data.extensions.fav', false);
+    _.unset(char, 'chat');
 }
 
 function readFromV2(char) {
@@ -779,7 +782,7 @@ async function importFromCharX(uploadPath, { request }, preservedFileName) {
         }
     }
 
-    unsetFavFlag(card);
+    unsetPrivateFields(card);
     card['create_date'] = humanizedISO8601DateTime();
     card.name = sanitize(card.name);
     const fileName = preservedFileName || getPngName(card.name, request.user.directories);
@@ -803,7 +806,7 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
     if (jsonData.spec !== undefined) {
         console.info(`Importing from ${jsonData.spec} json`);
         importRisuSprites(request.user.directories, jsonData);
-        unsetFavFlag(jsonData);
+        unsetPrivateFields(jsonData);
         jsonData = readFromV2(jsonData);
         jsonData['create_date'] = humanizedISO8601DateTime();
         const pngName = preservedFileName || getPngName(jsonData.data?.name || jsonData.name, request.user.directories);
@@ -886,7 +889,7 @@ async function importFromPng(uploadPath, { request }, preservedFileName) {
     if (jsonData.spec !== undefined) {
         console.info(`Found a ${jsonData.spec} character file.`);
         importRisuSprites(request.user.directories, jsonData);
-        unsetFavFlag(jsonData);
+        unsetPrivateFields(jsonData);
         jsonData = readFromV2(jsonData);
         jsonData['create_date'] = humanizedISO8601DateTime();
         const char = JSON.stringify(jsonData);
@@ -1423,17 +1426,21 @@ router.post('/export', validateAvatarUrlMiddleware, async function (request, res
 
         switch (request.body.format) {
             case 'png': {
-                const fileContent = await fsPromises.readFile(filename);
+                const rawBuffer = await fsPromises.readFile(filename);
+                const rawData = read(rawBuffer);
+                const mutatedData = mutateJsonString(rawData, unsetPrivateFields);
+                const mutatedBuffer = write(rawBuffer, mutatedData);
                 const contentType = mime.lookup(filename) || 'image/png';
                 response.setHeader('Content-Type', contentType);
                 response.setHeader('Content-Disposition', `attachment; filename="${encodeURI(path.basename(filename))}"`);
-                return response.send(fileContent);
+                return response.send(mutatedBuffer);
             }
             case 'json': {
                 try {
-                    let json = await readCharacterData(filename);
+                    const json = await readCharacterData(filename);
                     if (json === undefined) return response.sendStatus(400);
-                    let jsonObject = getCharaCardV2(JSON.parse(json), request.user.directories);
+                    const jsonObject = getCharaCardV2(JSON.parse(json), request.user.directories);
+                    unsetPrivateFields(jsonObject);
                     return response.type('json').send(JSON.stringify(jsonObject, null, 4));
                 }
                 catch {
