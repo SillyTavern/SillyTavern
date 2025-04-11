@@ -5,7 +5,6 @@ import { saveMetadataDebounced } from './extensions.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { flashHighlight, stringFormat } from './utils.js';
-import { t } from './i18n.js';
 
 const BG_METADATA_KEY = 'custom_background';
 const LIST_METADATA_KEY = 'chat_backgrounds';
@@ -244,7 +243,7 @@ async function getNewBackgroundName(referenceElement) {
     const fileExtension = oldBg.split('.').pop();
     const fileNameBase = isCustom ? oldBg.split('/').pop() : oldBg;
     const oldBgExtensionless = fileNameBase.replace(`.${fileExtension}`, '');
-    const newBgExtensionless = await callPopup('<h3>' + t`Enter new background name:` + '</h3>', 'input', oldBgExtensionless);
+    const newBgExtensionless = await callPopup('<h3>Enter new background name:</h3>', 'input', oldBgExtensionless);
 
     if (!newBgExtensionless) {
         console.debug('no new_bg_extensionless');
@@ -401,23 +400,87 @@ function generateUrlParameter(bg, isCustom) {
 }
 
 /**
- * Instantiates a background template
- * @param {string} bg Path to background
- * @param {boolean} isCustom Whether the background is custom
- * @returns {JQuery<HTMLElement>} Background template
+ * Instantiates a background template HTML element.
+ * Attempts to load a pre-generated static thumbnail from /backgrounds/thumbnails/.
+ * Falls back to loading the original image if the thumbnail is missing or fails to load.
+ * @param {string} bg - The original filename of the background (e.g., "my_image.webp") or a custom URL.
+ * @param {boolean} isCustom - Indicates if the background source is a custom URL.
+ * @returns {JQuery<HTMLElement>} A jQuery object representing the background preview element.
  */
 function getBackgroundFromTemplate(bg, isCustom) {
     const template = $('#background_template .bg_example').clone();
-    const thumbPath = isCustom ? bg : getThumbnailUrl('bg', bg);
-    const url = generateUrlParameter(bg, isCustom);
-    const title = isCustom ? bg.split('/').pop() : bg;
-    const friendlyTitle = title.slice(0, title.lastIndexOf('.'));
-    template.attr('title', title);
-    template.attr('bgfile', bg);
+    const originalIdentifier = bg; // Keep track of the original filename or custom URL
+
+    let initialPreviewUrl = null;
+    let originalFileUrl = null; // URL path to the full original file (if not custom)
+    let thumbnailUrl = null;    // URL path to the static thumbnail (if not custom)
+
+    // Determine URLs based on whether it's a custom URL or a standard background file
+    if (isCustom) {
+        // For custom URLs, the identifier is the URL itself
+        initialPreviewUrl = originalIdentifier;
+    } else {
+        // For standard backgrounds, construct paths for original and thumbnail
+        originalFileUrl = `/backgrounds/${encodeURIComponent(originalIdentifier)}`;
+
+        // Parse filename to build thumbnail name: basename_thumbnail.ext
+        const lastDotIndex = originalIdentifier.lastIndexOf('.');
+        let baseName = originalIdentifier;
+        let extension = '';
+
+        if (lastDotIndex !== -1) {
+            baseName = originalIdentifier.substring(0, lastDotIndex);
+            extension = originalIdentifier.substring(lastDotIndex); // Includes the dot (e.g., ".webp")
+        } else {
+            console.warn(`Background filename "${originalIdentifier}" has no extension.`);
+        }
+
+        const thumbnailFilename = `${baseName}_thumbnail${extension}`;
+        thumbnailUrl = `/backgrounds/thumbnails/${encodeURIComponent(thumbnailFilename)}`;
+
+        // Initially, try to load the thumbnail
+        initialPreviewUrl = thumbnailUrl;
+    }
+
+    // Apply the initial URL (thumbnail or custom URL) to the preview element's background style
+    if (initialPreviewUrl) {
+         template.css('background-image', `url("${initialPreviewUrl}")`);
+    } else {
+        // Fallback if no URL could be determined (shouldn't normally happen)
+        console.error(`Cannot determine preview URL for identifier: ${originalIdentifier}`);
+        // Optionally set a placeholder explicitly
+        // template.css('background-image', `url('/img/placeholder-icon.svg')`);
+    }
+
+    if (!isCustom && thumbnailUrl && originalFileUrl) {
+        // Use an Image object to check if the thumbnail loads successfully in the background.
+        const imgCheck = new Image();
+
+        imgCheck.onerror = () => {
+            // If the thumbnail URL fails to load, change the background to the original file URL.
+            console.warn(`Thumbnail failed to load: ${thumbnailUrl}. Falling back to original: ${originalFileUrl}`);
+            template.css('background-image', `url("${originalFileUrl}")`);
+        };
+
+        // Assigning src triggers the browser to attempt loading the image.
+        // If it fails, onerror will fire. If it succeeds, nothing visual changes here,
+        // as the background was already set to the thumbnail URL.
+        imgCheck.src = thumbnailUrl;
+    }
+
+    // --- Set standard attributes using the ORIGINAL identifier ---
+    // generateUrlParameter uses the original identifier to create the url() for setting the main background
+    const urlData = generateUrlParameter(originalIdentifier, isCustom);
+    const title = isCustom ? originalIdentifier.split('/').pop() : originalIdentifier; // Use identifier for title base
+    // Attempt to remove extension for display title
+    const friendlyTitle = title.includes('.') ? title.slice(0, title.lastIndexOf('.')) : title;
+
+    template.attr('title', title);                   // Tooltip shows original identifier
+    template.attr('bgfile', originalIdentifier);     // ** Critical: Store original identifier for click action **
     template.attr('custom', String(isCustom));
-    template.data('url', url);
-    template.css('background-image', `url('${thumbPath}')`);
-    template.find('.BGSampleTitle').text(friendlyTitle);
+    template.data('url', urlData);                   // Store generated CSS url() string for locking/setting
+    template.find('.BGSampleTitle').text(friendlyTitle); // Display friendly name
+
     return template;
 }
 
