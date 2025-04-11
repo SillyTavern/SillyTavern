@@ -409,7 +409,7 @@ function generateUrlParameter(bg, isCustom) {
  */
 function getBackgroundFromTemplate(bg, isCustom) {
     const template = $('#background_template .bg_example').clone();
-    const originalIdentifier = bg; // Keep track of the original filename or custom URL
+    const originalIdentifier = bg;
 
     let initialPreviewUrl = null;
     let originalFileUrl = null; // URL path to the full original file (if not custom)
@@ -448,8 +448,6 @@ function getBackgroundFromTemplate(bg, isCustom) {
     } else {
         // Fallback if no URL could be determined (shouldn't normally happen)
         console.error(`Cannot determine preview URL for identifier: ${originalIdentifier}`);
-        // Optionally set a placeholder explicitly
-        // template.css('background-image', `url('/img/placeholder-icon.svg')`);
     }
 
     if (!isCustom && thumbnailUrl && originalFileUrl) {
@@ -461,14 +459,10 @@ function getBackgroundFromTemplate(bg, isCustom) {
             console.warn(`Thumbnail failed to load: ${thumbnailUrl}. Falling back to original: ${originalFileUrl}`);
             template.css('background-image', `url("${originalFileUrl}")`);
         };
-
-        // Assigning src triggers the browser to attempt loading the image.
-        // If it fails, onerror will fire. If it succeeds, nothing visual changes here,
-        // as the background was already set to the thumbnail URL.
         imgCheck.src = thumbnailUrl;
     }
 
-    // --- Set standard attributes using the ORIGINAL identifier ---
+    // Set standard attributes using the original identifier
     // generateUrlParameter uses the original identifier to create the url() for setting the main background
     const urlData = generateUrlParameter(originalIdentifier, isCustom);
     const title = isCustom ? originalIdentifier.split('/').pop() : originalIdentifier; // Use identifier for title base

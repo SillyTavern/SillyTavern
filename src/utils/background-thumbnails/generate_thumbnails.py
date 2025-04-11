@@ -1,13 +1,11 @@
 ﻿# File: src/utils/background-thumbnails/generate_thumbnails.py
 # Purpose: Generates static thumbnails for SillyTavern backgrounds.
 # Usage: Can be run from any directory, finds paths relative to itself.
-# Requires Pillow: pip install Pillow
 
 import os
 from PIL import Image, UnidentifiedImageError
 import sys
 
-# --- Configuration ---
 # Default relative path from project root to the user's backgrounds
 DEFAULT_BACKGROUNDS_REL_PATH = os.path.join('data', 'default-user', 'backgrounds')
 # Target thumbnail dimensions (width, height) - 16:9 aspect ratio
@@ -16,15 +14,10 @@ THUMBNAIL_SIZE = (320, 180)
 THUMBNAIL_QUALITY = 75
 # Output format ('JPEG' or 'PNG') - Use JPEG for smaller static files
 THUMBNAIL_FORMAT = 'JPEG'
-# --- End Configuration ---
 
-# --- Dynamically Calculate Project Root ---
 # Get the absolute path to the directory containing this script
 script_dir = os.path.dirname(os.path.abspath(__file__))
-# Calculate the project root by going up 3 levels from the script's directory
-# (src/utils/background-thumbnails/ -> src/utils/ -> src/ -> project root)
 project_root = os.path.abspath(os.path.join(script_dir, '..', '..', '..'))
-# --- End Path Calculation ---
 
 # Construct the absolute paths using the calculated project root
 backgrounds_dir = os.path.join(project_root, DEFAULT_BACKGROUNDS_REL_PATH)
