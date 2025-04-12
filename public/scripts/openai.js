@@ -79,6 +79,7 @@ import { accountStorage } from './util/AccountStorage.js';
 export {
     openai_messages_count,
     oai_settings,
+    chat_completion_sources,
     loadOpenAISettings,
     setOpenAIMessages,
     setOpenAIMessageExamples,
@@ -168,7 +169,7 @@ const textCompletionModels = [
 let biasCache = undefined;
 export let model_list = [];
 
-export const chat_completion_sources = {
+const chat_completion_sources = {
     OPENAI: 'openai',
     WINDOWAI: 'windowai',
     CLAUDE: 'claude',
@@ -3507,6 +3508,7 @@ async function getStatusOpen() {
         return resultCheckStatus();
     }
 
+    // This is the correct place for the 'data' variable declaration
     let data = {
         reverse_proxy: oai_settings.reverse_proxy,
         proxy_password: oai_settings.proxy_password,
@@ -3517,8 +3519,11 @@ async function getStatusOpen() {
         await validateReverseProxy();
     }
 
+    // This is the correct placement for the 'if' block checking for CUSTOM source
     if (oai_settings.chat_completion_source === chat_completion_sources.CUSTOM) {
         $('.model_custom_select').empty();
+        // Your debugging log goes here, inside the 'if' block
+        console.log('Checking oai_settings in getStatusOpen (CUSTOM block):', oai_settings); // <<< Your console.log
         data.custom_url = oai_settings.custom_url;
         data.custom_include_headers = oai_settings.custom_include_headers;
     }
@@ -3532,7 +3537,7 @@ async function getStatusOpen() {
         const response = await fetch('/api/backends/chat-completions/status', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify(data),
+            body: JSON.stringify(data), // 'data' is used here
             signal: abortStatusCheck.signal,
             cache: 'no-cache',
         });
@@ -3559,7 +3564,6 @@ async function getStatusOpen() {
 
     return resultCheckStatus();
 }
-
 function showWindowExtensionError() {
     toastr.error(t`Get it here:` + ' <a href="https://windowai.io/" target="_blank">windowai.io</a>', t`Extension is not installed`, {
         escapeHtml: false,

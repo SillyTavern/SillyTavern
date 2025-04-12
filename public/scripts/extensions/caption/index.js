@@ -1,3 +1,4 @@
+import { oai_settings } from '../../openai.js';
 import { ensureImageFormatSupported, getBase64Async, isTrueBoolean, saveBase64AsFile } from '../../utils.js';
 import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import { appendMediaToMessage, callPopup, eventSource, event_types, getRequestHeaders, saveChatConditional, saveSettingsDebounced, substituteParamsExtended } from '../../../script.js';
@@ -388,6 +389,78 @@ async function captionCommandCallback(args, prompt) {
     });
 }
 
+async function loadCustomCaptionModels() {
+    try {
+        // Ensure oai_settings is accessible here. You might need to import it
+        // or ensure it's globally available depending on the script structure.
+        const response = await fetch('/api/backends/chat-completions/status', {
+            method: 'POST',
+            headers: getRequestHeaders(), // Ensure getRequestHeaders is imported/available
+            body: JSON.stringify({
+                chat_completion_source: 'custom',
+                custom_url: oai_settings.custom_url // <<< Added this line
+            }),
+            cache: 'no-cache',
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Failed to fetch custom models for captioning:", response.statusText, errorText);
+            toastr.error(`Failed to fetch custom models: ${response.statusText}`, 'Error');
+            return;
+        }
+
+        const responseData = await response.json();
+        // Assuming the model list is in responseData.data similar to how openai.js handles it
+        const customModels = responseData?.data || [];
+
+        const dropdown = document.getElementById('caption_multimodal_model');
+        if (!dropdown) return;
+
+        // Clear existing custom options before adding new ones
+        $(dropdown).find('option[data-type="custom"]').remove();
+
+        if (customModels.length === 0) {
+             // Optionally add a placeholder if no models are found
+             const option = document.createElement('option');
+             option.value = '';
+             option.textContent = '[No custom models found]';
+             option.dataset.type = 'custom';
+             option.disabled = true;
+             dropdown.add(option);
+             return;
+        }
+
+        // Populate dropdown with fetched models
+        customModels.forEach((model) => {
+            if (model && model.id) { // Ensure model and model.id exist
+                const option = document.createElement('option');
+                option.value = model.id;
+                option.textContent = model.id;
+                option.dataset.type = 'custom';
+                dropdown.add(option);
+            }
+        });
+
+        // Try to restore the previously selected model, if it exists in the new list
+        const currentModelExists = customModels.some(model => model.id === extension_settings.caption.multimodal_model);
+        if (currentModelExists) {
+            $(dropdown).val(extension_settings.caption.multimodal_model);
+        } else if (customModels.length > 0) {
+            // If previous selection doesn't exist, select the first available one
+            const firstModelId = customModels[0].id;
+            $(dropdown).val(firstModelId);
+            // Update the setting if the old selection is no longer valid
+            extension_settings.caption.multimodal_model = firstModelId;
+            saveSettingsDebounced();
+        }
+
+    } catch (error) {
+        console.error("Error loading custom caption models:", error);
+        toastr.error('Error loading custom models.', 'Error');
+    }
+}
+
 jQuery(async function () {
     function addSendPictureButton() {
         const sendButton = $(`
@@ -484,6 +557,14 @@ jQuery(async function () {
             const types = type.split(',');
             $(this).toggle(types.includes(extension_settings.caption.multimodal_api));
         });
+$('#caption_multimodal_block [data-type]').each(function () {
+    // ... (existing code to show/hide elements)
+});
+
+// Add this check and call
+if (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'custom') {
+    await loadCustomCaptionModels();
+}
     }
     async function addSettings() {
         const html = await renderExtensionTemplateAsync('caption', 'settings', { TEMPLATE_DEFAULT, PROMPT_DEFAULT });
@@ -566,15 +647,40 @@ jQuery(async function () {
         $('#ollama_download_model').trigger('click');
         $('#dialogue_popup_input').val(presetModel);
     });
-    $('#caption_multimodal_api').on('change', () => {
+    $('#caption_multimodal_api').on('change', async () => { // Make the handler async
         const api = String($('#caption_multimodal_api').val());
-        const model = String($(`#caption_multimodal_model option[data-type="${api}"]`).first().val());
+        let modelToSelect;
+    
+        if (api === 'custom') {
+            await loadCustomCaptionModels(); // Load models first
+    
+            // Check if the currently saved model is in the fetched list
+            const dropdown = document.getElementById('caption_multimodal_model');
+            const currentModelExists = $(dropdown).find(`option[value="${extension_settings.caption.multimodal_model}"]`).length > 0;
+    
+            if (currentModelExists) {
+                modelToSelect = extension_settings.caption.multimodal_model;
+            } else {
+                // If not found, or no previous selection, default to the first custom model
+                modelToSelect = $(dropdown).find('option[data-type="custom"]').first().val();
+            }
+            // Ensure UI matches the model to select
+             $('#caption_multimodal_model').val(modelToSelect);
+        } else {
+            // Original logic for other API types
+            modelToSelect = String($(`#caption_multimodal_model option[data-type="${api}"]`).first().val());
+             $('#caption_multimodal_model').val(modelToSelect); // Ensure UI matches
+        }
+    
+        // Update settings
         extension_settings.caption.multimodal_api = api;
-        extension_settings.caption.multimodal_model = model;
+        extension_settings.caption.multimodal_model = modelToSelect || ''; // Store the selected model, or empty if none
+    
         saveSettingsDebounced();
-        switchMultimodalBlocks();
-    });
-    $('#caption_multimodal_model').on('change', () => {
+        // Call switchMultimodalBlocks AFTER updating settings, it relies on them
+        // switchMultimodalBlocks will handle showing/hiding sections and potentially re-calling loadCustomCaptionModels if needed
+        await switchMultimodalBlocks();
+    });    $('#caption_multimodal_model').on('change', () => {
         extension_settings.caption.multimodal_model = String($('#caption_multimodal_model').val());
         saveSettingsDebounced();
     });

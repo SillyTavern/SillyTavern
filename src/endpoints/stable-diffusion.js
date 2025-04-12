@@ -1661,6 +1661,7 @@ venice.post('/generate', async (request, response) => {
             style_preset: request.body.style_preset, // Optional: Image style preset if provided by ST
             format: 'png', // Request PNG format for base64 compatibility
             return_binary: false, // Request base64 encoded data in JSON
+            hide_watermark: true, // Optional: Defaults to false in Venice API
             // safe_mode: false, // Optional: Defaults to false in Venice API
             // hide_watermark: false, // Optional: Defaults to false
             // embed_exif_metadata: false, // Optional: Defaults to false
@@ -1718,10 +1719,18 @@ venice.post('/generate', async (request, response) => {
 
         /** @type {any} */
         const data = await result.json();
-        console.debug('Venice API response received:', data); // Log the full response for debugging
+        // console.debug('Venice API response received:', data); // Log the full response for debugging // <--- OLD LINE
 
-        // Extract the base64 image data
-        // Venice API returns an 'images' array with base64 strings when return_binary is false
+        // --- NEW LOGIC ---
+        // Create a copy to avoid modifying the original data object
+        const dataForLog = { ...data };
+        // Remove the potentially large images field from the copy
+        delete dataForLog.images;
+        // Log the modified object
+        console.debug('Venice API response received (excluding images):', dataForLog);
+        // --- END NEW LOGIC ---
+
+        // Extract the base64 image data *from the original data object*
         const base64Image = data?.images?.[0];
 
         if (!base64Image) {
