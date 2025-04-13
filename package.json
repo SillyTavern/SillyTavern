@@ -73,6 +73,7 @@
         "response-time": "^2.3.3",
         "sanitize-filename": "^1.6.3",
         "seedrandom": "^3.0.5",
+        "sharp": "^0.34.1",
         "showdown": "^2.1.0",
         "sillytavern-transformers": "2.14.6",
         "simple-git": "^3.27.0",
