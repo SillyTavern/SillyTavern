@@ -1,0 +1,22 @@
+{
+    "input_sequence": "<|start_header_id|>user<|end_header_id|>\n\n",
+    "output_sequence": "<|start_header_id|>assistant<|end_header_id|>\n\n",
+    "last_output_sequence": "",
+    "system_sequence": "<|start_header_id|>system<|end_header_id|>\n\n",
+    "stop_sequence": "<|eot|>",
+    "wrap": false,
+    "macro": true,
+    "names_behavior": "always",
+    "activation_regex": "",
+    "system_sequence_prefix": "",
+    "system_sequence_suffix": "",
+    "first_output_sequence": "",
+    "skip_examples": false,
+    "output_suffix": "<|eot|>",
+    "input_suffix": "<|eot|>",
+    "system_suffix": "<|eot|>",
+    "user_alignment_message": "",
+    "system_same_as_user": true,
+    "last_system_sequence": "",
+    "name": "Llama 4 Instruct"
+}
