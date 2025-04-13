@@ -687,11 +687,13 @@
                                 </div>
                                 <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek">
                                     <div class="range-block-title" data-i18n="Temperature">
+                                        <a title="Reset temperature to model's default." id="temperature-reset-button" class="fa-undo fa-solid fa-fw interactable"></a>
                                         Temperature
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
                                             <input type="range" id="temp_openai" name="volume" min="0" max="2.0" step="0.01">
+                                            <div id="temperature-slider-notch" class="slider-notch"></div>
                                         </div>
                                         <div class="range-block-counter">
                                             <input type="number" min="0" max="2.0" step="0.01" data-for="temp_openai" id="temp_counter_openai">

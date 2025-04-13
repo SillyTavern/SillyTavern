@@ -120,6 +120,8 @@
 
     --animation-duration: 125ms;
     --animation-duration-slow: calc(var(--animation-duration) * 3);
+    
+    --thumb-diameter: 15px;
 }
 
 * {
@@ -263,6 +265,7 @@ table.responsiveTable {
 /* Mimic the outline of keyboard navigation for most most focusable controls */
 .interactable {
     border-radius: 5px;
+    cursor: pointer;
 }
 
 /* Outline for "normal" buttons should only be when actual keyboard navigation is used */
@@ -4138,6 +4141,21 @@ input[type="range"]:focus-visible {
     flex: 5;
 }
 
+#temperature-slider-notch {
+    display: none;
+    position: relative;
+    z-index: 1;
+    width: 3px;
+    height: 20%;
+    background-color: gold;
+    transform: translate(-50%, -180%);
+    pointer-events: none;
+}
+
+#temperature-reset-button {
+    display: none;
+}
+
 input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
@@ -4156,11 +4174,12 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     position: relative;
+    z-index: 2;
     box-shadow: 0 0 5px 0 black;
     box-shadow: inset 0 0 5px var(--black70a);
     -webkit-appearance: none;
-    height: 15px;
-    width: 15px;
+    height: var(--thumb-diameter);
+    width: var(--thumb-diameter);
     border-radius: 50%;
     background: var(--white100);
 }

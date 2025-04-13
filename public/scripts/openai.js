@@ -4277,8 +4277,12 @@ function getGroqMaxContext(model, isUnlocked) {
 }
 
 async function onModelChange() {
+    await getStatusOpen()
     biasCache = undefined;
     let value = String($(this).val() || '');
+
+    $('#temperature-slider-notch').css({'display': 'none'});
+    $('#temperature-reset-button').css({'display': 'none'});
 
     if ($(this).is('#model_claude_select')) {
         if (value.includes('-v')) {
@@ -4508,6 +4512,42 @@ async function onModelChange() {
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
         oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
+
+        const default_temperature = model_list.find((record) => record.id === oai_settings.mistralai_model)?.default_model_temperature;
+        if (default_temperature) {
+            const slider = document.querySelector('input[type=range]#temp_openai');
+            const counter = document.querySelector('input[type=number]#temp_counter_openai');
+            const updateSliderNotchPosition = () => {
+                console.warn('notch updated');
+                const sliderWidth = parseFloat(getComputedStyle(slider).width);
+                const thumbDiameter = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--thumb-diameter'));
+                const minTemp = parseFloat(slider.min);
+                const maxTemp = parseFloat(slider.max);
+                const notchPositionPercentage = (100 * (((default_temperature - minTemp) * (sliderWidth - thumbDiameter)) / (maxTemp - minTemp) + thumbDiameter / 2)) / sliderWidth;
+                $('#temperature-slider-notch').css({'left': `${notchPositionPercentage}%`,'display': 'block'});
+                $('#temperature-reset-button').css({'display': 'inline-block'});
+            };
+            const resetTemperatureValue = () => {
+                slider.value = default_temperature;
+                counter.value = default_temperature.toFixed(2);
+                slider.dispatchEvent(new Event('input'));
+                counter.dispatchEvent(new Event('input'));
+            };
+            if (!counter.hasAttribute('altered')) {
+                resetTemperatureValue();
+            };
+            $('#temperature-reset-button').on('click', () => {
+                resetTemperatureValue();
+                counter.removeAttribute('altered');
+            });
+            slider.addEventListener('input', () => {
+                counter.setAttribute('altered', '');
+            });
+            eventSource.once(event_types.APP_READY, updateSliderNotchPosition);
+        } else {
+            $('#temperature-slider-notch').css({'display': 'none'});
+            $('#temperature-reset-button').css({'display': 'none'});
+        }
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.COHERE) {
