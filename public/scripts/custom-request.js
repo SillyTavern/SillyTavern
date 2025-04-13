@@ -43,10 +43,12 @@ import EventSourceStream from './sse-stream.js';
  * @property {boolean?} [stream=false] - Whether to stream the response
  * @property {ChatCompletionMessage[]} messages - Array of chat messages
  * @property {string} [model] - Optional model name to use for completion
- * @property {string} chat_completion_source - Source provider for chat completion
+ * @property {string} chat_completion_source - Source provider
  * @property {number} max_tokens - Maximum number of tokens to generate
  * @property {number} [temperature] - Optional temperature parameter for response randomness
- * @property {string} [custom_url] - Optional custom URL for chat completion
+ * @property {string} [custom_url] - Optional custom URL
+ * @property {string} [reverse_proxy] - Optional reverse proxy URL
+ * @property {string} [proxy_password] - Optional proxy password
  */
 
 /** @typedef {Record<string, any> & ChatCompletionPayloadBase} ChatCompletionPayload */
@@ -80,7 +82,6 @@ export class TextCompletionService {
      */
     static createRequestData({ stream = false, prompt, max_tokens, model, api_type, api_server, temperature, min_p, ...props }) {
         const payload = {
-            ...props,
             stream,
             prompt,
             max_tokens,
@@ -90,6 +91,7 @@ export class TextCompletionService {
             api_server: api_server ?? getTextGenServer(api_type),
             temperature,
             min_p,
+            ...props,
         };
 
         // Remove undefined values to avoid API errors
@@ -387,9 +389,8 @@ export class ChatCompletionService {
      * @param {ChatCompletionPayload} custom
      * @returns {ChatCompletionPayload}
      */
-    static createRequestData({ stream = false, messages, model, chat_completion_source, max_tokens, temperature, custom_url, ...props }) {
+    static createRequestData({ stream = false, messages, model, chat_completion_source, max_tokens, temperature, custom_url, reverse_proxy, proxy_password, ...props }) {
         const payload = {
-            ...props,
             stream,
             messages,
             model,
@@ -397,6 +398,11 @@ export class ChatCompletionService {
             max_tokens,
             temperature,
             custom_url,
+            reverse_proxy,
+            proxy_password,
+            use_makersuite_sysprompt: true,
+            claude_use_sysprompt: true,
+            ...props,
         };
 
         // Remove undefined values to avoid API errors

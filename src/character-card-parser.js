@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { Buffer } from 'node:buffer';
 
-import encode from 'png-chunks-encode';
+import encode from './png/encode.js';
 import extract from 'png-chunks-extract';
 import PNGtext from 'png-chunk-text';
 

@@ -428,6 +428,7 @@ jQuery(async function () {
                         'zerooneai': SECRET_KEYS.ZEROONEAI,
                         'groq': SECRET_KEYS.GROQ,
                         'cohere': SECRET_KEYS.COHERE,
+                        'xai': SECRET_KEYS.XAI,
                     };
 
                     if (chatCompletionApis[api] && secret_state[chatCompletionApis[api]]) {

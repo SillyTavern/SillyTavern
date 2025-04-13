@@ -176,6 +176,7 @@ export const CHAT_COMPLETION_SOURCES = {
     ZEROONEAI: '01ai',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
+    XAI: 'xai',
 };
 
 /**

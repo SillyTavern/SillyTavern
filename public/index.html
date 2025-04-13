@@ -685,7 +685,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -698,7 +698,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek">
+                                <div class="range-block" data-source="openai,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -711,7 +711,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek">
+                                <div class="range-block" data-source="openai,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -737,7 +737,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek">
+                                <div class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -974,7 +974,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt">
+                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt,xai">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -1963,9 +1963,12 @@
                                             <span data-i18n="Use search capabilities provided by the backend.">
                                                 Use search capabilities provided by the backend.
                                             </span>
+                                            <b data-source="openrouter" data-i18n="openrouter_web_search_fee">
+                                                Not free, adds a $0.02 fee to each prompt.
+                                            </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,ai21">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,ai21,xai">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -1975,7 +1978,7 @@
                                             <span data-i18n="enable_functions_desc_3">Can be utilized by various extensions to provide additional functionality.</span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,openrouter,makersuite,claude,custom,01ai">
+                                    <div class="range-block" data-source="openai,openrouter,mistralai,makersuite,claude,custom,01ai,xai">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -1987,7 +1990,7 @@
                                             <code><i class="fa-solid fa-wand-magic-sparkles"></i></code>
                                             <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
                                         </div>
-                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai">
                                             <div class="flex-container oneline-dropdown">
                                                 <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
                                                     Inline Image Quality
@@ -2031,7 +2034,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="deepseek,openrouter,custom,claude">
+                                    <div class="range-block" data-source="deepseek,openrouter,custom,claude,xai">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
                                             <span>
@@ -2045,7 +2048,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Currently supported values are low, medium, and high.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
@@ -2756,6 +2759,7 @@
                                 <option value="perplexity">Perplexity</option>
                                 <option value="scale">Scale</option>
                                 <option value="windowai">Window AI</option>
+                                <option value="xai">xAI (Grok)</option>
                             </optgroup>
                         </select>
                         <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,deepseek">
@@ -3140,6 +3144,7 @@
                                         <option value="gemma-3-27b-it">Gemma 3 27B</option>
                                     </optgroup>
                                     <optgroup label="Subversions">
+                                        <option value="gemini-2.5-pro-preview-03-25">Gemini 2.5 Pro Preview 2025-03-25</option>
                                         <option value="gemini-2.5-pro-exp-03-25">Gemini 2.5 Pro Experimental 2025-03-25</option>
                                         <option value="gemini-2.0-pro-exp">Gemini 2.0 Pro Experimental</option>
                                         <option value="gemini-2.0-pro-exp-02-05">Gemini 2.0 Pro Experimental 2025-02-05</option>
@@ -3248,28 +3253,29 @@
                                     <option value="qwen-2.5-32b">qwen-2.5-32b</option>
                                     <option value="qwen-2.5-coder-32b">qwen-2.5-coder-32b</option>
                                 </optgroup>
-                                <optgroup label="DeepSeek / Alibaba Cloud">
+                                <optgroup label="DeepSeek">
                                     <option value="deepseek-r1-distill-qwen-32b">deepseek-r1-distill-qwen-32b</option>
-                                </optgroup>
-                                <optgroup label="DeepSeek / Meta">
                                     <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
                                 </optgroup>
                                 <optgroup label="Google">
                                     <option value="gemma2-9b-it">gemma2-9b-it</option>
                                 </optgroup>
                                 <optgroup label="Meta">
-                                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant </option>
+                                    <option value="meta-llama/llama-4-scout-17b-16e-instruct">meta-llama/llama-4-scout-17b-16e-instruct</option>
+                                    <option value="meta-llama/llama-4-maverick-17b-128e-instruct">meta-llama/llama-4-maverick-17b-128e-instruct</option>
+                                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
                                     <option value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview </option>
                                     <option value="llama-3.2-1b-preview">llama-3.2-1b-preview </option>
                                     <option value="llama-3.2-3b-preview">llama-3.2-3b-preview </option>
                                     <option value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview </option>
-                                    <option value="llama-3.3-70b-specdec">llama-3.3-70b-specdec </option>
+                                    <option value="llama-3.3-70b-specdec">llama-3.3-70b-specdec</option>
                                     <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile </option>
-                                    <option value="llama-guard-3-8b">llama-guard-3-8b </option>
-                                    <option value="llama3-70b-8192">llama3-70b-8192 </option>
-                                    <option value="llama3-8b-8192">llama3-8b-8192 </option>
+                                    <option value="llama-guard-3-8b">llama-guard-3-8b</option>
+                                    <option value="llama3-70b-8192">llama3-70b-8192</option>
+                                    <option value="llama3-8b-8192">llama3-8b-8192</option>
                                 </optgroup>
                                 <optgroup label="Mistral AI">
+                                    <option value="mistral-saba-24b">mistral-saba-24b</option>
                                     <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
                                 </optgroup>
                             </select>
@@ -3420,6 +3426,31 @@
                             </div>
                             <h4 data-i18n="01.AI Model">01.AI Model</h4>
                             <select id="model_01ai_select">
+                            </select>
+                        </div>
+                        <div id="xai_form" data-source="xai">
+                            <h4>
+                                <a data-i18n="xAI API Key" href="https://console.x.ai/" target="_blank" rel="noopener noreferrer">
+                                    xAI API Key
+                                </a>
+                            </h4>
+                            <div class="flex-container">
+                                <input id="api_key_xai" name="api_key_xai" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_xai"></div>
+                            </div>
+                            <div data-for="api_key_xai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <h4 data-i18n="xAI Model">xAI Model</h4>
+                            <select id="model_xai_select">
+                                <option value="grok-3-beta">grok-3-beta</option>
+                                <option value="grok-3-fast-beta">grok-3-fast-beta</option>
+                                <option value="grok-3-mini-beta">grok-3-mini-beta</option>
+                                <option value="grok-3-mini-fast-beta">grok-3-mini-fast-beta</option>
+                                <option value="grok-2-vision-1212">grok-2-vision-1212</option>
+                                <option value="grok-2-1212">grok-2-1212</option>
+                                <option value="grok-vision-beta">grok-vision-beta</option>
+                                <option value="grok-beta">grok-beta</option>
                             </select>
                         </div>
                         <div id="prompt_post_porcessing_form" data-source="custom,openrouter">
@@ -6450,7 +6481,7 @@
                     <div class="mes_text"></div>
                     <div class="mes_img_container">
                         <div class="mes_img_controls">
-                            <div title="Enlarge" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_img_enlarge" data-i18n="[title]Enlarge"></div>
+                            <div title="Expand and zoom" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_img_enlarge" data-i18n="[title]Expand and zoom"></div>
                             <div title="Caption" class="right_menu_button fa-lg fa-solid fa-envelope-open-text mes_img_caption" data-i18n="[title]Caption"></div>
                             <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_img_delete" data-i18n="[title]Delete"></div>
                         </div>

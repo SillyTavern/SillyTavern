@@ -49,7 +49,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           eslint-args: '--ignore-path=.gitignore --quiet'
-          extensions: 'js,ts'
+          extensions: 'js'
           annotations: true
           ignore-patterns: |
             dist/

@@ -184,6 +184,7 @@ export const chat_completion_sources = {
     ZEROONEAI: '01ai',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
+    XAI: 'xai',
 };
 
 const character_names_behavior = {
@@ -257,6 +258,7 @@ export const settingsToUpdate = {
     nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false],
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false],
     zerooneai_model: ['#model_01ai_select', 'zerooneai_model', false],
+    xai_model: ['#model_xai_select', 'xai_model', false],
     custom_model: ['#custom_model_id', 'custom_model', false],
     custom_url: ['#custom_api_url_text', 'custom_url', false],
     custom_include_body: ['#custom_include_body', 'custom_include_body', false],
@@ -345,6 +347,7 @@ const default_settings = {
     nanogpt_model: 'gpt-4o-mini',
     zerooneai_model: 'yi-large',
     deepseek_model: 'deepseek-chat',
+    xai_model: 'grok-3-beta',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -425,6 +428,7 @@ const oai_settings = {
     nanogpt_model: 'gpt-4o-mini',
     zerooneai_model: 'yi-large',
     deepseek_model: 'deepseek-chat',
+    xai_model: 'grok-3-beta',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -1645,6 +1649,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.nanogpt_model;
         case chat_completion_sources.DEEPSEEK:
             return oai_settings.deepseek_model;
+        case chat_completion_sources.XAI:
+            return oai_settings.xai_model;
         default:
             throw new Error(`Unknown chat completion source: ${activeSource}`);
     }
@@ -1686,6 +1692,11 @@ function calculateOpenRouterCost() {
         if (!isNaN(totalCost)) {
             cost = '$' + totalCost.toFixed(3);
         }
+    }
+
+    if (oai_settings.enable_web_search) {
+        const webSearchCost = (0.02).toFixed(2);
+        cost = t`${cost} + $${webSearchCost}`;
     }
 
     $('#openrouter_max_prompt_cost').text(cost);
@@ -1962,6 +1973,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     const is01AI = oai_settings.chat_completion_source == chat_completion_sources.ZEROONEAI;
     const isNano = oai_settings.chat_completion_source == chat_completion_sources.NANOGPT;
     const isDeepSeek = oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK;
+    const isXAI = oai_settings.chat_completion_source == chat_completion_sources.XAI;
     const isTextCompletion = isOAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
@@ -2034,7 +2046,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     // Add logprobs request (currently OpenAI only, max 5 on their side)
-    if (useLogprobs && (isOAI || isCustom || isDeepSeek)) {
+    if (useLogprobs && (isOAI || isCustom || isDeepSeek || isXAI)) {
         generate_data['logprobs'] = 5;
     }
 
@@ -2153,7 +2165,18 @@ async function sendOpenAIRequest(type, messages, signal) {
         }
     }
 
-    if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere || isNano) && oai_settings.seed >= 0) {
+    if (isXAI) {
+        if (generate_data.model.includes('grok-3-mini')) {
+            delete generate_data.presence_penalty;
+            delete generate_data.frequency_penalty;
+        }
+        if (generate_data.model.includes('grok-vision')) {
+            delete generate_data.tools;
+            delete generate_data.tool_choice;
+        }
+    }
+
+    if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere || isNano || isXAI) && oai_settings.seed >= 0) {
         generate_data['seed'] = oai_settings.seed;
     }
 
@@ -2279,6 +2302,11 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content || '');
         }
         return data.choices?.[0]?.delta?.content || '';
+    } else if (chat_completion_source === chat_completion_sources.XAI) {
+        if (show_thoughts) {
+            state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content || '');
+        }
+        return data.choices?.[0]?.delta?.content || '';
     } else if (chat_completion_source === chat_completion_sources.OPENROUTER) {
         if (show_thoughts) {
             state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning)?.[0]?.delta?.reasoning || '');
@@ -2311,6 +2339,7 @@ function parseChatCompletionLogprobs(data) {
     switch (oai_settings.chat_completion_source) {
         case chat_completion_sources.OPENAI:
         case chat_completion_sources.DEEPSEEK:
+        case chat_completion_sources.XAI:
         case chat_completion_sources.CUSTOM:
             if (!data.choices?.length) {
                 return null;
@@ -3232,6 +3261,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.nanogpt_model = settings.nanogpt_model ?? default_settings.nanogpt_model;
     oai_settings.deepseek_model = settings.deepseek_model ?? default_settings.deepseek_model;
     oai_settings.zerooneai_model = settings.zerooneai_model ?? default_settings.zerooneai_model;
+    oai_settings.xai_model = settings.xai_model ?? default_settings.xai_model;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
     oai_settings.custom_url = settings.custom_url ?? default_settings.custom_url;
     oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
@@ -3317,6 +3347,8 @@ function loadOpenAISettings(data, settings) {
     $('#model_deepseek_select').val(oai_settings.deepseek_model);
     $(`#model_deepseek_select option[value="${oai_settings.deepseek_model}"`).prop('selected', true);
     $('#model_01ai_select').val(oai_settings.zerooneai_model);
+    $('#model_xai_select').val(oai_settings.xai_model);
+    $(`#model_xai_select option[value="${oai_settings.xai_model}"`).attr('selected', true);
     $('#custom_model_id').val(oai_settings.custom_model);
     $('#custom_api_url_text').val(oai_settings.custom_url);
     $('#openai_max_context').val(oai_settings.openai_max_context);
@@ -4167,6 +4199,80 @@ function getMaxContextWindowAI(value) {
 }
 
 /**
+ * Get the maximum context size for the Mistral model
+ * @param {string} model Model identifier
+ * @param {boolean} isUnlocked Whether context limits are unlocked
+ * @returns {number} Maximum context size in tokens
+ */
+function getMistralMaxContext(model, isUnlocked) {
+    if (isUnlocked) {
+        return unlocked_max;
+    }
+
+    if (Array.isArray(model_list) && model_list.length > 0) {
+        const contextLength = model_list.find((record) => record.id === model)?.max_context_length;
+        if (contextLength) {
+            return contextLength;
+        }
+    }
+
+    const contextMap = {
+        'codestral-2411-rc5': 262144,
+        'codestral-2412': 262144,
+        'codestral-2501': 262144,
+        'codestral-latest': 262144,
+        'codestral-mamba-2407': 262144,
+        'codestral-mamba-latest': 262144,
+        'open-codestral-mamba': 262144,
+        'ministral-3b-2410': 131072,
+        'ministral-3b-latest': 131072,
+        'ministral-8b-2410': 131072,
+        'ministral-8b-latest': 131072,
+        'mistral-large-2407': 131072,
+        'mistral-large-2411': 131072,
+        'mistral-large-latest': 131072,
+        'mistral-large-pixtral-2411': 131072,
+        'mistral-tiny-2407': 131072,
+        'mistral-tiny-latest': 131072,
+        'open-mistral-nemo': 131072,
+        'open-mistral-nemo-2407': 131072,
+        'pixtral-12b': 131072,
+        'pixtral-12b-2409': 131072,
+        'pixtral-12b-latest': 131072,
+        'pixtral-large-2411': 131072,
+        'pixtral-large-latest': 131072,
+        'open-mixtral-8x22b': 65536,
+        'open-mixtral-8x22b-2404': 65536,
+        'codestral-2405': 32768,
+        'mistral-embed': 32768,
+        'mistral-large-2402': 32768,
+        'mistral-medium': 32768,
+        'mistral-medium-2312': 32768,
+        'mistral-medium-latest': 32768,
+        'mistral-moderation-2411': 32768,
+        'mistral-moderation-latest': 32768,
+        'mistral-ocr-2503': 32768,
+        'mistral-ocr-latest': 32768,
+        'mistral-saba-2502': 32768,
+        'mistral-saba-latest': 32768,
+        'mistral-small': 32768,
+        'mistral-small-2312': 32768,
+        'mistral-small-2402': 32768,
+        'mistral-small-2409': 32768,
+        'mistral-small-2501': 32768,
+        'mistral-small-2503': 32768,
+        'mistral-small-latest': 32768,
+        'mistral-tiny': 32768,
+        'mistral-tiny-2312': 32768,
+        'open-mistral-7b': 32768,
+        'open-mixtral-8x7b': 32768,
+    };
+
+    // Return context size if model found, otherwise default to 32k
+    return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || 32768;
+}
+
+/**
  * Get the maximum context size for the Groq model
  * @param {string} model Model identifier
  * @param {boolean} isUnlocked Whether context limits are unlocked
@@ -4194,6 +4300,9 @@ function getGroqMaxContext(model, isUnlocked) {
         'qwen-2.5-32b': max_128k,
         'deepseek-r1-distill-qwen-32b': max_128k,
         'deepseek-r1-distill-llama-70b-specdec': max_128k,
+        'mistral-saba-24b': max_32k,
+        'meta-llama/llama-4-scout-17b-16e-instruct': max_128k,
+        'meta-llama/llama-4-maverick-17b-128e-instruct': max_128k,
     };
 
     // Return context size if model found, otherwise default to 128k
@@ -4310,6 +4419,11 @@ async function onModelChange() {
         $('#custom_model_id').val(value).trigger('input');
     }
 
+    if ($(this).is('#model_xai_select')) {
+        console.log('XAI model changed to', value);
+        oai_settings.xai_model = value;
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
@@ -4328,7 +4442,7 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_32k);
         } else if (value.includes('gemini-1.5-pro') || value.includes('gemini-exp-1206') || value.includes('gemini-2.0-pro')) {
             $('#openai_max_context').attr('max', max_2mil);
-        } else if (value.includes('gemini-1.5-flash') || value.includes('gemini-2.0-flash') || value.includes('gemini-2.5-pro-exp-03-25')) {
+        } else if (value.includes('gemini-1.5-flash') || value.includes('gemini-2.0-flash') || value.includes('gemini-2.5-pro-exp-03-25') || value.includes('gemini-2.5-pro-preview-03-25')) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value.includes('gemini-1.0-pro') || value === 'gemini-pro') {
             $('#openai_max_context').attr('max', max_32k);
@@ -4426,27 +4540,10 @@ async function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.MISTRALAI) {
-        if (oai_settings.max_context_unlocked) {
-            $('#openai_max_context').attr('max', unlocked_max);
-        } else if (['codestral-latest', 'codestral-mamba-2407', 'codestral-2411-rc5', 'codestral-2412', 'codestral-2501'].includes(oai_settings.mistralai_model)) {
-            $('#openai_max_context').attr('max', max_256k);
-        } else if (['mistral-large-2407', 'mistral-large-2411', 'mistral-large-pixtral-2411', 'mistral-large-latest'].includes(oai_settings.mistralai_model)) {
-            $('#openai_max_context').attr('max', max_128k);
-        } else if (oai_settings.mistralai_model.includes('mistral-nemo')) {
-            $('#openai_max_context').attr('max', max_128k);
-        } else if (oai_settings.mistralai_model.includes('mixtral-8x22b')) {
-            $('#openai_max_context').attr('max', max_64k);
-        } else if (oai_settings.mistralai_model.includes('pixtral')) {
-            $('#openai_max_context').attr('max', max_128k);
-        } else if (oai_settings.mistralai_model.includes('ministral')) {
-            $('#openai_max_context').attr('max', max_32k);
-        } else {
-            $('#openai_max_context').attr('max', max_32k);
-        }
+        const maxContext = getMistralMaxContext(oai_settings.mistralai_model, oai_settings.max_context_unlocked);
+        $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
-
-        //mistral also caps temp at 1.0
         oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
@@ -4575,6 +4672,22 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_16k);
         } else {
             $('#openai_max_context').attr('max', max_64k);
+        }
+
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.XAI) {
+        if (oai_settings.max_context_unlocked) {
+            $('#openai_max_context').attr('max', unlocked_max);
+        } else if (oai_settings.xai_model.includes('grok-2-vision')) {
+            $('#openai_max_context').attr('max', max_32k);
+        } else if (oai_settings.xai_model.includes('grok-vision')) {
+            $('#openai_max_context').attr('max', max_8k);
+        } else {
+            $('#openai_max_context').attr('max', max_128k);
         }
 
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
@@ -4820,6 +4933,19 @@ async function onConnectButtonClick(e) {
         }
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.XAI) {
+        const api_key_xai = String($('#api_key_xai').val()).trim();
+
+        if (api_key_xai.length) {
+            await writeSecret(SECRET_KEYS.XAI, api_key_xai);
+        }
+
+        if (!secret_state[SECRET_KEYS.XAI]) {
+            console.log('No secret key saved for XAI');
+            return;
+        }
+    }
+
     startStatusLoading();
     saveSettingsDebounced();
     await getStatusOpen();
@@ -4875,6 +5001,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
         $('#model_deepseek_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.XAI) {
+        $('#model_xai_select').trigger('change');
     }
     $('[data-source]').each(function () {
         const validSources = $(this).data('source').split(',');
@@ -4962,6 +5091,7 @@ export function isImageInliningSupported() {
     const visionSupportedModels = [
         'gpt-4-vision',
         'gemini-2.5-pro-exp-03-25',
+        'gemini-2.5-pro-preview-03-25',
         'gemini-2.0-pro-exp',
         'gemini-2.0-pro-exp-02-05',
         'gemini-2.0-flash-lite-preview',
@@ -5003,7 +5133,9 @@ export function isImageInliningSupported() {
         'o1-2024-12-17',
         'chatgpt-4o-latest',
         'yi-vision',
-        'pixtral-latest',
+        'mistral-large-pixtral-2411',
+        'mistral-small-2503',
+        'mistral-small-latest',
         'pixtral-12b-latest',
         'pixtral-12b',
         'pixtral-12b-2409',
@@ -5011,6 +5143,8 @@ export function isImageInliningSupported() {
         'pixtral-large-2411',
         'c4ai-aya-vision-8b',
         'c4ai-aya-vision-32b',
+        'grok-2-vision',
+        'grok-vision',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -5030,6 +5164,8 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.mistralai_model.includes(model));
         case chat_completion_sources.COHERE:
             return visionSupportedModels.some(model => oai_settings.cohere_model.includes(model));
+        case chat_completion_sources.XAI:
+            return visionSupportedModels.some(model => oai_settings.xai_model.includes(model));
         default:
             return false;
     }
@@ -5570,6 +5706,7 @@ export function initOpenAI() {
 
     $('#openai_enable_web_search').on('input', function () {
         oai_settings.enable_web_search = !!$(this).prop('checked');
+        calculateOpenRouterCost();
         saveSettingsDebounced();
     });
 
@@ -5626,6 +5763,7 @@ export function initOpenAI() {
     $('#model_deepseek_select').on('change', onModelChange);
     $('#model_01ai_select').on('change', onModelChange);
     $('#model_custom_select').on('change', onModelChange);
+    $('#model_xai_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);

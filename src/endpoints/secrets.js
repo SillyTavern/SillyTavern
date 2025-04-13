@@ -52,6 +52,7 @@ export const SECRET_KEYS = {
     GENERIC: 'api_key_generic',
     DEEPSEEK: 'api_key_deepseek',
     SERPER: 'api_key_serper',
+    XAI: 'api_key_xai',
 };
 
 // These are the keys that are safe to expose, even if allowKeysExposure is false

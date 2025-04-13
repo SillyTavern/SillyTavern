@@ -16,7 +16,7 @@ router.post('/caption-image', async (request, response) => {
         const base64Data = request.body.image.split(',')[1];
         const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
         const apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
-        const model = request.body.model || 'gemini-pro-vision';
+        const model = request.body.model || 'gemini-2.0-flash';
         const url = `${apiUrl.origin}/v1beta/models/${model}:generateContent?key=${apiKey}`;
         const body = {
             contents: [{
@@ -30,7 +30,6 @@ router.post('/caption-image', async (request, response) => {
                     }],
             }],
             safetySettings: GEMINI_SAFETY,
-            generationConfig: { maxOutputTokens: 1000 },
         };
 
         console.debug('Multimodal captioning request', model, body);

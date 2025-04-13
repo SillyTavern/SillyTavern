@@ -109,6 +109,8 @@ export function extractReasoningFromData(data, {
             switch (chatCompletionSource ?? oai_settings.chat_completion_source) {
                 case chat_completion_sources.DEEPSEEK:
                     return data?.choices?.[0]?.message?.reasoning_content ?? '';
+                case chat_completion_sources.XAI:
+                    return data?.choices?.[0]?.message?.reasoning_content ?? '';
                 case chat_completion_sources.OPENROUTER:
                     return data?.choices?.[0]?.message?.reasoning ?? '';
                 case chat_completion_sources.MAKERSUITE:
@@ -832,6 +834,12 @@ function registerReasoningSlashCommands() {
                 typeList: ARGUMENT_TYPE.NUMBER,
                 enumProvider: commonEnumProviders.messages(),
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'collapse',
+                description: 'Whether to collapse the reasoning block. (If not provided, uses the default expand setting)',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
         ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -856,6 +864,9 @@ function registerReasoningSlashCommands() {
 
             closeMessageEditor('reasoning');
             updateMessageBlock(messageId, message);
+
+            if (isTrueBoolean(String(args.collapse))) $(`#chat [mesid="${messageId}"] .mes_reasoning_details`).removeAttr('open');
+            if (isFalseBoolean(String(args.collapse))) $(`#chat [mesid="${messageId}"] .mes_reasoning_details`).attr('open', '');
             return message.extra.reasoning;
         },
     }));

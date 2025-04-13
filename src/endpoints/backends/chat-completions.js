@@ -23,6 +23,7 @@ import {
     convertCohereMessages,
     convertMistralMessages,
     convertAI21Messages,
+    convertXAIMessages,
     mergeMessages,
     cachingAtDepthForOpenRouterClaude,
     cachingAtDepthForClaude,
@@ -53,6 +54,7 @@ const API_01AI = 'https://api.lingyiwanwu.com/v1';
 const API_AI21 = 'https://api.ai21.com/studio/v1';
 const API_NANOGPT = 'https://nano-gpt.com/api/v1';
 const API_DEEPSEEK = 'https://api.deepseek.com/beta';
+const API_XAI = 'https://api.x.ai/v1';
 
 /**
  * Applies a post-processing step to the generated messages.
@@ -872,6 +874,9 @@ router.post('/status', async function (request, response_getstatus_openai) {
         api_url = new URL(request.body.reverse_proxy || API_DEEPSEEK.replace('/beta', ''));
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK);
         headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.XAI) {
+        api_url = API_XAI;
+        api_key_openai = readSecret(request.user.directories, SECRET_KEYS.XAI);
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
@@ -1150,6 +1155,12 @@ router.post('/generate', function (request, response) {
         apiKey = readSecret(request.user.directories, SECRET_KEYS.ZEROONEAI);
         headers = {};
         bodyParams = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.XAI) {
+        apiUrl = API_XAI;
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.XAI);
+        headers = {};
+        bodyParams = {};
+        request.body.messages = convertXAIMessages(request.body.messages, getPromptNames(request));
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });
@@ -1159,6 +1170,12 @@ router.post('/generate', function (request, response) {
     if ([CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
         if (['o1', 'o3-mini', 'o3-mini-2025-01-31'].includes(request.body.model)) {
             bodyParams['reasoning_effort'] = request.body.reasoning_effort;
+        }
+    }
+
+    if ([CHAT_COMPLETION_SOURCES.XAI].includes(request.body.chat_completion_source)) {
+        if (['grok-3-mini-beta', 'grok-3-mini-fast-beta'].includes(request.body.model)) {
+            bodyParams['reasoning_effort'] = request.body.reasoning_effort === 'high' ? 'high' : 'low';
         }
     }
 

@@ -81,6 +81,7 @@ const sources = {
     nanogpt: 'nanogpt',
     bfl: 'bfl',
     falai: 'falai',
+    xai: 'xai',
 };
 
 const initiators = {
@@ -1303,6 +1304,7 @@ async function onModelChange() {
         sources.nanogpt,
         sources.bfl,
         sources.falai,
+        sources.xai,
     ];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
@@ -1518,6 +1520,9 @@ async function loadSamplers() {
         case sources.bfl:
             samplers = ['N/A'];
             break;
+        case sources.xai:
+            samplers = ['N/A'];
+            break;
     }
 
     for (const sampler of samplers) {
@@ -1708,6 +1713,9 @@ async function loadModels() {
         case sources.falai:
             models = await loadFalaiModels();
             break;
+        case sources.xai:
+            models = await loadXAIModels();
+            break;
     }
 
     for (const model of models) {
@@ -1758,6 +1766,12 @@ async function loadFalaiModels() {
     }
 
     return [];
+}
+
+async function loadXAIModels() {
+    return [
+        { value: 'grok-2-image-1212', text: 'grok-2-image-1212' },
+    ];
 }
 
 async function loadPollinationsModels() {
@@ -2081,6 +2095,9 @@ async function loadSchedulers() {
         case sources.falai:
             schedulers = ['N/A'];
             break;
+        case sources.xai:
+            schedulers = ['N/A'];
+            break;
     }
 
     for (const scheduler of schedulers) {
@@ -2164,6 +2181,12 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.bfl:
+            vaes = ['N/A'];
+            break;
+        case sources.falai:
+            vaes = ['N/A'];
+            break;
+        case sources.xai:
             vaes = ['N/A'];
             break;
     }
@@ -2734,6 +2757,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                 break;
             case sources.falai:
                 result = await generateFalaiImage(prefixedPrompt, negativePrompt, signal);
+                break;
+            case sources.xai:
+                result = await generateXAIImage(prefixedPrompt, negativePrompt, signal);
                 break;
         }
 
@@ -3464,6 +3490,33 @@ async function generateBflImage(prompt, signal) {
 }
 
 /**
+ * Generates an image using the xAI API.
+ * @param {string} prompt The main instruction used to guide the image generation.
+ * @param {string} _negativePrompt Negative prompt is not used in this API
+ * @param {AbortSignal} signal An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} A promise that resolves when the image generation and processing are complete.
+ */
+async function generateXAIImage(prompt, _negativePrompt, signal) {
+    const result = await fetch('/api/sd/xai/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify({
+            prompt: prompt,
+            model: extension_settings.sd.model,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'jpg', data: data.image };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+/**
  * Generates an image using the FAL.AI API.
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} negativePrompt - The negative prompt used to guide the image generation.
@@ -3782,6 +3835,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.BFL];
         case sources.falai:
             return secret_state[SECRET_KEYS.FALAI];
+        case sources.xai:
+            return secret_state[SECRET_KEYS.XAI];
     }
 }
 
