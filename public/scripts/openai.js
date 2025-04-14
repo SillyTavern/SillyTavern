@@ -2039,7 +2039,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     // Proxy is only supported for Claude, OpenAI, Mistral, and Google MakerSuite
-    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE, chat_completion_sources.DEEPSEEK].includes(oai_settings.chat_completion_source)) {
+    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE, chat_completion_sources.DEEPSEEK, chat_completion_sources.XAI].includes(oai_settings.chat_completion_source)) {
         await validateReverseProxy();
         generate_data['reverse_proxy'] = oai_settings.reverse_proxy;
         generate_data['proxy_password'] = oai_settings.proxy_password;
@@ -4940,7 +4940,7 @@ async function onConnectButtonClick(e) {
             await writeSecret(SECRET_KEYS.XAI, api_key_xai);
         }
 
-        if (!secret_state[SECRET_KEYS.XAI]) {
+        if (!secret_state[SECRET_KEYS.XAI] && !oai_settings.reverse_proxy) {
             console.log('No secret key saved for XAI');
             return;
         }
