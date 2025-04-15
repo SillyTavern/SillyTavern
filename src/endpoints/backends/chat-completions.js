@@ -841,7 +841,7 @@ async function sendXaiRequest(request, response) {
     const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.XAI);
 
     if (!apiKey && !request.body.reverse_proxy) {
-        console.warn('XAI API key is missing.');
+        console.warn('xAI API key is missing.');
         return response.status(400).send({ error: true });
     }
 
@@ -865,14 +865,12 @@ async function sendXaiRequest(request, response) {
             bodyParams['tool_choice'] = request.body.tool_choice;
         }
 
-        if ([CHAT_COMPLETION_SOURCES.XAI].includes(request.body.chat_completion_source)) {
-            if (['grok-3-mini-beta', 'grok-3-mini-fast-beta'].includes(request.body.model)) {
+
+        if (['grok-3-mini-beta', 'grok-3-mini-fast-beta'].includes(request.body.model)) {
                 bodyParams['reasoning_effort'] = request.body.reasoning_effort === 'high' ? 'high' : 'low';
-            }
         }    
 
-        const postProcessType = 'xai';
-        const processedMessages = postProcessPrompt(request.body.messages, postProcessType, getPromptNames(request));
+        const processedMessages = request.body.messages = convertXAIMessages(request.body.messages, getPromptNames(request));
 
         const requestBody = {
             'messages': processedMessages,
@@ -884,8 +882,6 @@ async function sendXaiRequest(request, response) {
             'presence_penalty': request.body.presence_penalty,
             'frequency_penalty': request.body.frequency_penalty,
             'top_p': request.body.top_p,
-            'top_k': request.body.top_k,
-            'logit_bias': request.body.logit_bias,
             'seed': request.body.seed,
             'n': request.body.n,
             ...bodyParams,
@@ -901,7 +897,7 @@ async function sendXaiRequest(request, response) {
             signal: controller.signal,
         };
 
-        console.debug('XAI request:', requestBody);
+        console.debug('xAI request:', requestBody);
 
         const generateResponse = await fetch(apiUrl + '/chat/completions', config);
 
@@ -910,27 +906,18 @@ async function sendXaiRequest(request, response) {
         } else {
             if (!generateResponse.ok) {
                 const errorText = await generateResponse.text();
-                console.warn(`XAI API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                console.warn(`xAI API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
                 const errorJson = tryParse(errorText) ?? { error: true };
-                return response.status(generateResponse.status).send(errorJson);
+                return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
-            console.debug('XAI response:', generateResponseJson);
+            console.debug('xAI response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
     } catch (error) {
-        if (error.name === 'AbortError') {
-             console.log('Request aborted by client.');
-             if (!response.headersSent) {
-                 response.status(499).send({ error: true, message: 'Client closed request' });
-             } else {
-                 response.end();
-             }
-             return;
-        }
-        console.error('Error communicating with XAI API: ', error);
+        console.error('Error communicating with xAI API: ', error);
         if (!response.headersSent) {
-            response.status(500).send({ error: true, message: 'Failed to communicate with XAI API' });
+            response.send({ error: true });
         } else {
             response.end();
         }
@@ -1268,12 +1255,6 @@ router.post('/generate', function (request, response) {
         apiKey = readSecret(request.user.directories, SECRET_KEYS.ZEROONEAI);
         headers = {};
         bodyParams = {};
-    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.XAI) {
-        apiUrl = API_XAI;
-        apiKey = readSecret(request.user.directories, SECRET_KEYS.XAI);
-        headers = {};
-        bodyParams = {};
-        request.body.messages = convertXAIMessages(request.body.messages, getPromptNames(request));
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });

@@ -65,7 +65,7 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.COHERE);
         }
 
-        if (request.body.api === 'xai' && !request.body.reverse_proxy) {
+        if (request.body.api === 'xai') {
             key = readSecret(request.user.directories, SECRET_KEYS.XAI);
         }
 
