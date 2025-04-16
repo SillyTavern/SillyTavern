@@ -863,6 +863,10 @@ async function sendXaiRequest(request, response) {
             bodyParams['tool_choice'] = request.body.tool_choice;
         }
 
+        if (Array.isArray(request.body.stop) && request.body.stop.length > 0) {
+            bodyParams['stop'] = request.body.stop;
+        }
+
         if (['grok-3-mini-beta', 'grok-3-mini-fast-beta'].includes(request.body.model)) {
             bodyParams['reasoning_effort'] = request.body.reasoning_effort === 'high' ? 'high' : 'low';
         }
