@@ -830,7 +830,6 @@ async function sendDeepSeekRequest(request, response) {
     }
 }
 
-
 /**
  * Sends a request to XAI API.
  * @param {express.Request} request Express request
@@ -859,16 +858,14 @@ async function sendXaiRequest(request, response) {
             bodyParams['logprobs'] = true;
         }
 
-
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
             bodyParams['tools'] = request.body.tools;
             bodyParams['tool_choice'] = request.body.tool_choice;
         }
 
-
         if (['grok-3-mini-beta', 'grok-3-mini-fast-beta'].includes(request.body.model)) {
-                bodyParams['reasoning_effort'] = request.body.reasoning_effort === 'high' ? 'high' : 'low';
-        }    
+            bodyParams['reasoning_effort'] = request.body.reasoning_effort === 'high' ? 'high' : 'low';
+        }
 
         const processedMessages = request.body.messages = convertXAIMessages(request.body.messages, getPromptNames(request));
 
@@ -923,9 +920,6 @@ async function sendXaiRequest(request, response) {
         }
     }
 }
-
-
-
 
 export const router = express.Router();
 
@@ -1142,8 +1136,6 @@ router.post('/generate', function (request, response) {
         case CHAT_COMPLETION_SOURCES.COHERE: return sendCohereRequest(request, response);
         case CHAT_COMPLETION_SOURCES.DEEPSEEK: return sendDeepSeekRequest(request, response);
         case CHAT_COMPLETION_SOURCES.XAI: return sendXaiRequest(request, response);
-
-        
     }
 
     let apiUrl;
