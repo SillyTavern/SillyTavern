@@ -43,7 +43,7 @@ whitelist:
 # Automatically whitelist Docker host and gateway IPs
 whitelistDockerHosts: true
 # Toggle basic authentication for endpoints
-basicAuthMode: false
+basicAuthMode: true
 # Basic authentication credentials
 basicAuthUser:
   username: "user"
