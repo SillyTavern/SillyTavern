@@ -78,6 +78,10 @@ class SystemTtsProvider {
     //########//
     // Config //
     //########//
+    
+    // Static constants for the simulated default voice
+    static BROWSER_DEFAULT_VOICE_ID = '__browser_default__';
+    static BROWSER_DEFAULT_VOICE_NAME = 'System Default Voice';
 
     settings;
     ready = false;
@@ -168,51 +172,123 @@ class SystemTtsProvider {
     //#################//
     fetchTtsVoiceObjects() {
         if (!('speechSynthesis' in window)) {
-            return [];
+            // Browser doesn't support speech synthesis
+            return Promise.resolve([]);
         }
 
         return new Promise((resolve) => {
+            // Use a minimal timeout to allow the voice list to potentially populate
             setTimeout(() => {
-                const voices = speechSynthesis
-                    .getVoices()
-                    .sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name))
-                    .map(x => ({ name: x.name, voice_id: x.voiceURI, preview_url: false, lang: x.lang }));
+                let voices = speechSynthesis.getVoices();
 
-                resolve(voices);
-            }, 1);
+                if (voices.length === 0) {
+                    // If no voices returned (e.g., Edge on first load), provide a default option
+                    console.warn("SystemTTS: getVoices() returned empty list. Providing browser default option.");
+                    const defaultVoice = {
+                        name: SystemTtsProvider.BROWSER_DEFAULT_VOICE_NAME,
+                        voice_id: SystemTtsProvider.BROWSER_DEFAULT_VOICE_ID,
+                        preview_url: false,
+                        // Try to guess the browser's default language
+                        lang: navigator.language || 'en-US'
+                    };
+                    resolve([defaultVoice]);
+                } else {
+                    // If voices are available, map them as before
+                    const mappedVoices = voices
+                        .sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name))
+                        .map(x => ({ name: x.name, voice_id: x.voiceURI, preview_url: false, lang: x.lang }));
+                    resolve(mappedVoices);
+                }
+            }, 50); // Increased timeout slightly just in case it helps voice population on some browsers
         });
     }
 
+
     previewTtsVoice(voiceId) {
         if (!('speechSynthesis' in window)) {
-            throw 'Speech synthesis API is not supported';
+            throw new Error('Speech synthesis API is not supported'); // Keep Error type for consistency
         }
 
-        const voice = speechSynthesis.getVoices().find(x => x.voiceURI === voiceId);
+        let voice = null;
+        // Check if the requested voice is NOT the browser default
+        if (voiceId !== SystemTtsProvider.BROWSER_DEFAULT_VOICE_ID) {
+            const voices = speechSynthesis.getVoices();
+             // Try to find the actual voice
+            voice = voices.find(x => x.voiceURI === voiceId);
 
-        if (!voice) {
-            throw `TTS Voice id ${voiceId} not found`;
+            if (!voice && voices.length > 0) {
+                // If voices are loaded but the specific ID wasn't found, log a warning
+                console.warn(`SystemTTS Preview: Voice ID "${voiceId}" not found among available voices. Using browser default.`);
+                // Fallback to default (voice remains null)
+            } else if (!voice && voices.length === 0) {
+                 // If no voices are loaded at all, we expect to use default
+                 console.warn(`SystemTTS Preview: Voice list is empty. Using browser default.`);
+                 // Fallback to default (voice remains null)
+            }
+        } else {
+             console.log("SystemTTS Preview: Using browser default voice as requested.");
+             // Use default (voice remains null)
         }
 
-        speechSynthesis.cancel();
-        const text = getPreviewString(voice.lang);
+        speechSynthesis.cancel(); // Stop any previous speech
+        // Use the language from the found voice if available, otherwise default to 'en-US' or browser lang for the preview text
+        const langForPreview = voice ? voice.lang : (navigator.language || 'en-US');
+        const text = getPreviewString(langForPreview);
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.voice = voice;
+
+        // Only set the voice if we found a specific one and it wasn't the default request
+        if (voice) {
+             utterance.voice = voice;
+        }
+        // Otherwise, utterance.voice remains null/undefined, causing the browser to use its default
+
         utterance.rate = this.settings.rate || 1;
         utterance.pitch = this.settings.pitch || 1;
+
+        // Add error handling for the speech itself
+        utterance.onerror = (event) => {
+             console.error(`SystemTTS Preview Error: ${event.error}`, event);
+             // Potentially notify the user here
+        };
+
         speechSynthesis.speak(utterance);
     }
 
     async getVoice(voiceName) {
         if (!('speechSynthesis' in window)) {
-            return { voice_id: null };
+            // Return a predictable null-like structure if API not supported
+             return { voice_id: null, name: 'API Not Supported' };
         }
 
+        // Check if the requested name is the browser default placeholder
+        if (voiceName === SystemTtsProvider.BROWSER_DEFAULT_VOICE_NAME) {
+            return {
+                voice_id: SystemTtsProvider.BROWSER_DEFAULT_VOICE_ID,
+                name: SystemTtsProvider.BROWSER_DEFAULT_VOICE_NAME
+            };
+        }
+
+        // Attempt to get voices, might be async
+        // Note: This relies on voices potentially being populated by now.
+        // A more robust approach might involve re-calling fetchTtsVoiceObjects if needed,
+        // but sticking to minimal changes based on original code structure.
         const voices = speechSynthesis.getVoices();
+
+        if (voices.length === 0) {
+             // If voices are still empty, we can't find any specific name
+             console.warn(`SystemTTS getVoice: Voice list empty, cannot find "${voiceName}". Falling back to browser default ID.`);
+             // Return the default placeholder as a fallback in this edge case
+             return {
+                 voice_id: SystemTtsProvider.BROWSER_DEFAULT_VOICE_ID,
+                 name: SystemTtsProvider.BROWSER_DEFAULT_VOICE_NAME
+             };
+        }
+
         const match = voices.find(x => x.name == voiceName);
 
         if (!match) {
-            throw `TTS Voice name ${voiceName} not found`;
+             // If voices are loaded but name not found, throw error as before
+            throw new Error(`SystemTTS getVoice: TTS Voice name "${voiceName}" not found`);
         }
 
         return { voice_id: match.voiceURI, name: match.name };
@@ -243,4 +319,4 @@ class SystemTtsProvider {
             });
         });
     }
-}
+} 
