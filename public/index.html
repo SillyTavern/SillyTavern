@@ -2034,6 +2034,52 @@
                                             </span>
                                         </div>
                                     </div>
+                                    <div data-source="makersuite" id="thinking_budget_master_container">
+                                        <hr>
+                                        <div class="range-block">
+                                            <label for="master_enable_thinking" class="checkbox_label widthFreeExpand">
+                                                <input id="master_enable_thinking" type="checkbox" />
+                                                <span>
+                                                    <span data-i18n="Enable Thinking Feature">Enable thinking
+                                                        budget</span>
+                                                    <i class="opacity50p fa-solid fa-circle-info"
+                                                        title="Works with Gemini 2.5 Flash Preview only!"
+                                                        data-i18n="[title]Works with Gemini 2.5 Flash Preview only!"></i>
+                                                </span>
+                                            </label>
+                                            <div class="toggle-description justifyLeft marginBot5">
+                                                <span data-i18n="thinking_budget_desc_1">Sends a</span> <code>thinkingBudget</code> <span data-i18n="thinking_budget_desc_2">value. If unchecked, lets the model decide (default thinking mode).</span>
+                                            </div>
+                                        </div>
+                                        <div id="thinking_budget_controls" style="display: none;">
+                                            <div class="range-block">
+                                                <label for="use_thinking_budget_value"
+                                                    class="checkbox_label widthFreeExpand">
+                                                    <input id="use_thinking_budget_value" type="checkbox" disabled />
+                                                    <span data-i18n="Use Thinking Budget Value">Use thinking budget
+                                                        value</span>
+                                                </label>
+                                                <div class="toggle-description justifyLeft marginBot5">
+                                                    <span data-i18n="use_thinking_budget_desc">Uses the slider value below. If unchecked, the budget is explicitly set to 0 (thinking disabled).</span>
+                                                </div>
+                                            </div>
+                                            <div class="range-block">
+                                                <div class="range-block-title" data-i18n="Thinking Budget (Tokens)">
+                                                    Thinking Budget (tokens)
+                                                </div>
+                                                <div class="range-block-range-and-counter">
+                                                    <div class="range-block-range">
+                                                        <input class="neo-range-slider" type="range" id="thinking_budget_slider" name="volume" min="0" max="24576" step="1" value="1000" disabled>
+                                            </div>
+                                                    <div class="range-block-counter">
+                                                        <input class="neo-range-input" type="number" min="0" max="24576" step="1" data-for="thinking_budget_slider" id="thinking_budget_counter" value="1000" disabled>
+                                            </div>
+                                                </div>
+                                                <label for="oai_max_context_unlocked"
+                                                    class="checkbox_label displayNone"></label>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div class="range-block" data-source="deepseek,openrouter,custom,claude,xai">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />

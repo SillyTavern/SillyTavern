@@ -354,6 +354,14 @@ async function sendMakerSuiteRequest(request, response) {
         responseSchema: request.body.responseSchema,
     };
 
+    const thinkingConfigFromRequest = request.body?.generationConfig?.thinkingConfig;
+    if (thinkingConfigFromRequest && typeof thinkingConfigFromRequest.thinkingBudget === 'number') {
+        generationConfig.thinkingConfig = {
+            thinkingBudget: thinkingConfigFromRequest.thinkingBudget,
+        };
+        console.log('[chat-completions.js] Added thinkingConfig to generationConfig:', generationConfig.thinkingConfig);
+    }
+
     function getGeminiBody() {
         if (!Array.isArray(generationConfig.stopSequences) || !generationConfig.stopSequences.length) {
             delete generationConfig.stopSequences;
@@ -439,7 +447,11 @@ async function sendMakerSuiteRequest(request, response) {
             controller.abort();
         });
 
-        const apiVersion = isThinking ? 'v1alpha' : 'v1beta';
+        let apiVersion = isThinking ? 'v1alpha' : 'v1beta';
+        if (generationConfig.thinkingConfig && apiVersion !== 'v1alpha') {
+            apiVersion = 'v1alpha';
+        }
+
         const responseType = (stream ? 'streamGenerateContent' : 'generateContent');
 
         const generateResponse = await fetch(`${apiUrl.toString().replace(/\/$/, '')}/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`, {
@@ -450,6 +462,8 @@ async function sendMakerSuiteRequest(request, response) {
             },
             signal: controller.signal,
         });
+
+
         // have to do this because of their busted ass streaming endpoint
         if (stream) {
             try {
