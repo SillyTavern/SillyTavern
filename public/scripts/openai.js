@@ -165,6 +165,11 @@ const textCompletionModels = [
     'code-search-ada-code-001',
 ];
 
+const googleThinkingBudgetModels = [
+    'gemini-2.5-flash-preview-04-17',
+    // Add future models here
+];
+
 let biasCache = undefined;
 export let model_list = [];
 
@@ -301,14 +306,14 @@ export const settingsToUpdate = {
     function_calling: ['#openai_function_calling', 'function_calling', true],
     show_thoughts: ['#openai_show_thoughts', 'show_thoughts', true],
     reasoning_effort: ['#openai_reasoning_effort', 'reasoning_effort', false],
+    google_master_enable_thinking: ['#google_master_enable_thinking', 'google_master_enable_thinking', true],
+    google_set_thinking_budget: ['#google_set_thinking_budget', 'google_set_thinking_budget', true],
+    thinking_budget: ['#thinking_budget_slider', 'thinking_budget', false],
     enable_web_search: ['#openai_enable_web_search', 'enable_web_search', true],
     seed: ['#seed_openai', 'seed', false],
     n: ['#n_openai', 'n', false],
     bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true],
     request_images: ['#openai_request_images', 'request_images', true],
-    masterEnableThinking: ['#master_enable_thinking', 'masterEnableThinking', true],
-    useThinkingBudget: ['#use_thinking_budget_value', 'useThinkingBudget', true],
-    thinkingBudget: ['#thinking_budget_slider', 'thinkingBudget', false],
 };
 
 const default_settings = {
@@ -386,13 +391,13 @@ const default_settings = {
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
     show_thoughts: true,
     reasoning_effort: 'medium',
+    google_master_enable_thinking: true, // Similar to Google AI studio
+    google_set_thinking_budget: false,
+    thinking_budget: 1000,
     enable_web_search: false,
     request_images: false,
     seed: -1,
     n: 1,
-    masterEnableThinking: false,
-    useThinkingBudget: false,
-    thinkingBudget: 1000,
 };
 
 const oai_settings = {
@@ -470,13 +475,13 @@ const oai_settings = {
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
     show_thoughts: true,
     reasoning_effort: 'medium',
+    google_master_enable_thinking: true, // Similar to Google AI studio
+    google_set_thinking_budget: false,
+    thinking_budget: 1000,
     enable_web_search: false,
     request_images: false,
     seed: -1,
     n: 1,
-    masterEnableThinking: false,
-    useThinkingBudget: false,
-    thinkingBudget: 1000,
 };
 
 export let proxies = [
@@ -2101,23 +2106,21 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     if (isGoogle) {
         const stopStringsLimit = 5;
-        generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['stop'] = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
-        generate_data['use_makersuite_sysprompt'] = oai_settings.use_makersuite_sysprompt;
-
-        if (oai_settings.masterEnableThinking && oai_settings.useThinkingBudget && oai_settings.thinkingBudget >= 0) {
-
-            generate_data.generationConfig = generate_data.generationConfig || {};
-            generate_data.generationConfig.thinkingConfig = {
-                thinkingBudget: oai_settings.thinkingBudget,
-            };
-        } else if (oai_settings.masterEnableThinking && !oai_settings.useThinkingBudget) {
-            generate_data.generationConfig = generate_data.generationConfig || {};
-            generate_data.generationConfig.thinkingConfig = {
-                thinkingBudget: 0,
-            };
+        const generationConfig = {};
+        generationConfig['top_k'] = Number(oai_settings.top_k_openai);
+        generationConfig['stopSequences'] = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
+        if (googleThinkingBudgetModels.includes(model)) {
+            if (!oai_settings.google_master_enable_thinking) {
+                // Master switch is OFF: Explicitly disable thinking
+                generationConfig['thinkingConfig'] = { thinkingBudget: 0 };
+            } else if (oai_settings.google_set_thinking_budget) {
+                // Master switch ON, Set Budget ON: Use slider value
+                generationConfig['thinkingConfig'] = { thinkingBudget: Number(oai_settings.thinking_budget) };
+            }
+            // If Master switch ON, Set Budget OFF: Do nothing, let API use default budget (don't send thinkingConfig)
         }
-
+        generate_data['generationConfig'] = generationConfig;
+        generate_data['use_makersuite_sysprompt'] = oai_settings.use_makersuite_sysprompt;
     }
 
     if (isMistral) {
@@ -3306,6 +3309,9 @@ function loadOpenAISettings(data, settings) {
     oai_settings.bypass_status_check = settings.bypass_status_check ?? default_settings.bypass_status_check;
     oai_settings.show_thoughts = settings.show_thoughts ?? default_settings.show_thoughts;
     oai_settings.reasoning_effort = settings.reasoning_effort ?? default_settings.reasoning_effort;
+    oai_settings.google_master_enable_thinking = settings.google_master_enable_thinking ?? default_settings.google_master_enable_thinking;
+    oai_settings.google_set_thinking_budget = settings.google_set_thinking_budget ?? default_settings.google_set_thinking_budget;
+    oai_settings.thinking_budget = settings.thinking_budget ?? default_settings.thinking_budget;
     oai_settings.enable_web_search = settings.enable_web_search ?? default_settings.enable_web_search;
     oai_settings.request_images = settings.request_images ?? default_settings.request_images;
     oai_settings.seed = settings.seed ?? default_settings.seed;
@@ -3324,9 +3330,6 @@ function loadOpenAISettings(data, settings) {
     oai_settings.continue_postfix = settings.continue_postfix ?? default_settings.continue_postfix;
     oai_settings.function_calling = settings.function_calling ?? default_settings.function_calling;
     oai_settings.openrouter_providers = settings.openrouter_providers ?? default_settings.openrouter_providers;
-    oai_settings.masterEnableThinking = settings.masterEnableThinking ?? default_settings.masterEnableThinking;
-    oai_settings.useThinkingBudget = settings.useThinkingBudget ?? default_settings.useThinkingBudget;
-    oai_settings.thinkingBudget = settings.thinkingBudget ?? default_settings.thinkingBudget;
 
     // Migrate from old settings
     if (settings.names_in_completion === true) {
@@ -3442,13 +3445,13 @@ function loadOpenAISettings(data, settings) {
     $('#openai_enable_web_search').prop('checked', oai_settings.enable_web_search);
     $('#openai_request_images').prop('checked', oai_settings.request_images);
 
-    $('#master_enable_thinking').prop('checked', oai_settings.masterEnableThinking);
-    $('#use_thinking_budget_value').prop('checked', oai_settings.useThinkingBudget);
-    $('#thinking_budget_slider').val(oai_settings.thinkingBudget);
-    $('#thinking_budget_counter').val(oai_settings.thinkingBudget);
-
     $('#openai_reasoning_effort').val(oai_settings.reasoning_effort);
     $(`#openai_reasoning_effort option[value="${oai_settings.reasoning_effort}"]`).prop('selected', true);
+
+    $('#google_master_enable_thinking').prop('checked', oai_settings.google_master_enable_thinking);
+    $('#google_set_thinking_budget').prop('checked', oai_settings.google_set_thinking_budget);
+    $('#thinking_budget_slider').val(oai_settings.thinking_budget);
+    $('#thinking_budget_counter').val(oai_settings.thinking_budget);
 
     if (settings.reverse_proxy !== undefined) oai_settings.reverse_proxy = settings.reverse_proxy;
     $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
@@ -3489,46 +3492,30 @@ function loadOpenAISettings(data, settings) {
     $('#oai_max_context_unlocked').prop('checked', oai_settings.max_context_unlocked);
     $('#custom_prompt_post_processing').val(oai_settings.custom_prompt_post_processing);
     $(`#custom_prompt_post_processing option[value="${oai_settings.custom_prompt_post_processing}"]`).attr('selected', true);
-
-    updateThinkingBudgetUIState();
+    updateThinkingBudgetUI();
 }
 
-function updateThinkingBudgetUIState() {
-    const masterEnabled = oai_settings.masterEnableThinking;
-    const useSlider = oai_settings.useThinkingBudget;
-    const unlocked = oai_settings.max_context_unlocked;
-    const $controlsDiv = $('#thinking_budget_controls');
-    const $useBudgetCheckbox = $('#use_thinking_budget_value');
-    const $sliderContainer = $('#thinking_budget_slider_container');
-    const $slider = $('#thinking_budget_slider');
-    const $counter = $('#thinking_budget_counter');
+/**
+ * Updates the visibility and state of the Google Thinking Budget controls.
+ */
+function updateThinkingBudgetUI() {
+    const isMakerSuite = oai_settings.chat_completion_source === chat_completion_sources.MAKERSUITE;
+    const modelSupportsControl = googleThinkingBudgetModels.includes(oai_settings.google_model);
+    const showMasterContainer = isMakerSuite && modelSupportsControl;
+    $('#thinking_budget_master_container').toggle(showMasterContainer);
 
-    // Show/hide the secondary controls container
-    if (masterEnabled) {
-        $controlsDiv.show();
+    if (showMasterContainer) {
+        const masterEnabled = oai_settings.google_master_enable_thinking;
+        $('#thinking_budget_controls').toggle(masterEnabled);
+
+        if (masterEnabled) {
+            const setBudgetEnabled = oai_settings.google_set_thinking_budget;
+            const sliderDisabled = !setBudgetEnabled;
+            $('#thinking_budget_slider').prop('disabled', sliderDisabled);
+            $('#thinking_budget_counter').prop('disabled', sliderDisabled);
+        }
     } else {
-        $controlsDiv.hide();
-    }
-
-    $useBudgetCheckbox.prop('disabled', !masterEnabled);
-
-    const enableSliderControls = masterEnabled && useSlider;
-
-    $sliderContainer.css('opacity', enableSliderControls ? 1 : 0.5);
-
-    $slider.prop('disabled', !enableSliderControls);
-    $counter.prop('disabled', !enableSliderControls);
-
-    const maxBudgetValue = unlocked ? 1000000 : 24576;
-    $slider.attr('max', maxBudgetValue);
-    $counter.attr('max', maxBudgetValue);
-
-    if (oai_settings.thinkingBudget > maxBudgetValue) {
-        console.log(`Clamping thinkingBudget from ${oai_settings.thinkingBudget} to ${maxBudgetValue}`);
-        oai_settings.thinkingBudget = maxBudgetValue;
-        $slider.val(oai_settings.thinkingBudget);
-        $counter.val(oai_settings.thinkingBudget);
-        saveSettingsDebounced();
+        $('#thinking_budget_controls').hide();
     }
 }
 
@@ -3756,6 +3743,9 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         function_calling: settings.function_calling,
         show_thoughts: settings.show_thoughts,
         reasoning_effort: settings.reasoning_effort,
+        google_master_enable_thinking: settings.google_master_enable_thinking,
+        google_set_thinking_budget: settings.google_set_thinking_budget,
+        thinking_budget: settings.thinking_budget,
         enable_web_search: settings.enable_web_search,
         request_images: settings.request_images,
         seed: settings.seed,
@@ -4187,8 +4177,6 @@ function onSettingsPresetChange() {
             }
         }
 
-        updateThinkingBudgetUIState(); // Update dependent UI after preset load
-
         $('#chat_completion_source').trigger('change');
         $('#openai_logit_bias_preset').trigger('change');
         $('#openrouter_providers_chat').trigger('change');
@@ -4541,6 +4529,7 @@ async function onModelChange() {
         $('#temp_openai').attr('max', makersuite_max_temp).val(oai_settings.temp_openai).trigger('input');
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        updateThinkingBudgetUI();
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
@@ -5608,6 +5597,7 @@ export function initOpenAI() {
     $('#chat_completion_source').on('change', function () {
         oai_settings.chat_completion_source = String($(this).find(':selected').val());
         toggleChatCompletionForms();
+        updateThinkingBudgetUI();
         saveSettingsDebounced();
         reconnectOpenAi();
         forceCharacterEditorTokenize();
@@ -5616,12 +5606,8 @@ export function initOpenAI() {
 
     $('#oai_max_context_unlocked').on('input', function (_e, data) {
         oai_settings.max_context_unlocked = !!$(this).prop('checked');
-
-        updateThinkingBudgetUIState(); // Update UI including max value and clamping
-
         if (data?.source !== 'preset') {
             $('#chat_completion_source').trigger('change');
-
         }
         saveSettingsDebounced();
     });
@@ -5797,6 +5783,38 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
+    $('#google_master_enable_thinking').on('input', function () {
+        oai_settings.google_master_enable_thinking = !!$(this).prop('checked');
+        updateThinkingBudgetUI();
+        saveSettingsDebounced();
+    });
+
+    $('#google_set_thinking_budget').on('input', function () {
+        oai_settings.google_set_thinking_budget = !!$(this).prop('checked');
+        updateThinkingBudgetUI();
+        saveSettingsDebounced();
+    });
+
+    $('#thinking_budget_slider').on('input', function () {
+        if (!$(this).prop('disabled')) {
+            oai_settings.thinking_budget = Number($(this).val());
+            $('#thinking_budget_counter').val(oai_settings.thinking_budget);
+            saveSettingsDebounced();
+        }
+    });
+    $('#thinking_budget_counter').on('input', function () {
+        if (!$(this).prop('disabled')) {
+            let value = Number($(this).val());
+            const min = Number($('#thinking_budget_slider').attr('min'));
+            const max = Number($('#thinking_budget_slider').attr('max'));
+            value = Math.max(min, Math.min(max, value));
+            $(this).val(value);
+            oai_settings.thinking_budget = value;
+            $('#thinking_budget_slider').val(value);
+            saveSettingsDebounced();
+        }
+    });
+
     $('#openai_enable_web_search').on('input', function () {
         oai_settings.enable_web_search = !!$(this).prop('checked');
         calculateOpenRouterCost();
@@ -5834,44 +5852,6 @@ export function initOpenAI() {
 
         oai_settings.openrouter_providers = selectedProviders;
 
-        saveSettingsDebounced();
-    });
-
-    $('#master_enable_thinking').on('change', function () {
-        oai_settings.masterEnableThinking = $(this).prop('checked');
-        updateThinkingBudgetUIState();
-        saveSettingsDebounced();
-    });
-
-    $('#use_thinking_budget_value').on('change', function () {
-        oai_settings.useThinkingBudget = $(this).prop('checked');
-        updateThinkingBudgetUIState();
-        saveSettingsDebounced();
-    });
-
-    $('#thinking_budget_slider').on('input', function () {
-        const value = Number($(this).val());
-        oai_settings.thinkingBudget = value;
-        $('#thinking_budget_counter').val(value);
-        saveSettingsDebounced();
-    });
-
-    $('#thinking_budget_counter').on('input', function () {
-        const max = Number($(this).attr('max'));
-        const min = Number($(this).attr('min'));
-        let value = Number($(this).val());
-
-        if (value > max) {
-            value = max;
-            $(this).val(value);
-        }
-        if (value < min) {
-            value = min;
-            $(this).val(value);
-        }
-
-        oai_settings.thinkingBudget = value;
-        $('#thinking_budget_slider').val(value); // Update linked slider
         saveSettingsDebounced();
     });
 

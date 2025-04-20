@@ -1419,7 +1419,7 @@
                                         </div>
                                     </div>
 
-                                    <div data-tg-type="aphrodite, ooba, koboldcpp, tabby, llamacpp" id="dryBlock" class="wide100p">
+                                    <div data-tg-type="aphrodite, ooba, koboldcpp, tabby, llamacpp, dreamgen" id="dryBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" title="DRY penalizes tokens that would extend the end of the input into a sequence that has previously occurred in the input. Set multiplier to 0 to disable." data-i18n="[title]DRY_Repetition_Penalty_desc">
                                             <label data-i18n="DRY Repetition Penalty">DRY Repetition Penalty</label>
                                             <a href="https://github.com/oobabooga/text-generation-webui/pull/5677" target="_blank">
@@ -1574,7 +1574,7 @@
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative" title="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative."></div>
                                                 </label>
                                             </label>
-                                            <label data-tg-type="ooba, llamacpp, tabby, koboldcpp" class="checkbox_label  flexGrow flexShrink" for="ban_eos_token_textgenerationwebui">
+                                            <label data-tg-type="ooba, llamacpp, tabby, koboldcpp, dreamgen" class="checkbox_label  flexGrow flexShrink" for="ban_eos_token_textgenerationwebui">
                                                 <input type="checkbox" id="ban_eos_token_textgenerationwebui" />
                                                 <label>
                                                     <small data-i18n="Ban EOS Token">Ban EOS Token</small>
@@ -2034,33 +2034,27 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div data-source="makersuite" id="thinking_budget_master_container">
+                                    <div id="thinking_budget_master_container" data-source="makersuite" style="display: none;">
                                         <hr>
                                         <div class="range-block">
-                                            <label for="master_enable_thinking" class="checkbox_label widthFreeExpand">
-                                                <input id="master_enable_thinking" type="checkbox" />
+                                            <label for="google_master_enable_thinking" class="checkbox_label widthFreeExpand">
+                                                <input id="google_master_enable_thinking" type="checkbox" />
                                                 <span>
-                                                    <span data-i18n="Enable Thinking Feature">Enable thinking
-                                                        budget</span>
-                                                    <i class="opacity50p fa-solid fa-circle-info"
-                                                        title="Works with Gemini 2.5 Flash Preview only!"
-                                                        data-i18n="[title]Works with Gemini 2.5 Flash Preview only!"></i>
+                                                    <span data-i18n="Enable thinking">Enable thinking</span>
                                                 </span>
                                             </label>
                                             <div class="toggle-description justifyLeft marginBot5">
-                                                <span data-i18n="thinking_budget_desc_1">Sends a</span> <code>thinkingBudget</code> <span data-i18n="thinking_budget_desc_2">value. If unchecked, lets the model decide (default thinking mode).</span>
+                                                <span data-i18n="thinking_budget_desc_master">Gemini 2.5 Flash Preview is the only thinking model that can have its thinking disabled.</span>
                                             </div>
                                         </div>
                                         <div id="thinking_budget_controls" style="display: none;">
                                             <div class="range-block">
-                                                <label for="use_thinking_budget_value"
-                                                    class="checkbox_label widthFreeExpand">
-                                                    <input id="use_thinking_budget_value" type="checkbox" disabled />
-                                                    <span data-i18n="Use Thinking Budget Value">Use thinking budget
-                                                        value</span>
+                                                <label for="google_set_thinking_budget" class="checkbox_label widthFreeExpand">
+                                                    <input id="google_set_thinking_budget" type="checkbox" />
+                                                    <span data-i18n="Set thinking budget">Set thinking budget</span>
                                                 </label>
                                                 <div class="toggle-description justifyLeft marginBot5">
-                                                    <span data-i18n="use_thinking_budget_desc">Uses the slider value below. If unchecked, the budget is explicitly set to 0 (thinking disabled).</span>
+                                                    <span data-i18n="use_thinking_budget_desc">Uses the slider value below. If unchecked, the budget is automatically determined by the API.</span>
                                                 </div>
                                             </div>
                                             <div class="range-block">
@@ -2069,14 +2063,13 @@
                                                 </div>
                                                 <div class="range-block-range-and-counter">
                                                     <div class="range-block-range">
-                                                        <input class="neo-range-slider" type="range" id="thinking_budget_slider" name="volume" min="0" max="24576" step="1" value="1000" disabled>
-                                            </div>
+                                                        <input class="neo-range-slider" type="range" id="thinking_budget_slider" name="volume" min="0" max="24576" step="1" value="1000">
+                                                    </div>
                                                     <div class="range-block-counter">
-                                                        <input class="neo-range-input" type="number" min="0" max="24576" step="1" data-for="thinking_budget_slider" id="thinking_budget_counter" value="1000" disabled>
-                                            </div>
+                                                        <input class="neo-range-input" type="number" min="0" max="24576" step="1" data-for="thinking_budget_slider" id="thinking_budget_counter" value="1000">
+                                                    </div>
                                                 </div>
-                                                <label for="oai_max_context_unlocked"
-                                                    class="checkbox_label displayNone"></label>
+                                                <label for="oai_max_context_unlocked" class="checkbox_label displayNone"></label>
                                             </div>
                                         </div>
                                     </div>

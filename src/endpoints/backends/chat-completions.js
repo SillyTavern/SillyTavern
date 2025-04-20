@@ -359,7 +359,6 @@ async function sendMakerSuiteRequest(request, response) {
         generationConfig.thinkingConfig = {
             thinkingBudget: thinkingConfigFromRequest.thinkingBudget,
         };
-        console.log('[chat-completions.js] Added thinkingConfig to generationConfig:', generationConfig.thinkingConfig);
     }
 
     function getGeminiBody() {
@@ -447,11 +446,7 @@ async function sendMakerSuiteRequest(request, response) {
             controller.abort();
         });
 
-        let apiVersion = isThinking ? 'v1alpha' : 'v1beta';
-        if (generationConfig.thinkingConfig && apiVersion !== 'v1alpha') {
-            apiVersion = 'v1alpha';
-        }
-
+        const apiVersion = isThinking ? 'v1alpha' : 'v1beta';
         const responseType = (stream ? 'streamGenerateContent' : 'generateContent');
 
         const generateResponse = await fetch(`${apiUrl.toString().replace(/\/$/, '')}/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`, {
@@ -462,8 +457,6 @@ async function sendMakerSuiteRequest(request, response) {
             },
             signal: controller.signal,
         });
-
-
         // have to do this because of their busted ass streaming endpoint
         if (stream) {
             try {
