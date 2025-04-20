@@ -2106,21 +2106,14 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     if (isGoogle) {
         const stopStringsLimit = 5;
-        const generationConfig = {};
-        generationConfig['top_k'] = Number(oai_settings.top_k_openai);
-        generationConfig['stopSequences'] = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
-        if (googleThinkingBudgetModels.includes(model)) {
-            if (!oai_settings.google_master_enable_thinking) {
-                // Master switch is OFF: Explicitly disable thinking
-                generationConfig['thinkingConfig'] = { thinkingBudget: 0 };
-            } else if (oai_settings.google_set_thinking_budget) {
-                // Master switch ON, Set Budget ON: Use slider value
-                generationConfig['thinkingConfig'] = { thinkingBudget: Number(oai_settings.thinking_budget) };
-            }
-            // If Master switch ON, Set Budget OFF: Do nothing, let API use default budget (don't send thinkingConfig)
-        }
-        generate_data['generationConfig'] = generationConfig;
+        generate_data['top_k'] = Number(oai_settings.top_k_openai);
+        generate_data['stop'] = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
         generate_data['use_makersuite_sysprompt'] = oai_settings.use_makersuite_sysprompt;
+        if (googleThinkingBudgetModels.includes(model)) {
+            generate_data['google_master_enable_thinking'] = oai_settings.google_master_enable_thinking;
+            generate_data['google_set_thinking_budget'] = oai_settings.google_set_thinking_budget;
+            generate_data['thinking_budget'] = oai_settings.thinking_budget;
+        }
     }
 
     if (isMistral) {

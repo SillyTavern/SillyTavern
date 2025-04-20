@@ -336,6 +336,11 @@ async function sendMakerSuiteRequest(request, response) {
         return response.status(400).send({ error: true });
     }
 
+    const googleThinkingBudgetModels = [
+        'gemini-2.5-flash-preview-04-17',
+        // Add future models here
+    ];
+
     const model = String(request.body.model);
     const stream = Boolean(request.body.stream);
     const enableWebSearch = Boolean(request.body.enable_web_search);
@@ -354,11 +359,19 @@ async function sendMakerSuiteRequest(request, response) {
         responseSchema: request.body.responseSchema,
     };
 
-    const thinkingConfigFromRequest = request.body?.generationConfig?.thinkingConfig;
-    if (thinkingConfigFromRequest && typeof thinkingConfigFromRequest.thinkingBudget === 'number') {
-        generationConfig.thinkingConfig = {
-            thinkingBudget: thinkingConfigFromRequest.thinkingBudget,
-        };
+    if (googleThinkingBudgetModels.includes(model) && request.body.google_master_enable_thinking !== undefined) {
+        const thinkingMasterEnabled = Boolean(request.body.google_master_enable_thinking);
+        const setThinkingBudget = Boolean(request.body.google_set_thinking_budget);
+        const thinkingBudgetValue = Number(request.body.thinking_budget);
+
+        if (!thinkingMasterEnabled) {
+            // Master switch is OFF: Explicitly disable thinking
+            generationConfig.thinkingConfig = { thinkingBudget: 0 };
+        } else if (setThinkingBudget) {
+            // Master switch ON, Set Budget ON: Use received slider value
+            generationConfig.thinkingConfig = { thinkingBudget: thinkingBudgetValue };
+        }
+        // If Master switch ON, Set Budget OFF: Do nothing, generationConfig.thinkingConfig remains unset
     }
 
     function getGeminiBody() {
