@@ -2130,6 +2130,128 @@ export function initDefaultSlashCommands() {
         `,
     }));
 
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'goto-floor',
+        aliases: ['floor', 'jump', 'scrollto'],
+        callback: async (_, index) => {
+            const floorIndex = Number(index);
+    
+            // Validate input
+            if (isNaN(floorIndex) || floorIndex < 0 || (typeof chat !== 'undefined' && floorIndex >= chat.length)) {
+                 const maxIndex = (typeof chat !== 'undefined' ? chat.length - 1 : 'unknown');
+                toastr.warning(`Invalid message index: ${index}. Please enter a number between 0 and ${maxIndex}.`);
+                console.warn(`WARN: Invalid message index provided for /goto-floor: ${index}. Max index: ${maxIndex}`);
+                return '';
+            }
+    
+            const messageElement = document.querySelector(`[mesid="${floorIndex}"]`);
+    
+            if (messageElement) {
+                const headerElement = messageElement.querySelector('.mes_header') ||
+                                      messageElement.querySelector('.mes_meta') ||
+                                      messageElement.querySelector('.mes_name_area') ||
+                                      messageElement.querySelector('.mes_name');
+    
+                const elementToScroll = headerElement || messageElement; // Prefer header, fallback to whole message
+                const blockPosition = headerElement ? 'center' : 'start'; // Center header, else start of message
+    
+                elementToScroll.scrollIntoView({ behavior: 'smooth', block: blockPosition });
+                console.log(`INFO: Scrolled ${headerElement ? 'header of' : ''} message ${floorIndex} into view (block: ${blockPosition}).`);
+    
+                // --- Highlight with smooth animation ---
+                messageElement.classList.add('highlight-scroll');
+                setTimeout(() => {
+                    // Add a class to fade out, then remove the highlight class after fade
+                    messageElement.classList.add('highlight-scroll-fadeout');
+                    // Wait for fadeout transition to complete before removing the base class
+                    // Match this duration to the transition duration in CSS
+                    setTimeout(() => {
+                        messageElement.classList.remove('highlight-scroll', 'highlight-scroll-fadeout');
+                    }, 500); // Matches the 0.5s transition duration
+                }, 1500); // Start fade out after 1.5 seconds
+    
+            } else {
+                toastr.warning(`Could not find element for message ${floorIndex} (using [mesid="${floorIndex}"]). It might not be rendered yet. Try scrolling up or use /chat-render all.`);
+                console.warn(`WARN: Element not found for message index ${floorIndex} using querySelector [mesid="${floorIndex}"] in /goto-floor.`);
+                const chatContainer = document.getElementById('chat');
+                if (chatContainer) {
+                    chatContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+            return '';
+        },
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'The message index (0-based) to scroll to.',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                isRequired: true,
+                enumProvider: commonEnumProviders.messages(),
+            }),
+        ],
+        helpString: `
+        <div>
+            Scrolls the chat view to the specified message index. Uses the <code>[mesid]</code> attribute for locating the message element. Index starts at 0.
+            It attempts to center the character's name/header area within the message block. Highlights the message using the theme's 'matchedText' color with a smooth animation.
+        </div>
+        <div>
+            <strong>Example:</strong> <pre><code>/goto-floor 10</code></pre> Scrolls to the 11th message (mesid=10).
+        </div>
+        <div>
+            Note: Due to virtual scrolling, very old messages might need loading first.
+        </div>
+    `,
+    }));
+    
+    // --- Improved CSS for highlight ---
+    const styleId = 'goto-floor-highlight-style';
+    if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            /* Base state for elements that *can* be highlighted */
+            /* Ensures transition applies smoothly in both directions */
+            .mes, .mes_block {
+                transition: background-color 0.5s ease-in-out, box-shadow 0.5s ease-in-out;
+                /* Add position relative if not already present, needed for potential pseudo-elements */
+                position: relative;
+            }
+    
+            /* --- Highlighting Style --- */
+            .mes.highlight-scroll,
+            .mes_block.highlight-scroll {
+                /* Use theme color for shadow, fallback to gold */
+                box-shadow: 0 0 10px var(--ac-style-color-matchedText, #FFD700) !important;
+                z-index: 5; /* Ensure highlight is visually prominent */
+            }
+    
+            /* Modern browsers: Use color-mix for transparent background */
+            @supports (background-color: color-mix(in srgb, white 50%, black)) {
+                .mes.highlight-scroll,
+                .mes_block.highlight-scroll {
+                     /* Mix theme color with transparent for background */
+                     background-color: color-mix(in srgb, var(--ac-style-color-matchedText, #FFD700) 35%, transparent) !important;
+                }
+            }
+    
+            /* Fallback for older browsers: Use a fixed semi-transparent background */
+            @supports not (background-color: color-mix(in srgb, white 50%, black)) {
+                .mes.highlight-scroll,
+                .mes_block.highlight-scroll {
+                    background-color: rgba(255, 215, 0, 0.35) !important; /* Fallback semi-transparent gold */
+                }
+            }
+    
+            /* --- Fade-out Control --- */
+            /* When fading out, explicitly transition back to transparent/none */
+            .mes.highlight-scroll-fadeout,
+            .mes_block.highlight-scroll-fadeout {
+                background-color: transparent !important;
+                box-shadow: none !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    // --- CSS Modification End ---
     registerVariableCommands();
 }
 
