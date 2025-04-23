@@ -2086,6 +2086,15 @@ body[data-stscript-style] .hljs.language-stscript {
             }
         }
 
+        >.head>.rawQuotes {
+            padding: 0 0.5em;
+            cursor: help;
+
+            &:hover {
+                text-decoration: 1px dotted underline;
+            }
+        }
+
         >.head>.source {
             padding: 0 0.5em;
             cursor: help;
@@ -2911,6 +2920,35 @@ select option:not(:checked) {
     pointer-events: none;
 }
 
+.menu_button.toggleable {
+    padding-left: 20px;
+}
+
+.menu_button.toggleable.toggled {
+    border-color: var(--active);
+}
+
+.menu_button.toggleable:not(.toggled) {
+    filter: brightness(80%);
+}
+
+.menu_button.toggleable::before {
+    font-family: "Font Awesome 6 Free";
+    margin-left: 10px;
+    position: absolute;
+    left: 0;
+}
+
+.menu_button.toggleable.toggled::before {
+    content: "\f00c";
+    color: var(--active);
+}
+
+.menu_button.toggleable:not(.toggled)::before {
+    content: "\f00d";
+    color: var(--fullred);
+}
+
 .fav_on {
     color: var(--golden) !important;
 }
@@ -2921,7 +2959,7 @@ select option:not(:checked) {
 }
 
 .menu_button.togglable:not(.toggleEnabled) {
-    color: red;
+    color: var(--fullred);
 }
 
 .displayBlock {
@@ -4957,6 +4995,7 @@ a:hover {
     max-width: 100%;
     max-height: 40vh;
     image-rendering: -webkit-optimize-contrast;
+    cursor: pointer;
 }
 
 .mes_img_swipes,

@@ -24,7 +24,7 @@ $('button').click(function () {
 
 async function doTokenCounter() {
     const { tokenizerName, tokenizerId } = getFriendlyTokenizerName(main_api);
-    const html = await renderExtensionTemplateAsync('token-counter', 'window', {tokenizerName});
+    const html = await renderExtensionTemplateAsync('token-counter', 'window', { tokenizerName });
 
     const dialog = $(html);
     const countDebounced = debounce(async () => {

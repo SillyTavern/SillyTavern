@@ -424,7 +424,7 @@ jQuery(async () => {
     installHintButton.on('click', async function () {
         const installButton = $('#third_party_extension_button');
         flashHighlight(installButton, 5000);
-        toastr.info('Click the flashing button to install extensions.', 'How to install extensions?');
+        toastr.info(t`Click the flashing button to install extensions.`, t`How to install extensions?`);
     });
 
     const connectButton = windowHtml.find('#assets-connect-button');

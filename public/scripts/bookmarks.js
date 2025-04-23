@@ -1,7 +1,6 @@
 import {
     characters,
     saveChat,
-    system_messages,
     system_message_types,
     this_chid,
     openCharacterChat,
@@ -13,7 +12,7 @@ import {
     saveChatConditional,
     saveItemizedPrompts,
 } from '../script.js';
-import { humanizedDateTime, getMessageTimeStamp } from './RossAscends-mods.js';
+import { humanizedDateTime } from './RossAscends-mods.js';
 import {
     getGroupPastChats,
     group_activation_strategy,
@@ -156,7 +155,7 @@ export async function createBranch(mesId) {
     if (selected_group) {
         await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);
     } else {
-        await saveChat(name, newMetadata, mesId);
+        await saveChat({ chatName: name, withMetadata: newMetadata, mesId });
     }
     // append to branches list if it exists
     // otherwise create it
@@ -212,7 +211,7 @@ export async function createNewBookmark(mesId, { forceName = null } = {}) {
     if (selected_group) {
         await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);
     } else {
-        await saveChat(name, newMetadata, mesId);
+        await saveChat({ chatName: name, withMetadata: newMetadata, mesId });
     }
 
     lastMes.extra['bookmark_link'] = name;
@@ -358,7 +357,7 @@ export async function convertSoloToGroupChat() {
     // Click on the freshly selected group to open it
     await openGroupById(group.id);
 
-    toastr.success('The chat has been successfully converted!');
+    toastr.success(t`The chat has been successfully converted!`);
 }
 
 /**

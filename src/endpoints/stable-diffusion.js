@@ -627,8 +627,8 @@ together.post('/models', async (request, response) => {
         }
 
         const models = data
-            .filter(x => x.display_type === 'image')
-            .map(x => ({ value: x.name, text: x.display_name }));
+            .filter(x => x.type === 'image')
+            .map(x => ({ value: x.id, text: x.display_name }));
 
         return response.send(models);
     } catch (error) {
@@ -907,89 +907,6 @@ stability.post('/generate', async (request, response) => {
     }
 });
 
-const blockentropy = express.Router();
-
-blockentropy.post('/models', async (request, response) => {
-    try {
-        const key = readSecret(request.user.directories, SECRET_KEYS.BLOCKENTROPY);
-
-        if (!key) {
-            console.warn('Block Entropy key not found.');
-            return response.sendStatus(400);
-        }
-
-        const modelsResponse = await fetch('https://api.blockentropy.ai/sdapi/v1/sd-models', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${key}`,
-            },
-        });
-
-        if (!modelsResponse.ok) {
-            console.warn('Block Entropy returned an error.');
-            return response.sendStatus(500);
-        }
-
-        const data = await modelsResponse.json();
-
-        if (!Array.isArray(data)) {
-            console.warn('Block Entropy returned invalid data.');
-            return response.sendStatus(500);
-        }
-        const models = data.map(x => ({ value: x.name, text: x.name }));
-        return response.send(models);
-
-    } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
-    }
-});
-
-blockentropy.post('/generate', async (request, response) => {
-    try {
-        const key = readSecret(request.user.directories, SECRET_KEYS.BLOCKENTROPY);
-
-        if (!key) {
-            console.warn('Block Entropy key not found.');
-            return response.sendStatus(400);
-        }
-
-        console.debug('Block Entropy request:', request.body);
-
-        const result = await fetch('https://api.blockentropy.ai/sdapi/v1/txt2img', {
-            method: 'POST',
-            body: JSON.stringify({
-                prompt: request.body.prompt,
-                negative_prompt: request.body.negative_prompt,
-                model: request.body.model,
-                steps: request.body.steps,
-                width: request.body.width,
-                height: request.body.height,
-                // Random seed if negative.
-                seed: request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 10_000_000),
-            }),
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${key}`,
-            },
-        });
-
-        if (!result.ok) {
-            console.warn('Block Entropy returned an error.');
-            return response.sendStatus(500);
-        }
-
-        const data = await result.json();
-        console.debug('Block Entropy response:', data);
-
-        return response.send(data);
-    } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
-    }
-});
-
-
 const huggingface = express.Router();
 
 huggingface.post('/generate', async (request, response) => {
@@ -1249,7 +1166,8 @@ falai.post('/models', async (_request, response) => {
         const models = data
             .filter(x => !x.title.toLowerCase().includes('inpainting') &&
                 !x.title.toLowerCase().includes('control') &&
-                !x.title.toLowerCase().includes('upscale'))
+                !x.title.toLowerCase().includes('upscale') &&
+                !x.title.toLowerCase().includes('lora'))
             .sort((a, b) => a.title.localeCompare(b.title))
             .map(x => ({ value: x.modelUrl.split('fal-ai/')[1], text: x.title }));
         return response.send(models);
@@ -1328,6 +1246,7 @@ falai.post('/generate', async (request, response) => {
                         'Authorization': `Key ${key}`,
                     },
                 });
+                /** @type {any} */
                 const resultData = await resultFetch.json();
 
                 if (resultData.detail !== null && resultData.detail !== undefined) {
@@ -1353,13 +1272,63 @@ falai.post('/generate', async (request, response) => {
     }
 });
 
+const xai = express.Router();
+
+xai.post('/generate', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.XAI);
+
+        if (!key) {
+            console.warn('xAI key not found.');
+            return response.sendStatus(400);
+        }
+
+        const requestBody = {
+            prompt: request.body.prompt,
+            model: request.body.model,
+            response_format: 'b64_json',
+        };
+
+        console.debug('xAI request:', requestBody);
+
+        const result = await fetch('https://api.x.ai/v1/images/generations', {
+            method: 'POST',
+            body: JSON.stringify(requestBody),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('xAI returned an error.', text);
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const data = await result.json();
+
+        const image = data?.data?.[0]?.b64_json;
+        if (!image) {
+            console.warn('xAI returned invalid data.');
+            return response.sendStatus(500);
+        }
+
+        return response.send({ image });
+    } catch (error) {
+        console.error('Error communicating with xAI', error);
+        return response.sendStatus(500);
+    }
+});
+
 router.use('/comfy', comfy);
 router.use('/together', together);
 router.use('/drawthings', drawthings);
 router.use('/pollinations', pollinations);
 router.use('/stability', stability);
-router.use('/blockentropy', blockentropy);
 router.use('/huggingface', huggingface);
 router.use('/nanogpt', nanogpt);
 router.use('/bfl', bfl);
 router.use('/falai', falai);
+router.use('/xai', xai);

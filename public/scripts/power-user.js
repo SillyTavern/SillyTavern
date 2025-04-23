@@ -55,6 +55,7 @@ import { POPUP_TYPE, callGenericPopup } from './popup.js';
 import { loadSystemPrompts } from './sysprompt.js';
 import { fuzzySearchCategories } from './filters.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { DEFAULT_REASONING_TEMPLATE, loadReasoningTemplates } from './reasoning.js';
 
 export {
     loadPowerUserSettings,
@@ -70,8 +71,8 @@ export {
 
 export const MAX_CONTEXT_DEFAULT = 8192;
 export const MAX_RESPONSE_DEFAULT = 2048;
-const MAX_CONTEXT_UNLOCKED = 200 * 1024;
-const MAX_RESPONSE_UNLOCKED = 32 * 1024;
+const MAX_CONTEXT_UNLOCKED = 512 * 1024;
+const MAX_RESPONSE_UNLOCKED = 64 * 1024;
 const unlockedMaxContextStep = 512;
 const maxContextMin = 512;
 const maxContextStep = 64;
@@ -218,7 +219,9 @@ let power_user = {
         system_sequence: '',
         system_suffix: '',
         last_system_sequence: '',
+        first_input_sequence: '',
         first_output_sequence: '',
+        last_input_sequence: '',
         last_output_sequence: '',
         system_sequence_prefix: '',
         system_sequence_suffix: '',
@@ -255,6 +258,7 @@ let power_user = {
     },
 
     reasoning: {
+        name: DEFAULT_REASONING_TEMPLATE,
         auto_parse: false,
         add_to_prompts: false,
         auto_expand: false,
@@ -1622,6 +1626,7 @@ async function loadPowerUserSettings(settings, data) {
     await loadInstructMode(data);
     await loadContextSettings();
     await loadSystemPrompts(data);
+    await loadReasoningTemplates(data);
     loadMaxContextUnlocked();
     switchWaifuMode();
     switchSpoilerMode();
@@ -1983,15 +1988,21 @@ export function fuzzySearchGroups(searchValue, fuzzySearchCaches = null) {
 /**
  * Renders a story string template with the given parameters.
  * @param {object} params Template parameters.
+ * @param {object} [options] Additional options.
+ * @param {string} [options.customStoryString] Custom story string template.
+ * @param {InstructSettings} [options.customInstructSettings] Custom instruct settings.
  * @returns {string} The rendered story string.
  */
-export function renderStoryString(params) {
+export function renderStoryString(params, { customStoryString = null, customInstructSettings = null } = {}) {
     try {
+        const storyString = customStoryString ?? power_user.context.story_string;
+        const instructSettings = structuredClone(customInstructSettings ?? power_user.instruct);
+
         // Validate and log possible warnings/errors
-        validateStoryString(power_user.context.story_string, params);
+        validateStoryString(storyString, params);
 
         // compile the story string template into a function, with no HTML escaping
-        const compiledTemplate = Handlebars.compile(power_user.context.story_string, { noEscape: true });
+        const compiledTemplate = Handlebars.compile(storyString, { noEscape: true });
 
         // render the story string template with the given params
         let output = compiledTemplate(params);
@@ -2004,7 +2015,7 @@ export function renderStoryString(params) {
 
         // add a newline to the end of the story string if it doesn't have one
         if (output.length > 0 && !output.endsWith('\n')) {
-            if (!power_user.instruct.enabled || power_user.instruct.wrap) {
+            if (!instructSettings.enabled || instructSettings.wrap) {
                 output += '\n';
             }
         }

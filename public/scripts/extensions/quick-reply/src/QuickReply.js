@@ -49,7 +49,7 @@ export class QuickReply {
     /**@type {string}*/ automationId = '';
 
     /**@type {function}*/ onExecute;
-    /**@type {(qr:QuickReply)=>AsyncGenerator<SlashCommandClosureResult|{closure:SlashCommandClosure, executor:SlashCommandExecutor|SlashCommandClosureResult}, SlashCommandClosureResult, boolean>}*/ onDebug;
+    /** @type {(qr:QuickReply)=>AsyncGenerator<SlashCommandClosureResult|{closure:SlashCommandClosure, executor:SlashCommandExecutor|SlashCommandClosureResult}, SlashCommandClosureResult, boolean>} */ onDebug;
     /**@type {function}*/ onDelete;
     /**@type {function}*/ onUpdate;
     /**@type {function}*/ onInsertBefore;
@@ -635,7 +635,6 @@ export class QuickReply {
             }, { passive:true });
             const getLineStart = ()=>{
                 const start = message.selectionStart;
-                const end = message.selectionEnd;
                 let lineStart;
                 if (start == 0 || message.value[start - 1] == '\n') {
                     // cursor is already at beginning of line
@@ -701,7 +700,6 @@ export class QuickReply {
                 } else if (evt.key == 'Enter' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey && !(ac.isReplaceable && ac.isActive)) {
                     // new line, keep indent
                     const start = message.selectionStart;
-                    const end = message.selectionEnd;
                     let lineStart = getLineStart();
                     const indent = /^([^\S\n]*)/.exec(message.value.slice(lineStart))[1] ?? '';
                     if (indent.length) {

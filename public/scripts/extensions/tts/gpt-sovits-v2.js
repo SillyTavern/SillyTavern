@@ -183,8 +183,6 @@ class GptSovitsV2Provider {
 
         let prompt_text = replaceSpeaker(voiceId);
 
-        const streaming = this.settings.streaming;
-
         const params = {
             text: inputText,
             prompt_text: prompt_text,

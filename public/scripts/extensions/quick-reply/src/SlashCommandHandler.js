@@ -8,18 +8,17 @@ import { SlashCommandEnumValue, enumTypes } from '../../../slash-commands/SlashC
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
 import { isTrueBoolean } from '../../../utils.js';
-// eslint-disable-next-line no-unused-vars
 import { QuickReplyApi } from '../api/QuickReplyApi.js';
 import { QuickReply } from './QuickReply.js';
 import { QuickReplySet } from './QuickReplySet.js';
 
 export class SlashCommandHandler {
-    /**@type {QuickReplyApi}*/ api;
+    /** @type {QuickReplyApi} */ api;
 
 
 
 
-    constructor(/**@type {QuickReplyApi}*/api) {
+    constructor(/** @type {QuickReplyApi} */api) {
         this.api = api;
     }
 
@@ -27,7 +26,7 @@ export class SlashCommandHandler {
 
 
     init() {
-        function getExecutionIcons(/**@type {QuickReply} */ qr) {
+        function getExecutionIcons(/** @type {QuickReply} */ qr) {
             let icons = '';
             if (qr.preventAutoExecute) icons += '🚫';
             if (qr.isHidden) icons += '👁️';

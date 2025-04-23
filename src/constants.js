@@ -43,6 +43,7 @@ export const USER_DIRECTORY_TEMPLATE = Object.freeze({
     vectors: 'vectors',
     backups: 'backups',
     sysprompt: 'sysprompt',
+    reasoning: 'reasoning',
 });
 
 /**
@@ -173,9 +174,9 @@ export const CHAT_COMPLETION_SOURCES = {
     PERPLEXITY: 'perplexity',
     GROQ: 'groq',
     ZEROONEAI: '01ai',
-    BLOCKENTROPY: 'blockentropy',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
+    XAI: 'xai',
 };
 
 /**
@@ -265,23 +266,6 @@ export const FEATHERLESS_KEYS = [
     'guided_grammar',
     'guided_decoding_backend',
     'guided_whitespace_pattern',
-];
-
-// https://dreamgen.com/docs/api#openai-text
-export const DREAMGEN_KEYS = [
-    'model',
-    'prompt',
-    'max_tokens',
-    'temperature',
-    'top_p',
-    'top_k',
-    'min_p',
-    'repetition_penalty',
-    'frequency_penalty',
-    'presence_penalty',
-    'stop',
-    'stream',
-    'minimum_message_content_tokens',
 ];
 
 // https://docs.together.ai/reference/completions

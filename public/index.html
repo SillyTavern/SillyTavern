@@ -197,6 +197,9 @@
                                             <div id="update_oai_preset" class="menu_button menu_button_icon" title="Update current preset" data-i18n="[title]Update current preset">
                                                 <i class="fa-fw fa-solid fa-save"></i>
                                             </div>
+                                            <div data-preset-manager-rename="openai" class="menu_button menu_button_icon" title="Rename current preset" data-i18n="[title]Rename current preset">
+                                                <i class="fa-fw fa-solid fa-pencil"></i>
+                                            </div>
                                             <div id="new_oai_preset" class="menu_button menu_button_icon" title="Save preset as" data-i18n="[title]Save preset as">
                                                 <i class="fa-fw fa-solid fa-file-circle-plus"></i>
                                             </div>
@@ -643,7 +646,7 @@
                                         <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="65536">
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,custom">
+                                <div class="range-block" data-source="openai,custom,xai">
                                     <div class="range-block-title" data-i18n="Multiple swipes per generation">
                                         Multiple swipes per generation
                                     </div>
@@ -682,7 +685,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -695,7 +698,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek">
+                                <div class="range-block" data-source="openai,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -708,7 +711,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek">
+                                <div class="range-block" data-source="openai,openrouter,custom,cohere,perplexity,groq,mistralai,nanogpt,deepseek,xai">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -734,7 +737,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek">
+                                <div class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -971,7 +974,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt">
+                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt,xai">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -1416,7 +1419,7 @@
                                         </div>
                                     </div>
 
-                                    <div data-tg-type="aphrodite, ooba, koboldcpp, tabby, llamacpp" id="dryBlock" class="wide100p">
+                                    <div data-tg-type="aphrodite, ooba, koboldcpp, tabby, llamacpp, dreamgen" id="dryBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" title="DRY penalizes tokens that would extend the end of the input into a sequence that has previously occurred in the input. Set multiplier to 0 to disable." data-i18n="[title]DRY_Repetition_Penalty_desc">
                                             <label data-i18n="DRY Repetition Penalty">DRY Repetition Penalty</label>
                                             <a href="https://github.com/oobabooga/text-generation-webui/pull/5677" target="_blank">
@@ -1571,7 +1574,7 @@
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative" title="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative."></div>
                                                 </label>
                                             </label>
-                                            <label data-tg-type="ooba, llamacpp, tabby, koboldcpp" class="checkbox_label  flexGrow flexShrink" for="ban_eos_token_textgenerationwebui">
+                                            <label data-tg-type="ooba, llamacpp, tabby, koboldcpp, dreamgen" class="checkbox_label  flexGrow flexShrink" for="ban_eos_token_textgenerationwebui">
                                                 <input type="checkbox" id="ban_eos_token_textgenerationwebui" />
                                                 <label>
                                                     <small data-i18n="Ban EOS Token">Ban EOS Token</small>
@@ -1957,12 +1960,15 @@
                                             <span data-i18n="Enable web search">Enable web search</span>
                                         </label>
                                         <div class="flexBasis100p toggle-description justifyLeft">
-                                            <span>
+                                            <span data-i18n="Use search capabilities provided by the backend.">
                                                 Use search capabilities provided by the backend.
                                             </span>
+                                            <b data-source="openrouter" data-i18n="openrouter_web_search_fee">
+                                                Not free, adds a $0.02 fee to each prompt.
+                                            </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,ai21">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,ai21,xai">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -1972,7 +1978,7 @@
                                             <span data-i18n="enable_functions_desc_3">Can be utilized by various extensions to provide additional functionality.</span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,openrouter,makersuite,claude,custom,01ai">
+                                    <div class="range-block" data-source="openai,openrouter,mistralai,makersuite,claude,custom,01ai,xai">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -1984,7 +1990,7 @@
                                             <code><i class="fa-solid fa-wand-magic-sparkles"></i></code>
                                             <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
                                         </div>
-                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai">
                                             <div class="flex-container oneline-dropdown">
                                                 <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
                                                     Inline Image Quality
@@ -2028,7 +2034,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="deepseek,openrouter,custom,claude">
+                                    <div class="range-block" data-source="deepseek,openrouter,custom,claude,xai">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
                                             <span>
@@ -2042,7 +2048,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Currently supported values are low, medium, and high.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
@@ -2188,7 +2194,7 @@
                                     <input id="horde_trusted_workers_only" type="checkbox" />
                                     <span data-i18n="Trusted workers only">Trusted workers only</span>
                                 </label>
-                                <small id="adjustedHordeParams">Context: --, Response: --</small>
+                                <small id="adjustedHordeParams"><span data-i18n="Context">Context</span>: --, <span data-i18n="Response">Response</span>: --</small>
                                 <h4 data-i18n="API key">API key</h4>
                                 <small>
                                     <span data-i18n="Get it here:">Get it here: </span> <a target="_blank" href="https://aihorde.net/register" data-i18n="Register">Register</a> (<a id="horde_kudos" href="javascript:void(0);" data-i18n="View my Kudos">View my Kudos</a>)<br>
@@ -2429,7 +2435,7 @@
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="Server url">Server URL</h4>
-                                    <small data-i18n="Example: 127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
+                                    <small data-i18n="Example: http://127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
                                     <input id="generic_api_url_text" name="generic_api_url" class="text_pole wide100p" value="" autocomplete="off" data-server-history="generic">
                                 </div>
                                 <datalist id="generic_model_fill"></datalist>
@@ -2458,7 +2464,7 @@
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="Server url">Server URL</h4>
-                                    <small data-i18n="Example: 127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
+                                    <small data-i18n="Example: http://127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
                                     <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" value="" autocomplete="off" data-server-history="ooba_blocking">
                                 </div>
                                 <input id="custom_model_textgenerationwebui" class="text_pole wide100p" placeholder="Custom model (optional)" data-i18n="[placeholder]Custom model (optional)" type="text">
@@ -2531,7 +2537,7 @@
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
-                                    <small data-i18n="Example: 127.0.0.1:8000">Example: http://127.0.0.1:8000</small>
+                                    <small data-i18n="Example: http://127.0.0.1:8000">Example: http://127.0.0.1:8000</small>
                                     <input id="vllm_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-server-history="vllm">
                                 </div>
                                 <div>
@@ -2577,7 +2583,7 @@
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
-                                    <small data-i18n="Example: 127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
+                                    <small data-i18n="Example: http://127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
                                     <input id="aphrodite_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-server-history="aphrodite">
                                 </div>
                                 <div>
@@ -2606,7 +2612,7 @@
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
-                                    <small data-i18n="Example: 127.0.0.1:8080">Example: http://127.0.0.1:8080</small>
+                                    <small data-i18n="Example: http://127.0.0.1:8080">Example: http://127.0.0.1:8080</small>
                                     <input id="llamacpp_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-server-history="llamacpp">
                                 </div>
                             </div>
@@ -2618,7 +2624,7 @@
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
-                                    <small data-i18n="Example: 127.0.0.1:11434">Example: http://127.0.0.1:11434</small>
+                                    <small data-i18n="Example: http://127.0.0.1:11434">Example: http://127.0.0.1:11434</small>
                                     <input id="ollama_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-server-history="ollama">
                                 </div>
                                 <div class="flex1">
@@ -2653,7 +2659,7 @@
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
-                                    <small data-i18n="Example: 127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
+                                    <small data-i18n="Example: http://127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
                                     <input id="tabby_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-server-history="tabby">
                                 </div>
                                 <div class="flex1">
@@ -2705,7 +2711,7 @@
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
-                                    <small data-i18n="Example: 127.0.0.1:5001">Example: http://127.0.0.1:5001</small>
+                                    <small data-i18n="Example: http://127.0.0.1:5001">Example: http://127.0.0.1:5001</small>
                                     <input id="koboldcpp_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-server-history="koboldcpp">
                                 </div>
                             </div>
@@ -2742,7 +2748,6 @@
                             <optgroup>
                                 <option value="01ai">01.AI (Yi)</option>
                                 <option value="ai21">AI21</option>
-                                <option value="blockentropy">Block Entropy</option>
                                 <option value="claude">Claude</option>
                                 <option value="cohere">Cohere</option>
                                 <option value="deepseek">DeepSeek</option>
@@ -2754,9 +2759,10 @@
                                 <option value="perplexity">Perplexity</option>
                                 <option value="scale">Scale</option>
                                 <option value="windowai">Window AI</option>
+                                <option value="xai">xAI (Grok)</option>
                             </optgroup>
                         </select>
-                        <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,deepseek">
+                        <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,deepseek,xai">
                             <div class="inline-drawer-toggle inline-drawer-header">
                                 <b data-i18n="Reverse Proxy">Reverse Proxy</b>
                                 <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -2819,7 +2825,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite,deepseek">
+                        <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite,deepseek,xai">
                             <div class="reverse_proxy_warning">
                                 <b>
                                     <div data-i18n="Using a proxy that you're not running yourself is a risk to your data privacy.">
@@ -2883,7 +2889,15 @@
                                         <option value="gpt-4o-2024-05-13">gpt-4o-2024-05-13</option>
                                         <option value="chatgpt-4o-latest">chatgpt-4o-latest</option>
                                     </optgroup>
-                                    <optgroup label="o1 and o1-mini">
+                                    <optgroup label="GPT-4.1">
+                                        <option value="gpt-4.1">gpt-4.1</option>
+                                        <option value="gpt-4.1-2025-04-14">gpt-4.1-2025-04-14</option>
+                                        <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                                        <option value="gpt-4.1-mini-2025-04-14">gpt-4.1-mini-2025-04-14</option>
+                                        <option value="gpt-4.1-nano">gpt-4.1-nano</option>
+                                        <option value="gpt-4.1-nano-2025-04-14">gpt-4.1-nano-2025-04-14</option>
+                                    </optgroup>
+                                    <optgroup label="o1">
                                         <option value="o1">o1</option>
                                         <option value="o1-2024-12-17">o1-2024-12-17</option>
                                         <option value="o1-mini">o1-mini</option>
@@ -2892,8 +2906,14 @@
                                         <option value="o1-preview-2024-09-12">o1-preview-2024-09-12</option>
                                     </optgroup>
                                     <optgroup label="o3">
+                                        <option value="o3">o3</option>
+                                        <option value="o3-2025-04-16">o3-2025-04-16</option>
                                         <option value="o3-mini">o3-mini</option>
                                         <option value="o3-mini-2025-01-31">o3-mini-2025-01-31</option>
+                                    </optgroup>
+                                    <optgroup label="o4">
+                                        <option value="o4-mini">o4-mini</option>
+                                        <option value="o4-mini-2025-04-16">o4-mini-2025-04-16</option>
                                     </optgroup>
                                     <optgroup label="GPT-4.5">
                                         <option value="gpt-4.5-preview">gpt-4.5-preview</option>
@@ -3138,8 +3158,11 @@
                                         <option value="gemma-3-27b-it">Gemma 3 27B</option>
                                     </optgroup>
                                     <optgroup label="Subversions">
+                                        <option value="gemini-2.5-pro-preview-03-25">Gemini 2.5 Pro Preview 2025-03-25</option>
+                                        <option value="gemini-2.5-pro-exp-03-25">Gemini 2.5 Pro Experimental 2025-03-25</option>
                                         <option value="gemini-2.0-pro-exp">Gemini 2.0 Pro Experimental</option>
                                         <option value="gemini-2.0-pro-exp-02-05">Gemini 2.0 Pro Experimental 2025-02-05</option>
+                                        <option value="gemini-2.5-flash-preview-04-17">Gemini 2.5 Flash Preview 2025-04-17</option>
                                         <option value="gemini-2.0-flash-lite-preview">Gemini 2.0 Flash-Lite Preview</option>
                                         <option value="gemini-2.0-flash-lite-preview-02-05">Gemini 2.0 Flash-Lite Preview 2025-02-05</option>
                                         <option value="gemini-2.0-flash-001">Gemini 2.0 Flash [001]</option>
@@ -3193,6 +3216,7 @@
                                         <option value="mistral-small-latest">mistral-small-latest</option>
                                         <option value="mistral-medium-latest">mistral-medium-latest</option>
                                         <option value="mistral-large-latest">mistral-large-latest</option>
+                                        <option value="mistral-saba-latest">mistral-saba-latest</option>
                                         <option value="codestral-latest">codestral-latest</option>
                                         <option value="codestral-mamba-latest">codestral-mamba-latest</option>
                                         <option value="pixtral-12b-latest">pixtral-12b-latest</option>
@@ -3208,13 +3232,20 @@
                                         <option value="mistral-small-2312">mistral-small-2312</option>
                                         <option value="mistral-small-2402">mistral-small-2402</option>
                                         <option value="mistral-small-2409">mistral-small-2409</option>
+                                        <option value="mistral-small-2501">mistral-small-2501</option>
+                                        <option value="mistral-small-2503">mistral-small-2503</option>
                                         <option value="mistral-medium-2312">mistral-medium-2312</option>
                                         <option value="mistral-large-2402">mistral-large-2402</option>
                                         <option value="mistral-large-2407">mistral-large-2407</option>
                                         <option value="mistral-large-2411">mistral-large-2411</option>
+                                        <option value="mistral-large-pixtral-2411">mistral-large-pixtral-2411</option>
+                                        <option value="mistral-saba-2502">mistral-saba-2502</option>
                                         <option value="codestral-2405">codestral-2405</option>
                                         <option value="codestral-2405-blue">codestral-2405-blue</option>
                                         <option value="codestral-mamba-2407">codestral-mamba-2407</option>
+                                        <option value="codestral-2411-rc5">codestral-2411-rc5</option>
+                                        <option value="codestral-2412">codestral-2412</option>
+                                        <option value="codestral-2501">codestral-2501</option>
                                         <option value="pixtral-12b-2409">pixtral-12b-2409</option>
                                         <option value="pixtral-large-2411">pixtral-large-2411</option>
                                     </optgroup>
@@ -3237,28 +3268,29 @@
                                     <option value="qwen-2.5-32b">qwen-2.5-32b</option>
                                     <option value="qwen-2.5-coder-32b">qwen-2.5-coder-32b</option>
                                 </optgroup>
-                                <optgroup label="DeepSeek / Alibaba Cloud">
+                                <optgroup label="DeepSeek">
                                     <option value="deepseek-r1-distill-qwen-32b">deepseek-r1-distill-qwen-32b</option>
-                                </optgroup>
-                                <optgroup label="DeepSeek / Meta">
                                     <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
                                 </optgroup>
                                 <optgroup label="Google">
                                     <option value="gemma2-9b-it">gemma2-9b-it</option>
                                 </optgroup>
                                 <optgroup label="Meta">
-                                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant </option>
+                                    <option value="meta-llama/llama-4-scout-17b-16e-instruct">meta-llama/llama-4-scout-17b-16e-instruct</option>
+                                    <option value="meta-llama/llama-4-maverick-17b-128e-instruct">meta-llama/llama-4-maverick-17b-128e-instruct</option>
+                                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
                                     <option value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview </option>
                                     <option value="llama-3.2-1b-preview">llama-3.2-1b-preview </option>
                                     <option value="llama-3.2-3b-preview">llama-3.2-3b-preview </option>
                                     <option value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview </option>
-                                    <option value="llama-3.3-70b-specdec">llama-3.3-70b-specdec </option>
+                                    <option value="llama-3.3-70b-specdec">llama-3.3-70b-specdec</option>
                                     <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile </option>
-                                    <option value="llama-guard-3-8b">llama-guard-3-8b </option>
-                                    <option value="llama3-70b-8192">llama3-70b-8192 </option>
-                                    <option value="llama3-8b-8192">llama3-8b-8192 </option>
+                                    <option value="llama-guard-3-8b">llama-guard-3-8b</option>
+                                    <option value="llama3-70b-8192">llama3-70b-8192</option>
+                                    <option value="llama3-8b-8192">llama3-8b-8192</option>
                                 </optgroup>
                                 <optgroup label="Mistral AI">
+                                    <option value="mistral-saba-24b">mistral-saba-24b</option>
                                     <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
                                 </optgroup>
                             </select>
@@ -3363,20 +3395,6 @@
                                 </select>
                             </div>
                         </form>
-                        <form id="blockentropy_form" data-source="blockentropy">
-                            <h4 data-i18n="Block Entropy API Key">Block Entropy API Key</h4>
-                            <div class="flex-container">
-                                <input id="api_key_blockentropy" name="api_key_blockentropy" class="text_pole flex1" value="" type="text" autocomplete="off">
-                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_blockentropy"></div>
-                            </div>
-                            <div data-for="api_key_blockentropy" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
-                                For privacy reasons, your API key will be hidden after you reload the page.
-                            </div>
-                            <h4 data-i18n="Select a Model">Select a Model</h4>
-                            <div class="flex-container">
-                                <select id="model_blockentropy_select" class="text_pole"></select>
-                            </div>
-                        </form>
                         <form id="custom_form" data-source="custom">
                             <h4 data-i18n="Custom Endpoint (Base URL)">Custom Endpoint (Base URL)</h4>
                             <div class="flex-container">
@@ -3407,17 +3425,10 @@
                             <div class="flex-container">
                                 <select id="model_custom_select" class="text_pole model_custom_select"></select>
                             </div>
-                            <h4 data-i18n="Prompt Post-Processing">Prompt Post-Processing</h4>
-                            <select id="custom_prompt_post_processing" class="text_pole" title="Applies additional processing to the prompt before sending it to the API." data-i18n="[title]Applies additional processing to the prompt before sending it to the API.">
-                                <option data-i18n="prompt_post_processing_none" value="">None</option>
-                                <option data-i18n="prompt_post_processing_merge" value="merge">Merge consecutive roles</option>
-                                <option data-i18n="prompt_post_processing_semi" value="semi">Semi-strict (alternating roles)</option>
-                                <option data-i18n="prompt_post_processing_strict" value="strict">Strict (user first, alternating roles)</option>
-                            </select>
                         </form>
                         <div id="01ai_form" data-source="01ai">
                             <h4>
-                                <a data-i18n="01.AI API Key" href="https://platform.01.ai/" target="_blank" rel="noopener noreferrer">
+                                <a data-i18n="01.AI API Key" href="https://platform.lingyiwanwu.com/" target="_blank" rel="noopener noreferrer">
                                     01.AI API Key
                                 </a>
                             </h4>
@@ -3430,6 +3441,40 @@
                             </div>
                             <h4 data-i18n="01.AI Model">01.AI Model</h4>
                             <select id="model_01ai_select">
+                            </select>
+                        </div>
+                        <div id="xai_form" data-source="xai">
+                            <h4>
+                                <a data-i18n="xAI API Key" href="https://console.x.ai/" target="_blank" rel="noopener noreferrer">
+                                    xAI API Key
+                                </a>
+                            </h4>
+                            <div class="flex-container">
+                                <input id="api_key_xai" name="api_key_xai" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_xai"></div>
+                            </div>
+                            <div data-for="api_key_xai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <h4 data-i18n="xAI Model">xAI Model</h4>
+                            <select id="model_xai_select">
+                                <option value="grok-3-beta">grok-3-beta</option>
+                                <option value="grok-3-fast-beta">grok-3-fast-beta</option>
+                                <option value="grok-3-mini-beta">grok-3-mini-beta</option>
+                                <option value="grok-3-mini-fast-beta">grok-3-mini-fast-beta</option>
+                                <option value="grok-2-vision-1212">grok-2-vision-1212</option>
+                                <option value="grok-2-1212">grok-2-1212</option>
+                                <option value="grok-vision-beta">grok-vision-beta</option>
+                                <option value="grok-beta">grok-beta</option>
+                            </select>
+                        </div>
+                        <div id="prompt_post_porcessing_form" data-source="custom,openrouter">
+                            <h4 data-i18n="Prompt Post-Processing">Prompt Post-Processing</h4>
+                            <select id="custom_prompt_post_processing" class="text_pole" title="Applies additional processing to the prompt before sending it to the API." data-i18n="[title]Applies additional processing to the prompt before sending it to the API.">
+                                <option data-i18n="prompt_post_processing_none" value="">None</option>
+                                <option data-i18n="prompt_post_processing_merge" value="merge">Merge consecutive roles</option>
+                                <option data-i18n="prompt_post_processing_semi" value="semi">Semi-strict (alternating roles)</option>
+                                <option data-i18n="prompt_post_processing_strict" value="strict">Strict (user first, alternating roles)</option>
                             </select>
                         </div>
                         <div class="flex-container flex">
@@ -3917,6 +3962,19 @@
                                     <summary data-i18n="Reasoning Formatting">
                                         Reasoning Formatting
                                     </summary>
+                                    <div class="flex-container" title="Select your current Reasoning Template" data-i18n="[title]Select your current Reasoning Template">
+                                        <select id="reasoning_select" data-preset-manager-for="reasoning" class="flex1 text_pole"></select>
+                                        <div class="flex-container margin0 justifyCenter gap3px">
+                                            <input type="file" hidden data-preset-manager-file="reasoning" accept=".json, .settings">
+                                            <i data-preset-manager-update="reasoning" class="menu_button fa-solid fa-save" title="Update current template" data-i18n="[title]Update current template"></i>
+                                            <i data-preset-manager-rename="reasoning" class="menu_button fa-pencil fa-solid" title="Rename current template" data-i18n="[title]Rename current template"></i>
+                                            <i data-preset-manager-new="reasoning" class="menu_button fa-solid fa-file-circle-plus" title="Save template as" data-i18n="[title]Save template as"></i>
+                                            <i data-preset-manager-import="reasoning" class="displayNone menu_button fa-solid fa-file-import" title="Import template" data-i18n="[title]Import template"></i>
+                                            <i data-preset-manager-export="reasoning" class="displayNone menu_button fa-solid fa-file-export" title="Export template" data-i18n="[title]Export template"></i>
+                                            <i data-preset-manager-restore="reasoning" class="menu_button fa-solid fa-recycle" title="Restore current template" data-i18n="[title]Restore current template"></i>
+                                            <i data-preset-manager-delete="reasoning" class="menu_button fa-solid fa-trash-can" title="Delete template" data-i18n="[title]Delete template"></i>
+                                        </div>
+                                    </div>
                                     <div class="flex-container">
                                         <div class="flex1" title="Inserted before the reasoning content." data-i18n="[title]reasoning_prefix">
                                             <small data-i18n="Prefix">Prefix</small>
@@ -5099,7 +5157,7 @@
                                     <div id="persona_depth_position_settings" class="flex-container">
                                         <div class="flex1">
                                             <label for="persona_depth_value" data-i18n="Depth:">Depth:</label>
-                                            <input id="persona_depth_value" class="text_pole" type="number" min="0" max="999" step="1">
+                                            <input id="persona_depth_value" class="text_pole" type="number" min="0" max="9999" step="1">
                                         </div>
                                         <div class="flex1">
                                             <label for="persona_depth_role" data-i18n="Role:">Role:</label>
@@ -5752,7 +5810,7 @@
                             @ Depth
                         </span>
                     </h4>
-                    <input id="depth_prompt_depth" name="depth_prompt_depth" class="text_pole textarea_compact m-t-0" type="number" min="0" max="999" value="4" form="form_create" />
+                    <input id="depth_prompt_depth" name="depth_prompt_depth" class="text_pole textarea_compact m-t-0" type="number" min="0" max="9999" value="4" form="form_create" />
                     <h4>
                         <span data-i18n="Role">
                             Role
@@ -5973,11 +6031,11 @@
                                         </div>
                                         <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap">
                                             <label for="depth" class="WIEntryHeaderTitleMobile" data-i18n="Depth:">Depth:</label>
-                                            <input title="Depth" class="text_pole wideMax100px margin0" type="number" name="depth" data-i18n="[title]Depth" placeholder="" min="0" max="999" />
+                                            <input title="Depth" class="text_pole wideMax100px margin0" type="number" name="depth" data-i18n="[title]Depth" placeholder="" min="0" max="9999" />
                                         </div>
                                         <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap">
                                             <label for="order" class="WIEntryHeaderTitleMobile" data-i18n="Order:">Order:</label>
-                                            <input title="Order" data-i18n="[title]Order" class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" min="0" max="999" />
+                                            <input title="Order" data-i18n="[title]Order" class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" min="0" max="9999" />
                                         </div>
                                         <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
                                             <label for="order" class="WIEntryHeaderTitleMobile" data-i18n="Trigger %:">Trigger %:</label>
@@ -5986,6 +6044,7 @@
                                     </div>
                                 </div>
                             </div>
+                            <i class="menu_button move_entry_button fa-solid fa-right-left" title="Move Entry to Another Lorebook" data-i18n="[title]Move Entry to Another Lorebook"></i>
                             <i class="menu_button duplicate_entry_button fa-solid fa-paste" title="Duplicate world info entry" data-i18n="[title]Duplicate world info entry" type="submit" value=""></i>
                             <i class="menu_button delete_entry_button fa-solid fa-trash-can" title="Delete world info entry" data-i18n="[title]Delete world info entry" type="submit" value=""></i>
                         </div>
@@ -6074,8 +6133,11 @@
                                         <label for="content ">
                                             <small>
                                                 <span class="alignitemscenter flex-container flexnowrap wide100p justifySpaceBetween">
-                                                    <span data-i18n="Content" class="alignitemscenter flex-container flexNoGap mdhotkey_location">
-                                                        Content
+                                                    <span class="alignitemscenter flex-container">
+                                                        <span data-i18n="Content" class="mdhotkey_location">
+                                                            Content
+                                                        </span>
+                                                        <i class="editor_maximize fa-solid fa-maximize right_menu_button" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                                     </span>
                                                     <span>
                                                         (<span data-i18n="extension_token_counter">Tokens:</span>&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)&nbsp;
@@ -6335,7 +6397,7 @@
                                     <span data-i18n="prompt_manager_depth">Depth</span>
                                 </label>
                                 <div class="text_muted" data-i18n="Injection depth. 0 = after the last message, 1 = before the last message, etc.">Injection depth. 0 = after the last message, 1 = before the last message, etc.</div>
-                                <input id="completion_prompt_manager_popup_entry_form_injection_depth" class="text_pole" type="number" name="injection_depth" min="0" max="999" value="4" />
+                                <input id="completion_prompt_manager_popup_entry_form_injection_depth" class="text_pole" type="number" name="injection_depth" min="0" max="9999" value="4" />
                             </div>
                         </div>
                         <div class="completion_prompt_manager_popup_entry_form_control">
@@ -6434,7 +6496,7 @@
                     <div class="mes_text"></div>
                     <div class="mes_img_container">
                         <div class="mes_img_controls">
-                            <div title="Enlarge" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_img_enlarge" data-i18n="[title]Enlarge"></div>
+                            <div title="Expand and zoom" class="right_menu_button fa-lg fa-solid fa-magnifying-glass mes_img_enlarge" data-i18n="[title]Expand and zoom"></div>
                             <div title="Caption" class="right_menu_button fa-lg fa-solid fa-envelope-open-text mes_img_caption" data-i18n="[title]Caption"></div>
                             <div title="Delete" class="right_menu_button fa-lg fa-solid fa-trash-can mes_img_delete" data-i18n="[title]Delete"></div>
                         </div>
@@ -6563,7 +6625,7 @@
                         <div class="ch_name"></div>
                         <small class="ch_additional_info group_select_counter"></small>
                     </div>
-                    <small class="character_name_block_sub_line">in this group</small>
+                    <small class="character_name_block_sub_line" data-i18n="in this group">in this group</small>
                     <i class='group_fav_icon fa-solid fa-star'></i>
                     <input class="ch_fav" value="" hidden />
                     <div class="group_select_block_list ch_description"></div>
@@ -6695,7 +6757,7 @@
                             <label class="checkbox_label alignItemsCenter" for="extension_floating_position_depth">
                                 <input type="radio" id="extension_floating_position_depth" name="extension_floating_position" value="1" />
                                 <span data-i18n="In-chat @ Depth">In-chat @ Depth</span>
-                                <input id="extension_floating_depth" class="text_pole textarea_compact widthNatural" type="number" min="0" max="999" />
+                                <input id="extension_floating_depth" class="text_pole textarea_compact widthNatural" type="number" min="0" max="9999" />
                                 <span data-i18n="as">as</span>
                                 <select id="extension_floating_role" class="text_pole widthNatural">
                                     <option data-i18n="System" value="0">System</option>
@@ -6710,7 +6772,7 @@
                                 <span data-i18n="Insertion Frequency">Insertion Frequency</span>
                                 <small data-i18n="(0 = Disable, 1 = Always)">(0 = Disable, 1 = Always)</small>
                             </label>
-                            <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="999" />
+                            <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="9999" />
                         </div>
                         <br>
                         <span><span data-i18n="User inputs until next insertion:">User inputs until next insertion:</span> <span id="extension_floating_counter">(disabled)</span></span>
@@ -6780,7 +6842,7 @@
                             <label class="checkbox_label alignItemsCenter" for="extension_default_position_depth">
                                 <input type="radio" id="extension_default_position_depth" name="extension_default_position" value="1" />
                                 <span data-i18n="In-chat @ Depth">In-chat @ Depth</span>
-                                <input id="extension_default_depth" class="text_pole textarea_compact widthNatural" type="number" min="0" max="999" />
+                                <input id="extension_default_depth" class="text_pole textarea_compact widthNatural" type="number" min="0" max="9999" />
                                 <span data-i18n="as">as</span>
                                 <select id="extension_default_role" class="text_pole widthNatural">
                                     <option data-i18n="System" value="0">System</option>
@@ -6794,7 +6856,7 @@
                                 <span data-i18n="Insertion Frequency">Insertion Frequency</span>
                                 <small data-i18n="(0 = Disable, 1 = Always)">(0 = Disable, 1 = Always)</small>
                             </label>
-                            <input id="extension_default_interval" class="text_pole widthUnset" type="number" min="0" max="999" />
+                            <input id="extension_default_interval" class="text_pole widthUnset" type="number" min="0" max="9999" />
                         </div>
                     </div>
                 </div>

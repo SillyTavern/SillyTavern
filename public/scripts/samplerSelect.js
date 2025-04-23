@@ -9,6 +9,7 @@ import { power_user } from './power-user.js';
 //import { getSortableDelay, onlyUnique } from './utils.js';
 //import { getCfgPrompt } from './cfg-scale.js';
 import { setting_names } from './textgen-settings.js';
+import { renderTemplateAsync } from './templates.js';
 
 
 const TGsamplerNames = setting_names;
@@ -25,25 +26,7 @@ async function showSamplerSelectPopup() {
     const html = $(document.createElement('div'));
     html.attr('id', 'sampler_view_list')
         .addClass('flex-container flexFlowColumn');
-    html.append(`
-    <div class="title_restorable flexFlowColumn alignItemsBaseline">
-        <div class="flex-container justifyCenter">
-            <h3>Sampler Select</h3>
-            <div class="flex-container alignItemsBaseline">
-            <div id="resetSelectedSamplers" class="menu_button menu_button_icon" title="Reset custom sampler selection">
-                <i class="fa-solid fa-recycle"></i>
-            </div>
-        </div>
-            <!--<div class="flex-container alignItemsBaseline">
-                <div class="menu_button menu_button_icon" title="Create a new sampler">
-                    <i class="fa-solid fa-plus"></i>
-                    <span data-i18n="Create">Create</span>
-                </div>
-            </div>-->
-        </div>
-        <small>Here you can toggle the display of individual samplers. (WIP)</small>
-    </div>
-    <hr>`);
+    html.append(await renderTemplateAsync('samplerSelector'));
 
     const listContainer = $('<div id="apiSamplersList" class="flex-container flexNoGap"></div>');
     const APISamplers = await listSamplers(main_api);

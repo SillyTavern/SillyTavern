@@ -21,6 +21,7 @@ import {
 const isBackupEnabled = !!getConfigValue('backups.chat.enabled', true, 'boolean');
 const maxTotalChatBackups = Number(getConfigValue('backups.chat.maxTotalBackups', -1, 'number'));
 const throttleInterval = Number(getConfigValue('backups.chat.throttleInterval', 10_000, 'number'));
+const checkIntegrity = !!getConfigValue('backups.chat.checkIntegrity', true, 'boolean');
 
 /**
  * Saves a chat to the backups directory.
@@ -292,15 +293,81 @@ function importRisuChat(userName, characterName, jsonData) {
     return chat.map(obj => JSON.stringify(obj)).join('\n');
 }
 
+/**
+ * Reads the first line of a file asynchronously.
+ * @param {string} filePath Path to the file
+ * @returns {Promise<string>} The first line of the file
+ */
+function readFirstLine(filePath) {
+    const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
+    const rl = readline.createInterface({ input: stream });
+    return new Promise((resolve, reject) => {
+        let resolved = false;
+        rl.on('line', line => {
+            resolved = true;
+            rl.close();
+            stream.close();
+            resolve(line);
+        });
+
+        rl.on('error', error => {
+            resolved = true;
+            reject(error);
+        });
+
+        // Handle empty files
+        stream.on('end', () => {
+            if (!resolved) {
+                resolved = true;
+                resolve('');
+            }
+        });
+    });
+}
+
+/**
+ * Checks if the chat being saved has the same integrity as the one being loaded.
+ * @param {string} filePath Path to the chat file
+ * @param {string} integritySlug Integrity slug
+ * @returns {Promise<boolean>} Whether the chat is intact
+ */
+async function checkChatIntegrity(filePath, integritySlug) {
+    // If the chat file doesn't exist, assume it's intact
+    if (!fs.existsSync(filePath)) {
+        return true;
+    }
+
+    // Parse the first line of the chat file as JSON
+    const firstLine = await readFirstLine(filePath);
+    const jsonData = tryParse(firstLine);
+    const chatIntegrity = jsonData?.chat_metadata?.integrity;
+
+    // If the chat has no integrity metadata, assume it's intact
+    if (!chatIntegrity) {
+        return true;
+    }
+
+    // Check if the integrity matches
+    return chatIntegrity === integritySlug;
+}
+
 export const router = express.Router();
 
-router.post('/save', validateAvatarUrlMiddleware, function (request, response) {
+router.post('/save', validateAvatarUrlMiddleware, async function (request, response) {
     try {
         const directoryName = String(request.body.avatar_url).replace('.png', '');
         const chatData = request.body.chat;
         const jsonlData = chatData.map(JSON.stringify).join('\n');
         const fileName = `${String(request.body.file_name)}.jsonl`;
         const filePath = path.join(request.user.directories.chats, directoryName, sanitize(fileName));
+        if (checkIntegrity && !request.body.force) {
+            const integritySlug = chatData?.[0]?.chat_metadata?.integrity;
+            const isIntact = await checkChatIntegrity(filePath, integritySlug);
+            if (!isIntact) {
+                console.error(`Chat integrity check failed for ${filePath}`);
+                return response.status(400).send({ error: 'integrity' });
+            }
+        }
         writeFileAtomicSync(filePath, jsonlData, 'utf8');
         getBackupFunction(request.user.profile.handle)(request.user.directories.backups, directoryName, jsonlData);
         return response.send({ result: 'ok' });
@@ -716,12 +783,11 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
                 continue;
             }
 
-            // Search through messages
+            // Search through title and messages of the chat
             const fragments = query.trim().toLowerCase().split(/\s+/).filter(x => x);
-            const hasMatch = messages.some(message => {
-                const text = message?.mes?.toLowerCase();
-                return text && fragments.every(fragment => text.includes(fragment));
-            });
+            const text = [path.parse(chatFile.path).name,
+                ...messages.map(message => message?.mes)].join('\n').toLowerCase();
+            const hasMatch = fragments.every(fragment => text.includes(fragment));
 
             if (hasMatch) {
                 results.push({

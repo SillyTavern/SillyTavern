@@ -65,6 +65,10 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.COHERE);
         }
 
+        if (request.body.api === 'xai') {
+            key = readSecret(request.user.directories, SECRET_KEYS.XAI);
+        }
+
         if (!key && !request.body.reverse_proxy && ['custom', 'ooba', 'koboldcpp', 'vllm'].includes(request.body.api) === false) {
             console.warn('No key found for API', request.body.api);
             return response.sendStatus(400);
@@ -116,7 +120,7 @@ router.post('/caption-image', async (request, response) => {
         }
 
         if (request.body.api === 'zerooneai') {
-            apiUrl = 'https://api.01.ai/v1/chat/completions';
+            apiUrl = 'https://api.lingyiwanwu.com/v1/chat/completions';
         }
 
         if (request.body.api === 'groq') {
@@ -132,6 +136,10 @@ router.post('/caption-image', async (request, response) => {
 
         if (request.body.api === 'cohere') {
             apiUrl = 'https://api.cohere.ai/v2/chat';
+        }
+
+        if (request.body.api === 'xai') {
+            apiUrl = 'https://api.x.ai/v1/chat/completions';
         }
 
         if (request.body.api === 'ooba') {

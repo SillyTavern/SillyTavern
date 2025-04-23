@@ -3,10 +3,8 @@ import { debounce, escapeRegex } from '../utils.js';
 import { AutoCompleteOption } from './AutoCompleteOption.js';
 import { AutoCompleteFuzzyScore } from './AutoCompleteFuzzyScore.js';
 import { BlankAutoCompleteOption } from './BlankAutoCompleteOption.js';
-// eslint-disable-next-line no-unused-vars
 import { AutoCompleteNameResult } from './AutoCompleteNameResult.js';
 import { AutoCompleteSecondaryNameResult } from './AutoCompleteSecondaryNameResult.js';
-import { Popup, getTopmostModalLayer } from '../popup.js';
 
 /**@readonly*/
 /**@enum {Number}*/

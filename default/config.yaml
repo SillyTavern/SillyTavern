@@ -114,6 +114,8 @@ backups:
   chat:
     # Enable automatic chat backups
     enabled: true
+    # Verify integrity of chat files before saving
+    checkIntegrity: true
     # Maximum number of chat backups to keep per user (starting from the most recent). Set to -1 to keep all backups.
     maxTotalBackups: -1
     # Interval in milliseconds to throttle chat backups per user
@@ -140,6 +142,8 @@ performance:
   lazyLoadCharacters: false
   # The maximum amount of memory that parsed character cards can use. Set to 0 to disable memory caching.
   memoryCacheCapacity: '100mb'
+  # Enables disk caching for character cards. Improves performances with large card libraries.
+  useDiskCache: true
 
 # Allow secret keys exposure via API
 allowKeysExposure: false
@@ -151,6 +155,7 @@ whitelistImportDomains:
   - cdn.discordapp.com
   - files.catbox.moe
   - raw.githubusercontent.com
+  - char-archive.evulid.cc
 # API request overrides (for KoboldAI and Text Completion APIs)
 ## Note: host includes the port number if it's not the default (80 or 443)
 ## Format is an array of objects:

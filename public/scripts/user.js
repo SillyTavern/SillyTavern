@@ -9,8 +9,8 @@ import { ensureImageFormatSupported, getBase64Async, humanFileSize } from './uti
 export let currentUser = null;
 export let accountsEnabled = false;
 
-// Extend the session every 30 minutes
-const SESSION_EXTEND_INTERVAL = 30 * 60 * 1000;
+// Extend the session every 10 minutes
+const SESSION_EXTEND_INTERVAL = 10 * 60 * 1000;
 
 /**
  * Enable or disable user account controls in the UI.

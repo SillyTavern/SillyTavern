@@ -13,7 +13,6 @@ import {
     DEFAULT_PRINT_TIMEOUT,
     printCharacters,
 } from '../script.js';
-// eslint-disable-next-line no-unused-vars
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';

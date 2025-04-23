@@ -22,6 +22,7 @@
                 <label for="expression_api" data-i18n="Classifier API">Classifier API</label>
                 <small data-i18n="Select the API for classifying expressions.">Select the API for classifying expressions.</small>
                 <select id="expression_api" class="flex1 margin0">
+                    <option value="99" data-i18n="[ None ]">[ None ]</option>
                     <option value="0" data-i18n="Local">Local</option>
                     <option value="1" data-i18n="Extras">Extras (deprecated)</option>
                     <option value="2" data-i18n="Main API">Main API</option>
@@ -29,7 +30,11 @@
                 </select>
             </div>
             <div class="expression_llm_prompt_block m-b-1 m-t-1">
-                <label for="expression_llm_prompt" class="title_restorable">
+                <label class="checkbox_label" for="expressions_filter_available" title="When using LLM or WebLLM classifier, only show and use expressions that have sprites assigned to them." data-i18n="[title]When using LLM or WebLLM classifier, only show and use expressions that have sprites assigned to them.">
+                    <input id="expressions_filter_available" type="checkbox">
+                    <span data-i18n="Filter expressions for available sprites">Filter expressions for available sprites</span>
+                </label>
+                <label for="expression_llm_prompt" class="title_restorable m-t-1">
                     <span data-i18n="LLM Prompt">LLM Prompt</span>
                     <div id="expression_llm_prompt_restore" title="Restore default value" class="right_menu_button">
                         <i class="fa-solid fa-clock-rotate-left fa-sm"></i>

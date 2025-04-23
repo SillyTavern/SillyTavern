@@ -795,6 +795,7 @@ export function parseNovelAILogprobs(data) {
 
     // Add the chosen token to `merged` if it's not already there. This can
     // happen if the chosen token was not among the top 10 most likely ones.
+    // eslint-disable-next-line no-unused-vars
     const [[chosenId], [_, chosenAfter]] = data.chosen[0];
     if (!merged.some(([id]) => id === chosenId)) {
         merged.push([chosenId, chosenAfter]);

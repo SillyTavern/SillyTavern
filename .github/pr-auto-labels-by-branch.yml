@@ -34,6 +34,9 @@
 🦊 Firefox:
 - head-branch: ['\bfirefox\b']
 
+🧑‍🤝‍🧑 Group Chat:
+- head-branch: ['\bgroups?\b']
+
 🖼️ Image Gen:
 - head-branch: ['\bimage-gen\b']
 
@@ -57,6 +60,9 @@
 
 📜 Prompt:
 - head-branch: ['\bprompt\b']
+
+🧠 Reasoning:
+- head-branch: ['\breasoning\b', '\breason\b', '\bthinking\b']
 
 🚚 Refactor:
 - head-branch: ['\brefactor(s|ed)?\b']

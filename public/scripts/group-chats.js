@@ -46,7 +46,6 @@ import {
     hideSwipeButtons,
     chat_metadata,
     updateChatMetadata,
-    isStreamingEnabled,
     getThumbnailUrl,
     getRequestHeaders,
     setMenuType,
@@ -435,16 +434,18 @@ export function getGroupCharacterCards(groupId, characterId) {
      * @param {string} value Value to replace
      * @param {string} fieldName Name of the field
      * @param {string} characterName Name of the character
+     * @param {boolean} trim Whether to trim the value
      * @returns {string} Replaced text
      * */
-    function customBaseChatReplace(value, fieldName, characterName) {
+    function customBaseChatReplace(value, fieldName, characterName, trim) {
         if (!value) {
             return '';
         }
 
         // We should do the custom field name replacement first, and then run it through the normal macro engine with provided names
         value = value.replace(/<FIELDNAME>/gi, fieldName);
-        return baseChatReplace(value.trim(), name1, characterName);
+        value = trim ? value.trim() : value;
+        return baseChatReplace(value, name1, characterName);
     }
 
     /**
@@ -467,13 +468,12 @@ export function getGroupCharacterCards(groupId, characterId) {
         }
 
         // Prepare and replace prefixes
-        const prefix = customBaseChatReplace(group.generation_mode_join_prefix, fieldName, characterName);
-        const suffix = customBaseChatReplace(group.generation_mode_join_suffix, fieldName, characterName);
-        const separator = power_user.instruct.wrap ? '\n' : '';
+        const prefix = customBaseChatReplace(group.generation_mode_join_prefix, fieldName, characterName, false);
+        const suffix = customBaseChatReplace(group.generation_mode_join_suffix, fieldName, characterName, false);
         // Also run the macro replacement on the actual content
-        value = customBaseChatReplace(value, fieldName, characterName);
+        value = customBaseChatReplace(value, fieldName, characterName, true);
 
-        return `${prefix ? prefix + separator : ''}${value}${suffix ? separator + suffix : ''}`;
+        return `${prefix}${value}${suffix}`;
     }
 
     const scenarioOverride = chat_metadata['scenario'];
@@ -696,7 +696,7 @@ export function getGroupBlock(group) {
     template.find('.group_fav_icon').css('display', 'none');
     template.addClass(group.fav ? 'is_fav' : '');
     template.find('.ch_fav').val(group.fav);
-    template.find('.group_select_counter').text(`${count} ${count != 1 ? 'characters' : 'character'}`);
+    template.find('.group_select_counter').text(count + ' ' + (count != 1 ? t`characters` : t`character`));
     template.find('.group_select_block_list').text(namesList.join(', '));
 
     // Display inline tags
@@ -882,7 +882,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             activatedMembers = activateListOrder(enabledMembers);
         }
         else if (activationStrategy === group_activation_strategy.POOLED) {
-            activatedMembers = activatePooledOrder(enabledMembers, lastMessage);
+            activatedMembers = activatePooledOrder(enabledMembers, lastMessage, isUserInput);
         }
         else if (activationStrategy === group_activation_strategy.MANUAL && !isUserInput) {
             activatedMembers = shuffle(enabledMembers).slice(0, 1).map(x => characters.findIndex(y => y.avatar === x)).filter(x => x !== -1);
@@ -904,6 +904,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                 groupChatQueueOrder.set(characters[activatedMembers[i]].avatar, i + 1);
             }
         }
+        await eventSource.emit(event_types.GROUP_WRAPPER_STARTED, { selected_group, type });
         // now the real generation begins: cycle through every activated character
         for (const chId of activatedMembers) {
             throwIfAborted();
@@ -942,6 +943,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         setCharacterName('');
         activateSendButtons();
         showSwipeButtons();
+        await eventSource.emit(event_types.GROUP_WRAPPER_FINISHED,  { selected_group, type });
     }
 
     return Promise.resolve(textResult);
@@ -1028,16 +1030,17 @@ function activateListOrder(members) {
  * Activate group members based on the last message.
  * @param {string[]} members List of member avatars
  * @param {Object} lastMessage Last message
+ * @param {boolean} isUserInput Whether the user has input text
  * @returns {number[]} List of character ids
  */
-function activatePooledOrder(members, lastMessage) {
+function activatePooledOrder(members, lastMessage, isUserInput) {
     /** @type {string} */
     let activatedMember = null;
     /** @type {string[]} */
     const spokenSinceUser = [];
 
     for (const message of chat.slice().reverse()) {
-        if (message.is_user) {
+        if (message.is_user || isUserInput) {
             break;
         }
 

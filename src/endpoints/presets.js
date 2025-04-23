@@ -30,6 +30,8 @@ function getPresetSettingsByAPI(apiId, directories) {
             return { folder: directories.context, extension: '.json' };
         case 'sysprompt':
             return { folder: directories.sysprompt, extension: '.json' };
+        case 'reasoning':
+            return { folder: directories.reasoning, extension: '.json' };
         default:
             return { folder: null, extension: null };
     }

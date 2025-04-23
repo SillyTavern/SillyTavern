@@ -14,7 +14,7 @@
     - '(🐧 Linux)'
 
 🦊 Firefox:
-    - '(firefox|mozilla)'
+    - '\b(firefox|mozilla)\b'
 
 📱 Mobile:
-    - '(iphone|ios|android|📱 Termux)'
+    - '\b(iphone|ios|android|📱 Termux)\b'

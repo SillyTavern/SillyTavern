@@ -8,11 +8,9 @@ import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 import { SlashCommandParserError } from './SlashCommandParserError.js';
 import { AutoCompleteNameResult } from '../autocomplete/AutoCompleteNameResult.js';
 import { SlashCommandQuickReplyAutoCompleteOption } from './SlashCommandQuickReplyAutoCompleteOption.js';
-// eslint-disable-next-line no-unused-vars
 import { SlashCommandScope } from './SlashCommandScope.js';
 import { SlashCommandVariableAutoCompleteOption } from './SlashCommandVariableAutoCompleteOption.js';
 import { SlashCommandNamedArgumentAssignment } from './SlashCommandNamedArgumentAssignment.js';
-// eslint-disable-next-line no-unused-vars
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNameResult.js';
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
@@ -28,16 +26,18 @@ import { t } from '../i18n.js';
 /** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
 /** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
 
-/**@readonly*/
-/**@enum {Number}*/
+/**
+ * @enum {Number}
+ * @readonly
+ * @typedef {{[id:PARSER_FLAG]:boolean}} ParserFlags
+ */
 export const PARSER_FLAG = {
     'STRICT_ESCAPING': 1,
     'REPLACE_GETVAR': 2,
 };
 
 export class SlashCommandParser {
-    // @ts-ignore
-    /**@type {Object.<string, SlashCommand>}*/ static commands = {};
+    /** @type {Object.<string, SlashCommand>} */ static commands = {};
 
     /**
      * @deprecated Use SlashCommandParser.addCommandObject() instead.
@@ -101,26 +101,25 @@ export class SlashCommandParser {
     get commands() {
         return SlashCommandParser.commands;
     }
-    // @ts-ignore
-    /**@type {Object.<string, string>}*/ helpStrings = {};
-    /**@type {boolean}*/ verifyCommandNames = true;
-    /**@type {string}*/ text;
-    /**@type {number}*/ index;
-    /**@type {SlashCommandAbortController}*/ abortController;
-    /**@type {SlashCommandDebugController}*/ debugController;
-    /**@type {SlashCommandScope}*/ scope;
-    /**@type {SlashCommandClosure}*/ closure;
+    /** @type {Object.<string, string>} */ helpStrings = {};
+    /** @type {boolean} */ verifyCommandNames = true;
+    /** @type {string} */ text;
+    /** @type {number} */ index;
+    /** @type {SlashCommandAbortController} */ abortController;
+    /** @type {SlashCommandDebugController} */ debugController;
+    /** @type {SlashCommandScope} */ scope;
+    /** @type {SlashCommandClosure} */ closure;
 
-    /**@type {Object.<PARSER_FLAG,boolean>}*/ flags = {};
+    /** @type {Object.<PARSER_FLAG,boolean>} */ flags = {};
 
-    /**@type {boolean}*/ jumpedEscapeSequence = false;
+    /** @type {boolean} */ jumpedEscapeSequence = false;
 
-    /**@type {{start:number, end:number}[]}*/ closureIndex;
-    /**@type {{start:number, end:number, name:string}[]}*/ macroIndex;
-    /**@type {SlashCommandExecutor[]}*/ commandIndex;
-    /**@type {SlashCommandScope[]}*/ scopeIndex;
+    /** @type {{start:number, end:number}[]} */ closureIndex;
+    /** @type {{start:number, end:number, name:string}[]} */ macroIndex;
+    /** @type {SlashCommandExecutor[]} */ commandIndex;
+    /** @type {SlashCommandScope[]} */ scopeIndex;
 
-    /**@type {string}*/ parserContext;
+    /** @type {string} */ parserContext;
 
     get userIndex() { return this.index; }
 
@@ -976,7 +975,7 @@ export class SlashCommandParser {
         cmd.startUnnamedArgs = this.index - (/\s(\s*)$/s.exec(this.behind)?.[1]?.length ?? 0);
         cmd.endUnnamedArgs = this.index;
         if (this.testUnnamedArgument()) {
-            cmd.unnamedArgumentList = this.parseUnnamedArgument(cmd.command?.unnamedArgumentList?.length && cmd?.command?.splitUnnamedArgument, cmd?.command?.splitUnnamedArgumentCount);
+            cmd.unnamedArgumentList = this.parseUnnamedArgument(cmd.command?.unnamedArgumentList?.length && cmd?.command?.splitUnnamedArgument, cmd?.command?.splitUnnamedArgumentCount, cmd?.command?.rawQuotes);
             cmd.endUnnamedArgs = this.index;
             if (cmd.name == 'let') {
                 const keyArg = cmd.namedArgumentList.find(it=>it.name == 'key');
@@ -1036,7 +1035,7 @@ export class SlashCommandParser {
     testUnnamedArgumentEnd() {
         return this.testCommandEnd();
     }
-    parseUnnamedArgument(split, splitCount = null) {
+    parseUnnamedArgument(split, splitCount = null, rawQuotes = false) {
         const wasSplit = split;
         /**@type {SlashCommandClosure|String}*/
         let value = this.jumpedEscapeSequence ? this.take() : ''; // take the first, already tested, char if it is an escaped one
@@ -1046,7 +1045,7 @@ export class SlashCommandParser {
         /**@type {SlashCommandUnnamedArgumentAssignment}*/
         let assignment = new SlashCommandUnnamedArgumentAssignment();
         assignment.start = this.index;
-        if (!split && this.testQuotedValue()) {
+        if (!split && !rawQuotes && this.testQuotedValue()) {
             // if the next bit is a quoted value, take the whole value and gather contents as a list
             assignment.value = this.parseQuotedValue();
             assignment.end = this.index;

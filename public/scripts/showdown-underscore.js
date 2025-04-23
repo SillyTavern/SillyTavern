@@ -8,10 +8,10 @@ export const markdownUnderscoreExt = () => {
 
         return [{
             type: 'output',
-            regex: new RegExp('(<code(?:\\s+[^>]*)?>[\\s\\S]*?<\\/code>)|\\b(?<!_)_(?!_)(.*?)(?<!_)_(?!_)\\b', 'g'),
-            replace: function(match, codeContent, italicContent) {
-                if (codeContent) {
-                    // If it's inside <code> tags, return unchanged
+            regex: new RegExp('(<code(?:\\s+[^>]*)?>[\\s\\S]*?<\\/code>|<style(?:\\s+[^>]*)?>[\\s\\S]*?<\\/style>)|\\b(?<!_)_(?!_)(.*?)(?<!_)_(?!_)\\b', 'gi'),
+            replace: function(match, tagContent, italicContent) {
+                if (tagContent) {
+                    // If it's inside <code> or <style> tags, return unchanged
                     return match;
                 } else if (italicContent) {
                     // If it's an italic group, apply the replacement

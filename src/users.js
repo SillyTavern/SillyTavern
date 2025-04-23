@@ -95,6 +95,7 @@ const STORAGE_KEYS = {
  * @property {string} vectors - The directory where the vectors are stored
  * @property {string} backups - The directory where the backups are stored
  * @property {string} sysprompt - The directory where the system prompt data is stored
+ * @property {string} reasoning - The directory where the reasoning templates are stored
  */
 
 /**

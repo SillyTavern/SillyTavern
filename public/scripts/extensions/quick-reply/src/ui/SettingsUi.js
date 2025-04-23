@@ -3,14 +3,13 @@ import { getSortableDelay } from '../../../../utils.js';
 import { log, warn } from '../../index.js';
 import { QuickReply } from '../QuickReply.js';
 import { QuickReplySet } from '../QuickReplySet.js';
-// eslint-disable-next-line no-unused-vars
 import { QuickReplySettings } from '../QuickReplySettings.js';
 
 export class SettingsUi {
-    /**@type {QuickReplySettings}*/ settings;
+    /** @type {QuickReplySettings} */ settings;
 
-    /**@type {HTMLElement}*/ template;
-    /**@type {HTMLElement}*/ dom;
+    /** @type {HTMLElement} */ template;
+    /** @type {HTMLElement} */ dom;
 
     /**@type {HTMLInputElement}*/ isEnabled;
     /**@type {HTMLInputElement}*/ isCombined;

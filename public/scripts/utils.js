@@ -1437,6 +1437,8 @@ export async function ensureImageFormatSupported(file) {
         'image/tiff',
         'image/gif',
         'image/apng',
+        'image/webp',
+        'image/avif',
     ];
 
     if (supportedTypes.includes(file.type) || !file.type.startsWith('image/')) {

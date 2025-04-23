@@ -13,6 +13,7 @@
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     color: var(--SmartThemeBodyColor);
     z-index: 40000;
+    user-select: none;
 }
 
 .select2-container .select2-selection .select2-selection__clear {

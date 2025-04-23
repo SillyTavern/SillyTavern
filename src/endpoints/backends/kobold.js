@@ -237,3 +237,45 @@ router.post('/transcribe-audio', async function (request, response) {
         response.status(500).send('Internal server error');
     }
 });
+
+router.post('/embed', async function (request, response) {
+    try {
+        const { server, items } = request.body;
+
+        if (!server) {
+            console.warn('KoboldCpp URL is not set');
+            return response.sendStatus(400);
+        }
+
+        const headers = {};
+        setAdditionalHeadersByType(headers, TEXTGEN_TYPES.KOBOLDCPP, server, request.user.directories);
+
+        const embeddingsUrl = new URL(server);
+        embeddingsUrl.pathname = '/api/extra/embeddings';
+
+        const embeddingsResult = await fetch(embeddingsUrl, {
+            method: 'POST',
+            headers: {
+                ...headers,
+            },
+            body: JSON.stringify({
+                input: items,
+            }),
+        });
+
+        /** @type {any} */
+        const data = await embeddingsResult.json();
+
+        if (!Array.isArray(data?.data)) {
+            console.warn('KoboldCpp API response was not an array');
+            return response.sendStatus(500);
+        }
+
+        const model = data.model || 'unknown';
+        const embeddings = data.data.map(x => Array.isArray(x) ? x[0] : x).sort((a, b) => a.index - b.index).map(x => x.embedding);
+        return response.json({ model, embeddings });
+    } catch (error) {
+        console.error('KoboldCpp embedding failed', error);
+        response.status(500).send('Internal server error');
+    }
+});

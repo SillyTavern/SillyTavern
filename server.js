@@ -20,6 +20,7 @@ import bodyParser from 'body-parser';
 import open from 'open';
 
 // local library imports
+import './src/fetch-patch.js';
 import { serverEvents, EVENT_NAMES } from './src/server-events.js';
 import { CommandLineParser } from './src/command-line.js';
 import { loadPlugins } from './src/plugin-loader.js';
@@ -66,6 +67,7 @@ import { init as statsInit, onExit as statsOnExit } from './src/endpoints/stats.
 import { checkForNewContent } from './src/endpoints/content-manager.js';
 import { init as settingsInit } from './src/endpoints/settings.js';
 import { redirectDeprecatedEndpoints, ServerStartup, setupPrivateEndpoints } from './src/server-startup.js';
+import { diskCache } from './src/endpoints/characters.js';
 
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
@@ -149,7 +151,7 @@ if (cliArgs.enableCorsProxy) {
 
 app.use(cookieSession({
     name: getCookieSessionName(),
-    sameSite: 'strict',
+    sameSite: 'lax',
     httpOnly: true,
     maxAge: getSessionCookieAge(),
     secret: getCookieSecret(globalThis.DATA_ROOT),
@@ -212,6 +214,17 @@ app.get('/', getCacheBusterMiddleware(), (request, response) => {
     return response.sendFile('index.html', { root: path.join(process.cwd(), 'public') });
 });
 
+// Callback endpoint for OAuth PKCE flows (e.g. OpenRouter)
+app.get('/callback/:source?', (request, response) => {
+    const source = request.params.source;
+    const query = request.url.split('?')[1];
+    const searchParams = new URLSearchParams();
+    source && searchParams.set('source', source);
+    query && searchParams.set('query', query);
+    const path = `/?${searchParams.toString()}`;
+    return response.redirect(307, path);
+});
+
 // Host login page
 app.get('/login', loginPageMiddleware);
 
@@ -267,7 +280,8 @@ async function preSetupTasks() {
 
     const directories = await getUserDirectoriesList();
     await checkForNewContent(directories);
-    await ensureThumbnailCache();
+    await ensureThumbnailCache(directories);
+    await diskCache.verify(directories);
     cleanUploads();
     migrateAccessLog();
 
@@ -286,6 +300,7 @@ async function preSetupTasks() {
         if (typeof cleanupPlugins === 'function') {
             await cleanupPlugins();
         }
+        diskCache.dispose();
         setWindowTitle(consoleTitle);
         process.exit();
     };
@@ -315,8 +330,12 @@ async function postSetupTasks(result) {
     const autorunUrl = cliArgs.getAutorunUrl(autorunHostname);
 
     if (cliArgs.autorun) {
-        console.log('Launching in a browser...');
-        await open(autorunUrl.toString());
+        try {
+            console.log('Launching in a browser...');
+            await open(autorunUrl.toString());
+        } catch (error) {
+            console.error('Failed to launch the browser. Open the URL manually.');
+        }
     }
 
     setWindowTitle('SillyTavern WebServer');

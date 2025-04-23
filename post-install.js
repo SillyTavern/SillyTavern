@@ -101,15 +101,12 @@ const keyMigrationMap = [
         newKey: 'performance.memoryCacheCapacity',
         migrate: (value) => `${value}mb`,
     },
-    // uncomment one release after 1.12.13
-    /*
     {
         oldKey: 'cookieSecret',
         newKey: 'cookieSecret',
         migrate: () => void 0,
         remove: true,
     },
-    */
 ];
 
 /**

@@ -254,6 +254,7 @@ router.post('/get', (request, response) => {
     const instruct = readAndParseFromDirectory(request.user.directories.instruct);
     const context = readAndParseFromDirectory(request.user.directories.context);
     const sysprompt = readAndParseFromDirectory(request.user.directories.sysprompt);
+    const reasoning = readAndParseFromDirectory(request.user.directories.reasoning);
 
     response.send({
         settings,
@@ -272,6 +273,7 @@ router.post('/get', (request, response) => {
         instruct,
         context,
         sysprompt,
+        reasoning,
         enable_extensions: ENABLE_EXTENSIONS,
         enable_extensions_auto_update: ENABLE_EXTENSIONS_AUTO_UPDATE,
         enable_accounts: ENABLE_ACCOUNTS,

@@ -564,6 +564,10 @@
         "type": "context"
     },
     {
+        "filename": "presets/context/Llama 4 Instruct.json",
+        "type": "context"
+    },
+    {
         "filename": "presets/context/Phi.json",
         "type": "context"
     },
@@ -661,6 +665,10 @@
     },
     {
         "filename": "presets/instruct/Llama 3 Instruct.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Llama 4 Instruct.json",
         "type": "instruct"
     },
     {
@@ -786,5 +794,13 @@
     {
         "filename": "presets/context/DeepSeek-V2.5.json",
         "type": "context"
+    },
+    {
+        "filename": "presets/reasoning/DeepSeek.json",
+        "type": "reasoning"
+    },
+    {
+        "filename": "presets/reasoning/Blank.json",
+        "type": "reasoning"
     }
 ]

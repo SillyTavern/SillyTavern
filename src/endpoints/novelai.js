@@ -270,7 +270,7 @@ router.post('/generate', async function (req, res) {
                     // ignore
                 }
 
-                return res.status(response.status).send({ error: { message } });
+                return res.status(500).send({ error: { message } });
             }
 
             /** @type {any} */

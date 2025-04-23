@@ -44,7 +44,6 @@ export const SECRET_KEYS = {
     ZEROONEAI: 'api_key_01ai',
     HUGGINGFACE: 'api_key_huggingface',
     STABILITY: 'api_key_stability',
-    BLOCKENTROPY: 'api_key_blockentropy',
     CUSTOM_OPENAI_TTS: 'api_key_custom_openai_tts',
     TAVILY: 'api_key_tavily',
     NANOGPT: 'api_key_nanogpt',
@@ -53,6 +52,7 @@ export const SECRET_KEYS = {
     GENERIC: 'api_key_generic',
     DEEPSEEK: 'api_key_deepseek',
     SERPER: 'api_key_serper',
+    XAI: 'api_key_xai',
 };
 
 // These are the keys that are safe to expose, even if allowKeysExposure is false

@@ -18,9 +18,8 @@
 
         <div id="regex_info_block_wrapper">
             <div id="regex_info_block" class="info-block"></div>
-            <!-- TODO replace 3rd-party link with our own docs when it's done -->
-            <a id="regex_info_block_flags_hint" href="http://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions#advanced_searching_with_flags" target="_blank" rel="noopener noreferrer">
-                <i class="fa-solid fa-circle-info" title="Click here to learn more about regex flags."></i>
+            <a id="regex_info_block_flags_hint" href="https://docs.sillytavern.app/extensions/regex/#flags" target="_blank" rel="noopener noreferrer">
+                <i class="fa-solid fa-circle-info" data-i18n="[title]ext_regex_flags_help" title="Click here to learn more about regex flags."></i>
             </a>
         </div>
 
@@ -114,14 +113,14 @@
                             <span data-i18n="Min Depth">Min Depth</span>
                             <span class="fa-solid fa-circle-question note-link-span"></span>
                         </small>
-                        <input name="min_depth" class="text_pole textarea_compact" type="number" min="-1" max="999" data-i18n="[placeholder]ext_regex_min_depth_placeholder" placeholder="Unlimited" />
+                        <input name="min_depth" class="text_pole textarea_compact" type="number" min="-1" max="9999" data-i18n="[placeholder]ext_regex_min_depth_placeholder" placeholder="Unlimited" />
                     </div>
                     <div class="flex1 flex-container flexNoGap">
                         <small data-i18n="[title]ext_regex_max_depth_desc" title="When applied to prompts or display, only affect messages no more than N levels deep. 0 = last message, 1 = penultimate message, etc. System prompt and utility prompts are not affected. Max must be greater than Min for regex to apply.">
                             <span data-i18n="Max Depth">Max Depth</span>
                             <span class="fa-solid fa-circle-question note-link-span"></span>
                         </small>
-                        <input name="max_depth" class="text_pole textarea_compact" type="number" min="0" max="999" data-i18n="[placeholder]ext_regex_min_depth_placeholder" placeholder="Unlimited" />
+                        <input name="max_depth" class="text_pole textarea_compact" type="number" min="0" max="9999" data-i18n="[placeholder]ext_regex_min_depth_placeholder" placeholder="Unlimited" />
                     </div>
                 </div>
             </div>
@@ -148,7 +147,7 @@
                 </label>
                 <span>
                     <small data-i18n="ext_regex_other_options" data-i18n="Ephemerality">Ephemerality</small>
-                    <span class="fa-solid fa-circle-question note-link-span" title="By default, regex scripts alter the chat file directly and irreversibly.&#13;Enabling either (or both) of the options below will prevent chat file alteration, while still altering the specified item(s)."></span>
+                    <span class="fa-solid fa-circle-question note-link-span" data-i18n="[title]ext_regex_other_options_desc" title="By default, regex scripts alter the chat file directly and irreversibly.&#13;Enabling either (or both) of the options below will prevent chat file alteration, while still altering the specified item(s)."></span>
                 </span>
                 <label class="checkbox flex-container" data-i18n="[title]ext_regex_only_format_visual_desc" title="Chat history file contents won't change, but regex will be applied to the messages displayed in the Chat UI.">
                     <input type="checkbox" name="only_format_display" />

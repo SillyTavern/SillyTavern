@@ -10,6 +10,7 @@ import { SECRET_KEYS, writeSecret } from './secrets.js';
 import { delay } from './utils.js';
 import { isMobile } from './RossAscends-mods.js';
 import { autoSelectInstructPreset } from './instruct-mode.js';
+import { t } from './i18n.js';
 
 export {
     horde_settings,
@@ -169,7 +170,7 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
         }
     }
     console.log(maxContextLength, maxLength);
-    $('#adjustedHordeParams').text(`Context: ${maxContextLength}, Response: ${maxLength}`);
+    $('#adjustedHordeParams').text(t`Context` + `: ${maxContextLength}, ` + t`Response` + `: ${maxLength}`);
     return { maxContextLength, maxLength };
 }
 
@@ -177,7 +178,7 @@ function setContextSizePreview() {
     if (horde_settings.models.length) {
         adjustHordeGenerationParams(max_context, amount_gen);
     } else {
-        $('#adjustedHordeParams').text('Context: --, Response: --');
+        $('#adjustedHordeParams').text(t`Context` + ': --, ' + t`Response` + ': --');
     }
 }
 
@@ -404,7 +405,7 @@ jQuery(function () {
         if (horde_settings.models.length) {
             adjustHordeGenerationParams(max_context, amount_gen);
         } else {
-            $('#adjustedHordeParams').text('Context: --, Response: --');
+            $('#adjustedHordeParams').text(t`Context` + ': --, ' + t`Response` + ': --');
         }
 
         saveSettingsDebounced();

@@ -360,8 +360,11 @@ export function convertCohereMessages(messages, names) {
  */
 export function convertGooglePrompt(messages, model, useSysPrompt, names) {
     const visionSupportedModels = [
+        'gemini-2.5-pro-preview-03-25',
+        'gemini-2.5-pro-exp-03-25',
         'gemini-2.0-pro-exp',
         'gemini-2.0-pro-exp-02-05',
+        'gemini-2.5-flash-preview-04-17',
         'gemini-2.0-flash-lite-preview',
         'gemini-2.0-flash-lite-preview-02-05',
         'gemini-2.0-flash',
@@ -411,7 +414,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
         }
     }
 
-    const system_instruction = { parts: { text: sys_prompt.trim() } };
+    const system_instruction = { parts: [{ text: sys_prompt.trim() }] };
     const toolNameMap = {};
 
     const contents = [];
@@ -506,7 +509,12 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
         if (index > 0 && message.role === contents[contents.length - 1].role) {
             parts.forEach((part) => {
                 if (part.text) {
-                    contents[contents.length - 1].parts[0].text += '\n\n' + part.text;
+                    const textPart = contents[contents.length - 1].parts.find(p => typeof p.text === 'string');
+                    if (textPart) {
+                        textPart.text += '\n\n' + part.text;
+                    } else {
+                        contents[contents.length - 1].parts.push(part);
+                    }
                 }
                 if (part.inlineData || part.functionCall || part.functionResponse) {
                     contents[contents.length - 1].parts.push(part);
@@ -673,6 +681,43 @@ export function convertMistralMessages(messages, names) {
             messages[i + 1].role = 'user';
         }
     }
+
+    return messages;
+}
+
+/**
+ * Convert a prompt from the messages objects to the format used by xAI.
+ * @param {object[]} messages Array of messages
+ * @param {PromptNames} names Prompt names
+ * @returns {object[]} Prompt for xAI
+ */
+export function convertXAIMessages(messages, names) {
+    if (!Array.isArray(messages)) {
+        return [];
+    }
+
+    messages.forEach(msg => {
+        if (!msg.name || msg.role === 'user') {
+            return;
+        }
+
+        const needsCharNamePrefix = [
+            { role: 'assistant', condition: names.charName && !msg.content.startsWith(`${names.charName}: `) && !names.startsWithGroupName(msg.content) },
+            { role: 'system', name: 'example_assistant', condition: names.charName && !msg.content.startsWith(`${names.charName}: `) && !names.startsWithGroupName(msg.content) },
+            { role: 'system', name: 'example_user', condition: names.userName && !msg.content.startsWith(`${names.userName}: `) },
+        ];
+
+        const matchingRule = needsCharNamePrefix.find(rule =>
+            msg.role === rule.role && (!rule.name || msg.name === rule.name) && rule.condition,
+        );
+
+        if (matchingRule) {
+            const prefix = msg.role === 'system' && msg.name === 'example_user' ? names.userName : names.charName;
+            msg.content = `${prefix}: ${msg.content}`;
+        }
+
+        delete msg.name;
+    });
 
     return messages;
 }

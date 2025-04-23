@@ -1,10 +1,10 @@
 'use strict';
 
-import { DOMPurify, Popper } from '../lib.js';
+import { DOMPurify } from '../lib.js';
 
 import { event_types, eventSource, is_send_press, main_api, substituteParams } from '../script.js';
 import { is_group_generating } from './group-chats.js';
-import { Message, TokenHandler } from './openai.js';
+import { Message, MessageCollection, TokenHandler } from './openai.js';
 import { power_user } from './power-user.js';
 import { debounce, waitUntilCondition, escapeHtml } from './utils.js';
 import { debounce_timeout } from './constants.js';
@@ -1440,36 +1440,8 @@ class PromptManager {
             footerDiv.querySelector('select').selectedIndex = selectedPromptIndex;
 
             // Add prompt export dialogue and options
-
-            const exportForCharacter = await renderTemplateAsync('promptManagerExportForCharacter');
-            const exportPopup = await renderTemplateAsync('promptManagerExportPopup', { isGlobalStrategy: 'global' === this.configuration.promptOrder.strategy, exportForCharacter });
-            rangeBlockDiv.insertAdjacentHTML('beforeend', exportPopup);
-
-            // Destroy previous popper instance if it exists
-            if (this.exportPopper) {
-                this.exportPopper.destroy();
-            }
-
-            this.exportPopper = Popper.createPopper(
-                document.getElementById('prompt-manager-export'),
-                document.getElementById('prompt-manager-export-format-popup'),
-                { placement: 'bottom' },
-            );
-
-            const showExportSelection = () => {
-                const popup = document.getElementById('prompt-manager-export-format-popup');
-                const show = popup.hasAttribute('data-show');
-
-                if (show) popup.removeAttribute('data-show');
-                else popup.setAttribute('data-show', '');
-
-                this.exportPopper.update();
-            };
-
             footerDiv.querySelector('#prompt-manager-import').addEventListener('click', this.handleImport);
-            footerDiv.querySelector('#prompt-manager-export').addEventListener('click', showExportSelection);
-            rangeBlockDiv.querySelector('.export-promptmanager-prompts-full').addEventListener('click', this.handleFullExport);
-            rangeBlockDiv.querySelector('.export-promptmanager-prompts-character')?.addEventListener('click', this.handleCharacterExport);
+            footerDiv.querySelector('#prompt-manager-export').addEventListener('click', this.handleFullExport);
         }
     }
 

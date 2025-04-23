@@ -9,7 +9,7 @@ import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
-import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { slashCommandReturnHelper } from './slash-commands/SlashCommandReturnHelper.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { isFalseBoolean, convertValueType, isTrueBoolean } from './utils.js';
@@ -583,7 +583,7 @@ export function evalBoolean(rule, a, b) {
  * Executes a slash command from a string (may be enclosed in quotes) and returns the result.
  * @param {string} command Command to execute. May contain escaped macro and batch separators.
  * @param {SlashCommandScope} [scope] The scope to use.
- * @param {{[id:PARSER_FLAG]:boolean}} [parserFlags] The parser flags to use.
+ * @param {import('./slash-commands/SlashCommandParser.js').ParserFlags} [parserFlags] The parser flags to use.
  * @param {SlashCommandAbortController} [abortController] The abort controller to use.
  * @returns {Promise<SlashCommandClosureResult>} Closure execution result
  */

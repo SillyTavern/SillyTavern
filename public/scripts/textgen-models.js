@@ -58,6 +58,8 @@ const OPENROUTER_PROVIDERS = [
     'Minimax',
     'Nineteen',
     'Liquid',
+    'Stealth',
+    'NCompass',
     'InferenceNet',
     'Friendli',
     'AionLabs',
@@ -69,6 +71,9 @@ const OPENROUTER_PROVIDERS = [
     'Targon',
     'Ubicloud',
     'Parasail',
+    'Phala',
+    'Cent-ML',
+    'Venice',
     '01.AI',
     'HuggingFace',
     'Mancer',
@@ -923,6 +928,10 @@ export function getCurrentDreamGenModelTokenizer() {
         return tokenizers.YI;
     } else if (model.id.startsWith('opus-v1-xl')) {
         return tokenizers.LLAMA;
+    } else if (model.id.startsWith('lucid-v1-medium')) {
+        return tokenizers.NEMO;
+    } else if (model.id.startsWith('lucid-v1-extra-large')) {
+        return tokenizers.LLAMA3;
     } else {
         return tokenizers.MISTRAL;
     }

@@ -398,7 +398,7 @@ function runRegexCallback(args, value) {
     for (const script of scripts) {
         if (script.scriptName.toLowerCase() === scriptName.toLowerCase()) {
             if (script.disabled) {
-                toastr.warning(`Regex script "${scriptName}" is disabled.`);
+                toastr.warning(t`Regex script "${scriptName}" is disabled.`);
                 return value;
             }
 

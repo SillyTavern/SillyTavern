@@ -407,11 +407,15 @@ export function getTokenizerModel(requestModel) {
         return 'o1';
     }
 
+    if (requestModel.includes('o3') || requestModel.includes('o4-mini')) {
+        return 'o1';
+    }
+
     if (requestModel.includes('gpt-4o') || requestModel.includes('chatgpt-4o-latest')) {
         return 'gpt-4o';
     }
 
-    if (requestModel.includes('gpt-4.5-preview')) {
+    if (requestModel.includes('gpt-4.1') || requestModel.includes('gpt-4.5')) {
         return 'gpt-4o';
     }
 

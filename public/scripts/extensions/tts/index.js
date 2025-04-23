@@ -1,5 +1,5 @@
 import { cancelTtsPlay, eventSource, event_types, getCurrentChatId, isStreamingEnabled, name2, saveSettingsDebounced, substituteParams } from '../../../script.js';
-import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules, renderExtensionTemplateAsync } from '../../extensions.js';
+import { ModuleWorkerWrapper, extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
 import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique } from '../../utils.js';
 import { EdgeTtsProvider } from './edge.js';
 import { ElevenLabsTtsProvider } from './elevenlabs.js';
@@ -471,6 +471,7 @@ async function processTtsQueue() {
     if (extension_settings.tts.skip_codeblocks) {
         text = text.replace(/^\s{4}.*$/gm, '').trim();
         text = text.replace(/```.*?```/gs, '').trim();
+        text = text.replace(/~~~.*?~~~/gs, '').trim();
     }
 
     if (extension_settings.tts.skip_tags) {
