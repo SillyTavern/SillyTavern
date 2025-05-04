@@ -4133,7 +4133,8 @@ function registerFunctionTool() {
             if (!isValidState()) throw new Error('Image generation is not configured.');
             if (!args) throw new Error('Missing arguments');
             if (!args.prompt) throw new Error('Missing prompt');
-            const url = await generatePicture(initiators.tool, {}, args.prompt);
+            const { prompt, ..._args } = args;
+            const url = await generatePicture(initiators.tool, _args, prompt);
             return encodeURI(url);
         },
         formatMessage: () => 'Generating an image...',
