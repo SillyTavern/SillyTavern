@@ -1,5 +1,8 @@
 import {
     showdown,
+    markdownIt,
+    markdownItKatex,
+    markdownItTexmath,
     moment,
     Fuse,
     DOMPurify,
@@ -336,7 +339,7 @@ DOMPurify.addHook('afterSanitizeAttributes', function (node) {
 });
 
 DOMPurify.addHook('uponSanitizeAttribute', (node, data, config) => {
-    if (!config['MESSAGE_SANITIZE']) {
+    if (!config['MESSAGE_SANITIZE'] || useMarkdownIt) {
         return;
     }
 
@@ -542,8 +545,9 @@ console.debug('Character context menu initialized', characterContextMenu);
 
 // Markdown converter
 export let mesForShowdownParse; //intended to be used as a context to compare showdown strings against
-/** @type {import('showdown').Converter} */
+/** @type {showdown.Converter | markdownIt} */
 let converter;
+let useMarkdownIt = true;
 
 // array for prompt token calculations
 console.debug('initializing Prompt Itemization Array on Startup');
@@ -791,6 +795,13 @@ async function getClientVersion() {
 }
 
 export function reloadMarkdownProcessor() {
+    if (useMarkdownIt) {
+        converter = markdownIt({ html: true, linkify: true })
+            .use(markdownItKatex)
+            .use(markdownItTexmath, { delimiters: 'brackets' });
+        return converter;
+    }
+
     converter = new showdown.Converter({
         emoji: true,
         literalMidWordUnderscores: true,
@@ -808,6 +819,14 @@ export function reloadMarkdownProcessor() {
     converter.addExtension(markdownExclusionExt(), 'exclusion');
 
     return converter;
+}
+
+export function renderMarkdown(str) {
+    if (converter instanceof showdown.Converter) {
+        return converter.makeHtml(str);
+    } else {
+        return converter.render(str);
+    }
 }
 
 export function getCurrentChatId() {
@@ -2180,7 +2199,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
 
         mes = mes.replaceAll('\\begin{align*}', '$$');
         mes = mes.replaceAll('\\end{align*}', '$$');
-        mes = converter.makeHtml(mes);
+        mes = renderMarkdown(mes);
 
         mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
             // Firefox creates extra newlines from <br>s in code blocks, so we replace them before converting newlines to <br>s.
@@ -8205,7 +8224,7 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
     $('#description_textarea').val(characters[chid].description);
     $('#character_world').val(characters[chid].data?.extensions?.world || '');
     $('#creator_notes_textarea').val(characters[chid].data?.creator_notes || characters[chid].creatorcomment);
-    $('#creator_notes_spoiler').html(DOMPurify.sanitize(converter.makeHtml(substituteParams(characters[chid].data?.creator_notes) || characters[chid].creatorcomment), { MESSAGE_SANITIZE: true }));
+    $('#creator_notes_spoiler').html(DOMPurify.sanitize(renderMarkdown(substituteParams(characters[chid].data?.creator_notes) || characters[chid].creatorcomment), { MESSAGE_SANITIZE: true }));
     $('#character_version_textarea').val(characters[chid].data?.character_version || '');
     $('#system_prompt_textarea').val(characters[chid].data?.system_prompt || '');
     $('#post_history_instructions_textarea').val(characters[chid].data?.post_history_instructions || '');
@@ -8286,7 +8305,7 @@ function select_rm_create({ switchMenu = true } = {}) {
     $('#description_textarea').val(create_save.description);
     $('#character_world').val(create_save.world);
     $('#creator_notes_textarea').val(create_save.creator_notes);
-    $('#creator_notes_spoiler').html(DOMPurify.sanitize(converter.makeHtml(create_save.creator_notes), { MESSAGE_SANITIZE: true }));
+    $('#creator_notes_spoiler').html(DOMPurify.sanitize(renderMarkdown(create_save.creator_notes), { MESSAGE_SANITIZE: true }));
     $('#post_history_instructions_textarea').val(create_save.post_history_instructions);
     $('#system_prompt_textarea').val(create_save.system_prompt);
     $('#tags_textarea').val(create_save.tags);

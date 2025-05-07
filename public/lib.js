@@ -14,6 +14,9 @@ import DiffMatchPatch from 'diff-match-patch';
 import { isProbablyReaderable, Readability } from '@mozilla/readability';
 import SVGInject from '@iconfu/svg-inject';
 import showdown from 'showdown';
+import markdownIt from 'markdown-it';
+import markdownItKatex_ from '@vscode/markdown-it-katex';
+import markdownItTexmath from 'markdown-it-texmath';
 import moment from 'moment';
 import seedrandom from 'seedrandom';
 import * as Popper from '@popperjs/core';
@@ -21,6 +24,9 @@ import droll from 'droll';
 import morphdom from 'morphdom';
 import { toggle as slideToggle } from 'slidetoggle';
 import chalk from 'chalk';
+
+// @ts-ignore
+const markdownItKatex = markdownItKatex_.default;
 
 /**
  * Expose the libraries to the 'window' object.
@@ -63,6 +69,18 @@ export function initLibraryShims() {
         // @ts-ignore
         window.showdown = showdown;
     }
+    if (!('markdownIt' in window)) {
+        // @ts-ignore
+        window.markdownIt = markdownIt;
+    }
+    if (!('markdownItKatex' in window)) {
+        // @ts-ignore
+        window.markdownItKatex = markdownItKatex;
+    }
+    if (!('markdownItTexmath' in window)) {
+        // @ts-ignore
+        window.markdownItTexmath = markdownItTexmath;
+    }
     if (!('moment' in window)) {
         // @ts-ignore
         window.moment = moment;
@@ -91,6 +109,9 @@ export default {
     isProbablyReaderable,
     SVGInject,
     showdown,
+    markdownIt,
+    markdownItKatex,
+    markdownItTexmath,
     moment,
     seedrandom,
     Popper,
@@ -114,6 +135,9 @@ export {
     isProbablyReaderable,
     SVGInject,
     showdown,
+    markdownIt,
+    markdownItKatex,
+    markdownItTexmath,
     moment,
     seedrandom,
     Popper,
