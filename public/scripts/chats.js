@@ -483,7 +483,7 @@ export function decodeStyleTags(text, { prefix } = { prefix: '.mes_text ' }) {
         if (Array.isArray(rule.selectors)) {
             for (let i = 0; i < rule.selectors.length; i++) {
                 const selector = rule.selectors[i];
-                if (selector && prefix) {
+                if (selector) {
                     const selectors = (selector.split(' ') ?? []).map((v) => {
                         if (v.startsWith('.')) {
                             return '.custom-' + v.substring(1);
@@ -570,7 +570,7 @@ function setGlobalStylesAllowed(avatarId, allowed) {
  */
 export function formatCreatorNotes(text, avatarId) {
     const sanitizeStyles = !canUseGlobalStyles(avatarId);
-    const decodeStyleParam = { prefix: sanitizeStyles ? '#creator_notes_spoiler ' : 'body ' };
+    const decodeStyleParam = { prefix: sanitizeStyles ? '#creator_notes_spoiler ' : '' };
     /** @type {import('dompurify').Config & { MESSAGE_SANITIZE: boolean }} */
     const config = {
         RETURN_DOM: false,
