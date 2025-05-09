@@ -761,24 +761,24 @@ async function populationInjectionPrompts(prompts, messages) {
         const wrap = false;
 
         // Group prompts by priority
-        const priorityGroups = {};
+        const orderGroups = {};
         for (const prompt of depthPrompts) {
-            const priority = prompt.injection_priority || 0;
-            if (!priorityGroups[priority]) {
-                priorityGroups[priority] = [];
+            const order = prompt.injection_order || 0;
+            if (!orderGroups[order]) {
+                orderGroups[order] = [];
             }
-            priorityGroups[priority].push(prompt);
+            orderGroups[order].push(prompt);
         }
 
-        // Process each priority group in order (low to high)
-        const priorities = Object.keys(priorityGroups).sort((a, b) => b - a);
-        for (const priority of priorities) {
-            const priorityPrompts = priorityGroups[priority];
+        // Process each order group in order (b - a = low to high ; a - b = high to low)
+        const orders = Object.keys(orderGroups).sort((a, b) => a - b);
+        for (const order of orders) {
+            const orderPrompts = orderGroups[order];
 
             // Order of priority for roles (most important go lower)
             const roles = ['system', 'user', 'assistant'];
             for (const role of roles) {
-                const rolePrompts = priorityPrompts
+                const rolePrompts = orderPrompts
                     .filter(prompt => prompt.role === role)
                     .map(x => x.content)
                     .join(separator);
@@ -1329,7 +1329,7 @@ async function preparePromptsForChatCompletion({ Scenario, charPersonality, name
             // Depth for In-Chat
             prompt.injection_depth = collectionPrompt.injection_depth ?? prompt.injection_depth;
             // Priority for In-Chat
-            prompt.injection_priority = collectionPrompt.injection_priority ?? prompt.injection_priority;
+            prompt.injection_order = collectionPrompt.injection_order ?? prompt.injection_order;
             // Role (system, user, assistant)
             prompt.role = collectionPrompt.role ?? prompt.role;
         }
