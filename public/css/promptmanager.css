@@ -359,10 +359,15 @@
     content: attr(external_piece_text);
     display: block;
     width: 100%;
-    font-weight: 600;
+    font-weight: 500;
     text-align: center;
 }
 
 .completion_prompt_manager_popup_entry_form_control #completion_prompt_manager_popup_entry_form_prompt:disabled {
     visibility: hidden;
+}
+
+#completion_prompt_manager_popup_entry_source_block {
+    display: flex;
+    justify-content: center;
 }
