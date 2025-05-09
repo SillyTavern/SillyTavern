@@ -570,13 +570,13 @@ function setGlobalStylesAllowed(avatarId, allowed) {
  */
 export function formatCreatorNotes(text, avatarId) {
     const sanitizeStyles = !canUseGlobalStyles(avatarId);
-    const decodeStyleParam = { prefix: sanitizeStyles ? '#creator_notes_spoiler ' : '' };
+    const decodeStyleParam = { prefix: sanitizeStyles ? '#creator_notes_spoiler ' : 'body ' };
     /** @type {import('dompurify').Config & { MESSAGE_SANITIZE: boolean }} */
     const config = {
         RETURN_DOM: false,
         RETURN_DOM_FRAGMENT: false,
         RETURN_TRUSTED_TYPE: false,
-        MESSAGE_SANITIZE: sanitizeStyles,
+        MESSAGE_SANITIZE: true,
         ADD_TAGS: ['custom-style'],
     };
 
