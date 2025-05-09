@@ -471,7 +471,7 @@ export function encodeStyleTags(text) {
  * Sanitizes custom style tags in the message text to prevent DOM pollution.
  * @param {string} text Message text
  * @param {object} options Options object
- * @param {string} options.prefix If not empty, prefix the class names with this value
+ * @param {string} options.prefix Prefix the selectors with this value
  * @returns {string} Sanitized message text
  * @copyright https://github.com/kwaroran/risuAI
  */
@@ -675,9 +675,10 @@ async function checkForGlobalStyles() {
  * @param {boolean|null} state State of the button
  */
 function setGlobalStylesButtonClass(state) {
-    $('#creators_note_styles_button').toggleClass('empty', state === null);
-    $('#creators_note_styles_button').toggleClass('allowed', state === true);
-    $('#creators_note_styles_button').toggleClass('forbidden', state === false);
+    const button = $('#creators_note_styles_button');
+    button.toggleClass('empty', state === null);
+    button.toggleClass('allowed', state === true);
+    button.toggleClass('forbidden', state === false);
 }
 
 /**
