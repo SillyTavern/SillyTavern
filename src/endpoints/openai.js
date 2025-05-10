@@ -45,6 +45,10 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.KOBOLDCPP);
         }
 
+        if (request.body.api === 'llamacpp') {
+            key = readSecret(request.user.directories, SECRET_KEYS.LLAMACPP);
+        }
+
         if (request.body.api === 'vllm') {
             key = readSecret(request.user.directories, SECRET_KEYS.VLLM);
         }
@@ -69,7 +73,8 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.XAI);
         }
 
-        if (!key && !request.body.reverse_proxy && ['custom', 'ooba', 'koboldcpp', 'vllm'].includes(request.body.api) === false) {
+        const noKeyTypes = ['custom', 'ooba', 'koboldcpp', 'vllm', 'llamacpp'];
+        if (!key && !request.body.reverse_proxy && !noKeyTypes.includes(request.body.api)) {
             console.warn('No key found for API', request.body.api);
             return response.sendStatus(400);
         }
@@ -156,7 +161,7 @@ router.post('/caption-image', async (request, response) => {
             });
         }
 
-        if (request.body.api === 'koboldcpp' || request.body.api === 'vllm') {
+        if (['koboldcpp', 'vllm', 'llamacpp'].includes(request.body.api)) {
             apiUrl = `${trimV1(request.body.server_url)}/v1/chat/completions`;
         }
 

@@ -502,51 +502,6 @@ ollama.post('/caption-image', async function (request, response) {
 
 const llamacpp = express.Router();
 
-llamacpp.post('/caption-image', async function (request, response) {
-    try {
-        if (!request.body.server_url) {
-            return response.sendStatus(400);
-        }
-
-        console.debug('LlamaCpp caption request:', request.body);
-        const baseUrl = trimV1(request.body.server_url);
-
-        const fetchResponse = await fetch(`${baseUrl}/completion`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt: `USER:[img-1]${String(request.body.prompt).trim()}\nASSISTANT:`,
-                image_data: [{ data: request.body.image, id: 1 }],
-                temperature: 0.1,
-                stream: false,
-                stop: ['USER:', '</s>'],
-            }),
-        });
-
-        if (!fetchResponse.ok) {
-            console.error('LlamaCpp caption error:', fetchResponse.status, fetchResponse.statusText);
-            return response.status(500).send({ error: true });
-        }
-
-        /** @type {any} */
-        const data = await fetchResponse.json();
-        console.debug('LlamaCpp caption response:', data);
-
-        const caption = data?.content || '';
-
-        if (!caption) {
-            console.error('LlamaCpp caption is empty.');
-            return response.status(500).send({ error: true });
-        }
-
-        return response.send({ caption });
-
-    } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
-    }
-});
-
 llamacpp.post('/props', async function (request, response) {
     try {
         if (!request.body.server_url) {

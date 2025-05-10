@@ -22,7 +22,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
 
     throwIfInvalidModel(useReverseProxy);
 
-    const noPrefix = ['ollama', 'llamacpp'].includes(extension_settings.caption.multimodal_api);
+    const noPrefix = ['ollama'].includes(extension_settings.caption.multimodal_api);
 
     if (noPrefix && base64Img.startsWith('data:image/')) {
         base64Img = base64Img.split(',')[1];
@@ -97,8 +97,6 @@ export async function getMultimodalCaption(base64Img, prompt) {
                 return '/api/google/caption-image';
             case 'anthropic':
                 return '/api/anthropic/caption-image';
-            case 'llamacpp':
-                return '/api/backends/text-completions/llamacpp/caption-image';
             case 'ollama':
                 return '/api/backends/text-completions/ollama/caption-image';
             default:

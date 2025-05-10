@@ -196,6 +196,17 @@ export class PromptCollection {
 }
 
 class PromptManager {
+    get promptSources() {
+        return {
+            charDescription: t`Character Description`,
+            charPersonality: t`Character Personality`,
+            scenario: t`Character Scenario`,
+            personaDescription: t`Persona Description`,
+            worldInfoBefore: t`World Info (↑Char)`,
+            worldInfoAfter: t`World Info (↓Char)`,
+        };
+    }
+
     constructor() {
         this.systemPrompts = [
             'main',
@@ -408,6 +419,7 @@ class PromptManager {
         this.handleResetPrompt = (event) => {
             const promptId = event.target.dataset.pmPrompt;
             const prompt = this.getPromptById(promptId);
+            const isPulledPrompt = Object.keys(this.promptSources).includes(promptId);
 
             switch (promptId) {
                 case 'main':
@@ -439,6 +451,12 @@ class PromptManager {
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides').checked = prompt.forbid_overrides ?? false;
             document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block').style.visibility = this.overridablePrompts.includes(prompt.identifier) ? 'visible' : 'hidden';
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').disabled = prompt.marker ?? false;
+            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block').style.display = isPulledPrompt ? '' : 'none';
+
+            if (isPulledPrompt) {
+                const sourceName = this.promptSources[promptId];
+                document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source').textContent = sourceName;
+            }
 
             if (!this.systemPrompts.includes(promptId)) {
                 document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position').removeAttribute('disabled');
@@ -1207,6 +1225,9 @@ class PromptManager {
         const injectionDepthBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block');
         const forbidOverridesField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides');
         const forbidOverridesBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block');
+        const entrySourceBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block');
+        const entrySource = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source');
+        const isPulledPrompt = Object.keys(this.promptSources).includes(prompt.identifier);
 
         nameField.value = prompt.name ?? '';
         roleField.value = prompt.role || 'system';
@@ -1218,6 +1239,12 @@ class PromptManager {
         injectionPositionField.removeAttribute('disabled');
         forbidOverridesField.checked = prompt.forbid_overrides ?? false;
         forbidOverridesBlock.style.visibility = this.overridablePrompts.includes(prompt.identifier) ? 'visible' : 'hidden';
+        entrySourceBlock.style.display = isPulledPrompt ? '' : 'none';
+
+        if (isPulledPrompt) {
+            const sourceName = this.promptSources[prompt.identifier];
+            entrySource.textContent = sourceName;
+        }
 
         if (this.systemPrompts.includes(prompt.identifier)) {
             injectionPositionField.setAttribute('disabled', 'disabled');
@@ -1303,6 +1330,8 @@ class PromptManager {
         const injectionDepthBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block');
         const forbidOverridesField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides');
         const forbidOverridesBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block');
+        const entrySourceBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block');
+        const entrySource = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source');
 
         nameField.value = '';
         roleField.selectedIndex = 0;
@@ -1314,6 +1343,8 @@ class PromptManager {
         injectionDepthBlock.style.visibility = 'unset';
         forbidOverridesBlock.style.visibility = 'unset';
         forbidOverridesField.checked = false;
+        entrySourceBlock.style.display = 'none';
+        entrySource.textContent = '';
 
         roleField.disabled = false;
     }
