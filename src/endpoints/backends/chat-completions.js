@@ -57,6 +57,7 @@ const API_AI21 = 'https://api.ai21.com/studio/v1';
 const API_NANOGPT = 'https://nano-gpt.com/api/v1';
 const API_DEEPSEEK = 'https://api.deepseek.com/beta';
 const API_XAI = 'https://api.x.ai/v1';
+const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
 
 /**
  * Applies a post-processing step to the generated messages.
@@ -1302,6 +1303,14 @@ router.post('/generate', function (request, response) {
         apiKey = readSecret(request.user.directories, SECRET_KEYS.ZEROONEAI);
         headers = {};
         bodyParams = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
+        apiUrl = API_POLLINATIONS;
+        apiKey = 'NONE';
+        headers = {};
+        bodyParams = {
+            reasoning_effort: request.body.reasoning_effort,
+            private: true,
+        };
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });

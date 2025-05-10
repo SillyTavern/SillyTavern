@@ -2236,6 +2236,14 @@ async function sendOpenAIRequest(type, messages, signal) {
         }
     }
 
+    if (isPollinations) {
+        delete generate_data.temperature;
+        delete generate_data.top_p;
+        delete generate_data.frequency_penalty;
+        delete generate_data.presence_penalty;
+        delete generate_data.max_tokens;
+    }
+
     if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere || isNano || isXAI || isPollinations) && oai_settings.seed >= 0) {
         generate_data['seed'] = oai_settings.seed;
     }
@@ -3413,6 +3421,8 @@ function loadOpenAISettings(data, settings) {
     $('#model_01ai_select').val(oai_settings.zerooneai_model);
     $('#model_xai_select').val(oai_settings.xai_model);
     $(`#model_xai_select option[value="${oai_settings.xai_model}"`).attr('selected', true);
+    $('#model_pollinations_select').val(oai_settings.pollinations_model);
+    $(`#model_pollinations_select option[value="${oai_settings.pollinations_model}"`).attr('selected', true);
     $('#custom_model_id').val(oai_settings.custom_model);
     $('#custom_api_url_text').val(oai_settings.custom_url);
     $('#openai_max_context').val(oai_settings.openai_max_context);
@@ -4737,6 +4747,18 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS) {
+        if (oai_settings.max_context_unlocked) {
+            $('#openai_max_context').attr('max', unlocked_max);
+        } else {
+            $('#openai_max_context').attr('max', max_128k);
+        }
+
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
     if (oai_settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
@@ -5079,6 +5101,9 @@ function toggleChatCompletionForms() {
     else if (oai_settings.chat_completion_source == chat_completion_sources.XAI) {
         $('#model_xai_select').trigger('change');
     }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS) {
+        $('#model_pollinations_select').trigger('change');
+    }
     $('[data-source]').each(function () {
         const validSources = $(this).data('source').split(',');
         $(this).toggle(validSources.includes(oai_settings.chat_completion_source));
@@ -5196,6 +5221,22 @@ export function isImageInliningSupported() {
         'grok-vision',
     ];
 
+    const pollinationsVisionModels = [
+        'openai',
+        'openai-fast',
+        'openai-large',
+        'openai-roblox',
+        'mistral',
+        'unity',
+        'mirexa',
+        'searchgpt',
+        'evil',
+        'phi',
+        'sur',
+        'bidara',
+        'openai-audio',
+    ];
+
     switch (oai_settings.chat_completion_source) {
         case chat_completion_sources.OPENAI:
             return visionSupportedModels.some(model =>
@@ -5218,6 +5259,8 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.cohere_model.includes(model));
         case chat_completion_sources.XAI:
             return visionSupportedModels.some(model => oai_settings.xai_model.includes(model));
+        case chat_completion_sources.POLLINATIONS:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.vision) || pollinationsVisionModels.includes(oai_settings.pollinations_model);
         default:
             return false;
     }
@@ -5816,6 +5859,7 @@ export function initOpenAI() {
     $('#model_01ai_select').on('change', onModelChange);
     $('#model_custom_select').on('change', onModelChange);
     $('#model_xai_select').on('change', onModelChange);
+    $('#model_pollinations_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);
