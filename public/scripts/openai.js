@@ -185,6 +185,7 @@ export const chat_completion_sources = {
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
     XAI: 'xai',
+    POLLINATIONS: 'pollinations',
 };
 
 const character_names_behavior = {
@@ -268,6 +269,7 @@ export const settingsToUpdate = {
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false],
     zerooneai_model: ['#model_01ai_select', 'zerooneai_model', false],
     xai_model: ['#model_xai_select', 'xai_model', false],
+    pollinations_model: ['#model_pollinations_select', 'pollinations_model', false],
     custom_model: ['#custom_model_id', 'custom_model', false],
     custom_url: ['#custom_api_url_text', 'custom_url', false],
     custom_include_body: ['#custom_include_body', 'custom_include_body', false],
@@ -357,6 +359,7 @@ const default_settings = {
     zerooneai_model: 'yi-large',
     deepseek_model: 'deepseek-chat',
     xai_model: 'grok-3-beta',
+    pollinations_model: 'openai',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -438,6 +441,7 @@ const oai_settings = {
     zerooneai_model: 'yi-large',
     deepseek_model: 'deepseek-chat',
     xai_model: 'grok-3-beta',
+    pollinations_model: 'openai',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -1660,6 +1664,8 @@ export function getChatCompletionModel(source = null) {
             return oai_settings.deepseek_model;
         case chat_completion_sources.XAI:
             return oai_settings.xai_model;
+        case chat_completion_sources.POLLINATIONS:
+            return oai_settings.pollinations_model;
         default:
             throw new Error(`Unknown chat completion source: ${activeSource}`);
     }
@@ -1841,6 +1847,24 @@ function saveModelList(data) {
 
         $('#model_deepseek_select').val(oai_settings.deepseek_model).trigger('change');
     }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS) {
+        $('#model_pollinations_select').empty();
+        model_list.forEach((model) => {
+            $('#model_pollinations_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.pollinations_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.pollinations_model)) {
+            oai_settings.pollinations_model = model_list[0].id;
+        }
+
+        $('#model_pollinations_select').val(oai_settings.pollinations_model).trigger('change');
+    }
 }
 
 function appendOpenRouterOptions(model_list, groupModels = false, sort = false) {
@@ -1953,6 +1977,7 @@ function getReasoningEffort() {
         chat_completion_sources.CUSTOM,
         chat_completion_sources.XAI,
         chat_completion_sources.OPENROUTER,
+        chat_completion_sources.POLLINATIONS,
     ];
 
     if (!reasoningEffortSources.includes(oai_settings.chat_completion_source)) {
@@ -2008,6 +2033,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isNano = oai_settings.chat_completion_source == chat_completion_sources.NANOGPT;
     const isDeepSeek = oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK;
     const isXAI = oai_settings.chat_completion_source == chat_completion_sources.XAI;
+    const isPollinations = oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS;
     const isTextCompletion = isOAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
@@ -2210,7 +2236,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         }
     }
 
-    if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere || isNano || isXAI) && oai_settings.seed >= 0) {
+    if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere || isNano || isXAI || isPollinations) && oai_settings.seed >= 0) {
         generate_data['seed'] = oai_settings.seed;
     }
 
@@ -3299,6 +3325,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.deepseek_model = settings.deepseek_model ?? default_settings.deepseek_model;
     oai_settings.zerooneai_model = settings.zerooneai_model ?? default_settings.zerooneai_model;
     oai_settings.xai_model = settings.xai_model ?? default_settings.xai_model;
+    oai_settings.pollinations_model = settings.pollinations_model ?? default_settings.pollinations_model;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
     oai_settings.custom_url = settings.custom_url ?? default_settings.custom_url;
     oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
@@ -3666,6 +3693,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         groq_model: settings.groq_model,
         zerooneai_model: settings.zerooneai_model,
         xai_model: settings.xai_model,
+        pollinations_model: settings.pollinations_model,
         custom_model: settings.custom_model,
         custom_url: settings.custom_url,
         custom_include_body: settings.custom_include_body,
@@ -4462,6 +4490,11 @@ async function onModelChange() {
         console.log('Custom model changed to', value);
         oai_settings.custom_model = value;
         $('#custom_model_id').val(value).trigger('input');
+    }
+
+    if (value && $(this).is('#model_pollinations_select')) {
+        console.log('Pollinations model changed to', value);
+        oai_settings.pollinations_model = value;
     }
 
     if ($(this).is('#model_xai_select')) {

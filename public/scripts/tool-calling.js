@@ -587,6 +587,7 @@ export class ToolManager {
             chat_completion_sources.MAKERSUITE,
             chat_completion_sources.AI21,
             chat_completion_sources.XAI,
+            chat_completion_sources.POLLINATIONS,
         ];
         return supportedSources.includes(oai_settings.chat_completion_source);
     }
