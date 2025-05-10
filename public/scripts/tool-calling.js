@@ -1,7 +1,7 @@
 import { DOMPurify } from '../lib.js';
 
 import { addOneMessage, chat, event_types, eventSource, main_api, saveChatConditional, system_avatar, systemUserName } from '../script.js';
-import { chat_completion_sources, oai_settings } from './openai.js';
+import { chat_completion_sources, model_list, oai_settings } from './openai.js';
 import { Popup } from './popup.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
@@ -573,6 +573,13 @@ export class ToolManager {
     static isToolCallingSupported() {
         if (main_api !== 'openai' || !oai_settings.function_calling) {
             return false;
+        }
+
+        if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS && Array.isArray(model_list)) {
+            const currentModel = model_list.find(model => model.id === oai_settings.pollinations_model);
+            if (currentModel) {
+                return currentModel.tools;
+            }
         }
 
         const supportedSources = [
