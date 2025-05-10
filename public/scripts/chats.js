@@ -1226,12 +1226,12 @@ async function openAttachmentManager() {
                 popper.update();
             });
 
-            return [popper, bodyListener];
+            return { popper, bodyListener };
         }).filter(Boolean);
 
         return () => {
             modalButtonData.forEach(p => {
-                const [popper, bodyListener] = p;
+                const { popper,bodyListener } = p;
                 popper.destroy();
                 document.body.removeEventListener('click', bodyListener);
             });
