@@ -530,35 +530,52 @@ export function decodeStyleTags(text, { prefix } = { prefix: '.mes_text ' }) {
 }
 
 /**
- * Checks if global styles are allowed for the character.
- * @param {string} avatarId Avatar ID
- * @returns {boolean} True if global styles are allowed for the character
+ * Class to manage style preferences for characters.
  */
-function canUseGlobalStyles(avatarId) {
-    return avatarId
-        ? accountStorage.getItem(`AllowGlobalStyles-${avatarId}`) === 'true'
-        : false; // Always disabled when creating a new character
-}
+class StylesPreference {
+    /**
+     * Creates a new StylesPreference instance.
+     * @param {string|null} avatarId - The avatar ID of the character
+     */
+    constructor(avatarId) {
+        this.avatarId = avatarId;
+    }
 
-/**
- * Checks if the global styles preference is set for the character.
- * @param {string} avatarId Avatar ID
- * @returns {boolean} True if global styles preference is set
- */
-function hasGlobalStylesPreference(avatarId) {
-    return avatarId
-        ? accountStorage.getItem(`AllowGlobalStyles-${avatarId}`) !== null
-        : true; // No character == assume preference is set
-}
+    /**
+     * Gets the account storage key for the style preference.
+     */
+    get key() {
+        return `AllowGlobalStyles-${this.avatarId}`;
+    }
 
-/**
- * Sets the global styles preference for the character.
- * @param {string} avatarId Avatar ID
- * @param {boolean} allowed New value for global styles
- */
-function setGlobalStylesAllowed(avatarId, allowed) {
-    if (avatarId) {
-        accountStorage.setItem(`AllowGlobalStyles-${avatarId}`, String(allowed));
+    /**
+     * Checks if a preference exists for this character.
+     * @returns {boolean} True if preference exists, false otherwise
+     */
+    exists() {
+        return this.avatarId
+            ? accountStorage.getItem(this.key) !== null
+            : true; // No character == assume preference is set
+    }
+
+    /**
+     * Gets the current style preference.
+     * @returns {boolean} True if global styles are allowed, false otherwise
+     */
+    get() {
+        return this.avatarId
+            ? accountStorage.getItem(this.key) === 'true'
+            : false; // Always disabled when creating a new character
+    }
+
+    /**
+     * Sets the global styles preference.
+     * @param {boolean} allowed - Whether global styles are allowed
+     */
+    set(allowed) {
+        if (this.avatarId) {
+            accountStorage.setItem(this.key, String(allowed));
+        }
     }
 }
 
@@ -569,7 +586,8 @@ function setGlobalStylesAllowed(avatarId, allowed) {
  * @returns {string} Formatted HTML text
  */
 export function formatCreatorNotes(text, avatarId) {
-    const sanitizeStyles = !canUseGlobalStyles(avatarId);
+    const preference = new StylesPreference(avatarId);
+    const sanitizeStyles = !preference.get();
     const decodeStyleParam = { prefix: sanitizeStyles ? '#creator_notes_spoiler ' : '' };
     /** @type {import('dompurify').Config & { MESSAGE_SANITIZE: boolean }} */
     const config = {
@@ -595,7 +613,8 @@ async function openGlobalStylesPreferenceDialog() {
     }
 
     const entityId = getCurrentEntityId();
-    const currentPreference = canUseGlobalStyles(entityId);
+    const preference = new StylesPreference(entityId);
+    const currentValue = preference.get();
 
     const template = $(await renderTemplateAsync('globalStylesPreference'));
 
@@ -603,27 +622,27 @@ async function openGlobalStylesPreferenceDialog() {
     const forbiddenRadio = template.find('#global_styles_forbidden');
 
     allowedRadio.on('change', () => {
-        setGlobalStylesAllowed(entityId, true);
+        preference.set(true);
         allowedRadio.prop('checked', true);
         forbiddenRadio.prop('checked', false);
     });
 
     forbiddenRadio.on('change', () => {
-        setGlobalStylesAllowed(entityId, false);
+        preference.set(false);
         allowedRadio.prop('checked', false);
         forbiddenRadio.prop('checked', true);
     });
 
-    const currentPreferenceRadio = currentPreference ? allowedRadio : forbiddenRadio;
+    const currentPreferenceRadio = currentValue ? allowedRadio : forbiddenRadio;
     template.find(currentPreferenceRadio).prop('checked', true);
 
     await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: false, large: false });
 
     // Re-render the notes if the preference changed
-    const newPreference = canUseGlobalStyles(entityId);
-    if (newPreference !== currentPreference) {
+    const newValue = preference.get();
+    if (newValue !== currentValue) {
         $('#rm_button_selected_ch').trigger('click');
-        setGlobalStylesButtonClass(newPreference);
+        setGlobalStylesButtonClass(newValue);
     }
 }
 
@@ -635,14 +654,15 @@ async function checkForGlobalStyles() {
 
     const notes = characters[this_chid].data?.creator_notes || characters[this_chid].creatorcomment;
     const avatarId = characters[this_chid].avatar;
-    const styleContents = getStyleContentsFromHtml(notes);
+    const styleContents = getStyleContentsFromMarkdown(notes);
 
     if (!styleContents) {
         setGlobalStylesButtonClass(null);
         return;
     }
 
-    const hasPreference = hasGlobalStylesPreference(avatarId);
+    const preference = new StylesPreference(avatarId);
+    const hasPreference = preference.exists();
     if (!hasPreference) {
         const template = $(await renderTemplateAsync('globalStylesPopup'));
         template.find('textarea').val(styleContents);
@@ -655,18 +675,18 @@ async function checkForGlobalStyles() {
 
         switch (confirmResult) {
             case POPUP_RESULT.AFFIRMATIVE:
-                setGlobalStylesAllowed(avatarId, false);
+                preference.set(false);
                 break;
             case POPUP_RESULT.NEGATIVE:
-                setGlobalStylesAllowed(avatarId, true);
+                preference.set(true);
                 break;
             case POPUP_RESULT.CANCELLED:
-                setGlobalStylesAllowed(avatarId, false);
+                preference.set(false);
                 break;
         }
     }
 
-    const currentPreference = canUseGlobalStyles(characters[this_chid].avatar);
+    const currentPreference = preference.get();
     setGlobalStylesButtonClass(currentPreference);
 }
 
@@ -682,11 +702,11 @@ function setGlobalStylesButtonClass(state) {
 }
 
 /**
- * Extracts the contents of all style elements from the HTML text.
- * @param {string} text HTML text
- * @returns {string} The joined contents of all style elements in the HTML
+ * Extracts the contents of all style elements from the Markdown text.
+ * @param {string} text Markdown text
+ * @returns {string} The joined contents of all style elements
  */
-function getStyleContentsFromHtml(text) {
+function getStyleContentsFromMarkdown(text) {
     if (!text) {
         return '';
     }
