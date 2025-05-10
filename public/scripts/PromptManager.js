@@ -451,6 +451,7 @@ class PromptManager {
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth').value = prompt.injection_depth ?? DEFAULT_DEPTH;
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_order').value = prompt.injection_order ?? 0;
             document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block').style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
+            document.getElementById(this.configuration.prefix + 'prompt_manager_order_block').style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides').checked = prompt.forbid_overrides ?? false;
             document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block').style.visibility = this.overridablePrompts.includes(prompt.identifier) ? 'visible' : 'hidden';
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').disabled = prompt.marker ?? false;
@@ -1228,6 +1229,7 @@ class PromptManager {
         const injectionDepthField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth');
         const injectionOrderField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_order');
         const injectionDepthBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block');
+        const injectionOrderBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_order_block');
         const forbidOverridesField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides');
         const forbidOverridesBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block');
         const entrySourceBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block');
@@ -1242,6 +1244,7 @@ class PromptManager {
         injectionDepthField.value = prompt.injection_depth ?? DEFAULT_DEPTH;
         injectionOrderField.value = prompt.injection_order ?? 0;
         injectionDepthBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
+        injectionOrderBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
         injectionPositionField.removeAttribute('disabled');
         forbidOverridesField.checked = prompt.forbid_overrides ?? false;
         forbidOverridesBlock.style.visibility = this.overridablePrompts.includes(prompt.identifier) ? 'visible' : 'hidden';
@@ -1273,11 +1276,14 @@ class PromptManager {
 
     handleInjectionPositionChange(event) {
         const injectionDepthBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block');
+        const injectionOrderBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_order_block');
         const injectionPosition = Number(event.target.value);
         if (injectionPosition === INJECTION_POSITION.ABSOLUTE) {
             injectionDepthBlock.style.visibility = 'visible';
+            injectionOrderBlock.style.visibility = 'visible';
         } else {
             injectionDepthBlock.style.visibility = 'hidden';
+            injectionOrderBlock.style.visibility = 'hidden';
         }
     }
 
@@ -1334,6 +1340,7 @@ class PromptManager {
         const injectionPositionField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position');
         const injectionDepthField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth');
         const injectionDepthBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block');
+        const injectionOrderBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_order_block');
         const forbidOverridesField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides');
         const forbidOverridesBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block');
         const entrySourceBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block');
@@ -1347,6 +1354,7 @@ class PromptManager {
         injectionPositionField.removeAttribute('disabled');
         injectionDepthField.value = DEFAULT_DEPTH;
         injectionDepthBlock.style.visibility = 'unset';
+        injectionOrderBlock.style.visibility = 'unset';
         forbidOverridesBlock.style.visibility = 'unset';
         forbidOverridesField.checked = false;
         entrySourceBlock.style.display = 'none';
