@@ -585,6 +585,7 @@ export class ToolManager {
             chat_completion_sources.COHERE,
             chat_completion_sources.DEEPSEEK,
             chat_completion_sources.MAKERSUITE,
+            chat_completion_sources.VERTEXAI,
             chat_completion_sources.AI21,
             chat_completion_sources.XAI,
         ];

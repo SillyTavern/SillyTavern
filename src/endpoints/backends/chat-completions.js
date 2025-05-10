@@ -52,6 +52,7 @@ const API_COHERE_V2 = 'https://api.cohere.ai/v2';
 const API_PERPLEXITY = 'https://api.perplexity.ai';
 const API_GROQ = 'https://api.groq.com/openai/v1';
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
+const API_VERTEX_AI = 'https://aiplatform.googleapis.com';
 const API_01AI = 'https://api.lingyiwanwu.com/v1';
 const API_AI21 = 'https://api.ai21.com/studio/v1';
 const API_NANOGPT = 'https://nano-gpt.com/api/v1';
@@ -336,12 +337,26 @@ async function sendScaleRequest(request, response) {
  * @param {express.Response} response Express response
  */
 async function sendMakerSuiteRequest(request, response) {
-    const apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
-    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
+    const useVertexAi = request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.VERTEXAI;
+    let apiUrl;
+    let apiKey;
 
-    if (!request.body.reverse_proxy && !apiKey) {
-        console.warn('Google AI Studio API key is missing.');
-        return response.status(400).send({ error: true });
+    if (useVertexAi) {
+        apiUrl = new URL(request.body.reverse_proxy || API_VERTEX_AI);
+        apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.VERTEXAI);
+
+        if (!request.body.reverse_proxy && !apiKey) {
+            console.warn('Google Vertex AI API key is missing.');
+            return response.status(400).send({ error: true });
+        }
+    } else {
+        apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
+        apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
+
+        if (!request.body.reverse_proxy && !apiKey) {
+            console.warn('Google AI Studio API key is missing.');
+            return response.status(400).send({ error: true });
+        }
     }
 
     const model = String(request.body.model);
@@ -471,7 +486,13 @@ async function sendMakerSuiteRequest(request, response) {
         const apiVersion = getConfigValue('gemini.apiVersion', 'v1beta');
         const responseType = (stream ? 'streamGenerateContent' : 'generateContent');
 
-        const generateResponse = await fetch(`${apiUrl.toString().replace(/\/$/, '')}/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`, {
+        let url;
+        if (useVertexAi) {
+            url = `${apiUrl.toString().replace(/\/$/, '')}/v1/publishers/google/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`;
+        } else {
+            url = `${apiUrl.toString().replace(/\/$/, '')}/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`;
+        }
+        const generateResponse = await fetch(url, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {
@@ -1174,6 +1195,7 @@ router.post('/generate', function (request, response) {
         case CHAT_COMPLETION_SOURCES.SCALE: return sendScaleRequest(request, response);
         case CHAT_COMPLETION_SOURCES.AI21: return sendAI21Request(request, response);
         case CHAT_COMPLETION_SOURCES.MAKERSUITE: return sendMakerSuiteRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.VERTEXAI: return sendMakerSuiteRequest(request, response);
         case CHAT_COMPLETION_SOURCES.MISTRALAI: return sendMistralAIRequest(request, response);
         case CHAT_COMPLETION_SOURCES.COHERE: return sendCohereRequest(request, response);
         case CHAT_COMPLETION_SOURCES.DEEPSEEK: return sendDeepSeekRequest(request, response);

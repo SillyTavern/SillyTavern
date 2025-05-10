@@ -176,6 +176,7 @@ export const chat_completion_sources = {
     OPENROUTER: 'openrouter',
     AI21: 'ai21',
     MAKERSUITE: 'makersuite',
+    VERTEXAI: 'vertexai',
     MISTRALAI: 'mistralai',
     CUSTOM: 'custom',
     COHERE: 'cohere',
@@ -348,6 +349,7 @@ const default_settings = {
     openai_model: 'gpt-4-turbo',
     claude_model: 'claude-3-5-sonnet-20240620',
     google_model: 'gemini-1.5-pro',
+    vertexai_model: 'gemini-1.5-pro',
     ai21_model: 'jamba-1.6-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
@@ -429,6 +431,7 @@ const oai_settings = {
     openai_model: 'gpt-4-turbo',
     claude_model: 'claude-3-5-sonnet-20240620',
     google_model: 'gemini-1.5-pro',
+    vertexai_model: 'gemini-1.5-pro',
     ai21_model: 'jamba-1.6-large',
     mistralai_model: 'mistral-large-latest',
     cohere_model: 'command-r-plus',
@@ -1638,6 +1641,8 @@ export function getChatCompletionModel(source = null) {
             return '';
         case chat_completion_sources.MAKERSUITE:
             return oai_settings.google_model;
+        case chat_completion_sources.VERTEXAI:
+            return oai_settings.vertexai_model;
         case chat_completion_sources.OPENROUTER:
             return oai_settings.openrouter_model !== openrouter_website_model ? oai_settings.openrouter_model : null;
         case chat_completion_sources.AI21:
@@ -1997,7 +2002,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isClaude = oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
     const isOpenRouter = oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER;
     const isScale = oai_settings.chat_completion_source == chat_completion_sources.SCALE;
-    const isGoogle = oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE;
+    const isGoogle = oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE || oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI;
     const isOAI = oai_settings.chat_completion_source == chat_completion_sources.OPENAI;
     const isMistral = oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI;
     const isCustom = oai_settings.chat_completion_source == chat_completion_sources.CUSTOM;
@@ -2072,8 +2077,8 @@ async function sendOpenAIRequest(type, messages, signal) {
         delete generate_data.stop;
     }
 
-    // Proxy is only supported for Claude, OpenAI, Mistral, and Google MakerSuite
-    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE, chat_completion_sources.DEEPSEEK, chat_completion_sources.XAI].includes(oai_settings.chat_completion_source)) {
+    // Proxy is only supported for Claude, OpenAI, Mistral, Google MakerSuite, and Vertex AI
+    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI, chat_completion_sources.DEEPSEEK, chat_completion_sources.XAI].includes(oai_settings.chat_completion_source)) {
         await validateReverseProxy();
         generate_data['reverse_proxy'] = oai_settings.reverse_proxy;
         generate_data['proxy_password'] = oai_settings.proxy_password;
@@ -2323,7 +2328,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             state.reasoning += data?.delta?.thinking || '';
         }
         return data?.delta?.text || '';
-    } else if (chat_completion_source === chat_completion_sources.MAKERSUITE) {
+    } else if (chat_completion_source === chat_completion_sources.MAKERSUITE || chat_completion_source === chat_completion_sources.VERTEXAI) {
         const inlineData = data?.candidates?.[0]?.content?.parts?.find(x => x.inlineData)?.inlineData;
         if (inlineData) {
             state.image = `data:${inlineData.mimeType};base64,${inlineData.data}`;
@@ -3306,6 +3311,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.custom_include_headers = settings.custom_include_headers ?? default_settings.custom_include_headers;
     oai_settings.custom_prompt_post_processing = settings.custom_prompt_post_processing ?? default_settings.custom_prompt_post_processing;
     oai_settings.google_model = settings.google_model ?? default_settings.google_model;
+    oai_settings.vertexai_model = settings.vertexai_model ?? default_settings.vertexai_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
     oai_settings.show_external_models = settings.show_external_models ?? default_settings.show_external_models;
@@ -3369,6 +3375,8 @@ function loadOpenAISettings(data, settings) {
     $(`#model_windowai_select option[value="${oai_settings.windowai_model}"`).attr('selected', true);
     $('#model_google_select').val(oai_settings.google_model);
     $(`#model_google_select option[value="${oai_settings.google_model}"`).attr('selected', true);
+    $('#model_vertexai_select').val(oai_settings.vertexai_model);
+    $(`#model_vertexai_select option[value="${oai_settings.vertexai_model}"`).attr('selected', true);
     $('#model_ai21_select').val(oai_settings.ai21_model);
     $(`#model_ai21_select option[value="${oai_settings.ai21_model}"`).attr('selected', true);
     $('#model_mistralai_select').val(oai_settings.mistralai_model);
@@ -3561,6 +3569,7 @@ async function getStatusOpen() {
         chat_completion_sources.CLAUDE,
         chat_completion_sources.AI21,
         chat_completion_sources.MAKERSUITE,
+        chat_completion_sources.VERTEXAI,
         chat_completion_sources.PERPLEXITY,
         chat_completion_sources.GROQ,
     ];
@@ -3673,6 +3682,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         custom_include_headers: settings.custom_include_headers,
         custom_prompt_post_processing: settings.custom_prompt_post_processing,
         google_model: settings.google_model,
+        vertexai_model: settings.vertexai_model,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
         presence_penalty: settings.pres_pen_openai,
@@ -4405,6 +4415,11 @@ async function onModelChange() {
         oai_settings.google_model = value;
     }
 
+    if ($(this).is('#model_vertexai_select')) {
+        console.log('Vertex AI model changed to', value);
+        oai_settings.vertexai_model = value;
+    }
+
     if ($(this).is('#model_mistralai_select')) {
         // Upgrade old mistral models to new naming scheme
         // would have done this in loadOpenAISettings, but it wasn't updating on preset change?
@@ -4480,7 +4495,7 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE || oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_2mil);
         } else if (value.includes('gemini-1.5-pro')) {
@@ -4836,6 +4851,19 @@ async function onConnectButtonClick(e) {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI) {
+        const api_key_vertexai = String($('#api_key_vertexai').val()).trim();
+
+        if (api_key_vertexai.length) {
+            await writeSecret(SECRET_KEYS.VERTEXAI, api_key_vertexai);
+        }
+
+        if (!secret_state[SECRET_KEYS.VERTEXAI] && !oai_settings.reverse_proxy) {
+            console.log('No secret key saved for Vertex AI');
+            return;
+        }
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         const api_key_claude = String($('#api_key_claude').val()).trim();
 
@@ -5013,6 +5041,9 @@ function toggleChatCompletionForms() {
     else if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         $('#model_google_select').trigger('change');
     }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI) {
+        $('#model_vertexai_select').trigger('change');
+    }
     else if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
         $('#model_openrouter_select').trigger('change');
     }
@@ -5171,6 +5202,8 @@ export function isImageInliningSupported() {
             );
         case chat_completion_sources.MAKERSUITE:
             return visionSupportedModels.some(model => oai_settings.google_model.includes(model));
+        case chat_completion_sources.VERTEXAI:
+            return visionSupportedModels.some(model => oai_settings.vertexai_model.includes(model));
         case chat_completion_sources.CLAUDE:
             return visionSupportedModels.some(model => oai_settings.claude_model.includes(model));
         case chat_completion_sources.OPENROUTER:
@@ -5770,6 +5803,7 @@ export function initOpenAI() {
     $('#model_windowai_select').on('change', onModelChange);
     $('#model_scale_select').on('change', onModelChange);
     $('#model_google_select').on('change', onModelChange);
+    $('#model_vertexai_select').on('change', onModelChange);
     $('#model_openrouter_select').on('change', onModelChange);
     $('#openrouter_group_models').on('change', onOpenrouterModelSortChange);
     $('#openrouter_sort_models').on('change', onOpenrouterModelSortChange);

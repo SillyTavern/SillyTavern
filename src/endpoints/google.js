@@ -7,6 +7,7 @@ import { readSecret, SECRET_KEYS } from './secrets.js';
 import { GEMINI_SAFETY } from '../constants.js';
 
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
+const API_VERTEX_AI = 'https://aiplatform.googleapis.com';
 
 export const router = express.Router();
 
@@ -14,10 +15,23 @@ router.post('/caption-image', async (request, response) => {
     try {
         const mimeType = request.body.image.split(';')[0].split(':')[1];
         const base64Data = request.body.image.split(',')[1];
-        const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
-        const apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
+        const useVertexAi = request.body.chat_completion_source === 'vertexai';
+        let apiKey;
+        let apiUrl;
+        if (useVertexAi) {
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.VERTEXAI);
+            apiUrl = new URL(request.body.reverse_proxy || API_VERTEX_AI);
+        } else {
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
+            apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
+        }
         const model = request.body.model || 'gemini-2.0-flash';
-        const url = `${apiUrl.origin}/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        let url;
+        if (useVertexAi) {
+            url = `${apiUrl.origin}/v1/publishers/google/models/${model}:generateContent?key=${apiKey}`;
+        } else {
+            url = `${apiUrl.origin}/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        }
         const body = {
             contents: [{
                 parts: [
