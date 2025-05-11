@@ -684,6 +684,8 @@ async function checkForGlobalStyles() {
                 preference.set(false);
                 break;
         }
+
+        $('#rm_button_selected_ch').trigger('click');
     }
 
     const currentPreference = preference.get();
