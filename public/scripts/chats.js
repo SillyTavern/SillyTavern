@@ -646,7 +646,7 @@ async function openGlobalStylesPreferenceDialog() {
     }
 }
 
-async function checkForGlobalStyles() {
+async function checkForCreatorNotesStyles() {
     // Don't do anything if in group chat or not in a chat
     if (selected_group || this_chid === undefined) {
         return;
@@ -1846,5 +1846,5 @@ export function initChatUtilities() {
         await onFileAttach(fileInput.files[0]);
     });
 
-    eventSource.on(event_types.CHAT_CHANGED, checkForGlobalStyles);
+    eventSource.on(event_types.CHAT_CHANGED, checkForCreatorNotesStyles);
 }
