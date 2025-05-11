@@ -5117,7 +5117,7 @@ async function testApiConnection() {
     }
 
     try {
-        const reply = await sendOpenAIRequest('quiet', [{ 'role': 'user', 'content': 'Hi' }], new AbortSignal());
+        const reply = await sendOpenAIRequest('quiet', [{ 'role': 'user', 'content': 'Hi' }], new AbortController().signal);
         console.log(reply);
         toastr.success(t`API connection successful!`);
     }
