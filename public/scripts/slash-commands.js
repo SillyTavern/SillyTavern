@@ -4136,6 +4136,7 @@ function getModelOptions(quiet) {
         { id: 'model_01ai_select', api: 'openai', type: chat_completion_sources.ZEROONEAI },
         { id: 'model_deepseek_select', api: 'openai', type: chat_completion_sources.DEEPSEEK },
         { id: 'model_xai_select', api: 'openai', type: chat_completion_sources.XAI },
+        { id: 'model_pollinations_select', api: 'openai', type: chat_completion_sources.POLLINATIONS },
         { id: 'model_novel_select', api: 'novel', type: null },
         { id: 'horde_model', api: 'koboldhorde', type: null },
     ];

@@ -86,14 +86,14 @@ class Prompt {
      * @param {string} param0.identifier - The unique identifier of the prompt.
      * @param {string} param0.role - The role associated with the prompt.
      * @param {string} param0.content - The content of the prompt.
-     * @param {string} param0.name - The name of the prompt.
-     * @param {boolean} param0.system_prompt - Indicates if the prompt is a system prompt.
-     * @param {string} param0.position - The position of the prompt in the prompt list.
-     * @param {number} param0.injection_position - The insert position of the prompt.
-     * @param {number} param0.injection_depth - The depth of the prompt in the chat.
-     * @param {number} param0.injection_order - The order of the prompt in the chat.
-     * @param {boolean} param0.forbid_overrides - Indicates if the prompt should not be overridden.
-     * @param {boolean} param0.extension - Prompt is added by an extension.
+     * @param {string} [param0.name] - The name of the prompt.
+     * @param {boolean} [param0.system_prompt] - Indicates if the prompt is a system prompt.
+     * @param {string} [param0.position] - The position of the prompt in the prompt list.
+     * @param {number} [param0.injection_position] - The insert position of the prompt.
+     * @param {number} [param0.injection_depth] - The depth of the prompt in the chat.
+     * @param {number} [param0.injection_order] - The order of the prompt in the chat.
+     * @param {boolean} [param0.forbid_overrides] - Indicates if the prompt should not be overridden.
+     * @param {boolean} [param0.extension] - Prompt is added by an extension.
      */
     constructor({ identifier, role, content, name, system_prompt, position, injection_depth, injection_position, forbid_overrides, extension, injection_order } = {}) {
         this.identifier = identifier;

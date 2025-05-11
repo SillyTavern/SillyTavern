@@ -1338,6 +1338,16 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
         'nsigma': settings.nsigma,
         'top_n_sigma': settings.nsigma,
         'min_keep': settings.min_keep,
+        parseSequenceBreakers: function () {
+            try {
+                return JSON.parse(this.dry_sequence_breakers);
+            } catch {
+                if (typeof this.dry_sequence_breakers === 'string') {
+                    return this.dry_sequence_breakers.split(',');
+                }
+                return undefined;
+            }
+        },
     };
     const nonAphroditeParams = {
         'rep_pen': settings.rep_pen,
@@ -1439,6 +1449,7 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
         params.dynatemp_max = params.dynatemp_high;
         delete params.dynatemp_low;
         delete params.dynatemp_high;
+        params.dry_sequence_breakers = params.parseSequenceBreakers();
     }
 
     if (settings.type === TABBY) {
@@ -1474,17 +1485,7 @@ export async function getTextGenGenerationData(finalPrompt, maxTokens, isImperso
             : [];
         const tokenBans = toIntArray(banned_tokens);
         logitBiasArray.push(...tokenBans.map(x => [Number(x), false]));
-        const sequenceBreakers = (() => {
-            try {
-                return JSON.parse(params.dry_sequence_breakers);
-            } catch {
-                if (typeof params.dry_sequence_breakers === 'string') {
-                    return params.dry_sequence_breakers.split(',');
-                }
-
-                return undefined;
-            }
-        })();
+        const sequenceBreakers = params.parseSequenceBreakers();
         const llamaCppParams = {
             'logit_bias': logitBiasArray,
             // Conflicts with ooba's grammar_string

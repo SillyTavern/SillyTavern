@@ -1010,6 +1010,8 @@ async function firstLoadInit() {
     initBulkEdit();
     initReasoning();
     await initScrapers();
+    initCustomSelectedSamplers();
+    addDebugFunctions();
     doDailyExtensionUpdatesCheck();
     await hideLoader();
     await fixViewport();
@@ -4809,7 +4811,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 name2: name2,
                 charDescription: description,
                 charPersonality: personality,
-                Scenario: scenario,
+                scenario: scenario,
                 worldInfoBefore: worldInfoBefore,
                 worldInfoAfter: worldInfoAfter,
                 extensionPrompts: extension_prompts,
@@ -12274,16 +12276,12 @@ jQuery(async function () {
     // Added here to prevent execution before script.js is loaded and get rid of quirky timeouts
     await firstLoadInit();
 
-    addDebugFunctions();
-
     eventSource.on(event_types.CHAT_DELETED, async (name) => {
         await deleteItemizedPrompts(name);
     });
     eventSource.on(event_types.GROUP_CHAT_DELETED, async (name) => {
         await deleteItemizedPrompts(name);
     });
-
-    initCustomSelectedSamplers();
 
     window.addEventListener('beforeunload', (e) => {
         if (isChatSaving) {

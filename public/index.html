@@ -974,7 +974,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt,xai">
+                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt,xai,pollinations">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -1406,7 +1406,7 @@
                                         </div>
                                     </div>
 
-                                    <div data-tg-type="koboldcpp, aphrodite, tabby, ooba, llamacpp" id="xtc_block" class="wide100p">
+                                    <div data-tg-type="koboldcpp, aphrodite, mancer, tabby, ooba, llamacpp" id="xtc_block" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Exclude Top Choices (XTC)">Exclude Top Choices (XTC)</label>
                                             <a href="https://github.com/oobabooga/text-generation-webui/pull/6335" target="_blank">
@@ -1427,7 +1427,7 @@
                                         </div>
                                     </div>
 
-                                    <div data-tg-type="aphrodite, ooba, koboldcpp, tabby, llamacpp, dreamgen" id="dryBlock" class="wide100p">
+                                    <div data-tg-type="aphrodite, mancer, ooba, koboldcpp, tabby, llamacpp, dreamgen" id="dryBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" title="DRY penalizes tokens that would extend the end of the input into a sequence that has previously occurred in the input. Set multiplier to 0 to disable." data-i18n="[title]DRY_Repetition_Penalty_desc">
                                             <label data-i18n="DRY Repetition Penalty">DRY Repetition Penalty</label>
                                             <a href="https://github.com/oobabooga/text-generation-webui/pull/5677" target="_blank">
@@ -1493,7 +1493,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-tg-type="ooba,infermaticai,koboldcpp,llamacpp,mancer,ollama,tabby" id="mirostat_block_ooba" class="wide100p">
+                                    <div data-tg-type="ooba,infermaticai,koboldcpp,llamacpp,ollama,tabby" id="mirostat_block_ooba" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat</label>
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Mirostat_desc" title="Mirostat is a thermostat for output perplexity.&#13;Mirostat matches the output perplexity to that of the input, thus avoiding the repetition trap&#13;(where, as the autoregressive inference produces text, the perplexity of the output tends toward zero)&#13;and the confusion trap (where the perplexity diverges).&#13;For details, see the paper Mirostat: A Neural Text Decoding Algorithm that Directly Controls Perplexity by Basu et al. (2020).&#13;Mode chooses the Mirostat version. 0=disable, 1=Mirostat 1.0 (llama.cpp only), 2=Mirostat 2.0."></div>
@@ -1977,7 +1977,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,ai21,xai">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,ai21,xai,pollinations">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -1987,7 +1987,7 @@
                                             <span data-i18n="enable_functions_desc_3">Can be utilized by various extensions to provide additional functionality.</span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,openrouter,mistralai,makersuite,claude,custom,01ai,xai">
+                                    <div class="range-block" data-source="openai,openrouter,mistralai,makersuite,claude,custom,01ai,xai,pollinations">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -1999,7 +1999,7 @@
                                             <code><i class="fa-solid fa-wand-magic-sparkles"></i></code>
                                             <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
                                         </div>
-                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations">
                                             <div class="flex-container oneline-dropdown">
                                                 <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
                                                     Inline Image Quality
@@ -2057,7 +2057,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,openrouter">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,openrouter,pollinations">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
@@ -2770,6 +2770,7 @@
                                 <option value="nanogpt">NanoGPT</option>
                                 <option value="openrouter">OpenRouter</option>
                                 <option value="perplexity">Perplexity</option>
+                                <option value="pollinations">Pollinations</option>
                                 <option value="scale">Scale</option>
                                 <option value="windowai">Window AI</option>
                                 <option value="xai">xAI (Grok)</option>
@@ -3479,6 +3480,21 @@
                                 <option value="grok-vision-beta">grok-vision-beta</option>
                                 <option value="grok-beta">grok-beta</option>
                             </select>
+                        </div>
+                        <div id="pollinations_form" data-source="pollinations">
+                            <h4 data-i18n="Pollinations Model">Pollinations Model</h4>
+                            <select id="model_pollinations_select">
+                                <!-- Populated by JavaScript -->
+                            </select>
+                            <div class="info-block hint">
+                                <a href="https://pollinations.ai/" target="_blank" rel="noopener noreferrer" data-i18n="Provided free of charge by Pollinations.AI">
+                                    Provided free of charge by Pollinations.AI
+                                </a>
+                                <br>
+                                <span data-i18n="Avoid sending sensitive information. Provider's outputs may include ads.">
+                                    Avoid sending sensitive information. Provider's outputs may include ads.
+                                </span>
+                            </div>
                         </div>
                         <div id="prompt_post_porcessing_form" data-source="custom,openrouter">
                             <h4 data-i18n="Prompt Post-Processing">Prompt Post-Processing</h4>
