@@ -4809,7 +4809,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 name2: name2,
                 charDescription: description,
                 charPersonality: personality,
-                Scenario: scenario,
+                scenario: scenario,
                 worldInfoBefore: worldInfoBefore,
                 worldInfoAfter: worldInfoAfter,
                 extensionPrompts: extension_prompts,
