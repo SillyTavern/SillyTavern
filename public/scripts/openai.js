@@ -5220,22 +5220,6 @@ export function isImageInliningSupported() {
         'grok-vision',
     ];
 
-    const pollinationsVisionModels = [
-        'openai',
-        'openai-fast',
-        'openai-large',
-        'openai-roblox',
-        'mistral',
-        'unity',
-        'mirexa',
-        'searchgpt',
-        'evil',
-        'phi',
-        'sur',
-        'bidara',
-        'openai-audio',
-    ];
-
     switch (oai_settings.chat_completion_source) {
         case chat_completion_sources.OPENAI:
             return visionSupportedModels.some(model =>
@@ -5259,7 +5243,7 @@ export function isImageInliningSupported() {
         case chat_completion_sources.XAI:
             return visionSupportedModels.some(model => oai_settings.xai_model.includes(model));
         case chat_completion_sources.POLLINATIONS:
-            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.vision) || pollinationsVisionModels.includes(oai_settings.pollinations_model);
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.vision);
         default:
             return false;
     }
