@@ -6464,7 +6464,7 @@
                                 <label for="completion_prompt_manager_popup_entry_form_injection_position">
                                     <span data-i18n="prompt_manager_position">Position</span>
                                 </label>
-                                <div class="text_muted" data-i18n="Injection position. Relative (to other prompts in prompt manager) or In-chat @ Depth.">Injection position. Relative (to other prompts in prompt manager) or In-chat @ Depth.</div>
+                                <div class="text_muted" data-i18n="Relative (to other prompts in prompt manager) or In-chat @ Depth.">Relative (to other prompts in prompt manager) or In-chat @ Depth.</div>
                                 <select id="completion_prompt_manager_popup_entry_form_injection_position" class="text_pole" name="injection_position">
                                     <option data-i18n="prompt_manager_relative" value="0">Relative</option>
                                     <option data-i18n="prompt_manager_in_chat" value="1">In-chat</option>
@@ -6474,14 +6474,14 @@
                                 <label for="completion_prompt_manager_popup_entry_form_injection_depth">
                                     <span data-i18n="prompt_manager_depth">Depth</span>
                                 </label>
-                                <div class="text_muted" data-i18n="Injection depth. 0 = after the last message, 1 = before the last message, etc.">Injection depth. 0 = after the last message, 1 = before the last message, etc.</div>
+                                <div class="text_muted" data-i18n="0 = after the last message, 1 = before the last message, etc.">0 = after the last message, 1 = before the last message, etc.</div>
                                 <input id="completion_prompt_manager_popup_entry_form_injection_depth" class="text_pole" type="number" name="injection_depth" min="0" max="9999" value="4" />
                             </div>
                             <div id="completion_prompt_manager_order_block" class="completion_prompt_manager_popup_entry_form_control flex1">
                                 <label for="completion_prompt_manager_popup_entry_form_injection_order">
                                     <span data-i18n="prompt_manager_order">Order</span>
                                 </label>
-                                <div class="text_muted" data-i18n="Injection order. Ordered from low/top to high/bottom. On conflict, this order applies: first System, then User, last Assistant.">Injection order. Ordered from high/top to low/bottom, and at same order: first System, then User, last Assistant.</div>
+                                <div class="text_muted" data-i18n="Ordered from high/top to low/bottom, and at same order: System, User, Assistant.">Ordered from high/top to low/bottom, and at same order: System, User, Assistant.</div>
                                 <input id="completion_prompt_manager_popup_entry_form_injection_order" class="text_pole" type="number" name="injection_order" min="0" max="9999" value="0" />
                             </div>
                         </div>
