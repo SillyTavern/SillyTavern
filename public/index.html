@@ -6442,21 +6442,19 @@
                                 <label for="completion_prompt_manager_popup_entry_form_name">
                                     <span data-i18n="prompt_manager_name">Name</span>
                                 </label>
-                                <div class="text_muted" data-i18n="A name for this prompt.">A name for this prompt.</div>
                                 <input id="completion_prompt_manager_popup_entry_form_name" class="text_pole" type="text" name="name" />
+                                <div class="text_muted" data-i18n="A name for this prompt.">A name for this prompt.</div>
                             </div>
                             <div class="completion_prompt_manager_popup_entry_form_control flex1">
                                 <label for="completion_prompt_manager_popup_entry_form_role">
                                     <span data-i18n="Role">Role</span>
                                 </label>
-                                <div class="text_muted">
-                                    <span data-i18n="To whom this message will be attributed.">To whom this message will be attributed.</span>
-                                </div>
                                 <select id="completion_prompt_manager_popup_entry_form_role" class="text_pole" name="role">
                                     <option data-i18n="System" value="system">System</option>
                                     <option data-i18n="User" value="user">User</option>
                                     <option data-i18n="AI Assistant" value="assistant">AI Assistant</option>
                                 </select>
+                                <div class="text_muted" data-i18n="To whom this message will be attributed.">To whom this message will be attributed.</div>
                             </div>
                         </div>
                         <div class="flex-container gap10px">
@@ -6464,25 +6462,25 @@
                                 <label for="completion_prompt_manager_popup_entry_form_injection_position">
                                     <span data-i18n="prompt_manager_position">Position</span>
                                 </label>
-                                <div class="text_muted" data-i18n="Relative (to other prompts in prompt manager) or In-chat @ Depth.">Relative (to other prompts in prompt manager) or In-chat @ Depth.</div>
                                 <select id="completion_prompt_manager_popup_entry_form_injection_position" class="text_pole" name="injection_position">
                                     <option data-i18n="prompt_manager_relative" value="0">Relative</option>
                                     <option data-i18n="prompt_manager_in_chat" value="1">In-chat</option>
                                 </select>
+                                <div class="text_muted" data-i18n="Relative (to other prompts in prompt manager) or In-chat @ Depth.">Relative (to other prompts in prompt manager) or In-chat @ Depth.</div>
                             </div>
                             <div id="completion_prompt_manager_depth_block" class="completion_prompt_manager_popup_entry_form_control flex1">
                                 <label for="completion_prompt_manager_popup_entry_form_injection_depth">
                                     <span data-i18n="prompt_manager_depth">Depth</span>
                                 </label>
-                                <div class="text_muted" data-i18n="0 = after the last message, 1 = before the last message, etc.">0 = after the last message, 1 = before the last message, etc.</div>
                                 <input id="completion_prompt_manager_popup_entry_form_injection_depth" class="text_pole" type="number" name="injection_depth" min="0" max="9999" value="4" />
+                                <div class="text_muted" data-i18n="0 = after the last message, 1 = before the last message, etc.">0 = after the last message, 1 = before the last message, etc.</div>
                             </div>
                             <div id="completion_prompt_manager_order_block" class="completion_prompt_manager_popup_entry_form_control flex1">
                                 <label for="completion_prompt_manager_popup_entry_form_injection_order">
                                     <span data-i18n="prompt_manager_order">Order</span>
                                 </label>
-                                <div class="text_muted" data-i18n="Ordered from high/top to low/bottom, and at same order: System, User, Assistant.">Ordered from high/top to low/bottom, and at same order: System, User, Assistant.</div>
                                 <input id="completion_prompt_manager_popup_entry_form_injection_order" class="text_pole" type="number" name="injection_order" min="0" max="9999" value="0" />
+                                <div class="text_muted" data-i18n="Ordered from high/top to low/bottom, and at same order: System, User, Assistant.">Ordered from high/top to low/bottom, and at same order: System, User, Assistant.</div>
                             </div>
                         </div>
                         <div class="completion_prompt_manager_popup_entry_form_control">
@@ -6491,7 +6489,6 @@
                                     <label for="completion_prompt_manager_popup_entry_form_prompt">
                                         <span data-i18n="Prompt">Prompt</span>
                                     </label>
-                                    <div class="text_muted" data-i18n="The prompt to be sent.">The prompt to be sent.</div>
                                 </div>
                                 <div id="completion_prompt_manager_forbid_overrides_block">
                                     <label class="checkbox_label" for="completion_prompt_manager_popup_entry_form_forbid_overrides" title="This prompt cannot be overridden by character cards, even if overrides are preferred." data-i18n="[title]This prompt cannot be overridden by character cards, even if overrides are preferred.">
@@ -6505,7 +6502,7 @@
                                 <span>&nbsp;</span>
                                 <span id="completion_prompt_manager_popup_entry_source"></span>
                             </div>
-                            <textarea id="completion_prompt_manager_popup_entry_form_prompt" class="text_pole" name="prompt">
+                            <textarea id="completion_prompt_manager_popup_entry_form_prompt" class="text_pole" name="prompt" placeholder="The prompt to be sent." data-i18n="[placeholder]The prompt to be sent."></textarea>
                         </textarea>
                         </div>
                         <div class="completion_prompt_manager_popup_entry_form_footer">
