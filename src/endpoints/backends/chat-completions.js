@@ -373,6 +373,8 @@ async function sendMakerSuiteRequest(request, response) {
 
         // These models do not support setting the threshold to OFF at all.
         const blockNoneModels = [
+            'gemini-2.5-pro-exp-03-25',
+            'gemini-2.5-flash-preview-04-17',
             'gemini-1.5-pro-001',
             'gemini-1.5-flash-001',
             'gemini-1.5-flash-8b-exp-0827',
