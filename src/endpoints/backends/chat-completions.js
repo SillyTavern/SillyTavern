@@ -380,7 +380,7 @@ async function sendMakerSuiteRequest(request, response) {
         let safetySettings = GEMINI_SAFETY;
 
         // These models do not support setting the threshold to OFF at all.
-        if (['gemini-1.5-pro-001', 'gemini-1.5-flash-001', 'gemini-1.5-flash-8b-exp-0827', 'gemini-1.5-flash-8b-exp-0924', 'gemini-pro', 'gemini-1.0-pro', 'gemini-1.0-pro-001', 'gemma-3-27b-it'].includes(model)) {
+        if (['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-preview-04-17', 'gemini-2.5-pro-exp-03-25', 'gemini-1.5-pro-001', 'gemini-1.5-flash-001', 'gemini-1.5-flash-8b-exp-0827', 'gemini-1.5-flash-8b-exp-0924', 'gemini-pro', 'gemini-1.0-pro', 'gemini-1.0-pro-001', 'gemma-3-27b-it'].includes(model)) {
             safetySettings = GEMINI_SAFETY.map(setting => ({ ...setting, threshold: 'BLOCK_NONE' }));
         }
         // Interestingly, Gemini 2.0 Flash does support setting the threshold for HARM_CATEGORY_CIVIC_INTEGRITY to OFF.
