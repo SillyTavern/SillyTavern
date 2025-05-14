@@ -1970,7 +1970,7 @@ export async function initPersonas() {
 
     $('#char_connections_button').on('click', showCharConnections);
 
-    eventSource.on('charManagementDropdown', (target) => {
+    eventSource.on(event_types.CHARACTER_MANAGEMENT_DROPDOWN, (target) => {
         if (target === 'convert_to_persona') {
             convertCharacterToPersona();
         }

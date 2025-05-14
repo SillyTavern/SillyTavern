@@ -760,22 +760,45 @@ async function populationInjectionPrompts(prompts, messages) {
         // Get prompts for current depth
         const depthPrompts = prompts.filter(prompt => prompt.injection_depth === i && prompt.content);
 
-        // Order of priority (most important go lower)
-        const roles = ['system', 'user', 'assistant'];
         const roleMessages = [];
         const separator = '\n';
         const wrap = false;
 
-        for (const role of roles) {
-            // Get prompts for current role
-            const rolePrompts = depthPrompts.filter(prompt => prompt.role === role).map(x => x.content).join(separator);
-            // Get extension prompt
-            const extensionPrompt = await getExtensionPrompt(extension_prompt_types.IN_CHAT, i, separator, roleTypes[role], wrap);
+        // Group prompts by priority
+        const extensionPromptsOrder = '0';
+        const orderGroups = {
+            [extensionPromptsOrder]: [],
+        };
+        for (const prompt of depthPrompts) {
+            const order = prompt.injection_order || 0;
+            if (!orderGroups[order]) {
+                orderGroups[order] = [];
+            }
+            orderGroups[order].push(prompt);
+        }
 
-            const jointPrompt = [rolePrompts, extensionPrompt].filter(x => x).map(x => x.trim()).join(separator);
+        // Process each order group in order (b - a = low to high ; a - b = high to low)
+        const orders = Object.keys(orderGroups).sort((a, b) => +a - +b);
+        for (const order of orders) {
+            const orderPrompts = orderGroups[order];
 
-            if (jointPrompt && jointPrompt.length) {
-                roleMessages.push({ 'role': role, 'content': jointPrompt, injected: true });
+            // Order of priority for roles (most important go lower)
+            const roles = ['system', 'user', 'assistant'];
+            for (const role of roles) {
+                const rolePrompts = orderPrompts
+                    .filter(prompt => prompt.role === role)
+                    .map(x => x.content)
+                    .join(separator);
+
+                // Get extension prompt
+                const extensionPrompt = order === extensionPromptsOrder
+                    ? await getExtensionPrompt(extension_prompt_types.IN_CHAT, i, separator, roleTypes[role], wrap)
+                    : '';
+                const jointPrompt = [rolePrompts, extensionPrompt].filter(x => x).map(x => x.trim()).join(separator);
+
+                if (jointPrompt && jointPrompt.length) {
+                    roleMessages.push({ 'role': role, 'content': jointPrompt, injected: true });
+                }
             }
         }
 
@@ -1314,6 +1337,8 @@ async function preparePromptsForChatCompletion({ scenario, charPersonality, name
             prompt.injection_position = collectionPrompt.injection_position ?? prompt.injection_position;
             // Depth for In-Chat
             prompt.injection_depth = collectionPrompt.injection_depth ?? prompt.injection_depth;
+            // Priority for In-Chat
+            prompt.injection_order = collectionPrompt.injection_order ?? prompt.injection_order;
             // Role (system, user, assistant)
             prompt.role = collectionPrompt.role ?? prompt.role;
         }
