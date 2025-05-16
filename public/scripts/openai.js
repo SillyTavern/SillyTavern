@@ -770,7 +770,7 @@ async function populationInjectionPrompts(prompts, messages) {
             [extensionPromptsOrder]: [],
         };
         for (const prompt of depthPrompts) {
-            const order = prompt.injection_order || 0;
+            const order = prompt.injection_order ?? 100;
             if (!orderGroups[order]) {
                 orderGroups[order] = [];
             }
