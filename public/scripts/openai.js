@@ -765,7 +765,7 @@ async function populationInjectionPrompts(prompts, messages) {
         const wrap = false;
 
         // Group prompts by priority
-        const extensionPromptsOrder = '0';
+        const extensionPromptsOrder = '100';
         const orderGroups = {
             [extensionPromptsOrder]: [],
         };
