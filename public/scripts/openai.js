@@ -778,7 +778,7 @@ async function populationInjectionPrompts(prompts, messages) {
         }
 
         // Process each order group in order (b - a = low to high ; a - b = high to low)
-        const orders = Object.keys(orderGroups).sort((a, b) => +a - +b);
+        const orders = Object.keys(orderGroups).sort((a, b) => +b - +a);
         for (const order of orders) {
             const orderPrompts = orderGroups[order];
 
