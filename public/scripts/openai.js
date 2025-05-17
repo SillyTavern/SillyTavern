@@ -767,12 +767,12 @@ async function populationInjectionPrompts(prompts, messages) {
         const wrap = false;
 
         // Group prompts by priority
-        const extensionPromptsOrder = '0';
+        const extensionPromptsOrder = '100';
         const orderGroups = {
             [extensionPromptsOrder]: [],
         };
         for (const prompt of depthPrompts) {
-            const order = prompt.injection_order || 0;
+            const order = prompt.injection_order ?? 100;
             if (!orderGroups[order]) {
                 orderGroups[order] = [];
             }
@@ -780,7 +780,7 @@ async function populationInjectionPrompts(prompts, messages) {
         }
 
         // Process each order group in order (b - a = low to high ; a - b = high to low)
-        const orders = Object.keys(orderGroups).sort((a, b) => +a - +b);
+        const orders = Object.keys(orderGroups).sort((a, b) => +b - +a);
         for (const order of orders) {
             const orderPrompts = orderGroups[order];
 

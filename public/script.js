@@ -183,7 +183,7 @@ import {
 } from './scripts/utils.js';
 import { debounce_timeout, IGNORE_SYMBOL } from './scripts/constants.js';
 
-import { doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
+import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, executeSlashCommandsOnChatInput, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, stopScriptExecution } from './scripts/slash-commands.js';
 import {
     tag_map,
@@ -945,7 +945,7 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
 export async function pingServer() {
     try {
         const result = await fetch('api/ping', {
-            method: 'GET',
+            method: 'POST',
             headers: getRequestHeaders(),
         });
 
@@ -1979,7 +1979,20 @@ export async function printMessages() {
     }
 }
 
+/**
+ * Cancels the debounced chat save if it is currently pending.
+ */
+export function cancelDebouncedChatSave() {
+    if (chatSaveTimeout) {
+        console.debug('Debounced chat save cancelled');
+        clearTimeout(chatSaveTimeout);
+        chatSaveTimeout = null;
+    }
+}
+
 export async function clearChat() {
+    cancelDebouncedChatSave();
+    cancelDebouncedMetadataSave();
     closeMessageEditor();
     extension_prompts = {};
     if (is_delete_mode) {
@@ -6929,11 +6942,7 @@ export function saveChatDebounced() {
     const chid = this_chid;
     const selectedGroup = selected_group;
 
-    if (chatSaveTimeout) {
-        console.debug('Clearing chat save timeout');
-        clearTimeout(chatSaveTimeout);
-        chatSaveTimeout = null;
-    }
+    cancelDebouncedChatSave();
 
     chatSaveTimeout = setTimeout(async () => {
         if (selectedGroup !== selected_group) {
@@ -7299,6 +7308,7 @@ function getFirstMessage() {
 }
 
 export async function openCharacterChat(file_name) {
+    await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
     await clearChat();
     characters[this_chid]['chat'] = file_name;
     chat.length = 0;
@@ -8645,11 +8655,7 @@ export async function saveChatConditional() {
     }
 
     try {
-        if (chatSaveTimeout) {
-            console.debug('Debounced chat save canceled');
-            clearTimeout(chatSaveTimeout);
-            chatSaveTimeout = null;
-        }
+        cancelDebouncedChatSave();
 
         isChatSaving = true;
 
@@ -9908,6 +9914,7 @@ export async function doNewChat({ deleteCurrentChat = false } = {}) {
     }
 
     //Fix it; New chat doesn't create while open create character menu
+    await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
     await clearChat();
     chat.length = 0;
 
@@ -11130,7 +11137,7 @@ jQuery(async function () {
         });
 
         if (id == 'option_select_chat') {
-            if (this_chid === undefined && !is_send_press) {
+            if (this_chid === undefined && !is_send_press && !selected_group) {
                 await openPermanentAssistantCard();
             }
             if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press) || fromSlashCommand) {
@@ -11204,6 +11211,7 @@ jQuery(async function () {
 
         else if (id == 'option_close_chat') {
             if (is_send_press == false) {
+                await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
                 await clearChat();
                 chat.length = 0;
                 resetSelectedGroup();
@@ -11218,7 +11226,7 @@ jQuery(async function () {
                 select_rm_characters();
                 await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
             } else {
-                toastr.info('Please stop the message generation first.');
+                toastr.info(t`Please stop the message generation first.`);
             }
         }
 

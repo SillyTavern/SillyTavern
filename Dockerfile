@@ -4,7 +4,7 @@ FROM node:lts-alpine3.19
 ARG APP_HOME=/home/node/app
 
 # Install system dependencies
-RUN apk add --no-cache gcompat tini git
+RUN apk add --no-cache gcompat tini git git-lfs
 
 # Create app directory
 WORKDIR ${APP_HOME}
