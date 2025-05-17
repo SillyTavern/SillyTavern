@@ -36,6 +36,7 @@ import { slashCommandReturnHelper } from '../../slash-commands/SlashCommandRetur
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
 import { WebLlmVectorProvider } from './webllm.js';
+import { removeReasoningFromString } from '../../reasoning.js';
 
 /**
  * @typedef {object} HashedMessage
@@ -260,7 +261,7 @@ async function summarizeExtra(element) {
  * @returns {Promise<boolean>} Sucess
  */
 async function summarizeMain(element) {
-    element.text = await generateRaw(element.text, '', false, false, settings.summary_prompt);
+    element.text = removeReasoningFromString(await generateRaw(element.text, '', false, false, settings.summary_prompt));
     return true;
 }
 

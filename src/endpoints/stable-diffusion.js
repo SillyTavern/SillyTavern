@@ -824,7 +824,8 @@ pollinations.post('/generate', async (request, response) => {
             height: String(request.body.height ?? 1024),
             nologo: String(true),
             nofeed: String(true),
-            referer: 'sillytavern',
+            private: String(true),
+            referrer: 'sillytavern',
         });
         promptUrl.search = params.toString();
 

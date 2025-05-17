@@ -23,6 +23,9 @@ import {
     neutralCharacterName,
     updateChatMetadata,
     system_message_types,
+    getSystemMessageByType,
+    printMessages,
+    clearChat,
 } from '../script.js';
 import { selected_group } from './group-chats.js';
 import { power_user } from './power-user.js';
@@ -37,6 +40,7 @@ import {
     saveBase64AsFile,
     extractTextFromOffice,
     download,
+    getFileText,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
@@ -1495,6 +1499,35 @@ jQuery(function () {
         ];
 
         download(chatToSave.map((m) => JSON.stringify(m)).join('\n'), `Assistant - ${humanizedDateTime()}.jsonl`, 'application/json');
+    });
+
+    $(document).on('click', '.assistant_note_import', async function () {
+        const importFile = async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                return;
+            }
+
+            try {
+                const text = await getFileText(file);
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                const messages = lines.map(line => JSON.parse(line));
+                const metadata = messages.shift()?.chat_metadata || {};
+                messages.unshift(getSystemMessageByType(system_message_types.ASSISTANT_NOTE));
+                await clearChat();
+                chat.splice(0, chat.length, ...messages);
+                updateChatMetadata(metadata, true);
+                await printMessages();
+            } catch (error) {
+                console.error('Error importing assistant chat:', error);
+                toastr.error(t`It's either corrupted or not a valid JSONL file.`, t`Failed to import chat`);
+            }
+        };
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.jsonl';
+        fileInput.addEventListener('change', importFile);
+        fileInput.click();
     });
 
     // Do not change. #attachFile is added by extension.

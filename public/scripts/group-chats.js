@@ -16,6 +16,7 @@ import {
     localizePagination,
     renderPaginationDropdown,
     paginationDropdownChangeHandler,
+    waitUntilCondition,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
 import { power_user, loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -1912,6 +1913,7 @@ export async function getGroupPastChats(groupId) {
 }
 
 export async function openGroupChat(groupId, chatId) {
+    await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
     const group = groups.find(x => x.id === groupId);
 
     if (!group || !group.chats.includes(chatId)) {

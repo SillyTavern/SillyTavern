@@ -448,7 +448,7 @@ jQuery(async function () {
                     }
 
                     // Custom API doesn't need additional checks
-                    if (api === 'custom') {
+                    if (api === 'custom' || api === 'pollinations') {
                         return true;
                     }
                 }
