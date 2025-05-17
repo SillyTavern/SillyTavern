@@ -4234,9 +4234,13 @@ function onSettingsPresetChange() {
             }
         }
 
-        $('#chat_completion_source').trigger('change');
+        // These cannot be changed via preset if unbound to connection
+        if (oai_settings.bind_preset_to_connection) {
+            $('#chat_completion_source').trigger('change');
+            $('#openrouter_providers_chat').trigger('change');
+        }
+
         $('#openai_logit_bias_preset').trigger('change');
-        $('#openrouter_providers_chat').trigger('change');
 
         saveSettingsDebounced();
         eventSource.emit(event_types.OAI_PRESET_CHANGED_AFTER);
