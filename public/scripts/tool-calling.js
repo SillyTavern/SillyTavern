@@ -1,7 +1,7 @@
 import { DOMPurify } from '../lib.js';
 
 import { addOneMessage, chat, event_types, eventSource, main_api, saveChatConditional, system_avatar, systemUserName } from '../script.js';
-import { chat_completion_sources, model_list, oai_settings } from './openai.js';
+import { chat_completion_sources, custom_prompt_post_processing_types, model_list, oai_settings } from './openai.js';
 import { Popup } from './popup.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
@@ -572,6 +572,10 @@ export class ToolManager {
      */
     static isToolCallingSupported() {
         if (main_api !== 'openai' || !oai_settings.function_calling) {
+            return false;
+        }
+
+        if (oai_settings.custom_prompt_post_processing && oai_settings.custom_prompt_post_processing !== custom_prompt_post_processing_types.NONE) {
             return false;
         }
 

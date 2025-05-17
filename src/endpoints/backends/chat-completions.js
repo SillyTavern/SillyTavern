@@ -71,15 +71,17 @@ function postProcessPrompt(messages, type, names) {
     switch (type) {
         case 'merge':
         case 'claude':
-            return mergeMessages(messages, names, false, false);
+            return mergeMessages(messages, names, { strict: false, placeholders: false, single: false });
         case 'semi':
-            return mergeMessages(messages, names, true, false);
+            return mergeMessages(messages, names, { strict: true, placeholders: false, single: false });
         case 'strict':
-            return mergeMessages(messages, names, true, true);
+            return mergeMessages(messages, names, { strict: true, placeholders: true, single: false });
         case 'deepseek':
-            return addAssistantPrefix(mergeMessages(messages, names, true, false));
+            return addAssistantPrefix(mergeMessages(messages, names, { strict: true, placeholders: false, single: false }));
         case 'deepseek-reasoner':
-            return addAssistantPrefix(mergeMessages(messages, names, true, true));
+            return addAssistantPrefix(mergeMessages(messages, names, { strict: true, placeholders: true, single: false }));
+        case 'single':
+            return mergeMessages(messages, names, { strict: true, placeholders: false, single: true });
         default:
             return messages;
     }
@@ -366,7 +368,7 @@ async function sendMakerSuiteRequest(request, response) {
 
     function getGeminiBody() {
         // #region UGLY MODEL LISTS AREA
-        const imageGenerationModels =  [
+        const imageGenerationModels = [
             'gemini-2.0-flash-exp',
             'gemini-2.0-flash-exp-image-generation',
         ];
@@ -1179,6 +1181,17 @@ router.post('/bias', async function (request, response) {
 router.post('/generate', function (request, response) {
     if (!request.body) return response.status(400).send({ error: true });
 
+    const postProcessingType = request.body.custom_prompt_post_processing;
+    if (Array.isArray(request.body.messages) && postProcessingType) {
+        if (postProcessingType !== 'none') {
+            console.info('Applying custom prompt post-processing of type', postProcessingType);
+        }
+        request.body.messages = postProcessPrompt(
+            request.body.messages,
+            postProcessingType,
+            getPromptNames(request));
+    }
+
     switch (request.body.chat_completion_source) {
         case CHAT_COMPLETION_SOURCES.CLAUDE: return sendClaudeRequest(request, response);
         case CHAT_COMPLETION_SOURCES.SCALE: return sendScaleRequest(request, response);
@@ -1195,15 +1208,6 @@ router.post('/generate', function (request, response) {
     let headers;
     let bodyParams;
     const isTextCompletion = Boolean(request.body.model && TEXT_COMPLETION_MODELS.includes(request.body.model)) || typeof request.body.messages === 'string';
-
-    const postProcessTypes = [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENROUTER];
-    if (Array.isArray(request.body.messages) && postProcessTypes.includes(request.body.chat_completion_source) && request.body.custom_prompt_post_processing) {
-        console.info('Applying custom prompt post-processing of type', request.body.custom_prompt_post_processing);
-        request.body.messages = postProcessPrompt(
-            request.body.messages,
-            request.body.custom_prompt_post_processing,
-            getPromptNames(request));
-    }
 
     if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
         apiUrl = new URL(request.body.reverse_proxy || API_OPENAI).toString();

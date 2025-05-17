@@ -202,13 +202,14 @@ const continue_postfix_types = {
     DOUBLE_NEWLINE: '\n\n',
 };
 
-const custom_prompt_post_processing_types = {
+export const custom_prompt_post_processing_types = {
     NONE: '',
     /** @deprecated Use MERGE instead. */
     CLAUDE: 'claude',
     MERGE: 'merge',
     SEMI: 'semi',
     STRICT: 'strict',
+    SINGLE: 'single',
 };
 
 const openrouter_middleout_types = {
