@@ -696,12 +696,12 @@ export function convertXAIMessages(messages, names) {
  * @param {any[]} messages Messages to merge
  * @param {PromptNames} names Prompt names
  * @param {object} options Options for merging
- * @param {boolean} options.strict Enable strict mode: only allow one system message at the start, force user first message
- * @param {boolean} options.placeholders Add user placeholders to the messages in strict mode
- * @param {boolean} options.single Force every role to be user, merging all messages into one
+ * @param {boolean} [options.strict] Enable strict mode: only allow one system message at the start, force user first message
+ * @param {boolean} [options.placeholders] Add user placeholders to the messages in strict mode
+ * @param {boolean} [options.single] Force every role to be user, merging all messages into one
  * @returns {any[]} Merged messages
  */
-export function mergeMessages(messages, names, { strict, placeholders, single }) {
+export function mergeMessages(messages, names, { strict = false, placeholders = false, single = false } = {}) {
     let mergedMessages = [];
 
     /** @type {Map<string,object>} */

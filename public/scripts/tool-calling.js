@@ -575,6 +575,7 @@ export class ToolManager {
             return false;
         }
 
+        // Post-processing will forcefully remove past tool calls from the prompt, making them useless
         if (oai_settings.custom_prompt_post_processing && oai_settings.custom_prompt_post_processing !== custom_prompt_post_processing_types.NONE) {
             return false;
         }
