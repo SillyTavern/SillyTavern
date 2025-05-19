@@ -136,6 +136,7 @@ const TAG_FOLDER_DEFAULT_TYPE = 'NONE';
  * @property {string} [color] - The background color of the tag
  * @property {string} [color2] - The foreground color of the tag
  * @property {number} [create_date] - A number representing the date when this tag was created
+ * @property {boolean} is_hidden_on_character_card - Whether this tag is hidden on the character card
  *
  * @property {function} [action] - An optional function that gets executed when this tag is an actionable tag and is clicked on.
  * @property {string} [class] - An optional css class added to the control representing this tag when printed. Used for custom tags in the filters.
@@ -909,6 +910,7 @@ function newTag(tagName) {
  * @property {(tag: Tag)=>boolean} [removeAction=undefined] - Action to perform on tag removal instead of the default remove action. If the action returns false, the tag will not be removed.
  * @property {boolean} [isGeneralList=false] - If true, indicates that this is the general list of tags.
  * @property {boolean} [skipExistsCheck=false] - If true, the tag gets added even if a tag with the same id already exists.
+ * @property {boolean} [isCharacterList=false] - If true, indicates that this is the character's list of tags.
  */
 
 /**
@@ -933,6 +935,15 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
     const $element = (typeof element === 'string') ? $(element) : element;
     const key = forEntityOrKey !== undefined ? getTagKeyForEntity(forEntityOrKey) : getTagKey();
     let printableTags = tags ? (typeof tags === 'function' ? tags() : tags) : getTagsList(key, sort);
+
+    console.log("tags"  , printableTags);
+    if (tagOptions.isCharacterList) {
+        printableTags = printableTags.filter(tag => !tag.is_hidden_on_character_card);
+    }
+    console.log("tags"  , printableTags);
+    console.log("tagoption"  , tagOptions);
+    console.log("element"  , element);
+
 
     if (empty === 'always' || (empty && (printableTags?.length > 0 || key))) {
         $element.empty();
