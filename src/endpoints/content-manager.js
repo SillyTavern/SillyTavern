@@ -346,13 +346,21 @@ async function downloadChubLorebook(id) {
 }
 
 async function downloadChubCharacter(id) {
-    const result = await fetch('https://api.chub.ai/api/characters/download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            'format': 'tavern',
-            'fullPath': id,
-        }),
+    const ChubCharacterId = encodeURIComponent(id); 
+    const filePath = 'raw/tavern_raw.json';
+    const encodedFilePathOnce = encodeURIComponent(filePath); 
+    const encodedFilePathTwice = encodeURIComponent(encodedFilePathOnce); 
+    //add header to skip cloudflare
+    const headers = {
+        'accept': 'application/json',
+        'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/'
+    };
+
+    const url = `https://gateway.chub.ai/api/v4/projects/${ChubCharacterId}/repository/files/${encodedFilePathTwice}/raw`;
+    console.info('Downloading from URL:', url);
+    const result = await fetch(url, {
+        method: 'GET',
+        headers: headers,
     });
 
     if (!result.ok) {
@@ -362,11 +370,21 @@ async function downloadChubCharacter(id) {
     }
 
     const buffer = Buffer.from(await result.arrayBuffer());
-    const fileName = result.headers.get('content-disposition')?.split('filename=')[1] || `${sanitize(id)}.png`;
-    const fileType = result.headers.get('content-type');
+
+    let fileName = `${sanitize(id)}.json`;
+    const disposition = result.headers.get('content-disposition');
+    if (disposition) {
+        const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+        if (filenameMatch && filenameMatch[1]) {
+            fileName = filenameMatch[1];
+        }
+    }
+
+    const fileType = result.headers.get('content-type') || 'application/json';
 
     return { buffer, fileName, fileType };
 }
+
 
 /**
  * Downloads a character card from the Pygsite.
