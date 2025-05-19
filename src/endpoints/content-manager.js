@@ -346,14 +346,14 @@ async function downloadChubLorebook(id) {
 }
 
 async function downloadChubCharacter(id) {
-    const ChubCharacterId = encodeURIComponent(id); 
+    const ChubCharacterId = encodeURIComponent(id);
     const filePath = 'raw/tavern_raw.json';
-    const encodedFilePathOnce = encodeURIComponent(filePath); 
-    const encodedFilePathTwice = encodeURIComponent(encodedFilePathOnce); 
+    const encodedFilePathOnce = encodeURIComponent(filePath);
+    const encodedFilePathTwice = encodeURIComponent(encodedFilePathOnce);
     //add header to skip cloudflare
     const headers = {
         'accept': 'application/json',
-        'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/'
+        'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/',
     };
 
     const url = `https://gateway.chub.ai/api/v4/projects/${ChubCharacterId}/repository/files/${encodedFilePathTwice}/raw`;
