@@ -2255,6 +2255,7 @@
     "Manual": "Когда вы скажете",
     "Auto Mode delay": "Задержка авто-режима",
     "Use tag as folder": "Тег-папка",
+    "Hide on character card": "Скрыть на карточке персонажа",
     "All connections to ${0} have been removed.": "Все связи с персонажем ${0} были удалены.",
     "Personas Unlocked": "Персоны отвязаны",
     "Remove All Connections": "Удалить все связи",

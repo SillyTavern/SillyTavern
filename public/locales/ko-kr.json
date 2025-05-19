@@ -955,6 +955,7 @@
     "Download chat as plain text document": "일반 텍스트 문서로 채팅 다운로드",
     "Delete chat file": "채팅 파일 삭제",
     "Use tag as folder": "폴더로 태그 지정",
+    "Hide on character card": "캐릭터 카드에서 숨기기",
     "Delete tag": "태그 삭제",
     "Entry Title/Memo": "항목 제목/메모",
     "WI Entry Status:🔵 Constant🟢 Normal🔗 Vectorized❌ Disabled": "WI 입국 상태:\r🔵 상시\r🟢 조건 만족시\r🔗 벡터화됨\r❌ 비활성화",
