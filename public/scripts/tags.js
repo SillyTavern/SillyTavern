@@ -1605,6 +1605,16 @@ function appendViewTagToList(list, tag, everything) {
         colorPicker[0].color = defaultColor;
     });
 
+    const hideToggle = template.find('.eye-toggle');
+    hideToggle.toggleClass('fa-eye-slash', tag.is_hidden_on_character_card);
+    hideToggle.toggleClass('fa-eye', !tag.is_hidden_on_character_card);
+
+    hideToggle.on('click', () => {
+        tag.is_hidden_on_character_card = !tag.is_hidden_on_character_card;
+        hideToggle.toggleClass('fa-eye-slash', tag.is_hidden_on_character_card);
+        hideToggle.toggleClass('fa-eye', !tag.is_hidden_on_character_card);
+    });
+
     list.append(template);
 
     // We prevent the popup from auto-close on Escape press on the color pickups. If the user really wants to, he can hit it again
