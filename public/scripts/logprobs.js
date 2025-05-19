@@ -378,9 +378,8 @@ function createSwipe(messageId, prompt) {
 
     const msg = chat[messageId];
 
-    let startReplyWithString = substituteParamsExtended(power_user.user_prompt_bias);
-    let reasoningPrefix = power_user.reasoning.prefix;
-    let reasoningSuffix = power_user.reasoning.suffix;
+    let reasoningPrefix = substituteParamsExtended(power_user.reasoning.prefix);
+    let reasoningSuffix = substituteParamsExtended(power_user.reasoning.suffix);
     let isReasoningAutoParsed = power_user.reasoning.auto_parse;
     let msgHasParsedReasoning = msg.extra?.reasoning?.length > 0;
     let shouldRerollReasoning = false;
@@ -397,25 +396,26 @@ function createSwipe(messageId, prompt) {
             shouldRerollReasoning = true;
         }
 
+        let hasReasoningPrefix = cleanedPrompt.includes(reasoningPrefix);
+        let hasReasoningSuffix = cleanedPrompt.includes(reasoningSuffix);
+
         //..with both the start and end think tags
         //OR
         //..with only the end think tag (implying prefilled think start)
         if (
-            (cleanedPrompt.includes(reasoningPrefix) && cleanedPrompt.includes(reasoningSuffix)) ||
-            (!cleanedPrompt.includes(reasoningPrefix) && cleanedPrompt.includes(reasoningSuffix))
+            (hasReasoningPrefix && hasReasoningSuffix)// ||
+        // (!cleanedPrompt.includes(reasoningPrefix) && cleanedPrompt.includes(reasoningSuffix))
         ) {
-            console.info('...incl. end tag...');
-
             //we need to send the results to the response block without reasoning attached
+            console.info('...incl. end tag...rerolling response');
             const endOfThink = cleanedPrompt.indexOf(reasoningSuffix) + reasoningSuffix.length;
-            console.info('removing think contents');
             cleanedPrompt = cleanedPrompt.substring(endOfThink);
+        }
 
-            //if cleanedprompt includes the "start reply with" string, remove it
-            if (cleanedPrompt.includes(startReplyWithString)) {
-                console.info('saw reply prefix, removing');
-                cleanedPrompt = cleanedPrompt.replace(startReplyWithString, '');
-            }
+        //if cleanedprompt includes the think prefix, but no suffix..
+        if (hasReasoningPrefix === true && hasReasoningSuffix === false) {
+            console.info('..no end tag...rerolling reasoning, so removing prefix');
+            cleanedPrompt = cleanedPrompt.replace(reasoningPrefix, '');
         }
     }
 
