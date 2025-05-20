@@ -896,6 +896,7 @@ function newTag(tagName) {
         folder_type: TAG_FOLDER_DEFAULT_TYPE,
         filter_state: DEFAULT_FILTER_STATE,
         sort_order: Math.max(0, ...tags.map(t => t.sort_order)) + 1,
+        is_hidden_on_character_card: false,
         color: '',
         color2: '',
         create_date: Date.now(),
