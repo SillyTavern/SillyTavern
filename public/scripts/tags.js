@@ -1609,6 +1609,8 @@ function appendViewTagToList(list, tag, everything) {
         tag.is_hidden_on_character_card = !tag.is_hidden_on_character_card;
         hideToggle.toggleClass('fa-eye-slash', tag.is_hidden_on_character_card);
         hideToggle.toggleClass('fa-eye', !tag.is_hidden_on_character_card);
+        printCharactersDebounced();
+        saveSettingsDebounced();
     });
 
     list.append(template);
