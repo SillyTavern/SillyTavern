@@ -1184,9 +1184,7 @@ router.post('/generate', function (request, response) {
 
     const postProcessingType = request.body.custom_prompt_post_processing;
     if (Array.isArray(request.body.messages) && postProcessingType) {
-        if (postProcessingType !== 'none') {
-            console.info('Applying custom prompt post-processing of type', postProcessingType);
-        }
+        console.info('Applying custom prompt post-processing of type', postProcessingType);
         request.body.messages = postProcessPrompt(
             request.body.messages,
             postProcessingType,
