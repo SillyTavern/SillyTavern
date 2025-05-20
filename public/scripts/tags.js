@@ -937,13 +937,13 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
     const key = forEntityOrKey !== undefined ? getTagKeyForEntity(forEntityOrKey) : getTagKey();
     let printableTags = tags ? (typeof tags === 'function' ? tags() : tags) : getTagsList(key, sort);
 
-    console.log("tags"  , printableTags);
+    console.log('tags'  , printableTags);
     if (tagOptions.isCharacterList) {
         printableTags = printableTags.filter(tag => !tag.is_hidden_on_character_card);
     }
-    console.log("tags"  , printableTags);
-    console.log("tagoption"  , tagOptions);
-    console.log("element"  , element);
+    console.log('tags'  , printableTags);
+    console.log('tagoption'  , tagOptions);
+    console.log('element'  , element);
 
 
     if (empty === 'always' || (empty && (printableTags?.length > 0 || key))) {
@@ -965,7 +965,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
 
     // We prepare some stuff. No matter which list we have, there is a maximum value of tags we are going to display
     // Constants to define tag printing limits
-    const DEFAULT_TAGS_LIMIT = 50;
+    const DEFAULT_TAGS_LIMIT = 5;
     const tagsDisplayLimit = expanded ? Number.MAX_SAFE_INTEGER : DEFAULT_TAGS_LIMIT;
 
     // Functions to determine tag properties
