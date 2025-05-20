@@ -1499,7 +1499,7 @@ function getCharacterBlock(item, id) {
 
     // Display inline tags
     const tagsElement = template.find('.tags');
-    printTagList(tagsElement, { forEntityOrKey: id });
+    printTagList(tagsElement, { forEntityOrKey: id, tagOptions: { isCharacterList: true } });
 
     // Add to the list
     return template;

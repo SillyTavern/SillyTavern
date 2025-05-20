@@ -383,6 +383,7 @@ async function sendMakerSuiteRequest(request, response) {
 
         const thinkingBudgetModels = [
             'gemini-2.5-flash-preview-04-17',
+            'gemini-2.5-flash-preview-05-20',
         ];
 
         const noSearchModels = [
