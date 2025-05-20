@@ -937,14 +937,9 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
     const key = forEntityOrKey !== undefined ? getTagKeyForEntity(forEntityOrKey) : getTagKey();
     let printableTags = tags ? (typeof tags === 'function' ? tags() : tags) : getTagsList(key, sort);
 
-    console.log('tags'  , printableTags);
     if (tagOptions.isCharacterList) {
         printableTags = printableTags.filter(tag => !tag.is_hidden_on_character_card);
     }
-    console.log('tags'  , printableTags);
-    console.log('tagoption'  , tagOptions);
-    console.log('element'  , element);
-
 
     if (empty === 'always' || (empty && (printableTags?.length > 0 || key))) {
         $element.empty();
