@@ -965,7 +965,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
 
     // We prepare some stuff. No matter which list we have, there is a maximum value of tags we are going to display
     // Constants to define tag printing limits
-    const DEFAULT_TAGS_LIMIT = 5;
+    const DEFAULT_TAGS_LIMIT = 50;
     const tagsDisplayLimit = expanded ? Number.MAX_SAFE_INTEGER : DEFAULT_TAGS_LIMIT;
 
     // Functions to determine tag properties
