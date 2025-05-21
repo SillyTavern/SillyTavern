@@ -58,6 +58,7 @@ const API_AI21 = 'https://api.ai21.com/studio/v1';
 const API_NANOGPT = 'https://nano-gpt.com/api/v1';
 const API_DEEPSEEK = 'https://api.deepseek.com/beta';
 const API_XAI = 'https://api.x.ai/v1';
+const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
 
 /**
  * Applies a post-processing step to the generated messages.
@@ -395,6 +396,7 @@ async function sendMakerSuiteRequest(request, response) {
 
         const thinkingBudgetModels = [
             'gemini-2.5-flash-preview-04-17',
+            'gemini-2.5-flash-preview-05-20',
         ];
 
         const noSearchModels = [
@@ -1031,6 +1033,10 @@ router.post('/status', async function (request, response_getstatus_openai) {
         api_url = new URL(request.body.reverse_proxy || API_XAI);
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.XAI);
         headers = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
+        api_url = 'https://text.pollinations.ai';
+        api_key_openai = 'NONE';
+        headers = {};
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
@@ -1052,7 +1058,12 @@ router.post('/status', async function (request, response_getstatus_openai) {
 
         if (response.ok) {
             /** @type {any} */
-            const data = await response.json();
+            let data = await response.json();
+
+            if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS && Array.isArray(data)) {
+                data = { data: data.map(model => ({ id: model.name, ...model })) };
+            }
+
             response_getstatus_openai.send(data);
 
             if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COHERE && Array.isArray(data?.models)) {
@@ -1315,6 +1326,14 @@ router.post('/generate', function (request, response) {
         apiKey = readSecret(request.user.directories, SECRET_KEYS.ZEROONEAI);
         headers = {};
         bodyParams = {};
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
+        apiUrl = API_POLLINATIONS;
+        apiKey = 'NONE';
+        headers = {};
+        bodyParams = {
+            reasoning_effort: request.body.reasoning_effort,
+            private: true,
+        };
     } else {
         console.warn('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });

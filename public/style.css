@@ -10,6 +10,7 @@
 @import url(css/accounts.css);
 @import url(css/tags.css);
 @import url(css/scrollable-button.css);
+@import url(css/welcome.css);
 
 :root {
     --doc-height: 100%;
@@ -3932,13 +3933,36 @@ grammarly-extension {
 
 /* Override toastr default styles */
 body #toast-container {
-    top: var(--topBarBlockSize);
+    margin-top: var(--topBarBlockSize);
 }
 
 body #toast-container>div {
     opacity: 1;
     filter: unset;
     -ms-filter: unset;
+    padding: 5px 5px 10px 50px;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    width:300px;
+}
+
+.toast-success {
+    background-color: #5d9e5d;
+}
+
+.toast-error {
+    background-color: #a83c36;
+}
+
+.toast-info {
+    background-color: #4092aa;
+}
+
+.toast-warning {
+    background-color: #e29325;
+}
+
+button.toast-close-button {
+padding-right: 3px
 }
 
 #dialogue_del_mes {
@@ -6060,12 +6084,12 @@ body:not(.movingUI) .drawer-content.maximized {
     flex-wrap: nowrap;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
-    padding: 0 2px;
+    gap: 5px;
 }
 
-.mes_text div[data-type="assistant_note"]:has(.assistant_note_export)>div:not(.assistant_note_export) {
+.mes_text div[data-type="assistant_note"]:has(.assistant_note_export) > div {
     flex: 1;
+    text-align: left;
 }
 
 .oneline-dropdown label {

@@ -137,6 +137,7 @@ let power_user = {
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
+    toastr_position: 'toast-top-center',
     chat_width: 50,
     never_resize_avatars: false,
     show_card_avatar_urls: false,
@@ -1044,6 +1045,43 @@ function applyChatDisplay() {
     }
 }
 
+function applyToastrPosition() {
+
+    if (!power_user.toastr_position) {
+        power_user.toastr_position = 'toast-top-center';
+        console.warn('applyToastrPosition: missing toastr position, defaulting to top-center');
+    }
+
+    switch (power_user.toastr_position) {
+        case 'toast-top-left': {
+            toastr.options.positionClass = 'toast-top-left';
+            break;
+        }
+        case 'toast-top-center': {
+            toastr.options.positionClass = 'toast-top-center';
+            break;
+        }
+        case 'toast-top-right': {
+            toastr.options.positionClass = 'toast-top-right';
+            break;
+        }
+        case 'toast-bottom-left': {
+            toastr.options.positionClass = 'toast-bottom-left';
+            break;
+        }
+        case 'toast-bottom-center': {
+            toastr.options.positionClass = 'toast-bottom-center';
+            break;
+        }
+        case 'toast-bottom-right': {
+            toastr.options.positionClass = 'toast-bottom-right';
+            break;
+        }
+    }
+
+    $('#toastr_position').val(power_user.toastr_position).prop('selected', true);
+}
+
 function applyChatWidth(type) {
     if (type === 'forced') {
         let r = document.documentElement;
@@ -1204,6 +1242,12 @@ function applyTheme(name) {
             key: 'chat_display',
             action: () => {
                 applyChatDisplay();
+            },
+        },
+        {
+            key: 'toastr_position',
+            action: () => {
+                applyToastrPosition();
             },
         },
         {
@@ -1455,6 +1499,7 @@ function getExampleMessagesBehavior() {
     return 'normal';
 }
 
+//MARK: loadPowerUser
 async function loadPowerUserSettings(settings, data) {
     const defaultStscript = JSON.parse(JSON.stringify(power_user.stscript));
     // Load from settings.json
@@ -1603,6 +1648,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#enableLabMode').prop('checked', power_user.enableLabMode).trigger('input', { fromInit: true });
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop('checked', true);
     $(`#chat_display option[value=${power_user.chat_display}]`).attr('selected', true).trigger('change');
+    $(`#toastr_position option[value=${power_user.toastr_position}]`).attr('selected', true).trigger('change');
     $('#chat_width_slider').val(power_user.chat_width);
     $('#token_padding').val(power_user.token_padding);
     $('#aux_field').val(power_user.aux_field);
@@ -2372,6 +2418,7 @@ function getThemeObject(name) {
         waifuMode: power_user.waifuMode,
         avatar_style: power_user.avatar_style,
         chat_display: power_user.chat_display,
+        toastr_position: power_user.toastr_position,
         noShadows: power_user.noShadows,
         chat_width: power_user.chat_width,
         timer_enabled: power_user.timer_enabled,
@@ -3320,6 +3367,13 @@ $(document).ready(() => {
         const value = $(this).find(':selected').val();
         power_user.chat_display = Number(value);
         applyChatDisplay();
+        saveSettingsDebounced();
+    });
+
+    $('#toastr_position').on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.toastr_position = String(value);
+        applyToastrPosition();
         saveSettingsDebounced();
     });
 

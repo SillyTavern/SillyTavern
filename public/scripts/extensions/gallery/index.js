@@ -710,7 +710,7 @@ async function listGalleryCommand(args) {
         delete context.extensionSettings.gallery.folders[avatar];
         context.saveSettingsDebounced();
     });
-    eventSource.on('charManagementDropdown', (selectedOptionId) => {
+    eventSource.on(event_types.CHARACTER_MANAGEMENT_DROPDOWN, (selectedOptionId) => {
         if (selectedOptionId === 'show_char_gallery') {
             showCharGallery();
         }

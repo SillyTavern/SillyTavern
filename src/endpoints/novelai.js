@@ -394,7 +394,8 @@ router.post('/generate-image', async (request, response) => {
             });
 
             if (!upscaleResult.ok) {
-                throw new Error('NovelAI returned an error.');
+                const text = await upscaleResult.text();
+                throw new Error('NovelAI returned an error.', { cause: text });
             }
 
             const upscaledArchiveBuffer = await upscaleResult.arrayBuffer();
@@ -408,7 +409,7 @@ router.post('/generate-image', async (request, response) => {
 
             return response.send(upscaledBase64);
         } catch (error) {
-            console.warn('NovelAI generated an image, but upscaling failed. Returning original image.');
+            console.warn('NovelAI generated an image, but upscaling failed. Returning original image.', error);
             return response.send(originalBase64);
         }
     } catch (error) {

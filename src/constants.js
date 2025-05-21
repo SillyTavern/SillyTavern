@@ -178,6 +178,7 @@ export const CHAT_COMPLETION_SOURCES = {
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
     XAI: 'xai',
+    POLLINATIONS: 'pollinations',
 };
 
 /**

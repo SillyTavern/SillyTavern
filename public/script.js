@@ -183,7 +183,7 @@ import {
 } from './scripts/utils.js';
 import { debounce_timeout, IGNORE_SYMBOL } from './scripts/constants.js';
 
-import { doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
+import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, executeSlashCommandsOnChatInput, getSlashCommandsHelp, initDefaultSlashCommands, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, stopScriptExecution } from './scripts/slash-commands.js';
 import {
     tag_map,
@@ -282,6 +282,7 @@ import { deriveTemplatesFromChatTemplate } from './scripts/chat-templates.js';
 import { getContext } from './scripts/st-context.js';
 import { extractReasoningFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
 import { accountStorage } from './scripts/util/AccountStorage.js';
+import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -312,7 +313,7 @@ await new Promise((resolve) => {
     }
 });
 
-showLoader();
+//showLoader(); <-- must wait for poweruser (called from firstinit()), so moved it in there
 
 // Configure toast library:
 toastr.options.escapeHtml = true; // Prevent raw HTML inserts
@@ -320,7 +321,7 @@ toastr.options.timeOut = 4000; // How long the toast will display without user i
 toastr.options.extendedTimeOut = 10000; // How long the toast will display after a user hovers over it
 toastr.options.progressBar = true; // Visually indicate how long before a toast expires.
 toastr.options.closeButton = true; // enable a close button
-toastr.options.positionClass = 'toast-top-center'; // Where to position the toast container
+//toastr.options.positionClass = power_user.toastr_position; // Where to position the toast container
 toastr.options.onHidden = () => {
     // If we have any dialog still open, the last "hidden" toastr will remove the toastr-container. We need to keep it alive inside the dialog though
     // so the toasts still show up inside there.
@@ -452,6 +453,7 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
 });
 
 // Event source init
+//MARK: event_types
 export const event_types = {
     APP_READY: 'app_ready',
     EXTRAS_CONNECTED: 'extras_connected',
@@ -529,6 +531,7 @@ export const event_types = {
     CONNECTION_PROFILE_UPDATED: 'connection_profile_updated',
     TOOL_CALLS_PERFORMED: 'tool_calls_performed',
     TOOL_CALLS_RENDERED: 'tool_calls_rendered',
+    CHARACTER_MANAGEMENT_DROPDOWN: 'charManagementDropdown',
 };
 
 export const eventSource = new EventEmitter([event_types.APP_READY]);
@@ -563,7 +566,7 @@ let chat_create_date = '';
 let firstRun = false;
 let settingsReady = false;
 let currentVersion = '0.0.0';
-let displayVersion = 'SillyTavern';
+export let displayVersion = 'SillyTavern';
 
 let generatedPromptCache = '';
 let generation_started = new Date();
@@ -636,6 +639,7 @@ export const system_message_types = {
     MACROS: 'macros',
     WELCOME_PROMPT: 'welcome_prompt',
     ASSISTANT_NOTE: 'assistant_note',
+    ASSISTANT_MESSAGE: 'assistant_message',
 };
 
 /**
@@ -737,6 +741,7 @@ async function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
+            uses_system_ui: true,
             mes: await renderTemplateAsync('welcomePrompt'),
             extra: {
                 isSmallSys: true,
@@ -941,7 +946,7 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
 export async function pingServer() {
     try {
         const result = await fetch('api/ping', {
-            method: 'GET',
+            method: 'POST',
             headers: getRequestHeaders(),
         });
 
@@ -956,6 +961,7 @@ export async function pingServer() {
     }
 }
 
+//MARK: firstLoadInit
 async function firstLoadInit() {
     try {
         const tokenResponse = await fetch('/csrf-token');
@@ -983,9 +989,8 @@ async function firstLoadInit() {
     ToolManager.initToolSlashCommands();
     await initPresetManager();
     await getSystemMessages();
-    sendSystemMessage(system_message_types.WELCOME);
-    sendSystemMessage(system_message_types.WELCOME_PROMPT);
     await getSettings();
+    showLoader();
     initKeyboard();
     initDynamicStyles();
     initTags();
@@ -1009,7 +1014,10 @@ async function firstLoadInit() {
     initSettingsSearch();
     initBulkEdit();
     initReasoning();
+    initWelcomeScreen();
     await initScrapers();
+    initCustomSelectedSamplers();
+    addDebugFunctions();
     doDailyExtensionUpdatesCheck();
     await hideLoader();
     await fixViewport();
@@ -1470,6 +1478,11 @@ function getCharacterBlock(item, id) {
     template.toggleClass('is_fav', item.fav || item.fav == 'true');
     template.find('.ch_fav').val(item.fav);
 
+    const isAssistant = item.avatar === getPermanentAssistantAvatar();
+    if (!isAssistant) {
+        template.find('.ch_assistant').remove();
+    }
+
     const description = item.data?.creator_notes || '';
     if (description) {
         template.find('.ch_description').text(description);
@@ -1489,7 +1502,7 @@ function getCharacterBlock(item, id) {
 
     // Display inline tags
     const tagsElement = template.find('.tags');
-    printTagList(tagsElement, { forEntityOrKey: id });
+    printTagList(tagsElement, { forEntityOrKey: id, tagOptions: { isCharacterList: true } });
 
     // Add to the list
     return template;
@@ -1969,7 +1982,20 @@ export async function printMessages() {
     }
 }
 
+/**
+ * Cancels the debounced chat save if it is currently pending.
+ */
+export function cancelDebouncedChatSave() {
+    if (chatSaveTimeout) {
+        console.debug('Debounced chat save cancelled');
+        clearTimeout(chatSaveTimeout);
+        chatSaveTimeout = null;
+    }
+}
+
 export async function clearChat() {
+    cancelDebouncedChatSave();
+    cancelDebouncedMetadataSave();
     closeMessageEditor();
     extension_prompts = {};
     if (is_delete_mode) {
@@ -2038,7 +2064,7 @@ export async function sendTextareaMessage() {
     }
 
     if (textareaText && !selected_group && this_chid === undefined && name2 !== neutralCharacterName) {
-        await newAssistantChat();
+        await newAssistantChat({ temporary: false });
     }
 
     Generate(generateType);
@@ -2289,6 +2315,7 @@ function getMessageFromTemplate({
     timestamp,
     tokenCount,
     extra,
+    type,
 }) {
     const mes = messageTemplate.clone();
     mes.attr({
@@ -2300,6 +2327,7 @@ function getMessageFromTemplate({
         'bookmark_link': bookmarkLink,
         'force_avatar': !!forceAvatar,
         'timestamp': timestamp,
+        ...(type ? { type } : {}),
     });
     mes.find('.avatar img').attr('src', avatarImg);
     mes.find('.ch_name .name_text').text(characterName);
@@ -2511,6 +2539,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         timestamp: timestamp,
         extra: mes.extra,
         tokenCount: mes.extra?.token_count ?? 0,
+        type: mes.extra?.type ?? '',
         ...formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count, mes.extra?.reasoning_duration, mes.extra?.time_to_first_token),
     };
 
@@ -2880,7 +2909,14 @@ export async function processCommands(message) {
     return true;
 }
 
-export function sendSystemMessage(type, text, extra = {}) {
+/**
+ * Gets a system message by type.
+ * @param {string} type Type of system message
+ * @param {string} [text] Text to be sent
+ * @param {object} [extra] Additional data to be added to the message
+ * @returns {object} System message object
+ */
+export function getSystemMessageByType(type, text, extra = {}) {
     const systemMessage = system_messages[type];
 
     if (!systemMessage) {
@@ -2903,7 +2939,17 @@ export function sendSystemMessage(type, text, extra = {}) {
 
     newMessage.extra = Object.assign(newMessage.extra, extra);
     newMessage.extra.type = type;
+    return newMessage;
+}
 
+/**
+ * Sends a system message to the chat.
+ * @param {string} type Type of system message
+ * @param {string} [text] Text to be sent
+ * @param {object} [extra] Additional data to be added to the message
+ */
+export function sendSystemMessage(type, text, extra = {}) {
+    const newMessage = getSystemMessageByType(type, text, extra);
     chat.push(newMessage);
     addOneMessage(newMessage);
     is_send_press = false;
@@ -3818,6 +3864,7 @@ function removeLastMessage() {
 }
 
 /**
+ * MARK:Generate()
  * Runs a generation using the current chat context.
  * @param {string} type Generation type
  * @param {GenerateOptions} options Generation options
@@ -4140,7 +4187,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
-    // kingbri MARK: - Make sure the prompt bias isn't the same as the user bias
     if ((promptBias && !isUserPromptBias) || power_user.always_force_name2 || main_api == 'novel') {
         force_name2 = true;
     }
@@ -4809,7 +4855,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 name2: name2,
                 charDescription: description,
                 charPersonality: personality,
-                Scenario: scenario,
+                scenario: scenario,
                 worldInfoBefore: worldInfoBefore,
                 worldInfoAfter: worldInfoAfter,
                 extensionPrompts: extension_prompts,
@@ -5123,6 +5169,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         throw exception;
     }
 }
+//MARK: Generate() ends
 
 /**
  * Stops the generation and any streaming if it is currently running.
@@ -6899,11 +6946,7 @@ export function saveChatDebounced() {
     const chid = this_chid;
     const selectedGroup = selected_group;
 
-    if (chatSaveTimeout) {
-        console.debug('Clearing chat save timeout');
-        clearTimeout(chatSaveTimeout);
-        chatSaveTimeout = null;
-    }
+    cancelDebouncedChatSave();
 
     chatSaveTimeout = setTimeout(async () => {
         if (selectedGroup !== selected_group) {
@@ -7269,6 +7312,7 @@ function getFirstMessage() {
 }
 
 export async function openCharacterChat(file_name) {
+    await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
     await clearChat();
     characters[this_chid]['chat'] = file_name;
     chat.length = 0;
@@ -7437,7 +7481,7 @@ function reloadLoop() {
     }
 }
 
-//***************SETTINGS****************//
+//MARK: getSettings()
 ///////////////////////////////////////////
 export async function getSettings() {
     const response = await fetch('/api/settings/get', {
@@ -7631,6 +7675,7 @@ function selectKoboldGuiPreset() {
         .trigger('change');
 }
 
+//MARK: saveSettings()
 export async function saveSettings(loopCounter = 0) {
     if (!settingsReady) {
         console.warn('Settings not ready, scheduling another save');
@@ -8615,11 +8660,7 @@ export async function saveChatConditional() {
     }
 
     try {
-        if (chatSaveTimeout) {
-            console.debug('Debounced chat save canceled');
-            clearTimeout(chatSaveTimeout);
-            chatSaveTimeout = null;
-        }
+        cancelDebouncedChatSave();
 
         isChatSaving = true;
 
@@ -9302,6 +9343,7 @@ export function swipe_left(_event, { source, repeated } = {}) {
  * @param {string} [params.source] The source of the swipe event.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  */
+//MARK: swipe_right
 export function swipe_right(_event, { source, repeated } = {}) {
     if (chat.length - 1 === Number(this_edit_mes_id)) {
         closeMessageEditor();
@@ -9878,6 +9920,7 @@ export async function doNewChat({ deleteCurrentChat = false } = {}) {
     }
 
     //Fix it; New chat doesn't create while open create character menu
+    await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
     await clearChat();
     chat.length = 0;
 
@@ -10110,8 +10153,17 @@ async function removeCharacterFromUI() {
     saveSettingsDebounced();
 }
 
-async function newAssistantChat() {
+/**
+ * Creates a new assistant chat.
+ * @param {object} params - Parameters for the new assistant chat
+ * @param {boolean} [params.temporary=false] I need a temporary secretary
+ * @returns {Promise<void>} - A promise that resolves when the new assistant chat is created
+ */
+export async function newAssistantChat({ temporary = false } = {}) {
     await clearChat();
+    if (!temporary) {
+        return openPermanentAssistantChat();
+    }
     chat.splice(0, chat.length);
     chat_metadata = {};
     setCharacterName(neutralCharacterName);
@@ -10309,6 +10361,8 @@ API Settings: ${JSON.stringify(getSettingsContents[getSettingsContents.main_api 
     });
 }
 
+
+// MARK: DOM Handlers Start
 jQuery(async function () {
     async function doForceSave() {
         await saveSettings();
@@ -10424,7 +10478,7 @@ jQuery(async function () {
                     if (chatId) {
                         return reject('Not in a temporary chat');
                     }
-                    await newAssistantChat();
+                    await newAssistantChat({ temporary: true });
                     return resolve('');
                 };
                 eventSource.once(event_types.CHAT_CHANGED, eventCallback);
@@ -11091,6 +11145,9 @@ jQuery(async function () {
         });
 
         if (id == 'option_select_chat') {
+            if (this_chid === undefined && !is_send_press && !selected_group) {
+                await openPermanentAssistantCard();
+            }
             if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press) || fromSlashCommand) {
                 await displayPastChats();
                 //this is just to avoid the shadow for past chat view when using /delchat
@@ -11121,7 +11178,7 @@ jQuery(async function () {
                 await doNewChat({ deleteCurrentChat: deleteCurrentChat });
             }
             if (!selected_group && this_chid === undefined && !is_send_press) {
-                await newAssistantChat();
+                await newAssistantChat({ temporary: true });
             }
         }
 
@@ -11162,6 +11219,7 @@ jQuery(async function () {
 
         else if (id == 'option_close_chat') {
             if (is_send_press == false) {
+                await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
                 await clearChat();
                 chat.length = 0;
                 resetSelectedGroup();
@@ -11174,12 +11232,9 @@ jQuery(async function () {
                 selected_button = 'characters';
                 $('#rm_button_selected_ch').children('h2').text('');
                 select_rm_characters();
-                sendSystemMessage(system_message_types.WELCOME);
-                sendSystemMessage(system_message_types.WELCOME_PROMPT);
-                await getClientVersion();
                 await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
             } else {
-                toastr.info('Please stop the message generation first.');
+                toastr.info(t`Please stop the message generation first.`);
             }
         }
 
@@ -12106,7 +12161,7 @@ jQuery(async function () {
                 );
                 break;*/
             default:
-                await eventSource.emit('charManagementDropdown', target);
+                await eventSource.emit(event_types.CHARACTER_MANAGEMENT_DROPDOWN, target);
         }
         $('#char-management-dropdown').prop('selectedIndex', 0);
     });
@@ -12274,16 +12329,12 @@ jQuery(async function () {
     // Added here to prevent execution before script.js is loaded and get rid of quirky timeouts
     await firstLoadInit();
 
-    addDebugFunctions();
-
     eventSource.on(event_types.CHAT_DELETED, async (name) => {
         await deleteItemizedPrompts(name);
     });
     eventSource.on(event_types.GROUP_CHAT_DELETED, async (name) => {
         await deleteItemizedPrompts(name);
     });
-
-    initCustomSelectedSamplers();
 
     window.addEventListener('beforeunload', (e) => {
         if (isChatSaving) {

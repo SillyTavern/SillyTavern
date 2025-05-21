@@ -10,6 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="darkreader-lock">
     <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#333">
     <style>
         /* Put critical CSS here. The rest should go in stylesheets. */
         body {
@@ -176,6 +177,11 @@
                                         </strong>
 
                                         <div class="flex-container gap3px">
+                                            <label for="bind_preset_to_connection" class="margin0 menu_button menu_button_icon" title="Bind presets to API connections" data-i18n="[title]Bind presets to API connections">
+                                                <input id="bind_preset_to_connection" type="checkbox" class="displayNone" />
+                                                <i class="fa-fw fa-solid fa-link toggleOn"></i>
+                                                <i class="fa-fw fa-solid fa-link-slash toggleOff"></i>
+                                            </label>
                                             <div id="import_oai_preset" class="margin0 menu_button menu_button_icon" title="Import preset" data-i18n="[title]Import preset">
                                                 <i class="fa-fw fa-solid fa-file-import"></i>
                                             </div>
@@ -974,7 +980,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt,xai">
+                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,nanogpt,xai,pollinations">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -1406,7 +1412,7 @@
                                         </div>
                                     </div>
 
-                                    <div data-tg-type="koboldcpp, aphrodite, tabby, ooba, llamacpp" id="xtc_block" class="wide100p">
+                                    <div data-tg-type="koboldcpp, aphrodite, mancer, tabby, ooba, llamacpp" id="xtc_block" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Exclude Top Choices (XTC)">Exclude Top Choices (XTC)</label>
                                             <a href="https://github.com/oobabooga/text-generation-webui/pull/6335" target="_blank">
@@ -1427,7 +1433,7 @@
                                         </div>
                                     </div>
 
-                                    <div data-tg-type="aphrodite, ooba, koboldcpp, tabby, llamacpp, dreamgen" id="dryBlock" class="wide100p">
+                                    <div data-tg-type="aphrodite, mancer, ooba, koboldcpp, tabby, llamacpp, dreamgen" id="dryBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" title="DRY penalizes tokens that would extend the end of the input into a sequence that has previously occurred in the input. Set multiplier to 0 to disable." data-i18n="[title]DRY_Repetition_Penalty_desc">
                                             <label data-i18n="DRY Repetition Penalty">DRY Repetition Penalty</label>
                                             <a href="https://github.com/oobabooga/text-generation-webui/pull/5677" target="_blank">
@@ -1493,7 +1499,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-tg-type="ooba,infermaticai,koboldcpp,llamacpp,mancer,ollama,tabby" id="mirostat_block_ooba" class="wide100p">
+                                    <div data-tg-type="ooba,infermaticai,koboldcpp,llamacpp,ollama,tabby" id="mirostat_block_ooba" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat</label>
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Mirostat_desc" title="Mirostat is a thermostat for output perplexity.&#13;Mirostat matches the output perplexity to that of the input, thus avoiding the repetition trap&#13;(where, as the autoregressive inference produces text, the perplexity of the output tends toward zero)&#13;and the confusion trap (where the perplexity diverges).&#13;For details, see the paper Mirostat: A Neural Text Decoding Algorithm that Directly Controls Perplexity by Basu et al. (2020).&#13;Mode chooses the Mirostat version. 0=disable, 1=Mirostat 1.0 (llama.cpp only), 2=Mirostat 2.0."></div>
@@ -1977,7 +1983,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,ai21,xai">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,ai21,xai,pollinations">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -1987,7 +1993,7 @@
                                             <span data-i18n="enable_functions_desc_3">Can be utilized by various extensions to provide additional functionality.</span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,openrouter,mistralai,makersuite,claude,custom,01ai,xai">
+                                    <div class="range-block" data-source="openai,openrouter,mistralai,makersuite,claude,custom,01ai,xai,pollinations">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -1999,7 +2005,7 @@
                                             <code><i class="fa-solid fa-wand-magic-sparkles"></i></code>
                                             <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
                                         </div>
-                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations">
                                             <div class="flex-container oneline-dropdown">
                                                 <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
                                                     Inline Image Quality
@@ -2057,7 +2063,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,openrouter">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,openrouter,pollinations">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
@@ -2771,6 +2777,7 @@
                                 <option value="nanogpt">NanoGPT</option>
                                 <option value="openrouter">OpenRouter</option>
                                 <option value="perplexity">Perplexity</option>
+                                <option value="pollinations">Pollinations</option>
                                 <option value="scale">Scale</option>
                                 <option value="windowai">Window AI</option>
                                 <option value="xai">xAI (Grok)</option>
@@ -2822,6 +2829,7 @@
                                     <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" />
                                     <small class="reverse_proxy_warning">
                                         <span data-i18n="Doesn't work? Try adding">Doesn't work? Try adding</span> <code>/v1</code> <span data-i18n="at the end!">at the end!</span>
+                                        <code>/chat/completions</code> <b data-i18n="suffix will be added automatically.">suffix will be added automatically.</b>
                                     </small>
                                 </div>
                                 <div class="range-block-title justifyLeft" data-i18n="Proxy Password">
@@ -3160,6 +3168,7 @@
                                         <option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
                                         <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
                                         <option value="gemini-2.5-pro-exp-03-25">gemini-2.5-pro-exp-03-25</option>
+                                        <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
                                         <option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
                                     </optgroup>
                                     <optgroup label="Gemini 2.0">
@@ -3476,6 +3485,7 @@
                             <div>
                                 <small>
                                     <span data-i18n="Doesn't work? Try adding">Doesn't work? Try adding</span> <code>/v1</code> <span data-i18n="at the end!">at the end!</span>
+                                    <code>/chat/completions</code> <b data-i18n="suffix will be added automatically.">suffix will be added automatically.</b>
                                 </small>
                             </div>
                             <h4>
@@ -3540,6 +3550,21 @@
                                 <option value="grok-vision-beta">grok-vision-beta</option>
                                 <option value="grok-beta">grok-beta</option>
                             </select>
+                        </div>
+                        <div id="pollinations_form" data-source="pollinations">
+                            <h4 data-i18n="Pollinations Model">Pollinations Model</h4>
+                            <select id="model_pollinations_select">
+                                <!-- Populated by JavaScript -->
+                            </select>
+                            <div class="info-block hint">
+                                <a href="https://pollinations.ai/" target="_blank" rel="noopener noreferrer" data-i18n="Provided free of charge by Pollinations.AI">
+                                    Provided free of charge by Pollinations.AI
+                                </a>
+                                <br>
+                                <span data-i18n="Avoid sending sensitive information. Provider's outputs may include ads.">
+                                    Avoid sending sensitive information. Provider's outputs may include ads.
+                                </span>
+                            </div>
                         </div>
                         <div id="prompt_post_porcessing_form" data-source="custom,openrouter">
                             <h4 data-i18n="Prompt Post-Processing">Prompt Post-Processing</h4>
@@ -4490,6 +4515,17 @@
                                     <input class="neo-range-slider" type="range" id="shadow_width" name="shadow_width" min="0" max="5" step="1">
                                     <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="shadow_width" id="shadow_width_counter">
                                 </div>
+                                <div class="flex-container alignItemsBaseline">
+                                    <span data-i18n="Notification Location:">Notification Location:</span><br>
+                                    <select id="toastr_position" class="widthNatural flex1 margin0">
+                                        <option value="toast-top-left" data-i18n="Top Left">Top Left</option>
+                                        <option value="toast-top-center" data-i18n="Top Center">Top Center</option>
+                                        <option value="toast-top-right" data-i18n="Top Right">Top Right</option>
+                                        <option value="toast-bottom-left" data-i18n="Bottom Left">Bottom Left</option>
+                                        <option value="toast-bottom-center" data-i18n="Bottom Center">Bottom Center</option>
+                                        <option value="toast-bottom-right" data-i18n="Bottom Right">Bottom Right</option>
+                                    </select>
+                                </div>
                             </div>
                             <hr>
                             <div name="themeToggles">
@@ -5407,6 +5443,9 @@
                                                 <option id="import_tags" data-i18n="Import Tags">
                                                     Import Tags
                                                 </option>
+                                                <option id="set_as_assistant" data-i18n="Set / Unset as Welcome Page Assistant">
+                                                    Set / Unset as Welcome Page Assistant
+                                                </option>
                                                 <!--<option id="dupe_button">
                                                         Duplicate
                                                     </option>
@@ -6043,6 +6082,7 @@
                 <div title="Tag as folder" class="tag_as_folder fa-solid fa-folder-open right_menu_button" data-i18n="[title]Use tag as folder">
                     <span class="tag_folder_indicator"></span>
                 </div>
+                <div class="right_menu_button fa-solid fa-eye fa-fw eye-toggle" title="Hide on character card" data-i18n="[title]Hide on character card"></div>
                 <div class="tag_view_color_picker" data-value="color"></div>
                 <div class="tag_view_color_picker" data-value="color2"></div>
                 <div class="tag_view_name" contenteditable="true"></div>
@@ -6428,6 +6468,9 @@
                     <div class="wide100p character_name_block">
                         <span class="ch_name"></span>
                         <small class="ch_additional_info ch_add_placeholder">+++</small>
+                        <small class="ch_assistant" title="This character will be used as a welcome page assistant." data-i18n="[title]This character will be used as a welcome page assistant.">
+                            <i class="fa-solid fa-sm fa-user-graduate"></i>
+                        </small>
                         <small class="ch_additional_info character_version"></small>
                         <small class="ch_additional_info ch_avatar_url"></small>
                     </div>
@@ -6487,21 +6530,19 @@
                                 <label for="completion_prompt_manager_popup_entry_form_name">
                                     <span data-i18n="prompt_manager_name">Name</span>
                                 </label>
-                                <div class="text_muted" data-i18n="A name for this prompt.">A name for this prompt.</div>
                                 <input id="completion_prompt_manager_popup_entry_form_name" class="text_pole" type="text" name="name" />
+                                <div class="text_muted" data-i18n="A name for this prompt.">A name for this prompt.</div>
                             </div>
                             <div class="completion_prompt_manager_popup_entry_form_control flex1">
                                 <label for="completion_prompt_manager_popup_entry_form_role">
                                     <span data-i18n="Role">Role</span>
                                 </label>
-                                <div class="text_muted">
-                                    <span data-i18n="To whom this message will be attributed.">To whom this message will be attributed.</span>
-                                </div>
                                 <select id="completion_prompt_manager_popup_entry_form_role" class="text_pole" name="role">
                                     <option data-i18n="System" value="system">System</option>
                                     <option data-i18n="User" value="user">User</option>
                                     <option data-i18n="AI Assistant" value="assistant">AI Assistant</option>
                                 </select>
+                                <div class="text_muted" data-i18n="To whom this message will be attributed.">To whom this message will be attributed.</div>
                             </div>
                         </div>
                         <div class="flex-container gap10px">
@@ -6509,18 +6550,26 @@
                                 <label for="completion_prompt_manager_popup_entry_form_injection_position">
                                     <span data-i18n="prompt_manager_position">Position</span>
                                 </label>
-                                <div class="text_muted" data-i18n="Injection position. Relative (to other prompts in prompt manager) or In-chat @ Depth.">Injection position. Relative (to other prompts in prompt manager) or In-chat @ Depth.</div>
                                 <select id="completion_prompt_manager_popup_entry_form_injection_position" class="text_pole" name="injection_position">
                                     <option data-i18n="prompt_manager_relative" value="0">Relative</option>
                                     <option data-i18n="prompt_manager_in_chat" value="1">In-chat</option>
                                 </select>
+                                <div class="text_muted" data-i18n="Relative (to other prompts in prompt manager) or In-chat @ Depth.">Relative (to other prompts in prompt manager) or In-chat @ Depth.</div>
                             </div>
                             <div id="completion_prompt_manager_depth_block" class="completion_prompt_manager_popup_entry_form_control flex1">
                                 <label for="completion_prompt_manager_popup_entry_form_injection_depth">
                                     <span data-i18n="prompt_manager_depth">Depth</span>
                                 </label>
-                                <div class="text_muted" data-i18n="Injection depth. 0 = after the last message, 1 = before the last message, etc.">Injection depth. 0 = after the last message, 1 = before the last message, etc.</div>
                                 <input id="completion_prompt_manager_popup_entry_form_injection_depth" class="text_pole" type="number" name="injection_depth" min="0" max="9999" value="4" />
+                                <div class="text_muted" data-i18n="0 = after the last message, 1 = before the last message, etc.">0 = after the last message, 1 = before the last message, etc.</div>
+                            </div>
+                            <div id="completion_prompt_manager_order_block" class="completion_prompt_manager_popup_entry_form_control flex1">
+                                <label for="completion_prompt_manager_popup_entry_form_injection_order">
+                                    <span data-i18n="prompt_manager_order">Order</span>
+                                    <i class="fas fa-info-circle" title="Prompt injections from other sources (World Info, Author's Note, etc.) always have a default order of 100." data-i18n="[title]prompt_manager_order_note"></i>
+                                </label>
+                                <input id="completion_prompt_manager_popup_entry_form_injection_order" class="text_pole" type="number" name="injection_order" min="0" max="9999" value="100" />
+                                <div class="text_muted" data-i18n="Ordered from low/top to high/bottom, and at same order: Assistant, User, System.">Ordered from low/top to high/bottom, and at same order: Assistant, User, System.</div>
                             </div>
                         </div>
                         <div class="completion_prompt_manager_popup_entry_form_control">
@@ -6529,7 +6578,6 @@
                                     <label for="completion_prompt_manager_popup_entry_form_prompt">
                                         <span data-i18n="Prompt">Prompt</span>
                                     </label>
-                                    <div class="text_muted" data-i18n="The prompt to be sent.">The prompt to be sent.</div>
                                 </div>
                                 <div id="completion_prompt_manager_forbid_overrides_block">
                                     <label class="checkbox_label" for="completion_prompt_manager_popup_entry_form_forbid_overrides" title="This prompt cannot be overridden by character cards, even if overrides are preferred." data-i18n="[title]This prompt cannot be overridden by character cards, even if overrides are preferred.">
@@ -6538,7 +6586,12 @@
                                     </label>
                                 </div>
                             </div>
-                            <textarea id="completion_prompt_manager_popup_entry_form_prompt" class="text_pole" name="prompt">
+                            <div id="completion_prompt_manager_popup_entry_source_block">
+                                <b data-i18n="Source:">Source:</b>
+                                <span>&nbsp;</span>
+                                <span id="completion_prompt_manager_popup_entry_source"></span>
+                            </div>
+                            <textarea id="completion_prompt_manager_popup_entry_form_prompt" class="text_pole" name="prompt" placeholder="The prompt to be sent." data-i18n="[placeholder]The prompt to be sent."></textarea>
                         </textarea>
                         </div>
                         <div class="completion_prompt_manager_popup_entry_form_footer">

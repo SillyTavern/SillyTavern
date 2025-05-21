@@ -718,7 +718,6 @@ export function getTopmostModalLayer() {
  */
 export function fixToastrForDialogs() {
     // Hacky way of getting toastr to actually display on top of the popup...
-
     const dlg = Array.from(document.querySelectorAll('dialog[open]:not([closing])')).pop();
 
     let toastContainer = document.getElementById('toast-container');
@@ -726,7 +725,15 @@ export function fixToastrForDialogs() {
     if (!toastContainer) {
         toastContainer = document.createElement('div');
         toastContainer.setAttribute('id', 'toast-container');
-        if (toastr.options.positionClass) toastContainer.classList.add(toastr.options.positionClass);
+        if (power_user.toastr_position) {
+            toastr.options.positionClass = (power_user.toastr_position);
+        } else {
+            console.warn('Did not find poweruser.toastr_position; defaulting to top center');
+            power_user.toastr_position = 'toast-top-center';
+            toastr.options.positionClass = (power_user.toastr_position);
+            $(`#toastr_position option[value=${power_user.toastr_position}]`).attr('selected', true);
+        }
+        //if (toastr.options.positionClass) toastContainer.classList.add(toastr.options.positionClass);
     }
 
     // Check if toastr is already a child. If not, we need to move it inside this dialog.
@@ -745,7 +752,7 @@ export function fixToastrForDialogs() {
             toastContainer.remove();
         } else {
             document.body.appendChild(toastContainer);
-            toastContainer.classList.add('toast-top-center');
+            toastContainer.classList.add(toastr.options.positionClass);
         }
     }
 }

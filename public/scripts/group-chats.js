@@ -16,6 +16,7 @@ import {
     localizePagination,
     renderPaginationDropdown,
     paginationDropdownChangeHandler,
+    waitUntilCondition,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
 import { power_user, loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -104,7 +105,7 @@ export {
 
 let is_group_generating = false; // Group generation flag
 let is_group_automode_enabled = false;
-let hideMutedSprites = true;
+let hideMutedSprites = false;
 let groups = [];
 let selected_group = null;
 let group_generation_id = null;
@@ -219,7 +220,7 @@ export async function getGroupChat(groupId, reload = false) {
     }
 
     // Run validation before any loading
-    validateGroup(group);
+    await validateGroup(group);
     await unshallowGroupMembers(groupId);
 
     const chat_id = group.chat_id;
@@ -1526,6 +1527,7 @@ async function onHideMutedSpritesClick(value) {
         _thisGroup.hideMutedSprites = value;
         console.log(`_thisGroup.hideMutedSprites = ${_thisGroup.hideMutedSprites}`);
         await editGroup(openGroupId, false, false);
+        await eventSource.emit(event_types.GROUP_UPDATED);
     }
 }
 
@@ -1618,6 +1620,9 @@ function select_group_chats(groupId, skipAnimation) {
             resetScrollHeight(element);
         });
     }
+
+    hideMutedSprites = group?.hideMutedSprites ?? false;
+    $('#rm_group_hidemutedsprites').prop('checked', hideMutedSprites);
 
     eventSource.emit('groupSelected', { detail: { id: openGroupId, group: group } });
 }
@@ -1912,6 +1917,7 @@ export async function getGroupPastChats(groupId) {
 }
 
 export async function openGroupChat(groupId, chatId) {
+    await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
     const group = groups.find(x => x.id === groupId);
 
     if (!group || !group.chats.includes(chatId)) {

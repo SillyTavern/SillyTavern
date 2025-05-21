@@ -73,7 +73,7 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.XAI);
         }
 
-        const noKeyTypes = ['custom', 'ooba', 'koboldcpp', 'vllm', 'llamacpp'];
+        const noKeyTypes = ['custom', 'ooba', 'koboldcpp', 'vllm', 'llamacpp', 'pollinations'];
         if (!key && !request.body.reverse_proxy && !noKeyTypes.includes(request.body.api)) {
             console.warn('No key found for API', request.body.api);
             return response.sendStatus(400);
@@ -145,6 +145,10 @@ router.post('/caption-image', async (request, response) => {
 
         if (request.body.api === 'xai') {
             apiUrl = 'https://api.x.ai/v1/chat/completions';
+        }
+
+        if (request.body.api === 'pollinations') {
+            apiUrl = 'https://text.pollinations.ai/openai/chat/completions';
         }
 
         if (request.body.api === 'ooba') {

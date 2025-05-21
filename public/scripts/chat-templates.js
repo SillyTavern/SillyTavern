@@ -24,17 +24,21 @@ const hash_derivations = {
         // Mistral-Large-Instruct-2407
         'Mistral V2 & V3'
     ,
-    '3c4ad5fa60dd8c7ccdf82fa4225864c903e107728fcaf859fa6052cb80c92ee9':
-        // Mistral-Large-Instruct-2411
-        'Mistral V7' // https://huggingface.co/mistralai/Mistral-Large-Instruct-2411
+    '26a59556925c987317ce5291811ba3b7f32ec4c647c400c6cc7e3a9993007ba7':
+        // Mistral-7B-Instruct-v0.3
+        'Mistral V2 & V3'
     ,
     'e4676cb56dffea7782fd3e2b577cfaf1e123537e6ef49b3ec7caa6c095c62272':
         // Mistral-Nemo-Instruct-2407
         'Mistral V3-Tekken'
     ,
-    '26a59556925c987317ce5291811ba3b7f32ec4c647c400c6cc7e3a9993007ba7':
-        // Mistral-7B-Instruct-v0.3
-        'Mistral V2 & V3'
+    '3c4ad5fa60dd8c7ccdf82fa4225864c903e107728fcaf859fa6052cb80c92ee9':
+        // Mistral-Large-Instruct-2411
+        'Mistral V7'
+    ,
+    '3934d199bfe5b6fab5cba1b5f8ee475e8d5738ac315f21cb09545b4e665cc005':
+        // Mistral Small 24B
+        'Mistral V7'
     ,
 
     // Gemma

@@ -498,3 +498,15 @@ label[for="trim_spaces"]:not(:has(input:checked)) small {
 #banned_tokens_block_ooba:not(:has(#send_banned_tokens_textgenerationwebui:checked)) #banned_tokens_controls_ooba {
     filter: brightness(0.5);
 }
+
+#bind_preset_to_connection:checked ~ .toggleOff {
+    display: none;
+}
+
+#bind_preset_to_connection:not(:checked) ~ .toggleOn {
+    display: none;
+}
+
+label[for="bind_preset_to_connection"]:has(input:checked) {
+    color: var(--active);
+}
