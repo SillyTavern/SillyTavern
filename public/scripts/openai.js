@@ -305,7 +305,6 @@ export const settingsToUpdate = {
     assistant_impersonation: ['#claude_assistant_impersonation', 'assistant_impersonation', false, false],
     claude_use_sysprompt: ['#claude_use_sysprompt', 'claude_use_sysprompt', true, false],
     use_makersuite_sysprompt: ['#use_makersuite_sysprompt', 'use_makersuite_sysprompt', true, false],
-    use_vertexai_sysprompt: ['#use_vertexai_sysprompt', 'use_vertexai_sysprompt', true, false],
     use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true, true],
     squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true, false],
     image_inlining: ['#openai_image_inlining', 'image_inlining', true, false],
@@ -387,7 +386,6 @@ const default_settings = {
     assistant_impersonation: '',
     claude_use_sysprompt: false,
     use_makersuite_sysprompt: true,
-    use_vertexai_sysprompt: true,
     use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
@@ -472,7 +470,6 @@ const oai_settings = {
     assistant_impersonation: '',
     claude_use_sysprompt: false,
     use_makersuite_sysprompt: true,
-    use_vertexai_sysprompt: true,
     use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
@@ -2185,18 +2182,11 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['api_url_scale'] = oai_settings.api_url_scale;
     }
 
-    if (isGoogle) {
+    if (isGoogle || isVertexAI) {
         const stopStringsLimit = 5;
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['stop'] = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
         generate_data['use_makersuite_sysprompt'] = oai_settings.use_makersuite_sysprompt;
-    }
-
-    if (isVertexAI) {
-        const stopStringsLimit = 5;
-        generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['stop'] = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
-        generate_data['use_vertexai_sysprompt'] = oai_settings.use_vertexai_sysprompt;
     }
 
     if (isMistral) {
@@ -3430,7 +3420,6 @@ function loadOpenAISettings(data, settings) {
     if (settings.openai_model !== undefined) oai_settings.openai_model = settings.openai_model;
     if (settings.claude_use_sysprompt !== undefined) oai_settings.claude_use_sysprompt = !!settings.claude_use_sysprompt;
     if (settings.use_makersuite_sysprompt !== undefined) oai_settings.use_makersuite_sysprompt = !!settings.use_makersuite_sysprompt;
-    if (settings.use_vertexai_sysprompt !== undefined) oai_settings.use_vertexai_sysprompt = !!settings.use_vertexai_sysprompt;
     if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#api_url_scale').val(oai_settings.api_url_scale);
@@ -3486,7 +3475,6 @@ function loadOpenAISettings(data, settings) {
     $('#openai_external_category').toggle(oai_settings.show_external_models);
     $('#claude_use_sysprompt').prop('checked', oai_settings.claude_use_sysprompt);
     $('#use_makersuite_sysprompt').prop('checked', oai_settings.use_makersuite_sysprompt);
-    $('#use_vertexai_sysprompt').prop('checked', oai_settings.use_vertexai_sysprompt);
     $('#scale-alt').prop('checked', oai_settings.use_alt_scale);
     $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback);
     $('#openrouter_group_models').prop('checked', oai_settings.openrouter_group_models);
@@ -3800,7 +3788,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         assistant_impersonation: settings.assistant_impersonation,
         claude_use_sysprompt: settings.claude_use_sysprompt,
         use_makersuite_sysprompt: settings.use_makersuite_sysprompt,
-        use_vertexai_sysprompt: settings.use_vertexai_sysprompt,
         use_alt_scale: settings.use_alt_scale,
         squash_system_messages: settings.squash_system_messages,
         image_inlining: settings.image_inlining,
@@ -5576,11 +5563,6 @@ export function initOpenAI() {
 
     $('#use_makersuite_sysprompt').on('change', function () {
         oai_settings.use_makersuite_sysprompt = !!$('#use_makersuite_sysprompt').prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $('#use_vertexai_sysprompt').on('change', function () {
-        oai_settings.use_vertexai_sysprompt = !!$('#use_vertexai_sysprompt').prop('checked');
         saveSettingsDebounced();
     });
 
