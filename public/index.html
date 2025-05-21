@@ -4388,18 +4388,29 @@
                             <div name="AvatarAndChatDisplay" class="flex-container flexFlowColumn">
                                 <div class="flex-container alignItemsBaseline">
                                     <span data-i18n="Avatar Style:">Avatars:</span>
-                                    <select id="avatar_style" class="widthNatural flex1 margin0">
+                                    <select id="avatar_style" class="widthNatural flex1 margin0 text_pole">
                                         <option value="0" data-i18n="Circle">Circle</option>
                                         <option value="2" data-i18n="Square">Square</option>
                                         <option value="1" data-i18n="Rectangle">Rectangle</option>
                                     </select>
                                 </div>
                                 <div class="flex-container alignItemsBaseline">
-                                    <span data-i18n="Chat Style:">Chat Style:</span><br>
-                                    <select id="chat_display" class="widthNatural flex1 margin0">
+                                    <span data-i18n="Chat Style:">Chat Style:</span>
+                                    <select id="chat_display" class="widthNatural flex1 margin0 text_pole">
                                         <option value="0" data-i18n="Flat">Flat</option>
                                         <option value="1" data-i18n="Bubbles">Bubbles</option>
                                         <option value="2" data-i18n="Document">Document</option>
+                                    </select>
+                                </div>
+                                <div class="flex-container alignItemsBaseline">
+                                    <span data-i18n="Notifications:">Notifications:</span>
+                                    <select id="toastr_position" class="widthNatural flex1 margin0 text_pole">
+                                        <option value="toast-top-left" data-i18n="Top Left">Top Left</option>
+                                        <option value="toast-top-center" data-i18n="Top Center">Top Center</option>
+                                        <option value="toast-top-right" data-i18n="Top Right">Top Right</option>
+                                        <option value="toast-bottom-left" data-i18n="Bottom Left">Bottom Left</option>
+                                        <option value="toast-bottom-center" data-i18n="Bottom Center">Bottom Center</option>
+                                        <option value="toast-bottom-right" data-i18n="Bottom Right">Bottom Right</option>
                                     </select>
                                 </div>
                             </div>
@@ -4493,17 +4504,6 @@
                                     </small>
                                     <input class="neo-range-slider" type="range" id="shadow_width" name="shadow_width" min="0" max="5" step="1">
                                     <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="shadow_width" id="shadow_width_counter">
-                                </div>
-                                <div class="flex-container alignItemsBaseline">
-                                    <span data-i18n="Notification Location:">Notification Location:</span><br>
-                                    <select id="toastr_position" class="widthNatural flex1 margin0">
-                                        <option value="toast-top-left" data-i18n="Top Left">Top Left</option>
-                                        <option value="toast-top-center" data-i18n="Top Center">Top Center</option>
-                                        <option value="toast-top-right" data-i18n="Top Right">Top Right</option>
-                                        <option value="toast-bottom-left" data-i18n="Bottom Left">Bottom Left</option>
-                                        <option value="toast-bottom-center" data-i18n="Bottom Center">Bottom Center</option>
-                                        <option value="toast-bottom-right" data-i18n="Bottom Right">Bottom Right</option>
-                                    </select>
                                 </div>
                             </div>
                             <hr>

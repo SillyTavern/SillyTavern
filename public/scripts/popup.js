@@ -1,6 +1,6 @@
 import dialogPolyfill from '../lib/dialog-polyfill.esm.js';
 import { shouldSendOnEnter } from './RossAscends-mods.js';
-import { power_user } from './power-user.js';
+import { power_user, toastPositionClasses } from './power-user.js';
 import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
 
 /** @readonly */
@@ -725,15 +725,7 @@ export function fixToastrForDialogs() {
     if (!toastContainer) {
         toastContainer = document.createElement('div');
         toastContainer.setAttribute('id', 'toast-container');
-        if (power_user.toastr_position) {
-            toastr.options.positionClass = (power_user.toastr_position);
-        } else {
-            console.warn('Did not find poweruser.toastr_position; defaulting to top center');
-            power_user.toastr_position = 'toast-top-center';
-            toastr.options.positionClass = (power_user.toastr_position);
-            $(`#toastr_position option[value=${power_user.toastr_position}]`).attr('selected', true);
-        }
-        //if (toastr.options.positionClass) toastContainer.classList.add(toastr.options.positionClass);
+        if (toastr.options.positionClass) toastContainer.classList.add(toastr.options.positionClass);
     }
 
     // Check if toastr is already a child. If not, we need to move it inside this dialog.
@@ -752,6 +744,7 @@ export function fixToastrForDialogs() {
             toastContainer.remove();
         } else {
             document.body.appendChild(toastContainer);
+            toastContainer.classList.remove(...toastPositionClasses);
             toastContainer.classList.add(toastr.options.positionClass);
         }
     }

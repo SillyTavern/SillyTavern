@@ -313,8 +313,6 @@ await new Promise((resolve) => {
     }
 });
 
-//showLoader(); <-- must wait for poweruser (called from firstinit()), so moved it in there
-
 // Configure toast library:
 toastr.options.escapeHtml = true; // Prevent raw HTML inserts
 toastr.options.timeOut = 4000; // How long the toast will display without user interaction
@@ -968,11 +966,11 @@ async function firstLoadInit() {
         const tokenData = await tokenResponse.json();
         token = tokenData.token;
     } catch {
-        hideLoader();
         toastr.error(t`Couldn't get CSRF token. Please refresh the page.`, t`Error`, { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true });
         throw new Error('Initialization failed');
     }
 
+    showLoader();
     initLibraryShims();
     addShowdownPatch(showdown);
     reloadMarkdownProcessor();
@@ -990,7 +988,6 @@ async function firstLoadInit() {
     await initPresetManager();
     await getSystemMessages();
     await getSettings();
-    showLoader();
     initKeyboard();
     initDynamicStyles();
     initTags();

@@ -167,7 +167,8 @@ body {
 }
 
 ::-webkit-scrollbar-track:hover {
-    background-color: rgba(126, 126, 126, 0.2); /* Adaptive, but won't contrast with neutral-gray. */
+    /* Adaptive, but won't contrast with neutral-gray. */
+    background-color: rgba(126, 126, 126, 0.2);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -247,6 +248,7 @@ table.responsiveTable {
 .has_hover_label .label_icon {
     transition: opacity var(--animation-duration) ease, max-width var(--animation-duration) ease;
 }
+
 .has_hover_label .label {
     transition: opacity var(--animation-duration-slow) ease, max-width var(--animation-duration-slow) ease;
     /* Prevent double gap on hidden icon */
@@ -257,6 +259,7 @@ table.responsiveTable {
 .has_hover_label .label {
     transition-delay: var(--animation-duration-slow);
 }
+
 .has_hover_label.fast .label_icon,
 .has_hover_label.fast .label {
     transition-delay: var(--animation-duration);
@@ -503,6 +506,7 @@ input[type='checkbox']:focus-visible {
 .mes_text em {
     color: var(--SmartThemeEmColor);
 }
+
 .mes_reasoning i,
 .mes_reasoning em {
     color: hsl(from var(--reasoning-em-color) h calc(s * var(--reasoning-saturation)) l);
@@ -512,6 +516,7 @@ input[type='checkbox']:focus-visible {
 .mes_text q em {
     color: inherit;
 }
+
 .mes_reasoning q i,
 .mes_reasoning q em {
     color: hsl(from var(--SmartThemeQuoteColor) h calc(s * var(--reasoning-saturation)) l);
@@ -520,6 +525,7 @@ input[type='checkbox']:focus-visible {
 .mes_text u {
     color: var(--SmartThemeUnderlineColor);
 }
+
 .mes_reasoning u {
     color: hsl(from var(--SmartThemeUnderlineColor) h calc(s * var(--reasoning-saturation)) l);
 }
@@ -527,6 +533,7 @@ input[type='checkbox']:focus-visible {
 .mes_text q {
     color: var(--SmartThemeQuoteColor);
 }
+
 .mes_reasoning q {
     color: hsl(from var(--SmartThemeQuoteColor) h calc(s * var(--reasoning-saturation)) l);
 }
@@ -3941,28 +3948,28 @@ body #toast-container>div {
     filter: unset;
     -ms-filter: unset;
     padding: 5px 5px 10px 50px;
-    font-size: calc(var(--mainFontSize) * 0.9);
-    width:300px;
+    font-size: calc(var(--mainFontSize) * 0.95);
+    width: 300px;
 }
 
-.toast-success {
+body #toast-container .toast-success {
     background-color: #5d9e5d;
 }
 
-.toast-error {
+body #toast-container .toast-error {
     background-color: #a83c36;
 }
 
-.toast-info {
+body #toast-container .toast-info {
     background-color: #4092aa;
 }
 
-.toast-warning {
+body #toast-container .toast-warning {
     background-color: #e29325;
 }
 
 button.toast-close-button {
-padding-right: 3px
+    padding-right: 3px
 }
 
 #dialogue_del_mes {
@@ -4052,6 +4059,7 @@ input[type='checkbox'].del_checkbox {
 .avatar-container:not(.locked_to_chat) .locked_to_chat_label {
     display: none;
 }
+
 .avatar-container:not(.locked_to_character) .locked_to_character_label {
     display: none;
 }
@@ -4071,7 +4079,7 @@ input[type='checkbox'].del_checkbox {
 }
 
 #lock_user_name.locked {
-    border-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 50%, var(--SmartThemeBorderColor));;
+    border-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 50%, var(--SmartThemeBorderColor));
 }
 
 #lock_persona_to_char.locked {
@@ -6087,7 +6095,7 @@ body:not(.movingUI) .drawer-content.maximized {
     gap: 5px;
 }
 
-.mes_text div[data-type="assistant_note"]:has(.assistant_note_export) > div {
+.mes_text div[data-type="assistant_note"]:has(.assistant_note_export)>div {
     flex: 1;
     text-align: left;
 }
