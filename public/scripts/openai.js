@@ -2779,7 +2779,13 @@ class Message {
      * @returns {Promise<string>} Compressed image as a Data URL.
      */
     async compressImage(image) {
-        if ([chat_completion_sources.OPENROUTER, chat_completion_sources.MAKERSUITE, chat_completion_sources.MISTRALAI].includes(oai_settings.chat_completion_source)) {
+        const compressImageSources = [
+            chat_completion_sources.OPENROUTER,
+            chat_completion_sources.MAKERSUITE,
+            chat_completion_sources.MISTRALAI,
+            chat_completion_sources.VERTEXAI,
+        ];
+        if (compressImageSources.includes(oai_settings.chat_completion_source)) {
             const sizeThreshold = 2 * 1024 * 1024;
             const dataSize = image.length * 0.75;
             const maxSide = 1024;
@@ -3441,7 +3447,7 @@ function loadOpenAISettings(data, settings) {
     $('#model_google_select').val(oai_settings.google_model);
     $(`#model_google_select option[value="${oai_settings.google_model}"`).prop('selected', true);
     $('#model_vertexai_select').val(oai_settings.vertexai_model);
-    $(`#model_vertexai_select option[value="${oai_settings.vertexai_model}"`).attr('selected', true);
+    $(`#model_vertexai_select option[value="${oai_settings.vertexai_model}"`).prop('selected', true);
     $('#model_ai21_select').val(oai_settings.ai21_model);
     $(`#model_ai21_select option[value="${oai_settings.ai21_model}"`).prop('selected', true);
     $('#model_mistralai_select').val(oai_settings.mistralai_model);
@@ -3659,7 +3665,16 @@ async function getStatusOpen() {
         chat_completion_source: oai_settings.chat_completion_source,
     };
 
-    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE, chat_completion_sources.DEEPSEEK, chat_completion_sources.XAI].includes(oai_settings.chat_completion_source)) {
+    const validateProxySources = [
+        chat_completion_sources.CLAUDE,
+        chat_completion_sources.OPENAI,
+        chat_completion_sources.MISTRALAI,
+        chat_completion_sources.MAKERSUITE,
+        chat_completion_sources.VERTEXAI,
+        chat_completion_sources.DEEPSEEK,
+        chat_completion_sources.XAI,
+    ];
+    if (oai_settings.reverse_proxy && validateProxySources.includes(oai_settings.chat_completion_source)) {
         await validateReverseProxy();
     }
 
@@ -4592,7 +4607,7 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE || oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI) {
+    if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_2mil);
         } else if (value.includes('gemini-1.5-pro')) {

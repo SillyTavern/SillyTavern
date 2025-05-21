@@ -5941,6 +5941,7 @@ function extractImageFromData(data, { mainApi = null, chatCompletionSource = nul
     switch (mainApi ?? main_api) {
         case 'openai': {
             switch (chatCompletionSource ?? oai_settings.chat_completion_source) {
+                case chat_completion_sources.VERTEXAI:
                 case chat_completion_sources.MAKERSUITE: {
                     const inlineData = data?.responseContent?.parts?.find(x => x.inlineData)?.inlineData;
                     if (inlineData) {
