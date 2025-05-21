@@ -2030,7 +2030,7 @@
                                             <span data-i18n="Allows the model to return image attachments.">
                                                 Allows the model to return image attachments.
                                             </span>
-                                            <em data-source="makersuite" data-i18n="Request inline images_desc_2">
+                                            <em data-source="makersuite,vertexai" data-i18n="Request inline images_desc_2">
                                                 Incompatible with the following features: function calling, web search, system prompt.
                                             </em>
                                         </div>
@@ -2772,7 +2772,7 @@
                                 <option value="deepseek">DeepSeek</option>
                                 <option value="groq">Groq</option>
                                 <option value="makersuite">Google AI Studio</option>
-                                <option value="vertexai">Google Vertex AI (Express mode keys only)</option>
+                                <option value="vertexai">Google Vertex AI (Express mode)</option>
                                 <option value="mistralai">MistralAI</option>
                                 <option value="nanogpt">NanoGPT</option>
                                 <option value="openrouter">OpenRouter</option>
@@ -3213,8 +3213,12 @@
                                 </select>
                             </div>
                         </form>
-                        <form id="vertexai_form" data-source="vertexai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <h4 data-i18n="Google Vertex AI API Key (Express mode keys only)">Google Vertex AI API Key (Express mode keys only)</h4>
+                        <div id="vertexai_form" data-source="vertexai">
+                            <h4>
+                                <a href="https://cloud.google.com/vertex-ai/generative-ai/docs/start/express-mode/overview" data-i18n="Google Vertex AI API Key (Express mode keys only)" target="_blank" rel="noopener noreferrer">
+                                    Google Vertex AI API Key (Express mode keys only)
+                                </a>
+                            </h4>
                             <div class="flex-container">
                                 <input id="api_key_vertexai" name="api_key_vertexai" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_vertexai"></div>
@@ -3237,7 +3241,7 @@
                                     </optgroup>
                                 </select>
                             </div>
-                        </form>
+                        </div>
                         <form id="mistralai_form" data-source="mistralai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4 data-i18n="MistralAI API Key">MistralAI API Key</h4>
                             <div class="flex-container">
