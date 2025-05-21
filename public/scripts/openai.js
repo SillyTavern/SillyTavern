@@ -2389,7 +2389,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             state.reasoning += data?.delta?.thinking || '';
         }
         return data?.delta?.text || '';
-    } else if (chat_completion_source === chat_completion_sources.MAKERSUITE || chat_completion_source === chat_completion_sources.VERTEXAI) {
+    } else if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(chat_completion_source)) {
         const inlineData = data?.candidates?.[0]?.content?.parts?.find(x => x.inlineData)?.inlineData;
         if (inlineData) {
             state.image = `data:${inlineData.mimeType};base64,${inlineData.data}`;
