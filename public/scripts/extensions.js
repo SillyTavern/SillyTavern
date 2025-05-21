@@ -380,31 +380,77 @@ async function getManifests(names) {
  */
 async function activateExtensions() {
     const extensions = Object.entries(manifests).sort((a, b) => sortManifestsByOrder(a[1], b[1]));
+    const extensionNames = extensions.map(x => x[0]);
     const promises = [];
 
     for (let entry of extensions) {
         const name = entry[0];
         const manifest = entry[1];
+        const extrasRequirements = manifest.requires;
+        const extensionDependencies = manifest.extensionDependencies;
 
         if (activeExtensions.has(name)) {
             continue;
         }
 
-        const meetsModuleRequirements = !Array.isArray(manifest.requires) || isSubsetOf(modules, manifest.requires);
+        // Module requirements: pass if 'requires' is undefined, null, or not an array; check subset if it's an array
+        let meetsModuleRequirements = true;
+        if (extrasRequirements !== undefined) {
+            if (Array.isArray(extrasRequirements)) {
+                console.debug(`Extension ${name}: requires is an array`);
+                meetsModuleRequirements = isSubsetOf(modules, extrasRequirements);
+            } else {
+                console.warn(`Extension ${name}: manifest.json 'requires' field is not an array. Loading allowed, but any intended requirements were not verified to exist.`);
+            }
+        }
+
+        // Extension dependencies: pass if 'extensionDependencies' is undefined or not an array; check subset and disabled status if it's an array
+        let meetsExtensionDeps = true;
+        let disabledDependencies = [];
+        if (extensionDependencies !== undefined) {
+            if (Array.isArray(extensionDependencies)) {
+                console.debug(`Extension ${name}: extensionDependencies is an array`);
+                // Check if all dependencies exist
+                meetsExtensionDeps = isSubsetOf(extensionNames, extensionDependencies);
+                // Check for disabled dependencies
+                if (meetsExtensionDeps) {
+                    disabledDependencies = extensionDependencies.filter(dep => extension_settings.disabledExtensions.includes(dep));
+                    if (disabledDependencies.length > 0) {
+                        meetsExtensionDeps = false; // Fail if any dependencies are disabled
+                    }
+                }
+            } else {
+                console.warn(`Extension ${name}: manifest.json 'extensionDependencies' field is not an array. Allowed, but any intended requirements were not verified to exist.`);
+            }
+        }
+
         const isDisabled = extension_settings.disabledExtensions.includes(name);
 
-        if (meetsModuleRequirements && !isDisabled) {
+        if (meetsModuleRequirements && meetsExtensionDeps && !isDisabled) {
             try {
-                console.debug('Activating extension', name);
-                const promise = addExtensionLocale(name, manifest).finally(() => Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]));
+                console.debug('Activating extension', name); // Changed from console.warn to console.debug for consistency
+                const promise = addExtensionLocale(name, manifest).finally(() =>
+                    Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]),
+                );
                 await promise
                     .then(() => activeExtensions.add(name))
                     .catch(err => console.log('Could not activate extension', name, err));
                 promises.push(promise);
-            }
-            catch (error) {
+            } catch (error) {
+                toastr.error(t`Could not activate Extension "${name}": ${error}`);
                 console.error('Could not activate extension', name);
                 console.error(error);
+            }
+        } else if (!meetsModuleRequirements && !isDisabled) {
+            console.warn(t`Extension "${name}" did not load. Missing required Extras Module: "${Array.isArray(extrasRequirements) ? extrasRequirements.join(', ') : extrasRequirements}"`);
+            toastr.error(t`Extension "${name}" did not load. Missing required Extras Module: "${Array.isArray(extrasRequirements) ? extrasRequirements.join(', ') : extrasRequirements}"`);
+        } else if (!meetsExtensionDeps && !isDisabled) {
+            if (disabledDependencies.length > 0) {
+                console.warn(t`Extension "${name}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
+                toastr.error(t`Extension "${name}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
+            } else {
+                console.warn(t`Extension "${name}" did not load. Missing required Extensions: "${Array.isArray(extensionDependencies) ? extensionDependencies.join(', ') : extensionDependencies}"`);
+                toastr.error(t`Extension "${name}" did not load. Missing required Extensions: "${Array.isArray(extensionDependencies) ? extensionDependencies.join(', ') : extensionDependencies}"`);
             }
         }
     }
