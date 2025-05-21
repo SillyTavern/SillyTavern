@@ -52,7 +52,7 @@ const API_COHERE_V2 = 'https://api.cohere.ai/v2';
 const API_PERPLEXITY = 'https://api.perplexity.ai';
 const API_GROQ = 'https://api.groq.com/openai/v1';
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
-const API_VERTEX_AI = 'https://aiplatform.googleapis.com';
+const API_VERTEX_AI = 'https://us-central1-aiplatform.googleapis.com';
 const API_01AI = 'https://api.lingyiwanwu.com/v1';
 const API_AI21 = 'https://api.ai21.com/studio/v1';
 const API_NANOGPT = 'https://nano-gpt.com/api/v1';
@@ -417,7 +417,7 @@ async function sendMakerSuiteRequest(request, response) {
             generationConfig.responseModalities = ['text', 'image'];
         }
 
-        const useSystemPrompt = !enableImageModality && !isGemma && request.body.use_makersuite_sysprompt;
+        const useSystemPrompt = !enableImageModality && !isGemma && ((request.body.use_makersuite_sysprompt && !useVertexAi) || (request.body.use_vertexai_sysprompt && useVertexAi));
 
         const tools = [];
         const prompt = convertGooglePrompt(request.body.messages, model, useSystemPrompt, getPromptNames(request));

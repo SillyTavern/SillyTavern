@@ -691,7 +691,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -730,7 +730,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="claude,openrouter,makersuite,cohere,perplexity">
+                                <div class="range-block" data-source="claude,openrouter,makersuite,vertexai,cohere,perplexity">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
@@ -743,7 +743,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai">
+                                <div class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -1969,7 +1969,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite,openrouter,claude">
+                                    <div class="range-block" data-source="makersuite,vertexai,openrouter,claude">
                                         <label for="openai_enable_web_search" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_enable_web_search" type="checkbox" />
                                             <span data-i18n="Enable web search">Enable web search</span>
@@ -1983,7 +1983,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,ai21,xai,pollinations">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -1993,7 +1993,7 @@
                                             <span data-i18n="enable_functions_desc_3">Can be utilized by various extensions to provide additional functionality.</span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,openrouter,mistralai,makersuite,claude,custom,01ai,xai,pollinations">
+                                    <div class="range-block" data-source="openai,openrouter,mistralai,makersuite,vertexai,claude,custom,01ai,xai,pollinations">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -2018,7 +2018,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite">
+                                    <div class="range-block" data-source="makersuite,vertexai">
                                         <label for="openai_request_images" class="checkbox_label widthFreeExpand">
                                             <input id="openai_request_images" type="checkbox" />
                                             <span>
@@ -2049,6 +2049,20 @@
                                             </span>
                                         </div>
                                     </div>
+                                    <div class="range-block" data-source="vertexai">
+                                        <label for="use_vertexai_sysprompt" class="checkbox_label widthFreeExpand">
+                                            <input id="use_vertexai_sysprompt" type="checkbox" />
+                                            <span>
+                                                <span data-i18n="Use system prompt">Use system prompt</span>
+                                                <i class="opacity50p fa-solid fa-circle-info" title="Gemini 1.5+, LearnLM"></i>
+                                            </span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft marginBot5">
+                                            <span data-i18n="Merges_all_system_messages_desc_1">
+                                                Merges all system messages up until the first message with a non-system role, and sends them in a</span> <code>system_instruction</code> <span data-i18n="Merges_all_system_messages_desc_2">field.
+                                            </span>
+                                        </div>
+                                    </div>
                                     <div class="range-block" data-source="deepseek,openrouter,custom,claude,xai">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
@@ -2063,12 +2077,12 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,openrouter,pollinations">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,openrouter,pollinations">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
                                                 <i data-source="openai,custom,xai,openrouter" class="opacity50p fa-solid fa-circle-info" title="OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level." data-i18n="[title]OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level."></i>
-                                                <i data-source="claude,makersuite" class="opacity50p fa-solid fa-circle-info" title="Allocates a portion of the response length for thinking (low: 10%, medium: 25%, high: 50%). Other options are model-dependent." data-i18n="[title]Allocates a portion of the response length for thinking (low: 10%, medium: 25%, high: 50%). Other options are model-dependent."></i>
+                                                <i data-source="claude,makersuite,vertexai" class="opacity50p fa-solid fa-circle-info" title="Allocates a portion of the response length for thinking (low: 10%, medium: 25%, high: 50%). Other options are model-dependent." data-i18n="[title]Allocates a portion of the response length for thinking (low: 10%, medium: 25%, high: 50%). Other options are model-dependent."></i>
                                             </label>
                                             <select id="openai_reasoning_effort">
                                                 <option data-i18n="openai_reasoning_effort_auto" value="auto">Auto</option>
@@ -2772,7 +2786,7 @@
                                 <option value="deepseek">DeepSeek</option>
                                 <option value="groq">Groq</option>
                                 <option value="makersuite">Google AI Studio</option>
-                                <option value="vertexai">Google Vertex AI</option>
+                                <option value="vertexai">Google Vertex AI (Express mode keys only)</option>
                                 <option value="mistralai">MistralAI</option>
                                 <option value="nanogpt">NanoGPT</option>
                                 <option value="openrouter">OpenRouter</option>
@@ -2847,7 +2861,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite,deepseek,xai">
+                        <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite,vertexai,deepseek,xai">
                             <div class="reverse_proxy_warning">
                                 <b>
                                     <div data-i18n="Using a proxy that you're not running yourself is a risk to your data privacy.">
@@ -3214,7 +3228,7 @@
                             </div>
                         </form>
                         <form id="vertexai_form" data-source="vertexai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <h4 data-i18n="Google Vertex AI API Key">Google Vertex AI API Key</h4>
+                            <h4 data-i18n="Google Vertex AI API Key (Express mode keys only)">Google Vertex AI API Key (Express mode keys only)</h4>
                             <div class="flex-container">
                                 <input id="api_key_vertexai" name="api_key_vertexai" class="text_pole flex1" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_vertexai"></div>
@@ -3228,47 +3242,12 @@
                                     <optgroup label="Gemini 2.5">
                                         <option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
                                         <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
-                                        <option value="gemini-2.5-pro-exp-03-25">gemini-2.5-pro-exp-03-25</option>
+                                        <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
                                         <option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
                                     </optgroup>
                                     <optgroup label="Gemini 2.0">
-                                        <option value="gemini-2.0-pro-exp-02-05">gemini-2.0-pro-exp-02-05 → 2.5-pro-exp-03-25</option>
-                                        <option value="gemini-2.0-pro-exp">gemini-2.0-pro-exp → 2.5-pro-exp-03-25</option>
-                                        <option value="gemini-exp-1206">gemini-exp-1206 → 2.5-pro-exp-03-25</option>
                                         <option value="gemini-2.0-flash-001">gemini-2.0-flash-001</option>
-                                        <option value="gemini-2.0-flash-exp-image-generation">gemini-2.0-flash-exp-image-generation</option>
-                                        <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
-                                        <option value="gemini-2.0-flash">gemini-2.0-flash</option>
-                                        <option value="gemini-2.0-flash-thinking-exp-01-21">gemini-2.0-flash-thinking-exp-01-21 → 2.5-flash-preview-04-17</option>
-                                        <option value="gemini-2.0-flash-thinking-exp-1219">gemini-2.0-flash-thinking-exp-1219 → 2.5-flash-preview-04-17</option>
-                                        <option value="gemini-2.0-flash-thinking-exp">gemini-2.0-flash-thinking-exp → 2.5-flash-preview-04-17</option>
                                         <option value="gemini-2.0-flash-lite-001">gemini-2.0-flash-lite-001</option>
-                                        <option value="gemini-2.0-flash-lite-preview-02-05">gemini-2.0-flash-lite-preview-02-05</option>
-                                        <option value="gemini-2.0-flash-lite-preview">gemini-2.0-flash-lite-preview</option>
-                                    </optgroup>
-                                    <optgroup label="Gemini 1.5">
-                                        <option value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
-                                        <option value="gemini-1.5-pro-002">gemini-1.5-pro-002</option>
-                                        <option value="gemini-1.5-pro-001">gemini-1.5-pro-001</option>
-                                        <option value="gemini-1.5-pro">gemini-1.5-pro</option>
-                                        <option value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</option>
-                                        <option value="gemini-1.5-flash-002">gemini-1.5-flash-002</option>
-                                        <option value="gemini-1.5-flash-001">gemini-1.5-flash-001</option>
-                                        <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-                                        <option value="gemini-1.5-flash-8b-001">gemini-1.5-flash-8b-001</option>
-                                        <option value="gemini-1.5-flash-8b-exp-0924">gemini-1.5-flash-8b-exp-0924</option>
-                                        <option value="gemini-1.5-flash-8b-exp-0827">gemini-1.5-flash-8b-exp-0827</option>
-                                        <option value="gemini-1.5-flash-8b">gemini-1.5-flash-8b</option>
-                                    </optgroup>
-                                    <optgroup label="Gemma">
-                                        <option value="gemma-3-27b-it">gemma-3-27b-it</option>
-                                        <option value="gemma-3-12b-it">gemma-3-12b-it</option>
-                                        <option value="gemma-3-4b-it">gemma-3-4b-it</option>
-                                        <option value="gemma-3-1b-it">gemma-3-1b-it</option>
-                                    </optgroup>
-                                    <optgroup label="LearnLM">
-                                        <option value="learnlm-2.0-flash-experimental">learnlm-2.0-flash-experimental</option>
-                                        <option value="learnlm-1.5-pro-experimental">learnlm-1.5-pro-experimental</option>
                                     </optgroup>
                                 </select>
                             </div>

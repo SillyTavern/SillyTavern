@@ -426,6 +426,7 @@ export class ChatCompletionService {
             reverse_proxy,
             proxy_password,
             use_makersuite_sysprompt: true,
+            use_vertexai_sysprompt: true,
             claude_use_sysprompt: true,
             ...props,
         };

@@ -7,7 +7,7 @@ import { readSecret, SECRET_KEYS } from './secrets.js';
 import { GEMINI_SAFETY } from '../constants.js';
 
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
-const API_VERTEX_AI = 'https://aiplatform.googleapis.com';
+const API_VERTEX_AI = 'https://us-central1-aiplatform.googleapis.com';
 
 export const router = express.Router();
 
