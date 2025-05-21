@@ -339,6 +339,7 @@ async function sendScaleRequest(request, response) {
  */
 async function sendMakerSuiteRequest(request, response) {
     const useVertexAi = request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.VERTEXAI;
+    const apiName = useVertexAi ? 'Google Vertex AI' : 'Google AI Studio';
     let apiUrl;
     let apiKey;
 
@@ -347,7 +348,7 @@ async function sendMakerSuiteRequest(request, response) {
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.VERTEXAI);
 
         if (!request.body.reverse_proxy && !apiKey) {
-            console.warn('Google Vertex AI API key is missing.');
+            console.warn(`${apiName} API key is missing.`);
             return response.status(400).send({ error: true });
         }
     } else {
@@ -355,7 +356,7 @@ async function sendMakerSuiteRequest(request, response) {
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
 
         if (!request.body.reverse_proxy && !apiKey) {
-            console.warn('Google AI Studio API key is missing.');
+            console.warn(`${apiName} API key is missing.`);
             return response.status(400).send({ error: true });
         }
     }
@@ -417,7 +418,7 @@ async function sendMakerSuiteRequest(request, response) {
             generationConfig.responseModalities = ['text', 'image'];
         }
 
-        const useSystemPrompt = !enableImageModality && !isGemma && ((request.body.use_makersuite_sysprompt && !useVertexAi) || (request.body.use_vertexai_sysprompt && useVertexAi));
+        const useSystemPrompt = !enableImageModality && !isGemma && request.body.use_makersuite_sysprompt;
 
         const tools = [];
         const prompt = convertGooglePrompt(request.body.messages, model, useSystemPrompt, getPromptNames(request));
@@ -476,7 +477,7 @@ async function sendMakerSuiteRequest(request, response) {
     }
 
     const body = getGeminiBody();
-    console.debug('Google AI Studio request:', body);
+    console.debug(`${apiName} request:`, body);
 
     try {
         const controller = new AbortController();
@@ -515,7 +516,7 @@ async function sendMakerSuiteRequest(request, response) {
             }
         } else {
             if (!generateResponse.ok) {
-                console.warn(`Google AI Studio API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+                console.warn(`${apiName} API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
                 return response.status(500).send({ error: true });
             }
 
@@ -524,7 +525,7 @@ async function sendMakerSuiteRequest(request, response) {
 
             const candidates = generateResponseJson?.candidates;
             if (!candidates || candidates.length === 0) {
-                let message = 'Google AI Studio API returned no candidate';
+                let message = `${apiName} API returned no candidate`;
                 console.warn(message, generateResponseJson);
                 if (generateResponseJson?.promptFeedback?.blockReason) {
                     message += `\nPrompt was blocked due to : ${generateResponseJson.promptFeedback.blockReason}`;
@@ -535,11 +536,11 @@ async function sendMakerSuiteRequest(request, response) {
             const responseContent = candidates[0].content ?? candidates[0].output;
             const functionCall = (candidates?.[0]?.content?.parts ?? []).some(part => part.functionCall);
             const inlineData = (candidates?.[0]?.content?.parts ?? []).some(part => part.inlineData);
-            console.debug('Google AI Studio response:', util.inspect(generateResponseJson, { depth: 5, colors: true }));
+            console.debug(`${apiName} response:`, util.inspect(generateResponseJson, { depth: 5, colors: true }));
 
             const responseText = typeof responseContent === 'string' ? responseContent : responseContent?.parts?.filter(part => !part.thought)?.map(part => part.text)?.join('\n\n');
             if (!responseText && !functionCall && !inlineData) {
-                let message = 'Google AI Studio Candidate text empty';
+                let message = `${apiName} Candidate text empty`;
                 console.warn(message, generateResponseJson);
                 return response.send({ error: { message } });
             }
@@ -549,7 +550,7 @@ async function sendMakerSuiteRequest(request, response) {
             return response.send(reply);
         }
     } catch (error) {
-        console.error('Error communicating with Google AI Studio API: ', error);
+        console.error(`Error communicating with ${apiName} API:`, error);
         if (!response.headersSent) {
             return response.status(500).send({ error: true });
         }
