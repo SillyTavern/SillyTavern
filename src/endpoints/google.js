@@ -16,6 +16,7 @@ router.post('/caption-image', async (request, response) => {
         const mimeType = request.body.image.split(';')[0].split(':')[1];
         const base64Data = request.body.image.split(',')[1];
         const useVertexAi = request.body.api === 'vertexai';
+        const apiName = useVertexAi ? 'Google Vertex AI' : 'Google AI Studio';
         let apiKey;
         let apiUrl;
         if (useVertexAi) {
@@ -47,7 +48,7 @@ router.post('/caption-image', async (request, response) => {
             safetySettings: GEMINI_SAFETY,
         };
 
-        console.debug('Multimodal captioning request', model, body);
+        console.debug(`${apiName} captioning request`, model, body);
 
         const result = await fetch(url, {
             body: JSON.stringify(body),
@@ -59,13 +60,13 @@ router.post('/caption-image', async (request, response) => {
 
         if (!result.ok) {
             const error = await result.json();
-            console.error(`Google AI Studio API returned error: ${result.status} ${result.statusText}`, error);
+            console.error(`${apiName} API returned error: ${result.status} ${result.statusText}`, error);
             return response.status(500).send({ error: true });
         }
 
         /** @type {any} */
         const data = await result.json();
-        console.info('Multimodal captioning response', data);
+        console.info(`${apiName} captioning response`, data);
 
         const candidates = data?.candidates;
         if (!candidates) {
