@@ -350,6 +350,7 @@ async function sendMakerSuiteRequest(request, response) {
     const enableWebSearch = Boolean(request.body.enable_web_search);
     const requestImages = Boolean(request.body.request_images);
     const reasoningEffort = String(request.body.reasoning_effort);
+    const includeReasoning = Boolean(request.body.include_reasoning);
     const isGemma = model.includes('gemma');
     const isLearnLM = model.includes('learnlm');
 
@@ -379,10 +380,8 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-1.5-flash-8b-exp-0924',
         ];
 
-        const thinkingBudgetModels = [
-            'gemini-2.5-flash-preview-04-17',
-            'gemini-2.5-flash-preview-05-20',
-        ];
+        const isThinkingConfigModel = m => /^gemini-2.5-(flash|pro)/.test(m);
+        const isThinkingBudgetModel = m => /^gemini-2.5-flash/.test(m);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
@@ -435,12 +434,17 @@ async function sendMakerSuiteRequest(request, response) {
             tools.push({ function_declarations: functionDeclarations });
         }
 
-        if (thinkingBudgetModels.includes(model)) {
-            const thinkingBudget = calculateGoogleBudgetTokens(generationConfig.maxOutputTokens, reasoningEffort);
+        if (isThinkingConfigModel(model)) {
+            const thinkingConfig = { includeThoughts: includeReasoning };
 
-            if (Number.isInteger(thinkingBudget)) {
-                generationConfig.thinkingConfig = { thinkingBudget: thinkingBudget };
+            if (isThinkingBudgetModel(model)) {
+                const thinkingBudget = calculateGoogleBudgetTokens(generationConfig.maxOutputTokens, reasoningEffort);
+                if (Number.isInteger(thinkingBudget)) {
+                    thinkingConfig.thinkingBudget = thinkingBudget;
+                }
             }
+
+            generationConfig.thinkingConfig = thinkingConfig;
         }
 
         let body = {

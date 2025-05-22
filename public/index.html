@@ -10,6 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="darkreader-lock">
     <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#333">
     <style>
         /* Put critical CSS here. The rest should go in stylesheets. */
         body {
@@ -1998,7 +1999,7 @@
                                             <span data-i18n="Send inline images">Send inline images</span>
                                         </label>
                                         <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                            <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it (e.g. GPT-4V, Claude 3 or Llava 13B). Use the</span>
+                                            <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it. Use the</span>
                                             <code><i class="fa-solid fa-paperclip"></i></code>
                                             <span data-i18n="image_inlining_hint_2">action on any message or the</span>
                                             <code><i class="fa-solid fa-wand-magic-sparkles"></i></code>
@@ -2048,13 +2049,10 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="deepseek,openrouter,custom,claude,xai">
+                                    <div class="range-block" data-source="deepseek,openrouter,custom,claude,xai,makersuite">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
-                                            <span>
-                                                <span data-i18n="Request model reasoning">Request model reasoning</span>
-                                                <i class="opacity50p fa-solid fa-circle-info" title="DeepSeek Reasoner"></i>
-                                            </span>
+                                            <span data-i18n="Request model reasoning">Request model reasoning</span>
                                         </label>
                                         <div class="toggle-description justifyLeft marginBot5">
                                             <span data-i18n="Allows the model to return its thinking process.">
@@ -4347,18 +4345,30 @@
                             <div name="AvatarAndChatDisplay" class="flex-container flexFlowColumn">
                                 <div class="flex-container alignItemsBaseline">
                                     <span data-i18n="Avatar Style:">Avatars:</span>
-                                    <select id="avatar_style" class="widthNatural flex1 margin0">
+                                    <select id="avatar_style" class="widthNatural flex1 margin0 text_pole">
                                         <option value="0" data-i18n="Circle">Circle</option>
                                         <option value="2" data-i18n="Square">Square</option>
+                                        <option value="3" data-i18n="Rounded">Rounded</option>
                                         <option value="1" data-i18n="Rectangle">Rectangle</option>
                                     </select>
                                 </div>
                                 <div class="flex-container alignItemsBaseline">
-                                    <span data-i18n="Chat Style:">Chat Style:</span><br>
-                                    <select id="chat_display" class="widthNatural flex1 margin0">
+                                    <span data-i18n="Chat Style:">Chat Style:</span>
+                                    <select id="chat_display" class="widthNatural flex1 margin0 text_pole">
                                         <option value="0" data-i18n="Flat">Flat</option>
                                         <option value="1" data-i18n="Bubbles">Bubbles</option>
                                         <option value="2" data-i18n="Document">Document</option>
+                                    </select>
+                                </div>
+                                <div class="flex-container alignItemsBaseline">
+                                    <span data-i18n="Notifications:">Notifications:</span>
+                                    <select id="toastr_position" class="widthNatural flex1 margin0 text_pole">
+                                        <option value="toast-top-left" data-i18n="Top Left">Top Left</option>
+                                        <option value="toast-top-center" data-i18n="Top Center">Top Center</option>
+                                        <option value="toast-top-right" data-i18n="Top Right">Top Right</option>
+                                        <option value="toast-bottom-left" data-i18n="Bottom Left">Bottom Left</option>
+                                        <option value="toast-bottom-center" data-i18n="Bottom Center">Bottom Center</option>
+                                        <option value="toast-bottom-right" data-i18n="Bottom Right">Bottom Right</option>
                                     </select>
                                 </div>
                             </div>

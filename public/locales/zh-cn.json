@@ -259,7 +259,7 @@
     "enable_functions_desc_2": "功能工具",
     "enable_functions_desc_3": "可以被各种扩展利用来提供附加功能。",
     "Send inline images": "发送图片",
-    "image_inlining_hint_1": "如果模型支持，就可以在提示词中发送图片（例如 GPT-4V、Claude 3 或 Llava 13B）。\n发送消息时，点击",
+    "image_inlining_hint_1": "如果模型支持，就可以在提示词中发送图片。\n发送消息时，点击",
     "image_inlining_hint_2": "在这里（",
     "image_inlining_hint_3": "）将图片添加到消息中。",
     "Inline Image Quality": "图片画质",
