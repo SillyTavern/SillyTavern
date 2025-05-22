@@ -22,6 +22,7 @@
                         <option value="cohere">Cohere</option>
                         <option value="custom" data-i18n="Custom (OpenAI-compatible)">Custom (OpenAI-compatible)</option>
                         <option value="google">Google AI Studio</option>
+                        <option value="vertexai">Google Vertex AI</option>
                         <option value="groq">Groq</option>
                         <option value="koboldcpp">KoboldCpp</option>
                         <option value="llamacpp">llama.cpp</option>
@@ -111,6 +112,12 @@
                         <option data-type="google" value="gemini-1.5-flash-8b-exp-0827">gemini-1.5-flash-8b-exp-0827</option>
                         <option data-type="google" value="learnlm-2.0-flash-experimental">learnlm-2.0-flash-experimental</option>
                         <option data-type="google" value="learnlm-1.5-pro-experimental">learnlm-1.5-pro-experimental</option>
+                        <option data-type="vertexai" value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
+                        <option data-type="vertexai" value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
+                        <option data-type="vertexai" value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
+                        <option data-type="vertexai" value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
+                        <option data-type="vertexai" value="gemini-2.0-flash-001">gemini-2.0-flash-001</option>
+                        <option data-type="vertexai" value="gemini-2.0-flash-lite-001">gemini-2.0-flash-lite-001</option>
                         <option data-type="groq" value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview</option>
                         <option data-type="groq" value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview</option>
                         <option data-type="groq" value="llava-v1.5-7b-4096-preview">llava-v1.5-7b-4096-preview</option>
@@ -170,7 +177,7 @@
                 <div data-type="ollama">
                     The model must be downloaded first! Do it with the <code>ollama pull</code> command or <a href="#" id="caption_ollama_pull">click here</a>.
                 </div>
-                <label data-type="openai,anthropic,google,mistral" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
+                <label data-type="openai,anthropic,google,vertexai,mistral" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
                     <input id="caption_allow_reverse_proxy" type="checkbox" class="checkbox">
                     <span data-i18n="Allow reverse proxy">Allow reverse proxy</span>
                 </label>

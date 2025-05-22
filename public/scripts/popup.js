@@ -1,6 +1,6 @@
 import dialogPolyfill from '../lib/dialog-polyfill.esm.js';
 import { shouldSendOnEnter } from './RossAscends-mods.js';
-import { power_user } from './power-user.js';
+import { power_user, toastPositionClasses } from './power-user.js';
 import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
 
 /** @readonly */
@@ -718,7 +718,6 @@ export function getTopmostModalLayer() {
  */
 export function fixToastrForDialogs() {
     // Hacky way of getting toastr to actually display on top of the popup...
-
     const dlg = Array.from(document.querySelectorAll('dialog[open]:not([closing])')).pop();
 
     let toastContainer = document.getElementById('toast-container');
@@ -745,7 +744,8 @@ export function fixToastrForDialogs() {
             toastContainer.remove();
         } else {
             document.body.appendChild(toastContainer);
-            toastContainer.classList.add('toast-top-center');
+            toastContainer.classList.remove(...toastPositionClasses);
+            toastContainer.classList.add(toastr.options.positionClass);
         }
     }
 }

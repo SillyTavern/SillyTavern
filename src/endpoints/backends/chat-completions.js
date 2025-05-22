@@ -52,6 +52,7 @@ const API_COHERE_V2 = 'https://api.cohere.ai/v2';
 const API_PERPLEXITY = 'https://api.perplexity.ai';
 const API_GROQ = 'https://api.groq.com/openai/v1';
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
+const API_VERTEX_AI = 'https://us-central1-aiplatform.googleapis.com';
 const API_01AI = 'https://api.lingyiwanwu.com/v1';
 const API_AI21 = 'https://api.ai21.com/studio/v1';
 const API_NANOGPT = 'https://nano-gpt.com/api/v1';
@@ -339,12 +340,27 @@ async function sendScaleRequest(request, response) {
  * @param {express.Response} response Express response
  */
 async function sendMakerSuiteRequest(request, response) {
-    const apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
-    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
+    const useVertexAi = request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.VERTEXAI;
+    const apiName = useVertexAi ? 'Google Vertex AI' : 'Google AI Studio';
+    let apiUrl;
+    let apiKey;
 
-    if (!request.body.reverse_proxy && !apiKey) {
-        console.warn('Google AI Studio API key is missing.');
-        return response.status(400).send({ error: true });
+    if (useVertexAi) {
+        apiUrl = new URL(request.body.reverse_proxy || API_VERTEX_AI);
+        apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.VERTEXAI);
+
+        if (!request.body.reverse_proxy && !apiKey) {
+            console.warn(`${apiName} API key is missing.`);
+            return response.status(400).send({ error: true });
+        }
+    } else {
+        apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
+        apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
+
+        if (!request.body.reverse_proxy && !apiKey) {
+            console.warn(`${apiName} API key is missing.`);
+            return response.status(400).send({ error: true });
+        }
     }
 
     const model = String(request.body.model);
@@ -352,6 +368,7 @@ async function sendMakerSuiteRequest(request, response) {
     const enableWebSearch = Boolean(request.body.enable_web_search);
     const requestImages = Boolean(request.body.request_images);
     const reasoningEffort = String(request.body.reasoning_effort);
+    const includeReasoning = Boolean(request.body.include_reasoning);
     const isGemma = model.includes('gemma');
     const isLearnLM = model.includes('learnlm');
 
@@ -381,10 +398,8 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-1.5-flash-8b-exp-0924',
         ];
 
-        const thinkingBudgetModels = [
-            'gemini-2.5-flash-preview-04-17',
-            'gemini-2.5-flash-preview-05-20',
-        ];
+        const isThinkingConfigModel = m => /^gemini-2.5-(flash|pro)/.test(m);
+        const isThinkingBudgetModel = m => /^gemini-2.5-flash/.test(m);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
@@ -437,12 +452,17 @@ async function sendMakerSuiteRequest(request, response) {
             tools.push({ function_declarations: functionDeclarations });
         }
 
-        if (thinkingBudgetModels.includes(model)) {
-            const thinkingBudget = calculateGoogleBudgetTokens(generationConfig.maxOutputTokens, reasoningEffort);
+        if (isThinkingConfigModel(model)) {
+            const thinkingConfig = { includeThoughts: includeReasoning };
 
-            if (Number.isInteger(thinkingBudget)) {
-                generationConfig.thinkingConfig = { thinkingBudget: thinkingBudget };
+            if (isThinkingBudgetModel(model)) {
+                const thinkingBudget = calculateGoogleBudgetTokens(generationConfig.maxOutputTokens, reasoningEffort);
+                if (Number.isInteger(thinkingBudget)) {
+                    thinkingConfig.thinkingBudget = thinkingBudget;
+                }
             }
+
+            generationConfig.thinkingConfig = thinkingConfig;
         }
 
         let body = {
@@ -463,7 +483,7 @@ async function sendMakerSuiteRequest(request, response) {
     }
 
     const body = getGeminiBody();
-    console.debug('Google AI Studio request:', body);
+    console.debug(`${apiName} request:`, body);
 
     try {
         const controller = new AbortController();
@@ -475,7 +495,13 @@ async function sendMakerSuiteRequest(request, response) {
         const apiVersion = getConfigValue('gemini.apiVersion', 'v1beta');
         const responseType = (stream ? 'streamGenerateContent' : 'generateContent');
 
-        const generateResponse = await fetch(`${apiUrl.toString().replace(/\/$/, '')}/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`, {
+        let url;
+        if (useVertexAi) {
+            url = `${apiUrl.toString().replace(/\/$/, '')}/v1/publishers/google/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`;
+        } else {
+            url = `${apiUrl.toString().replace(/\/$/, '')}/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`;
+        }
+        const generateResponse = await fetch(url, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {
@@ -496,7 +522,7 @@ async function sendMakerSuiteRequest(request, response) {
             }
         } else {
             if (!generateResponse.ok) {
-                console.warn(`Google AI Studio API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+                console.warn(`${apiName} API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
                 return response.status(500).send({ error: true });
             }
 
@@ -505,7 +531,7 @@ async function sendMakerSuiteRequest(request, response) {
 
             const candidates = generateResponseJson?.candidates;
             if (!candidates || candidates.length === 0) {
-                let message = 'Google AI Studio API returned no candidate';
+                let message = `${apiName} API returned no candidate`;
                 console.warn(message, generateResponseJson);
                 if (generateResponseJson?.promptFeedback?.blockReason) {
                     message += `\nPrompt was blocked due to : ${generateResponseJson.promptFeedback.blockReason}`;
@@ -516,11 +542,11 @@ async function sendMakerSuiteRequest(request, response) {
             const responseContent = candidates[0].content ?? candidates[0].output;
             const functionCall = (candidates?.[0]?.content?.parts ?? []).some(part => part.functionCall);
             const inlineData = (candidates?.[0]?.content?.parts ?? []).some(part => part.inlineData);
-            console.debug('Google AI Studio response:', util.inspect(generateResponseJson, { depth: 5, colors: true }));
+            console.debug(`${apiName} response:`, util.inspect(generateResponseJson, { depth: 5, colors: true }));
 
             const responseText = typeof responseContent === 'string' ? responseContent : responseContent?.parts?.filter(part => !part.thought)?.map(part => part.text)?.join('\n\n');
             if (!responseText && !functionCall && !inlineData) {
-                let message = 'Google AI Studio Candidate text empty';
+                let message = `${apiName} Candidate text empty`;
                 console.warn(message, generateResponseJson);
                 return response.send({ error: { message } });
             }
@@ -530,7 +556,7 @@ async function sendMakerSuiteRequest(request, response) {
             return response.send(reply);
         }
     } catch (error) {
-        console.error('Error communicating with Google AI Studio API: ', error);
+        console.error(`Error communicating with ${apiName} API:`, error);
         if (!response.headersSent) {
             return response.status(500).send({ error: true });
         }
@@ -1196,6 +1222,7 @@ router.post('/generate', function (request, response) {
         case CHAT_COMPLETION_SOURCES.SCALE: return sendScaleRequest(request, response);
         case CHAT_COMPLETION_SOURCES.AI21: return sendAI21Request(request, response);
         case CHAT_COMPLETION_SOURCES.MAKERSUITE: return sendMakerSuiteRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.VERTEXAI: return sendMakerSuiteRequest(request, response);
         case CHAT_COMPLETION_SOURCES.MISTRALAI: return sendMistralAIRequest(request, response);
         case CHAT_COMPLETION_SOURCES.COHERE: return sendCohereRequest(request, response);
         case CHAT_COMPLETION_SOURCES.DEEPSEEK: return sendDeepSeekRequest(request, response);
