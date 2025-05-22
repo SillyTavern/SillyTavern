@@ -28,6 +28,7 @@ import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.
 import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { GoogleTranslateTtsProvider } from './google-translate.js';
 import { KokoroTtsProvider } from './kokoro.js';
+import { DiaTtsProvider } from './dia.js';
 
 const UPDATE_INTERVAL = 1000;
 const wrapper = new ModuleWorkerWrapper(moduleWorker);
@@ -105,6 +106,7 @@ const ttsProviders = {
     System: SystemTtsProvider,
     VITS: VITSTtsProvider,
     XTTSv2: XTTSTtsProvider,
+    Dia: DiaTtsProvider,
 };
 let ttsProvider;
 let ttsProviderName;
@@ -485,7 +487,7 @@ async function processTtsQueue() {
     }
 
     if (extension_settings.tts.narrate_quoted_only) {
-        const special_quotes = /[“”«»「」『』＂＂]/g; // Extend this regex to include other special quotes
+        const special_quotes = /[""«»「」『』＂＂]/g; // Extend this regex to include other special quotes
         text = text.replace(special_quotes, '"');
         const matches = text.match(/".*?"/g); // Matches text inside double quotes, non-greedily
         const partJoiner = (ttsProvider?.separator || ' ... ');
@@ -1002,6 +1004,10 @@ function parseVoiceMap(voiceMapString) {
  * Apply voiceMap based on current voiceMapEntries
  */
 function updateVoiceMap() {
+    // Defensive: ensure provider settings object exists
+    if (!extension_settings.tts[ttsProviderName]) {
+        extension_settings.tts[ttsProviderName] = {};
+    }
     const tempVoiceMap = {};
     for (const voice of voiceMapEntries) {
         if (voice.voiceId === null) {
@@ -1103,6 +1109,11 @@ async function initVoiceMapInternal(unrestricted) {
     const enabled = $('#tts_enabled').is(':checked');
     if (!enabled) {
         return;
+    }
+
+    // Defensive: ensure provider settings object exists
+    if (!extension_settings.tts[ttsProviderName]) {
+        extension_settings.tts[ttsProviderName] = {};
     }
 
     // Keep errors inside extension UI rather than toastr. Toastr errors for TTS are annoying.

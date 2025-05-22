@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "Bash(iconv:*)",
+      "Bash(node:*)"
+    ],
+    "deny": []
+  }
+}
