@@ -54,7 +54,14 @@ export async function openWelcomeScreen() {
         return;
     }
 
-    await sendWelcomePanel();
+    const recentChats = await getRecentChats();
+    const chatAfterFetch = getCurrentChatId();
+    if (chatAfterFetch !== currentChatId) {
+        console.debug('Chat changed while fetching recent chats.');
+        return;
+    }
+
+    await sendWelcomePanel(recentChats);
     sendAssistantMessage();
     sendWelcomePrompt();
 }
@@ -86,7 +93,11 @@ function sendWelcomePrompt() {
     addOneMessage(message, { scroll: false });
 }
 
-async function sendWelcomePanel() {
+/**
+ * Sends the welcome panel to the chat.
+ * @param {RecentChat[]} chats List of recent chats
+ */
+async function sendWelcomePanel(chats) {
     try {
         const chatElement = document.getElementById('chat');
         const sendTextArea = document.getElementById('send_textarea');
@@ -94,7 +105,6 @@ async function sendWelcomePanel() {
             console.error('Chat element not found');
             return;
         }
-        const chats = await getRecentChats();
         const templateData = {
             chats,
             empty: !chats.length,

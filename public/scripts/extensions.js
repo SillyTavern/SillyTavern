@@ -58,14 +58,20 @@ let requiresReload = false;
 let stateChanged = false;
 let saveMetadataTimeout = null;
 
+export function cancelDebouncedMetadataSave() {
+    if (saveMetadataTimeout) {
+        console.debug('Debounced metadata save cancelled');
+        clearTimeout(saveMetadataTimeout);
+        saveMetadataTimeout = null;
+    }
+}
+
 export function saveMetadataDebounced() {
     const context = getContext();
     const groupId = context.groupId;
     const characterId = context.characterId;
 
-    if (saveMetadataTimeout) {
-        clearTimeout(saveMetadataTimeout);
-    }
+    cancelDebouncedMetadataSave();
 
     saveMetadataTimeout = setTimeout(async () => {
         const newContext = getContext();

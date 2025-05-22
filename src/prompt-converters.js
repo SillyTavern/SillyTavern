@@ -695,11 +695,13 @@ export function convertXAIMessages(messages, names) {
  * Merge messages with the same consecutive role, removing names if they exist.
  * @param {any[]} messages Messages to merge
  * @param {PromptNames} names Prompt names
- * @param {boolean} strict Enable strict mode: only allow one system message at the start, force user first message
- * @param {boolean} placeholders Add user placeholders to the messages in strict mode
+ * @param {object} options Options for merging
+ * @param {boolean} [options.strict] Enable strict mode: only allow one system message at the start, force user first message
+ * @param {boolean} [options.placeholders] Add user placeholders to the messages in strict mode
+ * @param {boolean} [options.single] Force every role to be user, merging all messages into one
  * @returns {any[]} Merged messages
  */
-export function mergeMessages(messages, names, strict, placeholders) {
+export function mergeMessages(messages, names, { strict = false, placeholders = false, single = false } = {}) {
     let mergedMessages = [];
 
     /** @type {Map<string,object>} */
@@ -742,6 +744,20 @@ export function mergeMessages(messages, names, strict, placeholders) {
             }
         }
         if (message.role === 'tool') {
+            message.role = 'user';
+        }
+        if (single) {
+            if (message.role === 'assistant') {
+                if (names.charName && !message.content.startsWith(`${names.charName}: `) && !names.startsWithGroupName(message.content)) {
+                    message.content = `${names.charName}: ${message.content}`;
+                }
+            }
+            if (message.role === 'user') {
+                if (names.userName && !message.content.startsWith(`${names.userName}: `)) {
+                    message.content = `${names.userName}: ${message.content}`;
+                }
+            }
+
             message.role = 'user';
         }
         delete message.name;
@@ -807,7 +823,7 @@ export function mergeMessages(messages, names, strict, placeholders) {
                 mergedMessages.unshift({ role: 'user', content: PROMPT_PLACEHOLDER });
             }
         }
-        return mergeMessages(mergedMessages, names, false, placeholders);
+        return mergeMessages(mergedMessages, names, { strict: false, placeholders, single: false });
     }
 
     return mergedMessages;

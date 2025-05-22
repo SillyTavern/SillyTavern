@@ -207,35 +207,58 @@ export function formatBytes(bytes) {
  * @returns {Promise<Buffer|null>} Buffer containing the extracted file. Null if the file was not found.
  */
 export async function extractFileFromZipBuffer(archiveBuffer, fileExtension) {
-    return await new Promise((resolve, reject) => yauzl.fromBuffer(Buffer.from(archiveBuffer), { lazyEntries: true }, (err, zipfile) => {
-        if (err) reject(err);
+    return await new Promise((resolve) => {
+        try {
+            yauzl.fromBuffer(Buffer.from(archiveBuffer), { lazyEntries: true }, (err, zipfile) => {
+                if (err) {
+                    console.warn(`Error opening ZIP file: ${err.message}`);
+                    return resolve(null);
+                }
 
-        zipfile.readEntry();
-        zipfile.on('entry', (entry) => {
-            if (entry.fileName.endsWith(fileExtension) && !entry.fileName.startsWith('__MACOSX')) {
-                console.info(`Extracting ${entry.fileName}`);
-                zipfile.openReadStream(entry, (err, readStream) => {
-                    if (err) {
-                        reject(err);
+                zipfile.readEntry();
+
+                zipfile.on('entry', (entry) => {
+                    if (entry.fileName.endsWith(fileExtension) && !entry.fileName.startsWith('__MACOSX')) {
+                        console.info(`Extracting ${entry.fileName}`);
+                        zipfile.openReadStream(entry, (err, readStream) => {
+                            if (err) {
+                                console.warn(`Error opening read stream: ${err.message}`);
+                                return zipfile.readEntry();
+                            } else {
+                                const chunks = [];
+                                readStream.on('data', (chunk) => {
+                                    chunks.push(chunk);
+                                });
+
+                                readStream.on('end', () => {
+                                    const buffer = Buffer.concat(chunks);
+                                    resolve(buffer);
+                                    zipfile.readEntry(); // Continue to the next entry
+                                });
+
+                                readStream.on('error', (err) => {
+                                    console.warn(`Error reading stream: ${err.message}`);
+                                    zipfile.readEntry();
+                                });
+                            }
+                        });
                     } else {
-                        const chunks = [];
-                        readStream.on('data', (chunk) => {
-                            chunks.push(chunk);
-                        });
-
-                        readStream.on('end', () => {
-                            const buffer = Buffer.concat(chunks);
-                            resolve(buffer);
-                            zipfile.readEntry(); // Continue to the next entry
-                        });
+                        zipfile.readEntry();
                     }
                 });
-            } else {
-                zipfile.readEntry();
-            }
-        });
-        zipfile.on('end', () => resolve(null));
-    }));
+
+                zipfile.on('error', (err) => {
+                    console.warn('ZIP processing error', err);
+                    resolve(null);
+                });
+
+                zipfile.on('end', () => resolve(null));
+            });
+        } catch (error) {
+            console.warn('Failed to process ZIP buffer', error);
+            resolve(null);
+        }
+    });
 }
 
 /**

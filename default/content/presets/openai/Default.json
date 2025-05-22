@@ -15,6 +15,7 @@
     "custom_exclude_body": "",
     "custom_include_headers": "",
     "google_model": "gemini-pro",
+    "vertexai_model": "gemini-2.0-flash-001",
     "temperature": 1,
     "frequency_penalty": 0,
     "presence_penalty": 0,

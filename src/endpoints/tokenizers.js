@@ -463,7 +463,7 @@ export function getTokenizerModel(requestModel) {
         return 'deepseek';
     }
 
-    if (requestModel.includes('gemma') || requestModel.includes('gemini')) {
+    if (requestModel.includes('gemma') || requestModel.includes('gemini') || requestModel.includes('learnlm')) {
         return 'gemma';
     }
 

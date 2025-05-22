@@ -372,9 +372,23 @@ export async function getChatInfo(pathToFile, additionalData = {}, isGroup = fal
         const stats = await fs.promises.stat(pathToFile);
         const fileSizeInKB = `${(stats.size / 1024).toFixed(2)}kb`;
 
-        if (stats.size === 0) {
+        const chatData = {
+            file_name: path.parse(pathToFile).base,
+            file_size: fileSizeInKB,
+            chat_items: 0,
+            mes: '[The chat is empty]',
+            last_mes: stats.mtimeMs,
+            ...additionalData,
+        };
+
+        if (stats.size === 0 && !isGroup) {
             console.warn(`Found an empty chat file: ${pathToFile}`);
             res({});
+            return;
+        }
+
+        if (stats.size === 0 && isGroup) {
+            res(chatData);
             return;
         }
 
@@ -395,14 +409,9 @@ export async function getChatInfo(pathToFile, additionalData = {}, isGroup = fal
             if (lastLine) {
                 const jsonData = tryParse(lastLine);
                 if (jsonData && (jsonData.name || jsonData.character_name)) {
-                    const chatData = {};
-
-                    chatData['file_name'] = path.parse(pathToFile).base;
-                    chatData['file_size'] = fileSizeInKB;
-                    chatData['chat_items'] = isGroup ? itemCounter : (itemCounter - 1);
-                    chatData['mes'] = jsonData['mes'] || '[The chat is empty]';
-                    chatData['last_mes'] = jsonData['send_date'] || stats.mtimeMs;
-                    Object.assign(chatData, additionalData);
+                    chatData.chat_items = isGroup ? itemCounter : (itemCounter - 1);
+                    chatData.mes = jsonData['mes'] || '[The chat is empty]';
+                    chatData.last_mes = jsonData['send_date'] || stats.mtimeMs;
 
                     res(chatData);
                 } else {

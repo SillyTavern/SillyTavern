@@ -414,6 +414,7 @@ jQuery(async function () {
                         'openai': SECRET_KEYS.OPENAI,
                         'mistral': SECRET_KEYS.MISTRALAI,
                         'google': SECRET_KEYS.MAKERSUITE,
+                        'vertexai': SECRET_KEYS.VERTEXAI,
                         'anthropic': SECRET_KEYS.CLAUDE,
                     };
 

@@ -903,7 +903,7 @@ async function slugify(text) {
 async function extendUserSession() {
     try {
         const response = await fetch('/api/ping?extend=1', {
-            method: 'GET',
+            method: 'POST',
             headers: getRequestHeaders(),
         });
 

@@ -52,7 +52,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { AUTOCOMPLETE_SELECT_KEY, AUTOCOMPLETE_WIDTH } from './autocomplete/AutoComplete.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
-import { POPUP_TYPE, callGenericPopup } from './popup.js';
+import { POPUP_TYPE, callGenericPopup, fixToastrForDialogs } from './popup.js';
 import { loadSystemPrompts } from './sysprompt.js';
 import { fuzzySearchCategories } from './filters.js';
 import { accountStorage } from './util/AccountStorage.js';
@@ -70,6 +70,15 @@ export {
     applyPowerUserSettings,
 };
 
+export const toastPositionClasses = [
+    'toast-top-left',
+    'toast-top-center',
+    'toast-top-right',
+    'toast-bottom-left',
+    'toast-bottom-center',
+    'toast-bottom-right',
+];
+
 export const MAX_CONTEXT_DEFAULT = 8192;
 export const MAX_RESPONSE_DEFAULT = 2048;
 const MAX_CONTEXT_UNLOCKED = 512 * 1024;
@@ -81,11 +90,13 @@ const maxContextStep = 64;
 const defaultStoryString = '{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}\'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}';
 const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
+const defaultToastPosition = 'toast-top-center';
 
 const avatar_styles = {
     ROUND: 0,
     RECTANGULAR: 1,
     SQUARE: 2,
+    ROUNDED: 3,
 };
 
 export const chat_styles = {
@@ -137,6 +148,7 @@ let power_user = {
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
+    toastr_position: defaultToastPosition,
     chat_width: 50,
     never_resize_avatars: false,
     show_card_avatar_urls: false,
@@ -1010,6 +1022,7 @@ function applyNoShadows() {
 function applyAvatarStyle() {
     $('body').toggleClass('big-avatars', power_user.avatar_style === avatar_styles.RECTANGULAR);
     $('body').toggleClass('square-avatars', power_user.avatar_style === avatar_styles.SQUARE);
+    $('body').toggleClass('rounded-avatars', power_user.avatar_style === avatar_styles.ROUNDED);
     $('#avatar_style').val(power_user.avatar_style).prop('selected', true);
 }
 
@@ -1042,6 +1055,17 @@ function applyChatDisplay() {
             break;
         }
     }
+}
+
+function applyToastrPosition() {
+    if (!toastPositionClasses.includes(power_user.toastr_position)) {
+        power_user.toastr_position = defaultToastPosition;
+        console.warn(`applyToastrPosition: invalid toastr position, defaulting to ${defaultToastPosition}`);
+    }
+
+    toastr.options.positionClass = power_user.toastr_position;
+    fixToastrForDialogs();
+    $('#toastr_position').val(power_user.toastr_position).prop('selected', true);
 }
 
 function applyChatWidth(type) {
@@ -1086,7 +1110,9 @@ function applyThemeColor(type) {
             document.documentElement.style.setProperty('--SmartThemeFastUIBGColor', power_user.fastui_bg_color);
         } */
     if (type === 'blurTint') {
+        let metaThemeColor = document.querySelector('meta[name=theme-color]');
         document.documentElement.style.setProperty('--SmartThemeBlurTintColor', power_user.blur_tint_color);
+        metaThemeColor.setAttribute('content', power_user.blur_tint_color);
     }
     if (type === 'chatTint') {
         document.documentElement.style.setProperty('--SmartThemeChatTintColor', power_user.chat_tint_color);
@@ -1204,6 +1230,12 @@ function applyTheme(name) {
             key: 'chat_display',
             action: () => {
                 applyChatDisplay();
+            },
+        },
+        {
+            key: 'toastr_position',
+            action: () => {
+                applyToastrPosition();
             },
         },
         {
@@ -1455,6 +1487,7 @@ function getExampleMessagesBehavior() {
     return 'normal';
 }
 
+//MARK: loadPowerUser
 async function loadPowerUserSettings(settings, data) {
     const defaultStscript = JSON.parse(JSON.stringify(power_user.stscript));
     // Load from settings.json
@@ -1603,6 +1636,7 @@ async function loadPowerUserSettings(settings, data) {
     $('#enableLabMode').prop('checked', power_user.enableLabMode).trigger('input', { fromInit: true });
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop('checked', true);
     $(`#chat_display option[value=${power_user.chat_display}]`).attr('selected', true).trigger('change');
+    $(`#toastr_position option[value=${power_user.toastr_position}]`).attr('selected', true).trigger('change');
     $('#chat_width_slider').val(power_user.chat_width);
     $('#token_padding').val(power_user.token_padding);
     $('#aux_field').val(power_user.aux_field);
@@ -1691,6 +1725,7 @@ async function loadPowerUserSettings(settings, data) {
     loadMovingUIState();
     loadCharListState();
     toggleMDHotkeyIconDisplay();
+    applyToastrPosition();
 }
 
 function toggleMDHotkeyIconDisplay() {
@@ -2372,6 +2407,7 @@ function getThemeObject(name) {
         waifuMode: power_user.waifuMode,
         avatar_style: power_user.avatar_style,
         chat_display: power_user.chat_display,
+        toastr_position: power_user.toastr_position,
         noShadows: power_user.noShadows,
         chat_width: power_user.chat_width,
         timer_enabled: power_user.timer_enabled,
@@ -3320,6 +3356,13 @@ $(document).ready(() => {
         const value = $(this).find(':selected').val();
         power_user.chat_display = Number(value);
         applyChatDisplay();
+        saveSettingsDebounced();
+    });
+
+    $('#toastr_position').on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.toastr_position = String(value);
+        applyToastrPosition();
         saveSettingsDebounced();
     });
 

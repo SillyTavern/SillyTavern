@@ -4986,7 +4986,7 @@ export function checkEmbeddedWorld(chid) {
                 toastr.info(
                     'To import and use it, select "Import Card Lore" in the "More..." dropdown menu on the character panel.',
                     `${characters[chid].name} has an embedded World/Lorebook`,
-                    { timeOut: 5000, extendedTimeOut: 10000, positionClass: 'toast-top-center' },
+                    { timeOut: 5000, extendedTimeOut: 10000 },
                 );
             }
         }

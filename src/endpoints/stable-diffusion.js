@@ -834,7 +834,8 @@ pollinations.post('/generate', async (request, response) => {
         const result = await fetch(promptUrl);
 
         if (!result.ok) {
-            console.warn('Pollinations returned an error.', result.status, result.statusText);
+            const text = await result.text();
+            console.warn('Pollinations returned an error.', text);
             throw new Error('Pollinations request failed.');
         }
 

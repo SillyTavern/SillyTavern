@@ -106,7 +106,7 @@ class Prompt {
         this.injection_position = injection_position;
         this.forbid_overrides = forbid_overrides;
         this.extension = extension ?? false;
-        this.injection_order = injection_order ?? 0;
+        this.injection_order = injection_order ?? 100;
     }
 }
 
@@ -449,7 +449,7 @@ class PromptManager {
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value = prompt.content ?? '';
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position').value = prompt.injection_position ?? 0;
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth').value = prompt.injection_depth ?? DEFAULT_DEPTH;
-            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_order').value = prompt.injection_order ?? 0;
+            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_order').value = prompt.injection_order ?? 100;
             document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block').style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
             document.getElementById(this.configuration.prefix + 'prompt_manager_order_block').style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
             document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides').checked = prompt.forbid_overrides ?? false;
@@ -694,6 +694,7 @@ class PromptManager {
         // Clear forms on closing the popup
         document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_close').addEventListener('click', closeAndClearPopup);
         document.getElementById(this.configuration.prefix + 'prompt_manager_popup_close_button').addEventListener('click', closeAndClearPopup);
+        closeAndClearPopup();
 
         // Re-render prompt manager on openai preset change
         eventSource.on(event_types.OAI_PRESET_CHANGED_AFTER, () => {
@@ -1242,7 +1243,7 @@ class PromptManager {
         promptField.disabled = prompt.marker ?? false;
         injectionPositionField.value = prompt.injection_position ?? INJECTION_POSITION.RELATIVE;
         injectionDepthField.value = prompt.injection_depth ?? DEFAULT_DEPTH;
-        injectionOrderField.value = prompt.injection_order ?? 0;
+        injectionOrderField.value = prompt.injection_order ?? 100;
         injectionDepthBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
         injectionOrderBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
         injectionPositionField.removeAttribute('disabled');
