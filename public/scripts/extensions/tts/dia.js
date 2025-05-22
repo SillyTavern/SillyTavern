@@ -1,7 +1,3 @@
-// DiaTtsProvider for SillyTavern TTS Extension
-// Implements the provider interface for Dia TTS OpenAI-compatible API
-// [SF][ISA][CA]
-
 import { getRequestHeaders } from '../../../script.js';
 import { getContext } from '../../extensions.js';
 import { saveTtsProviderSettings, getPreviewString } from './index.js';
