@@ -1,7 +1,5 @@
-import { getRequestHeaders } from '../../../script.js';
 import { getContext } from '../../extensions.js';
 import { saveTtsProviderSettings, getPreviewString } from './index.js';
-import { getBase64Async } from '../../utils.js';
 
 export { DiaTtsProvider };
 
@@ -40,7 +38,7 @@ class DiaTtsProvider {
             <small>API key (any string works with Dia)</small>
 
             <hr>
-            
+
             <div class="dia_voice_cloning">
                 <span>Voice Cloning</span><br>
                 <label for="dia-tts-char-select">Character</label>
@@ -121,23 +119,23 @@ class DiaTtsProvider {
         const saveBtn = document.getElementById('dia-tts-char-save');
         const refreshBtn = document.getElementById('dia-refresh-characters');
 
-        if (endpointInput) {
+        if (endpointInput instanceof HTMLInputElement) {
             endpointInput.addEventListener('change', (e) => {
-                this.settings.endpoint = e.target.value;
+                if (e.target instanceof HTMLInputElement) this.settings.endpoint = e.target.value;
                 saveTtsProviderSettings();
             });
         }
 
-        if (apiKeyInput) {
+        if (apiKeyInput instanceof HTMLInputElement) {
             apiKeyInput.addEventListener('change', (e) => {
-                this.settings.apiKey = e.target.value;
+                if (e.target instanceof HTMLInputElement) this.settings.apiKey = e.target.value;
                 saveTtsProviderSettings();
             });
         }
 
         // Populate character dropdown
         this.populateCharacterDropdown();
-        
+
         // Also refresh dropdown when settings are fully loaded (with a small delay)
         setTimeout(() => {
             this.populateCharacterDropdown();
@@ -159,10 +157,11 @@ class DiaTtsProvider {
         }
 
         // Handle file selection
-        if (upload) {
+        if (upload instanceof HTMLInputElement) {
             upload.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file) {
+                const target = e.target;
+                const file = (target instanceof HTMLInputElement && target.files) ? target.files[0] : null;
+                if (file && uploadBtn) {
                     uploadBtn.innerHTML = `
                         <i class="fa-solid fa-file-check"></i>
                         <span>${file.name}</span>
@@ -176,7 +175,7 @@ class DiaTtsProvider {
             });
         }
 
-        if (saveBtn && charSelect && voiceNameInput && upload) {
+        if (saveBtn && charSelect instanceof HTMLSelectElement && voiceNameInput instanceof HTMLInputElement && upload instanceof HTMLInputElement) {
             saveBtn.onclick = async () => {
                 const charName = charSelect.value;
                 if (!charName) {
@@ -184,7 +183,7 @@ class DiaTtsProvider {
                     return;
                 }
 
-                const file = upload.files[0];
+                const file = upload.files ? upload.files[0] : null;
                 if (!file) {
                     toastr.error('Please upload a voice sample');
                     return;
@@ -197,48 +196,56 @@ class DiaTtsProvider {
 
                 try {
                     // Disable button and show progress
-                    saveBtn.disabled = true;
-                    saveBtn.value = 'Creating Voice...';
-                    
+                    if (saveBtn instanceof HTMLButtonElement) {
+                        saveBtn.disabled = true;
+                    } else if (saveBtn instanceof HTMLInputElement) {
+                        saveBtn.value = 'Creating Voice...';
+                    }
+
                     // Generate voice name
                     let voiceName = voiceNameInput.value.trim();
                     if (!voiceName) {
                         voiceName = `${charName}_voice`;
                     }
                     const customVoiceId = voiceName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-                    
+
                     // Upload audio prompt
                     toastr.info('Uploading voice sample...');
                     const promptId = await this.uploadAudioPrompt(customVoiceId, file);
-                    
+
                     // Create voice mapping
                     toastr.info('Creating voice mapping...');
                     await this.createVoiceMapping(customVoiceId, promptId);
-                    
+
                     // Add to custom voices list
                     if (!this.settings.customVoices.includes(customVoiceId)) {
                         this.settings.customVoices.push(customVoiceId);
                     }
-                    
+
                     saveTtsProviderSettings();
                     this.renderCharMappingList();
                     toastr.success(`Custom voice "${customVoiceId}" created successfully`);
-                    
+
                     // Clear inputs
                     charSelect.value = '';
                     voiceNameInput.value = '';
                     upload.value = '';
-                    uploadBtn.innerHTML = `
-                        <i class="fa-solid fa-file-import"></i>
-                        <span>Upload Voice Sample</span>
-                    `;
+                    if (uploadBtn) {
+                        uploadBtn.innerHTML = `
+                            <i class="fa-solid fa-file-import"></i>
+                            <span>Upload Voice Sample</span>
+                        `;
+                    }
                 } catch (error) {
                     console.error('DiaTTS: Error creating custom voice:', error);
                     toastr.error(`Failed to create custom voice: ${error.message}`);
                 } finally {
                     // Re-enable button
-                    saveBtn.disabled = false;
-                    saveBtn.value = 'Create Custom Voice';
+                    if (saveBtn instanceof HTMLButtonElement) {
+                        saveBtn.disabled = false;
+                    } else if (saveBtn instanceof HTMLInputElement) {
+                        saveBtn.value = 'Create Custom Voice';
+                    }
                 }
             };
         }
@@ -254,9 +261,9 @@ class DiaTtsProvider {
         try {
             const context = getContext();
             console.log('DiaTTS: Context object:', context);
-            
+
             let characters = [];
-            
+
             if (context.groupId === null) {
                 // Single character chat
                 if (context.name2) {
@@ -270,7 +277,7 @@ class DiaTtsProvider {
                 if (context.name1) {
                     characters.push(context.name1); // User name
                 }
-                
+
                 // Get group members
                 const group = context.groups?.find(group => context.groupId == group.id);
                 if (group && group.members) {
@@ -282,16 +289,16 @@ class DiaTtsProvider {
                     }
                 }
             }
-            
+
             // Also try to get all characters if available
             if (context.characters && context.characters.length > 0) {
                 const allCharNames = context.characters.map(char => char.name).filter(name => name);
                 characters = [...characters, ...allCharNames].filter((name, index, arr) => arr.indexOf(name) === index);
             }
-            
+
             // Remove duplicates and filter out empty names
             characters = characters.filter((name, index, arr) => name && arr.indexOf(name) === index);
-            
+
             // Add characters to dropdown
             characters.forEach(charName => {
                 const option = document.createElement('option');
@@ -316,15 +323,15 @@ class DiaTtsProvider {
             const response = await fetch(`${this.settings.endpoint}/v1/audio_prompts/upload`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this.settings.apiKey}`
+                    'Authorization': `Bearer ${this.settings.apiKey}`,
                 },
-                body: formData
+                body: formData,
             });
 
             if (!response.ok) {
                 const errorText = await response.text();
                 let errorDetail = errorText;
-                
+
                 try {
                     const errorJson = JSON.parse(errorText);
                     errorDetail = errorJson.detail || errorText;
@@ -335,12 +342,12 @@ class DiaTtsProvider {
                 // Check if it's a file lock error that might be retryable
                 if (errorDetail.includes('being used by another process') && retryCount < maxRetries) {
                     console.warn(`DiaTTS: File lock error, retrying in ${(retryCount + 1) * 1000}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`);
-                    
+
                     // Wait before retrying
                     await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 1000));
                     return this.uploadAudioPrompt(promptId, file, retryCount + 1);
                 }
-                
+
                 // More user-friendly error messages
                 if (errorDetail.includes('being used by another process')) {
                     throw new Error('Audio file is temporarily locked. Please try again in a few moments, or try using a different audio file.');
@@ -354,7 +361,7 @@ class DiaTtsProvider {
             const result = await response.json();
             console.log('DiaTTS: Audio prompt uploaded successfully:', result);
             return promptId;
-            
+
         } catch (error) {
             if (error.name === 'TypeError' && error.message.includes('fetch')) {
                 throw new Error('Cannot connect to Dia server. Please check if the server is running and the endpoint URL is correct.');
@@ -368,14 +375,14 @@ class DiaTtsProvider {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.settings.apiKey}`
+                'Authorization': `Bearer ${this.settings.apiKey}`,
             },
             body: JSON.stringify({
                 voice_id: voiceId,
                 style: 'natural',
                 primary_speaker: 'S1',
-                audio_prompt: audioPrompt
-            })
+                audio_prompt: audioPrompt,
+            }),
         });
 
         if (!response.ok) {
@@ -393,19 +400,19 @@ class DiaTtsProvider {
             console.warn('DiaTTS: Settings not initialized, skipping custom voice loading');
             return;
         }
-        
+
         try {
             const response = await fetch(`${this.settings.endpoint}/v1/voice_mappings`, {
                 headers: {
-                    'Authorization': `Bearer ${this.settings.apiKey}`
-                }
+                    'Authorization': `Bearer ${this.settings.apiKey}`,
+                },
             });
 
             if (response.ok) {
                 const voiceMappings = await response.json();
                 const voiceSelect = document.getElementById('dia-tts-voice-select');
-                
-                if (voiceSelect) {
+
+                if (voiceSelect instanceof HTMLSelectElement) {
                     // Add custom voices to dropdown
                     for (const mapping of voiceMappings) {
                         if (!Array.from(voiceSelect.options).some(opt => opt.value === mapping.voice_id)) {
@@ -427,7 +434,7 @@ class DiaTtsProvider {
             console.warn('DiaTTS: Settings not initialized, skipping health check');
             return false;
         }
-        
+
         try {
             const response = await fetch(`${this.settings.endpoint}/health`);
             if (response.ok) {
@@ -457,14 +464,14 @@ class DiaTtsProvider {
 
     async fetchTtsVoiceObjects() {
         console.log('DiaTTS: Fetching available voices');
-        
+
         const voices = [
             { name: 'Alloy', voice_id: 'alloy', preview_url: '', lang: 'en-US', description: 'Built-in voice' },
             { name: 'Echo', voice_id: 'echo', preview_url: '', lang: 'en-US', description: 'Built-in voice' },
             { name: 'Fable', voice_id: 'fable', preview_url: '', lang: 'en-US', description: 'Built-in voice' },
             { name: 'Nova', voice_id: 'nova', preview_url: '', lang: 'en-US', description: 'Built-in voice' },
             { name: 'Onyx', voice_id: 'onyx', preview_url: '', lang: 'en-US', description: 'Built-in voice' },
-            { name: 'Shimmer', voice_id: 'shimmer', preview_url: '', lang: 'en-US', description: 'Built-in voice' }
+            { name: 'Shimmer', voice_id: 'shimmer', preview_url: '', lang: 'en-US', description: 'Built-in voice' },
         ];
 
         // Add custom voices if settings are available
@@ -475,7 +482,7 @@ class DiaTtsProvider {
                     voice_id: customVoice,
                     preview_url: '',
                     lang: 'en-US',
-                    description: 'Custom cloned voice'
+                    description: 'Custom cloned voice',
                 });
             }
         }
@@ -511,13 +518,13 @@ class DiaTtsProvider {
 
         try {
             const endpoint = `${this.settings.endpoint}/v1/audio/speech`;
-            
+
             const payload = {
                 model: this.settings.model,
                 input: formattedText,
                 voice: selectedVoice,
                 response_format: 'wav',
-                speed: 1.0
+                speed: 1.0,
             };
 
             console.log(`DiaTTS: Sending request to ${endpoint}`, payload);
@@ -526,9 +533,9 @@ class DiaTtsProvider {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.settings.apiKey}`
+                    'Authorization': `Bearer ${this.settings.apiKey}`,
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
@@ -553,14 +560,14 @@ class DiaTtsProvider {
         }
         this.audioElement.pause();
         this.audioElement.currentTime = 0;
-        
+
         const text = getPreviewString('en-US');
         const response = await this.generateTts(text, id);
-        
+
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
-        
+
         const audio = await response.blob();
         const url = URL.createObjectURL(audio);
         this.audioElement.src = url;
@@ -626,8 +633,8 @@ class DiaTtsProvider {
             const response = await fetch(`${this.settings.endpoint}/v1/voice_mappings/${voiceId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${this.settings.apiKey}`
-                }
+                    'Authorization': `Bearer ${this.settings.apiKey}`,
+                },
             });
 
             if (!response.ok) {
