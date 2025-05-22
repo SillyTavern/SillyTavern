@@ -94,6 +94,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
     function getEndpointUrl() {
         switch (extension_settings.caption.multimodal_api) {
             case 'google':
+            case 'vertexai':
                 return '/api/google/caption-image';
             case 'anthropic':
                 return '/api/anthropic/caption-image';
@@ -141,6 +142,10 @@ function throwIfInvalidModel(useReverseProxy) {
 
     if (extension_settings.caption.multimodal_api === 'google' && !secret_state[SECRET_KEYS.MAKERSUITE] && !useReverseProxy) {
         throw new Error('Google AI Studio API key is not set.');
+    }
+
+    if (extension_settings.caption.multimodal_api === 'vertexai' && !secret_state[SECRET_KEYS.VERTEXAI] && !useReverseProxy) {
+        throw new Error('Google Vertex AI API key is not set.');
     }
 
     if (extension_settings.caption.multimodal_api === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] && !useReverseProxy) {

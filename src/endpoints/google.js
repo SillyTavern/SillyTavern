@@ -15,7 +15,7 @@ router.post('/caption-image', async (request, response) => {
     try {
         const mimeType = request.body.image.split(';')[0].split(':')[1];
         const base64Data = request.body.image.split(',')[1];
-        const useVertexAi = request.body.chat_completion_source === 'vertexai';
+        const useVertexAi = request.body.api === 'vertexai';
         let apiKey;
         let apiUrl;
         if (useVertexAi) {
@@ -34,6 +34,7 @@ router.post('/caption-image', async (request, response) => {
         }
         const body = {
             contents: [{
+                role: 'user',
                 parts: [
                     { text: request.body.prompt },
                     {
