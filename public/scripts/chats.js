@@ -351,10 +351,13 @@ async function onFileAttach(file) {
     $('#file_form .file_size').text(humanFileSize(file.size));
     $('#file_form').removeClass('displayNone');
 
-    // Reset form on chat change
-    eventSource.once(event_types.CHAT_CHANGED, () => {
-        $('#file_form').trigger('reset');
-    });
+    // Reset form on chat change (if not on a welcome screen)
+    const currentChatId = getCurrentChatId();
+    if (currentChatId) {
+        eventSource.once(event_types.CHAT_CHANGED, () => {
+            $('#file_form').trigger('reset');
+        });
+    }
 }
 
 /**

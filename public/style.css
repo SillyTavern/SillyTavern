@@ -117,6 +117,7 @@
     --avatar-base-width: 50px;
     --avatar-base-border-radius: 2px;
     --avatar-base-border-radius-round: 50%;
+    --avatar-base-border-radius-rounded: 10px;
     --inline-avatar-small-factor: 0.6;
 
     --animation-duration: 125ms;
@@ -3139,7 +3140,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .missing-avatar.inline_avatar {
     padding: unset;
     border-radius: var(--avatar-base-border-radius-round);
-    width: fit-content;
+    font-size: 20px;
 }
 
 /*applies to char list and mes_text char display name*/

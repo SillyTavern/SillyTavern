@@ -96,6 +96,7 @@ const avatar_styles = {
     ROUND: 0,
     RECTANGULAR: 1,
     SQUARE: 2,
+    ROUNDED: 3,
 };
 
 export const chat_styles = {
@@ -1021,6 +1022,7 @@ function applyNoShadows() {
 function applyAvatarStyle() {
     $('body').toggleClass('big-avatars', power_user.avatar_style === avatar_styles.RECTANGULAR);
     $('body').toggleClass('square-avatars', power_user.avatar_style === avatar_styles.SQUARE);
+    $('body').toggleClass('rounded-avatars', power_user.avatar_style === avatar_styles.ROUNDED);
     $('#avatar_style').val(power_user.avatar_style).prop('selected', true);
 }
 

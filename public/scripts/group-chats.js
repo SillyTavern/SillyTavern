@@ -226,6 +226,7 @@ export async function getGroupChat(groupId, reload = false) {
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
     let freshChat = false;
+    let metadata = group.chat_metadata ?? {};
 
     await loadItemizedPrompts(getCurrentChatId());
 
@@ -234,7 +235,8 @@ export async function getGroupChat(groupId, reload = false) {
         chat.splice(0, chat.length, ...data);
         await printMessages();
     } else {
-        if (group && Array.isArray(group.members)) {
+        freshChat = !metadata.tainted;
+        if (group && Array.isArray(group.members) && freshChat) {
             for (let member of group.members) {
                 const character = characters.find(x => x.avatar === member || x.name === member);
                 if (!character) {
@@ -253,12 +255,10 @@ export async function getGroupChat(groupId, reload = false) {
                 addOneMessage(mes);
                 await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1), 'first_message');
             }
+            await saveGroupChat(groupId, false);
         }
-        await saveGroupChat(groupId, false);
-        freshChat = true;
     }
 
-    let metadata = group.chat_metadata ?? {};
     updateChatMetadata(metadata, true);
 
     if (reload) {

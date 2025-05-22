@@ -45,6 +45,11 @@ body.square-avatars .avatar img {
     border-radius: var(--avatar-base-border-radius) !important;
 }
 
+body.rounded-avatars .avatar,
+body.rounded-avatars .avatar img {
+    border-radius: var(--avatar-base-border-radius-rounded) !important;
+}
+
 /*char list grid mode*/
 
 body.charListGrid #rm_print_characters_block {

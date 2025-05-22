@@ -1315,7 +1315,7 @@ async function onViewTagsListClick() {
     printViewTagList(tagContainer);
     makeTagListDraggable(tagContainer);
 
-    await callGenericPopup(html, POPUP_TYPE.TEXT, null, { allowVerticalScrolling: true, wide: true });
+    await callGenericPopup(html, POPUP_TYPE.TEXT, null, { allowVerticalScrolling: true, wide: true, large: true });
 }
 
 /**

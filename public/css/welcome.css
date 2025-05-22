@@ -28,6 +28,10 @@ body.bubblechat .welcomePanel {
     margin-bottom: 5px;
 }
 
+body.hideChatAvatars .welcomePanel .recentChatList .recentChat .avatar {
+    display: none;
+}
+
 .welcomePanel .welcomeHeader {
     display: flex;
     flex-direction: row;

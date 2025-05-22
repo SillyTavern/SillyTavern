@@ -1999,7 +1999,7 @@
                                             <span data-i18n="Send inline images">Send inline images</span>
                                         </label>
                                         <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                            <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it (e.g. GPT-4V, Claude 3 or Llava 13B). Use the</span>
+                                            <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it. Use the</span>
                                             <code><i class="fa-solid fa-paperclip"></i></code>
                                             <span data-i18n="image_inlining_hint_2">action on any message or the</span>
                                             <code><i class="fa-solid fa-wand-magic-sparkles"></i></code>
@@ -2049,13 +2049,10 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="deepseek,openrouter,custom,claude,xai">
+                                    <div class="range-block" data-source="deepseek,openrouter,custom,claude,xai,makersuite">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
-                                            <span>
-                                                <span data-i18n="Request model reasoning">Request model reasoning</span>
-                                                <i class="opacity50p fa-solid fa-circle-info" title="DeepSeek Reasoner"></i>
-                                            </span>
+                                            <span data-i18n="Request model reasoning">Request model reasoning</span>
                                         </label>
                                         <div class="toggle-description justifyLeft marginBot5">
                                             <span data-i18n="Allows the model to return its thinking process.">
@@ -4384,6 +4381,7 @@
                                     <select id="avatar_style" class="widthNatural flex1 margin0 text_pole">
                                         <option value="0" data-i18n="Circle">Circle</option>
                                         <option value="2" data-i18n="Square">Square</option>
+                                        <option value="3" data-i18n="Rounded">Rounded</option>
                                         <option value="1" data-i18n="Rectangle">Rectangle</option>
                                     </select>
                                 </div>

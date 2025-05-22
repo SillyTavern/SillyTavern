@@ -236,7 +236,7 @@
     "Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.": "將連續的系統訊息合併為一個（不包括對話範例）。可能會提高某些模型的一致性。",
     "Enable function calling": "啟用函式呼叫",
     "Send inline images": "傳送內嵌圖片",
-    "image_inlining_hint_1": "如果模型支援（例如：GPT-4V、Claude 3 或 Llava 13B），則在提示詞中傳送圖片。\n使用任何訊息上的",
+    "image_inlining_hint_1": "如果模型支援，則在提示詞中傳送圖片。\n使用任何訊息上的",
     "image_inlining_hint_2": "動作或",
     "image_inlining_hint_3": "選單來附加圖片文件到聊天中。",
     "Inline Image Quality": "內嵌圖片品質",
