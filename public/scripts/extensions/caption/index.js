@@ -586,8 +586,8 @@ jQuery(async function () {
         extension_settings.caption.multimodal_model = String($('#caption_multimodal_model').val());
         saveSettingsDebounced();
     });
-    $('#caption_altEndpoint_address').val(extension_settings.caption.alt_endpoint_url).on('change', () => {
-        extension_settings.caption.alt_endpoint_url = String($('#caption_altEndpoint_address').val());
+    $('#caption_altEndpoint_url').val(extension_settings.caption.alt_endpoint_url).on('input', () => {
+        extension_settings.caption.alt_endpoint_url = String($('#caption_altEndpoint_url').val());
         saveSettingsDebounced();
     });
     $('#caption_altEndpoint_enabled').prop('checked', !!(extension_settings.caption.alt_endpoint_enabled)).on('input', () => {
