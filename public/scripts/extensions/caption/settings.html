@@ -160,6 +160,7 @@
                         <option data-type="llamacpp" value="llamacpp_current" data-i18n="currently_loaded">[Currently loaded]</option>
                         <option data-type="ooba" value="ooba_current" data-i18n="currently_loaded">[Currently loaded]</option>
                         <option data-type="koboldcpp" value="koboldcpp_current" data-i18n="currently_loaded">[Currently loaded]</option>
+                        <option data-type="koboldcpp" value="koboldcpp_custom" data-i18n="custom_endpoint">[Custom endpoint]</option>
                         <option data-type="vllm" value="vllm_current" data-i18n="currently_selected">[Currently selected]</option>
                         <option data-type="custom" value="custom_current" data-i18n="currently_selected">[Currently selected]</option>
                         <option data-type="xai" value="grok-2-vision-1212">grok-2-vision-1212</option>
@@ -188,6 +189,12 @@
                 <div class="flexBasis100p m-b-1">
                     <small><b data-i18n="Hint:">Hint:</b> <span data-i18n="Set your API keys and endpoints in the 'API Connections' tab first.">Set your API keys and endpoints in the 'API Connections' tab first.</span></small>
                 </div>
+            </div>
+            <div id="captions_altEndpoint_address_block">
+                <label for="captions_altEndpoint_address" data-i18n="Secondary Image Caption endpoint URL">
+                    Secondary Embedding endpoint URL
+                </label>
+                <input id="captions_altEndpoint_address" class="text_pole" type="text" placeholder="e.g. http://localhost:5001" />
             </div>
             <div id="caption_prompt_block">
                 <label for="caption_prompt" data-i18n="Caption Prompt">Caption Prompt</label>

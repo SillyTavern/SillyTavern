@@ -166,8 +166,13 @@ router.post('/caption-image', async (request, response) => {
         }
 
         if (['koboldcpp', 'vllm', 'llamacpp'].includes(request.body.api)) {
-            apiUrl = `${trimV1(request.body.server_url)}/v1/chat/completions`;
+            if ( request.body.alt_endpoint_url !== "") {
+                apiUrl = `${trimV1(request.body.alt_endpoint_url)}/v1/chat/completions`;
+            } else {
+                apiUrl = `${trimV1(request.body.server_url)}/v1/chat/completions`;
+            }
         }
+
 
         setAdditionalHeaders(request, { headers }, apiUrl);
         console.debug('Multimodal captioning request', body);
