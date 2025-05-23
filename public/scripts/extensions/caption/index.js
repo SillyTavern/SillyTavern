@@ -482,7 +482,7 @@ jQuery(async function () {
         $('#caption_multimodal_api').val(extension_settings.caption.multimodal_api);
         $('#caption_multimodal_model').val(extension_settings.caption.multimodal_model);
 
-        const isKoboCustom = extension_settings.caption.multimodal_api === "koboldcpp" 
+        const isKoboCustom = extension_settings.caption.multimodal_api === "koboldcpp"
             && extension_settings.caption.multimodal_model === "koboldcpp_custom";
         $('#captions_altEndpoint_address_block').toggle(isKoboCustom)
 
