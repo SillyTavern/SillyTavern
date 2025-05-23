@@ -156,7 +156,9 @@ router.post('/caption-image', async (request, response) => {
             });
         }
 
-        if (request.body.api === 'koboldcpp' || request.body.api === 'vllm') {
+        if (request.body.api === 'koboldcpp' && request.body.alt_endpoint_url !== "") {
+            apiUrl = `${trimV1(request.body.alt_endpoint_url)}/v1/chat/completions`;
+        } else if (request.body.api === 'koboldcpp' || request.body.api === 'vllm') {
             apiUrl = `${trimV1(request.body.server_url)}/v1/chat/completions`;
         }
 

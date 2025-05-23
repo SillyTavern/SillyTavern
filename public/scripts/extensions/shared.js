@@ -53,6 +53,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
         proxy_password: proxyPassword,
         api: extension_settings.caption.multimodal_api || 'openai',
         model: extension_settings.caption.multimodal_model || 'gpt-4-turbo',
+        alt_endpoint_url: ""
     };
 
     if (isOllama) {
@@ -101,6 +102,13 @@ export async function getMultimodalCaption(base64Img, prompt) {
                 return '/api/backends/text-completions/llamacpp/caption-image';
             case 'ollama':
                 return '/api/backends/text-completions/ollama/caption-image';
+            case 'koboldcpp':
+                {
+                    if (extension_settings.caption.multimodal_model === "koboldcpp_custom") {
+                        const base = extension_settings.caption.alt_endpoint_url.endsWith('/') ? extension_settings.caption.alt_endpoint_url.slice(0, -1) : extension_settings.caption.alt_endpoint_url
+                        requestBody.alt_endpoint_url = base
+                    }
+                }
             default:
                 return '/api/openai/caption-image';
         }
