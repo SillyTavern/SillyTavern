@@ -160,7 +160,6 @@
                         <option data-type="llamacpp" value="llamacpp_current" data-i18n="currently_loaded">[Currently loaded]</option>
                         <option data-type="ooba" value="ooba_current" data-i18n="currently_loaded">[Currently loaded]</option>
                         <option data-type="koboldcpp" value="koboldcpp_current" data-i18n="currently_loaded">[Currently loaded]</option>
-                        <option data-type="koboldcpp" value="koboldcpp_custom" data-i18n="custom_endpoint">[Custom endpoint]</option>
                         <option data-type="vllm" value="vllm_current" data-i18n="currently_selected">[Currently selected]</option>
                         <option data-type="custom" value="custom_current" data-i18n="currently_selected">[Currently selected]</option>
                         <option data-type="xai" value="grok-2-vision-1212">grok-2-vision-1212</option>
@@ -190,9 +189,13 @@
                     <small><b data-i18n="Hint:">Hint:</b> <span data-i18n="Set your API keys and endpoints in the 'API Connections' tab first.">Set your API keys and endpoints in the 'API Connections' tab first.</span></small>
                 </div>
             </div>
-            <div id="captions_altEndpoint_address_block">
-                <label for="captions_altEndpoint_address" data-i18n="Secondary Image Caption endpoint URL">
-                    Secondary image caption endpoint URL
+            <div data-type="koboldcpp,ollama,vllm,llamacpp,ooba" class="flex-container flexFlowColumn">
+                <label for="caption_altEndpoint_enabled" class="checkbox_label">
+                    <input id="caption_altEndpoint_enabled" type="checkbox">
+                    <span data-i18n="Use secondary URL">Use secondary URL</span>
+                </label>
+                <label for="caption_altEndpoint_address" data-i18n="Secondary captioning endpoint URL">
+                    Secondary captioning endpoint URL
                 </label>
                 <input id="captions_altEndpoint_address" class="text_pole" type="text" placeholder="e.g. http://localhost:5001" />
             </div>

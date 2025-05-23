@@ -408,6 +408,8 @@ jQuery(async function () {
                 // Handle multimodal sources
                 if (settings.source === 'multimodal') {
                     const api = settings.multimodal_api;
+                    const altEndpointEnabled = settings.alt_endpoint_enabled;
+                    const altEndpointUrl = settings.alt_endpoint_url;
 
                     // APIs that support reverse proxy
                     const reverseProxyApis = {
@@ -444,7 +446,11 @@ jQuery(async function () {
                         'vllm': textgen_types.VLLM,
                     };
 
-                    if (textCompletionApis[api] && textgenerationwebui_settings.server_urls[textCompletionApis[api]]) {
+                    if (textCompletionApis[api] && altEndpointEnabled && altEndpointUrl) {
+                        return true;
+                    }
+
+                    if (textCompletionApis[api] && !altEndpointEnabled && textgenerationwebui_settings.server_urls[textCompletionApis[api]]) {
                         return true;
                     }
 
@@ -481,10 +487,6 @@ jQuery(async function () {
         $('#caption_prompt_block').toggle(isMultimodal);
         $('#caption_multimodal_api').val(extension_settings.caption.multimodal_api);
         $('#caption_multimodal_model').val(extension_settings.caption.multimodal_model);
-
-        const isKoboCustom = extension_settings.caption.multimodal_api === "koboldcpp"
-            && extension_settings.caption.multimodal_model === "koboldcpp_custom";
-        $('#captions_altEndpoint_address_block').toggle(isKoboCustom)
 
         $('#caption_multimodal_block [data-type]').each(function () {
             const type = $(this).data('type');
@@ -584,10 +586,14 @@ jQuery(async function () {
     $('#caption_multimodal_model').on('change', () => {
         extension_settings.caption.multimodal_model = String($('#caption_multimodal_model').val());
         saveSettingsDebounced();
-        switchMultimodalBlocks()
+        switchMultimodalBlocks();
     });
-    $('#captions_altEndpoint_address').val(extension_settings.caption.alt_endpoint_url).on('change', () => {
-        extension_settings.caption.alt_endpoint_url = String($('#captions_altEndpoint_address').val());
+    $('#caption_altEndpoint_address').val(extension_settings.caption.alt_endpoint_url).on('change', () => {
+        extension_settings.caption.alt_endpoint_url = String($('#caption_altEndpoint_address').val());
+        saveSettingsDebounced();
+    });
+    $('#caption_altEndpoint_enabled').prop('checked', !!(extension_settings.caption.alt_endpoint_enabled)).on('input', () => {
+        extension_settings.caption.alt_endpoint_enabled = !!$('#caption_altEndpoint_enabled').prop('checked');
         saveSettingsDebounced();
     });
 
