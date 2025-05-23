@@ -1,6 +1,6 @@
 // Move chat functions here from script.js (eventually)
 
-import { Popper, css } from '../lib.js';
+import { Popper, css, DOMPurify } from '../lib.js';
 import {
     addCopyToCodeBlocks,
     appendMediaToMessage,
@@ -23,6 +23,8 @@ import {
     neutralCharacterName,
     updateChatMetadata,
     system_message_types,
+    converter,
+    substituteParams,
     getSystemMessageByType,
     printMessages,
     clearChat,
@@ -475,10 +477,12 @@ export function encodeStyleTags(text) {
 /**
  * Sanitizes custom style tags in the message text to prevent DOM pollution.
  * @param {string} text Message text
+ * @param {object} options Options object
+ * @param {string} options.prefix Prefix the selectors with this value
  * @returns {string} Sanitized message text
  * @copyright https://github.com/kwaroran/risuAI
  */
-export function decodeStyleTags(text) {
+export function decodeStyleTags(text, { prefix } = { prefix: '.mes_text ' }) {
     const styleDecodeRegex = /<custom-style>(.+?)<\/custom-style>/gms;
     const mediaAllowed = isExternalMediaAllowed();
 
@@ -494,7 +498,7 @@ export function decodeStyleTags(text) {
                         return v;
                     }).join(' ');
 
-                    rule.selectors[i] = '.mes_text ' + selectors;
+                    rule.selectors[i] = prefix + selectors;
                 }
             }
         }
@@ -530,6 +534,200 @@ export function decodeStyleTags(text) {
             return `CSS ERROR: ${error}`;
         }
     });
+}
+
+/**
+ * Class to manage style preferences for characters.
+ */
+class StylesPreference {
+    /**
+     * Creates a new StylesPreference instance.
+     * @param {string|null} avatarId - The avatar ID of the character
+     */
+    constructor(avatarId) {
+        this.avatarId = avatarId;
+    }
+
+    /**
+     * Gets the account storage key for the style preference.
+     */
+    get key() {
+        return `AllowGlobalStyles-${this.avatarId}`;
+    }
+
+    /**
+     * Checks if a preference exists for this character.
+     * @returns {boolean} True if preference exists, false otherwise
+     */
+    exists() {
+        return this.avatarId
+            ? accountStorage.getItem(this.key) !== null
+            : true; // No character == assume preference is set
+    }
+
+    /**
+     * Gets the current style preference.
+     * @returns {boolean} True if global styles are allowed, false otherwise
+     */
+    get() {
+        return this.avatarId
+            ? accountStorage.getItem(this.key) === 'true'
+            : false; // Always disabled when creating a new character
+    }
+
+    /**
+     * Sets the global styles preference.
+     * @param {boolean} allowed - Whether global styles are allowed
+     */
+    set(allowed) {
+        if (this.avatarId) {
+            accountStorage.setItem(this.key, String(allowed));
+        }
+    }
+}
+
+/**
+ * Formats creator notes in the message text.
+ * @param {string} text Raw Markdown text
+ * @param {string} avatarId Avatar ID
+ * @returns {string} Formatted HTML text
+ */
+export function formatCreatorNotes(text, avatarId) {
+    const preference = new StylesPreference(avatarId);
+    const sanitizeStyles = !preference.get();
+    const decodeStyleParam = { prefix: sanitizeStyles ? '#creator_notes_spoiler ' : '' };
+    /** @type {import('dompurify').Config & { MESSAGE_SANITIZE: boolean }} */
+    const config = {
+        RETURN_DOM: false,
+        RETURN_DOM_FRAGMENT: false,
+        RETURN_TRUSTED_TYPE: false,
+        MESSAGE_SANITIZE: true,
+        ADD_TAGS: ['custom-style'],
+    };
+
+    let html = converter.makeHtml(substituteParams(text));
+    html = encodeStyleTags(html);
+    html = DOMPurify.sanitize(html, config);
+    html = decodeStyleTags(html, decodeStyleParam);
+
+    return html;
+}
+
+async function openGlobalStylesPreferenceDialog() {
+    if (selected_group) {
+        toastr.info(t`To change the global styles preference, please select a character individually.`);
+        return;
+    }
+
+    const entityId = getCurrentEntityId();
+    const preference = new StylesPreference(entityId);
+    const currentValue = preference.get();
+
+    const template = $(await renderTemplateAsync('globalStylesPreference'));
+
+    const allowedRadio = template.find('#global_styles_allowed');
+    const forbiddenRadio = template.find('#global_styles_forbidden');
+
+    allowedRadio.on('change', () => {
+        preference.set(true);
+        allowedRadio.prop('checked', true);
+        forbiddenRadio.prop('checked', false);
+    });
+
+    forbiddenRadio.on('change', () => {
+        preference.set(false);
+        allowedRadio.prop('checked', false);
+        forbiddenRadio.prop('checked', true);
+    });
+
+    const currentPreferenceRadio = currentValue ? allowedRadio : forbiddenRadio;
+    template.find(currentPreferenceRadio).prop('checked', true);
+
+    await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: false, large: false });
+
+    // Re-render the notes if the preference changed
+    const newValue = preference.get();
+    if (newValue !== currentValue) {
+        $('#rm_button_selected_ch').trigger('click');
+        setGlobalStylesButtonClass(newValue);
+    }
+}
+
+async function checkForCreatorNotesStyles() {
+    // Don't do anything if in group chat or not in a chat
+    if (selected_group || this_chid === undefined) {
+        return;
+    }
+
+    const notes = characters[this_chid].data?.creator_notes || characters[this_chid].creatorcomment;
+    const avatarId = characters[this_chid].avatar;
+    const styleContents = getStyleContentsFromMarkdown(notes);
+
+    if (!styleContents) {
+        setGlobalStylesButtonClass(null);
+        return;
+    }
+
+    const preference = new StylesPreference(avatarId);
+    const hasPreference = preference.exists();
+    if (!hasPreference) {
+        const template = $(await renderTemplateAsync('globalStylesPopup'));
+        template.find('textarea').val(styleContents);
+        const confirmResult = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', {
+            wide: false,
+            large: false,
+            okButton: t`Just to Creator's Notes`,
+            cancelButton: t`Apply to the entire app`,
+        });
+
+        switch (confirmResult) {
+            case POPUP_RESULT.AFFIRMATIVE:
+                preference.set(false);
+                break;
+            case POPUP_RESULT.NEGATIVE:
+                preference.set(true);
+                break;
+            case POPUP_RESULT.CANCELLED:
+                preference.set(false);
+                break;
+        }
+
+        $('#rm_button_selected_ch').trigger('click');
+    }
+
+    const currentPreference = preference.get();
+    setGlobalStylesButtonClass(currentPreference);
+}
+
+/**
+ * Sets the class of the global styles button based on the state.
+ * @param {boolean|null} state State of the button
+ */
+function setGlobalStylesButtonClass(state) {
+    const button = $('#creators_note_styles_button');
+    button.toggleClass('empty', state === null);
+    button.toggleClass('allowed', state === true);
+    button.toggleClass('forbidden', state === false);
+}
+
+/**
+ * Extracts the contents of all style elements from the Markdown text.
+ * @param {string} text Markdown text
+ * @returns {string} The joined contents of all style elements
+ */
+function getStyleContentsFromMarkdown(text) {
+    if (!text) {
+        return '';
+    }
+
+    const div = document.createElement('div');
+    const html = converter.makeHtml(substituteParams(text));
+    div.innerHTML = html;
+    const styleElements = Array.from(div.querySelectorAll('style'));
+    return styleElements
+        .filter(s => s.textContent.trim().length > 0)
+        .map(s => s.textContent.trim())
+        .join('\n\n');
 }
 
 async function openExternalMediaOverridesDialog() {
@@ -1037,12 +1235,12 @@ async function openAttachmentManager() {
                 popper.update();
             });
 
-            return [popper, bodyListener];
+            return { popper, bodyListener };
         }).filter(Boolean);
 
         return () => {
             modalButtonData.forEach(p => {
-                const [popper, bodyListener] = p;
+                const { popper,bodyListener } = p;
                 popper.destroy();
                 document.body.removeEventListener('click', bodyListener);
             });
@@ -1466,7 +1664,7 @@ export function registerFileConverter(mimeType, converter) {
     converters[mimeType] = converter;
 }
 
-jQuery(function () {
+export function initChatUtilities() {
     $(document).on('click', '.mes_hide', async function () {
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
@@ -1645,6 +1843,10 @@ jQuery(function () {
         reloadCurrentChat();
     });
 
+    $('#creators_note_styles_button').on('click', function () {
+        openGlobalStylesPreferenceDialog();
+    });
+
     $(document).on('click', '.mes_img', expandMessageImage);
     $(document).on('click', '.mes_img_enlarge', expandAndZoomMessageImage);
     $(document).on('click', '.mes_img_delete', deleteMessageImage);
@@ -1679,4 +1881,6 @@ jQuery(function () {
         fileInput.files = dataTransfer.files;
         await onFileAttach(fileInput.files[0]);
     });
-});
+
+    eventSource.on(event_types.CHAT_CHANGED, checkForCreatorNotesStyles);
+}

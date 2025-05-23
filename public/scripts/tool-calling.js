@@ -575,6 +575,11 @@ export class ToolManager {
             return false;
         }
 
+        // Post-processing will forcefully remove past tool calls from the prompt, making them useless
+        if (oai_settings.custom_prompt_post_processing) {
+            return false;
+        }
+
         if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS && Array.isArray(model_list)) {
             const currentModel = model_list.find(model => model.id === oai_settings.pollinations_model);
             if (currentModel) {
@@ -592,6 +597,7 @@ export class ToolManager {
             chat_completion_sources.COHERE,
             chat_completion_sources.DEEPSEEK,
             chat_completion_sources.MAKERSUITE,
+            chat_completion_sources.VERTEXAI,
             chat_completion_sources.AI21,
             chat_completion_sources.XAI,
             chat_completion_sources.POLLINATIONS,

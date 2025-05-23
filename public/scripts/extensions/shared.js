@@ -15,7 +15,7 @@ import { createThumbnail, isValidUrl } from '../utils.js';
  */
 export async function getMultimodalCaption(base64Img, prompt) {
     const useReverseProxy =
-        (['openai', 'anthropic', 'google', 'mistral'].includes(extension_settings.caption.multimodal_api))
+        (['openai', 'anthropic', 'google', 'mistral', 'vertexai', 'xai'].includes(extension_settings.caption.multimodal_api))
         && extension_settings.caption.allow_reverse_proxy
         && oai_settings.reverse_proxy
         && isValidUrl(oai_settings.reverse_proxy);
@@ -38,7 +38,8 @@ export async function getMultimodalCaption(base64Img, prompt) {
     const isVllm = extension_settings.caption.multimodal_api === 'vllm';
     const base64Bytes = base64Img.length * 0.75;
     const compressionLimit = 2 * 1024 * 1024;
-    if ((['google', 'openrouter', 'mistral', 'groq'].includes(extension_settings.caption.multimodal_api) && base64Bytes > compressionLimit) || isOoba || isKoboldCpp) {
+    const thumbnailNeeded = ['google', 'openrouter', 'mistral', 'groq', 'vertexai'].includes(extension_settings.caption.multimodal_api);
+    if ((thumbnailNeeded && base64Bytes > compressionLimit) || isOoba || isKoboldCpp) {
         const maxSide = 1024;
         base64Img = await createThumbnail(base64Img, maxSide, maxSide, 'image/jpeg');
     }
@@ -94,6 +95,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
     function getEndpointUrl() {
         switch (extension_settings.caption.multimodal_api) {
             case 'google':
+            case 'vertexai':
                 return '/api/google/caption-image';
             case 'anthropic':
                 return '/api/anthropic/caption-image';
@@ -143,6 +145,10 @@ function throwIfInvalidModel(useReverseProxy) {
         throw new Error('Google AI Studio API key is not set.');
     }
 
+    if (extension_settings.caption.multimodal_api === 'vertexai' && !secret_state[SECRET_KEYS.VERTEXAI] && !useReverseProxy) {
+        throw new Error('Google Vertex AI API key is not set.');
+    }
+
     if (extension_settings.caption.multimodal_api === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] && !useReverseProxy) {
         throw new Error('Mistral AI API key is not set.');
     }
@@ -151,7 +157,7 @@ function throwIfInvalidModel(useReverseProxy) {
         throw new Error('Cohere API key is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'xai' && !secret_state[SECRET_KEYS.XAI]) {
+    if (extension_settings.caption.multimodal_api === 'xai' && !secret_state[SECRET_KEYS.XAI] && !useReverseProxy) {
         throw new Error('xAI API key is not set.');
     }
 

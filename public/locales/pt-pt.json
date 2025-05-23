@@ -253,7 +253,6 @@
     "Assistant Prefill": "Preenchimento prévio do assistente",
     "Start Claude's answer with...": "Iniciar resposta de Claude com...",
     "Assistant Impersonation Prefill": "Pré-preenchimento de representação do assistente",
-    "Use system prompt (Claude 2.1+ only)": "Usar prompt do sistema (apenas Claude 2.1+)",
     "Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.": "Enviar o prompt do sistema para modelos suportados. Se desativado, a mensagem do usuário é adicionada ao início do prompt.",
     "User first message": "Primeira mensagem do usuário",
     "Restore User first message": "Restaurar a primeira mensagem do usuário",

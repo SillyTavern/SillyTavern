@@ -255,7 +255,6 @@
     "Assistant Prefill": "어시스턴트 프리필",
     "Start Claude's answer with...": "클로드의 답변 시작하기...",
     "Assistant Impersonation Prefill": "어시스턴트 사칭 프리필",
-    "Use system prompt (Claude 2.1+ only)": "시스템 프롬프트 사용 (클로드 2.1+ 전용)",
     "Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.": "지원되는 모델에 대한 시스템 프롬프트를 보냅니다. 비활성화된 경우 사용자 메시지가 프롬프트의 처음에 추가됩니다.",
     "User first message": "사용자 첫 번째 메시지",
     "Restore User first message": "사용자의 첫 번째 메시지 복원",

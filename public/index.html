@@ -691,7 +691,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -730,7 +730,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="claude,openrouter,makersuite,cohere,perplexity">
+                                <div class="range-block" data-source="claude,openrouter,makersuite,vertexai,cohere,perplexity">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
@@ -743,7 +743,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai">
+                                <div class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,01ai,nanogpt,deepseek,xai">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -1969,7 +1969,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite,openrouter,claude">
+                                    <div class="range-block" data-source="makersuite,vertexai,openrouter,claude">
                                         <label for="openai_enable_web_search" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_enable_web_search" type="checkbox" />
                                             <span data-i18n="Enable web search">Enable web search</span>
@@ -1983,7 +1983,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,ai21,xai,pollinations">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,openrouter,groq,deepseek,makersuite,vertexai,ai21,xai,pollinations">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -1991,9 +1991,10 @@
                                         <div class="flexBasis100p toggle-description justifyLeft">
                                             <span data-i18n="enable_functions_desc_1">Allows using </span><a href="https://platform.openai.com/docs/guides/function-calling" target="_blank" data-i18n="enable_functions_desc_2">function tools</a>.
                                             <span data-i18n="enable_functions_desc_3">Can be utilized by various extensions to provide additional functionality.</span>
+                                            <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing is used!</strong>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,openrouter,mistralai,makersuite,claude,custom,01ai,xai,pollinations">
+                                    <div class="range-block" data-source="openai,openrouter,mistralai,makersuite,vertexai,claude,custom,01ai,xai,pollinations">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -2018,7 +2019,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite">
+                                    <div class="range-block" data-source="makersuite,vertexai">
                                         <label for="openai_request_images" class="checkbox_label widthFreeExpand">
                                             <input id="openai_request_images" type="checkbox" />
                                             <span>
@@ -2030,12 +2031,12 @@
                                             <span data-i18n="Allows the model to return image attachments.">
                                                 Allows the model to return image attachments.
                                             </span>
-                                            <em data-source="makersuite" data-i18n="Request inline images_desc_2">
+                                            <em data-source="makersuite,vertexai" data-i18n="Request inline images_desc_2">
                                                 Incompatible with the following features: function calling, web search, system prompt.
                                             </em>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite">
+                                    <div class="range-block" data-source="makersuite,vertexai">
                                         <label for="use_makersuite_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="use_makersuite_sysprompt" type="checkbox" />
                                             <span>
@@ -2060,12 +2061,12 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,openrouter,pollinations">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,openrouter,pollinations">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
                                                 <i data-source="openai,custom,xai,openrouter" class="opacity50p fa-solid fa-circle-info" title="OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level." data-i18n="[title]OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level."></i>
-                                                <i data-source="claude,makersuite" class="opacity50p fa-solid fa-circle-info" title="Allocates a portion of the response length for thinking (low: 10%, medium: 25%, high: 50%). Other options are model-dependent." data-i18n="[title]Allocates a portion of the response length for thinking (low: 10%, medium: 25%, high: 50%). Other options are model-dependent."></i>
+                                                <i data-source="claude,makersuite,vertexai" class="opacity50p fa-solid fa-circle-info" title="Allocates a portion of the response length for thinking (low: 10%, medium: 25%, high: 50%). Other options are model-dependent." data-i18n="[title]Allocates a portion of the response length for thinking (low: 10%, medium: 25%, high: 50%). Other options are model-dependent."></i>
                                             </label>
                                             <select id="openai_reasoning_effort">
                                                 <option data-i18n="openai_reasoning_effort_auto" value="auto">Auto</option>
@@ -2096,9 +2097,7 @@
                                         </div>
                                         <label for="claude_use_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="claude_use_sysprompt" type="checkbox" />
-                                            <span data-i18n="Use system prompt (Claude 2.1+ only)">
-                                                Use system prompt (Claude 2.1+ only)
-                                            </span>
+                                            <span data-i18n="Use system prompt">Use system prompt</span>
                                         </label>
                                         <div class="toggle-description justifyLeft marginBot5">
                                             <span data-i18n="Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.">
@@ -2769,6 +2768,7 @@
                                 <option value="deepseek">DeepSeek</option>
                                 <option value="groq">Groq</option>
                                 <option value="makersuite">Google AI Studio</option>
+                                <option value="vertexai">Google Vertex AI (Express mode)</option>
                                 <option value="mistralai">MistralAI</option>
                                 <option value="nanogpt">NanoGPT</option>
                                 <option value="openrouter">OpenRouter</option>
@@ -2779,7 +2779,7 @@
                                 <option value="xai">xAI (Grok)</option>
                             </optgroup>
                         </select>
-                        <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,deepseek,xai">
+                        <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,vertexai,deepseek,xai">
                             <div class="inline-drawer-toggle inline-drawer-header">
                                 <b data-i18n="Reverse Proxy">Reverse Proxy</b>
                                 <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -2843,7 +2843,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite,deepseek,xai">
+                        <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite,vertexai,deepseek,xai">
                             <div class="reverse_proxy_warning">
                                 <b>
                                     <div data-i18n="Using a proxy that you're not running yourself is a risk to your data privacy.">
@@ -2983,6 +2983,10 @@
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
                                     <optgroup label="Versions">
+                                        <option value="claude-opus-4-0">claude-opus-4-0</option>
+                                        <option value="claude-opus-4-20250514">claude-opus-4-20250514</option>
+                                        <option value="claude-sonnet-4-0">claude-sonnet-4-0</option>
+                                        <option value="claude-sonnet-4-20250514">claude-sonnet-4-20250514</option>
                                         <option value="claude-3-7-sonnet-latest">claude-3-7-sonnet-latest</option>
                                         <option value="claude-3-7-sonnet-20250219">claude-3-7-sonnet-20250219</option>
                                         <option value="claude-3-5-sonnet-latest">claude-3-5-sonnet-latest</option>
@@ -3209,6 +3213,38 @@
                                 </select>
                             </div>
                         </form>
+                        <div id="vertexai_form" data-source="vertexai">
+                            <h4>
+                                <span data-i18n="Google Vertex AI API Key">
+                                    Google Vertex AI API Key
+                                </span>
+                                <a href="https://cloud.google.com/vertex-ai/generative-ai/docs/start/express-mode/overview" data-i18n="(Express mode keys only)" target="_blank" rel="noopener noreferrer">
+                                    (Express mode keys only)
+                                </a>
+                            </h4>
+                            <div class="flex-container">
+                                <input id="api_key_vertexai" name="api_key_vertexai" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_vertexai"></div>
+                            </div>
+                            <div data-for="api_key_vertexai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <div>
+                                <h4 data-i18n="Google Model">Google Model</h4>
+                                <select id="model_vertexai_select">
+                                    <optgroup label="Gemini 2.5">
+                                        <option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
+                                        <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
+                                        <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
+                                        <option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
+                                    </optgroup>
+                                    <optgroup label="Gemini 2.0">
+                                        <option value="gemini-2.0-flash-001">gemini-2.0-flash-001</option>
+                                        <option value="gemini-2.0-flash-lite-001">gemini-2.0-flash-lite-001</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
                         <form id="mistralai_form" data-source="mistralai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4 data-i18n="MistralAI API Key">MistralAI API Key</h4>
                             <div class="flex-container">
@@ -3238,6 +3274,7 @@
                                         <option value="codestral-mamba-latest">codestral-mamba-latest</option>
                                         <option value="pixtral-12b-latest">pixtral-12b-latest</option>
                                         <option value="pixtral-large-latest">pixtral-large-latest</option>
+                                        <option value="devstral-small-latest">devstral-small-latest</option>
                                     </optgroup>
                                     <optgroup label="Sub-versions">
                                         <option value="open-mistral-nemo-2407">open-mistral-nemo-2407</option>
@@ -3266,6 +3303,7 @@
                                         <option value="codestral-2501">codestral-2501</option>
                                         <option value="pixtral-12b-2409">pixtral-12b-2409</option>
                                         <option value="pixtral-large-2411">pixtral-large-2411</option>
+                                        <option value="devstral-small-2505">devstral-small-2505</option>
                                     </optgroup>
                                     <optgroup id="mistralai_other_models" label="Other"></optgroup>
                                 </select>
@@ -3502,13 +3540,21 @@
                                 </span>
                             </div>
                         </div>
-                        <div id="prompt_post_porcessing_form" data-source="custom,openrouter">
-                            <h4 data-i18n="Prompt Post-Processing">Prompt Post-Processing</h4>
+                        <div id="prompt_post_processing_form">
+                            <h4>
+                                <span data-i18n="Prompt Post-Processing">
+                                    Prompt Post-Processing
+                                </span>
+                                <a href="https://docs.sillytavern.app/usage/api-connections/openai/#prompt-post-processing" class="notes-link" target="_blank">
+                                    <span class="fa-solid fa-circle-question note-link-span"></span>
+                                </a>
+                            </h4>
                             <select id="custom_prompt_post_processing" class="text_pole" title="Applies additional processing to the prompt before sending it to the API." data-i18n="[title]Applies additional processing to the prompt before sending it to the API.">
                                 <option data-i18n="prompt_post_processing_none" value="">None</option>
                                 <option data-i18n="prompt_post_processing_merge" value="merge">Merge consecutive roles</option>
                                 <option data-i18n="prompt_post_processing_semi" value="semi">Semi-strict (alternating roles)</option>
                                 <option data-i18n="prompt_post_processing_strict" value="strict">Strict (user first, alternating roles)</option>
+                                <option data-i18n="prompt_post_processing_single" value="single">Single user message</option>
                             </select>
                         </div>
                         <div class="flex-container flex">
@@ -5407,9 +5453,10 @@
                         </div>
                         <hr>
                         <div id="spoiler_free_desc" class="flex-container flexFlowColumn flex1 flexNoGap">
-                            <div id="creators_notes_div" class="title_restorable">
-                                <span data-i18n="Creator's Notes">Creator's Notes</span>
+                            <div id="creators_notes_div" class="title_restorable flexGap5">
+                                <span class="flex1" data-i18n="Creator's Notes">Creator's Notes</span>
                                 <small id="creators_note_desc_hidden" data-i18n="Character details are hidden.">Character details are hidden.</small>
+                                <div id="creators_note_styles_button" class="margin0 menu_button fa-solid fa-palette fa-fw" title="Allow / Forbid the use of global styles for this character." data-i18n="[title]Allow / Forbid the use of global styles for this character."></div>
                                 <div id="spoiler_free_desc_button" class="margin0 menu_button fa-solid fa-eye fa-fw" title="Show / Hide Description and First Message" data-i18n="[title]Show / Hide Description and First Message"></div>
                             </div>
                             <div id="creator_notes_spoiler" class="flex1"></div>

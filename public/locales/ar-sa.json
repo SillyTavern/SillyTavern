@@ -253,7 +253,6 @@
     "Assistant Prefill": "تعبئة مسبقة للمساعد",
     "Start Claude's answer with...": "ابدأ إجابة كلود بـ...",
     "Assistant Impersonation Prefill": "مساعد انتحال الشخصية المسبقة",
-    "Use system prompt (Claude 2.1+ only)": "استخدام التعليمة النظامية (فقط كلود 2.1+)",
     "Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.": "إرسال التعليمة النظامية للنماذج المدعومة. إذا تم تعطيلها، يتم إضافة رسالة المستخدم إلى بداية التعليمة.",
     "User first message": "الرسالة الأولى للمستخدم",
     "Restore User first message": "استعادة الرسالة الأولى للمستخدم",

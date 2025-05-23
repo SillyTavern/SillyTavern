@@ -253,7 +253,6 @@
     "Assistant Prefill": "Асистент автозаповнення",
     "Start Claude's answer with...": "Почати відповідь Клода з...",
     "Assistant Impersonation Prefill": "Попереднє заповнення уособлення помічника",
-    "Use system prompt (Claude 2.1+ only)": "Використовувати системний промпт (тільки Claude 2.1+)",
     "Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.": "Надсилати системний промпт для підтримуваних моделей. Якщо відключено, повідомлення користувача додається в початок промпта.",
     "User first message": "Перше повідомлення користувача",
     "Restore User first message": "Відновити перше повідомлення користувача",

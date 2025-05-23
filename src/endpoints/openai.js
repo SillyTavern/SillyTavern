@@ -22,8 +22,12 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
         }
 
-        if (request.body.api === 'openrouter' && !request.body.reverse_proxy) {
-            key = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER);
+        if (request.body.api === 'xai' && !request.body.reverse_proxy) {
+            key = readSecret(request.user.directories, SECRET_KEYS.XAI);
+        }
+
+        if (request.body.api === 'mistral' && !request.body.reverse_proxy) {
+            key = readSecret(request.user.directories, SECRET_KEYS.MISTRALAI);
         }
 
         if (request.body.reverse_proxy && request.body.proxy_password) {
@@ -34,6 +38,10 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.CUSTOM);
             mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
             mergeObjectWithYaml(headers, request.body.custom_include_headers);
+        }
+
+        if (request.body.api === 'openrouter') {
+            key = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER);
         }
 
         if (request.body.api === 'ooba') {
@@ -57,20 +65,12 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.ZEROONEAI);
         }
 
-        if (request.body.api === 'mistral') {
-            key = readSecret(request.user.directories, SECRET_KEYS.MISTRALAI);
-        }
-
         if (request.body.api === 'groq') {
             key = readSecret(request.user.directories, SECRET_KEYS.GROQ);
         }
 
         if (request.body.api === 'cohere') {
             key = readSecret(request.user.directories, SECRET_KEYS.COHERE);
-        }
-
-        if (request.body.api === 'xai') {
-            key = readSecret(request.user.directories, SECRET_KEYS.XAI);
         }
 
         const noKeyTypes = ['custom', 'ooba', 'koboldcpp', 'vllm', 'llamacpp', 'pollinations'];

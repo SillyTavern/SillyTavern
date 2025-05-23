@@ -280,7 +280,6 @@
     "Expand the editor": "展开编辑器",
     "Start Claude's answer with...": "以如下内容开始Claude的回答...",
     "Assistant Impersonation Prefill": "AI帮答预填",
-    "Use system prompt (Claude 2.1+ only)": "使用系统提示词（仅适用于Claude 2.1+）",
     "Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.": "为支持的模型发送系统提示词。如果禁用，则用户消息将添加到提示词的开头。",
     "Confirm token parsing with": "确认使用以下工具进行词符解析",
     "Tokenizer": "词符化器",

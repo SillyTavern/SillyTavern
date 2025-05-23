@@ -253,7 +253,6 @@
     "Assistant Prefill": "Prefill trợ lý",
     "Start Claude's answer with...": "Claude trả lời bắt đầu bằng...",
     "Assistant Impersonation Prefill": "Prefill cho mạo danh trợ lý",
-    "Use system prompt (Claude 2.1+ only)": "Sử dụng prompt hệ thống (Chỉ áp dụng từ Claude 2.1+)",
     "Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.": "Gửi yêu cầu hệ thống cho các model được hỗ trợ. Nếu bị vô hiệu hóa, tin nhắn của người dùng sẽ được thêm vào đầu yêu cầu.",
     "User first message": "Tin nhắn đầu tiên của người dùng",
     "Restore User first message": "Khôi phục tin nhắn đầu tiên của người dùng",

@@ -253,7 +253,6 @@
     "Assistant Prefill": "アシスタントプリフィル",
     "Start Claude's answer with...": "クロードの回答を...で始める",
     "Assistant Impersonation Prefill": "アシスタントのなりすまし事前入力",
-    "Use system prompt (Claude 2.1+ only)": "システムプロンプトを使用します（クロード2.1以降のみ）",
     "Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.": "サポートされているモデルのシステムプロンプトを送信します。無効にすると、ユーザーメッセージがプロンプトの先頭に追加されます。",
     "User first message": "ユーザーの最初のメッセージ",
     "Restore User first message": "ユーザーの最初のメッセージを復元する",

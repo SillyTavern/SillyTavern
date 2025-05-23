@@ -368,7 +368,6 @@ async function checkChatIntegrity(filePath, integritySlug) {
  */
 export async function getChatInfo(pathToFile, additionalData = {}, isGroup = false) {
     return new Promise(async (res) => {
-        const fileStream = fs.createReadStream(pathToFile);
         const stats = await fs.promises.stat(pathToFile);
         const fileSizeInKB = `${(stats.size / 1024).toFixed(2)}kb`;
 
@@ -392,6 +391,7 @@ export async function getChatInfo(pathToFile, additionalData = {}, isGroup = fal
             return;
         }
 
+        const fileStream = fs.createReadStream(pathToFile);
         const rl = readline.createInterface({
             input: fileStream,
             crlfDelay: Infinity,

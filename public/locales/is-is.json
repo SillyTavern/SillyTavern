@@ -253,7 +253,6 @@
     "Assistant Prefill": "Fyrirfram fylla viðstoðarmanns",
     "Start Claude's answer with...": "Byrjaðu svör Claude með...",
     "Assistant Impersonation Prefill": "Forfylling aðstoðarmanns eftirlíkingar",
-    "Use system prompt (Claude 2.1+ only)": "Nota kerfisflug (einungis Claude 2.1+)",
     "Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.": "Senda kerfisflug fyrir styðjandi módel. Ef óvirk, er notendaskilaboð bætt við byrjun flugs.",
     "User first message": "Fyrstu skilaboð notanda",
     "Restore User first message": "Endurheimta fyrstu skilaboð notanda",

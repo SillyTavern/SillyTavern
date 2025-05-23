@@ -52,6 +52,7 @@ const API_COHERE_V2 = 'https://api.cohere.ai/v2';
 const API_PERPLEXITY = 'https://api.perplexity.ai';
 const API_GROQ = 'https://api.groq.com/openai/v1';
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
+const API_VERTEX_AI = 'https://us-central1-aiplatform.googleapis.com';
 const API_01AI = 'https://api.lingyiwanwu.com/v1';
 const API_AI21 = 'https://api.ai21.com/studio/v1';
 const API_NANOGPT = 'https://nano-gpt.com/api/v1';
@@ -71,15 +72,17 @@ function postProcessPrompt(messages, type, names) {
     switch (type) {
         case 'merge':
         case 'claude':
-            return mergeMessages(messages, names, false, false);
+            return mergeMessages(messages, names, { strict: false, placeholders: false, single: false });
         case 'semi':
-            return mergeMessages(messages, names, true, false);
+            return mergeMessages(messages, names, { strict: true, placeholders: false, single: false });
         case 'strict':
-            return mergeMessages(messages, names, true, true);
+            return mergeMessages(messages, names, { strict: true, placeholders: true, single: false });
         case 'deepseek':
-            return addAssistantPrefix(mergeMessages(messages, names, true, false));
+            return addAssistantPrefix(mergeMessages(messages, names, { strict: true, placeholders: false, single: false }));
         case 'deepseek-reasoner':
-            return addAssistantPrefix(mergeMessages(messages, names, true, true));
+            return addAssistantPrefix(mergeMessages(messages, names, { strict: true, placeholders: true, single: false }));
+        case 'single':
+            return mergeMessages(messages, names, { strict: true, placeholders: false, single: true });
         default:
             return messages;
     }
@@ -125,10 +128,11 @@ async function sendClaudeRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_CLAUDE).toString();
     const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.CLAUDE);
     const divider = '-'.repeat(process.stdout.columns);
-    const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false, 'boolean') && request.body.model.startsWith('claude-3');
+    const isClaude3or4 = /^claude-(3|opus-4|sonnet-4)/.test(request.body.model);
+    const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false, 'boolean') && isClaude3or4;
     let cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1, 'number');
     // Disabled if not an integer or negative, or if the model doesn't support it
-    if (!Number.isInteger(cachingAtDepth) || cachingAtDepth < 0 || !request.body.model.startsWith('claude-3')) {
+    if (!Number.isInteger(cachingAtDepth) || cachingAtDepth < 0 || !isClaude3or4) {
         cachingAtDepth = -1;
     }
 
@@ -145,11 +149,12 @@ async function sendClaudeRequest(request, response) {
         });
         const additionalHeaders = {};
         const betaHeaders = ['output-128k-2025-02-19'];
-        const useTools = request.body.model.startsWith('claude-3') && Array.isArray(request.body.tools) && request.body.tools.length > 0;
-        const useSystemPrompt = (request.body.model.startsWith('claude-2') || request.body.model.startsWith('claude-3')) && request.body.claude_use_sysprompt;
+        const useTools = isClaude3or4 && Array.isArray(request.body.tools) && request.body.tools.length > 0;
+        const useSystemPrompt = Boolean(request.body.claude_use_sysprompt);
         const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
-        const useThinking = request.body.model.startsWith('claude-3-7') && Boolean(request.body.include_reasoning);
-        const useWebSearch = /^claude-3-(5|7)/.test(request.body.model) && Boolean(request.body.enable_web_search);
+        const useThinking = /^claude-(3-7|opus-4|sonnet-4)/.test(request.body.model) && Boolean(request.body.include_reasoning);
+        const useWebSearch = /^claude-(3-5|3-7|opus-4|sonnet-4)/.test(request.body.model) && Boolean(request.body.enable_web_search);
+        const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
         let fixThinkingPrefill = false;
         // Add custom stop sequences
         const stopSequences = [];
@@ -170,7 +175,7 @@ async function sendClaudeRequest(request, response) {
         };
         if (useSystemPrompt) {
             if (enableSystemPromptCache && Array.isArray(convertedPrompt.systemPrompt) && convertedPrompt.systemPrompt.length) {
-                convertedPrompt.systemPrompt[convertedPrompt.systemPrompt.length - 1]['cache_control'] = { type: 'ephemeral' };
+                convertedPrompt.systemPrompt[convertedPrompt.systemPrompt.length - 1]['cache_control'] = { type: 'ephemeral', ttl: cacheTTL };
             }
 
             requestBody.system = convertedPrompt.systemPrompt;
@@ -186,7 +191,7 @@ async function sendClaudeRequest(request, response) {
                 .map(fn => ({ name: fn.name, description: fn.description, input_schema: fn.parameters }));
 
             if (enableSystemPromptCache && requestBody.tools.length) {
-                requestBody.tools[requestBody.tools.length - 1]['cache_control'] = { type: 'ephemeral' };
+                requestBody.tools[requestBody.tools.length - 1]['cache_control'] = { type: 'ephemeral', ttl: cacheTTL };
             }
         }
 
@@ -195,15 +200,16 @@ async function sendClaudeRequest(request, response) {
                 'type': 'web_search_20250305',
                 'name': 'web_search',
             }];
-            requestBody.tools = [...(requestBody.tools || []), ...webSearchTool];
+            requestBody.tools = [...webSearchTool, ...(requestBody.tools || [])];
         }
 
         if (cachingAtDepth !== -1) {
-            cachingAtDepthForClaude(convertedPrompt.messages, cachingAtDepth);
+            cachingAtDepthForClaude(convertedPrompt.messages, cachingAtDepth, cacheTTL);
         }
 
         if (enableSystemPromptCache || cachingAtDepth !== -1) {
             betaHeaders.push('prompt-caching-2024-07-31');
+            betaHeaders.push('extended-cache-ttl-2025-04-11');
         }
 
         const reasoningEffort = request.body.reasoning_effort;
@@ -337,12 +343,27 @@ async function sendScaleRequest(request, response) {
  * @param {express.Response} response Express response
  */
 async function sendMakerSuiteRequest(request, response) {
-    const apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
-    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
+    const useVertexAi = request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.VERTEXAI;
+    const apiName = useVertexAi ? 'Google Vertex AI' : 'Google AI Studio';
+    let apiUrl;
+    let apiKey;
 
-    if (!request.body.reverse_proxy && !apiKey) {
-        console.warn('Google AI Studio API key is missing.');
-        return response.status(400).send({ error: true });
+    if (useVertexAi) {
+        apiUrl = new URL(request.body.reverse_proxy || API_VERTEX_AI);
+        apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.VERTEXAI);
+
+        if (!request.body.reverse_proxy && !apiKey) {
+            console.warn(`${apiName} API key is missing.`);
+            return response.status(400).send({ error: true });
+        }
+    } else {
+        apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
+        apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
+
+        if (!request.body.reverse_proxy && !apiKey) {
+            console.warn(`${apiName} API key is missing.`);
+            return response.status(400).send({ error: true });
+        }
     }
 
     const model = String(request.body.model);
@@ -367,7 +388,7 @@ async function sendMakerSuiteRequest(request, response) {
 
     function getGeminiBody() {
         // #region UGLY MODEL LISTS AREA
-        const imageGenerationModels =  [
+        const imageGenerationModels = [
             'gemini-2.0-flash-exp',
             'gemini-2.0-flash-exp-image-generation',
         ];
@@ -465,7 +486,7 @@ async function sendMakerSuiteRequest(request, response) {
     }
 
     const body = getGeminiBody();
-    console.debug('Google AI Studio request:', body);
+    console.debug(`${apiName} request:`, body);
 
     try {
         const controller = new AbortController();
@@ -477,7 +498,13 @@ async function sendMakerSuiteRequest(request, response) {
         const apiVersion = getConfigValue('gemini.apiVersion', 'v1beta');
         const responseType = (stream ? 'streamGenerateContent' : 'generateContent');
 
-        const generateResponse = await fetch(`${apiUrl.toString().replace(/\/$/, '')}/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`, {
+        let url;
+        if (useVertexAi) {
+            url = `${apiUrl.toString().replace(/\/$/, '')}/v1/publishers/google/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`;
+        } else {
+            url = `${apiUrl.toString().replace(/\/$/, '')}/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`;
+        }
+        const generateResponse = await fetch(url, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {
@@ -498,7 +525,7 @@ async function sendMakerSuiteRequest(request, response) {
             }
         } else {
             if (!generateResponse.ok) {
-                console.warn(`Google AI Studio API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+                console.warn(`${apiName} API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
                 return response.status(500).send({ error: true });
             }
 
@@ -507,7 +534,7 @@ async function sendMakerSuiteRequest(request, response) {
 
             const candidates = generateResponseJson?.candidates;
             if (!candidates || candidates.length === 0) {
-                let message = 'Google AI Studio API returned no candidate';
+                let message = `${apiName} API returned no candidate`;
                 console.warn(message, generateResponseJson);
                 if (generateResponseJson?.promptFeedback?.blockReason) {
                     message += `\nPrompt was blocked due to : ${generateResponseJson.promptFeedback.blockReason}`;
@@ -518,11 +545,11 @@ async function sendMakerSuiteRequest(request, response) {
             const responseContent = candidates[0].content ?? candidates[0].output;
             const functionCall = (candidates?.[0]?.content?.parts ?? []).some(part => part.functionCall);
             const inlineData = (candidates?.[0]?.content?.parts ?? []).some(part => part.inlineData);
-            console.debug('Google AI Studio response:', util.inspect(generateResponseJson, { depth: 5, colors: true }));
+            console.debug(`${apiName} response:`, util.inspect(generateResponseJson, { depth: 5, colors: true }));
 
             const responseText = typeof responseContent === 'string' ? responseContent : responseContent?.parts?.filter(part => !part.thought)?.map(part => part.text)?.join('\n\n');
             if (!responseText && !functionCall && !inlineData) {
-                let message = 'Google AI Studio Candidate text empty';
+                let message = `${apiName} Candidate text empty`;
                 console.warn(message, generateResponseJson);
                 return response.send({ error: { message } });
             }
@@ -532,7 +559,7 @@ async function sendMakerSuiteRequest(request, response) {
             return response.send(reply);
         }
     } catch (error) {
-        console.error('Error communicating with Google AI Studio API: ', error);
+        console.error(`Error communicating with ${apiName} API:`, error);
         if (!response.headersSent) {
             return response.status(500).send({ error: true });
         }
@@ -1184,11 +1211,21 @@ router.post('/bias', async function (request, response) {
 router.post('/generate', function (request, response) {
     if (!request.body) return response.status(400).send({ error: true });
 
+    const postProcessingType = request.body.custom_prompt_post_processing;
+    if (Array.isArray(request.body.messages) && postProcessingType) {
+        console.info('Applying custom prompt post-processing of type', postProcessingType);
+        request.body.messages = postProcessPrompt(
+            request.body.messages,
+            postProcessingType,
+            getPromptNames(request));
+    }
+
     switch (request.body.chat_completion_source) {
         case CHAT_COMPLETION_SOURCES.CLAUDE: return sendClaudeRequest(request, response);
         case CHAT_COMPLETION_SOURCES.SCALE: return sendScaleRequest(request, response);
         case CHAT_COMPLETION_SOURCES.AI21: return sendAI21Request(request, response);
         case CHAT_COMPLETION_SOURCES.MAKERSUITE: return sendMakerSuiteRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.VERTEXAI: return sendMakerSuiteRequest(request, response);
         case CHAT_COMPLETION_SOURCES.MISTRALAI: return sendMistralAIRequest(request, response);
         case CHAT_COMPLETION_SOURCES.COHERE: return sendCohereRequest(request, response);
         case CHAT_COMPLETION_SOURCES.DEEPSEEK: return sendDeepSeekRequest(request, response);
@@ -1200,15 +1237,6 @@ router.post('/generate', function (request, response) {
     let headers;
     let bodyParams;
     const isTextCompletion = Boolean(request.body.model && TEXT_COMPLETION_MODELS.includes(request.body.model)) || typeof request.body.messages === 'string';
-
-    const postProcessTypes = [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENROUTER];
-    if (Array.isArray(request.body.messages) && postProcessTypes.includes(request.body.chat_completion_source) && request.body.custom_prompt_post_processing) {
-        console.info('Applying custom prompt post-processing of type', request.body.custom_prompt_post_processing);
-        request.body.messages = postProcessPrompt(
-            request.body.messages,
-            request.body.custom_prompt_post_processing,
-            getPromptNames(request));
-    }
 
     if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
         apiUrl = new URL(request.body.reverse_proxy || API_OPENAI).toString();
@@ -1267,7 +1295,8 @@ router.post('/generate', function (request, response) {
         }
 
         let cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1, 'number');
-        if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && request.body.model?.startsWith('anthropic/claude-3')) {
+        const isClaude3or4 = /anthropic\/claude-(3|opus-4|sonnet-4)/.test(request.body.model);
+        if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0 && isClaude3or4) {
             cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth);
         }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {

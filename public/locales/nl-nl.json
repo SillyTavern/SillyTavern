@@ -253,7 +253,6 @@
     "Assistant Prefill": "Assistent Voorvullen",
     "Start Claude's answer with...": "Start het antwoord van Claude met...",
     "Assistant Impersonation Prefill": "Vooraf invullen van assistent-imitatie",
-    "Use system prompt (Claude 2.1+ only)": "Gebruik systeemprompt (alleen Claude 2.1+)",
     "Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.": "Verzend de systeemprompt voor ondersteunde modellen. Als dit is uitgeschakeld, wordt het gebruikersbericht toegevoegd aan het begin van de prompt.",
     "User first message": "Bericht van de gebruiker eerst",
     "Restore User first message": "Herstel gebruiker eerste bericht",

@@ -3970,7 +3970,8 @@ body #toast-container .toast-warning {
 }
 
 button.toast-close-button {
-    padding-right: 3px
+    padding-right: 5px;
+    padding-top: 3px;
 }
 
 #dialogue_del_mes {

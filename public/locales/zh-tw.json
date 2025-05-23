@@ -254,7 +254,6 @@
     "Assistant Prefill": "預先填充助理訊息",
     "Start Claude's answer with...": "開始 Claude 的回答⋯",
     "Assistant Impersonation Prefill": "助理扮演時的預先填充",
-    "Use system prompt (Claude 2.1+ only)": "使用系統提示詞（僅限 Claude 2.1+）",
     "Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.": "為支援的模型傳送系統提示詞。停用時，使用者訊息將新增到提示詞的開頭。",
     "User first message": "使用者第一則訊息",
     "Restore User first message": "還原使用者第一則訊息",
