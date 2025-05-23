@@ -487,7 +487,6 @@ jQuery(async function () {
         $('#caption_prompt_block').toggle(isMultimodal);
         $('#caption_multimodal_api').val(extension_settings.caption.multimodal_api);
         $('#caption_multimodal_model').val(extension_settings.caption.multimodal_model);
-
         $('#caption_multimodal_block [data-type]').each(function () {
             const type = $(this).data('type');
             const types = type.split(',');
@@ -586,7 +585,6 @@ jQuery(async function () {
     $('#caption_multimodal_model').on('change', () => {
         extension_settings.caption.multimodal_model = String($('#caption_multimodal_model').val());
         saveSettingsDebounced();
-        switchMultimodalBlocks();
     });
     $('#caption_altEndpoint_address').val(extension_settings.caption.alt_endpoint_url).on('change', () => {
         extension_settings.caption.alt_endpoint_url = String($('#caption_altEndpoint_address').val());
