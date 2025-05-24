@@ -76,7 +76,7 @@
     background-color: rgba(255, 0, 50, 0.4);
 }
 
-.logprobs_output_prefix:hover ~ .logprobs_output_prefix {
+.logprobs_output_prefix:hover~.logprobs_output_prefix {
     background-color: rgba(255, 0, 50, 0.4);
 }
 
@@ -115,7 +115,8 @@
     background-color: rgba(255, 255, 0, 0.05);
 }
 
-.logprobs_tint_0:hover, .logprobs_tint_0.selected {
+.logprobs_tint_0:hover,
+.logprobs_tint_0.selected {
     background-color: rgba(255, 255, 0, 0.4);
 }
 
@@ -123,7 +124,8 @@
     background-color: rgba(255, 0, 255, 0.05);
 }
 
-.logprobs_tint_1:hover, .logprobs_tint_1.selected {
+.logprobs_tint_1:hover,
+.logprobs_tint_1.selected {
     background-color: rgba(255, 0, 255, 0.4);
 }
 
@@ -131,7 +133,8 @@
     background-color: rgba(0, 255, 255, 0.05);
 }
 
-.logprobs_tint_2:hover, .logprobs_tint_2.selected {
+.logprobs_tint_2:hover,
+.logprobs_tint_2.selected {
     background-color: rgba(0, 255, 255, 0.4);
 }
 
@@ -139,6 +142,7 @@
     background-color: rgba(50, 205, 50, 0.05);
 }
 
-.logprobs_tint_3:hover, .logprobs_tint_3.selected {
+.logprobs_tint_3:hover,
+.logprobs_tint_3.selected {
     background-color: rgba(50, 205, 50, 0.4);
 }

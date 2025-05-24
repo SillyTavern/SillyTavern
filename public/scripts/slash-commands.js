@@ -266,6 +266,14 @@ export function initDefaultSlashCommands() {
                 enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
                 forceEnum: true,
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'raw',
+                description: 'If true, does not alter quoted literal unnamed arguments',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+                isRequired: false,
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -327,6 +335,14 @@ export function initDefaultSlashCommands() {
                 defaultValue: 'none',
                 enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
                 forceEnum: true,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'raw',
+                description: 'If true, does not alter quoted literal unnamed arguments',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+                isRequired: false,
             }),
         ],
         unnamedArgumentList: [
@@ -391,6 +407,14 @@ export function initDefaultSlashCommands() {
                 defaultValue: 'none',
                 enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
                 forceEnum: true,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'raw',
+                description: 'If true, does not alter quoted literal unnamed arguments',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+                isRequired: false,
             }),
         ],
         unnamedArgumentList: [
@@ -616,6 +640,14 @@ export function initDefaultSlashCommands() {
                 defaultValue: 'none',
                 enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
                 forceEnum: true,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'raw',
+                description: 'If true, does not alter quoted literal unnamed arguments',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+                isRequired: false,
             }),
         ],
         unnamedArgumentList: [
@@ -1012,6 +1044,14 @@ export function initDefaultSlashCommands() {
                 name: 'onClick',
                 description: 'a closure to call when the toast is clicked. This executed closure receives scope as provided in the script. Careful about possible side effects when manipulating variables and more.',
                 typeList: [ARGUMENT_TYPE.CLOSURE],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'raw',
+                description: 'If true, does not alter quoted literal unnamed arguments',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+                isRequired: false,
             }),
         ],
         unnamedArgumentList: [
@@ -4127,6 +4167,7 @@ function getModelOptions(quiet) {
         { id: 'model_openrouter_select', api: 'openai', type: chat_completion_sources.OPENROUTER },
         { id: 'model_ai21_select', api: 'openai', type: chat_completion_sources.AI21 },
         { id: 'model_google_select', api: 'openai', type: chat_completion_sources.MAKERSUITE },
+        { id: 'model_vertexai_select', api: 'openai', type: chat_completion_sources.VERTEXAI },
         { id: 'model_mistralai_select', api: 'openai', type: chat_completion_sources.MISTRALAI },
         { id: 'custom_model_id', api: 'openai', type: chat_completion_sources.CUSTOM },
         { id: 'model_cohere_select', api: 'openai', type: chat_completion_sources.COHERE },

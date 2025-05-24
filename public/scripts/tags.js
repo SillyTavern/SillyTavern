@@ -1315,7 +1315,7 @@ async function onViewTagsListClick() {
     printViewTagList(tagContainer);
     makeTagListDraggable(tagContainer);
 
-    await callGenericPopup(html, POPUP_TYPE.TEXT, null, { allowVerticalScrolling: true, wide: true });
+    await callGenericPopup(html, POPUP_TYPE.TEXT, null, { allowVerticalScrolling: true, wide: true, large: true });
 }
 
 /**
@@ -1601,14 +1601,17 @@ function appendViewTagToList(list, tag, everything) {
         colorPicker[0].color = defaultColor;
     });
 
+    const getHideTooltip = () => tag.is_hidden_on_character_card ? t`Hide on character card` : t`Show on character card`;
     const hideToggle = template.find('.eye-toggle');
     hideToggle.toggleClass('fa-eye-slash', tag.is_hidden_on_character_card);
     hideToggle.toggleClass('fa-eye', !tag.is_hidden_on_character_card);
+    hideToggle.attr('title', getHideTooltip());
 
     hideToggle.on('click', () => {
         tag.is_hidden_on_character_card = !tag.is_hidden_on_character_card;
         hideToggle.toggleClass('fa-eye-slash', tag.is_hidden_on_character_card);
         hideToggle.toggleClass('fa-eye', !tag.is_hidden_on_character_card);
+        hideToggle.attr('title', getHideTooltip());
         printCharactersDebounced();
         saveSettingsDebounced();
     });
