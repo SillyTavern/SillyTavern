@@ -36,7 +36,13 @@ export let modules = [];
  * A set of active extensions.
  * @type {Set<string>}
  */
-let activeExtensions = new Set();
+const activeExtensions = new Set();
+
+/**
+ * Errors that occurred while loading extensions.
+ * @type {Set<string>}
+ */
+const extensionLoadErrors = new Set();
 
 const getApiUrl = () => extension_settings.apiUrl;
 const sortManifestsByOrder = (a, b) => parseInt(a.loading_order) - parseInt(b.loading_order) || String(a.display_name).localeCompare(String(b.display_name));
@@ -387,7 +393,8 @@ async function activateExtensions() {
         const name = entry[0];
         const manifest = entry[1];
         const extrasRequirements = manifest.requires;
-        const extensionDependencies = manifest.extensionDependencies;
+        const extensionDependencies = manifest.dependencies;
+        const displayName = manifest.display_name || name;
 
         if (activeExtensions.has(name)) {
             continue;
@@ -397,30 +404,29 @@ async function activateExtensions() {
         let meetsModuleRequirements = true;
         if (extrasRequirements !== undefined) {
             if (Array.isArray(extrasRequirements)) {
-                console.debug(`Extension ${name}: requires is an array`);
                 meetsModuleRequirements = isSubsetOf(modules, extrasRequirements);
             } else {
                 console.warn(`Extension ${name}: manifest.json 'requires' field is not an array. Loading allowed, but any intended requirements were not verified to exist.`);
             }
         }
 
-        // Extension dependencies: pass if 'extensionDependencies' is undefined or not an array; check subset and disabled status if it's an array
+        // Extension dependencies: pass if 'dependencies' is undefined or not an array; check subset and disabled status if it's an array
         let meetsExtensionDeps = true;
         let disabledDependencies = [];
         if (extensionDependencies !== undefined) {
             if (Array.isArray(extensionDependencies)) {
-                console.debug(`Extension ${name}: extensionDependencies is an array`);
                 // Check if all dependencies exist
                 meetsExtensionDeps = isSubsetOf(extensionNames, extensionDependencies);
                 // Check for disabled dependencies
                 if (meetsExtensionDeps) {
                     disabledDependencies = extensionDependencies.filter(dep => extension_settings.disabledExtensions.includes(dep));
                     if (disabledDependencies.length > 0) {
-                        meetsExtensionDeps = false; // Fail if any dependencies are disabled
+                        // Fail if any dependencies are disabled
+                        meetsExtensionDeps = false;
                     }
                 }
             } else {
-                console.warn(`Extension ${name}: manifest.json 'extensionDependencies' field is not an array. Allowed, but any intended requirements were not verified to exist.`);
+                console.warn(`Extension ${name}: manifest.json 'dependencies' field is not an array. Allowed, but any intended requirements were not verified to exist.`);
             }
         }
 
@@ -428,34 +434,36 @@ async function activateExtensions() {
 
         if (meetsModuleRequirements && meetsExtensionDeps && !isDisabled) {
             try {
-                console.debug('Activating extension', name); // Changed from console.warn to console.debug for consistency
+                console.debug('Activating extension', name);
                 const promise = addExtensionLocale(name, manifest).finally(() =>
                     Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]),
                 );
                 await promise
                     .then(() => activeExtensions.add(name))
-                    .catch(err => console.log('Could not activate extension', name, err));
+                    .catch(err => {
+                        console.log('Could not activate extension', name, err);
+                        extensionLoadErrors.add(t`Extension "${name}" failed to load: ${err}`);
+                    });
                 promises.push(promise);
             } catch (error) {
-                toastr.error(t`Could not activate Extension "${name}": ${error}`);
-                console.error('Could not activate extension', name);
-                console.error(error);
+                console.error('Could not activate extension', name, error);
             }
         } else if (!meetsModuleRequirements && !isDisabled) {
-            console.warn(t`Extension "${name}" did not load. Missing required Extras Module: "${Array.isArray(extrasRequirements) ? extrasRequirements.join(', ') : extrasRequirements}"`);
-            toastr.error(t`Extension "${name}" did not load. Missing required Extras Module: "${Array.isArray(extrasRequirements) ? extrasRequirements.join(', ') : extrasRequirements}"`);
+            console.warn(t`Extension "${name}" did not load. Missing required Extras module(s): "${Array.isArray(extrasRequirements) ? extrasRequirements.join(', ') : extrasRequirements}"`);
+            extensionLoadErrors.add(t`Extension "${name}" did not load. Missing required Extras module(s): "${Array.isArray(extrasRequirements) ? extrasRequirements.join(', ') : extrasRequirements}"`);
         } else if (!meetsExtensionDeps && !isDisabled) {
             if (disabledDependencies.length > 0) {
                 console.warn(t`Extension "${name}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
-                toastr.error(t`Extension "${name}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
+                extensionLoadErrors.add(t`Extension "${name}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
             } else {
-                console.warn(t`Extension "${name}" did not load. Missing required Extensions: "${Array.isArray(extensionDependencies) ? extensionDependencies.join(', ') : extensionDependencies}"`);
-                toastr.error(t`Extension "${name}" did not load. Missing required Extensions: "${Array.isArray(extensionDependencies) ? extensionDependencies.join(', ') : extensionDependencies}"`);
+                console.warn(t`Extension "${name}" did not load. Missing required extensions: "${Array.isArray(extensionDependencies) ? extensionDependencies.join(', ') : extensionDependencies}"`);
+                extensionLoadErrors.add(t`Extension "${name}" did not load. Missing required extensions: "${Array.isArray(extensionDependencies) ? extensionDependencies.join(', ') : extensionDependencies}"`);
             }
         }
     }
 
     await Promise.allSettled(promises);
+    $('#extensions_details').toggleClass('warning', extensionLoadErrors.size > 0);
 }
 
 async function connectClickHandler() {
@@ -798,6 +806,27 @@ function getModuleInformation() {
 }
 
 /**
+ * Generates HTML for the extension load errors.
+ * @returns {string} HTML string containing the errors that occurred while loading extensions.
+ */
+function getExtensionLoadErrorsHtml() {
+    if (extensionLoadErrors.size === 0) {
+        return '';
+    }
+
+    const container = document.createElement('div');
+    container.classList.add('info-block', 'error');
+
+    for (const error of extensionLoadErrors) {
+        const errorElement = document.createElement('div');
+        errorElement.textContent = error;
+        container.appendChild(errorElement);
+    }
+
+    return container.outerHTML;
+}
+
+/**
  * Generates the HTML strings for all extensions and displays them in a popup.
  */
 async function showExtensionsDetails() {
@@ -811,6 +840,7 @@ async function showExtensionsDetails() {
             initialScrollTop = oldPopup.content.scrollTop;
             await oldPopup.completeCancelled();
         }
+        const htmlErrors = getExtensionLoadErrorsHtml();
         const htmlDefault = $('<div class="marginBot10"><h3 class="textAlignCenter">' + t`Built-in Extensions:` + '</h3></div>');
         const htmlExternal = $('<div class="marginBot10"><h3 class="textAlignCenter">' + t`Installed Extensions:` + '</h3></div>');
         const htmlLoading = $(`<div class="flex-container alignItemsCenter justifyCenter marginTop10 marginBot5">
@@ -833,6 +863,7 @@ async function showExtensionsDetails() {
 
         const html = $('<div></div>')
             .addClass('extensions_info')
+            .append(htmlErrors)
             .append(htmlDefault)
             .append(htmlExternal)
             .append(getModuleInformation());
