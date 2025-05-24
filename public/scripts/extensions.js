@@ -394,7 +394,6 @@ async function activateExtensions() {
         const manifest = entry[1];
         const extrasRequirements = manifest.requires;
         const extensionDependencies = manifest.dependencies;
-        const displayName = manifest.display_name || name;
 
         if (activeExtensions.has(name)) {
             continue;
