@@ -56,6 +56,8 @@ import { SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValu
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { ToolManager } from '../../tool-calling.js';
+import { MacrosParser } from '../../macros.js';
+import { t } from '../../i18n.js';
 
 export { MODULE_NAME };
 
@@ -4548,4 +4550,29 @@ jQuery(async () => {
 
     await loadSettings();
     $('body').addClass('sd');
+
+    const getMacroValue = ({ isNegative }) => {
+        if (selected_group || this_chid === undefined) {
+            return '';
+        }
+
+        const key = getCharaFilename(this_chid);
+        let characterPrompt = key ? (extension_settings.sd.character_prompts[key] || '') : '';
+        let negativePrompt = key ? (extension_settings.sd.character_negative_prompts[key] || '') : '';
+
+        const context = getContext();
+        const sharedPromptData = context?.characters[this_chid]?.data?.extensions?.sd_character_prompt;
+
+        if (typeof sharedPromptData?.positive === 'string' && !characterPrompt && sharedPromptData.positive) {
+            characterPrompt = sharedPromptData.positive || '';
+        }
+        if (typeof sharedPromptData?.negative === 'string' && !negativePrompt && sharedPromptData.negative) {
+            negativePrompt = sharedPromptData.negative || '';
+        }
+
+        return isNegative ? negativePrompt : characterPrompt;
+    };
+
+    MacrosParser.registerMacro('charPrefix', () => getMacroValue({ isNegative: false }), t`Character's positive positive Image Generation prompt prefix`);
+    MacrosParser.registerMacro('charNegativePrefix', () => getMacroValue({ isNegative: true }), t`Character's negative Image Generation prompt prefix`);
 });
