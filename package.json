@@ -111,7 +111,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.12.14",
+    "version": "1.13.0",
     "scripts": {
         "start": "node server.js",
         "debug": "node --inspect server.js",

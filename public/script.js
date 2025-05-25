@@ -379,7 +379,7 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
 
     // Replace line breaks with <br> in unknown elements
     if (node instanceof HTMLUnknownElement) {
-        node.innerHTML = node.innerHTML.replaceAll('\n', '<br>');
+        node.innerHTML = node.innerHTML.trim().replaceAll('\n', '<br>');
     }
 
     const isMediaAllowed = isExternalMediaAllowed();

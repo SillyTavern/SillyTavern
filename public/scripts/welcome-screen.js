@@ -20,9 +20,12 @@ import {
     system_avatar,
     system_message_types,
     this_chid,
+    unshallowCharacter,
 } from '../script.js';
+import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { getGroupAvatar, groups, is_group_generating, openGroupById, openGroupChat } from './group-chats.js';
 import { t } from './i18n.js';
+import { getMessageTimeStamp } from './RossAscends-mods.js';
 import { renderTemplateAsync } from './templates.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { sortMoments, timestampToMoment } from './utils.js';
@@ -62,8 +65,38 @@ export async function openWelcomeScreen() {
     }
 
     await sendWelcomePanel(recentChats);
+    await unshallowPermanentAssistant();
     sendAssistantMessage();
     sendWelcomePrompt();
+}
+
+/**
+ * Makes sure the assistant character has all data loaded.
+ * @returns {Promise<void>}
+ */
+async function unshallowPermanentAssistant() {
+    const assistantAvatar = getPermanentAssistantAvatar();
+    const characterId = characters.findIndex(x => x.avatar === assistantAvatar);
+    if (characterId === -1) {
+        return;
+    }
+
+    await unshallowCharacter(String(characterId));
+}
+
+/**
+ * Returns a greeting message for the assistant based on the character.
+ * @param {import('./char-data.js').v1CharData} character Character data
+ * @returns {string} Greeting message
+*/
+function getAssistantGreeting(character) {
+    const defaultGreeting = t`If you're connected to an API, try asking me something!`;
+
+    if (!character) {
+        return defaultGreeting;
+    }
+
+    return getRegexedString(character.first_mes || '', regex_placement.AI_OUTPUT) || defaultGreeting;
 }
 
 function sendAssistantMessage() {
@@ -71,13 +104,15 @@ function sendAssistantMessage() {
     const character = characters.find(x => x.avatar === currentAssistantAvatar);
     const name = character ? character.name : neutralCharacterName;
     const avatar = character ? getThumbnailUrl('avatar', character.avatar) : system_avatar;
+    const greeting = getAssistantGreeting(character);
 
     const message = {
         name: name,
         force_avatar: avatar,
-        mes: t`If you're connected to an API, try asking me something!` + '\n***\n' + t`**Hint:** Set any character as your welcome page assistant from their "More..." menu.`,
+        mes: greeting + '\n***\n' + t`**Hint:** Set any character as your welcome page assistant from their "More..." menu.`,
         is_system: false,
         is_user: false,
+        send_date: getMessageTimeStamp(),
         extra: {
             type: system_message_types.ASSISTANT_MESSAGE,
         },

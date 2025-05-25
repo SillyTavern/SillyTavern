@@ -982,6 +982,11 @@ function parseTimestamp(timestamp) {
         return new Date(unixTime).toISOString();
     }
 
+    // ISO 8601
+    if (moment(timestamp, moment.ISO_8601, true).isValid()) {
+        return timestamp;
+    }
+
     let dtFmt = [];
 
     // meridiem-based format
@@ -1008,6 +1013,7 @@ function parseTimestamp(timestamp) {
         if (!rgxMatch) continue;
         return x.callback(...rgxMatch);
     }
+
     return;
 }
 

@@ -152,7 +152,7 @@ async function sendClaudeRequest(request, response) {
         const useTools = isClaude3or4 && Array.isArray(request.body.tools) && request.body.tools.length > 0;
         const useSystemPrompt = Boolean(request.body.claude_use_sysprompt);
         const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
-        const useThinking = /^claude-(3-7|opus-4|sonnet-4)/.test(request.body.model) && Boolean(request.body.include_reasoning);
+        const useThinking = /^claude-(3-7|opus-4|sonnet-4)/.test(request.body.model);
         const useWebSearch = /^claude-(3-5|3-7|opus-4|sonnet-4)/.test(request.body.model) && Boolean(request.body.enable_web_search);
         const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
         let fixThinkingPrefill = false;
