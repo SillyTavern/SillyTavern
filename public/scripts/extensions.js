@@ -453,14 +453,14 @@ async function activateExtensions() {
                 console.error('Could not activate extension', name, error);
             }
         } else if (!meetsModuleRequirements && !isDisabled) {
-            console.warn(t`Extension "${displayName}" did not load. Missing required Extras module(s): "${missingModules.join(', ')}"`);
+            console.warn(t`Extension "${name}" did not load. Missing required Extras module(s): "${missingModules.join(', ')}"`);
             extensionLoadErrors.add(t`Extension "${displayName}" did not load. Missing required Extras module(s): "${missingModules.join(', ')}"`);
         } else if (!meetsExtensionDeps && !isDisabled) {
             if (disabledDependencies.length > 0) {
-                console.warn(t`Extension "${displayName}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
+                console.warn(t`Extension "${name}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
                 extensionLoadErrors.add(t`Extension "${displayName}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
             } else {
-                console.warn(t`Extension "${displayName}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
+                console.warn(t`Extension "${name}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
                 extensionLoadErrors.add(t`Extension "${displayName}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
             }
         }
