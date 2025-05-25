@@ -401,9 +401,11 @@ async function activateExtensions() {
 
         // Module requirements: pass if 'requires' is undefined, null, or not an array; check subset if it's an array
         let meetsModuleRequirements = true;
+        let missingModules = [];
         if (extrasRequirements !== undefined) {
             if (Array.isArray(extrasRequirements)) {
                 meetsModuleRequirements = isSubsetOf(modules, extrasRequirements);
+                missingModules = extrasRequirements.filter(req => !modules.includes(req));
             } else {
                 console.warn(`Extension ${name}: manifest.json 'requires' field is not an array. Loading allowed, but any intended requirements were not verified to exist.`);
             }
@@ -411,11 +413,13 @@ async function activateExtensions() {
 
         // Extension dependencies: pass if 'dependencies' is undefined or not an array; check subset and disabled status if it's an array
         let meetsExtensionDeps = true;
+        let missingDependencies = [];
         let disabledDependencies = [];
         if (extensionDependencies !== undefined) {
             if (Array.isArray(extensionDependencies)) {
                 // Check if all dependencies exist
                 meetsExtensionDeps = isSubsetOf(extensionNames, extensionDependencies);
+                missingDependencies = extensionDependencies.filter(dep => !extensionNames.includes(dep));
                 // Check for disabled dependencies
                 if (meetsExtensionDeps) {
                     disabledDependencies = extensionDependencies.filter(dep => extension_settings.disabledExtensions.includes(dep));
@@ -425,7 +429,7 @@ async function activateExtensions() {
                     }
                 }
             } else {
-                console.warn(`Extension ${name}: manifest.json 'dependencies' field is not an array. Allowed, but any intended requirements were not verified to exist.`);
+                console.warn(`Extension ${name}: manifest.json 'dependencies' field is not an array. Loading allowed, but any intended requirements were not verified to exist.`);
             }
         }
 
@@ -448,15 +452,15 @@ async function activateExtensions() {
                 console.error('Could not activate extension', name, error);
             }
         } else if (!meetsModuleRequirements && !isDisabled) {
-            console.warn(t`Extension "${name}" did not load. Missing required Extras module(s): "${Array.isArray(extrasRequirements) ? extrasRequirements.join(', ') : extrasRequirements}"`);
-            extensionLoadErrors.add(t`Extension "${name}" did not load. Missing required Extras module(s): "${Array.isArray(extrasRequirements) ? extrasRequirements.join(', ') : extrasRequirements}"`);
+            console.warn(t`Extension "${name}" did not load. Missing required Extras module(s): "${missingModules.join(', ')}"`);
+            extensionLoadErrors.add(t`Extension "${name}" did not load. Missing required Extras module(s): "${missingModules.join(', ')}"`);
         } else if (!meetsExtensionDeps && !isDisabled) {
             if (disabledDependencies.length > 0) {
                 console.warn(t`Extension "${name}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
                 extensionLoadErrors.add(t`Extension "${name}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
             } else {
-                console.warn(t`Extension "${name}" did not load. Missing required extensions: "${Array.isArray(extensionDependencies) ? extensionDependencies.join(', ') : extensionDependencies}"`);
-                extensionLoadErrors.add(t`Extension "${name}" did not load. Missing required extensions: "${Array.isArray(extensionDependencies) ? extensionDependencies.join(', ') : extensionDependencies}"`);
+                console.warn(t`Extension "${name}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
+                extensionLoadErrors.add(t`Extension "${name}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
             }
         }
     }
