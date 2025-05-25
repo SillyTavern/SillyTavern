@@ -965,6 +965,7 @@
     "char_import_5": "Персонаж с AICharacterCards.com (прямая ссылка или ID)",
     "char_import_6": "Прямая ссылка на PNG-файл (список разрешённых хостов находится в",
     "char_import_7": ")",
+    "char_import_9": "Персонаж с Soulkyn (прямая ссылка)",
     "Grammar String": "Грамматика",
     "GBNF or EBNF, depends on the backend in use. If you're using this you should know which.": "GBNF или EBNF, зависит от бэкенда. Если вы это используете, то, скорее всего, сами знаете, какой именно.",
     "Account": "Аккаунт",

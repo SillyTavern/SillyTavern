@@ -1381,6 +1381,7 @@
     "char_import_6": "直接PNGリンク（参照",
     "char_import_7": "許可されたホストの場合)",
     "char_import_8": "RisuRealm キャラクター (直接リンク)",
+    "char_import_9": "Soulkyn キャラクター (直接リンク)",
     "Supports importing multiple characters.": "複数のキャラクターのインポートをサポートします。",
     "Write each URL or ID into a new line.": "各 URL または ID を新しい行に入力します。",
     "Export for character": "キャラクターのエクスポート",

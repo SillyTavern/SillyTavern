@@ -637,6 +637,187 @@ async function downloadRisuCharacter(uuid) {
 }
 
 /**
+ * Parse Soulkyn URL to extract the character slug.
+ * @param {string} url Soulkyn character URL
+ * @returns {string | null} Slug of the character
+ */
+function parseSoulkynUrl(url) {
+    // Example: https://soulkyn.com/l/en-US/@kayla-marie
+    const pattern = /^https:\/\/soulkyn\.com\/l\/[a-z]{2}-[A-Z]{2}\/@([\w\d-]+)/i;
+    const match = url.match(pattern);
+    return match ? match[1] : null;
+}
+
+/**
+ * Download Soulkyn character card
+ * @param {string} slug Slug of the character
+ * @returns {Promise<{buffer: Buffer, fileName: string, fileType: string} | null>}
+ */
+async function downloadSoulkynCharacter(slug) {
+    const soulkynReplacements = [
+        // https://soulkyn.com/l/en-US/help/character-backgrounds-advanced#variables-you-can-use-in-character-background-text
+        { pattern: /__USER_?NAME__/gi, replacement: '{{user}}' },
+        { pattern: /__PERSONA_?NAME__/gi, replacement: '{{char}}' },
+        // ST doesn't support gender-specific pronoun macros
+        { pattern: /__U_PRONOUN_1__/gi, replacement: 'they' },
+        { pattern: /__U_PRONOUN_2__/gi, replacement: 'them' },
+        { pattern: /__U_PRONOUN_3__/gi, replacement: 'their' },
+        { pattern: /__U_PRONOUN_4__/gi, replacement: 'themselves' },
+        { pattern: /__(USER_)?PRONOUN__/gi, replacement: 'they' },
+        { pattern: /__(USER_)?CPRONOUN__/gi, replacement: 'them' },
+        { pattern: /__(USER_)?UPRONOUN__/gi, replacement: 'their' },
+        // HTML tags -> Markdown syntax
+        { pattern: /<(strong|b)>/gi, replacement: '**' },
+        { pattern: /<\/(strong|b)>/gi, replacement: '**' },
+        { pattern: /<(em|i)>/gi, replacement: '*' },
+        { pattern: /<\/(em|i)>/gi, replacement: '*' },
+    ];
+
+    const normalizeContent = (str) => soulkynReplacements.reduce((acc, { pattern, replacement }) => acc.replace(pattern, replacement), str);
+
+    try {
+        const url = `https://soulkyn.com/_special/rest/Sk/public/Persona/${slug}`;
+        const result = await fetch(url, {
+            headers: { 'Content-Type': 'application/json', 'User-Agent': USER_AGENT },
+        });
+        if (result.ok) {
+            /** @type {any} */
+            const soulkynCharData = await result.json();
+
+            if (soulkynCharData.result !== 'success') {
+                console.error('Soulkyn returned error', soulkynCharData.message);
+                throw new Error(`Failed to download character: ${soulkynCharData.message}`);
+            }
+
+            // Fetch avatar
+            let avatarBuffer = null;
+            if (soulkynCharData.data?.Avatar?.FWSUUID) {
+                const avatarUrl = `https://rub.soulkyn.com/${soulkynCharData.data.Avatar.FWSUUID}/`;
+                const avatarResult = await fetch(avatarUrl, { headers: { 'User-Agent': USER_AGENT } });
+
+                if (avatarResult.ok) {
+                    const avatarContentType = avatarResult.headers.get('content-type');
+                    if (avatarContentType === 'image/png') {
+                        avatarBuffer = Buffer.from(await avatarResult.arrayBuffer());
+                    } else {
+                        console.warn(`Soulkyn character (${slug}) avatar is not PNG: ${avatarContentType}`);
+                    }
+                } else {
+                    console.warn(`Soulkyn character (${slug}) avatar download failed: ${avatarResult.status}`);
+                }
+            } else {
+                console.warn(`Soulkyn character (${slug}) does not have an avatar`);
+            }
+
+            // Fallback to default avatar
+            if (!avatarBuffer) {
+                const defaultAvatarPath = path.join(serverDirectory, 'public', 'img', 'ai4.png');
+                avatarBuffer = fs.readFileSync(defaultAvatarPath);
+            }
+
+            const d = soulkynCharData.data;
+            soulkynReplacements.push({ pattern: d.Username, replacement: '{{char}}' });
+
+            // Parse Soulkyn data into character chard
+            const charData = {
+                name: d.Username,
+                first_mes: '',
+                tags: [],
+                description: '',
+                creator: d.User.Username,
+                creator_notes: '',
+                alternate_greetings: [],
+                character_version: '',
+                mes_example: '',
+                post_history_instructions: '',
+                system_prompt: '',
+                scenario: '',
+                personality: '',
+                extensions: {
+                    soulkyn_slug: slug,
+                    soulkyn_id: d.UUID,
+                },
+            };
+
+            if (d?.PersonaIntroText) {
+                const match = d.PersonaIntroText.match(/^(?:\[Scenario:\s*([\s\S]*?)\]\s*)?([\s\S]*)$/);
+                if (match) {
+                    if (match[1]) {
+                        charData.scenario = normalizeContent(match[1].trim());
+                    }
+                    charData.first_mes = normalizeContent(match[2].trim());
+                }
+            }
+
+            const descriptionArr = ['Name: {{char}}'];
+            if (d?.Version?.Age) {
+                descriptionArr.push(`Age: ${d.Version.Age}`);
+            }
+            if (d?.Version?.Gender) {
+                descriptionArr.push(`Gender: ${d.Version.Gender}`);
+            }
+            if (d?.Version?.Race?.Name && !d.Version.Race.Name.match(/no preset/i)) {
+                let race = d.Version.Race.Name;
+                if (d.Version.Race?.Description) {
+                    race += ` (${d.Version.Race.Description})`;
+                }
+                descriptionArr.push(`Race: ${race}`);
+            }
+            if (d?.PersonalityType) {
+                descriptionArr.push(`Personality type: ${d.PersonalityType}`);
+            }
+            if (Array.isArray(d?.Version?.PropertyPersonality)) {
+                const traits = d.Version.PropertyPersonality.map((t) => t.Value).join(', ');
+                descriptionArr.push(`Personality Traits: ${traits}`);
+            }
+            if (Array.isArray(d?.Version?.PropertyPhysical)) {
+                const traits = d.Version.PropertyPhysical.map((t) => t.Value).join(', ');
+                descriptionArr.push(`Physical Traits: ${traits}`);
+            }
+            if (Array.isArray(d?.Clothes?.Preset)) {
+                descriptionArr.push(`Clothes: ${d.Clothes.Preset.join(', ')}`);
+            }
+            if (d?.Avatar?.Caption) {
+                descriptionArr.push(`Image description featuring {{char}}: ${d.Avatar.Caption.replace(/\n+/g, ' ')}`);
+            }
+            if (d?.Version?.WelcomeMessage) {
+                if (charData.first_mes) {
+                    descriptionArr.push(`{{char}}'s self-description: "${d.Version.WelcomeMessage}"`);
+                } else {
+                    // Some characters lack `PersonaIntroText`. In that case we use `Version.WelcomeMessage` for `first_mes`
+                    charData.first_mes = normalizeContent(d.Version.WelcomeMessage);
+                }
+            }
+            charData.description = normalizeContent(descriptionArr.join('\n'));
+
+            if (Array.isArray(d?.Version?.ChatExamplesValue)) {
+                charData.mes_example = d.Version.ChatExamplesValue.map((example) => `<START>\n${normalizeContent(example)}`).join('\n');
+            }
+
+            if (Array.isArray(d?.PersonaTags)) {
+                charData.tags = d.PersonaTags.map((t) => t.Slug);
+            }
+
+            // Character card
+            const buffer = write(avatarBuffer, JSON.stringify({
+                'spec': 'chara_card_v2',
+                'spec_version': '2.0',
+                'data': charData,
+            }));
+
+            const fileName = `${sanitize(d.UUID)}.png`;
+            const fileType = 'image/png';
+
+            return { buffer, fileName, fileType };
+        }
+    } catch (error) {
+        console.error('Error downloading character:', error);
+        throw error;
+    }
+    return null;
+}
+
+/**
 * @param {String} url
 * @returns {String | null } UUID of the character
 */
@@ -691,6 +872,7 @@ router.post('/importURL', async (request, response) => {
         const isPygmalionContent = host.includes('pygmalion.chat');
         const isAICharacterCardsContent = host.includes('aicharactercards.com');
         const isRisu = host.includes('realm.risuai.net');
+        const isSoulkyn = host.includes('soulkyn.com');
         const isGeneric = isHostWhitelisted(host);
 
         if (isPygmalionContent) {
@@ -739,6 +921,13 @@ router.post('/importURL', async (request, response) => {
 
             type = 'character';
             result = await downloadRisuCharacter(uuid);
+        } else if (isSoulkyn) {
+            const soulkynSlug = parseSoulkynUrl(url);
+            if (!soulkynSlug) {
+                return response.sendStatus(404);
+            }
+            type = 'character';
+            result = await downloadSoulkynCharacter(soulkynSlug);
         } else if (isGeneric) {
             console.info('Downloading from generic url:', url);
             type = 'character';

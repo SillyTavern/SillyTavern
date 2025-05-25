@@ -1893,6 +1893,7 @@
     "char_import_6": "被允许的PNG直链（请参阅",
     "char_import_7": "）",
     "char_import_8": "RisuRealm 角色（直链）",
+    "char_import_9": "Soulkyn 角色（直链）",
     "Supports importing multiple characters.": "支持导入多个角色。",
     "Write each URL or ID into a new line.": "将每个 URL 或 ID 写入新行。",
     "Enter the Git URL of the extension to install": "输入扩展程序的 Git URL 以安装",

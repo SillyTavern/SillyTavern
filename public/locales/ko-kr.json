@@ -1398,6 +1398,7 @@
     "char_import_6": "직접 PNG 링크(참조",
     "char_import_7": "허용된 호스트의 경우)",
     "char_import_8": "RisuRealm 캐릭터 (직접링크)",
+    "char_import_9": "Soulkyn 캐릭터 (직접링크)",
     "Supports importing multiple characters.": "여러 문자 가져오기를 지원합니다.",
     "Write each URL or ID into a new line.": "각 URL 또는 ID를 새 줄에 작성합니다.",
     "Export for character": "캐릭터 내보내기",
