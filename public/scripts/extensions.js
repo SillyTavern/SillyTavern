@@ -394,6 +394,7 @@ async function activateExtensions() {
         const manifest = entry[1];
         const extrasRequirements = manifest.requires;
         const extensionDependencies = manifest.dependencies;
+        const displayName = manifest.display_name || name;
 
         if (activeExtensions.has(name)) {
             continue;
@@ -445,22 +446,22 @@ async function activateExtensions() {
                     .then(() => activeExtensions.add(name))
                     .catch(err => {
                         console.log('Could not activate extension', name, err);
-                        extensionLoadErrors.add(t`Extension "${name}" failed to load: ${err}`);
+                        extensionLoadErrors.add(t`Extension "${displayName}" failed to load: ${err}`);
                     });
                 promises.push(promise);
             } catch (error) {
                 console.error('Could not activate extension', name, error);
             }
         } else if (!meetsModuleRequirements && !isDisabled) {
-            console.warn(t`Extension "${name}" did not load. Missing required Extras module(s): "${missingModules.join(', ')}"`);
-            extensionLoadErrors.add(t`Extension "${name}" did not load. Missing required Extras module(s): "${missingModules.join(', ')}"`);
+            console.warn(t`Extension "${displayName}" did not load. Missing required Extras module(s): "${missingModules.join(', ')}"`);
+            extensionLoadErrors.add(t`Extension "${displayName}" did not load. Missing required Extras module(s): "${missingModules.join(', ')}"`);
         } else if (!meetsExtensionDeps && !isDisabled) {
             if (disabledDependencies.length > 0) {
-                console.warn(t`Extension "${name}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
-                extensionLoadErrors.add(t`Extension "${name}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
+                console.warn(t`Extension "${displayName}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
+                extensionLoadErrors.add(t`Extension "${displayName}" did not load. Required extensions exist but are disabled: "${disabledDependencies.join(', ')}". Enable them first, then reload.`);
             } else {
-                console.warn(t`Extension "${name}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
-                extensionLoadErrors.add(t`Extension "${name}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
+                console.warn(t`Extension "${displayName}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
+                extensionLoadErrors.add(t`Extension "${displayName}" did not load. Missing required extensions: "${missingDependencies.join(', ')}"`);
             }
         }
     }
